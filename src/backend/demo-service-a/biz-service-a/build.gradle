@@ -1,0 +1,4 @@
+dependencies {
+    api project(":common:common-web")
+    implementation project(":demo-service-a:api-service-a")
+}

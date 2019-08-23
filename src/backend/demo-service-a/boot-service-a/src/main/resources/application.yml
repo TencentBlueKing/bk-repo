@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: demo-service-a
+    desc: Demo service for service provider
+    version: 1.0.0
+    packageName: com.tencent.repository.servicea
+
+server:
+  port: 8080

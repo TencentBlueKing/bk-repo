@@ -1,0 +1,15 @@
+management:
+  security:
+    enabled: false
+
+spring:
+  cloud:
+    consul:
+      discovery:
+        heartbeat:
+          enabled: true
+        query-passing: true
+        preferIpAddress: true
+
+  main:
+    banner-mode: "off"

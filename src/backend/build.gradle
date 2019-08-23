@@ -1,0 +1,114 @@
+buildscript {
+    ext {
+        kotlinVersion = '1.3.31'
+        springBootVersion = '2.1.5.RELEASE'
+        springCloudVersion = 'Greenwich.SR2'
+
+        ktlintVersion = "0.34.2"
+        swaggerCoreVersion = "1.5.22"
+        swaggerFoxVersion = "2.9.2"
+
+    }
+
+    repositories {
+        mavenLocal()
+        maven { url MAVEN_REPO_URL }
+        maven { url "https://repo.spring.io/libs-milestone" }
+        mavenCentral()
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+        classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlinVersion"
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:$springBootVersion"
+    }
+}
+
+allprojects {
+    group "com.tencent.bk.repo"
+    version "0.1.0-SNAPSHOT"
+
+    repositories {
+        mavenLocal()
+        maven { url MAVEN_REPO_URL }
+        maven { url "https://repo.spring.io/libs-milestone" }
+        mavenCentral()
+        jcenter()
+    }
+
+}
+
+subprojects {
+    apply plugin: "java"
+    apply plugin: "kotlin"
+    apply plugin: "kotlin-spring"
+    apply plugin: 'org.springframework.boot'
+    apply plugin: "io.spring.dependency-management"
+
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+        kotlinOptions {
+            freeCompilerArgs = ["-Xjsr305=strict"]
+            jvmTarget = "1.8"
+        }
+    }
+
+    tasks.withType(JavaCompile).all {
+        options.encoding = "UTF-8"
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    jar.onlyIf { !sourceSets.main.allSource.files.isEmpty() }
+
+    configurations {
+        ktlint
+        all*.exclude group: "org.springframework.boot", module: "spring-boot-starter-logging"
+        all*.exclude group: "org.springframework.boot", module: "spring-boot-starter-tomcat"
+        all*.exclude group: "org.apache.tomcat", module: "tomcat-jdbc"
+        all*.exclude group: "org.slf4j", module: "log4j-over-slf4j"
+        all*.exclude group: "org.slf4j", module: "slf4j-log4j12"
+        all*.exclude group: "org.slf4j", module: "slf4j-nop"
+    }
+
+    dependencies {
+        ktlint "com.pinterest:ktlint"
+
+        implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+        implementation "org.jetbrains.kotlin:kotlin-reflect"
+        implementation "org.springframework.boot:spring-boot-configuration-processor"
+
+        testImplementation('org.springframework.boot:spring-boot-starter-test')
+    }
+
+    task ktlint(type: JavaExec, group: "verification") {
+        description = "Check Kotlin code style."
+        main = "com.pinterest.ktlint.Main"
+        classpath = configurations.ktlint
+        args "src/**/*.kt"
+        // to generate report in checkstyle format prepend following args:
+        // "--reporter=plain", "--reporter=checkstyle,output=${buildDir}/ktlint.xml"
+        // see https://github.com/pinterest/ktlint#usage for more
+    }
+    check.dependsOn ktlint
+
+    task ktlintFormat(type: JavaExec, group: "formatting") {
+        description = "Fix Kotlin code style deviations."
+        main = "com.pinterest.ktlint.Main"
+        classpath = configurations.ktlint
+        args "-F", "src/**/*.kt"
+    }
+
+
+    dependencyManagement {
+        dependencies {
+            imports {
+                mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"
+            }
+            dependency "com.pinterest:ktlint:$ktlintVersion"
+            dependency "io.swagger:swagger-annotations:$swaggerCoreVersion"
+            dependency "io.springfox:springfox-swagger2:$swaggerFoxVersion"
+        }
+
+    }
+}

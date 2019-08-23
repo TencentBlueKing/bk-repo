@@ -1,0 +1,6 @@
+dependencies {
+    api project(":common:common-api")
+    api project(":common:common-log")
+    api "org.springframework.cloud:spring-cloud-starter-consul-discovery"
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+}

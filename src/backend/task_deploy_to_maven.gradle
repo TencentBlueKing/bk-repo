@@ -1,0 +1,38 @@
+apply plugin: "kotlin"
+apply plugin: "maven"
+apply plugin: "kotlin-spring"
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile "org.jetbrains.kotlin:kotlin-reflect"
+}
+
+uploadArchives {
+
+    def mavenRepoDeployUrl = System.getProperty("mavenRepoDeployUrl")
+    def mavenRepoUsername = System.getProperty("mavenRepoUsername")
+    def mavenRepoPassword = System.getProperty("mavenRepoPassword")
+
+    if (mavenRepoDeployUrl == null) {
+        mavenRepoDeployUrl = System.getenv("mavenRepoDeployUrl")
+        mavenRepoUsername = System.getenv("mavenRepoUsername")
+        mavenRepoPassword = System.getenv("mavenRepoPassword")
+    }
+
+    if (mavenRepoDeployUrl == null) {
+        mavenRepoDeployUrl = MAVEN_REPO_DEPLOY_URL
+        mavenRepoUsername = MAVEN_REPO_USERNAME
+        mavenRepoPassword = MAVEN_REPO_PASSWORD
+    }
+
+    repositories {
+        mavenDeployer {
+            repository(url: mavenRepoDeployUrl) {
+                authentication(userName: mavenRepoUsername, password: mavenRepoPassword)
+            }
+        }
+    }
+}
+
+uploadArchives.onlyIf { !sourceSets.main.allSource.files.isEmpty() }
+install.onlyIf { !sourceSets.main.allSource.files.isEmpty() }
