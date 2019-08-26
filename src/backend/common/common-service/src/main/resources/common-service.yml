@@ -1,6 +1,16 @@
 management:
-  security:
-    enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: "*" # 暴露所有节点
+  endpoint:
+    health:
+      show-details: always
+
+info:
+  author: carrypan
+  blog-url: http:/www.qq.com
+  version: 1.0.0
 
 spring:
   cloud:
@@ -10,6 +20,13 @@ spring:
           enabled: true
         query-passing: true
         preferIpAddress: true
-
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
   main:
-    banner-mode: "off"
+    banner-mode: OFF
+
+logging:
+  config: classpath:log4j2-dev.xml

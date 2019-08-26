@@ -1,4 +1,4 @@
-package com.tencent.repository.common.web.swagger
+package com.tencent.repository.common.service.swagger
 
 import com.google.common.base.Predicates
 import org.springframework.context.annotation.Bean
@@ -24,7 +24,7 @@ class SwaggerAutoConfiguration {
     }
 
     companion object {
-        val DEFAULT_EXCLUDE_PATH = listOf("/error", "/actuator/**")
+        private val DEFAULT_EXCLUDE_PATH = listOf("/error", "/actuator/**")
     }
 
 }

@@ -1,4 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.tencent.repository.common.web.WebAutoConfiguration,\
-com.tencent.repository.common.web.swagger.SwaggerAutoConfiguration,\
-com.tencent.repository.common.web.exception.GlobalExceptionHandlerResolver

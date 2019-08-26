@@ -1,6 +1,6 @@
 package com.tencent.repository.common.api.util
 
-object ReflectUtil {
+object ReflectUtils {
 
     fun isNativeType(bean: Any): Boolean {
         return bean is Int ||

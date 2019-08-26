@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 
-object JsonUtil {
+object JsonUtils {
     private val objectMapper = ObjectMapper().apply {
         registerModule(KotlinModule())
         configure(SerializationFeature.INDENT_OUTPUT, true)
@@ -43,7 +43,7 @@ object JsonUtil {
      * 转成Json
      */
     fun toJson(bean: Any): String {
-        if (ReflectUtil.isNativeType(bean) || bean is String) {
+        if (ReflectUtils.isNativeType(bean) || bean is String) {
             return bean.toString()
         }
         return getObjectMapper().writeValueAsString(bean)!!
@@ -54,7 +54,7 @@ object JsonUtil {
      * 注意：会忽略掉值为空串和null的属性
      */
     fun toMutableMapSkipEmpty(bean: Any): MutableMap<String, Any> {
-        if (ReflectUtil.isNativeType(bean)) {
+        if (ReflectUtils.isNativeType(bean)) {
             return mutableMapOf()
         }
         return if (bean is String)
@@ -73,7 +73,7 @@ object JsonUtil {
      */
     fun toMap(bean: Any): Map<String, Any> {
         return when {
-            ReflectUtil.isNativeType(bean) -> mapOf()
+            ReflectUtils.isNativeType(bean) -> mapOf()
             bean is String -> to(bean)
             else -> to(getObjectMapper().writeValueAsString(bean))
         }

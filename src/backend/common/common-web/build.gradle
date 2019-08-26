@@ -1,9 +1,0 @@
-dependencies {
-    api project(":common:common-service")
-    api("org.springframework.boot:spring-boot-starter-web") {
-        exclude module: "spring-boot-starter-tomcat"
-    }
-    api "org.springframework.boot:spring-boot-starter-undertow"
-    api "io.springfox:springfox-swagger2"
-
-}
