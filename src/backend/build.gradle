@@ -46,6 +46,14 @@ subprojects {
     apply plugin: 'org.springframework.boot'
     apply plugin: "io.spring.dependency-management"
 
+
+    def isBootProject = project.name.startsWith("boot-")
+
+    jar.enabled = !isBootProject
+    bootJar.enabled = isBootProject
+    bootRun.enabled = isBootProject
+
+
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
         kotlinOptions {
             freeCompilerArgs = ["-Xjsr305=strict"]
@@ -59,7 +67,6 @@ subprojects {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
-    jar.onlyIf { !sourceSets.main.allSource.files.isEmpty() }
 
     configurations {
         ktlint

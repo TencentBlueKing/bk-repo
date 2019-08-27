@@ -11,11 +11,9 @@ import org.springframework.core.Ordered
 import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.StringRedisTemplate
-import org.springframework.data.redis.serializer.StringRedisSerializer
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer
+import org.springframework.data.redis.serializer.StringRedisSerializer
 
-
-@EnableCaching
 @Configuration
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @AutoConfigureBefore(RedisAutoConfiguration::class)

@@ -1,6 +1,6 @@
 package com.tencent.repository.servicea.api
 
-import com.tencent.repository.servicea.SERVICE_NAME
+import com.tencent.repository.servicea.constant.SERVICE_NAME
 import com.tencent.repository.servicea.pojo.User
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -18,16 +18,16 @@ interface DemoResource {
     @ApiOperation("get接口测试")
     @GetMapping("/hello")
     fun sayHello(
-            @RequestParam
-            @ApiParam(value = "姓名", required = true)
-            name: String
+        @RequestParam
+        @ApiParam(value = "姓名", required = true)
+        name: String
     ): String
-
 
     @ApiOperation("post接口测试")
     @PostMapping("/hello")
-    fun sayHello(@RequestBody
-                 @ApiParam(value = "用户信息", required = true)
-                 user: User
+    fun sayHello(
+        @RequestBody
+        @ApiParam(value = "用户信息", required = true)
+        user: User
     ): String
 }

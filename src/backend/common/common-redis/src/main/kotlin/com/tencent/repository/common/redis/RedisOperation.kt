@@ -1,8 +1,8 @@
 package com.tencent.repository.common.redis
 
+import java.util.concurrent.TimeUnit
 import org.springframework.data.redis.core.RedisCallback
 import org.springframework.data.redis.core.RedisTemplate
-import java.util.concurrent.TimeUnit
 
 /**
  * deng
@@ -97,5 +97,4 @@ class RedisOperation(private val redisTemplate: RedisTemplate<String, String>) {
     fun <T> execute(action: RedisCallback<T>): T? {
         return redisTemplate.execute(action)
     }
-
 }

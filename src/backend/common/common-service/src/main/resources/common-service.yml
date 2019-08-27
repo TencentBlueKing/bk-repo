@@ -1,17 +1,3 @@
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*" # 暴露所有节点
-  endpoint:
-    health:
-      show-details: always
-
-info:
-  author: carrypan
-  blog-url: http:/www.qq.com
-  version: 1.0.0
-
 spring:
   cloud:
     consul:

@@ -4,10 +4,10 @@ import com.tencent.repository.common.api.exception.ErrorCodeException
 import com.tencent.repository.common.api.pojo.Result
 import com.tencent.repository.common.service.utils.MessageCodeUtils
 import org.slf4j.LoggerFactory
-import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestControllerAdvice
 
 /**
  * 统一异常处理
@@ -25,12 +25,9 @@ class GlobalExceptionHandlerResolver {
                 status = HttpStatus.BAD_REQUEST.value(),
                 message = errorMsg.message ?: exception.message ?: "Unknown Error: ${exception.errorCode}"
         )
-
     }
 
     companion object {
-        val logger = LoggerFactory.getLogger(this.javaClass)!!
+        private val logger = LoggerFactory.getLogger(GlobalExceptionHandlerResolver::class.java)
     }
-
-
 }

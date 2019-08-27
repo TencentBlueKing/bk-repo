@@ -6,8 +6,8 @@ import org.springframework.context.annotation.ComponentScan
 
 @MicroService
 @ComponentScan("com.tencent.repository")
-class Application
+class BootApplication
 
 fun main(args: Array<String>) {
-    runApplication<Application>(*args)
+    runApplication<BootApplication>(*args)
 }

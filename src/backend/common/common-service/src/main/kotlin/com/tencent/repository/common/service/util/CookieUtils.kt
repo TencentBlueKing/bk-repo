@@ -1,4 +1,4 @@
-package com.tencent.devops.common.service.utils
+package com.tencent.reository.common.service.utils
 
 import javax.servlet.http.HttpServletRequest
 

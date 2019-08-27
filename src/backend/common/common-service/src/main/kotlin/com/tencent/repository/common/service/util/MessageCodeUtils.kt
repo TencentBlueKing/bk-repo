@@ -1,6 +1,6 @@
 package com.tencent.repository.common.service.utils
 
-import com.tencent.devops.common.service.utils.CookieUtils
+import com.tencent.reository.common.service.utils.CookieUtils
 import com.tencent.repository.common.api.constant.BK_LANGUAGE
 import com.tencent.repository.common.api.constant.DEFAULT_LANGUAGE
 import com.tencent.repository.common.api.constant.PROJECT_CODE_PREFIX
@@ -9,13 +9,13 @@ import com.tencent.repository.common.api.pojo.Result
 import com.tencent.repository.common.api.util.JsonUtils
 import com.tencent.repository.common.redis.RedisOperation
 import com.tencent.repository.common.service.util.SpringContextUtils
+import java.text.MessageFormat
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.i18n.LocaleContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
-import java.text.MessageFormat
 
 /**
  * code信息工具类
@@ -26,7 +26,7 @@ import java.text.MessageFormat
 @Component
 class MessageCodeUtils @Autowired constructor() {
     companion object {
-        private val logger = LoggerFactory.getLogger(this.javaClass)
+        private val logger = LoggerFactory.getLogger(MessageCodeUtils::class.java)
         private val simpleCnLanList = listOf("ZH_CN", "ZH-CN")
         private val twCnLanList = listOf("ZH_TW", "ZH-TW", "ZH_HK", "ZH-HK")
         /**

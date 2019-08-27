@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class DemoController @Autowired constructor(
     private val demoResource: DemoResource
-){
+) {
 
     @GetMapping("/get")
     fun testGet() = demoResource.sayHello("Lily")
