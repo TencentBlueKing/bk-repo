@@ -1,6 +1,5 @@
-package com.tencent.repository.common.service.utils
+package com.tencent.repository.common.service.util
 
-import com.tencent.reository.common.service.utils.CookieUtils
 import com.tencent.repository.common.api.constant.BK_LANGUAGE
 import com.tencent.repository.common.api.constant.DEFAULT_LANGUAGE
 import com.tencent.repository.common.api.constant.PROJECT_CODE_PREFIX
@@ -8,7 +7,6 @@ import com.tencent.repository.common.api.pojo.MessageCodeDetail
 import com.tencent.repository.common.api.pojo.Result
 import com.tencent.repository.common.api.util.JsonUtils
 import com.tencent.repository.common.redis.RedisOperation
-import com.tencent.repository.common.service.util.SpringContextUtils
 import java.text.MessageFormat
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,7 +18,6 @@ import org.springframework.web.context.request.ServletRequestAttributes
 /**
  * code信息工具类
  * @since: 2018-11-10
- * @version: $Revision$ $Date$ $LastChangedBy$
  *
  */
 @Component
@@ -34,7 +31,7 @@ class MessageCodeUtils @Autowired constructor() {
          * @param messageCode 状态码
          */
         fun <T> generateResponseDataObject(
-            messageCode: String
+            messageCode: Int
         ): Result<T> {
             return generateResponseDataObject(messageCode, null, null)
         }
@@ -45,7 +42,7 @@ class MessageCodeUtils @Autowired constructor() {
          * @param data 数据对象
          */
         fun <T> generateResponseDataObject(
-            messageCode: String,
+            messageCode: Int,
             data: T?
         ): Result<T> {
             return generateResponseDataObject(messageCode, null, data)
@@ -57,7 +54,7 @@ class MessageCodeUtils @Autowired constructor() {
          * @param params 替换状态码描述信息占位符的参数数组
          */
         fun <T> generateResponseDataObject(
-            messageCode: String,
+            messageCode: Int,
             params: Array<String>
         ): Result<T> {
             return generateResponseDataObject(messageCode, params, null)
@@ -71,20 +68,20 @@ class MessageCodeUtils @Autowired constructor() {
          */
         @Suppress("UNCHECKED_CAST")
         fun <T> generateResponseDataObject(
-            messageCode: String,
+            messageCode: Int,
             params: Array<String>?,
             data: T?
         ): Result<T> {
             val message = getCodeMessage(messageCode, params) ?: "System service busy, please try again later"
-            return Result(messageCode.toInt(), message, data) // 生成Result对象
+            return Result(messageCode, message, data) // 生成Result对象
         }
 
         /**
          * 获取code对应的中英文信息
          * @param messageCode code
          */
-        fun getCodeLanMessage(messageCode: String): String {
-            return getCodeMessage(messageCode, null) ?: messageCode
+        fun getCodeLanMessage(messageCode: Int): String {
+            return getCodeMessage(messageCode, null) ?: messageCode.toString()
         }
 
         /**
@@ -92,7 +89,7 @@ class MessageCodeUtils @Autowired constructor() {
          * @param messageCode code
          * @param params 替换描述信息占位符的参数数组
          */
-        private fun getCodeMessage(messageCode: String, params: Array<String>?): String? {
+        private fun getCodeMessage(messageCode: Int, params: Array<String>?): String? {
             var message: String? = null
             try {
                 val redisOperation: RedisOperation = SpringContextUtils.getBean(RedisOperation::class.java)
