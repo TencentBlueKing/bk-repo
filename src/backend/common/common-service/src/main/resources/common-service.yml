@@ -6,13 +6,11 @@ spring:
           enabled: true
         query-passing: true
         preferIpAddress: true
-  http:
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
-  main:
-    banner-mode: OFF
+  redis:
+    database: 0
+    host: 9.134.74.125
+    port: 16379
+    password: pass@bk
 
 logging:
   config: classpath:log4j2-dev.xml
