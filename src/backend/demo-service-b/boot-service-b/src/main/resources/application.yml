@@ -1,9 +1,6 @@
+server:
+  port: 8081
+
 spring:
   application:
     name: demo-service-b
-    desc: Demo service for service consumer
-    version: 1.0.0
-    packageName: com.tencent.repository.serviceb
-
-server:
-  port: 8081
