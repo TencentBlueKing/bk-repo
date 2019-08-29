@@ -4,3 +4,10 @@ server:
 spring:
   application:
     name: demo-service-a
+  data:
+    mongodb:
+      host: 9.134.74.125
+      port: 17017
+      database: testdb
+      username: bkrepo
+      password: pass@bkrepo
