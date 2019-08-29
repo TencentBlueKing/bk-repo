@@ -10,7 +10,7 @@ spring:
     database: 0
     host: 9.134.74.125
     port: 16379
-    password: pass@bk
+    password: pass@bkrepo
 
 logging:
   config: classpath:log4j2-dev.xml
