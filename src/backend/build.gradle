@@ -67,6 +67,10 @@ subprojects {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
+    tasks.withType(Test).all {
+        useJUnitPlatform()
+    }
+
 
     configurations {
         ktlint
@@ -85,7 +89,11 @@ subprojects {
         implementation "org.jetbrains.kotlin:kotlin-reflect"
         implementation "org.springframework.boot:spring-boot-configuration-processor"
 
-        testImplementation('org.springframework.boot:spring-boot-starter-test')
+        testImplementation("org.springframework.boot:spring-boot-starter-test") {
+            exclude module: "junit"
+        }
+        testImplementation("org.junit.jupiter:junit-jupiter-api")
+        testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
     }
 
     task ktlint(type: JavaExec, group: "verification") {
