@@ -16,7 +16,7 @@ interface PersonRepository: MongoRepository<Person, String> {
 
     /**
      * 按照指定规则声明接口，spring data会自动实现查询条件的封装
-     * 参考https://docs.spring.io/spring-data/jpa/docs/current/reference/html/
+     * 参考https://docs.spring.io/spring-data/mongodb/docs/2.1.8.RELEASE/reference/html
      */
     fun findByAgeGreaterThan(age: Int, page: Pageable): Page<Person>
 
