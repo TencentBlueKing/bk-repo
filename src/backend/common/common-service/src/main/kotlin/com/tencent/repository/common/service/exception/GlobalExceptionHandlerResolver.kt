@@ -1,7 +1,7 @@
 package com.tencent.repository.common.service.exception
 
 import com.tencent.repository.common.api.exception.ErrorCodeException
-import com.tencent.repository.common.api.pojo.Result
+import com.tencent.repository.common.api.pojo.Response
 import com.tencent.repository.common.service.util.MessageCodeUtils
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -17,11 +17,11 @@ class GlobalExceptionHandlerResolver {
 
     @ExceptionHandler(ErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleGlobalException(exception: ErrorCodeException): Result<Void> {
+    fun handleGlobalException(exception: ErrorCodeException): Response<Void> {
         logger.error("Failed with exception exception:$exception")
 
         val errorMsg = MessageCodeUtils.generateResponseDataObject<String>(exception.errorCode)
-        return Result(
+        return Response(
                 code = exception.errorCode,
                 message = errorMsg.message ?: exception.message ?: "Unknown Error: ${exception.errorCode}"
         )

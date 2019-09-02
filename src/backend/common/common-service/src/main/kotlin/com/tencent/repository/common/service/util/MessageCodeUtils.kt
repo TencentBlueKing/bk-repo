@@ -4,7 +4,7 @@ import com.tencent.repository.common.api.constant.BK_LANGUAGE
 import com.tencent.repository.common.api.constant.DEFAULT_LANGUAGE
 import com.tencent.repository.common.api.constant.PROJECT_CODE_PREFIX
 import com.tencent.repository.common.api.pojo.MessageCodeDetail
-import com.tencent.repository.common.api.pojo.Result
+import com.tencent.repository.common.api.pojo.Response
 import com.tencent.repository.common.api.util.JsonUtils
 import com.tencent.repository.common.redis.RedisOperation
 import java.text.MessageFormat
@@ -32,7 +32,7 @@ class MessageCodeUtils @Autowired constructor() {
          */
         fun <T> generateResponseDataObject(
             messageCode: Int
-        ): Result<T> {
+        ): Response<T> {
             return generateResponseDataObject(messageCode, null, null)
         }
 
@@ -44,7 +44,7 @@ class MessageCodeUtils @Autowired constructor() {
         fun <T> generateResponseDataObject(
             messageCode: Int,
             data: T?
-        ): Result<T> {
+        ): Response<T> {
             return generateResponseDataObject(messageCode, null, data)
         }
 
@@ -56,7 +56,7 @@ class MessageCodeUtils @Autowired constructor() {
         fun <T> generateResponseDataObject(
             messageCode: Int,
             params: Array<String>
-        ): Result<T> {
+        ): Response<T> {
             return generateResponseDataObject(messageCode, params, null)
         }
 
@@ -71,9 +71,9 @@ class MessageCodeUtils @Autowired constructor() {
             messageCode: Int,
             params: Array<String>?,
             data: T?
-        ): Result<T> {
+        ): Response<T> {
             val message = getCodeMessage(messageCode, params) ?: "System service busy, please try again later"
-            return Result(messageCode, message, data) // 生成Result对象
+            return Response(messageCode, message, data) // 生成Result对象
         }
 
         /**
