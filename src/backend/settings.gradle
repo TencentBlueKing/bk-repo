@@ -19,4 +19,9 @@ include ":demo-service-b:api-service-b"
 include ":demo-service-b:biz-service-b"
 include ":demo-service-b:boot-service-b"
 
+include ":storage"
+include ":storage:api-storage"
+include ":storage:biz-storage"
+include ":storage:boot-storage"
+
 include ":boot-assembly"
