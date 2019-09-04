@@ -5,6 +5,7 @@ include ":common:common-api"
 include ":common:common-auth"
 include ":common:common-client"
 include ":common:common-redis"
+include ":common:common-file"
 include ":common:common-mongo"
 include ":common:common-service"
 
