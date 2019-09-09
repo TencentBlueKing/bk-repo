@@ -1,4 +1,4 @@
-package com.tencent.bk.repo.common.file
+package com.tencent.bkrepo.common.storage.util
 
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.digest.DigestUtils

@@ -1,4 +1,4 @@
-package com.tencent.bk.repo.common.file
+package com.tencent.bkrepo.common.storage.util
 
 import java.io.File
 import java.io.FileInputStream
