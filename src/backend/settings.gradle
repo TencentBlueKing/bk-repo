@@ -20,4 +20,14 @@ include ":demo-service-b:api-service-b"
 include ":demo-service-b:biz-service-b"
 include ":demo-service-b:boot-service-b"
 
+include ":repository"
+include ":repository:api-repository"
+include ":repository:biz-repository"
+include ":repository:boot-repository"
+
+include ":metadata"
+include ":metadata:api-metadata"
+include ":metadata:biz-metadata"
+include ":metadata:boot-metadata"
+
 include ":boot-assembly"
