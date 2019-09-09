@@ -8,6 +8,7 @@ include ":common:common-redis"
 include ":common:common-file"
 include ":common:common-mongo"
 include ":common:common-service"
+include ":common:common-storage"
 
 include ":demo-service-a"
 include ":demo-service-a:api-service-a"
