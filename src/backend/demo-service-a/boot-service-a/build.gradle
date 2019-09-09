@@ -1,4 +1,3 @@
 dependencies {
     implementation project(":demo-service-a:biz-service-a")
-    implementation project(":storage:api-storage")
 }
