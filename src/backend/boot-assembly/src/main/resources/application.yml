@@ -1,9 +1,7 @@
+server:
+  port: 80
+
 spring:
   application:
     name: bk-repo
-    desc: BK-REPO Service
-    version: 1.0.0
-    packageName: com.tencent.repository
 
-server:
-  port: 80

@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.tencent.repository.common.redis.RedisAutoConfiguration
+com.tencent.bkrepo.common.redis.RedisAutoConfiguration
