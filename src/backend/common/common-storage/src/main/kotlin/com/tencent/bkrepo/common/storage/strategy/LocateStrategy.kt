@@ -12,5 +12,4 @@ interface LocateStrategy {
      * 根据文件hash值定位文件存储位置
      */
     fun locate(hash: String): String
-
 }

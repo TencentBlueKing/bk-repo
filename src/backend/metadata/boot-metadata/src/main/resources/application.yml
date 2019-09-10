@@ -1,0 +1,15 @@
+server:
+  port: 9002
+
+spring:
+  application:
+    name: metadata
+  data:
+    mongodb:
+      host: 9.134.74.125
+      port: 17017
+      database: testdb
+      username: bkrepo
+      password: pass@bkrepo
+      transaction:
+        enabled: false # 单机情况下关闭事物，否则报错

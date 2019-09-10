@@ -16,5 +16,4 @@ class MongoAutoConfiguration {
     fun transactionManager(dbFactory: MongoDbFactory): MongoTransactionManager {
         return MongoTransactionManager(dbFactory)
     }
-
 }
