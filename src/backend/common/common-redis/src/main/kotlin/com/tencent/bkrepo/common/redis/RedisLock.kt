@@ -1,17 +1,17 @@
 package com.tencent.bkrepo.common.redis
 
+import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.connection.RedisStringCommands
 import org.springframework.data.redis.connection.ReturnType
 import org.springframework.data.redis.core.RedisCallback
 import org.springframework.data.redis.core.types.Expiration
-import java.util.*
 
 class RedisLock(
-        private val redisOperation: RedisOperation,
-        private val lockKey: String,
-        private val lockValue: String = UUID.randomUUID().toString(),
-        private val expiredTimeInSeconds: Long = defaultLockExpired
+    private val redisOperation: RedisOperation,
+    private val lockKey: String,
+    private val lockValue: String = UUID.randomUUID().toString(),
+    private val expiredTimeInSeconds: Long = defaultLockExpired
 ) : AutoCloseable {
     companion object {
 

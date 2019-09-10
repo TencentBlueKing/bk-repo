@@ -11,8 +11,8 @@ class HashLocateStrategy : LocateStrategy {
     override fun locate(hash: String): String {
 
         val path = StringBuilder(FILE_SEPARATOR)
-        for(i in 1..LOCATE_DEPTH) {
-            path.append(hash.substring((i-1)*HASH_LENGTH, i*HASH_LENGTH)).append(FILE_SEPARATOR)
+        for (i in 1..LOCATE_DEPTH) {
+            path.append(hash.substring((i - 1)*HASH_LENGTH, i*HASH_LENGTH)).append(FILE_SEPARATOR)
         }
         return path.toString()
     }
@@ -24,4 +24,3 @@ class HashLocateStrategy : LocateStrategy {
         private const val LOCATE_DEPTH = 2
     }
 }
-

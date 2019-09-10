@@ -9,8 +9,9 @@ import java.io.InputStream
  * @author: carrypan
  * @date: 2019-09-09
  */
-abstract class AbstractFileStorage (
-        private val locateStrategy: LocateStrategy) : FileStorage {
+abstract class AbstractFileStorage(
+    private val locateStrategy: LocateStrategy
+) : FileStorage {
 
     override fun store(hash: String, inputStream: InputStream) {
         val path = locateStrategy.locate(hash)
@@ -37,4 +38,3 @@ abstract class AbstractFileStorage (
     abstract fun load(filename: String, path: String): InputStream
     abstract fun exist(filename: String, path: String): Boolean
 }
-

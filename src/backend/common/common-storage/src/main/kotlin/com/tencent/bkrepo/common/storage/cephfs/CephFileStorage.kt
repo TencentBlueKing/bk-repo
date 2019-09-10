@@ -12,18 +12,18 @@ import java.io.InputStream
  */
 class CephFileStorage(locateStrategy: LocateStrategy) : AbstractFileStorage(locateStrategy) {
     override fun store(filename: String, path: String, inputStream: InputStream) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
     }
 
     override fun delete(filename: String, path: String) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
     }
 
     override fun load(filename: String, path: String): InputStream {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
     }
 
     override fun exist(filename: String, path: String): Boolean {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
     }
 }
