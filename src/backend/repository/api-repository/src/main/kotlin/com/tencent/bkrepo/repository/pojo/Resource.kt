@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.pojo
 
 import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiParam
+import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
 
 /**
@@ -11,22 +11,22 @@ import java.time.LocalDateTime
  */
 @ApiModel("仓库信息")
 data class Resource(
-    @ApiParam("资源id")
+    @ApiModelProperty("资源id")
     val id: String?,
-    @ApiParam("是否为文件夹")
+    @ApiModelProperty("是否为文件夹")
     val folder: Boolean,
-    @ApiParam("路径")
+    @ApiModelProperty("路径")
     val path: String,
-    @ApiParam("资源名称")
+    @ApiModelProperty("资源名称")
     val name: String,
-    @ApiParam("完整路径")
+    @ApiModelProperty("完整路径")
     val fullPath: Boolean,
-    @ApiParam("文件大小，单位byte")
+    @ApiModelProperty("文件大小，单位byte")
     val size: Long,
-    @ApiParam("文件sha256")
+    @ApiModelProperty("文件sha256")
     val sha256: String,
-    @ApiParam("逻辑删除标记")
+    @ApiModelProperty("逻辑删除标记")
     val deleted: LocalDateTime,
-    @ApiParam("所属仓库id")
+    @ApiModelProperty("所属仓库id")
     val repositoryId: String
 )
