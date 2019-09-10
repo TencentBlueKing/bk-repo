@@ -1,4 +1,0 @@
-dependencies {
-    api "commons-codec:commons-codec:1.9"
-    testImplementation("org.junit.jupiter:junit-jupiter-api")
-}
