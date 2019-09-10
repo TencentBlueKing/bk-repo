@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam
  * @date: 2019-09-10
  */
 @Api("节点资源服务接口")
-@FeignClient(contextId = "nodeResource", value = SERVICE_NAME)
+@FeignClient(SERVICE_NAME, contextId = "NodeResource")
 @RequestMapping("/service/resource")
 interface NodeResource {
 

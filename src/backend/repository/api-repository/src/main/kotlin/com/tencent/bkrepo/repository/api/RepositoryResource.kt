@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping
  * @date: 2019-09-09
  */
 @Api("仓库服务接口")
-@FeignClient(contextId = "repositoryResource", value = SERVICE_NAME)
+@FeignClient(SERVICE_NAME, contextId = "RepositoryResource")
 @RequestMapping("/service/repository")
 interface RepositoryResource {
 
