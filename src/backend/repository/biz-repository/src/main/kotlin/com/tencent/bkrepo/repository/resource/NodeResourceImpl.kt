@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.Resource
+import org.springframework.web.bind.annotation.RestController
 
 /**
  * 节点资源服务接口 实现类
@@ -11,6 +12,7 @@ import com.tencent.bkrepo.repository.pojo.Resource
  * @author: carrypan
  * @date: 2019-09-10
  */
+@RestController
 class NodeResourceImpl : NodeResource {
     override fun detail(id: String): Response<Resource> {
         TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
