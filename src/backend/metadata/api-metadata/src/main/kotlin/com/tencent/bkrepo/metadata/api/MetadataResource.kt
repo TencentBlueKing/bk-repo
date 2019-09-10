@@ -48,7 +48,7 @@ interface MetadataResource {
     ): Response<Metadata>
 
     @ApiOperation("创建元数据列表")
-    @PostMapping
+    @PostMapping("/list")
     fun create(
         @ApiParam(value = "元数据信息")
         @RequestBody repository: List<Metadata>
