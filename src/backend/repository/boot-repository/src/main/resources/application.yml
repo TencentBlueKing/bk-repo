@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: reposutory
+    name: repository
   data:
     mongodb:
       host: 9.134.74.125
