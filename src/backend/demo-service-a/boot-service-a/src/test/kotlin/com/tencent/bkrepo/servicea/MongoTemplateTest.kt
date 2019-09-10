@@ -13,11 +13,11 @@ import org.springframework.data.mongodb.core.query.Query
 @DisplayName("测试MongoTemplate")
 @SpringBootTest
 class MongoTemplateTest @Autowired constructor(
-        val mongoTemplate: MongoTemplate
-){
+    val mongoTemplate: MongoTemplate
+) {
     @Test
     @DisplayName("自定义构造Query 和 Criteria条件查询")
-    fun queryTest(){
+    fun queryTest() {
         // 通过Query 和 Criteria 可以构造出任意复杂条件查询
         val query = Query(Criteria.where("age").gte(35)).with(PageRequest.of(0, 10))
 
@@ -26,7 +26,6 @@ class MongoTemplateTest @Autowired constructor(
 
         println(count)
 
-        result.forEach{ println(it.name)}
+        result.forEach { println(it.name) }
     }
-
 }

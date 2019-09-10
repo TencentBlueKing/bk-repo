@@ -3,7 +3,9 @@ package com.tencent.bkrepo.servicea
 import com.tencent.bkrepo.servicea.model.Gender
 import com.tencent.bkrepo.servicea.model.Person
 import com.tencent.bkrepo.servicea.repository.PersonRepository
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -14,11 +16,10 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.test.annotation.Rollback
 
-
 @DisplayName("测试Spring Data MongoRepository")
 @SpringBootTest
 class PersonRepositoryTest @Autowired constructor(
-        val personRepository: PersonRepository
+    val personRepository: PersonRepository
 ) {
 
     @Test
@@ -30,7 +31,6 @@ class PersonRepositoryTest @Autowired constructor(
         personRepository.insert(person)
         println("insert result: $person")
         assertNotNull(person.id)
-
     }
 
     @Test
@@ -58,7 +58,6 @@ class PersonRepositoryTest @Autowired constructor(
         // 删除
         personRepository.deleteById(person.id!!)
         assertNull(personRepository.findByIdOrNull(person.id))
-
     }
 
     @Test
@@ -78,7 +77,7 @@ class PersonRepositoryTest @Autowired constructor(
         println("totalPages: ${page.totalPages}")
         println("isFirst: ${page.isFirst}")
         println("isLast: ${page.isLast}")
-        page.forEach{ println(it.name)}
+        page.forEach { println(it.name) }
     }
 
     @Test
@@ -86,7 +85,7 @@ class PersonRepositoryTest @Autowired constructor(
     fun findByAgeGreaterThanTest() {
         val page = personRepository.findByAgeGreaterThan(40, PageRequest.of(0, 10))
 
-        page.forEach{ println(it.name)}
+        page.forEach { println(it.name) }
     }
 
     @Test
@@ -94,8 +93,6 @@ class PersonRepositoryTest @Autowired constructor(
     fun findByNameAndAgeRangeTest() {
         val page = personRepository.findByNameAndAgeRange("Jam", 30, 35, PageRequest.of(0, 10))
 
-        page.forEach{ println(it.name)}
+        page.forEach { println(it.name) }
     }
-
-
 }

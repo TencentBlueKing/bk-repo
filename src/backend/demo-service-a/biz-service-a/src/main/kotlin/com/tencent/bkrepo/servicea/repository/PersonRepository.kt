@@ -12,7 +12,7 @@ import org.springframework.stereotype.Repository
  * 底层是通过mongoTemplate来完成的操作，我们也可以直接使用mongoTemplate
  */
 @Repository
-interface PersonRepository: MongoRepository<Person, String> {
+interface PersonRepository : MongoRepository<Person, String> {
 
     /**
      * 按照指定规则声明接口，spring data会自动实现查询条件的封装

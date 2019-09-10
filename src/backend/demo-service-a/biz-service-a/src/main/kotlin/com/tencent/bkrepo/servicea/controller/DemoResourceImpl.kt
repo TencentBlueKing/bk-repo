@@ -12,5 +12,4 @@ class DemoResourceImpl : DemoResource {
     override fun sayHello(user: User): String {
         return "Hello, ${user.name}, you are ${user.age} years old!"
     }
-
 }
