@@ -1,19 +1,27 @@
 package com.tencent.bkrepo.registry.controller
 
 import io.swagger.annotations.ApiParam
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ManifestController {
 
-    @GetMapping("/v2/manifest")
-    fun sayHello(
-        @RequestParam
-        @ApiParam(value = "姓名", required = true)
-        name: String
+    @PutMapping("/v2/{name}/manifests/{reference}")
+    fun putManifest(
+        @PathVariable
+        @ApiParam(value = "name", required = true)
+        name: String,
+        @PathVariable
+        @ApiParam(value = "reference", required = true)
+        reference: String,
+        @ApiParam
+        @RequestHeader(value = "Content-Type", required = true)
+        mediaType: String
     ): String {
-        return "Hello, $name!"
+
+        return "Hello, $name, $reference ,$mediaType!"
     }
 }
