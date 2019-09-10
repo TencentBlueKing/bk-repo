@@ -18,4 +18,9 @@ include ":demo-service-b:api-service-b"
 include ":demo-service-b:biz-service-b"
 include ":demo-service-b:boot-service-b"
 
+include ":registry"
+include ":registry:api-registry"
+include ":registry:biz-registry"
+include ":registry:boot-registry"
+
 include ":boot-assembly"
