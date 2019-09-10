@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.tencent.repository.common.mongo.MongoAutoConfiguration
+com.tencent.bkrepo.common.mongo.MongoAutoConfiguration

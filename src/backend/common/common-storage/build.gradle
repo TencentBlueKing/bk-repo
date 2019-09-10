@@ -1,0 +1,3 @@
+dependencies {
+    api "commons-codec:commons-codec"
+}
