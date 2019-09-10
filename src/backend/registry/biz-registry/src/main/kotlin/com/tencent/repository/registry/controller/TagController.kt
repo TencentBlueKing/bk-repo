@@ -1,4 +1,4 @@
-package com.tencent.repository.registry.controller
+package com.tencent.bkrepo.registry.controller
 
 import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.GetMapping

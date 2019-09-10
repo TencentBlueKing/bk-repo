@@ -1,1 +1,1 @@
-package com.tencent.repository.registry.manifest
+package com.tencent.bkrepo.registry.manifest
