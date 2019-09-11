@@ -1,6 +1,0 @@
-dependencies {
-    api project(":common:common-service")
-    api project(":common:common-client")
-    implementation project(":demo-service-b:api-service-b")
-    implementation project(":demo-service-a:api-service-a")
-}
