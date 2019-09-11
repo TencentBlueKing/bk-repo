@@ -1,9 +1,8 @@
 package com.tencent.bkrepo.demo
 
-import org.springframework.core.env.StandardEnvironment
 import com.ulisesbocchio.jasyptspringboot.encryptor.DefaultLazyEncryptor
 import org.junit.jupiter.api.Test
-
+import org.springframework.core.env.StandardEnvironment
 
 /**
  * Jasypt 加密测试
@@ -18,6 +17,5 @@ class JasyptTest {
         System.setProperty("jasypt.encryptor.password", "bkrepo")
         val stringEncryptor = DefaultLazyEncryptor(StandardEnvironment())
         println(stringEncryptor.encrypt("pass@bkrepo"))
-
     }
 }
