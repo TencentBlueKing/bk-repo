@@ -7,7 +7,8 @@ buildscript {
         ktlintVersion = "0.34.2"
         swaggerCoreVersion = "1.5.22"
         swaggerFoxVersion = "2.9.2"
-
+        commonsCodecVersion = "1.9"
+        jasyptVersion= "2.1.2"
     }
 
     repositories {
@@ -123,6 +124,9 @@ subprojects {
             dependency "com.pinterest:ktlint:$ktlintVersion"
             dependency "io.swagger:swagger-annotations:$swaggerCoreVersion"
             dependency "io.springfox:springfox-swagger2:$swaggerFoxVersion"
+            dependency "commons-codec:commons-codec:$commonsCodecVersion"
+            dependency "com.github.ulisesbocchio:jasypt-spring-boot-starter:$jasyptVersion"
+            
         }
 
     }
