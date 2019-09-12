@@ -9,5 +9,3 @@ class RegistryApplication
 fun main(args: Array<String>) {
     runApplication<RegistryApplication>(*args)
 }
-
-

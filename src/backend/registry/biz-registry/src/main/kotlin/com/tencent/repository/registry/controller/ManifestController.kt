@@ -1,8 +1,9 @@
 package com.tencent.bkrepo.registry.controller
 
 import io.swagger.annotations.ApiParam
-import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
@@ -19,9 +20,12 @@ class ManifestController {
         reference: String,
         @ApiParam
         @RequestHeader(value = "Content-Type", required = true)
-        mediaType: String
+        mediaType: String,
+        @RequestBody
+        @ApiParam(value = "body", required = false)
+        body: String?
     ): String {
 
-        return "Hello, $name, $reference ,$mediaType!"
+        return "Hello, $name, $reference ,$mediaType，$body"
     }
 }
