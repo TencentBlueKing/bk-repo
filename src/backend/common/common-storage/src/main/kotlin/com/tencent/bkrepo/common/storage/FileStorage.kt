@@ -4,6 +4,7 @@ import java.io.InputStream
 
 /**
  * 文件存储接口
+ * hash可理解为文件id，推荐使用sha256。
  *
  * @author: carrypan
  * @date: 2019-09-09

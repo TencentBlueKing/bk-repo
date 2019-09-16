@@ -5,6 +5,8 @@ import java.io.InputStream
 
 /**
  * 文件存储抽象类
+ * 对于上层来说，只需要提供文件hash值（如sha256），不需要关心文件如何落地与定位，统一由本层的LocateStrategy去判断，以达到更均衡的文件散列分布，同时避免文件冲突。
+ * 通常来说上层会计算文件的hash(完整性校验等)，考虑到性能问题，因此hash统一由上层计算好传递进来。
  *
  * @author: carrypan
  * @date: 2019-09-09
