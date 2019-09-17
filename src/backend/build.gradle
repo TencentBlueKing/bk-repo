@@ -8,9 +8,10 @@ buildscript {
         swaggerCoreVersion = "1.5.22"
         swaggerFoxVersion = "2.9.2"
         commonsCodecVersion = "1.10"
-        jasyptVersion= "2.1.2"
-        innerCosVersion= "5.1.9.mvs"
-        awsS3Version= "1.11.631"
+        jasyptVersion = "2.1.2"
+        innerCosVersion = "5.1.9.mvs"
+        awsS3Version = "1.11.631"
+        guavaVersion = "28.1-jre"
     }
 
     repositories {
@@ -132,6 +133,8 @@ subprojects {
             dependency "com.github.ulisesbocchio:jasypt-spring-boot-starter:$jasyptVersion"
             dependency "com.tencent:cos_api_mvs:$innerCosVersion"
             dependency "com.amazonaws:aws-java-sdk-s3:$awsS3Version"
+            dependency "com.google.guava:guava:$guavaVersion"
+            
         }
 
     }

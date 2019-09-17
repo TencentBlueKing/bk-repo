@@ -13,6 +13,5 @@ class LocalStorageProperties {
 
     var enabled: Boolean = false
 
-    lateinit var directory: String
-
+    lateinit var localStorageCredentials: LocalStorageCredentials
 }

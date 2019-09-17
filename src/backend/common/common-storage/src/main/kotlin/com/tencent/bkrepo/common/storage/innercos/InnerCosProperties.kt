@@ -13,11 +13,5 @@ class InnerCosProperties {
 
     var enabled: Boolean = false
 
-    lateinit var appId: String
-    lateinit var secretId: String
-    lateinit var secretKey: String
-    lateinit var host: String
-    lateinit var region: String
-    lateinit var bucket: String
-
+    lateinit var credentials: InnerCosCredentials
 }

@@ -9,7 +9,7 @@ import com.qcloud.s1.cos.model.GetObjectRequest
 import com.qcloud.s1.cos.model.ObjectMetadata
 import com.qcloud.s1.cos.model.PutObjectRequest
 import com.qcloud.s1.cos.region.Region
-import com.tencent.bkrepo.common.storage.AbstractFileStorage
+import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
 import org.apache.http.HttpStatus
 import java.io.InputStream
@@ -20,44 +20,43 @@ import java.io.InputStream
  * @author: carrypan
  * @date: 2019-09-17
  */
-class InnerCosFileStorage(locateStrategy: LocateStrategy, innerCosProperties: InnerCosProperties) : AbstractFileStorage(locateStrategy) {
+class InnerCosFileStorage(
+        locateStrategy: LocateStrategy,
+        defaultCredentials: InnerCosCredentials
+) : AbstractFileStorage<InnerCosCredentials, InnerCosClient>(locateStrategy, defaultCredentials) {
 
-    private val cosClient: COSClient
-    private val bucketName: String = innerCosProperties.bucket
-
-    init {
-        val credentials = BasicCOSCredentials(innerCosProperties.appId, innerCosProperties.secretId, innerCosProperties.secretKey)
-        val clientConfig = ClientConfig(Region(innerCosProperties.region))
-        clientConfig.host = innerCosProperties.host
-        cosClient = COSClient(credentials, clientConfig)
+    override fun createClient(credentials: InnerCosCredentials): InnerCosClient {
+        val basicCOSCredentials = BasicCOSCredentials(credentials.appId, credentials.secretId, credentials.secretKey)
+        val clientConfig = ClientConfig(Region(credentials.regionName))
+        clientConfig.host = credentials.host
+        return InnerCosClient(credentials.bucketName, COSClient(basicCOSCredentials, clientConfig))
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream) {
+    override fun store(path: String, filename: String, inputStream: InputStream, client: InnerCosClient) {
         val objectMetadata = ObjectMetadata()
         objectMetadata.contentLength = inputStream.available().toLong()
-        val putObjectRequest = PutObjectRequest(bucketName, filename, inputStream, objectMetadata)
-        cosClient.putObject(putObjectRequest)
+        val putObjectRequest = PutObjectRequest(client.bucketName, filename, inputStream, objectMetadata)
+        client.CosClient.putObject(putObjectRequest)
     }
 
-    override fun delete(path: String, filename: String) {
-        val deleteObjectRequest = DeleteObjectRequest(bucketName, filename)
-        cosClient.deleteObject(deleteObjectRequest)
+    override fun delete(path: String, filename: String, client: InnerCosClient) {
+        val deleteObjectRequest = DeleteObjectRequest(client.bucketName, filename)
+        client.CosClient.deleteObject(deleteObjectRequest)
     }
 
-    override fun load(path: String, filename: String): InputStream {
-        val getObjectRequest = GetObjectRequest(bucketName, filename)
-        return cosClient.getObject(getObjectRequest).objectContent
+    override fun load(path: String, filename: String, client: InnerCosClient): InputStream {
+        val getObjectRequest = GetObjectRequest(client.bucketName, filename)
+        return client.CosClient.getObject(getObjectRequest).objectContent
     }
 
-    override fun exist(path: String, filename: String): Boolean {
+    override fun exist(path: String, filename: String, client: InnerCosClient): Boolean {
         var exists = true
         try {
-            cosClient.getobjectMetadata(bucketName, filename)
+            client.CosClient.getobjectMetadata(client.bucketName, filename)
         } catch (cosServiceException: CosServiceException) {
             exists = cosServiceException.statusCode != HttpStatus.SC_NOT_FOUND
         }
         return exists
     }
-
 
 }

@@ -30,7 +30,7 @@ class StorageAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty(prefix = "storage.innercos", name = ["enabled"], havingValue = "true")
-    fun innerCosFileStorage(innerCosProperties: InnerCosProperties) = InnerCosFileStorage(locateStrategy, innerCosProperties)
+    fun innerCosFileStorage(innerCosProperties: InnerCosProperties) = InnerCosFileStorage(locateStrategy, innerCosProperties.credentials)
 
     @Bean
     @ConditionalOnProperty(prefix = "storage.local", name = ["enabled"], havingValue = "true")
