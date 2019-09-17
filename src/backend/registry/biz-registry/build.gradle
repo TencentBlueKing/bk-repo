@@ -1,6 +1,8 @@
 dependencies {
     api project(":common:common-service")
     api project(":common:common-client")
+    api project(":common:common-api")
+    api project(":common:common-storage")
     compile "com.squareup.okhttp3:okhttp"
 }
 
