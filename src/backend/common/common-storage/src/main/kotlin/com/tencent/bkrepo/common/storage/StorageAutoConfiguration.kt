@@ -34,5 +34,5 @@ class StorageAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty(prefix = "storage.local", name = ["enabled"], havingValue = "true")
-    fun localFileStorage(localStorageProperties: LocalStorageProperties) = LocalFileStorage(locateStrategy, localStorageProperties)
+    fun localFileStorage(localStorageProperties: LocalStorageProperties) = LocalFileStorage(locateStrategy, localStorageProperties.localStorageCredentials)
 }
