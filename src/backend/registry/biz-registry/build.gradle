@@ -1,4 +1,6 @@
 dependencies {
     api project(":common:common-service")
     api project(":common:common-client")
+    compile "com.squareup.okhttp3:okhttp"
 }
+

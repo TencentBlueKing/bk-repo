@@ -1,5 +1,3 @@
-
-
 package com.tencent.bkrepo.registry.manifest
 
 enum class ManifestType(val value: String) {

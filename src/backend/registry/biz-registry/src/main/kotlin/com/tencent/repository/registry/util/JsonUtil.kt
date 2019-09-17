@@ -1,5 +1,5 @@
 
-package com.tencent.bkrepo.registry.jacksonUtil
+package com.tencent.bkrepo.registry.JsonUtil
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.core.JsonParser
@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 
-object JacksonUtil {
+object JsonUtil {
     fun createObjectMapper(): ObjectMapper {
         val objectMapper = ObjectMapper()
         objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true)
