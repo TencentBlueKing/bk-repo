@@ -5,6 +5,8 @@ import java.io.InputStream
 
 /**
  * 文件存储抽象类
+ * 对于上层来说，只需要提供文件hash值（如sha256），不需要关心文件如何落地与定位，统一由本层的LocateStrategy去判断，以达到更均衡的文件散列分布，同时避免文件冲突。
+ * 通常来说上层会计算文件的hash(完整性校验等)，考虑到性能问题，因此hash统一由上层计算好传递进来。
  *
  * @author: carrypan
  * @date: 2019-09-09
@@ -15,7 +17,7 @@ abstract class AbstractFileStorage(
 
     override fun store(hash: String, inputStream: InputStream) {
         val path = locateStrategy.locate(hash)
-        store(hash, path, inputStream)
+        store(path, hash, inputStream)
     }
 
     override fun delete(hash: String) {
@@ -33,8 +35,8 @@ abstract class AbstractFileStorage(
         return exist(path, hash)
     }
 
-    abstract fun store(filename: String, path: String, inputStream: InputStream)
-    abstract fun delete(filename: String, path: String)
-    abstract fun load(filename: String, path: String): InputStream
-    abstract fun exist(filename: String, path: String): Boolean
+    protected abstract fun store(path: String, filename: String, inputStream: InputStream)
+    protected abstract fun delete(path: String, filename: String)
+    protected abstract fun load(path: String, filename: String): InputStream
+    protected abstract fun exist(path: String, filename: String): Boolean
 }

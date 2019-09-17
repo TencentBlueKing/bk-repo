@@ -1,34 +1,30 @@
 package com.tencent.bkrepo.common.storage.util
 
-import java.io.FileInputStream
 import java.io.IOException
 import java.security.MessageDigest
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.digest.DigestUtils
+import java.io.InputStream
 
 object FileDigestUtils {
 
     @Throws(IOException::class, IllegalArgumentException::class)
-    fun fileSha1(inputFiles: Array<String>): String? {
-        return digest(inputFiles, DigestUtils.getSha1Digest())
+    fun fileSha1(inputStreamList: List<InputStream>): String {
+        return digest(inputStreamList, DigestUtils.getSha1Digest())
     }
 
     @Throws(IOException::class, IllegalArgumentException::class)
-    fun fileMD5(inputFiles: Array<String>): String? {
-        return digest(inputFiles, DigestUtils.getMd5Digest())
+    fun fileMD5(inputStreamList: List<InputStream>): String {
+        return digest(inputStreamList, DigestUtils.getMd5Digest())
     }
 
     @Throws(IOException::class, IllegalArgumentException::class)
-    fun fileSha256(inputFiles: Array<String>): String? {
-        return digest(inputFiles, DigestUtils.getSha256Digest())
+    fun fileSha256(inputStreamList: List<InputStream>): String {
+        return digest(inputStreamList, DigestUtils.getSha256Digest())
     }
 
-    private fun digest(inputFiles: Array<String>, messageDigest: MessageDigest): String? {
-        inputFiles.forEach { inputFile ->
-            FileInputStream(inputFile).use { inputStream ->
-                DigestUtils.updateDigest(messageDigest, inputStream)
-            }
-        }
+    private fun digest(inputStreamList: List<InputStream>, messageDigest: MessageDigest): String {
+        inputStreamList.forEach { DigestUtils.updateDigest(messageDigest, it) }
         return Hex.encodeHexString(messageDigest.digest())
     }
 }
