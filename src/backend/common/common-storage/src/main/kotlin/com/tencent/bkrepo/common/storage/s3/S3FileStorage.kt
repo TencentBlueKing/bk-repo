@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
 import java.io.InputStream
 
 /**
- * S3文件存吃
+ * S3文件存储
  *
  * @author: carrypan
  * @date: 2019-09-09
