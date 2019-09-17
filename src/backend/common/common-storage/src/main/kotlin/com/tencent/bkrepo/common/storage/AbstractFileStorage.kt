@@ -17,7 +17,7 @@ abstract class AbstractFileStorage(
 
     override fun store(hash: String, inputStream: InputStream) {
         val path = locateStrategy.locate(hash)
-        store(hash, path, inputStream)
+        store(path, hash, inputStream)
     }
 
     override fun delete(hash: String) {
@@ -35,8 +35,8 @@ abstract class AbstractFileStorage(
         return exist(path, hash)
     }
 
-    abstract fun store(filename: String, path: String, inputStream: InputStream)
-    abstract fun delete(filename: String, path: String)
-    abstract fun load(filename: String, path: String): InputStream
-    abstract fun exist(filename: String, path: String): Boolean
+    protected abstract fun store(path: String, filename: String, inputStream: InputStream)
+    protected abstract fun delete(path: String, filename: String)
+    protected abstract fun load(path: String, filename: String): InputStream
+    protected abstract fun exist(path: String, filename: String): Boolean
 }

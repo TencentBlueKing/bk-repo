@@ -1,7 +1,8 @@
-package com.tencent.bkrepo.common.storage.cephfs
+package com.tencent.bkrepo.common.storage.local
 
 import com.tencent.bkrepo.common.storage.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
+import java.io.File
 import java.io.InputStream
 
 /**
@@ -10,7 +11,18 @@ import java.io.InputStream
  * @author: carrypan
  * @date: 2019-09-09
  */
-class CephFileStorage(locateStrategy: LocateStrategy) : AbstractFileStorage(locateStrategy) {
+class LocalFileStorage(locateStrategy: LocateStrategy, localStorageProperties: LocalStorageProperties) : AbstractFileStorage(locateStrategy) {
+
+    private val directory: String = localStorageProperties.directory
+
+    init {
+        val localPath = File(directory)
+        if(!localPath.exists()) {
+            localPath.mkdirs()
+        }
+        assert(localPath.isDirectory) {"$directory is not a directory"}
+    }
+
     override fun store(path: String, filename: String, inputStream: InputStream) {
         TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
     }
