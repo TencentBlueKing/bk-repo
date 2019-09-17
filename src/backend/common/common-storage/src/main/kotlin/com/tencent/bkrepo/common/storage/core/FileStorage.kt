@@ -15,20 +15,20 @@ interface FileStorage<Key: StorageCredentials, Client> {
     /**
      * 存储文件
      */
-    fun store(hash: String, inputStream: InputStream, key: Key?)
+    fun store(hash: String, inputStream: InputStream, key: Key? = null)
 
     /**
      * 加载文件
      */
-    fun load(hash: String, key: Key?): InputStream
+    fun load(hash: String, key: Key? = null): InputStream
 
     /**
      * 删除文件
      */
-    fun delete(hash: String, key: Key?)
+    fun delete(hash: String, key: Key? = null)
 
     /**
      * 判断是否存在
      */
-    fun exist(hash: String, key: Key?): Boolean
+    fun exist(hash: String, key: Key? = null): Boolean
 }
