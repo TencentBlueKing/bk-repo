@@ -10,17 +10,17 @@ import java.io.InputStream
  * @author: carrypan
  * @date: 2019-09-09
  */
-interface FileStorage<Key: StorageCredentials, Client> {
+interface FileStorage<Key, Client> {
 
     /**
-     * 存储文件
+     * 存储文件。文件存储完成后inputStream不会关闭，由调用方关闭
      */
     fun store(hash: String, inputStream: InputStream, key: Key? = null)
 
     /**
-     * 加载文件
+     * 加载文件。记住InputStream用完后关闭
      */
-    fun load(hash: String, key: Key? = null): InputStream
+    fun load(hash: String, key: Key? = null): InputStream?
 
     /**
      * 删除文件

@@ -15,7 +15,7 @@ import java.io.InputStream
  * @author: carrypan
  * @date: 2019-09-09
  */
-abstract class AbstractFileStorage<Key: StorageCredentials, Client>(
+abstract class AbstractFileStorage<Key, Client>(
     private val locateStrategy: LocateStrategy,
     private val defaultCredentials: Key
 ) : FileStorage<Key, Client> {
@@ -38,7 +38,7 @@ abstract class AbstractFileStorage<Key: StorageCredentials, Client>(
         delete(path, hash, loadingCache.get(key?:defaultCredentials))
     }
 
-    override fun load(hash: String, key: Key?): InputStream {
+    override fun load(hash: String, key: Key?): InputStream? {
         val path = locateStrategy.locate(hash)
         return load(path, hash, loadingCache.get(key?:defaultCredentials))
     }
@@ -52,7 +52,7 @@ abstract class AbstractFileStorage<Key: StorageCredentials, Client>(
 
     protected abstract fun store(path: String, filename: String, inputStream: InputStream, client: Client)
     protected abstract fun delete(path: String, filename: String, client: Client)
-    protected abstract fun load(path: String, filename: String, client: Client): InputStream
+    protected abstract fun load(path: String, filename: String, client: Client): InputStream?
     protected abstract fun exist(path: String, filename: String, client: Client): Boolean
 
     companion object {

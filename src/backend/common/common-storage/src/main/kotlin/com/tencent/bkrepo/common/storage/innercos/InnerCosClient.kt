@@ -9,5 +9,5 @@ import com.qcloud.s1.cos.COSClient
  */
 class InnerCosClient(
     val bucketName: String,
-    val CosClient: COSClient
+    val cosClient: COSClient
 )

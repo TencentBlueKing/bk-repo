@@ -36,23 +36,26 @@ class InnerCosFileStorage(
         val objectMetadata = ObjectMetadata()
         objectMetadata.contentLength = inputStream.available().toLong()
         val putObjectRequest = PutObjectRequest(client.bucketName, filename, inputStream, objectMetadata)
-        client.CosClient.putObject(putObjectRequest)
+        client.cosClient.putObject(putObjectRequest)
     }
 
     override fun delete(path: String, filename: String, client: InnerCosClient) {
         val deleteObjectRequest = DeleteObjectRequest(client.bucketName, filename)
-        client.CosClient.deleteObject(deleteObjectRequest)
+        client.cosClient.deleteObject(deleteObjectRequest)
     }
 
-    override fun load(path: String, filename: String, client: InnerCosClient): InputStream {
-        val getObjectRequest = GetObjectRequest(client.bucketName, filename)
-        return client.CosClient.getObject(getObjectRequest).objectContent
+    override fun load(path: String, filename: String, client: InnerCosClient): InputStream? {
+        return if(exist(path, filename, client)) {
+            val getObjectRequest = GetObjectRequest(client.bucketName, filename)
+            client.cosClient.getObject(getObjectRequest).objectContent
+        } else null
+
     }
 
     override fun exist(path: String, filename: String, client: InnerCosClient): Boolean {
         var exists = true
         try {
-            client.CosClient.getobjectMetadata(client.bucketName, filename)
+            client.cosClient.getobjectMetadata(client.bucketName, filename)
         } catch (cosServiceException: CosServiceException) {
             exists = cosServiceException.statusCode != HttpStatus.SC_NOT_FOUND
         }

@@ -6,7 +6,7 @@ import java.io.File
 import java.io.InputStream
 
 /**
- * CephFS文件存储
+ * 本地文件存储
  *
  * @author: carrypan
  * @date: 2019-09-09
@@ -14,36 +14,24 @@ import java.io.InputStream
 class LocalFileStorage(
         locateStrategy: LocateStrategy,
         defaultCredentials: LocalStorageCredentials
-) : AbstractFileStorage<LocalStorageCredentials, Any>(locateStrategy, defaultCredentials) {
-
-    override fun createClient(key: LocalStorageCredentials): Any {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+) : AbstractFileStorage<LocalStorageCredentials, LocalStorageClient>(locateStrategy, defaultCredentials) {
+    override fun store(path: String, filename: String, inputStream: InputStream, client: LocalStorageClient) {
+        client.store(path, filename, inputStream)
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream, client: Any) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun delete(path: String, filename: String, client: LocalStorageClient) {
+        client.delete(path, filename)
     }
 
-    override fun delete(path: String, filename: String, client: Any) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun load(path: String, filename: String, client: LocalStorageClient): InputStream? {
+        return client.load(path, filename)
     }
 
-    override fun load(path: String, filename: String, client: Any): InputStream {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun exist(path: String, filename: String, client: LocalStorageClient): Boolean {
+        return client.exist(path, filename)
     }
 
-    override fun exist(path: String, filename: String, client: Any): Boolean {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-
-/*    init {
-        val localPath = File(directory)
-        if(!localPath.exists()) {
-            localPath.mkdirs()
-        }
-        assert(localPath.isDirectory) {"$directory is not a directory"}
-    }*/
+    override fun createClient(key: LocalStorageCredentials) = LocalStorageClient(key.directory)
 
 
 }
