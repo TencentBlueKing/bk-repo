@@ -6,6 +6,6 @@ package com.tencent.bkrepo.common.storage.local
  * @author: carrypan
  * @date: 2019-09-17
  */
-data class LocalStorageCredentials(
-    val directory: String
+class LocalStorageCredentials(
+    var directory: String = ""
 )

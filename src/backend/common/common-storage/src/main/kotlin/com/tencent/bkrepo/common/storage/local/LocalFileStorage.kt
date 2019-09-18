@@ -31,7 +31,7 @@ class LocalFileStorage(
         return client.exist(path, filename)
     }
 
-    override fun createClient(key: LocalStorageCredentials) = LocalStorageClient(key.directory)
+    override fun createClient(credentials: LocalStorageCredentials) = LocalStorageClient(credentials.directory)
 
 
 }

@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.storage.innercos
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.NestedConfigurationProperty
 
 /**
  * inner cos 配置属性
@@ -13,5 +14,6 @@ class InnerCosProperties {
 
     var enabled: Boolean = false
 
-    lateinit var credentials: InnerCosCredentials
+    @NestedConfigurationProperty
+    var credentials: InnerCosCredentials = InnerCosCredentials()
 }

@@ -15,40 +15,40 @@ import java.io.InputStream
  * @author: carrypan
  * @date: 2019-09-09
  */
-abstract class AbstractFileStorage<Key, Client>(
+abstract class AbstractFileStorage<Credentials, Client>(
     private val locateStrategy: LocateStrategy,
-    private val defaultCredentials: Key
-) : FileStorage<Key, Client> {
+    private val defaultCredentials: Credentials
+) : FileStorage<Credentials, Client> {
 
-    private val loadingCache: LoadingCache<Key, Client> = CacheBuilder.newBuilder()
+    private val loadingCache: LoadingCache<Credentials, Client> = CacheBuilder.newBuilder()
             .maximumSize(MAX_CACHE_SIZE)
-            .build(object : CacheLoader<Key, Client>() {
-                override fun load(key: Key): Client = createClient(key)
+            .build(object : CacheLoader<Credentials, Client>() {
+                override fun load(credentials: Credentials): Client = createClient(credentials)
             })
 
 
-    override fun store(hash: String, inputStream: InputStream, key: Key?) {
+    override fun store(hash: String, inputStream: InputStream, credentials: Credentials?) {
         val path = locateStrategy.locate(hash)
 
-        store(path, hash, inputStream, loadingCache.get(key?:defaultCredentials))
+        store(path, hash, inputStream, loadingCache.get(credentials?:defaultCredentials))
     }
 
-    override fun delete(hash: String, key: Key?) {
+    override fun delete(hash: String, credentials: Credentials?) {
         val path = locateStrategy.locate(hash)
-        delete(path, hash, loadingCache.get(key?:defaultCredentials))
+        delete(path, hash, loadingCache.get(credentials?:defaultCredentials))
     }
 
-    override fun load(hash: String, key: Key?): InputStream? {
+    override fun load(hash: String, credentials: Credentials?): InputStream? {
         val path = locateStrategy.locate(hash)
-        return load(path, hash, loadingCache.get(key?:defaultCredentials))
+        return load(path, hash, loadingCache.get(credentials?:defaultCredentials))
     }
 
-    override fun exist(hash: String, key: Key?): Boolean {
+    override fun exist(hash: String, credentials: Credentials?): Boolean {
         val path = locateStrategy.locate(hash)
-        return exist(path, hash, loadingCache.get(key?:defaultCredentials))
+        return exist(path, hash, loadingCache.get(credentials?:defaultCredentials))
     }
 
-    protected abstract fun createClient(key: Key): Client
+    protected abstract fun createClient(credentials: Credentials): Client
 
     protected abstract fun store(path: String, filename: String, inputStream: InputStream, client: Client)
     protected abstract fun delete(path: String, filename: String, client: Client)

@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.storage.local
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.NestedConfigurationProperty
 
 /**
  * inner cos 配置属性
@@ -13,5 +14,6 @@ class LocalStorageProperties {
 
     var enabled: Boolean = false
 
-    lateinit var credentials: LocalStorageCredentials
+    @NestedConfigurationProperty
+    var credentials = LocalStorageCredentials()
 }
