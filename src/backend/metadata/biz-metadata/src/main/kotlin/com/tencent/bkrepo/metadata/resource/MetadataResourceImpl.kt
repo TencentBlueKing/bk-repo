@@ -17,7 +17,7 @@ class MetadataResourceImpl : MetadataResource {
         TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun list(resourceId: String): Response<List<Metadata>> {
+    override fun list(nodeId: String): Response<List<Metadata>> {
         TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
     }
 

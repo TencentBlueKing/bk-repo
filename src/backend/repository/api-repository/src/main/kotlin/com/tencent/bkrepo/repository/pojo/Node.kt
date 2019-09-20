@@ -10,7 +10,7 @@ import java.time.LocalDateTime
  * @date: 2019-09-10
  */
 @ApiModel("仓库信息")
-data class Resource(
+data class Node(
     @ApiModelProperty("资源id")
     val id: String?,
     @ApiModelProperty("是否为文件夹")

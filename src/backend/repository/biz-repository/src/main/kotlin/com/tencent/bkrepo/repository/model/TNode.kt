@@ -9,8 +9,8 @@ import org.springframework.data.mongodb.core.mapping.Document
  * @author: carrypan
  * @date: 2019-09-10
  */
-@Document("resource")
-data class TResource(
+@Document("node")
+data class TNode(
     val id: String,
     val createdBy: String,
     val createdDate: LocalDateTime,
