@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.storage.innercos
 
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
 import com.tencent.cos.COSClient
@@ -15,6 +16,11 @@ import com.tencent.cos.region.Region
 import com.tencent.cos.transfer.TransferManager
 import org.apache.http.HttpStatus
 import java.io.InputStream
+import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 
 /**
@@ -28,20 +34,31 @@ class InnerCosFileStorage(
         defaultCredentials: InnerCosCredentials
 ) : AbstractFileStorage<InnerCosCredentials, InnerCosClient>(locateStrategy, defaultCredentials) {
 
+    private val executor = ThreadPoolExecutor(100, 200, 5L, TimeUnit.SECONDS,
+            LinkedBlockingQueue(1024), ThreadFactoryBuilder().setNameFormat("innercos-storage-uploader-pool-%d").build(),
+            ThreadPoolExecutor.AbortPolicy())
+
+
     override fun createClient(credentials: InnerCosCredentials): InnerCosClient {
         val basicCOSCredentials = BasicCOSCredentials(credentials.secretId, credentials.secretKey)
         val clientConfig = ClientConfig(Region(credentials.region))
         return InnerCosClient(credentials.bucket, COSClient(basicCOSCredentials, clientConfig))
     }
 
+    override fun onClientRemoval(credentials: InnerCosCredentials, client: InnerCosClient) {
+        client.cosClient.shutdown()
+        super.onClientRemoval(credentials, client)
+    }
+
     override fun store(path: String, filename: String, inputStream: InputStream, client: InnerCosClient) {
         val fileSize = inputStream.available().toLong()
         // 支持根据文件的大小自动选择单文件上传或者分块上传
-        val transferManager = TransferManager(client.cosClient)
+        val transferManager = TransferManager(client.cosClient, executor)
         val objectMetadata = ObjectMetadata().apply{contentLength = fileSize}
         val putObjectRequest = PutObjectRequest(client.bucketName, filename, inputStream, objectMetadata)
         val upload = transferManager.upload(putObjectRequest)
         // 等待传输结束
+        upload.waitForUploadResult()
         upload.waitForCompletion()
         transferManager.shutdownNow()
     }

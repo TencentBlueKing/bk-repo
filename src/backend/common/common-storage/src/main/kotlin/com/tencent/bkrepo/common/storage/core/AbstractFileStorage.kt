@@ -2,7 +2,6 @@ package com.tencent.bkrepo.common.storage.core
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
 import java.io.InputStream
 
@@ -20,12 +19,13 @@ abstract class AbstractFileStorage<Credentials, Client>(
     val defaultCredentials: Credentials
 ) : FileStorage<Credentials, Client> {
 
-    private val loadingCache: LoadingCache<Credentials, Client> = CacheBuilder.newBuilder()
+    // client缓存抽象实现
+    private val loadingCache = CacheBuilder.newBuilder()
             .maximumSize(MAX_CACHE_SIZE)
+            .removalListener<Credentials, Client>{ onClientRemoval(it.key, it.value) }
             .build(object : CacheLoader<Credentials, Client>() {
                 override fun load(credentials: Credentials): Client = createClient(credentials)
             })
-
 
     override fun store(hash: String, inputStream: InputStream, credentials: Credentials?) {
         val path = locateStrategy.locate(hash)
@@ -47,7 +47,17 @@ abstract class AbstractFileStorage<Credentials, Client>(
         return exist(path, hash, loadingCache.get(credentials?:defaultCredentials))
     }
 
+    /**
+     * 根据credentials创建client
+     */
     abstract fun createClient(credentials: Credentials): Client
+
+    /**
+     * 缓存清理时回调处理
+     */
+    protected open fun onClientRemoval(credentials: Credentials, client: Client) {
+       // do nothing
+    }
 
     protected abstract fun store(path: String, filename: String, inputStream: InputStream, client: Client)
     protected abstract fun delete(path: String, filename: String, client: Client)
@@ -55,6 +65,7 @@ abstract class AbstractFileStorage<Credentials, Client>(
     protected abstract fun exist(path: String, filename: String, client: Client): Boolean
 
     companion object {
+        // client 最大缓存数量
         private const val MAX_CACHE_SIZE = 20L
     }
 
