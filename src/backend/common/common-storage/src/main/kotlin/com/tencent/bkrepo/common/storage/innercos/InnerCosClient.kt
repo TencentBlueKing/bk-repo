@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.storage.innercos
 
-import com.qcloud.s1.cos.COSClient
+import com.tencent.cos.COSClient
 
 /**
  *

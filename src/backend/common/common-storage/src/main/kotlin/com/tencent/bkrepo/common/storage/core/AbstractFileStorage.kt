@@ -17,7 +17,7 @@ import java.io.InputStream
  */
 abstract class AbstractFileStorage<Credentials, Client>(
     private val locateStrategy: LocateStrategy,
-    private val defaultCredentials: Credentials
+    val defaultCredentials: Credentials
 ) : FileStorage<Credentials, Client> {
 
     private val loadingCache: LoadingCache<Credentials, Client> = CacheBuilder.newBuilder()
@@ -29,7 +29,6 @@ abstract class AbstractFileStorage<Credentials, Client>(
 
     override fun store(hash: String, inputStream: InputStream, credentials: Credentials?) {
         val path = locateStrategy.locate(hash)
-
         store(path, hash, inputStream, loadingCache.get(credentials?:defaultCredentials))
     }
 
@@ -48,7 +47,7 @@ abstract class AbstractFileStorage<Credentials, Client>(
         return exist(path, hash, loadingCache.get(credentials?:defaultCredentials))
     }
 
-    protected abstract fun createClient(credentials: Credentials): Client
+    abstract fun createClient(credentials: Credentials): Client
 
     protected abstract fun store(path: String, filename: String, inputStream: InputStream, client: Client)
     protected abstract fun delete(path: String, filename: String, client: Client)

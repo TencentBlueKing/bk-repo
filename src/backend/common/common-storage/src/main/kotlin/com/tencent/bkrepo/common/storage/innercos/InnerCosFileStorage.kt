@@ -1,18 +1,21 @@
 package com.tencent.bkrepo.common.storage.innercos
 
-import com.qcloud.s1.cos.COSClient
-import com.qcloud.s1.cos.ClientConfig
-import com.qcloud.s1.cos.auth.BasicCOSCredentials
-import com.qcloud.s1.cos.exception.CosServiceException
-import com.qcloud.s1.cos.model.DeleteObjectRequest
-import com.qcloud.s1.cos.model.GetObjectRequest
-import com.qcloud.s1.cos.model.ObjectMetadata
-import com.qcloud.s1.cos.model.PutObjectRequest
-import com.qcloud.s1.cos.region.Region
+
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
+import com.tencent.cos.COSClient
+import com.tencent.cos.ClientConfig
+import com.tencent.cos.auth.BasicCOSCredentials
+import com.tencent.cos.exception.CosServiceException
+import com.tencent.cos.model.DeleteObjectRequest
+import com.tencent.cos.model.GetObjectRequest
+import com.tencent.cos.model.ObjectMetadata
+import com.tencent.cos.model.PutObjectRequest
+import com.tencent.cos.region.Region
+import com.tencent.cos.transfer.TransferManager
 import org.apache.http.HttpStatus
 import java.io.InputStream
+
 
 /**
  * tencent inner cos 文件存储实现类
@@ -26,17 +29,21 @@ class InnerCosFileStorage(
 ) : AbstractFileStorage<InnerCosCredentials, InnerCosClient>(locateStrategy, defaultCredentials) {
 
     override fun createClient(credentials: InnerCosCredentials): InnerCosClient {
-        val basicCOSCredentials = BasicCOSCredentials(credentials.appId, credentials.secretId, credentials.secretKey)
-        val clientConfig = ClientConfig(Region(credentials.regionName))
-        clientConfig.host = credentials.host
-        return InnerCosClient(credentials.bucketName, COSClient(basicCOSCredentials, clientConfig))
+        val basicCOSCredentials = BasicCOSCredentials(credentials.secretId, credentials.secretKey)
+        val clientConfig = ClientConfig(Region(credentials.region))
+        return InnerCosClient(credentials.bucket, COSClient(basicCOSCredentials, clientConfig))
     }
 
     override fun store(path: String, filename: String, inputStream: InputStream, client: InnerCosClient) {
-        val objectMetadata = ObjectMetadata()
-        objectMetadata.contentLength = inputStream.available().toLong()
+        val fileSize = inputStream.available().toLong()
+        // 支持根据文件的大小自动选择单文件上传或者分块上传
+        val transferManager = TransferManager(client.cosClient)
+        val objectMetadata = ObjectMetadata().apply{contentLength = fileSize}
         val putObjectRequest = PutObjectRequest(client.bucketName, filename, inputStream, objectMetadata)
-        client.cosClient.putObject(putObjectRequest)
+        val upload = transferManager.upload(putObjectRequest)
+        // 等待传输结束
+        upload.waitForCompletion()
+        transferManager.shutdownNow()
     }
 
     override fun delete(path: String, filename: String, client: InnerCosClient) {
@@ -55,7 +62,7 @@ class InnerCosFileStorage(
     override fun exist(path: String, filename: String, client: InnerCosClient): Boolean {
         var exists = true
         try {
-            client.cosClient.getobjectMetadata(client.bucketName, filename)
+            client.cosClient.getObjectMetadata(client.bucketName, filename)
         } catch (cosServiceException: CosServiceException) {
             exists = cosServiceException.statusCode != HttpStatus.SC_NOT_FOUND
         }

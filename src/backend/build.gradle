@@ -9,7 +9,6 @@ buildscript {
         swaggerFoxVersion = "2.9.2"
         commonsCodecVersion = "1.10"
         jasyptVersion = "2.1.2"
-        innerCosVersion = "5.1.9.mvs"
         awsS3Version = "1.11.631"
         guavaVersion = "28.1-jre"
     }
@@ -17,6 +16,8 @@ buildscript {
     repositories {
         mavenLocal()
         maven { url MAVEN_REPO_URL }
+        // for inner sdk
+        maven { url "https://mirrors.tencent.com/repository/maven/tencent_public_snapshots/" }
         maven { url "https://repo.spring.io/libs-milestone" }
         mavenCentral()
         jcenter()
@@ -131,11 +132,15 @@ subprojects {
             dependency "io.springfox:springfox-swagger2:$swaggerFoxVersion"
             dependency "commons-codec:commons-codec:$commonsCodecVersion"
             dependency "com.github.ulisesbocchio:jasypt-spring-boot-starter:$jasyptVersion"
-            dependency "com.tencent:cos_api_mvs:$innerCosVersion"
             dependency "com.amazonaws:aws-java-sdk-s3:$awsS3Version"
             dependency "com.google.guava:guava:$guavaVersion"
             
         }
 
     }
+    
+}
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
 }
