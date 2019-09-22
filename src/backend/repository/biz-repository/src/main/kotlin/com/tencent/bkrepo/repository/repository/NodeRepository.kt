@@ -15,6 +15,6 @@ import org.springframework.stereotype.Repository
  */
 @Repository
 interface NodeRepository : MongoRepository<TNode, String> {
-    fun listByRepositoryIdAndPath(repositoryId: String, path: String): List<Node>
-    fun listByRepositoryIdAndPath(repositoryId: String, path: String, pageRequest: PageRequest): Page<Node>
+    fun findByRepositoryIdAndPath(repositoryId: String, path: String): List<Node>
+    fun findByRepositoryIdAndPath(repositoryId: String, path: String, pageRequest: PageRequest): Page<Node>
 }

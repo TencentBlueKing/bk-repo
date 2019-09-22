@@ -39,12 +39,12 @@ class NodeService @Autowired constructor(
 
     fun list(repositoryId: String, path: String): List<Node> {
         val parentPath = if (StringUtils.isBlank(path)) "/" else path
-        return nodeRepository.listByRepositoryIdAndPath(repositoryId, parentPath)
+        return nodeRepository.findByRepositoryIdAndPath(repositoryId, parentPath)
     }
 
     fun page(repositoryId: String, path: String, page: Int, size: Int): Page<Node> {
         val parentPath = if (StringUtils.isBlank(path)) "/" else path
-        val tNodePage = nodeRepository.listByRepositoryIdAndPath(repositoryId, parentPath, PageRequest.of(page, size))
+        val tNodePage = nodeRepository.findByRepositoryIdAndPath(repositoryId, parentPath, PageRequest.of(page, size))
         return Page(page, size, tNodePage.totalElements, tNodePage.content)
     }
 
