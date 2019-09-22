@@ -26,4 +26,13 @@ data class Response<out T>(
     fun isNotOk(): Boolean {
         return code != CommonMessageCode.SUCCESS
     }
+
+    companion object {
+
+        fun success() = Response(CommonMessageCode.SUCCESS, null, null)
+
+        fun <T> success(data: T) = Response(CommonMessageCode.SUCCESS, null, data)
+
+        fun fail(code: Int, message: String) = Response<Void>(code, message, null)
+    }
 }
