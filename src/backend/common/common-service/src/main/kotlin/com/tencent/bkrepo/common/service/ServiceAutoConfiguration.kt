@@ -19,6 +19,7 @@ class ServiceAutoConfiguration {
     @Bean
     fun auditorAware(): AuditorAware<String> {
         return AuditorAware {
+            // TODO: 返回操作用户
             Optional.of("system")
         }
     }
