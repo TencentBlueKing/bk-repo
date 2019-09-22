@@ -7,12 +7,20 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
+import org.springframework.data.domain.AuditorAware
+import java.util.*
 
 @Configuration
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnWebApplication
 @EnableDiscoveryClient
 class ServiceAutoConfiguration {
+
     @Bean
-    fun jmxAutoConfiguration() = JmxAutoConfiguration()
+    fun auditorAware(): AuditorAware<String> {
+        return AuditorAware {
+            Optional.of("systme")
+        }
+    }
+
 }
