@@ -100,10 +100,12 @@ class NodeService @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     fun logicDeleteByPath(repositoryId: String, path: String) {
         // TODO: 逻辑删除，到期清理，还需要清理文件和元数据
-        val subNodeQuery = Query(Criteria.where("repositoryId").`is`("repositoryId")
-                .and("path").`is`(path))
-        val nodeQuery = Query(Criteria.where("repositoryId").`is`("repositoryId")
-                .and("name").`is`(path.split("/")[0]))
+        val subNodeQuery = Query(Criteria.where("repositoryId").`is`(repositoryId)
+                .and("path").`is`(path)
+                .and("folder").`is`(false))
+        val nodeQuery = Query(Criteria.where("repositoryId").`is`(repositoryId)
+                .and("fullPath").`is`(path)
+                .and("folder").`is`(true))
         val update = Update().set("deleted", LocalDateTime.now())
                 .set("lastModifiedDate", LocalDateTime.now())
                 .set("lastModifiedBy", "")

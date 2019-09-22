@@ -17,7 +17,7 @@ import java.util.*
 class ServiceAutoConfiguration {
 
     @Bean
-    fun auditorAware(): AuditorAware<String> {
+    fun userAuditor(): AuditorAware<String> {
         return AuditorAware {
             // TODO: 返回操作用户
             Optional.of("system")
