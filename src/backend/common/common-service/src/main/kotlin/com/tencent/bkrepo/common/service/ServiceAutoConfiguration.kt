@@ -19,7 +19,7 @@ class ServiceAutoConfiguration {
     @Bean
     fun auditorAware(): AuditorAware<String> {
         return AuditorAware {
-            Optional.of("systme")
+            Optional.of("system")
         }
     }
 
