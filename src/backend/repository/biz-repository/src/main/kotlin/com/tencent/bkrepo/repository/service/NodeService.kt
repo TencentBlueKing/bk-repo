@@ -38,13 +38,13 @@ class NodeService @Autowired constructor(
     }
 
     fun list(repositoryId: String, path: String): List<Node> {
-        val parentPath = if (StringUtils.isBlank(path)) "/" else path
-        return nodeRepository.findByRepositoryIdAndPath(repositoryId, parentPath)
+        // TODO: path末尾应该不含/，根目录为空
+        return nodeRepository.findByRepositoryIdAndPath(repositoryId, path)
     }
 
     fun page(repositoryId: String, path: String, page: Int, size: Int): Page<Node> {
-        val parentPath = if (StringUtils.isBlank(path)) "/" else path
-        val tNodePage = nodeRepository.findByRepositoryIdAndPath(repositoryId, parentPath, PageRequest.of(page, size))
+        // TODO: path末尾应该不含/，根目录为空
+        val tNodePage = nodeRepository.findByRepositoryIdAndPath(repositoryId, path, PageRequest.of(page, size))
         return Page(page, size, tNodePage.totalElements, tNodePage.content)
     }
 
@@ -62,7 +62,7 @@ class NodeService @Autowired constructor(
                 repositoryId = it.repositoryId
             )
         }
-        tNode.fullPath = "${tNode.path}${tNode.name}"
+        tNode.fullPath = "${tNode.path}/${tNode.name}"
         return IdValue(nodeRepository.insert(tNode).id)
     }
 
@@ -84,7 +84,7 @@ class NodeService @Autowired constructor(
                 sha256 = it.sha256
             )
         }
-        tNode.fullPath = "${tNode.path}${tNode.name}"
+        tNode.fullPath = "${tNode.path}/${tNode.name}"
         nodeRepository.save(tNode)
     }
 

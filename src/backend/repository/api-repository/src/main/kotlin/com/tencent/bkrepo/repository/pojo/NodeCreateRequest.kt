@@ -20,7 +20,7 @@ data class NodeCreateRequest(
         @ApiModelProperty("文件大小，单位byte")
         val size: Long,
         @ApiModelProperty("文件sha256")
-        val sha256: String,
+        val sha256: String? = null,
         @ApiModelProperty("所属仓库id")
         val repositoryId: String
 )

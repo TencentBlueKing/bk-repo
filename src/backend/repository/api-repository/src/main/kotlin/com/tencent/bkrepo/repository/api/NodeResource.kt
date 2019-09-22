@@ -34,61 +34,61 @@ interface NodeResource {
     @ApiOperation("查看节点详情")
     @GetMapping("/{id}")
     fun detail(
-        @ApiParam(value = "节点id")
+        @ApiParam(value = "节点id", required = true)
         @PathVariable id: String
     ): Response<Node>
 
     @ApiOperation("列表查询指定目录下所有节点, 只返回一层深度的节点")
     @GetMapping("/list/{repositoryId}")
     fun list(
-        @ApiParam(value = "仓库id")
+        @ApiParam(value = "仓库id", required = true)
         @PathVariable repositoryId: String,
-        @ApiParam(value = "所属目录")
+        @ApiParam(value = "所属目录", required = true)
         @RequestParam path: String
     ): Response<List<Node>>
 
     @ApiOperation("分页查询指定目录下所有节点, 只返回一层深度的节点")
     @GetMapping("/page/{page}/{size}/{repositoryId}")
     fun page(
-        @ApiParam(value = "当前页")
+        @ApiParam(value = "当前页", required = true, example = "0")
         @PathVariable page: Int,
-        @ApiParam(value = "分页大小")
+        @ApiParam(value = "分页大小", required = true, example = "20")
         @PathVariable size: Int,
-        @ApiParam(value = "仓库id")
+        @ApiParam(value = "仓库id", required = true)
         @PathVariable repositoryId: String,
-        @ApiParam(value = "所属目录")
+        @ApiParam(value = "所属目录", required = true)
         @RequestParam path: String
     ): Response<Page<Node>>
 
     @ApiOperation("创建节点")
     @PostMapping
     fun create(
-        @ApiParam(value = "创建节点请求")
+        @ApiParam(value = "创建节点请求", required = true)
         @RequestBody nodeCreateRequest: NodeCreateRequest
     ): Response<IdValue>
 
     @ApiOperation("修改节点")
     @PutMapping("/{id}")
     fun update(
-        @ApiParam(value = "节点id")
+        @ApiParam(value = "节点id", required = true)
         @PathVariable id: String,
-        @ApiParam(value = "更新节点请求")
+        @ApiParam(value = "更新节点请求", required = true)
         @RequestBody nodeUpdateRequest: NodeUpdateRequest
     ): Response<Void>
 
     @ApiOperation("根据id删除节点")
     @DeleteMapping("/{id}")
     fun deleteById(
-        @ApiParam(value = "节点id")
+        @ApiParam(value = "节点id", required = true)
         @PathVariable id: String
     ): Response<Void>
 
     @ApiOperation("删除目录")
     @DeleteMapping
     fun deleteByPath(
-        @ApiParam(value = "仓库id")
+        @ApiParam(value = "仓库id", required = true)
         @RequestParam repositoryId: String,
-        @ApiParam(value = "节点目录")
+        @ApiParam(value = "节点目录", required = true)
         @RequestParam path: String
     ): Response<Void>
 
