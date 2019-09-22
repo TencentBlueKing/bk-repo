@@ -1,9 +1,12 @@
 package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.Node
+import com.tencent.bkrepo.repository.pojo.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.NodeUpdateRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -23,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam
  * @author: carrypan
  * @date: 2019-09-10
  */
-@Api("资源节点服务接口")
+@Api("节点服务接口")
 @FeignClient(SERVICE_NAME, contextId = "NodeResource")
 @RequestMapping("/service/resource")
 interface NodeResource {
@@ -38,20 +41,20 @@ interface NodeResource {
     @ApiOperation("列表查询指定目录下所有节点, 只返回一层深度的节点")
     @GetMapping("/list/{repositoryId}")
     fun list(
-        @ApiParam(value = "项目id")
+        @ApiParam(value = "仓库id")
         @PathVariable repositoryId: String,
         @ApiParam(value = "所属目录")
         @RequestParam path: String
-    ): Response<Page<Node>>
+    ): Response<List<Node>>
 
     @ApiOperation("分页查询指定目录下所有节点, 只返回一层深度的节点")
     @GetMapping("/page/{page}/{size}/{repositoryId}")
     fun page(
         @ApiParam(value = "当前页")
-        @PathVariable page: Long,
+        @PathVariable page: Int,
         @ApiParam(value = "分页大小")
-        @PathVariable size: Long,
-        @ApiParam(value = "项目id")
+        @PathVariable size: Int,
+        @ApiParam(value = "仓库id")
         @PathVariable repositoryId: String,
         @ApiParam(value = "所属目录")
         @RequestParam path: String
@@ -60,30 +63,33 @@ interface NodeResource {
     @ApiOperation("创建节点")
     @PostMapping
     fun create(
-        @ApiParam(value = "节点信息")
-        @RequestBody repository: Node
-    ): Response<Node>
+        @ApiParam(value = "创建节点请求")
+        @RequestBody nodeCreateRequest: NodeCreateRequest
+    ): Response<IdValue>
 
     @ApiOperation("修改节点")
     @PutMapping("/{id}")
     fun update(
         @ApiParam(value = "节点id")
         @PathVariable id: String,
-        @ApiParam(value = "节点信息")
-        @RequestBody repository: Node
-    ): Response<Boolean>
+        @ApiParam(value = "更新节点请求")
+        @RequestBody nodeUpdateRequest: NodeUpdateRequest
+    ): Response<Void>
 
     @ApiOperation("根据id删除节点")
     @DeleteMapping("/{id}")
     fun deleteById(
         @ApiParam(value = "节点id")
         @PathVariable id: String
-    ): Response<Boolean>
+    ): Response<Void>
 
-    @ApiOperation("根据path删除节点")
-    @DeleteMapping()
+    @ApiOperation("删除目录")
+    @DeleteMapping
     fun deleteByPath(
-        @ApiParam(value = "节点path")
+        @ApiParam(value = "仓库id")
+        @RequestParam repositoryId: String,
+        @ApiParam(value = "节点目录")
         @RequestParam path: String
-    ): Response<Boolean>
+    ): Response<Void>
+
 }

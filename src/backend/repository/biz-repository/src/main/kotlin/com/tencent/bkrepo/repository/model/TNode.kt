@@ -11,18 +11,18 @@ import org.springframework.data.mongodb.core.mapping.Document
  */
 @Document("node")
 data class TNode(
-    val id: String,
-    val createdBy: String,
-    val createdDate: LocalDateTime,
-    val lastModifiedBy: String,
-    val lastModifiedDate: LocalDateTime,
+    var id: String? = null,
+    var createdBy: String? = null,
+    var createdDate: LocalDateTime? = null,
+    var lastModifiedBy: String? = null,
+    var lastModifiedDate: LocalDateTime? = null,
 
-    val folder: Boolean,
-    val path: String,
-    val name: String,
-    val fullPath: Boolean,
-    val size: Long,
-    val sha256: String,
-    val deleted: LocalDateTime,
-    val repositoryId: String
+    var folder: Boolean? = null,
+    var path: String? = null,
+    var name: String? = null,
+    var fullPath: String? = null,
+    var size: Long? = null,
+    var sha256: String? = null,
+    var deleted: LocalDateTime? = null,
+    var repositoryId: String? = null
 )

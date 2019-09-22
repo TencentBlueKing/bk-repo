@@ -1,9 +1,14 @@
 package com.tencent.bkrepo.repository.resource
 
+import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.Node
+import com.tencent.bkrepo.repository.pojo.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.NodeUpdateRequest
+import com.tencent.bkrepo.repository.service.NodeService
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -13,32 +18,39 @@ import org.springframework.web.bind.annotation.RestController
  * @date: 2019-09-10
  */
 @RestController
-class NodeResourceImpl : NodeResource {
+class NodeResourceImpl @Autowired constructor(
+        private val nodeService: NodeService
+) : NodeResource {
     override fun detail(id: String): Response<Node> {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+        return Response.success(nodeService.getDetailById(id))
     }
 
-    override fun list(repositoryId: String, path: String): Response<Page<Node>> {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+    override fun list(repositoryId: String, path: String): Response<List<Node>> {
+        return Response.success(nodeService.list(repositoryId, path))
     }
 
-    override fun page(page: Long, size: Long, repositoryId: String, path: String): Response<Page<Node>> {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+    override fun page(page: Int, size: Int, repositoryId: String, path: String): Response<Page<Node>> {
+        return Response.success(nodeService.page(repositoryId, path, page, size))
     }
 
-    override fun create(repository: Node): Response<Node> {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+    override fun create(nodeCreateRequest: NodeCreateRequest): Response<IdValue> {
+        return Response.success(nodeService.create(nodeCreateRequest))
     }
 
-    override fun update(id: String, repository: Node): Response<Boolean> {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+    override fun update(id: String, nodeUpdateRequest: NodeUpdateRequest): Response<Void> {
+        nodeService.updateById(id, nodeUpdateRequest)
+        return Response.success()
     }
 
-    override fun deleteById(id: String): Response<Boolean> {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+    override fun deleteById(id: String): Response<Void> {
+        nodeService.logicDeleteById(id)
+        return Response.success()
     }
 
-    override fun deleteByPath(path: String): Response<Boolean> {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+    override fun deleteByPath(repositoryId: String, path: String): Response<Void> {
+        nodeService.logicDeleteByPath(repositoryId, path)
+        return Response.success()
     }
+
+
 }

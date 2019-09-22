@@ -1,8 +1,11 @@
 package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
+import com.tencent.bkrepo.repository.pojo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.Repository
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -45,9 +48,9 @@ interface RepositoryResource {
     @GetMapping("/page/{page}/{size}/{projectId}")
     fun page(
         @ApiParam(value = "当前页")
-        @PathVariable page: Long,
+        @PathVariable page: Int,
         @ApiParam(value = "分页大小")
-        @PathVariable size: Long,
+        @PathVariable size: Int,
         @ApiParam(value = "项目id")
         @PathVariable projectId: String
     ): Response<Page<Repository>>
@@ -55,23 +58,23 @@ interface RepositoryResource {
     @ApiOperation("创建仓库")
     @PostMapping
     fun create(
-        @ApiParam(value = "仓库信息")
-        @RequestBody repository: Repository
-    ): Response<Repository>
+        @ApiParam(value = "创建仓库请求")
+        @RequestBody repoCreateRequest: RepoCreateRequest
+    ): Response<IdValue>
 
     @ApiOperation("修改仓库")
     @PutMapping("/{id}")
     fun update(
         @ApiParam(value = "仓库id")
         @PathVariable id: String,
-        @ApiParam(value = "仓库信息")
-        @RequestBody repository: Repository
-    ): Response<Boolean>
+        @ApiParam(value = "更新仓库请求")
+        @RequestBody repoUpdateRequest: RepoUpdateRequest
+    ): Response<Void>
 
     @ApiOperation("删除仓库")
     @DeleteMapping("/{id}")
     fun delete(
         @ApiParam(value = "仓库id")
         @PathVariable id: String
-    ): Response<Boolean>
+    ): Response<Void>
 }
