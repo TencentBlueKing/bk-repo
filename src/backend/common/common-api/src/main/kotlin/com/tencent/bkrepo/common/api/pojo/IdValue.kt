@@ -11,6 +11,6 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("数据id值")
 data class IdValue(
-        @ApiModelProperty("id值")
-        val id: String?
+    @ApiModelProperty("id值")
+    val id: String
 )

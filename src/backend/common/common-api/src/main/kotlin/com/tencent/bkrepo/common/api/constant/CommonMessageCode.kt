@@ -10,4 +10,5 @@ object CommonMessageCode {
     const val PERMISSION_DENIED = 2100006 // 无权限{0}
     const val ERROR_SERVICE_NO_FOUND = 2100007 // "找不到任何有效的{0}服务提供者"
     const val ELEMENT_NOT_FOUND = 2100008 // "访问的资源{0}不存在"
+    const val ELEMENT_CANNOT_BE_MODIFIED = 2100009 // "资源无法被编辑"
 }

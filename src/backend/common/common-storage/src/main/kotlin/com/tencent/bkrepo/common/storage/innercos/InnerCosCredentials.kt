@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.storage.innercos
 
-
 /**
  * inner cos 身份认证信息
  *

@@ -2,7 +2,6 @@ package com.tencent.bkrepo.common.storage.local
 
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
-import java.io.File
 import java.io.InputStream
 
 /**
@@ -12,8 +11,8 @@ import java.io.InputStream
  * @date: 2019-09-09
  */
 class LocalFileStorage(
-        locateStrategy: LocateStrategy,
-        defaultCredentials: LocalStorageCredentials
+    locateStrategy: LocateStrategy,
+    defaultCredentials: LocalStorageCredentials
 ) : AbstractFileStorage<LocalStorageCredentials, LocalStorageClient>(locateStrategy, defaultCredentials) {
     override fun store(path: String, filename: String, inputStream: InputStream, client: LocalStorageClient) {
         client.store(path, filename, inputStream)
@@ -32,6 +31,4 @@ class LocalFileStorage(
     }
 
     override fun createClient(credentials: LocalStorageCredentials) = LocalStorageClient(credentials.directory)
-
-
 }

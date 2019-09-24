@@ -80,16 +80,8 @@ interface NodeResource {
     @DeleteMapping("/{id}")
     fun deleteById(
         @ApiParam(value = "节点id", required = true)
-        @PathVariable id: String
+        @PathVariable id: String,
+        @ApiParam(value = "修改者", required = true)
+        @RequestParam modifiedBy: String
     ): Response<Void>
-
-    @ApiOperation("删除目录")
-    @DeleteMapping
-    fun deleteByPath(
-        @ApiParam(value = "仓库id", required = true)
-        @RequestParam repositoryId: String,
-        @ApiParam(value = "节点目录", required = true)
-        @RequestParam path: String
-    ): Response<Void>
-
 }

@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class NodeResourceImpl @Autowired constructor(
-        private val nodeService: NodeService
+    private val nodeService: NodeService
 ) : NodeResource {
     override fun detail(id: String): Response<Node> {
         return Response.success(nodeService.getDetailById(id))
@@ -42,15 +42,8 @@ class NodeResourceImpl @Autowired constructor(
         return Response.success()
     }
 
-    override fun deleteById(id: String): Response<Void> {
-        nodeService.logicDeleteById(id)
+    override fun deleteById(id: String, modifiedBy: String): Response<Void> {
+        nodeService.softDeleteById(id, modifiedBy)
         return Response.success()
     }
-
-    override fun deleteByPath(repositoryId: String, path: String): Response<Void> {
-        nodeService.logicDeleteByPath(repositoryId, path)
-        return Response.success()
-    }
-
-
 }

@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.storage.innercos
 
-
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
@@ -14,14 +13,11 @@ import com.tencent.cos.model.ObjectMetadata
 import com.tencent.cos.model.PutObjectRequest
 import com.tencent.cos.region.Region
 import com.tencent.cos.transfer.TransferManager
-import org.apache.http.HttpStatus
 import java.io.InputStream
-import java.util.concurrent.Executors
-import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-
+import org.apache.http.HttpStatus
 
 /**
  * tencent inner cos 文件存储实现类
@@ -30,14 +26,13 @@ import java.util.concurrent.TimeUnit
  * @date: 2019-09-17
  */
 class InnerCosFileStorage(
-        locateStrategy: LocateStrategy,
-        defaultCredentials: InnerCosCredentials
+    locateStrategy: LocateStrategy,
+    defaultCredentials: InnerCosCredentials
 ) : AbstractFileStorage<InnerCosCredentials, InnerCosClient>(locateStrategy, defaultCredentials) {
 
     private val executor = ThreadPoolExecutor(100, 200, 5L, TimeUnit.SECONDS,
             LinkedBlockingQueue(1024), ThreadFactoryBuilder().setNameFormat("innercos-storage-uploader-pool-%d").build(),
             ThreadPoolExecutor.AbortPolicy())
-
 
     override fun createClient(credentials: InnerCosCredentials): InnerCosClient {
         val basicCOSCredentials = BasicCOSCredentials(credentials.secretId, credentials.secretKey)
@@ -54,7 +49,7 @@ class InnerCosFileStorage(
         val fileSize = inputStream.available().toLong()
         // 支持根据文件的大小自动选择单文件上传或者分块上传
         val transferManager = TransferManager(client.cosClient, executor)
-        val objectMetadata = ObjectMetadata().apply{contentLength = fileSize}
+        val objectMetadata = ObjectMetadata().apply { contentLength = fileSize }
         val putObjectRequest = PutObjectRequest(client.bucketName, filename, inputStream, objectMetadata)
         val upload = transferManager.upload(putObjectRequest)
         // 等待传输结束
@@ -69,11 +64,10 @@ class InnerCosFileStorage(
     }
 
     override fun load(path: String, filename: String, client: InnerCosClient): InputStream? {
-        return if(exist(path, filename, client)) {
+        return if (exist(path, filename, client)) {
             val getObjectRequest = GetObjectRequest(client.bucketName, filename)
             client.cosClient.getObject(getObjectRequest).objectContent
         } else null
-
     }
 
     override fun exist(path: String, filename: String, client: InnerCosClient): Boolean {
@@ -85,5 +79,4 @@ class InnerCosFileStorage(
         }
         return exists
     }
-
 }

@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class RepositoryResourceImpl @Autowired constructor(
-        private val repositoryService: RepositoryService
+    private val repositoryService: RepositoryService
 ) : RepositoryResource {
 
     override fun detail(id: String): Response<Repository> {

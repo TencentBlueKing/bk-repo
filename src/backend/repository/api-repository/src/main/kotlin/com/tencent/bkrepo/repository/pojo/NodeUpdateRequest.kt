@@ -11,12 +11,14 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("更新节点请求")
 data class NodeUpdateRequest(
-        @ApiModelProperty("路径")
-        val path: String?,
-        @ApiModelProperty("资源名称")
-        val name: String?,
-        @ApiModelProperty("文件大小，单位byte")
-        val size: Long?,
-        @ApiModelProperty("文件sha256")
-        val sha256: String?
+    @ApiModelProperty("修改者")
+    val modifiedBy: String,
+    @ApiModelProperty("路径")
+    val path: String? = null,
+    @ApiModelProperty("资源名称")
+    val name: String? = null,
+    @ApiModelProperty("文件大小，单位byte")
+    val size: Long? = null,
+    @ApiModelProperty("文件sha256")
+    val sha256: String? = null
 )

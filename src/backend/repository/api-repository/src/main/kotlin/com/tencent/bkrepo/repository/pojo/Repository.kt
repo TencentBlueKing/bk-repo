@@ -24,7 +24,7 @@ data class Repository(
     @ApiModelProperty("简要描述")
     val description: String?,
     @ApiModelProperty("扩展信息")
-    val extension: Any,
+    val extension: Any?,
     @ApiModelProperty("所属项目id")
     val projectId: String
 )

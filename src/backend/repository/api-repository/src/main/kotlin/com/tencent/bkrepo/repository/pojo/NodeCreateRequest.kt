@@ -11,16 +11,19 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("创建节点请求")
 data class NodeCreateRequest(
-        @ApiModelProperty("是否为文件夹")
-        val folder: Boolean,
-        @ApiModelProperty("路径")
-        val path: String,
-        @ApiModelProperty("资源名称")
-        val name: String,
-        @ApiModelProperty("文件大小，单位byte")
-        val size: Long,
-        @ApiModelProperty("文件sha256")
-        val sha256: String? = null,
-        @ApiModelProperty("所属仓库id")
-        val repositoryId: String
+    @ApiModelProperty("是否为文件夹")
+    val folder: Boolean,
+    @ApiModelProperty("路径")
+    val path: String,
+    @ApiModelProperty("资源名称")
+    val name: String,
+    @ApiModelProperty("所属仓库id")
+    val repositoryId: String,
+    @ApiModelProperty("创建者")
+    val createdBy: String,
+    @ApiModelProperty("文件大小，单位byte")
+    val size: Long? = null,
+    @ApiModelProperty("文件sha256")
+    val sha256: String? = null
+
 )

@@ -12,10 +12,10 @@ import java.io.InputStream
  */
 class LocalStorageClient(private val directory: String) {
 
-    init{
+    init {
         val dir = File(directory)
         dir.mkdirs()
-        assert(dir.isFile) {"$directory is not a valid directory path!"}
+        assert(dir.isFile) { "$directory is not a valid directory path!" }
     }
 
     fun store(path: String, filename: String, inputStream: InputStream) {
@@ -29,7 +29,7 @@ class LocalStorageClient(private val directory: String) {
     fun delete(path: String, filename: String) {
         val subDirectory = File(directory, path)
         val file = File(subDirectory, filename)
-        if(file.isFile) {
+        if (file.isFile) {
             file.deleteOnExit()
         }
     }
@@ -37,7 +37,7 @@ class LocalStorageClient(private val directory: String) {
     fun load(path: String, filename: String): InputStream? {
         val subDirectory = File(directory, path)
         val file = File(subDirectory, filename)
-        return if(file.isFile) file.inputStream() else null
+        return if (file.isFile) file.inputStream() else null
     }
 
     fun exist(path: String, filename: String): Boolean {

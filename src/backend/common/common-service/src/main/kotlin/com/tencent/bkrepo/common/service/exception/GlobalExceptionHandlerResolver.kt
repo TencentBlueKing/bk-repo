@@ -21,7 +21,7 @@ class GlobalExceptionHandlerResolver {
         logger.error("Failed with exception exception:$exception")
 
         val errorMsg = MessageCodeUtils.generateResponseDataObject<String>(exception.errorCode)
-        return Response.fail(exception.errorCode,errorMsg.message ?: exception.message ?: "Unknown Error: ${exception.errorCode}")
+        return Response.fail(exception.errorCode, errorMsg.message ?: exception.message ?: "Unknown Error: ${exception.errorCode}")
     }
 
     companion object {
