@@ -2,8 +2,8 @@ package com.tencent.bkrepo.common.storage
 
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
 import com.tencent.bkrepo.common.storage.innercos.InnerCosProperties
-import com.tencent.bkrepo.common.storage.local.LocalStorageProperties
 import com.tencent.bkrepo.common.storage.local.LocalFileStorage
+import com.tencent.bkrepo.common.storage.local.LocalStorageProperties
 import com.tencent.bkrepo.common.storage.strategy.HashLocateStrategy
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
 import org.springframework.beans.factory.annotation.Autowired
@@ -30,9 +30,9 @@ class StorageAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty(prefix = "storage.innercos", name = ["enabled"], havingValue = "true")
-    fun innerCosFileStorage(innerCosProperties: InnerCosProperties) = InnerCosFileStorage(locateStrategy, innerCosProperties)
+    fun innerCosFileStorage(innerCosProperties: InnerCosProperties) = InnerCosFileStorage(locateStrategy, innerCosProperties.credentials)
 
     @Bean
     @ConditionalOnProperty(prefix = "storage.local", name = ["enabled"], havingValue = "true")
-    fun localFileStorage(localStorageProperties: LocalStorageProperties) = LocalFileStorage(locateStrategy, localStorageProperties)
+    fun localFileStorage(localStorageProperties: LocalStorageProperties) = LocalFileStorage(locateStrategy, localStorageProperties.credentials)
 }

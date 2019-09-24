@@ -17,6 +17,6 @@ data class Metadata(
     val key: String,
     @ApiModelProperty("元数据value")
     val value: Any,
-    @ApiModelProperty("元数据所属资源id")
-    val resourceId: String
+    @ApiModelProperty("元数据所属节点id")
+    val nodeId: String
 )

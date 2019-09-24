@@ -2,12 +2,13 @@ package com.tencent.bkrepo.common.api.pojo
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import kotlin.math.ceil
 
 @ApiModel("分页数据包装模型")
 data class Page<out T>(
     @ApiModelProperty("总记录行数", required = true)
     val count: Long,
-    @ApiModelProperty("第几页", required = true)
+    @ApiModelProperty("第几页(0页开始)", required = true)
     val page: Int,
     @ApiModelProperty("每页多少条", required = true)
     val pageSize: Int,
@@ -20,7 +21,7 @@ data class Page<out T>(
         count = count,
         page = page,
         pageSize = pageSize,
-        totalPages = Math.ceil(count * 1.0 / pageSize).toInt(),
+        totalPages = ceil(count * 1.0 / pageSize).toInt(),
         records = records
     )
 }

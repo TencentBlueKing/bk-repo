@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping
  * @author: carrypan
  * @date: 2019-09-10
  */
-@Api("节点资源服务接口")
+@Api("节点元数据服务接口")
 @FeignClient(SERVICE_NAME, contextId = "MetadataResource")
 @RequestMapping("/service/metadata")
 interface MetadataResource {
@@ -33,11 +33,11 @@ interface MetadataResource {
         @PathVariable id: String
     ): Response<Metadata>
 
-    @ApiOperation("列表查询资源所有元数据")
-    @GetMapping("/list/{resourceId}")
+    @ApiOperation("列表查询节点所有元数据")
+    @GetMapping("/list/{nodeId}")
     fun list(
-        @ApiParam(value = "资源id")
-        @PathVariable resourceId: String
+        @ApiParam(value = "节点id")
+        @PathVariable nodeId: String
     ): Response<List<Metadata>>
 
     @ApiOperation("创建元数据")

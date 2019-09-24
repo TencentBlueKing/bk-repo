@@ -19,5 +19,5 @@ data class TMetadata(
 
     val key: String,
     val value: Any,
-    val resourceId: String
+    val nodeId: String
 )
