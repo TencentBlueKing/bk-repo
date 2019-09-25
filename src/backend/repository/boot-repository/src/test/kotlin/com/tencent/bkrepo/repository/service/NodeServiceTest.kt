@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 
 /**
  * NodeServiceTest
@@ -34,6 +36,7 @@ internal class NodeServiceTest @Autowired constructor(
 
     @BeforeEach
     fun setUp() {
+        repositoryService.list(projectId).forEach { repositoryService.deleteById(it.id) }
         repoId = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述")).id
     }
 
@@ -85,7 +88,10 @@ internal class NodeServiceTest @Autowired constructor(
     @Test
     fun exist() {
         assertTrue(nodeService.exist(repoId, ""))
-        assertFalse(nodeService.exist(repoId, "/"))
+        assertTrue(nodeService.exist(repoId, "/"))
+
+        nodeService.create(NodeCreateRequest(false, "  / a /   b /  ", " 1.txt  ", repoId, operator, 1024, "sha256")).id
+        assertTrue(nodeService.exist(repoId, "/a/b/1.txt"))
     }
 
     @Test
@@ -109,7 +115,7 @@ internal class NodeServiceTest @Autowired constructor(
         assertNotNull(node.lastModifiedDate)
 
         assertEquals(false, node.folder)
-        assertEquals("/a/b", node.path)
+        assertEquals("/a/b/", node.path)
         assertEquals("1.txt", node.name)
         assertEquals("/a/b/1.txt", node.fullPath)
         assertEquals(repoId, node.repositoryId)
@@ -129,7 +135,7 @@ internal class NodeServiceTest @Autowired constructor(
         assertNotNull(node.lastModifiedDate)
 
         assertEquals(true, node.folder)
-        assertEquals("/a/c", node.path)
+        assertEquals("/a/c/", node.path)
         assertEquals("中文.@_-`~...", node.name)
         assertEquals("/a/c/中文.@_-`~...", node.fullPath)
         assertEquals(repoId, node.repositoryId)
@@ -151,7 +157,7 @@ internal class NodeServiceTest @Autowired constructor(
         assertNotNull(node.lastModifiedDate)
 
         assertEquals(false, node.folder)
-        assertEquals("/c/d/e", node.path)
+        assertEquals("/c/d/e/", node.path)
         assertEquals("2.txt.txt", node.name)
         assertEquals("/c/d/e/2.txt.txt", node.fullPath)
         assertEquals(repoId, node.repositoryId)
@@ -167,12 +173,25 @@ internal class NodeServiceTest @Autowired constructor(
         assertFalse(nodeService.exist(repoId, "/a/b/1.txt"))
 
         nodeid = nodeService.create(NodeCreateRequest(true, "/a/b/", "c", repoId, operator, 1024L, "sha256")).id
-        val nodeid2 = nodeService.create(NodeCreateRequest(false, "/a/b/c", "1.txt", repoId, operator, 1024L, "sha256")).id
+        nodeService.create(NodeCreateRequest(false, "/a/b/c", "1.txt", repoId, operator, 1024L, "sha256")).id
 
-        assertThrows<ErrorCodeException> { nodeService.softDeleteById(nodeid, operator) }
+        assertTrue(nodeService.exist(repoId, "/a/b/c/1.txt"))
 
-        nodeService.softDeleteById(nodeid2, operator)
+        nodeService.softDeleteById(nodeid, operator)
 
-        assertDoesNotThrow { nodeService.softDeleteById(nodeid, operator) }
+        assertFalse(nodeService.exist(repoId, "/a/b/c/1.txt"))
+
+    }
+
+    @Test
+    fun escapeTest() {
+        nodeService.create(NodeCreateRequest(false, "/.*|^/a", "1.txt", repoId, operator, 1024, "sha256")).id
+        nodeService.create(NodeCreateRequest(false, "/a", "1.txt", repoId, operator, 1024, "sha256")).id
+
+
+        assertEquals(1, nodeService.list(repoId, "/.*|^/a").size)
+        nodeService.softDeleteByPath(repoId, "/.*|^/a", operator)
+        assertEquals(0, nodeService.list(repoId, "/.*|^/a").size)
+        assertEquals(1, nodeService.list(repoId, "/a").size)
     }
 }

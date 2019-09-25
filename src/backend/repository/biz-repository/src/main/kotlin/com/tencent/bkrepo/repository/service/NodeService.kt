@@ -7,24 +7,30 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.Node
 import com.tencent.bkrepo.repository.pojo.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.NodeUpdateRequest
 import com.tencent.bkrepo.repository.repository.NodeRepository
 import com.tencent.bkrepo.repository.util.NodeUtils
 import com.tencent.bkrepo.repository.util.NodeUtils.combineFullPath
+import com.tencent.bkrepo.repository.util.NodeUtils.escapeRegex
+import com.tencent.bkrepo.repository.util.NodeUtils.formatFullPath
+import com.tencent.bkrepo.repository.util.NodeUtils.formatPath
+import com.tencent.bkrepo.repository.util.NodeUtils.isRootDir
 import com.tencent.bkrepo.repository.util.NodeUtils.parseDirName
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFileName
-import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 仓库service
@@ -42,18 +48,23 @@ class NodeService @Autowired constructor(
     }
 
     fun list(repositoryId: String, path: String): List<Node> {
-        return nodeRepository.findByRepositoryIdAndPathAndDeletedIsNull(repositoryId, path)
+        return nodeRepository.findByRepositoryIdAndPathAndDeletedIsNull(repositoryId, formatPath(path))
     }
 
     fun page(repositoryId: String, path: String, page: Int, size: Int): Page<Node> {
-        val tNodePage = nodeRepository.findByRepositoryIdAndPathAndDeletedIsNull(repositoryId, path, PageRequest.of(page, size))
+        val tNodePage = nodeRepository.findByRepositoryIdAndPathAndDeletedIsNull(repositoryId, formatPath(path), PageRequest.of(page, size))
         return Page(page, size, tNodePage.totalElements, tNodePage.content)
     }
 
     fun exist(repositoryId: String, fullPath: String): Boolean {
-        fullPath.takeIf { it.isNotBlank() } ?: return true
+        val formattedPath = formatFullPath(fullPath)
+        // 如果为根目录，直接判断仓库是否存在。仓库存在则根目录存在
+        if(isRootDir(formattedPath)) {
+            return mongoTemplate.findById(repositoryId, TRepository::class.java) != null
+        }
+
         val query = Query(Criteria.where("repositoryId").`is`(repositoryId)
-                .and("fullPath").`is`(fullPath)
+                .and("fullPath").`is`(formattedPath)
                 .and("deleted").`is`(null))
         return mongoTemplate.exists(query, TNode::class.java)
     }
@@ -77,8 +88,9 @@ class NodeService @Autowired constructor(
                 lastModifiedDate = LocalDateTime.now()
             )
         }
+
         // 路径唯一性校验
-        node.takeIf { !exist(it.repositoryId, it.fullPath) } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
+        node.takeUnless { exist(it.repositoryId, it.fullPath) } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
         // 判断父目录是否存在，不存在先创建
         mkdirs(node.repositoryId, node.path, nodeCreateRequest.createdBy)
 
@@ -99,6 +111,7 @@ class NodeService @Autowired constructor(
             node.lastModifiedDate = LocalDateTime.now()
             node.lastModifiedBy = modifiedBy
         }
+
         val newFullPath = combineFullPath(node.path, node.name)
         // 如果path和name有变化，校验格式和唯一性
         if (node.fullPath != newFullPath) {
@@ -107,6 +120,7 @@ class NodeService @Autowired constructor(
             // 判断父目录是否存在，不存在先创建
             mkdirs(node.repositoryId, node.path, nodeUpdateRequest.modifiedBy)
         }
+
         nodeRepository.save(node)
     }
 
@@ -116,15 +130,26 @@ class NodeService @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     fun softDeleteById(id: String, modifiedBy: String) {
         val node = nodeRepository.findByIdOrNull(id) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
-        if (node.folder && page(node.repositoryId, node.fullPath, 0, 10).count > 0) {
-            throw ErrorCodeException(ELEMENT_CANNOT_BE_MODIFIED, "文件夹包含子文件，无法删除！")
-        }
-        node.apply {
-            deleted = LocalDateTime.now()
-            lastModifiedDate = LocalDateTime.now()
-            lastModifiedBy = modifiedBy
-        }
-        nodeRepository.save(node)
+        softDeleteByPath(node.repositoryId, node.fullPath, modifiedBy)
+    }
+
+    /**
+     * 根据全路径软删除文件或者目录
+     */
+    @Transactional(rollbackFor = [Throwable::class])
+    fun softDeleteByPath(repositoryId: String, fullPath: String, modifiedBy: String) {
+        val formattedPath = formatFullPath(fullPath)
+        val escapedPath = escapeRegex(formattedPath)
+        logger.info("escapedPath: $escapedPath")
+        val query = Query(Criteria.where("repositoryId").`is`(repositoryId)
+                .orOperator(Criteria.where("fullPath").regex("^$escapedPath/"), Criteria.where("fullPath").`is`(formattedPath))
+                .and("deleted").`is`(null))
+        logger.info("query: $query")
+        val update = Update().set("deleted", LocalDateTime.now())
+                .set("lastModifiedDate", LocalDateTime.now())
+                .set("lastModifiedBy", modifiedBy)
+
+        mongoTemplate.updateMulti(query, update, Node::class.java)
     }
 
     /**
@@ -140,13 +165,14 @@ class NodeService @Autowired constructor(
      */
     private fun mkdirs(repositoryId: String, path: String, createdBy: String) {
         val parentPath = NodeUtils.getParentPath(path)
+        val name = NodeUtils.getName(path)
         takeIf { !exist(repositoryId, parentPath) }?.run {
             mkdirs(repositoryId, parentPath, createdBy)
             nodeRepository.insert(TNode(
                     folder = true,
                     path = parentPath,
-                    name = NodeUtils.getName(path),
-                    fullPath = path,
+                    name = name,
+                    fullPath = combineFullPath(parentPath, name),
                     repositoryId = repositoryId,
                     size = 0,
                     createdBy = createdBy,

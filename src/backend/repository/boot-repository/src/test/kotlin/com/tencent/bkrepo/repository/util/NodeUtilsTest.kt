@@ -20,9 +20,9 @@ internal class NodeUtilsTest {
     fun parseDirName() {
         assertEquals(ROOT_DIR, NodeUtils.parseDirName("/"))
         assertEquals(ROOT_DIR, NodeUtils.parseDirName("  /   "))
-        assertEquals("/a", NodeUtils.parseDirName("  /   a"))
-        assertEquals("/a/b", NodeUtils.parseDirName("  /   a  /b"))
-        assertEquals("/a/b", NodeUtils.parseDirName("  /   a  /b/"))
+        assertEquals("/a/", NodeUtils.parseDirName("  /   a"))
+        assertEquals("/a/b/", NodeUtils.parseDirName("  /   a  /b"))
+        assertEquals("/a/b/", NodeUtils.parseDirName("  /   a  /b/"))
 
         assertThrows<ErrorCodeException> { NodeUtils.parseDirName(" ") }
         assertDoesNotThrow { NodeUtils.parseDirName("/1/2/3/4/5/6/7/8/9/10") }
@@ -47,22 +47,40 @@ internal class NodeUtilsTest {
 
     @Test
     fun combineFullPath() {
-        assertEquals("/a", NodeUtils.combineFullPath("/", "a"))
+        assertEquals("/a", NodeUtils.combineFullPath("", "a"))
         assertEquals("/a/b", NodeUtils.combineFullPath("/a", "b"))
+        assertEquals("/a/b", NodeUtils.combineFullPath("/a/", "b"))
     }
 
     @Test
     fun getParentPath() {
-        assertEquals("/a", NodeUtils.getParentPath("/a/b"))
-        assertEquals("/a", NodeUtils.getParentPath("/a/b.txt"))
+        assertEquals("/a/", NodeUtils.getParentPath("/a/b"))
+        assertEquals("/a/", NodeUtils.getParentPath("/a/b.txt"))
+        assertEquals("/a/b/", NodeUtils.getParentPath("/a/b/c/"))
         assertEquals("/", NodeUtils.getParentPath("/a"))
-        assertEquals("", NodeUtils.getParentPath("/"))
+        assertEquals("/", NodeUtils.getParentPath("/"))
     }
 
     @Test
     fun getName() {
         assertEquals("b", NodeUtils.getName("/a/b"))
         assertEquals("b.txt", NodeUtils.getName("/a/b.txt"))
-        assertEquals("/", NodeUtils.getName("/"))
+        assertEquals("", NodeUtils.getName("/"))
+        assertEquals("c", NodeUtils.getName("/a/b/c/"))
     }
+
+    @Test
+    fun escapeRegex() {
+        assertEquals("""\\.\\*""", NodeUtils.escapeRegex(".*"))
+        assertEquals("""/\\.\\*\\|\\^/a/""", NodeUtils.escapeRegex("/.*|^/a/"))
+    }
+
+    @Test
+    fun formatPath() {
+        assertEquals("/.*|^/a/", NodeUtils.formatPath("/.*|^/a"))
+        assertEquals("/.*|^/a", NodeUtils.formatFullPath("/.*|^/a"))
+    }
+
 }
+
+
