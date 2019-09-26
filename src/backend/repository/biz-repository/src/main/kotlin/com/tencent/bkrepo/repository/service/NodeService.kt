@@ -129,7 +129,7 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun softDeleteById(id: String, modifiedBy: String) {
-        val node = nodeRepository.findByIdOrNull(id) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
+        val node = nodeRepository.findByIdOrNull(id) ?: return
         softDeleteByPath(node.repositoryId, node.fullPath, modifiedBy)
     }
 
