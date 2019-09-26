@@ -2,7 +2,9 @@ package com.tencent.bkrepo.common.storage.core
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
+import java.io.File
 import java.io.InputStream
 
 /**
@@ -14,41 +16,72 @@ import java.io.InputStream
  * @author: carrypan
  * @date: 2019-09-09
  */
-abstract class AbstractFileStorage<Credentials, Client>(
+abstract class AbstractFileStorage<Credentials: ClientCredentials, Client>(
     private val locateStrategy: LocateStrategy,
-    val defaultCredentials: Credentials
-) : FileStorage<Credentials, Client> {
+    private val properties: StorageProperties
+) : FileStorage {
 
-    private val loadingCache = CacheBuilder.newBuilder()
-            .maximumSize(MAX_CACHE_SIZE)
-            .removalListener<Credentials, Client> { onClientRemoval(it.key, it.value) }
-            .build(object : CacheLoader<Credentials, Client>() {
-                override fun load(credentials: Credentials): Client = createClient(credentials)
-            })
+    private var clientCache: LoadingCache<Credentials, Client>? = null
 
-    override fun store(hash: String, inputStream: InputStream, credentials: Credentials?) {
-        // 转存本地文件
-        // 1. 并行上传 加速，
-        // 2. 支持重试
-        // 3. 下载缓存
-        val path = locateStrategy.locate(hash)
-        store(path, hash, inputStream, loadingCache.get(credentials ?: defaultCredentials))
+    private var localFileCache: LocalFileCache? = null
+
+    init {
+        if(properties.clientCache.enabled) {
+            clientCache = CacheBuilder.newBuilder()
+                    .maximumSize(properties.clientCache.size)
+                    .removalListener<Credentials, Client> { onClientRemoval(it.key, it.value) }
+                    .build(object : CacheLoader<Credentials, Client>() {
+                        override fun load(credentials: Credentials): Client = createClient(credentials)
+                    })
+        }
+
+        if(properties.localCache.enabled) {
+            localFileCache = LocalFileCache(properties.localCache.path)
+        }
+
     }
 
-    override fun delete(hash: String, credentials: Credentials?) {
-        val path = locateStrategy.locate(hash)
-        delete(path, hash, loadingCache.get(credentials ?: defaultCredentials))
+    private fun getClient(clientCredentials: ClientCredentials?): Client {
+        val credentials = (clientCredentials ?: properties.credentials) as Credentials
+        return clientCache?.get(credentials) ?: createClient(credentials)
     }
 
-    override fun load(hash: String, credentials: Credentials?): InputStream? {
-        // 查看本是否有文件
+    override fun store(hash: String, inputStream: InputStream, credentials: ClientCredentials?) {
         val path = locateStrategy.locate(hash)
-        return load(path, hash, loadingCache.get(credentials ?: defaultCredentials))
+
+        localFileCache?.run {
+            val cachedFile = this.cache(path, hash, inputStream)
+            store(path, hash, cachedFile, getClient(credentials))
+        } ?: store(path, hash, inputStream, getClient(credentials))
     }
 
-    override fun exist(hash: String, credentials: Credentials?): Boolean {
+    override fun delete(hash: String, credentials: ClientCredentials?) {
         val path = locateStrategy.locate(hash)
-        return exist(path, hash, loadingCache.get(credentials ?: defaultCredentials))
+
+        delete(path, hash, getClient(credentials))
+        localFileCache?.remove(path, hash)
+
+    }
+
+    override fun load(hash: String, credentials: ClientCredentials?): InputStream? {
+        val path = locateStrategy.locate(hash)
+
+        return localFileCache?.run {
+            this.get(path, hash)?.inputStream() ?: let {
+                val inputStream = load(path, hash, getClient(credentials))
+                inputStream?.let { this.cache(path, hash, it) }
+                inputStream
+            }
+        } ?: load(path, hash, getClient(credentials))
+
+    }
+
+    override fun exist(hash: String, credentials: ClientCredentials?): Boolean {
+        val path = locateStrategy.locate(hash)
+
+        return localFileCache?.run {
+            this.get(path, hash)?.let{ true }
+        } ?: exist(path, hash, getClient(credentials))
     }
 
     /**
@@ -63,15 +96,11 @@ abstract class AbstractFileStorage<Credentials, Client>(
         // do nothing
     }
 
+
     protected abstract fun store(path: String, filename: String, inputStream: InputStream, client: Client)
+    protected abstract fun store(path: String, filename: String, file: File, client: Client)
     protected abstract fun delete(path: String, filename: String, client: Client)
     protected abstract fun load(path: String, filename: String, client: Client): InputStream?
     protected abstract fun exist(path: String, filename: String, client: Client): Boolean
 
-    companion object {
-        /**
-         * client 最大缓存数量
-         */
-        private const val MAX_CACHE_SIZE = 20L
-    }
 }

@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.demo.resource
 
+import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.demo.api.UserResource
@@ -19,7 +20,7 @@ class UserResourceImpl : UserResource {
     lateinit var foo: Foo
 
     @Autowired
-    lateinit var innerCosFileStorage: InnerCosFileStorage
+    lateinit var fileStorage: FileStorage
 
     override fun sayHello(name: String) = "Hello, $name!"
 
@@ -45,7 +46,7 @@ class UserResourceImpl : UserResource {
             map["计算耗时"] = "${(System.currentTimeMillis() - start) / 1000F}秒"
             // 上传
             start = System.currentTimeMillis()
-            innerCosFileStorage.store(fileSha256, testFile.inputStream())
+            fileStorage.store(fileSha256, testFile.inputStream())
             val uploadConsume = (System.currentTimeMillis() - start) / 1000F
             map["上传耗时"] = "${uploadConsume}秒"
             map["上传平均速度"] = "${fileSize / uploadConsume} MB/S"
