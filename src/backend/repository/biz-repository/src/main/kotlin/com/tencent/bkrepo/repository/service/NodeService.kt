@@ -145,7 +145,7 @@ class NodeService @Autowired constructor(
                 .orOperator(Criteria.where("fullPath").regex("^$escapedPath/"), Criteria.where("fullPath").`is`(formattedPath))
                 .and("deleted").`is`(null))
         logger.info("query: $query")
-        val update = Update().set("deleted", LocalDateTime.now())
+        val update = Update.update("deleted", LocalDateTime.now())
                 .set("lastModifiedDate", LocalDateTime.now())
                 .set("lastModifiedBy", modifiedBy)
 
