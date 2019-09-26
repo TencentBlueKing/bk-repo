@@ -6,10 +6,12 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.Repository
 import com.tencent.bkrepo.repository.repository.RepoRepository
+import com.tencent.bkrepo.repository.repository.StorageCredentialsRepository
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,13 +31,18 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Service
 class RepositoryService @Autowired constructor(
-    private val repoRepository: RepoRepository,
-    private val nodeService: NodeService,
-    private val mongoTemplate: MongoTemplate
+        private val repoRepository: RepoRepository,
+        private val credentialsRepository: StorageCredentialsRepository,
+        private val nodeService: NodeService,
+        private val mongoTemplate: MongoTemplate
 ) {
     fun getDetailById(id: String): Repository {
-
-        return toRepository(repoRepository.findByIdOrNull(id)) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
+        val repository = toRepository(repoRepository.findByIdOrNull(id)) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
+        credentialsRepository.findByRepositoryId(repository.id)?.let {
+            repository.storageType = it.type
+            repository.storageCredentials = it.credentials
+        }
+        return repository
     }
 
     fun list(projectId: String): List<Repository> {
@@ -73,7 +80,25 @@ class RepositoryService @Autowired constructor(
                 lastModifiedDate = LocalDateTime.now()
             )
         }
-        return IdValue(repoRepository.insert(tRepository).id!!)
+        val idValue = IdValue(repoRepository.insert(tRepository).id!!)
+
+        if(repoCreateRequest.storageType != null && repoCreateRequest.storageCredentials != null) {
+            val tStorageCredentials = repoCreateRequest.let{
+                TStorageCredentials(
+                        repositoryId = idValue.id,
+                        type = it.storageType!!,
+                        credentials = it.storageCredentials!!,
+                        createdBy = it.createdBy,
+                        createdDate = LocalDateTime.now(),
+                        lastModifiedBy = it.createdBy,
+                        lastModifiedDate = LocalDateTime.now()
+                )
+            }
+
+            credentialsRepository.insert(tStorageCredentials)
+        }
+
+        return idValue
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -100,7 +125,8 @@ class RepositoryService @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     fun deleteById(id: String) {
         repoRepository.deleteById(id)
-        nodeService.deleteByRepoId(id)
+        nodeService.deleteByRepositoryId(id)
+        credentialsRepository.deleteByRepositoryId(id)
     }
 
     companion object {

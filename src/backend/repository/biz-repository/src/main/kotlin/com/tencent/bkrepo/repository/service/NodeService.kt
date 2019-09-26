@@ -156,7 +156,7 @@ class NodeService @Autowired constructor(
      * 删除某个仓库下所有文件
      * 因为仓库已经删除，因此永久删除文件，不做保留
      */
-    fun deleteByRepoId(repoId: String) {
+    fun deleteByRepositoryId(repoId: String) {
         mongoTemplate.remove(Query(Criteria.where("repositoryId").`is`(repoId)), TNode::class.java)
     }
 
