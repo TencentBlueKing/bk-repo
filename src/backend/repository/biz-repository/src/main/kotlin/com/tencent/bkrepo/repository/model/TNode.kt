@@ -22,6 +22,7 @@ data class TNode(
     var fullPath: String,
     var repositoryId: String,
     var size: Long,
+    var expired: Long,
     var sha256: String? = null,
     var deleted: LocalDateTime? = null
 
