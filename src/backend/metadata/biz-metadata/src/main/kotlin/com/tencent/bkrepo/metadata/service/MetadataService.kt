@@ -51,7 +51,7 @@ class MetadataService @Autowired constructor(
     }
 
     fun delete(metadataDeleteRequest: MetadataDeleteRequest) {
-        metadataDeleteRequest.apply {
+        metadataDeleteRequest.run {
             if(this.deleteAll) {
                 metadataRepository.deleteByNodeId(this.nodeId)
             } else {
