@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.common.storage.local
 
+import com.tencent.bkrepo.common.storage.core.ClientCredentials
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 
@@ -10,10 +12,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty
  * @date: 2019-09-16
  */
 @ConfigurationProperties("storage.local")
-class LocalStorageProperties {
-
-    var enabled: Boolean = false
+class LocalStorageProperties: StorageProperties() {
 
     @NestedConfigurationProperty
-    var credentials = LocalStorageCredentials()
+    override var credentials: ClientCredentials = LocalStorageCredentials()
 }

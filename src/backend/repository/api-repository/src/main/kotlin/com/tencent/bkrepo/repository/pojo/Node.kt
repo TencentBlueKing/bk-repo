@@ -35,5 +35,8 @@ data class Node(
     @ApiModelProperty("文件sha256")
     val sha256: String? = null,
     @ApiModelProperty("所属仓库id")
-    val repositoryId: String
+    val repositoryId: String,
+
+    @ApiModelProperty("文件分块列表")
+    var fileBlockList: List<FileBlock>? = null
 )

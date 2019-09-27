@@ -21,9 +21,13 @@ data class NodeCreateRequest(
     val repositoryId: String,
     @ApiModelProperty("创建者")
     val createdBy: String,
+    @ApiModelProperty("文件过期时间,单位秒。小于等于0则永久存放")
+    val expired: Long = 0,
     @ApiModelProperty("文件大小，单位byte")
     val size: Long? = null,
     @ApiModelProperty("文件sha256")
-    val sha256: String? = null
+    val sha256: String? = null,
+    @ApiModelProperty("分块信息列表")
+    val blockList: List<FileBlock>? = null
 
 )

@@ -18,6 +18,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import org.apache.http.HttpStatus
+import java.io.File
 
 /**
  * tencent inner cos 文件存储实现类
@@ -27,8 +28,8 @@ import org.apache.http.HttpStatus
  */
 class InnerCosFileStorage(
     locateStrategy: LocateStrategy,
-    defaultCredentials: InnerCosCredentials
-) : AbstractFileStorage<InnerCosCredentials, InnerCosClient>(locateStrategy, defaultCredentials) {
+    properties: InnerCosProperties
+) : AbstractFileStorage<InnerCosCredentials, InnerCosClient>(locateStrategy, properties) {
 
     private val executor = ThreadPoolExecutor(100, 200, 5L, TimeUnit.SECONDS,
             LinkedBlockingQueue(1024), ThreadFactoryBuilder().setNameFormat("innercos-storage-uploader-pool-%d").build(),
@@ -45,6 +46,16 @@ class InnerCosFileStorage(
         super.onClientRemoval(credentials, client)
     }
 
+    override fun store(path: String, filename: String, file: File, client: InnerCosClient) {
+        // 支持根据文件的大小自动选择单文件上传或者分块上传
+        val transferManager = TransferManager(client.cosClient, executor)
+        val putObjectRequest = PutObjectRequest(client.bucketName, filename, file)
+        val upload = transferManager.upload(putObjectRequest)
+        // 等待传输结束
+        upload.waitForCompletion()
+        transferManager.shutdownNow()
+    }
+
     override fun store(path: String, filename: String, inputStream: InputStream, client: InnerCosClient) {
         val fileSize = inputStream.available().toLong()
         // 支持根据文件的大小自动选择单文件上传或者分块上传
@@ -53,7 +64,6 @@ class InnerCosFileStorage(
         val putObjectRequest = PutObjectRequest(client.bucketName, filename, inputStream, objectMetadata)
         val upload = transferManager.upload(putObjectRequest)
         // 等待传输结束
-        upload.waitForUploadResult()
         upload.waitForCompletion()
         transferManager.shutdownNow()
     }

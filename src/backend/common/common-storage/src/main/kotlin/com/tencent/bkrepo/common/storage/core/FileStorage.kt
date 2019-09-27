@@ -10,25 +10,25 @@ import java.io.InputStream
  * @author: carrypan
  * @date: 2019-09-09
  */
-interface FileStorage<Credentials, Client> {
+interface FileStorage {
 
     /**
      * 存储文件。文件存储完成后inputStream不会关闭，由调用方关闭
      */
-    fun store(hash: String, inputStream: InputStream, credentials: Credentials? = null)
+    fun store(hash: String, inputStream: InputStream, credentials: ClientCredentials? = null)
 
     /**
      * 加载文件。记住InputStream用完后关闭
      */
-    fun load(hash: String, credentials: Credentials? = null): InputStream?
+    fun load(hash: String, credentials: ClientCredentials? = null): InputStream?
 
     /**
      * 删除文件
      */
-    fun delete(hash: String, credentials: Credentials? = null)
+    fun delete(hash: String, credentials: ClientCredentials? = null)
 
     /**
      * 判断是否存在
      */
-    fun exist(hash: String, credentials: Credentials? = null): Boolean
+    fun exist(hash: String, credentials: ClientCredentials? = null): Boolean
 }

@@ -27,6 +27,10 @@ data class RepoCreateRequest(
     @ApiModelProperty("简要描述")
     val description: String? = null,
     @ApiModelProperty("扩展信息")
-    val extension: Any? = null
+    val extension: Any? = null,
+    @ApiModelProperty("存储类型")
+    val storageType: String? = null,
+    @ApiModelProperty("存储身份信息")
+    val storageCredentials: Any? = null
 
 )

@@ -3,6 +3,8 @@ package com.tencent.bkrepo.metadata.api
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.metadata.constant.SERVICE_NAME
 import com.tencent.bkrepo.metadata.pojo.Metadata
+import com.tencent.bkrepo.metadata.pojo.MetadataDeleteRequest
+import com.tencent.bkrepo.metadata.pojo.MetadataUpsertRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -11,7 +13,6 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
@@ -40,33 +41,17 @@ interface MetadataResource {
         @PathVariable nodeId: String
     ): Response<List<Metadata>>
 
-    @ApiOperation("创建元数据")
-    @PostMapping
-    fun create(
+    @ApiOperation("创建/更新元数据列表")
+    @PostMapping("/upsert")
+    fun upsert(
         @ApiParam(value = "元数据信息")
-        @RequestBody repository: Metadata
-    ): Response<Metadata>
-
-    @ApiOperation("创建元数据列表")
-    @PostMapping("/list")
-    fun create(
-        @ApiParam(value = "元数据信息")
-        @RequestBody repository: List<Metadata>
-    ): Response<List<Metadata>>
-
-    @ApiOperation("修改元数据")
-    @PutMapping("/{id}")
-    fun update(
-        @ApiParam(value = "元数据id")
-        @PathVariable id: String,
-        @ApiParam(value = "元数据信息")
-        @RequestBody repository: Metadata
-    ): Response<Boolean>
+        @RequestBody metadataUpsertRequest: MetadataUpsertRequest
+    ): Response<Void>
 
     @ApiOperation("删除元数据")
-    @DeleteMapping("/{id}")
+    @DeleteMapping()
     fun delete(
         @ApiParam(value = "元数据id")
-        @PathVariable id: String
-    ): Response<Boolean>
+        @RequestBody metadataDeleteRequest: MetadataDeleteRequest
+    ): Response<Void>
 }

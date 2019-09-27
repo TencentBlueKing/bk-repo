@@ -12,12 +12,12 @@ import org.springframework.data.mongodb.core.mapping.Document
 @Document("storage_credentials")
 data class TStorageCredentials(
     var id: String? = null,
-    var createdBy: String? = null,
-    var createdDate: LocalDateTime? = null,
-    var lastModifiedBy: String? = null,
-    var lastModifiedDate: LocalDateTime? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
 
-    var repositoryId: String? = null,
-    var type: String? = null,
-    var credentials: Any? = null
+    var repositoryId: String,
+    var type: String,
+    var credentials: Any
 )

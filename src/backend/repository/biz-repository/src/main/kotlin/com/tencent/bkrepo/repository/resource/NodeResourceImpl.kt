@@ -25,6 +25,10 @@ class NodeResourceImpl @Autowired constructor(
         return Response.success(nodeService.getDetailById(id))
     }
 
+    override fun detail(repositoryId: String, fullPath: String): Response<Node> {
+        return Response.success(nodeService.getDetailByFullPath(repositoryId, fullPath))
+    }
+
     override fun list(repositoryId: String, path: String): Response<List<Node>> {
         return Response.success(nodeService.list(repositoryId, path))
     }

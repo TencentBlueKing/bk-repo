@@ -4,26 +4,21 @@ import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.mapping.Document
 
 /**
- * 资源模型
+ * 文件分块信息
  *
  * @author: carrypan
- * @date: 2019-09-10
+ * @date: 2019-09-27
  */
-@Document("node")
-data class TNode(
+@Document("file_block")
+data class TFileBlock(
     var id: String? = null,
     var createdBy: String,
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime,
-    var folder: Boolean,
-    var path: String,
-    var name: String,
-    var fullPath: String,
-    var repositoryId: String,
-    var size: Long,
-    var expired: Long,
-    var sha256: String? = null,
-    var deleted: LocalDateTime? = null
 
+    var index: Int,
+    var size: Long,
+    var sha256: String,
+    var nodeId: String
 )
