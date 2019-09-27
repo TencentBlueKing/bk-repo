@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.model
 
+import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
 import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.mapping.Document
 
@@ -11,17 +12,18 @@ import org.springframework.data.mongodb.core.mapping.Document
  */
 @Document("repository")
 data class TRepository(
-    val id: String,
-    val createdBy: String,
-    val createdDate: LocalDateTime,
-    val lastModifiedBy: String,
-    val lastModifiedDate: LocalDateTime,
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
 
-    val name: String,
-    val type: String,
-    val category: String,
-    val public: Boolean,
-    val description: String,
-    val extension: Any,
-    val projectId: String
+    var name: String,
+    var type: String,
+    var category: RepositoryCategoryEnum,
+    var public: Boolean,
+    var projectId: String,
+    var description: String? = null,
+    var extension: Any? = null
+
 )

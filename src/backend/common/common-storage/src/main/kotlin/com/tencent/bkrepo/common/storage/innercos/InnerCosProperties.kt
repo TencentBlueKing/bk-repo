@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.common.storage.innercos
 
+import com.tencent.bkrepo.common.storage.core.ClientCredentials
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.NestedConfigurationProperty
 
 /**
  * inner cos 配置属性
@@ -9,15 +12,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties
  * @date: 2019-09-16
  */
 @ConfigurationProperties("storage.innercos")
-class InnerCosProperties {
+class InnerCosProperties: StorageProperties() {
 
     var enabled: Boolean = false
 
-    lateinit var appId: String
-    lateinit var secretId: String
-    lateinit var secretKey: String
-    lateinit var host: String
-    lateinit var region: String
-    lateinit var bucket: String
-
+    @NestedConfigurationProperty
+    override var credentials: ClientCredentials = InnerCosCredentials()
 }

@@ -12,7 +12,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("仓库信息")
 data class Repository(
     @ApiModelProperty("仓库id")
-    val id: String?,
+    val id: String,
     @ApiModelProperty("仓库名称")
     val name: String,
     @ApiModelProperty("仓库类型")
@@ -26,5 +26,9 @@ data class Repository(
     @ApiModelProperty("扩展信息")
     val extension: Any?,
     @ApiModelProperty("所属项目id")
-    val projectId: String
+    val projectId: String,
+    @ApiModelProperty("存储类型")
+    var storageType: String? = null,
+    @ApiModelProperty("存储身份信息")
+    var storageCredentials: Any? = null
 )

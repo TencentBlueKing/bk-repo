@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.demo.api
 
+import com.tencent.bkrepo.demo.constant.SERVICE_NAME
 import com.tencent.bkrepo.demo.pojo.User
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 
 @Api("测试接口")
-@FeignClient(contextId = "userResource", value = "\${spring.application.name}")
+@FeignClient(SERVICE_NAME, contextId = "userResource")
 interface UserResource {
 
     @ApiOperation("get接口测试")

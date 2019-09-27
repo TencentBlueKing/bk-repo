@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document
  */
 @Document("metadata")
 data class TMetadata(
-    val id: String,
+    val id: String? = null,
     val createdBy: String,
     val createdDate: LocalDateTime,
     val lastModifiedBy: String,
@@ -19,5 +19,5 @@ data class TMetadata(
 
     val key: String,
     val value: Any,
-    val resourceId: String
+    val nodeId: String
 )
