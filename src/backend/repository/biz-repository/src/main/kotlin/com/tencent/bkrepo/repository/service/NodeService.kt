@@ -6,11 +6,13 @@ import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXI
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.Node
 import com.tencent.bkrepo.repository.pojo.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.NodeUpdateRequest
+import com.tencent.bkrepo.repository.repository.FileBlockRepository
 import com.tencent.bkrepo.repository.repository.NodeRepository
 import com.tencent.bkrepo.repository.util.NodeUtils
 import com.tencent.bkrepo.repository.util.NodeUtils.combineFullPath
@@ -22,6 +24,7 @@ import com.tencent.bkrepo.repository.util.NodeUtils.parseDirName
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFileName
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.Example
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -41,10 +44,27 @@ import java.time.LocalDateTime
 @Service
 class NodeService @Autowired constructor(
     private val nodeRepository: NodeRepository,
+    private val fileBlockRepository: FileBlockRepository,
     private val mongoTemplate: MongoTemplate
 ) {
     fun getDetailById(id: String): Node {
-        return toNode(nodeRepository.findByIdOrNull(id)) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
+        val node = toNode(nodeRepository.findByIdAndDeletedIsNull(id)) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
+        fileBlockRepository.findByNodeId(node.id).let{ node.fileBlockList = it }
+
+        return node
+    }
+
+    fun getDetailByFullPath(repositoryId: String, fullPath: String): Node {
+        val tNode = mongoTemplate.findOne(Query(
+                Criteria.where("repositoryId").`is`(repositoryId)
+                        .and("fullPath").`is`(repositoryId)
+                        .and("deleted").`is`(null)
+        ), TNode::class.java)
+
+        val node = toNode(tNode) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
+        fileBlockRepository.findByNodeId(node.id).let{ node.fileBlockList = it }
+
+        return node
     }
 
     fun list(repositoryId: String, path: String): List<Node> {
@@ -81,7 +101,7 @@ class NodeService @Autowired constructor(
                 fullPath = combineFullPath(path, name),
                 repositoryId = it.repositoryId,
                 size = if (it.folder) 0 else it.size ?: 0,
-                sha256 = if (it.folder) null else it.sha256,
+                sha256 = if (it.folder || it.blockList == null) null else it.sha256,
                 createdBy = it.createdBy,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = it.createdBy,
@@ -93,8 +113,23 @@ class NodeService @Autowired constructor(
         node.takeUnless { exist(it.repositoryId, it.fullPath) } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
         // 判断父目录是否存在，不存在先创建
         mkdirs(node.repositoryId, node.path, nodeCreateRequest.createdBy)
+        // 保存节点
+        val idValue = IdValue(nodeRepository.insert(node).id!!)
+        // 保存分块信息
+        nodeCreateRequest.blockList?.map {
+            TFileBlock(
+                    index = it.index,
+                    size = it.size,
+                    sha256 = it.sha256,
+                    nodeId = idValue.id,
+                    createdBy = nodeCreateRequest.createdBy,
+                    createdDate = LocalDateTime.now(),
+                    lastModifiedBy = nodeCreateRequest.createdBy,
+                    lastModifiedDate = LocalDateTime.now()
+            )
+        }?.toList()?.run { fileBlockRepository.saveAll(this) }
 
-        return IdValue(nodeRepository.insert(node).id!!)
+        return idValue
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -113,7 +148,7 @@ class NodeService @Autowired constructor(
         }
 
         val newFullPath = combineFullPath(node.path, node.name)
-        // 如果path和name有变化，校验格式和唯一性
+        // 如果path和name有变化，校验唯一性
         if (node.fullPath != newFullPath) {
             takeIf { !exist(node.repositoryId, newFullPath) } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
             node.fullPath = newFullPath
@@ -156,6 +191,7 @@ class NodeService @Autowired constructor(
      * 删除某个仓库下所有文件
      * 因为仓库已经删除，因此永久删除文件，不做保留
      */
+    @Transactional(rollbackFor = [Throwable::class])
     fun deleteByRepositoryId(repoId: String) {
         mongoTemplate.remove(Query(Criteria.where("repositoryId").`is`(repoId)), TNode::class.java)
     }

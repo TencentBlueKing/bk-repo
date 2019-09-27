@@ -17,4 +17,5 @@ import org.springframework.stereotype.Repository
 interface NodeRepository : MongoRepository<TNode, String> {
     fun findByRepositoryIdAndPathAndDeletedIsNull(repositoryId: String, path: String): List<Node>
     fun findByRepositoryIdAndPathAndDeletedIsNull(repositoryId: String, path: String, pageRequest: PageRequest): Page<Node>
+    fun findByIdAndDeletedIsNull(id: String): TNode?
 }

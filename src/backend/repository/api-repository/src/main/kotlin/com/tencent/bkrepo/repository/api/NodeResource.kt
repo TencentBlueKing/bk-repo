@@ -31,11 +31,20 @@ import org.springframework.web.bind.annotation.RequestParam
 @RequestMapping("/service/resource")
 interface NodeResource {
 
-    @ApiOperation("查看节点详情")
+    @ApiOperation("根据id查看节点详情")
     @GetMapping("/{id}")
     fun detail(
         @ApiParam(value = "节点id", required = true)
         @PathVariable id: String
+    ): Response<Node>
+
+    @ApiOperation("根据路径查看节点详情")
+    @GetMapping("/{repositoryId}")
+    fun detail(
+            @ApiParam(value = "仓库id", required = true)
+            @PathVariable repositoryId: String,
+            @ApiParam(value = "节点完整路径", required = true)
+            @RequestParam fullPath: String
     ): Response<Node>
 
     @ApiOperation("列表查询指定目录下所有节点, 只返回一层深度的节点")

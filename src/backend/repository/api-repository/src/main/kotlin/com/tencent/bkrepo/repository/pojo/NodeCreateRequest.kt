@@ -24,6 +24,8 @@ data class NodeCreateRequest(
     @ApiModelProperty("文件大小，单位byte")
     val size: Long? = null,
     @ApiModelProperty("文件sha256")
-    val sha256: String? = null
+    val sha256: String? = null,
+    @ApiModelProperty("分块信息列表")
+    val blockList: List<FileBlock>? = null
 
 )
