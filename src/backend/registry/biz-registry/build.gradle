@@ -3,6 +3,9 @@ dependencies {
     api project(":common:common-client")
     api project(":common:common-api")
     api project(":common:common-storage")
+    // https://mvnrepository.com/artifact/javax.ws.rs/jsr311-api
+    compile group: 'javax.ws.rs', name: 'jsr311-api', version: '1.1.1'
+    compile group: 'org.projectlombok', name: 'lombok', version: '1.18.10'
     compile "com.squareup.okhttp3:okhttp"
 }
 

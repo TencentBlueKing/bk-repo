@@ -1,8 +1,8 @@
-package com.tencent.bkrepo.registry.manifest
+package com.tencent.bkrepo.registry.manifest2
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-class Platform() {
+class PlatformSpec() {
     var architecture: String = ""
     var os: String = ""
     @JsonProperty("os.version")
@@ -10,4 +10,5 @@ class Platform() {
     @JsonProperty("os.features")
     var osFeatures: List<String> = emptyList()
     var variant: String = ""
+    var features: List<String> = emptyList()
 }
