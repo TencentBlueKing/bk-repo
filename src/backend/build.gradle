@@ -38,7 +38,7 @@ allprojects {
         mavenLocal()
         maven { url MAVEN_REPO_URL }
         // for inner cos sdk
-        maven { url "http://maven.oa.com/nexus/content/groups/public/" }
+        maven { url "https://mirrors.tencent.com/repository/maven/tencent_public_snapshots/" }
         maven { url "https://repo.spring.io/libs-milestone" }
         mavenCentral()
         jcenter()
