@@ -31,10 +31,10 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Service
 class RepositoryService @Autowired constructor(
-        private val repoRepository: RepoRepository,
-        private val credentialsRepository: StorageCredentialsRepository,
-        private val nodeService: NodeService,
-        private val mongoTemplate: MongoTemplate
+    private val repoRepository: RepoRepository,
+    private val credentialsRepository: StorageCredentialsRepository,
+    private val nodeService: NodeService,
+    private val mongoTemplate: MongoTemplate
 ) {
     fun getDetailById(id: String): Repository {
         val repository = toRepository(repoRepository.findByIdOrNull(id)) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
@@ -82,8 +82,8 @@ class RepositoryService @Autowired constructor(
         }
         val idValue = IdValue(repoRepository.insert(tRepository).id!!)
 
-        if(repoCreateRequest.storageType != null && repoCreateRequest.storageCredentials != null) {
-            val tStorageCredentials = repoCreateRequest.let{
+        if (repoCreateRequest.storageType != null && repoCreateRequest.storageCredentials != null) {
+            val tStorageCredentials = repoCreateRequest.let {
                 TStorageCredentials(
                         repositoryId = idValue.id,
                         type = it.storageType!!,

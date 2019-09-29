@@ -49,7 +49,7 @@ internal class RepositoryServiceTest @Autowired constructor(
         assertEquals(0, repositoryService.list(projectId).size)
         val size = 20
         repeat(size) {
-            repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
+            i -> repositoryService.create(RepoCreateRequest(operator, "测试仓库$i", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
         }
         assertEquals(size, repositoryService.list(projectId).size)
     }
@@ -59,7 +59,7 @@ internal class RepositoryServiceTest @Autowired constructor(
         assertEquals(0, repositoryService.list(projectId).size)
         val size = 51L
         repeat(size.toInt()) {
-            repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
+            i -> repositoryService.create(RepoCreateRequest(operator, "测试仓库$i", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
         }
         var page = repositoryService.page(projectId, 0, 10)
         assertEquals(10, page.records.size)
@@ -120,7 +120,7 @@ internal class RepositoryServiceTest @Autowired constructor(
     @Test
     fun deleteById() {
         val idValue = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
-        val idValue2 = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
+        val idValue2 = repositoryService.create(RepoCreateRequest(operator, "测试仓库2", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
         repositoryService.deleteById(idValue.id)
         assertThrows<ErrorCodeException> { repositoryService.getDetailById(idValue.id) }
 

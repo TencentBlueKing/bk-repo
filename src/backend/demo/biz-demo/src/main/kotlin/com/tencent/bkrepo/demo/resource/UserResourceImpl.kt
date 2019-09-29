@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.demo.resource
 
 import com.tencent.bkrepo.common.storage.core.FileStorage
-import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.demo.api.UserResource
 import com.tencent.bkrepo.demo.pojo.User

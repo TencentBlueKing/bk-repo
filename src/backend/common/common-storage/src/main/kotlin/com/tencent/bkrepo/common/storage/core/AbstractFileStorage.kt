@@ -16,7 +16,7 @@ import java.io.InputStream
  * @author: carrypan
  * @date: 2019-09-09
  */
-abstract class AbstractFileStorage<Credentials: ClientCredentials, Client>(
+abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
     private val locateStrategy: LocateStrategy,
     private val properties: StorageProperties
 ) : FileStorage {
@@ -26,7 +26,7 @@ abstract class AbstractFileStorage<Credentials: ClientCredentials, Client>(
     private var localFileCache: LocalFileCache? = null
 
     init {
-        if(properties.clientCache.enabled) {
+        if (properties.clientCache.enabled) {
             clientCache = CacheBuilder.newBuilder()
                     .maximumSize(properties.clientCache.size)
                     .removalListener<Credentials, Client> { onClientRemoval(it.key, it.value) }
@@ -35,12 +35,12 @@ abstract class AbstractFileStorage<Credentials: ClientCredentials, Client>(
                     })
         }
 
-        if(properties.localCache.enabled) {
+        if (properties.localCache.enabled) {
             localFileCache = LocalFileCache(properties.localCache.path)
         }
-
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun getClient(clientCredentials: ClientCredentials?): Client {
         val credentials = (clientCredentials ?: properties.credentials) as Credentials
         return clientCache?.get(credentials) ?: createClient(credentials)
@@ -60,7 +60,6 @@ abstract class AbstractFileStorage<Credentials: ClientCredentials, Client>(
 
         delete(path, hash, getClient(credentials))
         localFileCache?.remove(path, hash)
-
     }
 
     override fun load(hash: String, credentials: ClientCredentials?): InputStream? {
@@ -73,14 +72,13 @@ abstract class AbstractFileStorage<Credentials: ClientCredentials, Client>(
                 inputStream
             }
         } ?: load(path, hash, getClient(credentials))
-
     }
 
     override fun exist(hash: String, credentials: ClientCredentials?): Boolean {
         val path = locateStrategy.locate(hash)
 
         return localFileCache?.run {
-            this.get(path, hash)?.let{ true }
+            this.get(path, hash)?.let { true }
         } ?: exist(path, hash, getClient(credentials))
     }
 
@@ -96,11 +94,9 @@ abstract class AbstractFileStorage<Credentials: ClientCredentials, Client>(
         // do nothing
     }
 
-
     protected abstract fun store(path: String, filename: String, inputStream: InputStream, client: Client)
     protected abstract fun store(path: String, filename: String, file: File, client: Client)
     protected abstract fun delete(path: String, filename: String, client: Client)
     protected abstract fun load(path: String, filename: String, client: Client): InputStream?
     protected abstract fun exist(path: String, filename: String, client: Client): Boolean
-
 }

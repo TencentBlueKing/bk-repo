@@ -4,14 +4,13 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 /**
- * 分块上传预检结果
+ * 取消分块上传请求，服务器释放资源
  *
  * @author: carrypan
  * @date: 2019-09-27
  */
-@ApiModel("分块上传预检结果")
-data class UploadPrecheckResult(
+@ApiModel("取消分块上传请求")
+data class UploadAbortRequest(
     @ApiModelProperty("分块上传事物id")
     val uploadId: String
-
 )

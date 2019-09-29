@@ -22,9 +22,9 @@ import com.tencent.bkrepo.repository.util.NodeUtils.formatPath
 import com.tencent.bkrepo.repository.util.NodeUtils.isRootDir
 import com.tencent.bkrepo.repository.util.NodeUtils.parseDirName
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFileName
+import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.domain.Example
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -33,7 +33,6 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 
 /**
  * 仓库service
@@ -49,7 +48,7 @@ class NodeService @Autowired constructor(
 ) {
     fun getDetailById(id: String): Node {
         val node = toNode(nodeRepository.findByIdAndDeletedIsNull(id)) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
-        fileBlockRepository.findByNodeId(node.id).let{ node.fileBlockList = it }
+        fileBlockRepository.findByNodeId(node.id).let { node.fileBlockList = it }
 
         return node
     }
@@ -62,7 +61,7 @@ class NodeService @Autowired constructor(
         ), TNode::class.java)
 
         val node = toNode(tNode) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
-        fileBlockRepository.findByNodeId(node.id).let{ node.fileBlockList = it }
+        fileBlockRepository.findByNodeId(node.id).let { node.fileBlockList = it }
 
         return node
     }
@@ -79,7 +78,7 @@ class NodeService @Autowired constructor(
     fun exist(repositoryId: String, fullPath: String): Boolean {
         val formattedPath = formatFullPath(fullPath)
         // 如果为根目录，直接判断仓库是否存在。仓库存在则根目录存在
-        if(isRootDir(formattedPath)) {
+        if (isRootDir(formattedPath)) {
             return mongoTemplate.findById(repositoryId, TRepository::class.java) != null
         }
 
@@ -102,7 +101,7 @@ class NodeService @Autowired constructor(
                 repositoryId = it.repositoryId,
                 expires = if (it.folder) 0 else it.expires,
                 size = if (it.folder) 0 else it.size ?: 0,
-                sha256 = if (it.folder || it.blockList == null) null else it.sha256,
+                sha256 = if (it.folder) null else it.sha256,
                 createdBy = it.createdBy,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = it.createdBy,
