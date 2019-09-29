@@ -3,9 +3,9 @@ package com.tencent.bkrepo.registry.v2.model
 import org.apache.commons.lang.StringUtils
 
 class DockerDigest(digest: String) {
-    var alg: String? = null
+    var alg: String = ""
         private set
-    var hex: String? = null
+    var hex: String = ""
         private set
 
     init {
@@ -17,6 +17,14 @@ class DockerDigest(digest: String) {
 
     fun filename(): String {
         return this.alg + "__" + this.hex
+    }
+
+    fun getDigestAlg(): String {
+        return this.alg
+    }
+
+    fun getDigestHex(): String {
+        return this.hex
     }
 
     override fun toString(): String {
