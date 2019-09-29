@@ -1,12 +1,10 @@
 package com.tencent.bkrepo.demo
 
 import com.tencent.bkrepo.common.storage.local.LocalFileStorage
-import com.tencent.bkrepo.common.storage.local.LocalStorageCredentials
 import com.tencent.bkrepo.common.storage.local.LocalStorageProperties
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 
@@ -31,11 +29,6 @@ class LocalFileStorageTest {
     @BeforeEach
     fun beforeEach() {
         fileStorage = LocalFileStorage(locateStrategy, properties)
-    }
-
-    @Test
-    fun uploadTest() {
-        fileStorage!!.createClient(LocalStorageCredentials().apply { this.path = "/" })
     }
 
 }

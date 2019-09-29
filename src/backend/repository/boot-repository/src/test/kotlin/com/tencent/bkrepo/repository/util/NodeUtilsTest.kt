@@ -2,7 +2,8 @@ package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_DIR
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -71,8 +72,8 @@ internal class NodeUtilsTest {
 
     @Test
     fun escapeRegex() {
-        assertEquals("""\\.\\*""", NodeUtils.escapeRegex(".*"))
-        assertEquals("""/\\.\\*\\|\\^/a/""", NodeUtils.escapeRegex("/.*|^/a/"))
+        assertEquals("""\.\*""", NodeUtils.escapeRegex(".*"))
+        assertEquals("""/\.\*\|\^/a/""", NodeUtils.escapeRegex("/.*|^/a/"))
     }
 
     @Test

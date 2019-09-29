@@ -8,6 +8,6 @@ import com.tencent.bkrepo.common.storage.core.ClientCredentials
  * @author: carrypan
  * @date: 2019-09-17
  */
-class LocalStorageCredentials: ClientCredentials {
+class LocalStorageCredentials : ClientCredentials {
     var path: String = "/data/upload"
 }

@@ -25,8 +25,8 @@ import java.time.LocalDateTime
  */
 @Service
 class MetadataService @Autowired constructor(
-        private val metadataRepository: MetadataRepository,
-        private val mongoTemplate: MongoTemplate
+    private val metadataRepository: MetadataRepository,
+    private val mongoTemplate: MongoTemplate
 ) {
     fun getDetailById(id: String): Metadata {
         return toNode(metadataRepository.findByIdOrNull(id)) ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND)
@@ -38,7 +38,7 @@ class MetadataService @Autowired constructor(
 
     fun upsert(metadataUpsertRequest: MetadataUpsertRequest) {
         with(metadataUpsertRequest) {
-            this.dataMap.forEach{
+            this.dataMap.forEach {
                 val update = Update.update("value", LocalDateTime.now())
                         .set("lastModifiedDate", LocalDateTime.now())
                         .set("lastModifiedBy", this.operateBy)
@@ -47,12 +47,11 @@ class MetadataService @Autowired constructor(
                 mongoTemplate.upsert(Query(Criteria.where("nodeId").`is`(this.nodeId).and("key").`is`(it.key)), update, TMetadata::class.java)
             }
         }
-
     }
 
     fun delete(metadataDeleteRequest: MetadataDeleteRequest) {
         metadataDeleteRequest.run {
-            if(this.deleteAll) {
+            if (this.deleteAll) {
                 metadataRepository.deleteByNodeId(this.nodeId)
             } else {
                 this.metadataIdList?.let { metadataRepository.deleteByIdIn(it) }

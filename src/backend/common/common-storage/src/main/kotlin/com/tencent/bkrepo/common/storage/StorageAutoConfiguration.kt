@@ -34,7 +34,6 @@ class StorageAutoConfiguration {
     @ConditionalOnProperty(prefix = "storage.innercos", name = ["enabled"], havingValue = "true")
     fun innerCosFileStorage(innerCosProperties: InnerCosProperties) = InnerCosFileStorage(locateStrategy, innerCosProperties)
 
-
     @Bean
     @ConditionalOnMissingBean(FileStorage::class)
     fun localFileStorage(localStorageProperties: LocalStorageProperties) = LocalFileStorage(locateStrategy, localStorageProperties)

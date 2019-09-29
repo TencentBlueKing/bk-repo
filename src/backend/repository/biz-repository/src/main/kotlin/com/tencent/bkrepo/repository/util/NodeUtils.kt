@@ -32,7 +32,7 @@ object NodeUtils {
      */
     private const val FILE_SEPARATOR = "/"
 
-    private const val FILE_SEPARATOR_CHAR= '/'
+    private const val FILE_SEPARATOR_CHAR = '/'
 
     /**
      * 根目录
@@ -43,7 +43,7 @@ object NodeUtils {
      * 格式化目录名称, 返回格式/a/b/c/，根目录返回/
      */
     fun formatPath(input: String): String {
-        if(isRootDir(input)) return ROOT_DIR
+        if (isRootDir(input)) return ROOT_DIR
 
         val nameList = input.split(FILE_SEPARATOR).filter { it.isNotBlank() }.map { it.trim() }.toList()
         val builder = StringBuilder()
@@ -55,7 +55,7 @@ object NodeUtils {
      * 格式化全路径名称, 返回格式/a/b/c，根目录返回/
      */
     fun formatFullPath(input: String): String {
-        if(isRootDir(input)) return ROOT_DIR
+        if (isRootDir(input)) return ROOT_DIR
 
         val nameList = input.split(FILE_SEPARATOR).filter { it.isNotBlank() }.map { it.trim() }.toList()
         val builder = StringBuilder()
@@ -102,7 +102,7 @@ object NodeUtils {
      * 根据路径列表和文件名组合全路径，返回格式/a/b/c/abc.txt
      */
     fun combineFullPath(path: String, name: String): String {
-        return if(!path.endsWith(FILE_SEPARATOR)) path + FILE_SEPARATOR + name else path + name
+        return if (!path.endsWith(FILE_SEPARATOR)) path + FILE_SEPARATOR + name else path + name
     }
 
     /**
@@ -110,7 +110,7 @@ object NodeUtils {
      */
     fun getParentPath(path: String): String {
         val index = path.trimEnd(FILE_SEPARATOR_CHAR).lastIndexOf(FILE_SEPARATOR)
-        return if(isRootDir(path) || index <= 0) ROOT_DIR else path.substring(0, index + 1)
+        return if (isRootDir(path) || index <= 0) ROOT_DIR else path.substring(0, index + 1)
     }
 
     /**
@@ -118,7 +118,7 @@ object NodeUtils {
      */
     fun getName(path: String): String {
         val trimmedPath = path.trimEnd(FILE_SEPARATOR_CHAR)
-        return if(isRootDir(trimmedPath)) "" else trimmedPath.substring(trimmedPath.lastIndexOf(FILE_SEPARATOR) + 1)
+        return if (isRootDir(trimmedPath)) "" else trimmedPath.substring(trimmedPath.lastIndexOf(FILE_SEPARATOR) + 1)
     }
 
     /**
@@ -130,14 +130,13 @@ object NodeUtils {
 
     fun escapeRegex(input: String): String {
         var escapedString = input.trim()
-        if(escapedString.isNotBlank()) {
+        if (escapedString.isNotBlank()) {
             keywordList.forEach {
-                if(escapedString.contains(it)) {
+                if (escapedString.contains(it)) {
                     escapedString = escapedString.replace(it, "\\$it")
                 }
             }
         }
         return escapedString
     }
-
 }

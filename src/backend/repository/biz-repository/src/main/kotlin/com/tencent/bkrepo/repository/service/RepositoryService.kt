@@ -12,7 +12,6 @@ import com.tencent.bkrepo.repository.pojo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.Repository
 import com.tencent.bkrepo.repository.repository.RepoRepository
 import com.tencent.bkrepo.repository.repository.StorageCredentialsRepository
-import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
@@ -22,6 +21,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 仓库service
@@ -31,10 +31,10 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Service
 class RepositoryService @Autowired constructor(
-        private val repoRepository: RepoRepository,
-        private val credentialsRepository: StorageCredentialsRepository,
-        private val nodeService: NodeService,
-        private val mongoTemplate: MongoTemplate
+    private val repoRepository: RepoRepository,
+    private val credentialsRepository: StorageCredentialsRepository,
+    private val nodeService: NodeService,
+    private val mongoTemplate: MongoTemplate
 ) {
     fun getDetailById(id: String): Repository {
         val repository = toRepository(repoRepository.findByIdOrNull(id)) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
@@ -82,8 +82,8 @@ class RepositoryService @Autowired constructor(
         }
         val idValue = IdValue(repoRepository.insert(tRepository).id!!)
 
-        if(repoCreateRequest.storageType != null && repoCreateRequest.storageCredentials != null) {
-            val tStorageCredentials = repoCreateRequest.let{
+        if (repoCreateRequest.storageType != null && repoCreateRequest.storageCredentials != null) {
+            val tStorageCredentials = repoCreateRequest.let {
                 TStorageCredentials(
                         repositoryId = idValue.id,
                         type = it.storageType!!,

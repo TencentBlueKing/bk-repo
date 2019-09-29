@@ -12,7 +12,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty
  * @date: 2019-09-16
  */
 @ConfigurationProperties("storage.innercos")
-class InnerCosProperties: StorageProperties() {
+class InnerCosProperties : StorageProperties() {
 
     var enabled: Boolean = false
 

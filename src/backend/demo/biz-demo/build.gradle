@@ -1,8 +1,8 @@
 dependencies {
     api project(":common:common-service")
-    implementation project(":common:common-client")
-    implementation project(":common:common-mongo")
-    implementation project(":common:common-storage")
-    implementation project(":demo:api-demo")
+    api project(":common:common-storage")
+    api project(":common:common-mongo")
+    api project(":demo:api-demo")
     
+    implementation project(":common:common-client")
 }

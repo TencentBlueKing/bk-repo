@@ -4,14 +4,15 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 /**
- * 分块上传预检结果
+ * 完成分块上传请求，服务器释放资源
  *
  * @author: carrypan
  * @date: 2019-09-27
  */
-@ApiModel("分块上传预检结果")
-data class UploadPrecheckResult(
+@ApiModel("完成分块上传请求")
+data class UploadCompleteRequest(
     @ApiModelProperty("分块上传事物id")
-    val uploadId: String
-
+    val uploadId: String,
+    @ApiModelProperty("分块数量")
+    val blockCount: Int
 )

@@ -12,6 +12,6 @@ import org.springframework.stereotype.Repository
  */
 @Repository
 interface StorageCredentialsRepository : MongoRepository<TStorageCredentials, String> {
-    fun findByRepositoryId(repositoryId: String): TStorageCredentials
+    fun findByRepositoryId(repositoryId: String): TStorageCredentials?
     fun deleteByRepositoryId(repositoryId: String)
 }
