@@ -30,5 +30,13 @@ include ":metadata:api-metadata"
 include ":metadata:biz-metadata"
 include ":metadata:boot-metadata"
 
+include ":auth"
+include ":auth:api-auth"
+include ":auth:biz-auth"
+include ":auth:boot-auth"
 
 include ":boot-assembly"
+
+
+
+
