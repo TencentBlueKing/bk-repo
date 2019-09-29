@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class MetadataResourceImpl @Autowired constructor(
-        private val metadataService: MetadataService
+    private val metadataService: MetadataService
 ) : MetadataResource {
     override fun detail(id: String): Response<Metadata> {
         return Response.success(metadataService.getDetailById(id))

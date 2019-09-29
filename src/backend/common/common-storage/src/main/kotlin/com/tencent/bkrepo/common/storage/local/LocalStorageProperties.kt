@@ -12,7 +12,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty
  * @date: 2019-09-16
  */
 @ConfigurationProperties("storage.local")
-class LocalStorageProperties: StorageProperties() {
+class LocalStorageProperties : StorageProperties() {
 
     @NestedConfigurationProperty
     override var credentials: ClientCredentials = LocalStorageCredentials()

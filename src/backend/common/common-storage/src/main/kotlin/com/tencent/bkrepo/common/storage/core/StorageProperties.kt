@@ -40,5 +40,3 @@ abstract class StorageProperties {
                 var size: Long = 0L
         }
 }
-
-

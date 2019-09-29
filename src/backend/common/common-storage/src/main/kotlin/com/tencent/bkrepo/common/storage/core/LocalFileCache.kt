@@ -25,7 +25,7 @@ class LocalFileCache(private val cachePath: String) {
     fun get(path: String, filename: String): File? {
         val subDirectory = File(cachePath, path)
         val file = File(subDirectory, filename)
-        return if(file.exists() && file.isFile) file else null
+        return if (file.exists() && file.isFile) file else null
     }
 
     fun remove(path: String, filename: String) {

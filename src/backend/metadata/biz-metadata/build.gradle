@@ -1,5 +1,5 @@
 dependencies {
     api project(":common:common-service")
     api project(":common:common-mongo")
-    implementation project(":metadata:api-metadata")
+    api project(":metadata:api-metadata")
 }

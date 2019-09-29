@@ -8,7 +8,7 @@ import com.tencent.bkrepo.common.storage.core.ClientCredentials
  * @author: carrypan
  * @date: 2019-09-17
  */
-class InnerCosCredentials: ClientCredentials{
+class InnerCosCredentials : ClientCredentials {
     var secretId: String? = null
     var secretKey: String? = null
     var region: String? = null
