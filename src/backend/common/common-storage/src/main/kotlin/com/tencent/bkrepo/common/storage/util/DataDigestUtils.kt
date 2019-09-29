@@ -2,7 +2,7 @@ package com.tencent.bkrepo.common.storage.util
 
 import java.security.MessageDigest
 
-object  DataDigestUtils  {
+object DataDigestUtils {
     /**
      * md5加密字符串
      * md5使用后转成16进制变成32个字节
@@ -10,19 +10,18 @@ object  DataDigestUtils  {
     fun md5FromStr(str: String): String {
         val digest = MessageDigest.getInstance("MD5")
         val result = digest.digest(str.toByteArray())
-        //没转16进制之前是16位
+        // 没转16进制之前是16位
         println("result${result.size}")
-        //转成16进制后是32字节
+        // 转成16进制后是32字节
         return toHex(result)
     }
-
 
     fun md5FromByteArray(byteArr: ByteArray): String {
         val digest = MessageDigest.getInstance("MD5")
         val result = digest.digest(byteArr)
-        //没转16进制之前是16位
+        // 没转16进制之前是16位
         println("result${result.size}")
-        //转成16进制后是32字节
+        // 转成16进制后是32字节
         return toHex(result)
     }
 
@@ -39,23 +38,23 @@ object  DataDigestUtils  {
             }
             this.toString()
         }
-        //转成16进制后是32字节
+        // 转成16进制后是32字节
         return result
     }
 
-    fun sha1FromStr(str:String): String {
+    fun sha1FromStr(str: String): String {
         val digest = MessageDigest.getInstance("SHA-1")
         val result = digest.digest(str.toByteArray())
         return toHex(result)
     }
 
-    fun sha1FromByteArray(byteArr:ByteArray): String {
+    fun sha1FromByteArray(byteArr: ByteArray): String {
         val digest = MessageDigest.getInstance("SHA-1")
         val result = digest.digest(byteArr)
         return toHex(result)
     }
 
-    fun sha256FromByteArray(byteArr:ByteArray): String {
+    fun sha256FromByteArray(byteArr: ByteArray): String {
         val digest = MessageDigest.getInstance("SHA-256")
         val result = digest.digest(byteArr)
         return toHex(result)

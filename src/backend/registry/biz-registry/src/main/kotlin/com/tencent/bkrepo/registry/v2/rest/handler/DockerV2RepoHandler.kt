@@ -19,7 +19,7 @@ interface DockerV2RepoHandler {
 //
 //    fun getManifest(var1: String, var2: String): Response
 //
-//    fun deleteManifest(var1: String, var2: String): Response
+    fun deleteManifest(var1: String, var2: String): Response
 //
 //    fun getTags(var1: String, var2: Int, var3: String): Response
 //
