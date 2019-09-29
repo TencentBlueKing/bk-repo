@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.registry.manifest
+package com.tencent.bkrepo.registry.manifest2
 
 class Descriptor() {
     var platform: Platform = Platform()

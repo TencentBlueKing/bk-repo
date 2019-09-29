@@ -1,6 +1,6 @@
-package com.tencent.bkrepo.registry.manifest
+package com.tencent.bkrepo.registry.manifest2
 
-data class ManifestV1(
+data class SignedManifest(
     var schemaVersion: Int = 1,
     var mediaType: String,
     var tag: String,

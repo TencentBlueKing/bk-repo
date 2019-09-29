@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.registry.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.tencent.bkrepo.registry.manifest.ManifestDeserializer
-import com.tencent.bkrepo.registry.manifest.ManifestHandler
+import com.tencent.bkrepo.registry.manifest2.ManifestDeserializer
+import com.tencent.bkrepo.registry.manifest2.ManifestHandler
 import com.tencent.bkrepo.registry.util.Digest
 import io.swagger.annotations.ApiParam
 import okhttp3.MediaType
@@ -45,6 +45,10 @@ class ManifestController @Autowired constructor(val objectMapper: ObjectMapper) 
             manHandle.digest = desc.digest
             manHandle.tag = reference
         }
+
+        // Tag this manifest
+
+        // Construct a canonical url for the uploaded manifest
 
         return "Hello, $name, $reference ,$mediaType，$body"
     }
