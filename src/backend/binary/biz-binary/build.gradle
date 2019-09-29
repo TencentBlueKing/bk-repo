@@ -1,0 +1,4 @@
+dependencies {
+    api project(":common:common-service")
+    implementation project(":binary:api-binary")
+}

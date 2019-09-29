@@ -100,7 +100,7 @@ class NodeService @Autowired constructor(
                 name = name,
                 fullPath = combineFullPath(path, name),
                 repositoryId = it.repositoryId,
-                expired = it.expired,
+                expires = if (it.folder) 0 else it.expires,
                 size = if (it.folder) 0 else it.size ?: 0,
                 sha256 = if (it.folder || it.blockList == null) null else it.sha256,
                 createdBy = it.createdBy,
@@ -144,7 +144,7 @@ class NodeService @Autowired constructor(
             name?.let { node.name = parseFileName(it) }
             size?.let { node.size = it }
             sha256?.let { node.sha256 = it }
-            expired?.let { node.expired }
+            expires?.let { node.expires }
             node.lastModifiedDate = LocalDateTime.now()
             node.lastModifiedBy = modifiedBy
         }
@@ -213,7 +213,7 @@ class NodeService @Autowired constructor(
                     fullPath = combineFullPath(parentPath, name),
                     repositoryId = repositoryId,
                     size = 0,
-                    expired = 0,
+                    expires = 0,
                     createdBy = createdBy,
                     createdDate = LocalDateTime.now(),
                     lastModifiedBy = createdBy,
