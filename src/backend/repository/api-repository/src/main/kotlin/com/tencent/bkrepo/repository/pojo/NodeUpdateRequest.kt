@@ -21,6 +21,6 @@ data class NodeUpdateRequest(
     val size: Long? = null,
     @ApiModelProperty("文件sha256")
     val sha256: String? = null,
-    @ApiModelProperty("文件过期时间,单位秒。小于等于0则永久存放")
+    @ApiModelProperty("过期时间，单位天(0代表永久保存)")
     val expires: Long? = null
 )
