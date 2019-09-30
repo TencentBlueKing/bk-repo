@@ -82,14 +82,14 @@ internal class RepositoryServiceTest @Autowired constructor(
     @Test
     fun exist() {
         val idValue = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
-        assertTrue(repositoryService.exist(projectId, "BINARY", "测试仓库"))
-        assertFalse(repositoryService.exist("", "", ""))
-        assertFalse(repositoryService.exist(projectId, "", ""))
-        assertFalse(repositoryService.exist(projectId, "BINARY", ""))
-        assertFalse(repositoryService.exist("", "BINARY", "测试仓库"))
+        assertTrue(repositoryService.exist(projectId, "测试仓库"))
+        assertFalse(repositoryService.exist("", ""))
+        assertFalse(repositoryService.exist(projectId, ""))
+        assertFalse(repositoryService.exist(projectId, ""))
+        assertFalse(repositoryService.exist("", "测试仓库"))
 
         repositoryService.deleteById(idValue.id)
-        assertFalse(repositoryService.exist(projectId, "BINARY", "测试仓库"))
+        assertFalse(repositoryService.exist(projectId, "测试仓库"))
     }
 
     @Test
