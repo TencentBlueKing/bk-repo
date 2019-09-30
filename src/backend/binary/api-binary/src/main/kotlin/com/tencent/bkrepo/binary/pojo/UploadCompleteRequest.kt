@@ -13,6 +13,6 @@ import io.swagger.annotations.ApiModelProperty
 data class UploadCompleteRequest(
     @ApiModelProperty("分块上传事物id")
     val uploadId: String,
-    @ApiModelProperty("分块数量")
-    val blockCount: Int
+    @ApiModelProperty("分块sha256列表")
+    val blockSha256List: List<String>
 )

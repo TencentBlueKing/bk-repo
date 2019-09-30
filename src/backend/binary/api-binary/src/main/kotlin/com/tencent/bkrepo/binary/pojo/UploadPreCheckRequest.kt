@@ -10,7 +10,7 @@ import io.swagger.annotations.ApiModelProperty
  * @date: 2019-09-27
  */
 @ApiModel("分块上传预检请求")
-data class UploadPrecheckRequest(
+data class UploadPreCheckRequest(
     @ApiModelProperty("仓库id", required = true)
     val repositoryId: String,
     @ApiModelProperty("路径", required = true)
