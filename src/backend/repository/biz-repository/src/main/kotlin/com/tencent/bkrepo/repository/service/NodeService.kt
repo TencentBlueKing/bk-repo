@@ -85,6 +85,7 @@ class NodeService @Autowired constructor(
         val query = Query(Criteria.where("repositoryId").`is`(repositoryId)
                 .and("fullPath").`is`(formattedPath)
                 .and("deleted").`is`(null))
+
         return mongoTemplate.exists(query, TNode::class.java)
     }
 
@@ -176,11 +177,9 @@ class NodeService @Autowired constructor(
     fun softDeleteByPath(repositoryId: String, fullPath: String, modifiedBy: String) {
         val formattedPath = formatFullPath(fullPath)
         val escapedPath = escapeRegex(formattedPath)
-        logger.info("escapedPath: $escapedPath")
         val query = Query(Criteria.where("repositoryId").`is`(repositoryId)
                 .orOperator(Criteria.where("fullPath").regex("^$escapedPath/"), Criteria.where("fullPath").`is`(formattedPath))
                 .and("deleted").`is`(null))
-        logger.info("query: $query")
         val update = Update.update("deleted", LocalDateTime.now())
                 .set("lastModifiedDate", LocalDateTime.now())
                 .set("lastModifiedBy", modifiedBy)
