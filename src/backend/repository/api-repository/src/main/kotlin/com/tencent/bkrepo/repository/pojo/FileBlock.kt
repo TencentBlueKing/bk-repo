@@ -10,13 +10,13 @@ import io.swagger.annotations.ApiModelProperty
  */
 data class FileBlock(
     @ApiModelProperty("分块id")
-val id: String? = null,
+    val id: String? = null,
     @ApiModelProperty("分块顺序")
-var sequence: Int,
+    var sequence: Int,
     @ApiModelProperty("分块大小")
-var size: Long,
+    var size: Long,
     @ApiModelProperty("sha256")
-var sha256: String,
+    var sha256: String,
     @ApiModelProperty("所属节点id")
-var nodeId: String
+    var nodeId: String
 )
