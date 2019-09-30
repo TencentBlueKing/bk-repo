@@ -17,7 +17,7 @@ data class TFileBlock(
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime,
 
-    var index: Int,
+    var sequence: Int,
     var size: Long,
     var sha256: String,
     var nodeId: String

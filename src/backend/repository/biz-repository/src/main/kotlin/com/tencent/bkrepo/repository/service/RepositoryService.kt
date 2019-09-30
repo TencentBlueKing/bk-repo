@@ -55,7 +55,7 @@ class RepositoryService @Autowired constructor(
     }
 
     fun exist(projectId: String, name: String): Boolean {
-        name.takeIf { it.isNotBlank() && name.isNotBlank()} ?: return false
+        name.takeIf { it.isNotBlank() && name.isNotBlank() } ?: return false
         val query = Query(Criteria.where("projectId").`is`(projectId)
                 .and("name").`is`(name))
         return mongoTemplate.exists(query, TRepository::class.java)

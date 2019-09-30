@@ -119,7 +119,7 @@ class NodeService @Autowired constructor(
         // 保存分块信息
         nodeCreateRequest.blockList?.map {
             TFileBlock(
-                    index = it.index,
+                    sequence = it.sequence,
                     size = it.size,
                     sha256 = it.sha256,
                     nodeId = idValue.id,
