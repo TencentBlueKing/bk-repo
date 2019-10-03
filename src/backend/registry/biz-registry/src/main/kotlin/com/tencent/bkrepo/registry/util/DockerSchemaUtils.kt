@@ -49,7 +49,7 @@ class DockerSchemaUtils {
                     val manifestConfigFilename = DockerDigest(digest).filename()
                     val manifestConfigFile = DockerUtils.getManifestConfigBlob(repo, manifestConfigFilename, dockerRepoPath, tag)
                     if (manifestConfigFile != null) {
-                        val manifestStream = (repo.getWorkContext() as DockerWorkContext).readGlobal(DockerUtils.getFullPath(manifestConfigFile, repo.getWorkContext() as DockerWorkContext))
+                        val manifestStream = (repo.getWorkContextC() as DockerWorkContext).readGlobal(DockerUtils.getFullPath(manifestConfigFile, repo.getWorkContextC() as DockerWorkContext))
                         var var9: Throwable? = null
 
                         val var10: ByteArray
@@ -84,7 +84,7 @@ class DockerSchemaUtils {
 
         fun fetchSchema2Manifest(repo: Repo<DockerWorkContext>, schema2Path: String): ByteArray {
             try {
-                val manifestStream = (repo.getWorkContext() as DockerWorkContext).readGlobal(schema2Path)
+                val manifestStream = (repo.getWorkContextC() as DockerWorkContext).readGlobal(schema2Path)
                 var var3: Throwable? = null
 
                 val var4: ByteArray
@@ -131,7 +131,7 @@ class DockerSchemaUtils {
                             val manifestFilename = DockerDigest(digest).filename()
                             if (searchGlobally) {
                                 val manifestFile = DockerUtils.getBlobGlobally(repo, manifestFilename, DockerSearchBlobPolicy.SHA_256)
-                                return if (manifestFile == null) "" else DockerUtils.getFullPath(manifestFile, repo.getWorkContext() as DockerWorkContext)
+                                return if (manifestFile == null) "" else DockerUtils.getFullPath(manifestFile, repo.getWorkContextC() as DockerWorkContext)
                             }
 
                             val artifacts = repo.findArtifacts(dockerRepo, manifestFilename)

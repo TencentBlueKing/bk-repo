@@ -42,7 +42,7 @@ class DockerV2LocalRepoHandler : DockerV2RepoHandler {
     }
 
     private fun deleteManifestByDigest(dockerRepo: String, digest: DockerDigest): Response {
-        log.info("Deleting docker manifest for repo '{}' and digest '{}' in repo '{}'", *arrayOf(dockerRepo, digest, this.repo.getId()))
+        log.info("Deleting docker manifest for repo '{}' and digest '{}' in repo '{}'", *arrayOf(dockerRepo, digest, this.repo.getRepoId()))
         val manifests = this.repo.findArtifacts(dockerRepo, "manifest.json")
         val var4 = manifests.iterator()
 
