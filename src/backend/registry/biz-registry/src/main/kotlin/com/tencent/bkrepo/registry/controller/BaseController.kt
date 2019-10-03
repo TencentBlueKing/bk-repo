@@ -10,9 +10,9 @@ class BaseController {
 
     @GetMapping("/v2/base")
     fun sayHello(
-            @RequestParam
-            @ApiParam(value = "姓名", required = true)
-            name: String
+        @RequestParam
+        @ApiParam(value = "姓名", required = true)
+        name: String
     ): String {
         return "Hello, $name!"
     }
