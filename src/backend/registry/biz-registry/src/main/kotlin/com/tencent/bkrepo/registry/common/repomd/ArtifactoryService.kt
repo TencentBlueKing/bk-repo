@@ -2,8 +2,10 @@ package com.tencent.bkrepo.registry.common.repomd
 
 import com.tencent.bkrepo.registry.repomd.Artifact
 import com.tencent.bkrepo.registry.repomd.Repo
+import com.tencent.bkrepo.registry.repomd.UploadContext
 import com.tencent.bkrepo.registry.repomd.WorkContext
 import java.io.InputStream
+import javax.ws.rs.core.Response
 
 // import java.util.*
 
@@ -90,7 +92,8 @@ open class ArtifactoryService<C : WorkContext>(var workContext: C, var id: Strin
 //        return req
 //    }
 
-//    fun upload(context: UploadContext): Response {
+    override fun upload(context: UploadContext): Response {
+        throw UnsupportedOperationException("NOT IMPLEMENTED")
 //        val res = JerseyArtifactoryResponse()
 //        val properties = this.parseUploadProperties(context)
 //        val req = ArtifactoryDeployRequestBuilder(this.repoPath(context.getPath())).inputStream(context.getContent()).properties(properties).contentLength(this.contentLength(context)).build()
@@ -122,8 +125,7 @@ open class ArtifactoryService<C : WorkContext>(var workContext: C, var id: Strin
 //            log.error(var8.getMessage(), var8)
 //            return Response.status(Response.Status.BAD_REQUEST).entity(var8.getMessage()).build()
 //        }
-//
-//    }
+    }
 
 //    private fun contentLength(context: UploadContext): Long {
 //        if (context.getContentLength() > 0L) {
@@ -167,13 +169,15 @@ open class ArtifactoryService<C : WorkContext>(var workContext: C, var id: Strin
 //        return if (properties.containsKey(key)) properties.get(key) else null
 //    }
 
-//    fun setAttribute(path: String, key: String, value: Any) {
-//        this.setProperties(path, key, value)
-//    }
+    override fun setAttribute(path: String, key: String, value: Any) {
+        throw UnsupportedOperationException("NOT IMPLEMENTED")
+        // this.setProperties(path, key, value)
+    }
 
-//    fun setAttributes(path: String, key: String, vararg values: Any) {
-//        this.setProperties(path, key, *values)
-//    }
+    override fun setAttributes(path: String, key: String, vararg values: Any) {
+        throw UnsupportedOperationException("NOT IMPLEMENTED")
+        //   this.setProperties(path, key, *values)
+    }
 
 //    fun addAttribute(path: String, key: String, vararg values: Any) {
 //        this.addProperty(path, key, values)
@@ -183,9 +187,10 @@ open class ArtifactoryService<C : WorkContext>(var workContext: C, var id: Strin
 //        this.removePropertyValues(path, key, values)
 //    }
 
-//    fun setAttributes(path: String, keyValueMap: Map<String, String>) {
-//        this.setProperties(path, keyValueMap)
-//    }
+    override fun setAttributes(path: String, keyValueMap: Map<String, String>) {
+        throw UnsupportedOperationException("NOT IMPLEMENTED")
+        // this.setProperties(path, keyValueMap)
+    }
 
     override fun exists(path: String): Boolean {
         return true

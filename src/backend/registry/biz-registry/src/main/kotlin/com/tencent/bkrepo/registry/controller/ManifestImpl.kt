@@ -1,35 +1,29 @@
 package com.tencent.bkrepo.registry.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.tencent.bkrepo.registry.api.Manifest
 import com.tencent.bkrepo.registry.manifest2.ManifestDeserializer
 import com.tencent.bkrepo.registry.manifest2.ManifestHandler
 import com.tencent.bkrepo.registry.util.Digest
-import io.swagger.annotations.ApiParam
 import okhttp3.MediaType
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
-// PutManifest validates and stores a manifest in the registry
-@RestController
-class ManifestController @Autowired constructor(val objectMapper: ObjectMapper) {
+/**
+ * 元数据服务接口实现类
+ *
+ * @author: owenlxu
+ * @date: 2019-10-03
+ */
 
-    @PutMapping("/v2/{name}/manifests/{reference}")
-    fun putManifest(
-        @PathVariable
-        @ApiParam(value = "name", required = true)
+// ManifestImpl validates and impl the manifest interface
+@RestController
+class ManifestImpl @Autowired constructor(val objectMapper: ObjectMapper) : Manifest {
+
+    override fun putManifest(
         name: String,
-        @PathVariable
-        @ApiParam(value = "reference", required = true)
         reference: String,
-        @ApiParam
-        @RequestHeader(value = "Content-Type", required = true)
         contentTypeHeader: String,
-        @RequestBody
-        @ApiParam(value = "body", required = false)
         body: String
     ): String {
         var manHandle = ManifestHandler("", "")

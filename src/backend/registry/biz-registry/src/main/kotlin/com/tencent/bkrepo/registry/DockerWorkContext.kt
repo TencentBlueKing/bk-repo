@@ -8,14 +8,14 @@ import java.io.InputStream
 interface DockerWorkContext : WorkContext {
 
 //    val keyPair: KeyPair
-//    fun cleanup(var1: String, var2: String)
+    fun cleanup(var1: String, var2: String)
 //
-//    fun onTagPushedSuccessfully(var1: String, var2: String, var3: String)
+    fun onTagPushedSuccessfully(var1: String, var2: String, var3: String)
 //
 //    @Throws(DockerLockManifestException::class)
-//    fun obtainManifestLock(var1: String): String
+    fun obtainManifestLock(var1: String): String
 //
-//    fun releaseManifestLock(var1: String, var2: String)
+    fun releaseManifestLock(var1: String, var2: String)
 //
     fun findBlobsGlobally(var1: String, var2: DockerSearchBlobPolicy): Iterable<Artifact>
 //
@@ -23,7 +23,7 @@ interface DockerWorkContext : WorkContext {
 //
     fun readGlobal(var1: String): InputStream
 //
-//    fun copy(var1: String, var2: String): Boolean
+    fun copy(var1: String, var2: String): Boolean
 //
 //    fun copyToCache(sourcePath: String, targetPath: String): Boolean {
 //        return false

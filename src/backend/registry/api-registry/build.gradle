@@ -1,3 +1,10 @@
 group 'com.tencent.bk.repo'
 version '0.1.0-SNAPSHOT'
 
+dependencies {
+    api project(":common:common-service")
+    api project(":common:common-client")
+    api project(":common:common-api")
+    api project(":common:common-storage")
+}
+

@@ -6,13 +6,13 @@ interface WorkContext {
     // TODO : repo
 //    val getRepo: Repo
 
-//    val getSubject: Any
-//
-//    val getContextMap: Map<String, Any>
-//
+    fun getSubject(): Any
+
+    fun getContextMap(): Map<String, Any>
+
 //    val getTempDirectory: Path
-//
-//    fun setSystem()
-//
-//    fun unsetSystem()
+
+    fun setSystem()
+
+    fun unsetSystem()
 }

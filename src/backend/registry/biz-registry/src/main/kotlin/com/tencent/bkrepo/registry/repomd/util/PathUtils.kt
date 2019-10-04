@@ -48,4 +48,13 @@ object PathUtils {
     fun normalizeSlashes(path: CharSequence?): CharSequence? {
         return if (path == null) null else PATTERN_SLASHES.matcher(path).replaceAll("/")
     }
+
+    fun getFileName(path: String?): String? {
+        if (path == null) {
+            return null
+        } else {
+            val dummy = File(path)
+            return dummy.name
+        }
+    }
 }
