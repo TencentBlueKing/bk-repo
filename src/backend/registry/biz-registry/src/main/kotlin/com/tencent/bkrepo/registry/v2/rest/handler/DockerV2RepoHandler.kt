@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.registry.v2.rest.handler
 
-import java.io.InputStream
 import javax.ws.rs.core.Response
 
 interface DockerV2RepoHandler {
@@ -16,7 +15,7 @@ interface DockerV2RepoHandler {
 //
 //    fun uploadBlob(var1: String, var2: DockerDigest, var3: String, var4: InputStream): Response
 //
-    fun uploadManifest(var1: String, var2: String, mediaType: String, var3: InputStream): Response
+    fun uploadManifest(var1: String, var2: String, mediaType: String, var3: ByteArray): Response
 //
 //    fun getManifest(var1: String, var2: String): Response
 //

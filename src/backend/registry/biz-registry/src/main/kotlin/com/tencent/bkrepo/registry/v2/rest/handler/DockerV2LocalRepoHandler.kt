@@ -30,7 +30,6 @@ import java.io.InputStream
 import java.util.function.Predicate
 import java.util.regex.Pattern
 import javax.ws.rs.core.Response
-import org.apache.commons.io.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 
@@ -95,19 +94,20 @@ class DockerV2LocalRepoHandler : DockerV2RepoHandler {
         }
     }
 
-    override fun uploadManifest(dockerRepo: String, tag: String, mediaType: String, stream: InputStream): Response {
+    override fun uploadManifest(dockerRepo: String, tag: String, mediaType: String, data: ByteArray): Response {
         log.info("Deploying docker manifest for repo '{}' and tag '{}' into repo '{}'", *arrayOf<Any>(dockerRepo, tag, this.repo.getRepoId()))
-        var lockId: String? = null
+        var lockId: String = ""
         val manifestType = ManifestType.from(mediaType)
         val manifestPath = buildManifestPathFromType(dockerRepo, tag, manifestType)
         if (!this.repo.canWrite(manifestPath)) {
             log.debug("Attempt to write manifest to {} failed the permission check.", manifestPath)
-            return this.consumeStreamAndReturnError(dockerRepo, tag, stream)
+            return DockerV2Errors.unauthorizedUpload()
+            // return this.consumeStreamAndReturnError(dockerRepo, tag, stream)
         } else {
             val var9: Response
             try {
                 lockId = (this.repo.getWorkContextC() as DockerWorkContext).obtainManifestLock("$dockerRepo/$tag")
-                val digest = this.processUploadedManifestType(dockerRepo, tag, manifestPath, manifestType, stream)
+                val digest = this.processUploadedManifestType(dockerRepo, tag, manifestPath, manifestType, data)
                 return Response.status(201).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", digest).build()
             } catch (var14: DockerLockManifestException) {
                 // this.logException(var14)
@@ -117,7 +117,7 @@ class DockerV2LocalRepoHandler : DockerV2RepoHandler {
                 // this.logException(var15)
                 var9 = DockerV2Errors.manifestInvalid(var15.message!!)
             } finally {
-                IOUtils.closeQuietly(stream)
+                // IOUtils.closeQuietly(stream)
                 this.releaseManifestLock(lockId, dockerRepo, tag)
                 (this.repo.getWorkContextC() as DockerWorkContext).cleanup(this.repo.getRepoId(), "$dockerRepo/_uploads")
             }
@@ -138,8 +138,8 @@ class DockerV2LocalRepoHandler : DockerV2RepoHandler {
     }
 
     @Throws(IOException::class, DockerSyncManifestException::class)
-    private fun processUploadedManifestType(dockerRepo: String, tag: String, manifestPath: String, manifestType: ManifestType, stream: InputStream): DockerDigest {
-        val manifestBytes = IOUtils.toByteArray(stream)
+    private fun processUploadedManifestType(dockerRepo: String, tag: String, manifestPath: String, manifestType: ManifestType, manifestBytes: ByteArray): DockerDigest {
+        // val manifestBytes = IOUtils.toByteArray(stream)
         val digest = DockerManifestDigester.calc(manifestBytes)
         if (ManifestType.Schema2List.equals(manifestType)) {
             this.processManifestList(dockerRepo, tag, manifestPath, digest!!, manifestBytes, manifestType)
@@ -218,7 +218,7 @@ class DockerV2LocalRepoHandler : DockerV2RepoHandler {
         // return Stream.of(Pair(digest.getDigestAlg(), digest.getDigestHex()), Pair("docker.manifest.digest", digest.toString()), Pair<String, String>("docker.manifest", tag), Pair<String, String>("docker.repoName", dockerRepo), Pair("docker.manifest.type", manifestType.toString())).collect(Collectors.toMap<Any, Any, Any>(Function<Any, Any> { it.key }, Function<Any, Any> { it.value }))
     }
 
-    private fun releaseManifestLock(lockId: String?, dockerRepo: String, tag: String) {
+    private fun releaseManifestLock(lockId: String, dockerRepo: String, tag: String) {
         if (lockId != null) {
             try {
                 (this.repo.getWorkContextC() as DockerWorkContext).releaseManifestLock(lockId, "$dockerRepo/$tag")
