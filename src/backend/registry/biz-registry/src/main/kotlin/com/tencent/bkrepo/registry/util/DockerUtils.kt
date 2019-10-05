@@ -80,7 +80,7 @@ abstract class DockerUtils {
         }
 
         fun getBlobGlobally(repo: Repo<DockerWorkContext>, blobFilename: String, searchPolicy: DockerSearchBlobPolicy): Artifact? {
-            var repoBlobs = (repo.getWorkContext() as DockerWorkContext).findBlobsGlobally(blobFilename, searchPolicy)
+            var repoBlobs = (repo.getWorkContextC() as DockerWorkContext).findBlobsGlobally(blobFilename, searchPolicy)
             if (repoBlobs != null && !Iterables.isEmpty(repoBlobs!!)) {
                 // TODO : iter
 //                val var10001 = DockerV2LocalRepoHandler.nonTempUploads
@@ -92,7 +92,7 @@ abstract class DockerUtils {
 
                     while (var5.hasNext()) {
                         val blob = var5.next() as Artifact
-                        if (repo.getId().equals(blob.getRepoId())) {
+                        if (repo.getRepoId().equals(blob.getRepoId())) {
                             foundBlob = blob
                             break
                         }
@@ -111,7 +111,7 @@ abstract class DockerUtils {
             if (repo.exists(configPath)) {
                 log.debug("Manifest config blob found in: '{}'", configPath)
                 val config = repo.artifact(configPath)
-                if ((repo.getWorkContext() as DockerWorkContext).isBlobReadable(config!!)) {
+                if ((repo.getWorkContextC() as DockerWorkContext).isBlobReadable(config!!)) {
                     return config
                 }
             }
@@ -126,7 +126,7 @@ abstract class DockerUtils {
             if (repo.exists(tempBlobPath)) {
                 log.debug("Blob found in: '{}'", tempBlobPath)
                 blob = repo.artifact(tempBlobPath)
-                if ((repo.getWorkContext() as DockerWorkContext).isBlobReadable(blob!!)) {
+                if ((repo.getWorkContextC() as DockerWorkContext).isBlobReadable(blob!!)) {
                     return blob
                 }
             }

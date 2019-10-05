@@ -5,8 +5,8 @@ import com.google.common.collect.Multimap
 import com.google.common.collect.Sets
 
 class DockerTagInfo {
-    var title: String? = null
-    var digest: DockerDigest? = null
+    var title: String = ""
+    lateinit var digest: DockerDigest
     var totalSize: Long = 0
     var ports: MutableSet<String> = Sets.newHashSet()
     var volumes: MutableSet<String> = Sets.newHashSet()

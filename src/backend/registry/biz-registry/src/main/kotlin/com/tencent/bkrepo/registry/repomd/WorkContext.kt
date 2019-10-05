@@ -1,18 +1,16 @@
 package com.tencent.bkrepo.registry.repomd
 
-import java.nio.file.Path
-
 interface WorkContext {
-    val getContextPath: String
+    fun getContextPath(): String
 
     // TODO : repo
 //    val getRepo: Repo
 
-    val getSubject: Any
+    fun getSubject(): Any
 
-    val getContextMap: Map<String, Any>
+    fun getContextMap(): Map<String, Any>
 
-    val getTempDirectory: Path
+//    val getTempDirectory: Path
 
     fun setSystem()
 
