@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.model.TRole
+import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -14,24 +16,27 @@ class RoleService @Autowired constructor(
     private val roleRepository: RoleRepository,
     private val mongoTemplate: MongoTemplate
 ) {
-    fun addRole() {
-        logger.info("add Role")
-        val now = LocalDateTime.now()
+    fun listAll(): List<TRole> {
+        return roleRepository.findAll()
+    }
+
+    fun listByType(roleType: RoleType): List<TRole> {
+        return roleRepository.findByRoleType(roleType)
+    }
+
+    fun addRole(createRoleRequest: CreateRoleRequest) {
         roleRepository.save(
             TRole(
                 id = null,
-                name = "name1",
-                displayName = "displahName1",
-                roleType = "type1",
-                createdBy = "necrohuang",
-                createdDate = now,
-                lastModifiedBy = "necrohuang",
-                lastModifiedDate = now
+                roleType = createRoleRequest.roleType,
+                name = createRoleRequest.name,
+                displayName = createRoleRequest.displayName
             )
         )
+    }
 
-        logger.info("allRole: ${roleRepository.findAll()}")
-
+    fun deleteByName(name: String) {
+        roleRepository.deleteByName(name)
     }
 
 

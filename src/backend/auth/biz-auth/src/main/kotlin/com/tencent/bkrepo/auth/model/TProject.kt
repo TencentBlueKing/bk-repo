@@ -9,10 +9,10 @@ import org.springframework.data.mongodb.core.mapping.Document
 @Document("project")
 data class TProject(
     val id: String? = null,
-    val createdBy: String,
-    val createdDate: LocalDateTime,
-    val lastModifiedBy: String,
-    val lastModifiedDate: LocalDateTime,
+//    val createdBy: String,
+//    val createdDate: LocalDateTime,
+//    val lastModifiedBy: String,
+//    val lastModifiedDate: LocalDateTime,
 
     val name: String,
     val displayName: String,

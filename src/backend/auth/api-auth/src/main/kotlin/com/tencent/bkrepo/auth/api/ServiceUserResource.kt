@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*
 @Api("角色接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceRoleResource")
 @RequestMapping("/service/auth/role")
-interface ServiceRoleResource {
+interface ServiceUserResource {
     @ApiOperation("创建角色")
     @PostMapping("/create")
     fun createRole(
