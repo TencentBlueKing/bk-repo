@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.registry.api
 
-// import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
+import javax.ws.rs.core.Response
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -21,8 +21,11 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface Manifest {
 
     @ApiOperation("查看元数据详情")
-    @PutMapping("/{name}/manifests/{reference}")
+    @PutMapping("/{repoKey}/{name}/manifests/{reference}")
     fun putManifest(
+        @PathVariable
+        @ApiParam(value = "repoKey", required = true)
+         repoKey: String,
         @PathVariable
         @ApiParam(value = "name", required = true)
         name: String,
@@ -35,5 +38,5 @@ interface Manifest {
         @RequestBody
         @ApiParam(value = "body", required = false)
         body: String
-    ): String
+    ): Response
 }

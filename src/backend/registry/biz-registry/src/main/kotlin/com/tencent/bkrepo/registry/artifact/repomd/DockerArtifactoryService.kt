@@ -1,20 +1,23 @@
 package com.tencent.bkrepo.registry.artifact.repomd
 
 // import com.tencent.bkrepo.registry.common.repomd.ArtifactoryService
+import com.tencent.bkrepo.registry.DockerWorkContext
 import com.tencent.bkrepo.registry.repomd.Artifact
 import com.tencent.bkrepo.registry.repomd.Repo
 import com.tencent.bkrepo.registry.repomd.UploadContext
-import com.tencent.bkrepo.registry.repomd.WorkContext
 import java.io.InputStream
 import javax.ws.rs.core.Response
 
-open class DockerArtifactoryService(var workContext: WorkContext, var id: String) : Repo<WorkContext> {
+class DockerArtifactoryService(var workContext: DockerWorkContext, var id: String) : Repo<DockerWorkContext> {
 
     // protected var propertiesService: PropertiesService ？
 
-    protected lateinit var context: WorkContext
+    protected lateinit var context: DockerWorkContext
+    protected lateinit var repoKey: String
 
     init {
+        this.context = workContext
+        this.repoKey = id
     }
 
 //    override  fun read(path: String): InputStream {
@@ -37,10 +40,10 @@ open class DockerArtifactoryService(var workContext: WorkContext, var id: String
 //    }
 
     override fun getRepoId(): String {
-        return ""
+        return this.repoKey
     }
 
-    override fun getWorkContextC(): WorkContext {
+    override fun getWorkContextC(): DockerWorkContext {
         return this.context
     }
 

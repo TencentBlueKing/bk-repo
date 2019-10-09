@@ -33,13 +33,27 @@ import javax.ws.rs.core.Response
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 
-class DockerV2LocalRepoHandler : DockerV2RepoHandler {
+class DockerV2LocalRepoHandler(repo: Repo<DockerWorkContext>) : DockerV2RepoHandler {
+
     var log = LoggerFactory.getLogger(DockerV2LocalRepoHandler::class.java)
-    var OLD_USER_AGENT_PATTERN = Pattern.compile("^(?:docker\\/1\\.(?:3|4|5|6|7(?!\\.[0-9]-dev))|Go ).*$")
-    var ERR_MANIFEST_UPLOAD = "Error uploading manifest: "
     lateinit var repo: Repo<DockerWorkContext>
     lateinit var manifestSyncer: DockerManifestSyncer
-//    var  httpHeaders: HttpHeaders
+//    lateinit var httpHeaders: HttpHeaders
+    var OLD_USER_AGENT_PATTERN = Pattern.compile("^(?:docker\\/1\\.(?:3|4|5|6|7(?!\\.[0-9]-dev))|Go ).*$")
+    var ERR_MANIFEST_UPLOAD = "Error uploading manifest: "
+
+    init {
+        this.repo = repo
+//        this.httpHeaders = httpHeaders
+        this.manifestSyncer = DockerManifestSyncer()
+    }
+
+//    constructor(repo: Repo<DockerWorkContext>, httpHeaders: HttpHeaders, syncer: DockerManifestSyncer) {
+//        this.repo = repo
+//        this.httpHeaders = httpHeaders
+//        this.manifestSyncer = syncer
+//    }
+
     // private val manifestSyncer: DockerManifestSyncer
     var nonTempUploads: Predicate<Artifact> = object : Predicate<Artifact> {
         private val TMP_UPLOADS_PATH_ELEMENT = "/_uploads/"
@@ -106,7 +120,7 @@ class DockerV2LocalRepoHandler : DockerV2RepoHandler {
         } else {
             val var9: Response
             try {
-                lockId = (this.repo.getWorkContextC() as DockerWorkContext).obtainManifestLock("$dockerRepo/$tag")
+                // lockId = (this.repo.getWorkContextC() as DockerWorkContext).obtainManifestLock("$dockerRepo/$tag")
                 val digest = this.processUploadedManifestType(dockerRepo, tag, manifestPath, manifestType, data)
                 return Response.status(201).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", digest).build()
             } catch (var14: DockerLockManifestException) {
@@ -118,8 +132,8 @@ class DockerV2LocalRepoHandler : DockerV2RepoHandler {
                 var9 = DockerV2Errors.manifestInvalid(var15.message!!)
             } finally {
                 // IOUtils.closeQuietly(stream)
-                this.releaseManifestLock(lockId, dockerRepo, tag)
-                (this.repo.getWorkContextC() as DockerWorkContext).cleanup(this.repo.getRepoId(), "$dockerRepo/_uploads")
+                // this.releaseManifestLock(lockId, dockerRepo, tag)
+                // (this.repo.getWorkContextC() as DockerWorkContext).cleanup(this.repo.getRepoId(), "$dockerRepo/_uploads")
             }
 
             return var9

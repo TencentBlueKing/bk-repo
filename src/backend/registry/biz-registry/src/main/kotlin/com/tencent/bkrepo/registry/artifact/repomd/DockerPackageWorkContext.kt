@@ -2,13 +2,13 @@ package com.tencent.bkrepo.registry.artifact.repomd
 
 import com.tencent.bkrepo.registry.DockerWorkContext
 // import com.tencent.bkrepo.registry.common.repomd.PackageWorkContext
-import com.tencent.bkrepo.registry.papi.repo.RepoPath
+// import com.tencent.bkrepo.registry.papi.repo.RepoPath
 import com.tencent.bkrepo.registry.repomd.Artifact
 import com.tencent.bkrepo.registry.v2.helpers.DockerSearchBlobPolicy
 import java.io.InputStream
 import org.slf4j.LoggerFactory
 
-class DockerPackageWorkContext(repoPath: RepoPath) : DockerWorkContext {
+class DockerPackageWorkContext() : DockerWorkContext {
 
     private var contextPath: String = ""
     private lateinit var contextMap: MutableMap<String, Any>

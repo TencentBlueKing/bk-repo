@@ -4,23 +4,23 @@ import com.tencent.bkrepo.registry.common.Info
 
 interface RepoPath : Info {
 
-    val repoKey: String
+    abstract fun getRepoKey(): String
 
-    fun getPath(): String
+    abstract fun getPath(): String
 
-    val id: String
+    abstract fun getId(): String
 
-    val name: String
+    abstract fun toPath(): String
 
-    val parent: RepoPath?
+    abstract fun getName(): String
 
-    val isRoot: Boolean
+    abstract fun getParent(): RepoPath?
 
-    val isFile: Boolean
+    abstract fun isRoot(): Boolean
 
-    val isFolder: Boolean
+    abstract fun isFile(): Boolean
 
-    fun toPath(): String
+    abstract fun isFolder(): Boolean
 
     companion object {
         val REPO_PATH_SEP = ':'

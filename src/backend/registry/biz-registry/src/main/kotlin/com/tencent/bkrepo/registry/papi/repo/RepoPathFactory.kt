@@ -21,16 +21,14 @@ class RepoPathFactory {
             var rpp = rpp
             if (rpp != null && rpp.length != 0) {
                 rpp = PathUtils.trimLeadingSlashes(PathUtils.formatPath(rpp))
-                val idx = 0
-                // TODO :
-                // val idx = rpp.indexOf()
+                val idx = rpp!!.indexOf('/')
                 val repoKey: String
                 val path: String
                 if (idx < 0) {
-                    repoKey = rpp!!
+                    repoKey = rpp
                     path = ""
                 } else {
-                    repoKey = rpp!!.substring(0, idx)
+                    repoKey = rpp.substring(0, idx)
                     path = rpp.substring(idx + 1)
                 }
 
