@@ -2,7 +2,6 @@ package com.tencent.bkrepo.registry.artifact.util
 
 import com.tencent.bkrepo.registry.artifact.repomd.DockerArtifactoryService
 import com.tencent.bkrepo.registry.artifact.repomd.DockerPackageWorkContext
-import com.tencent.bkrepo.registry.papi.repo.RepoPathFactory
 
 object DockerUtil {
 
@@ -38,8 +37,8 @@ object DockerUtil {
 //    }
 
     fun createDockerRepoContext(repoKey: String): DockerArtifactoryService {
-        val repoPath = RepoPathFactory.create(repoKey)
-        val context = DockerPackageWorkContext(repoPath)
+        // val repoPath = RepoPathFactory.create(repoKey)
+        val context = DockerPackageWorkContext()
         return DockerArtifactoryService(context, repoKey)
     }
 }
