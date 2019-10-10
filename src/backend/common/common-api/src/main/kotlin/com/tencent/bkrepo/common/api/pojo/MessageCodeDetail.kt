@@ -8,9 +8,9 @@ data class MessageCodeDetail(
     @ApiModelProperty("主键ID", required = true)
     val id: String,
     @ApiModelProperty("信息码", required = true)
-    val messageCode: Int,
+    val messageCode: String,
     @ApiModelProperty("模块代码", required = true)
-    val moduleCode: Int,
+    val moduleCode: String,
     @ApiModelProperty("中文简体描述信息", required = true)
     var messageDetailZhCn: String,
     @ApiModelProperty("中文繁体描述信息", required = false)
