@@ -20,5 +20,9 @@ data class TFileBlock(
     var sequence: Int,
     var size: Long,
     var sha256: String,
-    var nodeId: String
+
+    var repositoryId: String,
+    var nodeId: String,
+    var fullPath: String,
+    var deleted: LocalDateTime? = null
 )

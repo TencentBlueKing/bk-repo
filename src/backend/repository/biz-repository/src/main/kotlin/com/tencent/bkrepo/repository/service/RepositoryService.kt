@@ -36,13 +36,22 @@ class RepositoryService @Autowired constructor(
     private val nodeService: NodeService,
     private val mongoTemplate: MongoTemplate
 ) {
-    fun getDetailById(id: String): Repository {
-        val repository = toRepository(repoRepository.findByIdOrNull(id)) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
+    fun getDetailById(id: String): Repository? {
+        val repository = toRepository(repoRepository.findByIdOrNull(id)) ?: return null
         credentialsRepository.findByRepositoryId(repository.id)?.let {
             repository.storageType = it.type
             repository.storageCredentials = it.credentials
         }
         return repository
+    }
+
+    fun query(projectId: String, repoName: String, type: String): Repository? {
+        projectId.takeIf { it.isNotBlank() && repoName.isNotBlank() && type.isNotBlank() } ?: return null
+        val query = Query(Criteria.where("projectId").`is`(projectId)
+                .and("name").`is`(repoName)
+                .and("type").`is`(type))
+
+        return toRepository(mongoTemplate.findOne(query, TRepository::class.java))
     }
 
     fun list(projectId: String): List<Repository> {

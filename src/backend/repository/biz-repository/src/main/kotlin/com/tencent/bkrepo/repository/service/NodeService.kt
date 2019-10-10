@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.pojo.FileBlock
 import com.tencent.bkrepo.repository.pojo.Node
 import com.tencent.bkrepo.repository.pojo.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.NodeUpdateRequest
@@ -35,7 +36,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 /**
- * 仓库service
+ * 节点service
  *
  * @author: carrypan
  * @date: 2019-09-20
@@ -46,21 +47,21 @@ class NodeService @Autowired constructor(
     private val fileBlockRepository: FileBlockRepository,
     private val mongoTemplate: MongoTemplate
 ) {
-    fun getDetailById(id: String): Node {
-        val node = toNode(nodeRepository.findByIdAndDeletedIsNull(id)) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
+    fun getDetailById(id: String): Node? {
+        val node = toNode(nodeRepository.findByIdAndDeletedIsNull(id)) ?: return null
         fileBlockRepository.findByNodeId(node.id).let { node.fileBlockList = it }
 
         return node
     }
 
-    fun getDetailByFullPath(repositoryId: String, fullPath: String): Node {
+    fun getDetailByFullPath(repositoryId: String, fullPath: String): Node? {
         val tNode = mongoTemplate.findOne(Query(
                 Criteria.where("repositoryId").`is`(repositoryId)
-                        .and("fullPath").`is`(repositoryId)
+                        .and("fullPath").`is`(fullPath)
                         .and("deleted").`is`(null)
         ), TNode::class.java)
 
-        val node = toNode(tNode) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
+        val node = toNode(tNode) ?: return null
         fileBlockRepository.findByNodeId(node.id).let { node.fileBlockList = it }
 
         return node
@@ -111,7 +112,17 @@ class NodeService @Autowired constructor(
         }
 
         // 路径唯一性校验
-        node.takeUnless { exist(it.repositoryId, it.fullPath) } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
+        val existNode = getDetailByFullPath(node.repositoryId, node.fullPath)
+        if (existNode != null) {
+            if (!nodeCreateRequest.overwrite) {
+                throw ErrorCodeException(PARAMETER_IS_EXIST)
+            } else if (existNode.folder || node.folder) {
+                throw ErrorCodeException(ELEMENT_CANNOT_BE_MODIFIED)
+            } else {
+                // 存在相同路径文件且允许覆盖，删除之前的文件
+                deleteById(existNode.id, node.lastModifiedBy, false)
+            }
+        }
         // 判断父目录是否存在，不存在先创建
         mkdirs(node.repositoryId, node.path, nodeCreateRequest.createdBy)
         // 保存节点
@@ -123,6 +134,8 @@ class NodeService @Autowired constructor(
                     size = it.size,
                     sha256 = it.sha256,
                     nodeId = idValue.id,
+                    fullPath = node.fullPath,
+                    repositoryId = node.repositoryId,
                     createdBy = nodeCreateRequest.createdBy,
                     createdDate = LocalDateTime.now(),
                     lastModifiedBy = nodeCreateRequest.createdBy,
@@ -162,29 +175,36 @@ class NodeService @Autowired constructor(
     }
 
     /**
-     * 软删除文件，定期清理
+     * 删除文件，定期清理
      */
     @Transactional(rollbackFor = [Throwable::class])
-    fun softDeleteById(id: String, modifiedBy: String) {
+    fun deleteById(id: String, modifiedBy: String, soft: Boolean = true) {
         val node = nodeRepository.findByIdOrNull(id) ?: return
-        softDeleteByPath(node.repositoryId, node.fullPath, modifiedBy)
+        deleteByPath(node.repositoryId, node.fullPath, modifiedBy, soft)
     }
 
     /**
-     * 根据全路径软删除文件或者目录
+     * 根据全路径删除文件或者目录
      */
     @Transactional(rollbackFor = [Throwable::class])
-    fun softDeleteByPath(repositoryId: String, fullPath: String, modifiedBy: String) {
+    fun deleteByPath(repositoryId: String, fullPath: String, modifiedBy: String, soft: Boolean = true) {
         val formattedPath = formatFullPath(fullPath)
         val escapedPath = escapeRegex(formattedPath)
         val query = Query(Criteria.where("repositoryId").`is`(repositoryId)
                 .orOperator(Criteria.where("fullPath").regex("^$escapedPath/"), Criteria.where("fullPath").`is`(formattedPath))
                 .and("deleted").`is`(null))
-        val update = Update.update("deleted", LocalDateTime.now())
-                .set("lastModifiedDate", LocalDateTime.now())
-                .set("lastModifiedBy", modifiedBy)
-
-        mongoTemplate.updateMulti(query, update, Node::class.java)
+        if (soft) {
+            // 软删除
+            val update = Update.update("deleted", LocalDateTime.now())
+                    .set("lastModifiedDate", LocalDateTime.now())
+                    .set("lastModifiedBy", modifiedBy)
+            mongoTemplate.updateMulti(query, update, Node::class.java)
+            mongoTemplate.updateMulti(query, update, FileBlock::class.java)
+        } else {
+            // 硬删除，同时会删除block
+            mongoTemplate.remove(query, Node::class.java)
+            mongoTemplate.remove(query, FileBlock::class.java)
+        }
     }
 
     /**
@@ -193,7 +213,9 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun deleteByRepositoryId(repoId: String) {
-        mongoTemplate.remove(Query(Criteria.where("repositoryId").`is`(repoId)), TNode::class.java)
+        val query = Query(Criteria.where("repositoryId").`is`(repoId))
+        mongoTemplate.remove(query, TNode::class.java)
+        mongoTemplate.remove(query, TFileBlock::class.java)
     }
 
     /**

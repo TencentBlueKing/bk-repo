@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -48,25 +49,25 @@ internal class NodeServiceTest @Autowired constructor(
 
     @Test
     fun getDetailById() {
-        assertThrows<ErrorCodeException> { nodeService.getDetailById("") }
+        assertNull(nodeService.getDetailById(""))
     }
 
     @Test
     fun list() {
-        nodeService.create(NodeCreateRequest(true, "/a/b/", "c", repoId, operator, 0, 1024L, "sha256")).id
+        nodeService.create(NodeCreateRequest(true, "/a/b/", "c", repoId, operator, 0, false,1024L, "sha256")).id
 
         val size = 20
-        repeat(size) { i -> nodeService.create(NodeCreateRequest(false, "/a/b/c", "$i.txt", repoId, operator, 0, 1024L, "sha256")).id }
+        repeat(size) { i -> nodeService.create(NodeCreateRequest(false, "/a/b/c", "$i.txt", repoId, operator, 0, false,1024L, "sha256")).id }
 
         assertEquals(size, nodeService.list(repoId, "/a/b/c").size)
     }
 
     @Test
     fun page() {
-        nodeService.create(NodeCreateRequest(true, "/a/b/", "c", repoId, operator, 0, 1024L, "sha256")).id
+        nodeService.create(NodeCreateRequest(true, "/a/b/", "c", repoId, operator, 0, false, 1024L, "sha256")).id
 
         val size = 51L
-        repeat(size.toInt()) { i -> nodeService.create(NodeCreateRequest(false, "/a/b/c", "$i.txt", repoId, operator, 0, 1024L, "sha256")).id }
+        repeat(size.toInt()) { i -> nodeService.create(NodeCreateRequest(false, "/a/b/c", "$i.txt", repoId, operator, 0, false,1024L, "sha256")).id }
 
         var page = nodeService.page(repoId, "/a/b/c", 0, 10)
         assertEquals(10, page.records.size)
@@ -91,26 +92,26 @@ internal class NodeServiceTest @Autowired constructor(
         assertTrue(nodeService.exist(repoId, ""))
         assertTrue(nodeService.exist(repoId, "/"))
 
-        nodeService.create(NodeCreateRequest(false, "  / a /   b /  ", " 1.txt  ", repoId, operator, 0, 1024, "sha256")).id
+        nodeService.create(NodeCreateRequest(false, "  / a /   b /  ", " 1.txt  ", repoId, operator, 0, false,1024, "sha256")).id
         assertTrue(nodeService.exist(repoId, "/a/b/1.txt"))
     }
 
     @Test
     fun createThrow() {
-        assertThrows<ErrorCodeException> { nodeService.create(NodeCreateRequest(false, "   a /   b /  ", " 1.txt  ", repoId, operator, 0, 1024, "sha256")) }
-        assertThrows<ErrorCodeException> { nodeService.create(NodeCreateRequest(false, "   a /   b /  ", " 1./txt  ", repoId, operator, 0, 1024, "sha256")) }
-        assertThrows<ErrorCodeException> { nodeService.create(NodeCreateRequest(true, "/a/b/", "..", repoId, operator, 0, 1024, "sha256")) }
-        assertThrows<ErrorCodeException> { nodeService.create(NodeCreateRequest(true, "/a/b/", ".", repoId, operator, 0, 1024, "sha256")) }
+        assertThrows<ErrorCodeException> { nodeService.create(NodeCreateRequest(false, "   a /   b /  ", " 1.txt  ", repoId, operator, 0, false,1024, "sha256")) }
+        assertThrows<ErrorCodeException> { nodeService.create(NodeCreateRequest(false, "   a /   b /  ", " 1./txt  ", repoId, operator, 0, false,1024, "sha256")) }
+        assertThrows<ErrorCodeException> { nodeService.create(NodeCreateRequest(true, "/a/b/", "..", repoId, operator, 0, false,1024, "sha256")) }
+        assertThrows<ErrorCodeException> { nodeService.create(NodeCreateRequest(true, "/a/b/", ".", repoId, operator, 0, false,1024, "sha256")) }
     }
 
     @Test
     fun createFile() {
-        val nodeid = nodeService.create(NodeCreateRequest(false, "  / a /   b /  ", " 1.txt  ", repoId, operator, 0, 1024, "sha256")).id
-        assertThrows<ErrorCodeException> { nodeService.create(NodeCreateRequest(false, "  / a /   b /  ", " 1.txt  ", repoId, operator, 0, 1024, "sha256")) }
+        val nodeid = nodeService.create(NodeCreateRequest(false, "  / a /   b /  ", " 1.txt  ", repoId, operator, 0, false,1024, "sha256")).id
+        assertThrows<ErrorCodeException> { nodeService.create(NodeCreateRequest(false, "  / a /   b /  ", " 1.txt  ", repoId, operator, 0, false,1024, "sha256")) }
 
         val node = nodeService.getDetailById(nodeid)
 
-        assertEquals(operator, node.createdBy)
+        assertEquals(operator, node!!.createdBy)
         assertNotNull(node.createdDate)
         assertEquals(operator, node.lastModifiedBy)
         assertNotNull(node.lastModifiedDate)
@@ -126,11 +127,11 @@ internal class NodeServiceTest @Autowired constructor(
 
     @Test
     fun createDir() {
-        val nodeid = nodeService.create(NodeCreateRequest(true, "  /// a /   c ////  ", "  中文.@_-`~...  ", repoId, operator, 0, 1024, "sha256")).id
+        val nodeid = nodeService.create(NodeCreateRequest(true, "  /// a /   c ////  ", "  中文.@_-`~...  ", repoId, operator, 0, false,1024, "sha256")).id
 
         val node = nodeService.getDetailById(nodeid)
 
-        assertEquals(operator, node.createdBy)
+        assertEquals(operator, node!!.createdBy)
         assertNotNull(node.createdDate)
         assertEquals(operator, node.lastModifiedBy)
         assertNotNull(node.lastModifiedDate)
@@ -146,13 +147,13 @@ internal class NodeServiceTest @Autowired constructor(
 
     @Test
     fun updateById() {
-        val nodeid = nodeService.create(NodeCreateRequest(false, "  / a /   b /  ", " 1.txt  ", repoId, operator, 0, 1024, "sha256")).id
+        val nodeid = nodeService.create(NodeCreateRequest(false, "  / a /   b /  ", " 1.txt  ", repoId, operator, 0, false,1024, "sha256")).id
 
         nodeService.updateById(nodeid, NodeUpdateRequest(operator, path = "/c/d/e", name = "2.txt.txt", size = 0L, sha256 = "sha2561"))
 
         val node = nodeService.getDetailById(nodeid)
 
-        assertEquals(operator, node.createdBy)
+        assertEquals(operator, node!!.createdBy)
         assertNotNull(node.createdDate)
         assertEquals(operator, node.lastModifiedBy)
         assertNotNull(node.lastModifiedDate)
@@ -168,17 +169,17 @@ internal class NodeServiceTest @Autowired constructor(
 
     @Test
     fun softDeleteById() {
-        var nodeid = nodeService.create(NodeCreateRequest(false, "/a/b/", "1.txt", repoId, operator, 0, 1024, "sha256")).id
-        nodeService.softDeleteById(nodeid, operator)
+        var nodeid = nodeService.create(NodeCreateRequest(false, "/a/b/", "1.txt", repoId, operator, 0, false,1024, "sha256")).id
+        nodeService.deleteById(nodeid, operator)
 
         assertFalse(nodeService.exist(repoId, "/a/b/1.txt"))
 
-        nodeid = nodeService.create(NodeCreateRequest(true, "/a/b/", "c", repoId, operator, 0, 1024, "sha256")).id
-        nodeService.create(NodeCreateRequest(false, "/a/b/c", "1.txt", repoId, operator, 0, 1024, "sha256")).id
+        nodeid = nodeService.create(NodeCreateRequest(true, "/a/b/", "c", repoId, operator, 0, false,1024, "sha256")).id
+        nodeService.create(NodeCreateRequest(false, "/a/b/c", "1.txt", repoId, operator, 0, false,1024, "sha256")).id
 
         assertTrue(nodeService.exist(repoId, "/a/b/c/1.txt"))
 
-        nodeService.softDeleteById(nodeid, operator)
+        nodeService.deleteById(nodeid, operator)
 
         assertFalse(nodeService.exist(repoId, "/a/b/c/1.txt"))
 
@@ -186,12 +187,12 @@ internal class NodeServiceTest @Autowired constructor(
 
     @Test
     fun escapeTest() {
-        nodeService.create(NodeCreateRequest(false, "/.*|^/a", "1.txt", repoId, operator, 0, 1024, "sha256")).id
-        nodeService.create(NodeCreateRequest(false, "/a", "1.txt", repoId, operator, 0, 1024, "sha256")).id
+        nodeService.create(NodeCreateRequest(false, "/.*|^/a", "1.txt", repoId, operator, 0, false,1024, "sha256")).id
+        nodeService.create(NodeCreateRequest(false, "/a", "1.txt", repoId, operator, 0, false,1024, "sha256")).id
 
 
         assertEquals(1, nodeService.list(repoId, "/.*|^/a").size)
-        nodeService.softDeleteByPath(repoId, "/.*|^/a", operator)
+        nodeService.deleteByPath(repoId, "/.*|^/a", operator)
         assertEquals(0, nodeService.list(repoId, "/.*|^/a").size)
         assertEquals(1, nodeService.list(repoId, "/a").size)
     }

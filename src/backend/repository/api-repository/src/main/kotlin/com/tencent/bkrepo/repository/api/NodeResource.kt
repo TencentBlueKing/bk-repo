@@ -36,7 +36,7 @@ interface NodeResource {
     fun detail(
         @ApiParam(value = "节点id", required = true)
         @PathVariable id: String
-    ): Response<Node>
+    ): Response<Node?>
 
     @ApiOperation("根据路径查看节点详情")
     @GetMapping("/{repositoryId}")
@@ -45,7 +45,7 @@ interface NodeResource {
         @PathVariable repositoryId: String,
         @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
-    ): Response<Node>
+    ): Response<Node?>
 
     @ApiOperation("列表查询指定目录下所有节点, 只返回一层深度的节点")
     @GetMapping("/list/{repositoryId}")
@@ -87,7 +87,7 @@ interface NodeResource {
 
     @ApiOperation("根据id删除节点")
     @DeleteMapping("/{id}")
-    fun deleteById(
+    fun delete(
         @ApiParam(value = "节点id", required = true)
         @PathVariable id: String,
         @ApiParam(value = "修改者", required = true)
