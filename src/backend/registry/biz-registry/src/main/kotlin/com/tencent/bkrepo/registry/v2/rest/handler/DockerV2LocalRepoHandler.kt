@@ -113,6 +113,7 @@ class DockerV2LocalRepoHandler(repo: Repo<DockerWorkContext>) : DockerV2RepoHand
         var lockId: String = ""
         val manifestType = ManifestType.from(mediaType)
         val manifestPath = buildManifestPathFromType(dockerRepo, tag, manifestType)
+        log.info("anifest path to {} .", manifestPath)
         if (!this.repo.canWrite(manifestPath)) {
             log.debug("Attempt to write manifest to {} failed the permission check.", manifestPath)
             return DockerV2Errors.unauthorizedUpload()
