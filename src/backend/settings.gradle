@@ -14,7 +14,6 @@ include ":demo:api-demo"
 include ":demo:biz-demo"
 include ":demo:boot-demo"
 
-
 include ":registry"
 include ":registry:api-registry"
 include ":registry:biz-registry"
@@ -30,5 +29,9 @@ include ":metadata:api-metadata"
 include ":metadata:biz-metadata"
 include ":metadata:boot-metadata"
 
+include ":binary"
+include ":binary:api-binary"
+include ":binary:biz-binary"
+include ":binary:boot-binary"
 
 include ":boot-assembly"

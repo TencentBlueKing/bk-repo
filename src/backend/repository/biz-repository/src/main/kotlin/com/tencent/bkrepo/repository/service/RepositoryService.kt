@@ -36,13 +36,22 @@ class RepositoryService @Autowired constructor(
     private val nodeService: NodeService,
     private val mongoTemplate: MongoTemplate
 ) {
-    fun getDetailById(id: String): Repository {
-        val repository = toRepository(repoRepository.findByIdOrNull(id)) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
+    fun getDetailById(id: String): Repository? {
+        val repository = toRepository(repoRepository.findByIdOrNull(id)) ?: return null
         credentialsRepository.findByRepositoryId(repository.id)?.let {
             repository.storageType = it.type
             repository.storageCredentials = it.credentials
         }
         return repository
+    }
+
+    fun query(projectId: String, repoName: String, type: String): Repository? {
+        projectId.takeIf { it.isNotBlank() && repoName.isNotBlank() && type.isNotBlank() } ?: return null
+        val query = Query(Criteria.where("projectId").`is`(projectId)
+                .and("name").`is`(repoName)
+                .and("type").`is`(type))
+
+        return toRepository(mongoTemplate.findOne(query, TRepository::class.java))
     }
 
     fun list(projectId: String): List<Repository> {
@@ -54,17 +63,16 @@ class RepositoryService @Autowired constructor(
         return Page(page, size, tRepositoryPage.totalElements, tRepositoryPage.content)
     }
 
-    fun exist(projectId: String, type: String, name: String): Boolean {
-        name.takeIf { it.isNotBlank() } ?: return false
+    fun exist(projectId: String, name: String): Boolean {
+        name.takeIf { it.isNotBlank() && name.isNotBlank() } ?: return false
         val query = Query(Criteria.where("projectId").`is`(projectId)
-                .and("type").`is`(type)
                 .and("name").`is`(name))
         return mongoTemplate.exists(query, TRepository::class.java)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     fun create(repoCreateRequest: RepoCreateRequest): IdValue {
-        repoCreateRequest.takeUnless { exist(it.projectId, it.type, it.name) } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
+        repoCreateRequest.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
 
         val tRepository = repoCreateRequest.let { TRepository(
                 name = it.name,
@@ -106,7 +114,7 @@ class RepositoryService @Autowired constructor(
         val repository = repoRepository.findByIdOrNull(id) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
         // 如果修改了name，校验唯一性
         repoUpdateRequest.name?.takeUnless {
-            repository.name != it && exist(repository.projectId, repository.type, it)
+            repository.name != it && exist(repository.projectId, it)
         } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
 
         with(repoUpdateRequest) {

@@ -35,7 +35,7 @@ interface RepositoryResource {
     fun detail(
         @ApiParam(value = "仓库id", required = true)
         @PathVariable id: String
-    ): Response<Repository>
+    ): Response<Repository?>
 
     @ApiOperation("列表查询项目所有仓库")
     @GetMapping("/list/{projectId}")
@@ -77,4 +77,15 @@ interface RepositoryResource {
         @ApiParam(value = "仓库id", required = true)
         @PathVariable id: String
     ): Response<Void>
+
+    @ApiOperation("根据名称查询仓库")
+    @GetMapping("/{projectId}/{repoName}/{type}")
+    fun query(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "仓库类型", required = true)
+        @PathVariable type: String
+    ): Response<Repository?>
 }

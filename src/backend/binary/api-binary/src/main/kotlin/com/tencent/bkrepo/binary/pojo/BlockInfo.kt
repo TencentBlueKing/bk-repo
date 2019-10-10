@@ -13,7 +13,7 @@ import io.swagger.annotations.ApiModelProperty
 data class BlockInfo(
     @ApiModelProperty("分块大小")
     val size: Long,
-    @ApiModelProperty("分块大小")
+    @ApiModelProperty("分块sha256")
     val sha256: String,
     @ApiModelProperty("分块序号")
     val sequence: String
