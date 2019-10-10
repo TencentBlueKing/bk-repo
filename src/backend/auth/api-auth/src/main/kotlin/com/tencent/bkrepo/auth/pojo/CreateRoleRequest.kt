@@ -4,7 +4,7 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("创建用户")
+@ApiModel("创建角色请求")
 data class CreateRoleRequest(
     @ApiModelProperty("名称")
     val name: String,

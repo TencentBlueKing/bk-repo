@@ -3,7 +3,7 @@ package com.tencent.bkrepo.auth.pojo
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("元数据信息")
+@ApiModel("用户信息")
 data class User(
     @ApiModelProperty("ID")
     val id: String,

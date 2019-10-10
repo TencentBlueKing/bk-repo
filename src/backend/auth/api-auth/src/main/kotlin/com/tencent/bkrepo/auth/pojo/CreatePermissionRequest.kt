@@ -5,7 +5,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("创建权限")
+@ApiModel("创建权限请求")
 data class CreatePermissionRequest(
     @ApiModelProperty("权限资源类型")
     val resourceType: ResourceType,

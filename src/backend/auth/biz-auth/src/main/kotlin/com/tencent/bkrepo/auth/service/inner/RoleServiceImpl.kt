@@ -57,13 +57,13 @@ class RoleServiceImpl @Autowired constructor(
         return roleRepository.findByRoleType(roleType).map { transfer(it) }
     }
 
-    override fun addRole(createRoleRequest: CreateRoleRequest) {
+    override fun addRole(request: CreateRoleRequest) {
         roleRepository.save(
             TRole(
                 id = null,
-                roleType = createRoleRequest.roleType,
-                name = createRoleRequest.name,
-                displayName = createRoleRequest.displayName
+                roleType = request.roleType,
+                name = request.name,
+                displayName = request.displayName
             )
         )
     }

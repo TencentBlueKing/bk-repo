@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServiceRoleResourceImpl @Autowired constructor(
-    private val roleService: RoleService,
-    private val rolePermissionRepository: RolePermissionRepository
+    private val rolePermissionRepository: RolePermissionRepository,
+    private val roleService: RoleService
 ) : ServiceRoleResource {
     override fun listProjectRole(): Response<List<Role>> {
         return Response(roleService.listByType(RoleType.PROJECT))
@@ -32,9 +32,9 @@ class ServiceRoleResourceImpl @Autowired constructor(
         return Response(true)
     }
 
-    override fun createRole(createRoleRequest: CreateRoleRequest): Response<Boolean> {
+    override fun createRole(request: CreateRoleRequest): Response<Boolean> {
         // todo check request
-        roleService.addRole(createRoleRequest)
+        roleService.addRole(request)
         return Response(true)
     }
 
