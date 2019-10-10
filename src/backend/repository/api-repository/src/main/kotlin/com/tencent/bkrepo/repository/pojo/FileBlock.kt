@@ -12,11 +12,15 @@ data class FileBlock(
     @ApiModelProperty("分块id")
     val id: String? = null,
     @ApiModelProperty("分块顺序")
-    var index: Int,
+    var sequence: Int,
     @ApiModelProperty("分块大小")
     var size: Long,
     @ApiModelProperty("sha256")
     var sha256: String,
     @ApiModelProperty("所属节点id")
-    var nodeId: String
+    var nodeId: String,
+    @ApiModelProperty("所属仓库id")
+    var repositoryId: String,
+    @ApiModelProperty("所属文件全路径")
+    var fullPath: String
 )

@@ -6,6 +6,8 @@ import com.tencent.bkrepo.repository.pojo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.RepoUpdateRequest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -41,7 +43,7 @@ internal class RepositoryServiceTest @Autowired constructor(
 
     @Test
     fun getDetailById() {
-        assertThrows<ErrorCodeException> { repositoryService.getDetailById("") }
+        assertNull(repositoryService.getDetailById(""))
     }
 
     @Test
@@ -82,21 +84,21 @@ internal class RepositoryServiceTest @Autowired constructor(
     @Test
     fun exist() {
         val idValue = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
-        assertTrue(repositoryService.exist(projectId, "BINARY", "测试仓库"))
-        assertFalse(repositoryService.exist("", "", ""))
-        assertFalse(repositoryService.exist(projectId, "", ""))
-        assertFalse(repositoryService.exist(projectId, "BINARY", ""))
-        assertFalse(repositoryService.exist("", "BINARY", "测试仓库"))
+        assertTrue(repositoryService.exist(projectId, "测试仓库"))
+        assertFalse(repositoryService.exist("", ""))
+        assertFalse(repositoryService.exist(projectId, ""))
+        assertFalse(repositoryService.exist(projectId, ""))
+        assertFalse(repositoryService.exist("", "测试仓库"))
 
         repositoryService.deleteById(idValue.id)
-        assertFalse(repositoryService.exist(projectId, "BINARY", "测试仓库"))
+        assertFalse(repositoryService.exist(projectId, "测试仓库"))
     }
 
     @Test
     fun create() {
         val idValue = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
         val repository = repositoryService.getDetailById(idValue.id)
-        assertEquals("测试仓库", repository.name)
+        assertEquals("测试仓库", repository!!.name)
         assertEquals("BINARY", repository.type)
         assertEquals(RepositoryCategoryEnum.LOCAL, repository.category)
         assertEquals(true, repository.public)
@@ -110,7 +112,7 @@ internal class RepositoryServiceTest @Autowired constructor(
         val idValue = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
         repositoryService.updateById(idValue.id, RepoUpdateRequest(operator, name = "新的名称", category = RepositoryCategoryEnum.REMOTE, public = false, description = "新的描述"))
         val repository = repositoryService.getDetailById(idValue.id)
-        assertEquals("新的名称", repository.name)
+        assertEquals("新的名称", repository!!.name)
         assertEquals(RepositoryCategoryEnum.REMOTE, repository.category)
         assertEquals(false, repository.public)
         assertEquals("新的描述", repository.description)
@@ -122,9 +124,9 @@ internal class RepositoryServiceTest @Autowired constructor(
         val idValue = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
         val idValue2 = repositoryService.create(RepoCreateRequest(operator, "测试仓库2", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
         repositoryService.deleteById(idValue.id)
-        assertThrows<ErrorCodeException> { repositoryService.getDetailById(idValue.id) }
+        assertNull(repositoryService.getDetailById(idValue.id))
 
         repositoryService.deleteById("")
-        repositoryService.getDetailById(idValue2.id)
+        assertNotNull(repositoryService.getDetailById(idValue2.id))
     }
 }

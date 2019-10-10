@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 /**
- * 仓库mongo repository
+ * 仓库身份信息mongo repository
  *
  * @author: carrypan
  * @date: 2019-09-20

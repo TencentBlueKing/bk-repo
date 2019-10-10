@@ -23,6 +23,8 @@ data class NodeCreateRequest(
     val createdBy: String,
     @ApiModelProperty("过期时间，单位天(0代表永久保存)")
     val expires: Long = 0,
+    @ApiModelProperty("是否覆盖")
+    val overwrite: Boolean = false,
     @ApiModelProperty("文件大小，单位byte")
     val size: Long? = null,
     @ApiModelProperty("文件sha256")
