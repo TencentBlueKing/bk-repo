@@ -7,7 +7,7 @@ import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_INVALID
+import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import org.springframework.beans.factory.annotation.Autowired
@@ -52,26 +52,26 @@ class ServicePermissionResourceImpl @Autowired constructor(
                 }
                 ResourceType.PROJECT -> {
                     if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_IS_INVALID, "projectId required")
+                        throw ErrorCodeException(PARAMETER_INVALID, "projectId required")
                     }
                 }
                 ResourceType.REPO -> {
                     if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_IS_INVALID, "projectId required")
+                        throw ErrorCodeException(PARAMETER_INVALID, "projectId required")
                     }
                     if (repoId.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_IS_INVALID, "repoId required")
+                        throw ErrorCodeException(PARAMETER_INVALID, "repoId required")
                     }
                 }
                 ResourceType.NODE -> {
                     if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_IS_INVALID, "node required")
+                        throw ErrorCodeException(PARAMETER_INVALID, "node required")
                     }
                     if (repoId.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_IS_INVALID, "repoId required")
+                        throw ErrorCodeException(PARAMETER_INVALID, "repoId required")
                     }
                     if (node.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_IS_INVALID, "node required")
+                        throw ErrorCodeException(PARAMETER_INVALID, "node required")
                     }
                 }
             }

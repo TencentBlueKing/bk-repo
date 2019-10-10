@@ -12,7 +12,7 @@ import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.repository.UserRoleRepository
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_INVALID
+import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
