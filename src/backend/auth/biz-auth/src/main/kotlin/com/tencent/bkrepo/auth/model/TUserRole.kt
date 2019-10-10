@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 data class TUserRole(
     val id: String? = null,
 
-    val userId: String,
+    val userName: String,
     val roleId: String,
 
     val projectId: String,

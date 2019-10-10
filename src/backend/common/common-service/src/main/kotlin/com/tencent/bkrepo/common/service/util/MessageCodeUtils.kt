@@ -73,7 +73,7 @@ class MessageCodeUtils @Autowired constructor() {
             data: T?
         ): Response<T> {
             val message = getCodeMessage(messageCode, params)
-                    ?: "System service busy, please try again later"
+                    //?: "System service busy, please try again later"
             return Response(messageCode, message, data) // 生成Result对象
         }
 

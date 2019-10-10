@@ -12,7 +12,7 @@ data class User(
     @ApiModelProperty("用户名")
     val displayName: String,
     @ApiModelProperty("密码")
-    val pwd: String,
+    var pwd: String,
     @ApiModelProperty("是否是管理员")
     val admin: Boolean,
     @ApiModelProperty("是否锁定")

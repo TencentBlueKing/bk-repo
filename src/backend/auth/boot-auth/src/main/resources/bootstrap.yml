@@ -13,3 +13,6 @@ spring:
         format: YAML
         data-key: data
         profileSeparator: '::'
+
+auth:
+  realm: inner

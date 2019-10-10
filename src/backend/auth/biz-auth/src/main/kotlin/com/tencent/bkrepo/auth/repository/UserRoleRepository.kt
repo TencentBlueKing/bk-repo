@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface UserRoleRepository : MongoRepository<TUserRole, String> {
-    fun findByUserIdAndProjectId(userId: String, projectId: String): List<TUserRole>
+    fun findByUserNameAndProjectId(userName: String, projectId: String): List<TUserRole>
 }

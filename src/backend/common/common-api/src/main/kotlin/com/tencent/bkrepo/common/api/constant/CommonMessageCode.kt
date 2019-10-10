@@ -11,4 +11,5 @@ object CommonMessageCode {
     const val ERROR_SERVICE_NO_FOUND = 2100007 // "找不到任何有效的{0}服务提供者"
     const val ELEMENT_NOT_FOUND = 2100008 // "访问的资源{0}不存在"
     const val ELEMENT_CANNOT_BE_MODIFIED = 2100009 // "资源无法被编辑"
+    const val NOT_SUPPORTED = 2100010 // "不支持的功能"
 }
