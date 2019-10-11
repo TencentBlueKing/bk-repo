@@ -97,20 +97,23 @@ bootRun.enabled = isBootProject
 该部分只涉及到前端请求与网关**微服务路由**的部分，**该部分与后台定义路径的无关**。
 
 * 先按子服务划分api,  方便网关识别做微服务路由，例如：
-  * 仓库管理(repo) /ms/repo
-  * ms 为网关判断是要向后端微服务的请求(MicroService),与静态资源请求区分
+  * 仓库服务(repository) /api/repository
+  * metadata服务(metadata) /api/metadata
+  * api为网关判断是要向后端微服务的请求(MicroService),与静态资源请求以及其请求分离
+  * docker registry微服务再做特殊处理
+  
 #### 网关处理逻辑与后端定义部分 
 
 - 基于上面接下来按接口调用范围划分，分有用户态的接口与后台服务间调用 (无用户态)，还是以上面几个子服务为例子：
-  - 仓库管理资源接口(repo) 
-    - 用户登录态接口  GET /ms/repo/user/repos/{repoId}
-    - 服务间调用接口 GET /ms/repo/service/repos/{repoId}
+  - 仓库服务接口(repo) 
+    - 用户登录态接口  GET /api/repository/user/repos/{repoId}
+    - 服务间调用接口 GET /api/repository/service/repos/{repoId}
 
 ```tex
-  示例：GET /ms/repo/user/repos/{repoId}
-  前缀： /ms/repo  
-  网关拿repo查到相应仓库管理微服务的IP做转发，同时把这个repo微服务标识从URI中移除
-  此时请求URI变成 	/ms/user/repos/{repoId}
+  示例：GET /api/repository/user/repos/{repoId}
+  前缀： /api/repository  
+  网关拿repository查到相应仓库管理微服务的IP做转发，同时把这个/api/repository微服务标识从URI中移除
+  此时请求URI变成 	/user/repos/{repoId}
 ```
 
 #### 后端URI定义

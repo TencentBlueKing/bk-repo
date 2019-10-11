@@ -19,14 +19,16 @@ class DockerManifestSyncer {
 
     @Throws(IOException::class)
     fun sync(repo: Repo<DockerWorkContext>, info: ManifestMetadata, dockerRepo: String, tag: String): Boolean {
-        log.debug("Starting to sync docker repository blobs")
+        log.info("Starting to sync docker repository blobs")
         val var5 = info.blobsInfo.iterator()
 
         while (var5.hasNext()) {
             val blobInfo = var5.next() as DockerBlobInfo
+            log.info(" docker digest {}",blobInfo.digest)
             if (blobInfo.digest != null && !this.isForeignLayer(blobInfo)) {
                 val blobDigest = DockerDigest(blobInfo.digest!!)
                 val blobFilename = blobDigest.filename()
+                log.info(" blob file name digest {}",blobFilename)
                 val tempBlobPath = "$dockerRepo/_uploads/$blobFilename"
                 val finalBlobPath = "$dockerRepo/$tag/$blobFilename"
                 if (!repo.exists(finalBlobPath)) {

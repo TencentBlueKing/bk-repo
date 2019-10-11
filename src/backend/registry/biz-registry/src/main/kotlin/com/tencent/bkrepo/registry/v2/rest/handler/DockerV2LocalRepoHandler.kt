@@ -113,7 +113,7 @@ class DockerV2LocalRepoHandler(repo: Repo<DockerWorkContext>) : DockerV2RepoHand
         var lockId: String = ""
         val manifestType = ManifestType.from(mediaType)
         val manifestPath = buildManifestPathFromType(dockerRepo, tag, manifestType)
-        log.info("anifest path to {} .", manifestPath)
+        log.info("manifest path to {} .", manifestPath)
         if (!this.repo.canWrite(manifestPath)) {
             log.debug("Attempt to write manifest to {} failed the permission check.", manifestPath)
             return DockerV2Errors.unauthorizedUpload()
@@ -156,6 +156,7 @@ class DockerV2LocalRepoHandler(repo: Repo<DockerWorkContext>) : DockerV2RepoHand
     private fun processUploadedManifestType(dockerRepo: String, tag: String, manifestPath: String, manifestType: ManifestType, manifestBytes: ByteArray): DockerDigest {
         // val manifestBytes = IOUtils.toByteArray(stream)
         val digest = DockerManifestDigester.calc(manifestBytes)
+        log.info("digest : {}",digest)
         if (ManifestType.Schema2List.equals(manifestType)) {
             this.processManifestList(dockerRepo, tag, manifestPath, digest!!, manifestBytes, manifestType)
             return digest
@@ -167,6 +168,7 @@ class DockerV2LocalRepoHandler(repo: Repo<DockerWorkContext>) : DockerV2RepoHand
                 log.error(msg)
                 throw DockerSyncManifestException(msg)
             } else {
+                log.info("start to upload manifest : {}",manifestType.toString())
                 val response = this.repo.upload(this.manifestUploadContext(manifestType, manifestMetadata, manifestPath, manifestBytes))
                 if (!this.uploadSuccessful(response)) {
                     throw IOException(response.getEntity().toString())
