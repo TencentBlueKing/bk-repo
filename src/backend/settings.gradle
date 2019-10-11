@@ -34,4 +34,13 @@ include ":binary:api-binary"
 include ":binary:biz-binary"
 include ":binary:boot-binary"
 
+include ":auth"
+include ":auth:api-auth"
+include ":auth:biz-auth"
+include ":auth:boot-auth"
+
 include ":boot-assembly"
+
+
+
+
