@@ -48,7 +48,7 @@ class InnerCosFileStorage(
 
     override fun store(path: String, filename: String, file: File, client: InnerCosClient) {
         // 支持根据文件的大小自动选择单文件上传或者分块上传
-        val transferManager = TransferManager(client.cosClient, executor)
+        val transferManager = TransferManager(client.cosClient, executor, false)
         val putObjectRequest = PutObjectRequest(client.bucketName, filename, file)
         val upload = transferManager.upload(putObjectRequest)
         // 等待传输结束
@@ -59,7 +59,7 @@ class InnerCosFileStorage(
     override fun store(path: String, filename: String, inputStream: InputStream, client: InnerCosClient) {
         val fileSize = inputStream.available().toLong()
         // 支持根据文件的大小自动选择单文件上传或者分块上传
-        val transferManager = TransferManager(client.cosClient, executor)
+        val transferManager = TransferManager(client.cosClient, executor, false)
         val objectMetadata = ObjectMetadata().apply { contentLength = fileSize }
         val putObjectRequest = PutObjectRequest(client.bucketName, filename, inputStream, objectMetadata)
         val upload = transferManager.upload(putObjectRequest)

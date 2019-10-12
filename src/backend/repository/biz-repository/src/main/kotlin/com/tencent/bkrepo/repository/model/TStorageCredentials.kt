@@ -19,5 +19,5 @@ data class TStorageCredentials(
 
     var repositoryId: String,
     var type: String,
-    var credentials: Any
+    var credentials: String
 )

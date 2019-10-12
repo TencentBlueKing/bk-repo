@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
 import com.tencent.bkrepo.repository.pojo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.RepoUpdateRequest
@@ -12,7 +11,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 

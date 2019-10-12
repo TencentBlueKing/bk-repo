@@ -79,7 +79,7 @@ interface RepositoryResource {
     ): Response<Void>
 
     @ApiOperation("根据名称查询仓库")
-    @GetMapping("/{projectId}/{repoName}/{type}")
+    @GetMapping("/query/{projectId}/{repoName}/{type}")
     fun query(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,

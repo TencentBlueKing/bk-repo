@@ -13,5 +13,5 @@ import org.springframework.stereotype.Repository
  */
 @Repository
 interface FileBlockRepository : MongoRepository<TFileBlock, String> {
-    fun findByNodeId(nodeId: String): List<FileBlock>
+    fun findByNodeIdOrderBySequence(nodeId: String): List<FileBlock>
 }

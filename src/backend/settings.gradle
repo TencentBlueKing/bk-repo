@@ -29,9 +29,9 @@ include ":metadata:api-metadata"
 include ":metadata:biz-metadata"
 include ":metadata:boot-metadata"
 
-include ":binary"
-include ":binary:api-binary"
-include ":binary:biz-binary"
-include ":binary:boot-binary"
+include ":generic"
+include ":generic:api-generic"
+include ":generic:biz-generic"
+include ":generic:boot-generic"
 
 include ":boot-assembly"

@@ -1,0 +1,9 @@
+dependencies {
+    api project(":common:common-service")
+    api project(":common:common-client")
+    api project(":common:common-storage")
+    api project(":common:common-mongo")
+    api project(":generic:api-generic")
+    api project(":repository:api-repository")
+    api project(":metadata:api-metadata")
+}

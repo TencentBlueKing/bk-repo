@@ -31,6 +31,6 @@ data class RepoCreateRequest(
     @ApiModelProperty("存储类型")
     val storageType: String? = null,
     @ApiModelProperty("存储身份信息")
-    val storageCredentials: Any? = null
+    val storageCredentials: String? = null
 
 )

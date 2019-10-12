@@ -32,6 +32,14 @@ object NodeUtils {
      */
     private const val FILE_SEPARATOR = "/"
 
+    /**
+     * 文件分隔符
+     */
+    private const val DOT = "."
+
+    /**
+     * 文件分隔字符
+     */
     private const val FILE_SEPARATOR_CHAR = '/'
 
     /**
@@ -138,5 +146,9 @@ object NodeUtils {
             }
         }
         return escapedString
+    }
+
+    fun getExtention(fileName: String): String? {
+        return fileName.trim().substring(fileName.lastIndexOf(DOT) + 1)
     }
 }

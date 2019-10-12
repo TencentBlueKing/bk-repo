@@ -18,7 +18,7 @@ data class FileBlock(
     @ApiModelProperty("sha256")
     var sha256: String,
     @ApiModelProperty("所属节点id")
-    var nodeId: String,
+    var nodeId: String ? = null,
     @ApiModelProperty("所属仓库id")
     var repositoryId: String,
     @ApiModelProperty("所属文件全路径")

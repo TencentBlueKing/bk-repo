@@ -39,13 +39,22 @@ interface NodeResource {
     ): Response<Node?>
 
     @ApiOperation("根据路径查看节点详情")
-    @GetMapping("/{repositoryId}")
-    fun detail(
+    @GetMapping("/query/{repositoryId}")
+    fun query(
         @ApiParam(value = "仓库id", required = true)
         @PathVariable repositoryId: String,
         @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
     ): Response<Node?>
+
+    @ApiOperation("根据路径查看节点详是否存在")
+    @GetMapping("/exist/{repositoryId}")
+    fun exist(
+        @ApiParam(value = "仓库id", required = true)
+        @PathVariable repositoryId: String,
+        @ApiParam(value = "节点完整路径", required = true)
+        @RequestParam fullPath: String
+    ): Response<Boolean>
 
     @ApiOperation("列表查询指定目录下所有节点, 只返回一层深度的节点")
     @GetMapping("/list/{repositoryId}")

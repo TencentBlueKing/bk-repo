@@ -11,5 +11,9 @@ enum class StorageTypeEnum {
     INNER_COS, // 内部cos
     COS, // 腾讯云cos
     S3, // 标准S3
-    CEPH_FS, // CephFS
+    CEPH_FS; // CephFS
+
+    companion object {
+        fun getEnum(string: String) = values().find { it.name == string }
+    }
 }

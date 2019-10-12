@@ -10,7 +10,8 @@ package com.tencent.bkrepo.common.api.enums
 enum class SystemModuleEnum(val code: String) {
     COMMON("00"), // 公共模块
     REPOSITORY("01"), // 仓库
-    METADATA("02"); // 元数据
+    METADATA("02"), // 元数据
+    GENERIC("11"); // 通用文件
 
     companion object {
         fun getSystemModule(code: String): SystemModuleEnum {

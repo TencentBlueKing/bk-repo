@@ -51,7 +51,14 @@ class RepositoryService @Autowired constructor(
                 .and("name").`is`(repoName)
                 .and("type").`is`(type))
 
-        return toRepository(mongoTemplate.findOne(query, TRepository::class.java))
+        val repository = toRepository(mongoTemplate.findOne(query, TRepository::class.java)) ?: return null
+
+        credentialsRepository.findByRepositoryId(repository.id)?.let {
+            repository.storageType = it.type
+            repository.storageCredentials = it.credentials
+        }
+
+        return repository
     }
 
     fun list(projectId: String): List<Repository> {

@@ -6,6 +6,7 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
 import java.io.File
 import java.io.InputStream
+import org.slf4j.LoggerFactory
 
 /**
  * 文件存储抽象类
@@ -53,6 +54,8 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
             val cachedFile = this.cache(path, hash, inputStream)
             store(path, hash, cachedFile, getClient(credentials))
         } ?: store(path, hash, inputStream, getClient(credentials))
+
+        logger.debug("File $hash has been stored.")
     }
 
     override fun delete(hash: String, credentials: ClientCredentials?) {
@@ -60,6 +63,8 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
 
         delete(path, hash, getClient(credentials))
         localFileCache?.remove(path, hash)
+
+        logger.debug("File $hash hash been removed.")
     }
 
     override fun load(hash: String, credentials: ClientCredentials?): InputStream? {
@@ -72,6 +77,7 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
                 inputStream
             }
         } ?: load(path, hash, getClient(credentials))
+
     }
 
     override fun exist(hash: String, credentials: ClientCredentials?): Boolean {
@@ -92,6 +98,7 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
      */
     protected open fun onClientRemoval(credentials: Credentials, client: Client) {
         // do nothing
+        logger.debug("Cached storage client is removed")
     }
 
     protected abstract fun store(path: String, filename: String, inputStream: InputStream, client: Client)
@@ -99,4 +106,8 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
     protected abstract fun delete(path: String, filename: String, client: Client)
     protected abstract fun load(path: String, filename: String, client: Client): InputStream?
     protected abstract fun exist(path: String, filename: String, client: Client): Boolean
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(AbstractFileStorage::class.java)
+    }
 }
