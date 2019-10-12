@@ -33,7 +33,18 @@ class MessageCodeUtils @Autowired constructor() {
         fun <T> generateResponseDataObject(
             messageCode: Int
         ): Response<T> {
-            return generateResponseDataObject(messageCode, null, null)
+            return generateResponseDataObject(messageCode, null, null, null)
+        }
+
+        /**
+         * 生成请求响应对象
+         * @param messageCode 状态码
+         */
+        fun <T> generateResponseDataObject(
+            messageCode: Int,
+            defaultMessage: String?
+        ): Response<T> {
+            return generateResponseDataObject(messageCode, defaultMessage, null, null)
         }
 
         /**
@@ -43,9 +54,10 @@ class MessageCodeUtils @Autowired constructor() {
          */
         fun <T> generateResponseDataObject(
             messageCode: Int,
+            defaultMessage: String?,
             data: T?
         ): Response<T> {
-            return generateResponseDataObject(messageCode, null, data)
+            return generateResponseDataObject(messageCode, defaultMessage, null, data)
         }
 
         /**
@@ -55,9 +67,10 @@ class MessageCodeUtils @Autowired constructor() {
          */
         fun <T> generateResponseDataObject(
             messageCode: Int,
-            params: Array<String>
+            defaultMessage: String?,
+            params: Array<out String>
         ): Response<T> {
-            return generateResponseDataObject(messageCode, params, null)
+            return generateResponseDataObject(messageCode, defaultMessage, params, null)
         }
 
         /**
@@ -69,11 +82,12 @@ class MessageCodeUtils @Autowired constructor() {
         @Suppress("UNCHECKED_CAST")
         fun <T> generateResponseDataObject(
             messageCode: Int,
-            params: Array<String>?,
+            defaultMessage: String?,
+            params: Array<out String>?,
             data: T?
         ): Response<T> {
-            val message = getCodeMessage(messageCode, params)
-                    //?: "System service busy, please try again later"
+            val message = getCodeMessage(messageCode, defaultMessage, params)
+                    ?: "System service busy, please try again later"
             return Response(messageCode, message, data) // 生成Result对象
         }
 
@@ -82,7 +96,7 @@ class MessageCodeUtils @Autowired constructor() {
          * @param messageCode code
          */
         fun getCodeLanMessage(messageCode: Int): String {
-            return getCodeMessage(messageCode, null)
+            return getCodeMessage(messageCode, null, null)
                     ?: messageCode.toString()
         }
 
@@ -91,13 +105,13 @@ class MessageCodeUtils @Autowired constructor() {
          * @param messageCode code
          * @param params 替换描述信息占位符的参数数组
          */
-        private fun getCodeMessage(messageCode: Int, params: Array<String>?): String? {
+        private fun getCodeMessage(messageCode: Int, defaultMessage: String?, params: Array<out String>?): String? {
             var message: String? = null
             try {
                 val redisOperation: RedisOperation = SpringContextUtils.getBean(RedisOperation::class.java)
                 // 根据code从redis中获取该状态码对应的信息信息(PROJECT_CODE_PREFIX前缀保证code码在redis中的唯一性)
                 val messageCodeDetailStr = redisOperation.get(PROJECT_CODE_PREFIX + messageCode)
-                    ?: return message
+                    ?: defaultMessage ?: return message
                 val attributes = RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes
                 val locale = if (null != attributes) {
                     val request = attributes.request

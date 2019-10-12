@@ -26,7 +26,7 @@ abstract class StorageProperties {
                 /**
                  * 缓存文件时间，单位秒
                  */
-                var period: Long = 60 * 60L
+                var expires: Long = 60 * 60L
         }
 
         class ClientCache {

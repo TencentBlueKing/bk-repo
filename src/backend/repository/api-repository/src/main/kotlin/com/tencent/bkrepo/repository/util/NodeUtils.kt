@@ -32,6 +32,14 @@ object NodeUtils {
      */
     private const val FILE_SEPARATOR = "/"
 
+    /**
+     * 文件分隔符
+     */
+    private const val DOT = "."
+
+    /**
+     * 文件分隔字符
+     */
     private const val FILE_SEPARATOR_CHAR = '/'
 
     /**
@@ -70,11 +78,11 @@ object NodeUtils {
     fun parseDirName(input: String): String {
         val dirName = input.trim()
         dirName.takeIf { it.startsWith(FILE_SEPARATOR) }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_INVALID, "Directory name {$dirName} is invalid, it should start with '$FILE_SEPARATOR'.")
+                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Directory name {$dirName} is invalid, it should start with '$FILE_SEPARATOR'.")
 
         val nameList = dirName.split(FILE_SEPARATOR).filter { it.isNotBlank() }.map { parseFileName(it) }.toList()
         nameList.takeIf { it.size <= MAX_DIR_DEPTH }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_INVALID, "The depth of directory should not exceed $MAX_DIR_DEPTH.")
+                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "The depth of directory should not exceed $MAX_DIR_DEPTH.")
 
         val builder = StringBuilder()
         nameList.forEach { builder.append(FILE_SEPARATOR).append(it) }
@@ -88,13 +96,13 @@ object NodeUtils {
     fun parseFileName(input: String): String {
         val fileName = input.trim()
         fileName.takeIf { it.isNotBlank() }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_INVALID, "File name can not be blank.")
+                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "File name can not be blank.")
         fileName.takeUnless { forbiddenNameList.contains(it) }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_INVALID)
+                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
         fileName.takeUnless { it.contains(FILE_SEPARATOR) }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_INVALID, "File name {$input} should not contain '$FILE_SEPARATOR'.")
+                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "File name {$input} should not contain '$FILE_SEPARATOR'.")
         fileName.takeIf { it.length <= MAX_FILENAME_LENGTH }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_INVALID, "The length of name {$input} should not exceed $MAX_FILENAME_LENGTH.")
+                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "The length of name {$input} should not exceed $MAX_FILENAME_LENGTH.")
         return fileName
     }
 
@@ -138,5 +146,9 @@ object NodeUtils {
             }
         }
         return escapedString
+    }
+
+    fun getExtention(fileName: String): String? {
+        return fileName.trim().substring(fileName.lastIndexOf(DOT) + 1)
     }
 }

@@ -16,6 +16,6 @@ class JasyptTest {
     fun testJasypt() {
         System.setProperty("jasypt.encryptor.password", "bkrepo")
         val stringEncryptor = DefaultLazyEncryptor(StandardEnvironment())
-        println(stringEncryptor.encrypt("YJ3FAeZ4nEM8jEHDu2Quh1RBsn/PPfALZD"))
+        println(stringEncryptor.encrypt("ZH17km/iHZhjTyGHHzyc9QQuKzUGZcti"))
     }
 }

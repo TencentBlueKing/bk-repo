@@ -23,8 +23,8 @@ internal class MessageCodeDetailServiceTest @Autowired constructor(
 
     @Test
     @DisplayName("创建消息码")
-    @Disabled
+    //@Disabled
     fun create() {
-        messageCodeDetailService.create(MessageCodeCreateRequest( "2500001", SystemModuleEnum.COMMON, "系统内部繁忙，请稍后再试试", "系統內部繁忙，請稍後再試試", "System service busy, please try again later"))
+        messageCodeDetailService.create(MessageCodeCreateRequest( "2500004", SystemModuleEnum.COMMON, "{0}为非法数据", "{0}為非法數據", "{0} is invalid."))
     }
 }

@@ -30,5 +30,5 @@ data class Repository(
     @ApiModelProperty("存储类型")
     var storageType: String? = null,
     @ApiModelProperty("存储身份信息")
-    var storageCredentials: Any? = null
+    var storageCredentials: String? = null
 )

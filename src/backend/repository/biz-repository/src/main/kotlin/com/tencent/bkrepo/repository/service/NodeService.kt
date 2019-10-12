@@ -49,20 +49,21 @@ class NodeService @Autowired constructor(
 ) {
     fun getDetailById(id: String): Node? {
         val node = toNode(nodeRepository.findByIdAndDeletedIsNull(id)) ?: return null
-        fileBlockRepository.findByNodeId(node.id).let { node.fileBlockList = it }
+        fileBlockRepository.findByNodeIdOrderBySequence(node.id).let { node.fileBlockList = it }
 
         return node
     }
 
-    fun getDetailByFullPath(repositoryId: String, fullPath: String): Node? {
+    fun query(repositoryId: String, fullPath: String): Node? {
+        val formattedPath = formatFullPath(fullPath)
         val tNode = mongoTemplate.findOne(Query(
                 Criteria.where("repositoryId").`is`(repositoryId)
-                        .and("fullPath").`is`(fullPath)
+                        .and("fullPath").`is`(formattedPath)
                         .and("deleted").`is`(null)
         ), TNode::class.java)
 
         val node = toNode(tNode) ?: return null
-        fileBlockRepository.findByNodeId(node.id).let { node.fileBlockList = it }
+        fileBlockRepository.findByNodeIdOrderBySequence(node.id).let { node.fileBlockList = it }
 
         return node
     }
@@ -112,7 +113,7 @@ class NodeService @Autowired constructor(
         }
 
         // 路径唯一性校验
-        val existNode = getDetailByFullPath(node.repositoryId, node.fullPath)
+        val existNode = query(node.repositoryId, node.fullPath)
         if (existNode != null) {
             if (!nodeCreateRequest.overwrite) {
                 throw ErrorCodeException(PARAMETER_IS_EXIST)

@@ -39,4 +39,8 @@ data class Node(
 
     @ApiModelProperty("文件分块列表")
     var fileBlockList: List<FileBlock>? = null
-)
+) {
+    fun isBlockFile(): Boolean {
+        return !fileBlockList.isNullOrEmpty()
+    }
+}

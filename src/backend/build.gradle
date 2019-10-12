@@ -17,7 +17,7 @@ buildscript {
         mavenLocal()
         maven { url MAVEN_REPO_URL }
         // for inner sdk
-        maven { url "https://mirrors.tencent.com/repository/maven/tencent_public_snapshots/" }
+        maven { url MAVEN_SNAPSHOT_REPO_URL }
         maven { url "https://repo.spring.io/libs-milestone" }
         mavenCentral()
         jcenter()
@@ -31,14 +31,14 @@ buildscript {
 }
 
 allprojects {
-    group "com.tencent.bk.repo"
+    group "com.tencent.bkrepo"
     version "0.1.0-SNAPSHOT"
 
     repositories {
         mavenLocal()
         maven { url MAVEN_REPO_URL }
         // for inner cos sdk
-        maven { url "https://mirrors.tencent.com/repository/maven/tencent_public_snapshots/" }
+        maven { url MAVEN_SNAPSHOT_REPO_URL }
         maven { url "https://repo.spring.io/libs-milestone" }
         mavenCentral()
         jcenter()
@@ -52,6 +52,7 @@ subprojects {
     apply plugin: "kotlin-spring"
     apply plugin: 'org.springframework.boot'
     apply plugin: "io.spring.dependency-management"
+    apply plugin: "maven-publish"
 
 
     def isBootProject = project.name.startsWith("boot-")
@@ -127,6 +128,7 @@ subprojects {
             }
             dependency "com.pinterest:ktlint:$ktlintVersion"
             dependency "io.swagger:swagger-annotations:$swaggerCoreVersion"
+            dependency "io.swagger:swagger-models:$swaggerCoreVersion"
             dependency "io.springfox:springfox-swagger2:$swaggerFoxVersion"
             dependency "commons-codec:commons-codec:$commonsCodecVersion"
             dependency "com.github.ulisesbocchio:jasypt-spring-boot-starter:$jasyptVersion"
@@ -135,6 +137,37 @@ subprojects {
             
         }
 
+    }
+
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                groupId project.group
+                artifactId project.name
+                version project.version
+                from components.java
+            }
+        }
+        repositories {
+            maven {
+                if (project.version.endsWith('-SNAPSHOT')) {
+                    url = MAVEN_SNAPSHOT_REPO_DEPLOY_URL
+                    
+                    credentials {
+                        username MAVEN_SNAPSHOT_REPO_USERNAME
+                        password MAVEN_SNAPSHOT_REPO_PASSWORD
+                    }
+                } else {
+                    url = MAVEN_REPO_DEPLOY_URL=
+
+                    credentials {
+                        username MAVEN_REPO_USERNAME
+                        password MAVEN_REPO_PASSWORD
+                    }
+                }
+
+            }
+        }
     }
     
 }
