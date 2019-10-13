@@ -11,10 +11,10 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("文件复制请求")
 data class FileCopyRequest(
-        @ApiModelProperty("目标项目", required = false)
-        private val toProjectId: String,
-        @ApiModelProperty("目标仓库", required = false)
-        private val toRepoName: String,
-        @ApiModelProperty("目标路径", required = true)
-        private val toPath: String
+    @ApiModelProperty("目标项目", required = false)
+    val toProjectId: String,
+    @ApiModelProperty("目标仓库", required = false)
+    val toRepoName: String,
+    @ApiModelProperty("目标路径", required = true)
+    val toPath: String
 )

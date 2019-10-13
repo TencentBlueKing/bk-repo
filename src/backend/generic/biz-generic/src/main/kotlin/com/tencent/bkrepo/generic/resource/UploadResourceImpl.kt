@@ -10,8 +10,6 @@ import com.tencent.bkrepo.generic.pojo.upload.UploadPreCheckRequest
 import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.UploadService
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 
@@ -55,5 +53,4 @@ class UploadResourceImpl @Autowired constructor(
     override fun queryBlockInfo(userId: String, uploadId: String): Response<List<BlockInfo>> {
         return Response.success(uploadService.queryBlockInfo(userId, uploadId))
     }
-
 }

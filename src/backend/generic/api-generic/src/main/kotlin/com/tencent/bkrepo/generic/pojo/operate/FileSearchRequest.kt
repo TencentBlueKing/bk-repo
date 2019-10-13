@@ -11,8 +11,8 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("文件搜索请求")
 data class FileSearchRequest(
-        @ApiModelProperty("匹配路径列表", required = true)
-        private val pathPattern: List<String>,
-        @ApiModelProperty("元数据匹配条件", required = true)
-        private val metadataCondition: Map<String, String>
+    @ApiModelProperty("匹配路径列表", required = true)
+    val pathPattern: List<String>,
+    @ApiModelProperty("元数据匹配条件", required = true)
+    val metadataCondition: Map<String, String>
 )

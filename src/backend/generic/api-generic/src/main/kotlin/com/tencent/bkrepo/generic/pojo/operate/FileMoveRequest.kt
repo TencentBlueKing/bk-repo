@@ -11,6 +11,6 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("文件移动请求")
 data class FileMoveRequest(
-        @ApiModelProperty("目标路径", required = true)
-        private val toPath: String
+    @ApiModelProperty("目标路径", required = true)
+    val toPath: String
 )

@@ -11,8 +11,8 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("文件详情")
 data class FileDetail(
-        @ApiModelProperty("文件信息")
-        private val fileInfo: FileInfo,
-        @ApiModelProperty("元数据列表")
-        private val metadataList: List<Metadata>
+    @ApiModelProperty("文件信息")
+    val fileInfo: FileInfo,
+    @ApiModelProperty("元数据列表")
+    val metadataList: List<Metadata>
 )
