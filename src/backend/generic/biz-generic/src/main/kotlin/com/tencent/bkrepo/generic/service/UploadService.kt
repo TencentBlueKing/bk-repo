@@ -11,7 +11,7 @@ import com.tencent.bkrepo.generic.constant.UploadStatusEnum
 import com.tencent.bkrepo.generic.model.TBlockRecord
 import com.tencent.bkrepo.generic.model.TUploadTransaction
 import com.tencent.bkrepo.generic.pojo.BlockInfo
-import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
+import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
 import com.tencent.bkrepo.generic.repository.BlockRecordRepository
 import com.tencent.bkrepo.generic.repository.UploadTransactionRepository
 import com.tencent.bkrepo.repository.api.NodeResource
