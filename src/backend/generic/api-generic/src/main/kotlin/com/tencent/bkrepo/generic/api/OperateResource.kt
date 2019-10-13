@@ -49,7 +49,7 @@ interface OperateResource {
             fullPath: String,
             @ApiParam("是否包含目录", required = false, defaultValue = "false")
             @RequestParam
-            includeFolders: Boolean = false,
+            includeFolder: Boolean = false,
             @ApiParam("是否深度查询文件", required = false, defaultValue = "false")
             @RequestParam
             deep: Boolean = false
