@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.repository
 
 import com.tencent.bkrepo.repository.model.TFileBlock
-import com.tencent.bkrepo.repository.pojo.FileBlock
+import com.tencent.bkrepo.repository.pojo.node.FileBlock
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 

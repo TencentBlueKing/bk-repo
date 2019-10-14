@@ -7,9 +7,9 @@ import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.model.TStorageCredentials
-import com.tencent.bkrepo.repository.pojo.RepoCreateRequest
-import com.tencent.bkrepo.repository.pojo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.Repository
+import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.Repository
 import com.tencent.bkrepo.repository.repository.RepoRepository
 import com.tencent.bkrepo.repository.repository.StorageCredentialsRepository
 import java.time.LocalDateTime
@@ -148,16 +148,18 @@ class RepositoryService @Autowired constructor(
         private val logger = LoggerFactory.getLogger(RepositoryService::class.java)
 
         fun toRepository(tRepository: TRepository?): Repository? {
-            return tRepository?.let { Repository(
-                    it.id!!,
-                    it.name,
-                    it.type,
-                    it.category,
-                    it.public,
-                    it.description,
-                    it.extension,
-                    it.projectId
-            ) }
+            return tRepository?.let {
+                Repository(
+                        it.id!!,
+                        it.name,
+                        it.type,
+                        it.category,
+                        it.public,
+                        it.description,
+                        it.extension,
+                        it.projectId
+                )
+            }
         }
     }
 }

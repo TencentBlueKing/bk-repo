@@ -4,9 +4,9 @@ import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.api.RepositoryResource
-import com.tencent.bkrepo.repository.pojo.RepoCreateRequest
-import com.tencent.bkrepo.repository.pojo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.Repository
+import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.Repository
 import com.tencent.bkrepo.repository.service.RepositoryService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController

@@ -45,10 +45,10 @@ interface OperateResource {
         repoName: String,
         @ApiParam(hidden = true)
         @WildcardParam
-        fullPath: String,
+        path: String,
         @ApiParam("是否包含目录", required = false, defaultValue = "false")
         @RequestParam
-        includeFolder: Boolean = false,
+        includeFolder: Boolean = true,
         @ApiParam("是否深度查询文件", required = false, defaultValue = "false")
         @RequestParam
         deep: Boolean = false

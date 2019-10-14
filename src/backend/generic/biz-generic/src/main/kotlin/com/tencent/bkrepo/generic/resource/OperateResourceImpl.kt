@@ -8,7 +8,11 @@ import com.tencent.bkrepo.generic.pojo.operate.FileCopyRequest
 import com.tencent.bkrepo.generic.pojo.operate.FileMoveRequest
 import com.tencent.bkrepo.generic.pojo.operate.FileSearchRequest
 import com.tencent.bkrepo.generic.service.OperateService
+import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -21,8 +25,8 @@ import org.springframework.web.bind.annotation.RestController
 class OperateResourceImpl @Autowired constructor(
     private val operateService: OperateService
 ) : OperateResource {
-    override fun listFile(userId: String, projectId: String, repoName: String, fullPath: String, includeFolder: Boolean, deep: Boolean): Response<List<FileInfo>> {
-        return Response.success(operateService.listFile(userId, projectId, repoName, fullPath, includeFolder, deep))
+    override fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Response<List<FileInfo>> {
+        return Response.success(operateService.listFile(userId, projectId, repoName, path, includeFolder, deep))
     }
 
     override fun searchFile(userId: String, projectId: String, repoName: String, searchRequest: FileSearchRequest): Response<List<FileInfo>> {
@@ -55,5 +59,12 @@ class OperateResourceImpl @Autowired constructor(
     override fun copy(userId: String, projectId: String, repoName: String, fullPath: String, copyRequest: FileCopyRequest): Response<Void> {
         operateService.copy(userId, projectId, repoName, fullPath, copyRequest.toProjectId, copyRequest.toRepoName, copyRequest.toPath)
         return Response.success()
+    }
+
+    @ApiOperation("head请求")
+    @RequestMapping(method = [RequestMethod.HEAD])
+    fun head(@RequestParam name: String): Response<String> {
+        println("head request: $name")
+        return Response.success("head response")
     }
 }

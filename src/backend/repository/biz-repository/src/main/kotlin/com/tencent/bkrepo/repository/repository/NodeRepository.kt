@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.repository
 
 import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.pojo.Node
+import com.tencent.bkrepo.repository.pojo.node.Node
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.repository.MongoRepository

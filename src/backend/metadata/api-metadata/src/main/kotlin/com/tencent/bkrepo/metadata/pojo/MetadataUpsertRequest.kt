@@ -9,7 +9,7 @@ import io.swagger.annotations.ApiModelProperty
  * @author: carrypan
  * @date: 2019-09-26
  */
-@ApiModel("创建/更新元数据请求")
+@ApiModel("创建或更新元数据请求")
 data class MetadataUpsertRequest(
     @ApiModelProperty("节点id")
     val nodeId: String,

@@ -4,9 +4,10 @@ import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.api.NodeResource
-import com.tencent.bkrepo.repository.pojo.Node
-import com.tencent.bkrepo.repository.pojo.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.node.Node
+import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.NodeService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -33,12 +34,16 @@ class NodeResourceImpl @Autowired constructor(
         return Response.success(nodeService.exist(repositoryId, fullPath))
     }
 
-    override fun list(repositoryId: String, path: String): Response<List<Node>> {
-        return Response.success(nodeService.list(repositoryId, path))
+    override fun list(repositoryId: String, path: String, includeFolder: Boolean, deep: Boolean): Response<List<Node>> {
+        return Response.success(nodeService.list(repositoryId, path, includeFolder, deep))
     }
 
-    override fun page(page: Int, size: Int, repositoryId: String, path: String): Response<Page<Node>> {
-        return Response.success(nodeService.page(repositoryId, path, page, size))
+    override fun page(page: Int, size: Int, repositoryId: String, path: String, includeFolder: Boolean, deep: Boolean): Response<Page<Node>> {
+        return Response.success(nodeService.page(repositoryId, path, page, size, includeFolder, deep))
+    }
+
+    override fun search(repositoryId: String, nodeSearchRequest: NodeSearchRequest): Response<List<Node>> {
+        return Response.success(nodeService.search(repositoryId, nodeSearchRequest))
     }
 
     override fun create(nodeCreateRequest: NodeCreateRequest): Response<IdValue> {

@@ -136,6 +136,9 @@ object NodeUtils {
         return path == ROOT_DIR || path == ""
     }
 
+    /**
+     * 正则特殊符号转义
+     */
     fun escapeRegex(input: String): String {
         var escapedString = input.trim()
         if (escapedString.isNotBlank()) {
@@ -148,7 +151,10 @@ object NodeUtils {
         return escapedString
     }
 
-    fun getExtention(fileName: String): String? {
+    /**
+     * 获取文件后缀
+     */
+    fun getExtension(fileName: String): String? {
         return fileName.trim().substring(fileName.lastIndexOf(DOT) + 1)
     }
 }

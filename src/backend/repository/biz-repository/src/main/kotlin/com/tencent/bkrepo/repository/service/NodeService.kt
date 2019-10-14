@@ -9,10 +9,11 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
-import com.tencent.bkrepo.repository.pojo.FileBlock
-import com.tencent.bkrepo.repository.pojo.Node
-import com.tencent.bkrepo.repository.pojo.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.node.FileBlock
+import com.tencent.bkrepo.repository.pojo.node.Node
+import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeUpdateRequest
 import com.tencent.bkrepo.repository.repository.FileBlockRepository
 import com.tencent.bkrepo.repository.repository.NodeRepository
 import com.tencent.bkrepo.repository.util.NodeUtils
@@ -27,6 +28,7 @@ import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -68,13 +70,53 @@ class NodeService @Autowired constructor(
         return node
     }
 
-    fun list(repositoryId: String, path: String): List<Node> {
-        return nodeRepository.findByRepositoryIdAndPathAndDeletedIsNull(repositoryId, formatPath(path))
+    fun list(repositoryId: String, path: String, includeFolder: Boolean, deep: Boolean): List<Node> {
+        val formattedPath = formatPath(path)
+        val escapedPath = escapeRegex(formattedPath)
+        val criteria = Criteria.where("repositoryId").`is`(repositoryId)
+                .and("deleted").`is`(null)
+        if(deep) {
+            criteria.and("fullPath").regex("^$escapedPath")
+        } else {
+            criteria.and("path").`is`(formattedPath)
+        }
+        if(!includeFolder) {
+            criteria.and("folder").`is`(false)
+        }
+        val query = Query(criteria).with(Sort.by("name"))
+
+        return mongoTemplate.find(query, TNode::class.java).map { toNode(it)!! }
     }
 
-    fun page(repositoryId: String, path: String, page: Int, size: Int): Page<Node> {
-        val tNodePage = nodeRepository.findByRepositoryIdAndPathAndDeletedIsNull(repositoryId, formatPath(path), PageRequest.of(page, size))
-        return Page(page, size, tNodePage.totalElements, tNodePage.content)
+
+    fun page(repositoryId: String, path: String, page: Int, size: Int, includeFolder: Boolean, deep: Boolean): Page<Node> {
+        val formattedPath = formatPath(path)
+        val escapedPath = escapeRegex(formattedPath)
+        val criteria = Criteria.where("repositoryId").`is`(repositoryId)
+                .and("deleted").`is`(null)
+
+        if(deep) {
+            criteria.and("fullPath").regex("^$escapedPath")
+        } else {
+            criteria.and("path").`is`(formattedPath)
+        }
+        if(!includeFolder) {
+            criteria.and("folder").`is`(false)
+        }
+        val query = Query(criteria)
+                .with(Sort.by("name"))
+                .with(PageRequest.of(page, size))
+
+        val listData = mongoTemplate.find(query, TNode::class.java).map { toNode(it)!! }
+        val count = mongoTemplate.count(query, TNode::class.java)
+
+        return Page(page, size, count, listData)
+    }
+
+
+    fun search(repositoryId: String, nodeSearchRequest: NodeSearchRequest): List<Node> {
+        // TODO: 实现搜索
+        return emptyList()
     }
 
     fun exist(repositoryId: String, fullPath: String): Boolean {
@@ -247,19 +289,20 @@ class NodeService @Autowired constructor(
         private val logger = LoggerFactory.getLogger(NodeService::class.java)
 
         fun toNode(tNode: TNode?): Node? {
-            return tNode?.let { Node(
-                    it.id!!,
-                    it.createdBy,
-                    it.createdDate,
-                    it.lastModifiedBy,
-                    it.lastModifiedDate,
-                    it.folder,
-                    it.path,
-                    it.name,
-                    it.fullPath,
-                    it.size,
-                    it.sha256,
-                    it.repositoryId
+            return tNode?.let {
+                Node(
+                        it.id!!,
+                        it.createdBy,
+                        it.createdDate,
+                        it.lastModifiedBy,
+                        it.lastModifiedDate,
+                        it.folder,
+                        it.path,
+                        it.name,
+                        it.fullPath,
+                        it.size,
+                        it.sha256,
+                        it.repositoryId
                 )
             }
         }

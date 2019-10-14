@@ -16,8 +16,8 @@ import com.tencent.bkrepo.generic.repository.BlockRecordRepository
 import com.tencent.bkrepo.generic.repository.UploadTransactionRepository
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
-import com.tencent.bkrepo.repository.pojo.FileBlock
-import com.tencent.bkrepo.repository.pojo.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.FileBlock
+import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory

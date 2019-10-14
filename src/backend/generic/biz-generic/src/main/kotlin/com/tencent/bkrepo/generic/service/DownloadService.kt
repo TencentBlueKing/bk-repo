@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
-import com.tencent.bkrepo.generic.constant.CONTENT_DISPOSITION_TEMMPLATE
+import com.tencent.bkrepo.generic.constant.CONTENT_DISPOSITION_TEMPLATE
 import com.tencent.bkrepo.generic.constant.DEFAULT_MIME_TYPE
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.REPO_TYPE
@@ -72,12 +72,12 @@ class DownloadService @Autowired constructor(
         return ResponseEntity
                 .ok()
                 .contentType(determineMediaType(formattedFullPath))
-                .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMMPLATE.format(node.name))
+                .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(node.name))
                 .body(InputStreamResource(inputStream))
     }
 
     private fun determineMediaType(fullPath: String): MediaType {
-        val mimeType = MimeMappings.DEFAULT.get(NodeUtils.getExtention(fullPath)) ?: DEFAULT_MIME_TYPE
+        val mimeType = MimeMappings.DEFAULT.get(NodeUtils.getExtension(fullPath)) ?: DEFAULT_MIME_TYPE
         return MediaType.parseMediaType(mimeType)
     }
 
@@ -130,7 +130,7 @@ class DownloadService @Autowired constructor(
                 return ResponseEntity
                         .ok()
                         .contentType(determineMediaType(formattedFullPath))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMMPLATE.format(node.name))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(node.name))
                         .body(InputStreamResource(inputStream))
             } ?: throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
         } ?: throw ErrorCodeException(GenericMessageCode.DOWNLOAD_SIMPLE_FORBIDDEN)
