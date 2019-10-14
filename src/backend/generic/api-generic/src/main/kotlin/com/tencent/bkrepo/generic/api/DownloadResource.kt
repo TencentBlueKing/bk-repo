@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam
  * @date: 2019-09-28
  */
 @Api("下载接口")
-@RequestMapping("/download")
+@RequestMapping("/api/download")
 interface DownloadResource {
 
     @ApiOperation("简单下载")

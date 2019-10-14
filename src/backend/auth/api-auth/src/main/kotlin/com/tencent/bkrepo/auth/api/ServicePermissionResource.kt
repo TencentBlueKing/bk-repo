@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*
 
 @Api(tags = ["SERVICE_PERMISSION"], description = "服务-权限接口")
 @FeignClient(SERVICE_NAME, contextId = "ServicePermissionResource")
-@RequestMapping("/service/auth/permission")
+@RequestMapping("/api/service/auth/permission")
 interface ServicePermissionResource {
     @ApiOperation("校验系统权限")
     @PostMapping("/check")

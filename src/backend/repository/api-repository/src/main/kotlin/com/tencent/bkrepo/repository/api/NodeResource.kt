@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("节点服务接口")
 @FeignClient(SERVICE_NAME, contextId = "NodeResource")
-@RequestMapping("/service/resource")
+@RequestMapping("/api/service/resource")
 interface NodeResource {
 
     @ApiOperation("根据id查看节点详情")

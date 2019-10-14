@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping
  */
 @Api("节点元数据服务接口")
 @FeignClient(SERVICE_NAME, contextId = "MetadataResource")
-@RequestMapping("/service/metadata")
+@RequestMapping("/api/service/metadata")
 interface MetadataResource {
 
     @ApiOperation("查看元数据详情")

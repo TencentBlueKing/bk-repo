@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*
 
 @Api(tags = ["SERVICE_USER"], description = "服务-用户接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceUserResource")
-@RequestMapping("/service/auth/user")
+@RequestMapping("/api/service/auth/user")
 interface ServiceUserResource {
     @ApiOperation("创建用户")
     @PostMapping("/create")

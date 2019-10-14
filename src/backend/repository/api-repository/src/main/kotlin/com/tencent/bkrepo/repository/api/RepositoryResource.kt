@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping
  */
 @Api("仓库服务接口")
 @FeignClient(SERVICE_NAME, contextId = "RepositoryResource")
-@RequestMapping("/service/repository")
+@RequestMapping("/api/service/repository")
 interface RepositoryResource {
 
     @ApiOperation("查看仓库详情")

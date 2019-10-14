@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping
  * @date: 2019-09-29
  */
 @Api("文件操作接口")
-@RequestMapping("/operate")
+@RequestMapping("/api/operate")
 interface OperateResource {
 
     @ApiOperation("移动文件(不支持目录)")
