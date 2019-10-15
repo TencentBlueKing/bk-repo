@@ -14,5 +14,5 @@ data class FileDetail(
     @ApiModelProperty("文件信息")
     val fileInfo: FileInfo,
     @ApiModelProperty("元数据列表")
-    val metadataList: List<Metadata>
+    val metadata: Map<String, String>
 )

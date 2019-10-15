@@ -1,9 +1,6 @@
 package com.tencent.bkrepo.repository.repository
 
 import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.pojo.node.Node
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
@@ -14,8 +11,4 @@ import org.springframework.stereotype.Repository
  * @date: 2019-09-20
  */
 @Repository
-interface NodeRepository : MongoRepository<TNode, String> {
-    fun findByRepositoryIdAndPathAndDeletedIsNull(repositoryId: String, path: String): List<Node>
-    fun findByRepositoryIdAndPathAndDeletedIsNull(repositoryId: String, path: String, pageRequest: PageRequest): Page<Node>
-    fun findByIdAndDeletedIsNull(id: String): TNode?
-}
+interface NodeRepository : MongoRepository<TNode, String>

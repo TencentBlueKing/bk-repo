@@ -17,10 +17,6 @@ data class NodeUpdateRequest(
     val path: String? = null,
     @ApiModelProperty("资源名称")
     val name: String? = null,
-    @ApiModelProperty("文件大小，单位byte")
-    val size: Long? = null,
-    @ApiModelProperty("文件sha256")
-    val sha256: String? = null,
     @ApiModelProperty("过期时间，单位天(0代表永久保存)")
     val expires: Long? = null
 )

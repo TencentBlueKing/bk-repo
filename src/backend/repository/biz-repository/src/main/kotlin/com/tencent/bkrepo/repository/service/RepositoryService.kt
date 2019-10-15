@@ -71,7 +71,7 @@ class RepositoryService @Autowired constructor(
     }
 
     fun exist(projectId: String, name: String): Boolean {
-        name.takeIf { it.isNotBlank() && name.isNotBlank() } ?: return false
+        takeIf { projectId.isNotBlank() && name.isNotBlank() } ?: return false
         val query = Query(Criteria.where("projectId").`is`(projectId)
                 .and("name").`is`(name))
         return mongoTemplate.exists(query, TRepository::class.java)
@@ -113,6 +113,8 @@ class RepositoryService @Autowired constructor(
             credentialsRepository.insert(tStorageCredentials)
         }
 
+        // 创建根节点
+        nodeService.createRootPath(idValue.id, repoCreateRequest.createdBy)
         return idValue
     }
 

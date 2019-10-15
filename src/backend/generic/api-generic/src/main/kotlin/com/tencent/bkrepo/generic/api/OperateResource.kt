@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.annotation.WildcardParam
 import com.tencent.bkrepo.generic.pojo.FileDetail
 import com.tencent.bkrepo.generic.pojo.FileInfo
+import com.tencent.bkrepo.generic.pojo.FileSizeInfo
 import com.tencent.bkrepo.generic.pojo.operate.FileCopyRequest
 import com.tencent.bkrepo.generic.pojo.operate.FileMoveRequest
 import com.tencent.bkrepo.generic.pojo.operate.FileSearchRequest
@@ -102,7 +103,7 @@ interface OperateResource {
         @ApiParam(hidden = true)
         @WildcardParam
         fullPath: String
-    ): Response<Long>
+    ): Response<FileSizeInfo>
 
     @ApiOperation("创建文件夹")
     @PostMapping("/create/{projectId}/{repoName}/**")

@@ -16,14 +16,17 @@ data class TNode(
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime,
+
     var folder: Boolean,
     var path: String,
     var name: String,
     var fullPath: String,
     var repositoryId: String,
     var size: Long,
-    var expires: Long,
+    var expireDate: LocalDateTime? = null,
     var sha256: String? = null,
-    var deleted: LocalDateTime? = null
+    var deleted: LocalDateTime? = null,
 
+    var metadata: Map<String, String>? = null,
+    var blockList: List<TFileBlock>? = null
 )

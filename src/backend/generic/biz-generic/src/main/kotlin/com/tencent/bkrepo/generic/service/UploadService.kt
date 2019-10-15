@@ -112,7 +112,7 @@ class UploadService @Autowired constructor(
         }
 
         // 判断文件是否存在
-        if (!overwrite && nodeResource.exist(repository.id, fullPath).data!!) {
+        if (!overwrite && nodeResource.exist(repository.id, fullPath).data == true) {
             logger.warn("user[$userId] preCheck [$projectId/$repoName/$formattedFullPath] failed: file already exists")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_EXIST, formattedFullPath)
         }
@@ -254,13 +254,7 @@ class UploadService @Autowired constructor(
         }
         // 保存节点
         val totalSize = sortedUploadedBlockRecordList.sumBy { it.size.toInt() }.toLong()
-        val blockList = sortedUploadedBlockRecordList.map {
-            FileBlock(repositoryId = repository!!.id,
-                    fullPath = uploadTransaction.fullPath,
-                    sequence = it.sequence,
-                    size = it.size,
-                    sha256 = it.sha256)
-        }
+        val blockList = sortedUploadedBlockRecordList.map { FileBlock(sequence = it.sequence, size = it.size, sha256 = it.sha256) }
         val result = nodeResource.create(NodeCreateRequest(
                 folder = false,
                 path = NodeUtils.getParentPath(uploadTransaction.fullPath),
