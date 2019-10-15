@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
-import com.tencent.bkrepo.repository.pojo.RepoCreateRequest
-import com.tencent.bkrepo.repository.pojo.RepoUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull

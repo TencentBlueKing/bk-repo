@@ -45,27 +45,24 @@ object NodeUtils {
     /**
      * 根目录
      */
-    const val ROOT_DIR = FILE_SEPARATOR
+    const val ROOT_PATH = FILE_SEPARATOR
 
     /**
      * 格式化目录名称, 返回格式/a/b/c/，根目录返回/
      */
     fun formatPath(input: String): String {
-        if (isRootDir(input)) return ROOT_DIR
-
-        val nameList = input.split(FILE_SEPARATOR).filter { it.isNotBlank() }.map { it.trim() }.toList()
-        val builder = StringBuilder()
-        nameList.forEach { builder.append(FILE_SEPARATOR).append(it) }
-        return builder.append(FILE_SEPARATOR).toString()
+        val path = formatFullPath(input)
+        return if (isRootPath(path)) path else path + FILE_SEPARATOR
     }
 
     /**
      * 格式化全路径名称, 返回格式/a/b/c，根目录返回/
      */
     fun formatFullPath(input: String): String {
-        if (isRootDir(input)) return ROOT_DIR
+        val path = input.trim()
+        if (isRootPath(path)) return ROOT_PATH
 
-        val nameList = input.split(FILE_SEPARATOR).filter { it.isNotBlank() }.map { it.trim() }.toList()
+        val nameList = path.split(FILE_SEPARATOR).filter { it.isNotBlank() }.map { it.trim() }.toList()
         val builder = StringBuilder()
         nameList.forEach { builder.append(FILE_SEPARATOR).append(it) }
         return builder.toString()
@@ -75,8 +72,10 @@ object NodeUtils {
      * 解析目录名称，返回格式/a/b/c/，根目录返回/
      * 出错则抛出异常
      */
-    fun parseDirName(input: String): String {
+    fun parsePathName(input: String): String {
         val dirName = input.trim()
+        if (dirName.isEmpty()) return ROOT_PATH
+
         dirName.takeIf { it.startsWith(FILE_SEPARATOR) }
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Directory name {$dirName} is invalid, it should start with '$FILE_SEPARATOR'.")
 
@@ -86,6 +85,7 @@ object NodeUtils {
 
         val builder = StringBuilder()
         nameList.forEach { builder.append(FILE_SEPARATOR).append(it) }
+
         return builder.append(FILE_SEPARATOR).toString()
     }
 
@@ -118,7 +118,7 @@ object NodeUtils {
      */
     fun getParentPath(path: String): String {
         val index = path.trimEnd(FILE_SEPARATOR_CHAR).lastIndexOf(FILE_SEPARATOR)
-        return if (isRootDir(path) || index <= 0) ROOT_DIR else path.substring(0, index + 1)
+        return if (isRootPath(path) || index <= 0) ROOT_PATH else path.substring(0, index + 1)
     }
 
     /**
@@ -126,16 +126,19 @@ object NodeUtils {
      */
     fun getName(path: String): String {
         val trimmedPath = path.trimEnd(FILE_SEPARATOR_CHAR)
-        return if (isRootDir(trimmedPath)) "" else trimmedPath.substring(trimmedPath.lastIndexOf(FILE_SEPARATOR) + 1)
+        return if (isRootPath(trimmedPath)) "" else trimmedPath.substring(trimmedPath.lastIndexOf(FILE_SEPARATOR) + 1)
     }
 
     /**
      * 判断路径是否为根目录
      */
-    fun isRootDir(path: String): Boolean {
-        return path == ROOT_DIR || path == ""
+    fun isRootPath(path: String): Boolean {
+        return path == ROOT_PATH || path == ""
     }
 
+    /**
+     * 正则特殊符号转义
+     */
     fun escapeRegex(input: String): String {
         var escapedString = input.trim()
         if (escapedString.isNotBlank()) {
@@ -148,7 +151,10 @@ object NodeUtils {
         return escapedString
     }
 
-    fun getExtention(fileName: String): String? {
+    /**
+     * 获取文件后缀
+     */
+    fun getExtension(fileName: String): String? {
         return fileName.trim().substring(fileName.lastIndexOf(DOT) + 1)
     }
 }

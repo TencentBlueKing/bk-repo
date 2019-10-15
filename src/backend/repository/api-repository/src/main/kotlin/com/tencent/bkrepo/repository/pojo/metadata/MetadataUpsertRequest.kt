@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.metadata.pojo
+package com.tencent.bkrepo.repository.pojo.metadata
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -11,10 +11,10 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("创建或更新元数据请求")
 data class MetadataUpsertRequest(
-    @ApiModelProperty("节点id")
-    val nodeId: String,
-    @ApiModelProperty("创建者")
-    val operateBy: String,
+    @ApiModelProperty("仓库id")
+    val repositoryId: String,
+    @ApiModelProperty("路径")
+    val fullPath: String,
     @ApiModelProperty("元数据key-value数据")
-    val dataMap: Map<String, Any>
+    val metadata: Map<String, String>
 )

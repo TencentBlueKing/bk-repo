@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
-import com.tencent.bkrepo.generic.constant.CONTENT_DISPOSITION_TEMMPLATE
+import com.tencent.bkrepo.generic.constant.CONTENT_DISPOSITION_TEMPLATE
 import com.tencent.bkrepo.generic.constant.DEFAULT_MIME_TYPE
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.REPO_TYPE
@@ -45,13 +45,13 @@ class DownloadService @Autowired constructor(
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         }
         // 查询节点
-        val node = nodeResource.query(repository.id, fullPath).data ?: run {
+        val node = nodeResource.queryDetail(repository.id, fullPath).data ?: run {
             logger.warn("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] failed: $fullPath not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         }
 
         // 如果为目录
-        if (node.folder) {
+        if (node.nodeInfo.folder) {
             logger.warn("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] failed: $fullPath not found")
             throw ErrorCodeException(GenericMessageCode.DOWNLOAD_FOLDER_FORBIDDEN)
         }
@@ -63,7 +63,7 @@ class DownloadService @Autowired constructor(
         }
 
         // fileStorage
-        val inputStream = fileStorage.load(node.sha256!!, CredentialsUtils.readString(repository.storageType, repository.storageCredentials)) ?: run {
+        val inputStream = fileStorage.load(node.nodeInfo.sha256!!, CredentialsUtils.readString(repository.storageType, repository.storageCredentials)) ?: run {
             logger.warn("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] failed: file data not found")
             throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
         }
@@ -72,12 +72,12 @@ class DownloadService @Autowired constructor(
         return ResponseEntity
                 .ok()
                 .contentType(determineMediaType(formattedFullPath))
-                .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMMPLATE.format(node.name))
+                .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(node.nodeInfo.name))
                 .body(InputStreamResource(inputStream))
     }
 
     private fun determineMediaType(fullPath: String): MediaType {
-        val mimeType = MimeMappings.DEFAULT.get(NodeUtils.getExtention(fullPath)) ?: DEFAULT_MIME_TYPE
+        val mimeType = MimeMappings.DEFAULT.get(NodeUtils.getExtension(fullPath)) ?: DEFAULT_MIME_TYPE
         return MediaType.parseMediaType(mimeType)
     }
 
@@ -92,14 +92,14 @@ class DownloadService @Autowired constructor(
         }
 
         // 查询节点
-        val node = nodeResource.query(repository.id, fullPath).data ?: run {
+        val node = nodeResource.queryDetail(repository.id, fullPath).data ?: run {
             logger.warn("user[$userId] query file info [$projectId/$repoName/$formattedFullPath] failed: $fullPath not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         }
 
         // 如果为目录或简单上传的文件则返回空列表
         node.takeIf { node.isBlockFile() }?.run {
-            return node.fileBlockList!!.map { BlockInfo(size = it.size, sha256 = it.sha256, sequence = it.sequence) }
+            return node.blockList!!.map { BlockInfo(size = it.size, sha256 = it.sha256, sequence = it.sequence) }
         } ?: return emptyList()
     }
 
@@ -113,13 +113,13 @@ class DownloadService @Autowired constructor(
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         }
         // 查询节点
-        val node = nodeResource.query(repository.id, fullPath).data ?: run {
+        val node = nodeResource.queryDetail(repository.id, fullPath).data ?: run {
             logger.warn("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] failed: $fullPath not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         }
 
         node.takeIf { node.isBlockFile() }?.run {
-            node.fileBlockList!!.find { it.sequence == sequence }?.run {
+            node.blockList!!.find { it.sequence == sequence }?.run {
                 // fileStorage
                 val inputStream = fileStorage.load(this.sha256, CredentialsUtils.readString(repository.storageType, repository.storageCredentials)) ?: run {
                     logger.warn("user[$userId] download block [$projectId/$repoName/$formattedFullPath/$sequence] failed: file data not found")
@@ -130,7 +130,7 @@ class DownloadService @Autowired constructor(
                 return ResponseEntity
                         .ok()
                         .contentType(determineMediaType(formattedFullPath))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMMPLATE.format(node.name))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(node.nodeInfo.name))
                         .body(InputStreamResource(inputStream))
             } ?: throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
         } ?: throw ErrorCodeException(GenericMessageCode.DOWNLOAD_SIMPLE_FORBIDDEN)

@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.pojo
+package com.tencent.bkrepo.repository.pojo.repo
 
 import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
 import io.swagger.annotations.ApiModel

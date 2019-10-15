@@ -14,6 +14,6 @@ import org.springframework.stereotype.Repository
  */
 @Repository
 interface RepoRepository : MongoRepository<TRepository, String> {
-    fun findByProjectId(projectId: String): List<com.tencent.bkrepo.repository.pojo.Repository>
-    fun findByProjectId(projectId: String, pageRequest: PageRequest): Page<com.tencent.bkrepo.repository.pojo.Repository>
+    fun findByProjectId(projectId: String): List<com.tencent.bkrepo.repository.pojo.repo.Repository>
+    fun findByProjectId(projectId: String, pageRequest: PageRequest): Page<com.tencent.bkrepo.repository.pojo.repo.Repository>
 }

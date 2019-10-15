@@ -5,5 +5,4 @@ dependencies {
     api project(":common:common-mongo")
     api project(":generic:api-generic")
     api project(":repository:api-repository")
-    api project(":metadata:api-metadata")
 }

@@ -4,9 +4,12 @@ import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
-import com.tencent.bkrepo.repository.pojo.Node
-import com.tencent.bkrepo.repository.pojo.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeUpdateRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -28,24 +31,17 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("节点服务接口")
 @FeignClient(SERVICE_NAME, contextId = "NodeResource")
-@RequestMapping("/service/resource")
+@RequestMapping("/service/node")
 interface NodeResource {
-
-    @ApiOperation("根据id查看节点详情")
-    @GetMapping("/{id}")
-    fun detail(
-        @ApiParam(value = "节点id", required = true)
-        @PathVariable id: String
-    ): Response<Node?>
 
     @ApiOperation("根据路径查看节点详情")
     @GetMapping("/query/{repositoryId}")
-    fun query(
+    fun queryDetail(
         @ApiParam(value = "仓库id", required = true)
         @PathVariable repositoryId: String,
         @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
-    ): Response<Node?>
+    ): Response<NodeDetail?>
 
     @ApiOperation("根据路径查看节点详是否存在")
     @GetMapping("/exist/{repositoryId}")
@@ -56,16 +52,20 @@ interface NodeResource {
         @RequestParam fullPath: String
     ): Response<Boolean>
 
-    @ApiOperation("列表查询指定目录下所有节点, 只返回一层深度的节点")
+    @ApiOperation("列表查询指定目录下所有节点")
     @GetMapping("/list/{repositoryId}")
     fun list(
         @ApiParam(value = "仓库id", required = true)
         @PathVariable repositoryId: String,
         @ApiParam(value = "所属目录", required = true)
-        @RequestParam path: String
-    ): Response<List<Node>>
+        @RequestParam path: String,
+        @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
+        @RequestParam includeFolder: Boolean = true,
+        @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
+        @RequestParam deep: Boolean = false
+    ): Response<List<NodeInfo>>
 
-    @ApiOperation("分页查询指定目录下所有节点, 只返回一层深度的节点")
+    @ApiOperation("分页查询指定目录下所有节点")
     @GetMapping("/page/{page}/{size}/{repositoryId}")
     fun page(
         @ApiParam(value = "当前页", required = true, example = "0")
@@ -75,8 +75,21 @@ interface NodeResource {
         @ApiParam(value = "仓库id", required = true)
         @PathVariable repositoryId: String,
         @ApiParam(value = "所属目录", required = true)
-        @RequestParam path: String
-    ): Response<Page<Node>>
+        @RequestParam path: String,
+        @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
+        @RequestParam includeFolder: Boolean = true,
+        @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
+        @RequestParam deep: Boolean = false
+    ): Response<Page<NodeInfo>>
+
+    @ApiOperation("搜索文件")
+    @PostMapping("/search/{repositoryId}")
+    fun search(
+        @ApiParam(value = "仓库id", required = true)
+        @PathVariable repositoryId: String,
+        @ApiParam(value = "节点搜索请求", required = true)
+        @RequestBody nodeSearchRequest: NodeSearchRequest
+    ): Response<List<NodeInfo>>
 
     @ApiOperation("创建节点")
     @PostMapping
@@ -102,4 +115,13 @@ interface NodeResource {
         @ApiParam(value = "修改者", required = true)
         @RequestParam modifiedBy: String
     ): Response<Void>
+
+    @ApiOperation("查询节点大小信息")
+    @DeleteMapping("/size/{repositoryId}")
+    fun getNodeSize(
+        @ApiParam(value = "仓库id", required = true)
+        @PathVariable repositoryId: String,
+        @ApiParam(value = "节点完整路径", required = true)
+        @RequestParam fullPath: String
+    ): Response<NodeSizeInfo>
 }

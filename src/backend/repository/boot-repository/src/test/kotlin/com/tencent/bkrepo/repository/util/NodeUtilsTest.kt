@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_DIR
+import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
@@ -19,19 +19,19 @@ internal class NodeUtilsTest {
 
     @Test
     fun parseDirName() {
-        assertEquals(ROOT_DIR, NodeUtils.parseDirName("/"))
-        assertEquals(ROOT_DIR, NodeUtils.parseDirName("  /   "))
-        assertEquals("/a/", NodeUtils.parseDirName("  /   a"))
-        assertEquals("/a/b/", NodeUtils.parseDirName("  /   a  /b"))
-        assertEquals("/a/b/", NodeUtils.parseDirName("  /   a  /b/"))
+        assertEquals(ROOT_PATH, NodeUtils.parsePathName("/"))
+        assertEquals(ROOT_PATH, NodeUtils.parsePathName("  /   "))
+        assertEquals("/a/", NodeUtils.parsePathName("  /   a"))
+        assertEquals("/a/b/", NodeUtils.parsePathName("  /   a  /b"))
+        assertEquals("/a/b/", NodeUtils.parsePathName("  /   a  /b/"))
 
-        assertThrows<ErrorCodeException> { NodeUtils.parseDirName(" ") }
-        assertDoesNotThrow { NodeUtils.parseDirName("/1/2/3/4/5/6/7/8/9/10") }
-        assertThrows<ErrorCodeException> { NodeUtils.parseDirName("/1/2/3/4/5/6/7/8/9/10/11") }
-        assertThrows<ErrorCodeException> { NodeUtils.parseDirName("/../") }
-        assertThrows<ErrorCodeException> { NodeUtils.parseDirName("/./") }
-        assertDoesNotThrow { NodeUtils.parseDirName("/.1/") }
-        assertDoesNotThrow { NodeUtils.parseDirName("/..../") }
+        assertThrows<ErrorCodeException> { NodeUtils.parsePathName(" ") }
+        assertDoesNotThrow { NodeUtils.parsePathName("/1/2/3/4/5/6/7/8/9/10") }
+        assertThrows<ErrorCodeException> { NodeUtils.parsePathName("/1/2/3/4/5/6/7/8/9/10/11") }
+        assertThrows<ErrorCodeException> { NodeUtils.parsePathName("/../") }
+        assertThrows<ErrorCodeException> { NodeUtils.parsePathName("/./") }
+        assertDoesNotThrow { NodeUtils.parsePathName("/.1/") }
+        assertDoesNotThrow { NodeUtils.parsePathName("/..../") }
     }
 
     @Test
