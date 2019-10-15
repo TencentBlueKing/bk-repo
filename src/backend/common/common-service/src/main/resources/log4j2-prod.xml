@@ -9,7 +9,7 @@
     <Console name="Console" target="SYSTEM_OUT">
         <PatternLayout pattern="${CONSOLE_PATTERN}" />
     </Console>
-    <RollingFile name="RollingFile" fileName="/data1/logs/service.log" filePattern="/data1/logs/service-%d{MM-dd-yy}.log.gz">
+    <RollingFile name="RollingFile" fileName="/data1/logs/${sys:serviceName}.log" filePattern="/data1/logs/${sys:serviceName:-%d{MM-dd-yy}.log.gz">
         <PatternLayout pattern="${FILE_PATTERN}"/>
         <Policies>
             <SizeBasedTriggeringPolicy size="250MB"/>
@@ -19,10 +19,6 @@
 </appenders>
 
 <loggers>
-    <logger name="com.tencent" level="debug" additivity="false">
-        <appender-ref ref="Console"/>
-        <appender-ref ref="RollingFile" />
-    </logger>
     <root level="info">
         <appender-ref ref="Console" />
         <appender-ref ref="RollingFile" />
