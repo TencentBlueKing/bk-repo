@@ -109,8 +109,21 @@ class NodeService @Autowired constructor(
     }
 
     fun search(repositoryId: String, nodeSearchRequest: NodeSearchRequest): List<NodeInfo> {
-        // TODO: 实现搜索
-        return emptyList()
+        val query = createNodeQuery()
+        val criteria = Criteria.where("repositoryId").`is`(repositoryId).and("deleted").`is`(null)
+        // 路径匹配
+        val criteriaList = nodeSearchRequest.pathPattern.map {
+            val escapedPath = escapeRegex(formatPath(it))
+            Criteria.where("fullPath").regex("^$escapedPath")
+        }
+        criteria.orOperator(*criteriaList.toTypedArray())
+        // 元数据匹配
+        nodeSearchRequest.metadataCondition.filterKeys { it.isNotBlank() }.forEach { (key, value) -> run {
+            criteria.and("metadata.$key").`is`(value)
+        } }
+        query.addCriteria(criteria)
+
+        return mongoTemplate.find(query, TNode::class.java).map { convert(it)!! }
     }
 
     fun exist(repositoryId: String, fullPath: String): Boolean {
