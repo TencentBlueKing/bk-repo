@@ -27,7 +27,7 @@ import org.springframework.web.multipart.MultipartFile
  * @date: 2019-09-27
  */
 @Api("上传接口")
-@RequestMapping("/api/upload")
+@RequestMapping("/upload")
 interface UploadResource {
 
     @ApiOperation("简单上传")
