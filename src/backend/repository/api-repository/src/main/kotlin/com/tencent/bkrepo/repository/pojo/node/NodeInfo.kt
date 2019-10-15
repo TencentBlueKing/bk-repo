@@ -1,16 +1,16 @@
-package com.tencent.bkrepo.repository.pojo
+package com.tencent.bkrepo.repository.pojo.node
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
 
 /**
- * 仓库信息
+ * 节点信息
  * @author: carrypan
  * @date: 2019-09-10
  */
-@ApiModel("仓库信息")
-data class Node(
+@ApiModel("节点信息")
+data class NodeInfo(
     @ApiModelProperty("节点id")
     val id: String,
     @ApiModelProperty("创建者")
@@ -35,12 +35,5 @@ data class Node(
     @ApiModelProperty("文件sha256")
     val sha256: String? = null,
     @ApiModelProperty("所属仓库id")
-    val repositoryId: String,
-
-    @ApiModelProperty("文件分块列表")
-    var fileBlockList: List<FileBlock>? = null
-) {
-    fun isBlockFile(): Boolean {
-        return !fileBlockList.isNullOrEmpty()
-    }
-}
+    val repositoryId: String
+)

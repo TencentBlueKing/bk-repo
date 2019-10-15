@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.generic.pojo
+package com.tencent.bkrepo.generic.pojo.upload
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty

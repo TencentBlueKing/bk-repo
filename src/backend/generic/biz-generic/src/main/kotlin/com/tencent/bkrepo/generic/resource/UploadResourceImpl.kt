@@ -3,11 +3,11 @@ package com.tencent.bkrepo.generic.resource
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.api.UploadResource
 import com.tencent.bkrepo.generic.pojo.BlockInfo
-import com.tencent.bkrepo.generic.pojo.BlockUploadRequest
-import com.tencent.bkrepo.generic.pojo.SimpleUploadRequest
-import com.tencent.bkrepo.generic.pojo.UploadCompleteRequest
-import com.tencent.bkrepo.generic.pojo.UploadPreCheckRequest
-import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
+import com.tencent.bkrepo.generic.pojo.upload.BlockUploadRequest
+import com.tencent.bkrepo.generic.pojo.upload.SimpleUploadRequest
+import com.tencent.bkrepo.generic.pojo.upload.UploadCompleteRequest
+import com.tencent.bkrepo.generic.pojo.upload.UploadPreCheckRequest
+import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.UploadService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController

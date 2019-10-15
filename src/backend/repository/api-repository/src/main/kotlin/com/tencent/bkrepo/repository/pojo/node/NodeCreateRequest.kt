@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.pojo
+package com.tencent.bkrepo.repository.pojo.node
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -30,6 +30,8 @@ data class NodeCreateRequest(
     @ApiModelProperty("文件sha256")
     val sha256: String? = null,
     @ApiModelProperty("分块信息列表")
-    val blockList: List<FileBlock>? = null
+    val blockList: List<FileBlock>? = null,
+    @ApiModelProperty("元数据信息")
+    val metadata: Map<String, String>? = null
 
 )
