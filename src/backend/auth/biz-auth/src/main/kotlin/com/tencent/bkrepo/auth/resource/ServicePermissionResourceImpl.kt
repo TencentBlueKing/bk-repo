@@ -12,7 +12,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
-import java.lang.RuntimeException
 
 @RestController
 class ServicePermissionResourceImpl @Autowired constructor(
@@ -51,23 +50,23 @@ class ServicePermissionResourceImpl @Autowired constructor(
 
                 }
                 ResourceType.PROJECT -> {
-                    if (projectId.isNullOrBlank()) {
+                    if (project.isNullOrBlank()) {
                         throw ErrorCodeException(PARAMETER_INVALID, "projectId required")
                     }
                 }
                 ResourceType.REPO -> {
-                    if (projectId.isNullOrBlank()) {
+                    if (project.isNullOrBlank()) {
                         throw ErrorCodeException(PARAMETER_INVALID, "projectId required")
                     }
-                    if (repoId.isNullOrBlank()) {
+                    if (repo.isNullOrBlank()) {
                         throw ErrorCodeException(PARAMETER_INVALID, "repoId required")
                     }
                 }
                 ResourceType.NODE -> {
-                    if (projectId.isNullOrBlank()) {
+                    if (project.isNullOrBlank()) {
                         throw ErrorCodeException(PARAMETER_INVALID, "node required")
                     }
-                    if (repoId.isNullOrBlank()) {
+                    if (repo.isNullOrBlank()) {
                         throw ErrorCodeException(PARAMETER_INVALID, "repoId required")
                     }
                     if (node.isNullOrBlank()) {
