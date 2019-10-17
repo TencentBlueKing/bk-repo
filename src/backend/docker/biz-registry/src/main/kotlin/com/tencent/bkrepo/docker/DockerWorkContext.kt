@@ -4,6 +4,7 @@ import com.tencent.bkrepo.docker.repomd.Artifact
 import com.tencent.bkrepo.docker.repomd.WorkContext
 import com.tencent.bkrepo.docker.v2.helpers.DockerSearchBlobPolicy
 import java.io.InputStream
+import java.net.URI
 
 interface DockerWorkContext : WorkContext {
 
@@ -29,9 +30,10 @@ interface DockerWorkContext : WorkContext {
 //        return false
 //    }
 //
-//    fun rewriteRepoURI(repoKey: String, uri: URI, headers: Set<Entry<String, List<String>>>): URI {
-//        return uri
-//    }
+
+    fun rewriteRepoURI(repoKey: String, uri: URI, headers: MutableSet<MutableMap.MutableEntry<String, List<String>>>): URI {
+        return uri
+    }
 
     fun translateRepoId(var1: String): String
 }

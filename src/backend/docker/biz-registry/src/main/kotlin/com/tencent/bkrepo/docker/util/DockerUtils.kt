@@ -121,7 +121,7 @@ abstract class DockerUtils {
 
         fun getBlobFromRepoPath(repo: Repo<DockerWorkContext>, blobFilename: String, dockerRepoPath: String): Artifact? {
             val tempBlobPath = "$dockerRepoPath/_uploads/$blobFilename"
-            log.debug("Searching blob in '{}'", tempBlobPath)
+            log.info("Searching blob in '{}'", tempBlobPath)
             var blob: Artifact?
             if (repo.exists(tempBlobPath)) {
                 log.debug("Blob found in: '{}'", tempBlobPath)

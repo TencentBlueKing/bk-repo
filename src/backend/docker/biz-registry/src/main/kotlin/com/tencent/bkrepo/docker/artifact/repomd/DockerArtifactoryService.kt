@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.docker.artifact.repomd
 
-// import com.tencent.bkrepo.registry.common.repomd.ArtifactoryService
 import com.tencent.bkrepo.docker.DockerWorkContext
 import com.tencent.bkrepo.docker.repomd.Artifact
+import com.tencent.bkrepo.docker.repomd.DownloadContext
 import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.repomd.UploadContext
 import java.io.InputStream
@@ -70,19 +70,9 @@ class DockerArtifactoryService(var workContext: DockerWorkContext, var id: Strin
 //        return !statusHolder.isError()
     }
 
-//    fun download(downloadContext: DownloadContext): Response? {
-//        val req = this.getInternalArtifactoryRequestForDownload(downloadContext)
-//        val res = JerseyArtifactoryResponse()
-//
-//        try {
-//            this.downloadService.process(req, res)
-//            return res.build()
-//        } catch (var5: IOException) {
-//            log.error(var5.message, var5)
-//            return null
-//        }
-//
-//    }
+    override fun download(downloadContext: DownloadContext): Response {
+        throw UnsupportedOperationException("NOT IMPLEMENTED")
+    }
 
 //    private fun getInternalArtifactoryRequestForDownload(downloadContext: DownloadContext): InternalArtifactoryRequest {
 //        val requestHeaders = downloadContext.getRequestHeaders()

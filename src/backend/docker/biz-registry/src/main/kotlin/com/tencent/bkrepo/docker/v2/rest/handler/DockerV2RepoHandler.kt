@@ -7,10 +7,10 @@ interface DockerV2RepoHandler {
     fun ping(): Response
 
     fun isBlobExists(var1: String, var2: DockerDigest): Response
-//
-//    fun getBlob(var1: String, var2: DockerDigest): Response
-//
-//    fun startBlobUpload(var1: String, var2: DockerDigest): Response
+
+    fun getBlob(var1: String, var2: DockerDigest): Response
+
+    fun startBlobUpload(projectId :String,repoName:String, name: String, digest: String?): Response
 //
 //    fun patchUpload(var1: String, var2: String, var3: InputStream): Response
 //

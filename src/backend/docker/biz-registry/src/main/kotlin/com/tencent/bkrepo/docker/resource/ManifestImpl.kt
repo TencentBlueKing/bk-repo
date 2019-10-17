@@ -19,7 +19,8 @@ import org.springframework.web.bind.annotation.RestController
 class ManifestImpl @Autowired constructor(val objectMapper: ObjectMapper) : Manifest {
 
     override fun putManifest(
-        repoKey: String,
+        projectId: String,
+        repoName: String,
         name: String,
         reference: String,
         contentTypeHeader: String,

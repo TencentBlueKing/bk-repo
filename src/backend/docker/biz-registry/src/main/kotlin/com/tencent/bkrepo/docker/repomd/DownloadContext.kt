@@ -1,19 +1,14 @@
 package com.tencent.bkrepo.docker.repomd
 
 import com.google.common.collect.Maps
-import javax.ws.rs.core.HttpHeaders
+import org.springframework.http.HttpHeaders
 import lombok.Generated
 
-public class DownloadContext {
+public class DownloadContext(path: String, httpHeaders: HttpHeaders) {
     val FORCE_GET_STREAM_HEADER = "artifactory.disableRedirect"
     private var path: String? = null
     private var skipStatsUpdate = false
     private val requestHeaders = Maps.newHashMap<String, String>()
-
-    fun DownloadContext(path: String, httpHeaders: HttpHeaders) {
-        this.path = path
-        this.headers(httpHeaders)
-    }
 
     fun path(path: String): DownloadContext {
         this.path = path
@@ -37,8 +32,8 @@ public class DownloadContext {
     }
 
     fun headers(httpHeaders: HttpHeaders?): DownloadContext {
-        if (httpHeaders != null) {
-            val multiMap = httpHeaders.requestHeaders
+        if (!httpHeaders.isNullOrEmpty()) {
+            val multiMap = httpHeaders.toMap()
             val var3 = multiMap.keys.iterator()
 
             while (var3.hasNext()) {

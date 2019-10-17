@@ -1,11 +1,10 @@
 package com.tencent.bkrepo.docker.artifact.repomd
 
 import com.tencent.bkrepo.docker.DockerWorkContext
-// import com.tencent.bkrepo.registry.common.repomd.PackageWorkContext
-// import com.tencent.bkrepo.registry.papi.repo.RepoPath
 import com.tencent.bkrepo.docker.repomd.Artifact
 import com.tencent.bkrepo.docker.v2.helpers.DockerSearchBlobPolicy
 import java.io.InputStream
+import java.net.URI
 import org.slf4j.LoggerFactory
 
 class DockerPackageWorkContext() : DockerWorkContext {
@@ -74,5 +73,10 @@ class DockerPackageWorkContext() : DockerWorkContext {
     override fun unsetSystem() {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
         // WorkContextAuthenticationHelper.unsetSystem(this)
+    }
+
+    override fun rewriteRepoURI(repoKey: String, uri: URI, headers: MutableSet<MutableMap.MutableEntry<String, List<String>>>): URI {
+        return uri
+        // return DockerInternalRewrite.rewriteBack(repoKey, uri, headers)
     }
 }

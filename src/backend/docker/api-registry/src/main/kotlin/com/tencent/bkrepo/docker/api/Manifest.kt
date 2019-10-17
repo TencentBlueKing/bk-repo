@@ -21,11 +21,14 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface Manifest {
 
     @ApiOperation("查看元数据详情")
-    @PutMapping("/{repoKey}/{name}/manifests/{reference}")
+    @PutMapping("/{projectId}/{repoName}/{name}/manifests/{reference}")
     fun putManifest(
         @PathVariable
-        @ApiParam(value = "repoKey", required = true)
-         repoKey: String,
+        @ApiParam(value = "projectId", required = true)
+        projectId: String,
+        @PathVariable
+        @ApiParam(value = "repoName", required = true)
+        repoName: String,
         @PathVariable
         @ApiParam(value = "name", required = true)
         name: String,

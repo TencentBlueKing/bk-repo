@@ -28,7 +28,7 @@ interface Repo<C : WorkContext> {
 
     fun delete(var1: String): Boolean
 
-//    fun download(var1: DownloadContext): Response
+    fun download(var1: DownloadContext): Response
 
     fun upload(var1: UploadContext): Response
 

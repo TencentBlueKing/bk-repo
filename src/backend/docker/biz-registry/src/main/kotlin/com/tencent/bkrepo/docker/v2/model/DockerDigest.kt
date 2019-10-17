@@ -2,7 +2,7 @@ package com.tencent.bkrepo.docker.v2.model
 
 import org.apache.commons.lang.StringUtils
 
-class DockerDigest(digest: String) {
+class DockerDigest(digest: String?) {
     var alg: String = ""
         private set
     var hex: String = ""

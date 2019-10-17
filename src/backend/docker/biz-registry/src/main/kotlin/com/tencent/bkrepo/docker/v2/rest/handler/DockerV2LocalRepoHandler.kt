@@ -12,6 +12,7 @@ import com.tencent.bkrepo.docker.manifest.ManifestJson
 import com.tencent.bkrepo.docker.manifest.ManifestListSchema2Deserializer
 import com.tencent.bkrepo.docker.manifest.ManifestType
 import com.tencent.bkrepo.docker.repomd.Artifact
+import com.tencent.bkrepo.docker.repomd.DownloadContext
 import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.repomd.UploadContext
 import com.tencent.bkrepo.docker.repomd.util.PathUtils
@@ -28,9 +29,13 @@ import com.tencent.bkrepo.docker.v2.rest.errors.DockerV2Errors
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
+import java.net.URI
+import java.util.*
 import java.util.function.Predicate
 import java.util.regex.Pattern
+import org.springframework.http.HttpHeaders
 import javax.ws.rs.core.Response
+import javax.ws.rs.core.UriBuilder
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -38,9 +43,11 @@ import org.springframework.stereotype.Service
 @Service
 class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
 
-    lateinit  private var repo: Repo<DockerWorkContext>
+    private var repo: Repo<DockerWorkContext> = DockerUtil.createDockerRepoContext("docker-local")
+    public lateinit var httpHeaders: HttpHeaders
     init {
-        this.repo = DockerUtil.createDockerRepoContext("aaaa")
+        // this.repo = DockerUtil.createDockerRepoContext("aaaa")
+        // this.httpHeaders = HttpHeaders.
     }
 
     companion object {
@@ -50,11 +57,6 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
         private val OLD_USER_AGENT_PATTERN = Pattern.compile("^(?:docker\\/1\\.(?:3|4|5|6|7(?!\\.[0-9]-dev))|Go ).*$")
     }
 
-    fun Printlines() {
-        this.repo.delete("aaaaaaa")
-    }
-
-    // private val manifestSyncer: DockerManifestSyncer
     var nonTempUploads: Predicate<Artifact> = object : Predicate<Artifact> {
         private val TMP_UPLOADS_PATH_ELEMENT = "/_uploads/"
 
@@ -332,12 +334,12 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
 //        return DockerV2Errors.unauthorizedUpload()
     }
 
-    override fun isBlobExists(dockerRepo: String, digest: DockerDigest): Response {
+    override fun isBlobExists(name: String, digest: DockerDigest): Response {
         if (DockerSchemaUtils.isEmptyBlob(digest)) {
-            log.debug("Request for empty layer for image {}, returning dummy HEAD response.", dockerRepo)
+            log.debug("Request for empty layer for image {}, returning dummy HEAD response.", name)
             return DockerSchemaUtils.emptyBlobHeadResponse()
         } else {
-            val blob = DockerUtils.getBlobFromRepoPath(this.repo, digest.filename(), dockerRepo)
+            val blob = DockerUtils.getBlobFromRepoPath(this.repo, digest.filename(), name)
             if (blob != null) {
                 val response = Response.ok().header("Docker-Distribution-Api-Version", "registry/2.0")
                         .header("Docker-Content-Digest", digest)
@@ -347,6 +349,100 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
             } else {
                 return DockerV2Errors.blobUnknown(digest.toString())
             }
+        }
+    }
+
+    override fun getBlob(dockerRepo: String, digest: DockerDigest): Response {
+        log.info("Fetching docker blob '{}' from repo '{}'", digest, this.repo.getRepoId())
+        if (DockerSchemaUtils.isEmptyBlob(digest)) {
+            log.debug("Request for empty layer for image {}, returning dummy GET response.", dockerRepo)
+            return DockerSchemaUtils.emptyBlobGetResponse()
+        } else {
+            val blob = this.getRepoBlob(digest)
+            if (blob != null) {
+                val response = this.repo.download(DownloadContext(blob.getPath(), this.httpHeaders).header("artifactory.disableRedirect", "false"))
+                return Response.fromResponse(response).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", digest).build()
+            } else {
+                return DockerV2Errors.blobUnknown(digest.toString())
+            }
+        }
+    }
+
+    private fun getRepoBlob(digest: DockerDigest): Artifact? {
+        var repoBlobs = this.repo.findArtifacts("", digest.filename())
+        if (repoBlobs != null) {
+            val var10001 = nonTempUploads
+            var10001.javaClass
+            // repoBlobs = Iterables.filter(repoBlobs, Predicate<T> { var10001.test(it) })
+            val var3 = repoBlobs.iterator()
+
+            while (var3.hasNext()) {
+                val repoBlob = var3.next()
+                val blobPath = repoBlob.getPath()
+                if (this.repo.canRead(blobPath)) {
+                    log.debug("Found repo blob at '{}'", blobPath)
+                    return repoBlob
+                }
+            }
+        }
+
+        return null
+    }
+
+    override fun startBlobUpload(projectId:String,repoName:String, name: String, mount: String?): Response {
+        var dockerRepo = "/$projectId/$repoName/$name"
+        val uploadDirectory = "$dockerRepo/_uploads"
+        if (!this.repo.canWrite(uploadDirectory)) {
+            return DockerV2Errors.unauthorizedUpload()
+        } else {
+            val location: URI
+            if (mount != null) {
+                var mountDigest = DockerDigest(mount)
+                val mountableBlob = DockerUtils.getBlobGlobally(this.repo, mountDigest.filename(), DockerSearchBlobPolicy.SHA_256)
+                if (mountableBlob != null) {
+                    location = this.getDockerURI("$dockerRepo/blobs/$mount")
+                    log.debug("Found accessible blob at {}/{} to mount onto {}", *arrayOf<Any>(mountableBlob.getRepoId(), mountableBlob.getPath(), this.repo.getRepoId() + "/" + dockerRepo + "/" + mount))
+                    return Response.status(201).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", mount).header("Content-Length", 0).header("Location", location).build()
+                }
+            }
+
+            val uuid = UUID.randomUUID().toString()
+            location = this.getDockerURI("$dockerRepo/blobs/uploads/$uuid")
+            return Response.status(202).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Upload-Uuid", uuid).header("Location", location).build()
+        }
+    }
+
+    private fun getDockerURI(path: String): URI {
+        val hostHeaders = this.httpHeaders.get("Host")
+        var host = ""
+        var port: Int? = null
+        if (hostHeaders != null && !hostHeaders.isEmpty()) {
+            val parts = (hostHeaders[0] as String).split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            host = parts[0]
+            if (parts.size > 1) {
+                port = Integer.valueOf(parts[1])
+            }
+        } else {
+            log.warn("Docker location URL is blank, make sure the Host request header exists.")
+        }
+
+        val headers = this.httpHeaders.entries
+        val builder = UriBuilder.fromPath("v2/$path").host(host).scheme(this.getProtocol(this.httpHeaders))
+        if (port != null) {
+            builder.port(port)
+        }
+
+        val uri = builder.build(*arrayOfNulls(0))
+        return (this.repo.getWorkContextC() as DockerWorkContext).rewriteRepoURI(this.repo.getRepoId(), uri, headers)
+    }
+
+    private fun getProtocol(httpHeaders: HttpHeaders): String {
+        val protocolHeaders = httpHeaders.get("X-Forwarded-Proto")
+        if (protocolHeaders != null && !protocolHeaders.isEmpty()) {
+            return protocolHeaders.iterator().next() as String
+        } else {
+            log.debug("X-Forwarded-Proto does not exist, returning https.")
+            return "https"
         }
     }
 }
