@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.repository.MongoRepository
  * @date: 2019-10-10
  */
 interface BlockRecordRepository : MongoRepository<TBlockRecord, String> {
-    fun findByUploadIdAndSequence(uploadId: String, sequence: Int): TBlockRecord?
     fun findByUploadId(uploadId: String): List<TBlockRecord>
     fun deleteByUploadId(uploadId: String)
+    fun deleteByUploadIdAndSequence(uploadId: String, sequence: Int)
 }

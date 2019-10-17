@@ -21,38 +21,44 @@ import org.springframework.stereotype.Service
  */
 @Service
 class MetadataService @Autowired constructor(
+    private val nodeService: NodeService,
     private val mongoTemplate: MongoTemplate
 ) {
-    fun query(repositoryId: String, fullPath: String): Map<String, String> {
-        val formattedPath = NodeUtils.formatFullPath(fullPath)
-        return mongoTemplate.findOne(Query(
-                Criteria.where("repositoryId").`is`(repositoryId)
-                        .and("fullPath").`is`(formattedPath)
-                        .and("deleted").`is`(null)
-        ), TNode::class.java)?.metadata ?: emptyMap()
+    fun query(projectId: String, repoName: String, fullPath: String): Map<String, String> {
+        nodeService.checkRepository(projectId, repoName)
+        return mongoTemplate.findOne(createQuery(projectId, repoName, fullPath), TNode::class.java)?.metadata ?: emptyMap()
     }
 
     fun upsert(metadataUpsertRequest: MetadataUpsertRequest) {
-        val formattedPath = NodeUtils.formatFullPath(metadataUpsertRequest.fullPath)
-        val query = Query(Criteria.where("repositoryId").`is`(metadataUpsertRequest.repositoryId)
-                        .and("fullPath").`is`(formattedPath)
-                        .and("deleted").`is`(null)
-        )
+        val projectId = metadataUpsertRequest.projectId
+        val repoName = metadataUpsertRequest.repoName
+        nodeService.checkRepository(projectId, repoName)
+
+        val query = createQuery(projectId, repoName, metadataUpsertRequest.fullPath)
         val update = Update()
         metadataUpsertRequest.metadata.filterKeys { it.isNotBlank() }.forEach { (key, value) -> update.set("metadata.$key", value) }
         mongoTemplate.upsert(query, update, TNode::class)
     }
 
     fun delete(metadataDeleteRequest: MetadataDeleteRequest) {
-        val formattedPath = NodeUtils.formatFullPath(metadataDeleteRequest.fullPath)
-        val query = Query(Criteria.where("repositoryId").`is`(metadataDeleteRequest.repositoryId)
-                .and("fullPath").`is`(formattedPath)
-                .and("deleted").`is`(null)
-        )
+        val projectId = metadataDeleteRequest.projectId
+        val repoName = metadataDeleteRequest.repoName
+        nodeService.checkRepository(projectId, repoName)
+        val query = createQuery(projectId, repoName, metadataDeleteRequest.fullPath)
+
         val update = Update()
         metadataDeleteRequest.keyList.filter { it.isNotBlank() }.forEach {
             update.unset("metadata.$it")
         }
         mongoTemplate.updateFirst(query, update, TNode::class)
+    }
+
+    private fun createQuery(projectId: String, repoName: String, fullPath: String): Query {
+        val formattedPath = NodeUtils.formatFullPath(fullPath)
+        return Query(Criteria.where("projectId").`is`(projectId)
+                        .and("repoName").`is`(repoName)
+                        .and("fullPath").`is`(formattedPath)
+                        .and("deleted").`is`(null)
+        )
     }
 }

@@ -27,10 +27,12 @@ import org.springframework.web.bind.annotation.RequestParam
 @RequestMapping("/service/metadata")
 interface MetadataResource {
     @ApiOperation("查询节点所有元数据")
-    @GetMapping("/list/{repositoryId}")
+    @GetMapping("/list/{projectId}/{repoName}")
     fun query(
-        @ApiParam(value = "仓库id", required = true)
-        @PathVariable repositoryId: String,
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
         @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
     ): Response<Map<String, String>>

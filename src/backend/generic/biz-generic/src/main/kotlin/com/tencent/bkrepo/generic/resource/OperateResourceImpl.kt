@@ -26,8 +26,8 @@ class OperateResourceImpl @Autowired constructor(
         return Response.success(operateService.listFile(userId, projectId, repoName, path, includeFolder, deep))
     }
 
-    override fun searchFile(userId: String, projectId: String, repoName: String, searchRequest: FileSearchRequest): Response<List<FileInfo>> {
-        return Response.success(operateService.searchFile(userId, projectId, repoName, searchRequest.pathPattern, searchRequest.metadataCondition))
+    override fun searchFile(userId: String, searchRequest: FileSearchRequest): Response<List<FileInfo>> {
+        return Response.success(operateService.searchFile(userId, searchRequest))
     }
 
     override fun getFileDetail(userId: String, projectId: String, repoName: String, fullPath: String): Response<FileDetail> {

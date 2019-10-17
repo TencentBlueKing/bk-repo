@@ -5,6 +5,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataUpsertRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import org.apache.commons.lang.RandomStringUtils
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -30,38 +31,76 @@ class MetadataServiceTest @Autowired constructor(
     private val projectId = "1"
     private val operator = "system"
 
-    private var repoId = ""
+    private var repoName = ""
 
     @BeforeEach
     fun setUp() {
-        repositoryService.list(projectId).forEach { repositoryService.deleteById(it.id) }
-        repoId = repositoryService.create(RepoCreateRequest(operator, "test", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述")).id
+        repoName = RandomStringUtils.randomAlphabetic(10)
+        repositoryService.list(projectId).forEach { repositoryService.delete(projectId, it.name) }
+        repositoryService.create(
+                RepoCreateRequest(
+                        projectId = projectId,
+                        name = repoName,
+                        type = "GENERIC",
+                        category = RepositoryCategoryEnum.LOCAL,
+                        public = true,
+                        description = "简单描述",
+                        operator = operator
+                )
+        )
     }
 
     @AfterEach
     fun tearDown() {
-        repositoryService.deleteById(repoId)
+        repositoryService.delete(projectId, repoName)
     }
 
     @Test
+    fun createTest() {
+        val metadata = mutableMapOf<String, String>()
+        metadata["name"] = "c.txt"
+        metadata["createdBy"] = "system"
+        
+        val createRequest =  NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                folder = false,
+                fullPath = "/a/b/c.txt",
+                expires = 0,
+                overwrite = false,
+                size = 1,
+                sha256 = "sha256",
+                metadata = metadata,
+                operator = operator
+        )
+        
+        nodeService.create(createRequest)
+        Assertions.assertEquals(2, metadataService.query(projectId, repoName, "/a/b/c.txt").size)
+
+        var dbMetadata = metadataService.query(projectId, repoName, "/a/b/c.txt")
+        Assertions.assertEquals("c.txt", dbMetadata["name"])
+        Assertions.assertEquals("system", dbMetadata["createdBy"])
+    }
+    
+    @Test
     fun upsertTest() {
-        nodeService.create(NodeCreateRequest(false, "/a/b", "c.txt", repoId, operator, 0, false, 1024, "sha256")).id
-        Assertions.assertEquals(0, metadataService.query(repoId, "/a/b/c.txt").size)
+        nodeService.create(createRequest())
+        Assertions.assertEquals(0, metadataService.query(projectId, repoName, "/a/b/c.txt").size)
 
         val metadata = mutableMapOf<String, String>()
         metadata["name"] = "c.txt"
         metadata["createdBy"] = "system"
-        metadataService.upsert(MetadataUpsertRequest(repoId, "a/b/c.txt", metadata))
+        metadataService.upsert(MetadataUpsertRequest(projectId, repoName,"a/b/c.txt", metadata, operator))
 
-        var dbMetadata = metadataService.query(repoId, "/a/b/c.txt")
+        var dbMetadata = metadataService.query(projectId, repoName, "/a/b/c.txt")
         Assertions.assertEquals("c.txt", dbMetadata["name"])
         Assertions.assertEquals("system", dbMetadata["createdBy"])
 
         metadata["size"] = "0"
         metadata["createdBy"] = "admin"
-        metadataService.upsert(MetadataUpsertRequest(repoId, "a/b/c.txt", metadata))
+        metadataService.upsert(MetadataUpsertRequest(projectId, repoName, "a/b/c.txt", metadata, operator))
 
-        dbMetadata = metadataService.query(repoId, "/a/b/c.txt")
+        dbMetadata = metadataService.query(projectId, repoName, "/a/b/c.txt")
         Assertions.assertEquals("c.txt", dbMetadata["name"])
         Assertions.assertEquals("admin", dbMetadata["createdBy"])
         Assertions.assertEquals("0", dbMetadata["size"])
@@ -69,19 +108,34 @@ class MetadataServiceTest @Autowired constructor(
 
     @Test
     fun deleteTest() {
-        nodeService.create(NodeCreateRequest(false, "/a/b", "c.txt", repoId, operator, 0, false, 1024, "sha256")).id
-        Assertions.assertEquals(0, metadataService.query(repoId, "/a/b/c.txt").size)
+        nodeService.create(createRequest())
+        Assertions.assertEquals(0, metadataService.query(projectId, repoName, "/a/b/c.txt").size)
 
         val metadata = mutableMapOf<String, String>()
         metadata["name"] = "c.txt"
         metadata["createdBy"] = "system"
         metadata["size"] = "0"
-        metadataService.upsert(MetadataUpsertRequest(repoId, "a/b/c.txt", metadata))
+        metadataService.upsert(MetadataUpsertRequest(projectId, repoName, "a/b/c.txt", metadata, operator))
 
-        metadataService.delete(MetadataDeleteRequest(repoId, "a/b/c.txt", setOf("name", "createdBy")))
+        metadataService.delete(MetadataDeleteRequest(projectId, repoName,"a/b/c.txt", setOf("name", "createdBy"), operator))
 
-        val dbMetadata = metadataService.query(repoId, "/a/b/c.txt")
+        val dbMetadata = metadataService.query(projectId, repoName, "/a/b/c.txt")
         Assertions.assertEquals(1, dbMetadata.size)
         Assertions.assertEquals("0", dbMetadata["size"])
     }
+
+    private fun createRequest(): NodeCreateRequest{
+        return NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                folder = false,
+                fullPath = "/a/b/c.txt",
+                expires = 0,
+                overwrite = false,
+                size = 1,
+                sha256 = "sha256",
+                operator = operator
+        )
+    }
+
 }

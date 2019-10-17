@@ -45,7 +45,7 @@ class GlobalExceptionHandlerResolver {
     @ExceptionHandler(HystrixRuntimeException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleHystrixRuntimeException(exception: HystrixRuntimeException): Response<Void> {
-        logger.error("Failed with hystrix exception:[${exception.failureType}-${exception.message}]", exception.fallbackException)
+        logger.error("Failed with hystrix exception:[${exception.failureType}-${exception.message}]")
 
         return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "内部依赖服务调用异常")
     }

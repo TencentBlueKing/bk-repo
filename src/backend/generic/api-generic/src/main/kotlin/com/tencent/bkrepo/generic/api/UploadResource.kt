@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.multipart.MultipartFile
@@ -33,7 +32,7 @@ import org.springframework.web.multipart.MultipartFile
 interface UploadResource {
 
     @ApiOperation("简单上传")
-    @PutMapping("/simple/{projectId}/{repoName}/**")
+    @PostMapping("/simple/{projectId}/{repoName}/**")
     fun simpleUpload(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
@@ -71,7 +70,7 @@ interface UploadResource {
     ): Response<UploadTransactionInfo>
 
     @ApiOperation("分块上传")
-    @PutMapping("/block/{uploadId}/{sequence}")
+    @PostMapping("/block/{uploadId}/{sequence}")
     fun blockUpload(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
@@ -79,7 +78,7 @@ interface UploadResource {
         @ApiParam("分块上传事物id", required = true)
         @PathVariable
         uploadId: String,
-        @ApiParam("分块序号", required = true)
+        @ApiParam("分块序号，从1开始", required = true)
         @PathVariable
         sequence: Int,
         @ApiParam("文件", required = true)

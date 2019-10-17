@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.RestController
 class MetadataResourceImpl @Autowired constructor(
     private val metadataService: MetadataService
 ) : MetadataResource {
-    override fun query(repositoryId: String, fullPath: String): Response<Map<String, String>> {
-        return Response.success(metadataService.query(repositoryId, fullPath))
+    override fun query(projectId: String, repoName: String, fullPath: String): Response<Map<String, String>> {
+        return Response.success(metadataService.query(projectId, repoName, fullPath))
     }
 
     override fun upsert(metadataUpsertRequest: MetadataUpsertRequest): Response<Void> {

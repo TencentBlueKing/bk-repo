@@ -12,25 +12,24 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("创建仓库请求")
 data class RepoCreateRequest(
-    @ApiModelProperty("创建者")
-    val createdBy: String,
-    @ApiModelProperty("仓库名称")
-    val name: String,
-    @ApiModelProperty("仓库类型")
-    val type: String,
-    @ApiModelProperty("仓库类别")
-    val category: RepositoryCategoryEnum,
-    @ApiModelProperty("是否公开")
-    val public: Boolean,
-    @ApiModelProperty("所属项目id")
+    @ApiModelProperty("所属项目id", required = true)
     val projectId: String,
-    @ApiModelProperty("简要描述")
+    @ApiModelProperty("仓库名称", required = true)
+    val name: String,
+    @ApiModelProperty("仓库类型", required = true)
+    val type: String,
+    @ApiModelProperty("仓库类别", required = true)
+    val category: RepositoryCategoryEnum,
+    @ApiModelProperty("是否公开", required = true)
+    val public: Boolean,
+    @ApiModelProperty("简要描述", required = false)
     val description: String? = null,
-    @ApiModelProperty("扩展信息")
+    @ApiModelProperty("扩展信息", required = false)
     val extension: Any? = null,
-    @ApiModelProperty("存储类型")
-    val storageType: String? = null,
-    @ApiModelProperty("存储身份信息")
-    val storageCredentials: String? = null
+    @ApiModelProperty("存储身份信息", required = false)
+    var storageCredentials: StorageCredentials? = null,
+
+    @ApiModelProperty("操作用户", required = true)
+    val operator: String
 
 )

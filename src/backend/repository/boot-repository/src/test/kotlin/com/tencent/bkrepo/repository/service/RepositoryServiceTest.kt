@@ -1,8 +1,10 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 
@@ -28,29 +31,24 @@ internal class RepositoryServiceTest @Autowired constructor(
 
     private val projectId = "1"
     private val operator = "system"
+    private val repoName = "test"
 
     @BeforeEach
     fun setUp() {
-        repositoryService.list(projectId).forEach { repositoryService.deleteById(it.id) }
+        repositoryService.list(projectId).forEach { repositoryService.delete(projectId, it.name) }
     }
 
-    @BeforeEach
+    @AfterEach
     fun tearDown() {
-        repositoryService.list(projectId).forEach { repositoryService.deleteById(it.id) }
+        repositoryService.list(projectId).forEach { repositoryService.delete(projectId, it.name) }
     }
 
-    @Test
-    fun getDetailById() {
-        assertNull(repositoryService.getDetailById(""))
-    }
 
     @Test
     fun list() {
         assertEquals(0, repositoryService.list(projectId).size)
         val size = 20
-        repeat(size) {
-            i -> repositoryService.create(RepoCreateRequest(operator, "测试仓库$i", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
-        }
+        repeat(size) { i -> repositoryService.create(createRequest("repo$i")) }
         assertEquals(size, repositoryService.list(projectId).size)
     }
 
@@ -59,7 +57,7 @@ internal class RepositoryServiceTest @Autowired constructor(
         assertEquals(0, repositoryService.list(projectId).size)
         val size = 51L
         repeat(size.toInt()) {
-            i -> repositoryService.create(RepoCreateRequest(operator, "测试仓库$i", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
+            i -> repositoryService.create(createRequest("repo$i"))
         }
         var page = repositoryService.page(projectId, 0, 10)
         assertEquals(10, page.records.size)
@@ -81,50 +79,69 @@ internal class RepositoryServiceTest @Autowired constructor(
 
     @Test
     fun exist() {
-        val idValue = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
-        assertTrue(repositoryService.exist(projectId, "测试仓库"))
+        repositoryService.create(createRequest())
+        assertTrue(repositoryService.exist(projectId, repoName))
+        assertTrue(repositoryService.exist(projectId, repoName, "GENERIC"))
         assertFalse(repositoryService.exist("", ""))
         assertFalse(repositoryService.exist(projectId, ""))
-        assertFalse(repositoryService.exist(projectId, ""))
-        assertFalse(repositoryService.exist("", "测试仓库"))
+        assertFalse(repositoryService.exist("", repoName))
 
-        repositoryService.deleteById(idValue.id)
-        assertFalse(repositoryService.exist(projectId, "测试仓库"))
+        repositoryService.delete(projectId, repoName)
+        assertFalse(repositoryService.exist(projectId, repoName))
     }
 
     @Test
     fun create() {
-        val idValue = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
-        val repository = repositoryService.getDetailById(idValue.id)
-        assertEquals("测试仓库", repository!!.name)
-        assertEquals("BINARY", repository.type)
+        repositoryService.create(createRequest())
+        val repository = repositoryService.queryDetail(projectId, repoName, "GENERIC")!!
+        assertEquals(repoName, repository.name)
+        assertEquals("GENERIC", repository.type)
         assertEquals(RepositoryCategoryEnum.LOCAL, repository.category)
         assertEquals(true, repository.public)
         assertEquals(projectId, repository.projectId)
         assertEquals("简单描述", repository.description)
         assertEquals(null, repository.extension)
+        assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
     }
 
     @Test
-    fun updateById() {
-        val idValue = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
-        repositoryService.updateById(idValue.id, RepoUpdateRequest(operator, name = "新的名称", category = RepositoryCategoryEnum.REMOTE, public = false, description = "新的描述"))
-        val repository = repositoryService.getDetailById(idValue.id)
-        assertEquals("新的名称", repository!!.name)
+    fun update() {
+        repositoryService.create(createRequest())
+        repositoryService.update(RepoUpdateRequest(
+                projectId = projectId,
+                name = repoName,
+                category = RepositoryCategoryEnum.REMOTE,
+                public = false,
+                description = "新的描述",
+                operator = operator))
+        val repository = repositoryService.queryDetail(projectId, repoName)!!
         assertEquals(RepositoryCategoryEnum.REMOTE, repository.category)
         assertEquals(false, repository.public)
         assertEquals("新的描述", repository.description)
-        assertEquals(projectId, repository.projectId)
     }
 
     @Test
     fun deleteById() {
-        val idValue = repositoryService.create(RepoCreateRequest(operator, "测试仓库", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
-        val idValue2 = repositoryService.create(RepoCreateRequest(operator, "测试仓库2", "BINARY", RepositoryCategoryEnum.LOCAL, true, projectId, "简单描述"))
-        repositoryService.deleteById(idValue.id)
-        assertNull(repositoryService.getDetailById(idValue.id))
+        repositoryService.create(createRequest("test1"))
+        repositoryService.create(createRequest("test2"))
+        repositoryService.delete(projectId, "test1")
+        assertNull(repositoryService.queryDetail(projectId, "test1"))
 
-        repositoryService.deleteById("")
-        assertNotNull(repositoryService.getDetailById(idValue2.id))
+        assertThrows<ErrorCodeException> { repositoryService.delete(projectId, "") }
+        assertThrows<ErrorCodeException> { repositoryService.delete(projectId, "test1") }
+
+        assertNotNull(repositoryService.queryDetail(projectId, "test2"))
+    }
+
+    private fun createRequest(name: String = repoName): RepoCreateRequest {
+        return RepoCreateRequest(
+                projectId = projectId,
+                name = name,
+                type = "GENERIC",
+                category = RepositoryCategoryEnum.LOCAL,
+                public = true,
+                description = "简单描述",
+                operator = operator
+        )
     }
 }

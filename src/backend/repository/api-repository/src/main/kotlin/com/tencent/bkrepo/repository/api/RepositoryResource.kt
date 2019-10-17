@@ -27,14 +27,27 @@ import org.springframework.web.bind.annotation.RequestMapping
  */
 @Api("仓库服务接口")
 @FeignClient(SERVICE_NAME, contextId = "RepositoryResource")
-@RequestMapping("/service/repository")
+@RequestMapping("/service/repo")
 interface RepositoryResource {
 
-    @ApiOperation("查看仓库详情")
-    @GetMapping("/{id}")
-    fun detail(
-        @ApiParam(value = "仓库id", required = true)
-        @PathVariable id: String
+    @ApiOperation("根据名称类型查询仓库")
+    @GetMapping("/query/{projectId}/{name}/{type}")
+    fun queryDetail(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable name: String,
+        @ApiParam(value = "仓库类型", required = true)
+        @PathVariable type: String
+    ): Response<Repository?>
+
+    @ApiOperation("根据名称查询仓库")
+    @GetMapping("/query/{projectId}/{name}")
+    fun queryDetail(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable name: String
     ): Response<Repository?>
 
     @ApiOperation("列表查询项目所有仓库")
@@ -58,34 +71,21 @@ interface RepositoryResource {
     @ApiOperation("创建仓库")
     @PostMapping
     fun create(
-        @ApiParam(value = "创建仓库请求", required = true)
         @RequestBody repoCreateRequest: RepoCreateRequest
     ): Response<IdValue>
 
     @ApiOperation("修改仓库")
-    @PutMapping("/{id}")
+    @PutMapping
     fun update(
-        @ApiParam(value = "仓库id", required = true)
-        @PathVariable id: String,
-        @ApiParam(value = "更新仓库请求", required = true)
         @RequestBody repoUpdateRequest: RepoUpdateRequest
     ): Response<Void>
 
     @ApiOperation("删除仓库")
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{projectId}/{name}")
     fun delete(
-        @ApiParam(value = "仓库id", required = true)
-        @PathVariable id: String
-    ): Response<Void>
-
-    @ApiOperation("根据名称查询仓库")
-    @GetMapping("/query/{projectId}/{repoName}/{type}")
-    fun query(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
-        @ApiParam(value = "仓库类型", required = true)
-        @PathVariable type: String
-    ): Response<Repository?>
+        @PathVariable name: String
+    ): Response<Void>
 }
