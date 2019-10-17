@@ -48,7 +48,7 @@ class AuthService @Autowired constructor(
                     repositoryResource.create(
                         RepoCreateRequest(
                             createdBy = "system",
-                            name = "",
+                            name = repoName,
                             type = REPO_TYPE,
                             category = RepositoryCategoryEnum.LOCAL,
                             public = false,

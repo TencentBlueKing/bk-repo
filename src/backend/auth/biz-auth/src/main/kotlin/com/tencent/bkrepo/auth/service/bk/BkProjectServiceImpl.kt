@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.auth.service.bk
 
+import com.tencent.bkrepo.auth.model.TProject
 import com.tencent.bkrepo.auth.pojo.CreateProjectRequest
 import com.tencent.bkrepo.auth.pojo.Project
 import com.tencent.bkrepo.auth.repository.ProjectRepository
@@ -27,7 +28,14 @@ class BkProjectServiceImpl @Autowired constructor(
     }
 
     override fun createProject(request: CreateProjectRequest) {
-
+        projectRepository.insert(
+            TProject(
+                id = null,
+                name = request.name,
+                displayName = request.displayName,
+                description = request.description
+            )
+        )
     }
 
     override fun deleteByName(name: String) {
