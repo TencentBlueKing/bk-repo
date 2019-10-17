@@ -23,6 +23,7 @@ class AuthService @Autowired constructor(
     private val servicePermissionResource: ServicePermissionResource,
     private val repositoryResource: RepositoryResource
 ) {
+
     fun checkPermission(request: CheckPermissionRequest): Boolean {
         logger.info("checkPermission, request: $request")
 
@@ -42,21 +43,20 @@ class AuthService @Autowired constructor(
 
             if (!request.repo.isNullOrBlank()) {
                 val repoName = request.repo!!
-                val repo = repositoryResource.query(request.project!!, repoName, REPO_TYPE).data
+                val repo = repositoryResource.queryDetail(request.project!!, repoName, REPO_TYPE).data
                 if (repo == null) {
                     logger.info("repo($repoName) not exist, create it")
                     repositoryResource.create(
                         RepoCreateRequest(
-                            createdBy = "system",
+                            projectId = projectName,
                             name = repoName,
                             type = REPO_TYPE,
                             category = RepositoryCategoryEnum.LOCAL,
                             public = false,
-                            projectId = request.project!!,
                             description = "repo $repoName",
                             extension = null,
-                            storageType = null,
-                            storageCredentials = null
+                            storageCredentials = null,
+                            operator = "system"
                         )
                     )
                 }
