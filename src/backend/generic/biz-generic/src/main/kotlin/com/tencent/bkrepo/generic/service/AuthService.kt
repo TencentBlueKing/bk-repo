@@ -17,12 +17,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
-/**
- * 通用文件上传服务类
- *
- * @author: carrypan
- * @date: 2019-10-08
- */
 @Service
 class AuthService @Autowired constructor(
     private val serviceProjectResource: ServiceProjectResource,
@@ -30,10 +24,13 @@ class AuthService @Autowired constructor(
     private val repositoryResource: RepositoryResource
 ) {
     fun checkPermission(request: CheckPermissionRequest): Boolean {
+        logger.info("checkPermission, request: $request")
+
         if (!request.project.isNullOrBlank()) {
             val projectName = request.project!!
             val project = serviceProjectResource.getByName(projectName).data
             if (project == null) {
+                logger.info("project($projectName) not exist, create it")
                 serviceProjectResource.createProject(
                     CreateProjectRequest(
                         name = projectName,
@@ -41,32 +38,34 @@ class AuthService @Autowired constructor(
                         description = ""
                     )
                 )
-
             }
-        }
 
-        if (!request.repo.isNullOrBlank()) {
-            val repoName = request.repo!!
-            val repo = repositoryResource.query(request.project!!, repoName, REPO_TYPE).data
-            if (repo == null) {
-                repositoryResource.create(
-                    RepoCreateRequest(
-                        createdBy = "system",
-                        name = "",
-                        type = REPO_TYPE,
-                        category = RepositoryCategoryEnum.LOCAL,
-                        public = false,
-                        projectId = request.project!!,
-                        description = "repo $repoName",
-                        extension = null,
-                        storageType = null,
-                        storageCredentials = null
+            if (!request.repo.isNullOrBlank()) {
+                val repoName = request.repo!!
+                val repo = repositoryResource.query(request.project!!, repoName, REPO_TYPE).data
+                if (repo == null) {
+                    logger.info("repo($repoName) not exist, create it")
+                    repositoryResource.create(
+                        RepoCreateRequest(
+                            createdBy = "system",
+                            name = "",
+                            type = REPO_TYPE,
+                            category = RepositoryCategoryEnum.LOCAL,
+                            public = false,
+                            projectId = request.project!!,
+                            description = "repo $repoName",
+                            extension = null,
+                            storageType = null,
+                            storageCredentials = null
+                        )
                     )
-                )
+                }
             }
         }
 
-        return servicePermissionResource.checkPermission(request).data!!
+        val checkResponse = servicePermissionResource.checkPermission(request)
+        logger.info("checkResponse: $checkResponse")
+        return checkResponse.data!!
     }
 
     companion object {
