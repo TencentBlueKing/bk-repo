@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
@@ -26,36 +29,37 @@ import org.springframework.stereotype.Service
 @Service
 class OperateService(
     private val repositoryResource: RepositoryResource,
-    private val nodeResource: NodeResource
+    private val nodeResource: NodeResource,
+    private val authService: AuthService
 ) {
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
-        // TODO: 鉴权
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.NODE, PermissionAction.READ, projectId, repoName))
         val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         return nodeResource.list(repository.id, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
     }
 
     fun searchFile(userId: String, projectId: String, repoName: String, pathPattern: List<String>, metadataCondition: Map<String, String>): List<FileInfo> {
-        // TODO: 鉴权
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.NODE, PermissionAction.READ, projectId, repoName))
         val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         return nodeResource.search(repository.id, NodeSearchRequest(pathPattern, metadataCondition)).data?.map { toFileInfo(it) } ?: emptyList()
     }
 
     fun getFileDetail(userId: String, projectId: String, repoName: String, fullPath: String): FileDetail {
-        // TODO: 鉴权
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.NODE, PermissionAction.READ, projectId, repoName))
         val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         val nodeDetail = nodeResource.queryDetail(repository.id, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileDetail(toFileInfo(nodeDetail.nodeInfo), nodeDetail.metadata)
     }
 
     fun getFileSize(userId: String, projectId: String, repoName: String, fullPath: String): FileSizeInfo {
-        // TODO: 鉴权
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.NODE, PermissionAction.READ, projectId, repoName))
         val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         val nodeSizeInfo = nodeResource.getNodeSize(repository.id, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileSizeInfo(subFileCount = nodeSizeInfo.subNodeCount, size = nodeSizeInfo.size)
     }
 
     fun mkdir(userId: String, projectId: String, repoName: String, fullPath: String) {
-        // TODO: 鉴权
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.NODE, PermissionAction.WRITE, projectId, repoName))
         val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
         val existNode = nodeResource.queryDetail(repository.id, formattedFullPath).data
@@ -84,7 +88,6 @@ class OperateService(
     }
 
     fun move(userId: String, projectId: String, repoName: String, fullPath: String, toPath: String) {
-        // TODO: 鉴权
         val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         val existNode = nodeResource.queryDetail(repository.id, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
 

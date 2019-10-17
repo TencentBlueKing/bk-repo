@@ -5,6 +5,9 @@ import com.tencent.bkrepo.auth.pojo.CreateProjectRequest
 import com.tencent.bkrepo.auth.pojo.Project
 import com.tencent.bkrepo.auth.repository.ProjectRepository
 import com.tencent.bkrepo.auth.service.ProjectService
+import com.tencent.bkrepo.auth.util.TransferUtils
+import com.tencent.bkrepo.common.api.constant.CommonMessageCode
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
@@ -14,8 +17,13 @@ import org.springframework.stereotype.Service
 class ProjectServiceImpl @Autowired constructor(
     private val projectRepository: ProjectRepository
 ) : ProjectService {
+    override fun getByName(name: String): Project {
+        val project = projectRepository.findOneByName(name) ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, name)
+        return TransferUtils.transferProject(project)
+    }
+
     override fun listProject(): List<Project> {
-        return projectRepository.findAll().map { transfer(it) }
+        return projectRepository.findAll().map { TransferUtils.transferProject(it) }
     }
 
     override fun createProject(request: CreateProjectRequest) {
@@ -26,15 +34,6 @@ class ProjectServiceImpl @Autowired constructor(
                 displayName = request.displayName,
                 description = request.description
             )
-        )
-    }
-
-    private fun transfer(tProject: TProject): Project {
-        return Project(
-            id = tProject.id!!,
-            name = tProject.name,
-            displayName = tProject.displayName,
-            description = tProject.description
         )
     }
 

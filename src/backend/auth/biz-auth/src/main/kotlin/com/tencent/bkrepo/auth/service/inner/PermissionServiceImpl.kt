@@ -94,7 +94,7 @@ class PermissionServiceImpl @Autowired constructor(
         return if (request.resourceType == ResourceType.SYSTEM) {
             user.admin
         } else {
-            val permissions = getPermission(request.userId, request.projectId!!)
+            val permissions = getPermission(request.userId, request.project!!)
             checkAuth(request, permissions)
         }
     }
@@ -122,7 +122,7 @@ class PermissionServiceImpl @Autowired constructor(
                 }
                 if (permission.resourceType == ResourceType.REPO) {
                     return permission.action == request.action
-                        && (permission.repoId == "*" || permission.repoId == request.repoId)
+                        && (permission.repoId == "*" || permission.repoId == request.repo)
                 }
                 return false
             }

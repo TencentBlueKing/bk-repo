@@ -27,6 +27,13 @@ interface ServiceProjectResource {
         @PathVariable name: String
     ): Response<Boolean>
 
+    @ApiOperation("")
+    @DeleteMapping("/query/{name}")
+    fun getByName(
+        @ApiParam(value = "项目名")
+        @PathVariable name: String
+    ): Response<Project?>
+
     @ApiOperation("list项目")
     @GetMapping("/list")
     fun listProject(): Response<List<Project>>
