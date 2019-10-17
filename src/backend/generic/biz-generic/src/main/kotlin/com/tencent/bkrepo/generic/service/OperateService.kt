@@ -33,33 +33,33 @@ class OperateService(
     private val authService: AuthService
 ) {
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.NODE, PermissionAction.READ, projectId, repoName))
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
         val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         return nodeResource.list(repository.id, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
     }
 
     fun searchFile(userId: String, projectId: String, repoName: String, pathPattern: List<String>, metadataCondition: Map<String, String>): List<FileInfo> {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.NODE, PermissionAction.READ, projectId, repoName))
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
         val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         return nodeResource.search(repository.id, NodeSearchRequest(pathPattern, metadataCondition)).data?.map { toFileInfo(it) } ?: emptyList()
     }
 
     fun getFileDetail(userId: String, projectId: String, repoName: String, fullPath: String): FileDetail {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.NODE, PermissionAction.READ, projectId, repoName))
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
         val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         val nodeDetail = nodeResource.queryDetail(repository.id, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileDetail(toFileInfo(nodeDetail.nodeInfo), nodeDetail.metadata)
     }
 
     fun getFileSize(userId: String, projectId: String, repoName: String, fullPath: String): FileSizeInfo {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.NODE, PermissionAction.READ, projectId, repoName))
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
         val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         val nodeSizeInfo = nodeResource.getNodeSize(repository.id, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileSizeInfo(subFileCount = nodeSizeInfo.subNodeCount, size = nodeSizeInfo.size)
     }
 
     fun mkdir(userId: String, projectId: String, repoName: String, fullPath: String) {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.NODE, PermissionAction.WRITE, projectId, repoName))
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
         val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
         val existNode = nodeResource.queryDetail(repository.id, formattedFullPath).data
