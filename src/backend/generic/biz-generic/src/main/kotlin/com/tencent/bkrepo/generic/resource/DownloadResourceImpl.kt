@@ -25,7 +25,7 @@ class DownloadResourceImpl @Autowired constructor(
     }
 
     override fun queryBlockInfo(userId: String, projectId: String, repoName: String, fullPath: String): Response<List<BlockInfo>> {
-        return Response.success(downloadService.queryFileInfo(userId, projectId, repoName, fullPath))
+        return Response.success(downloadService.queryBlockInfo(userId, projectId, repoName, fullPath))
     }
 
     override fun blockDownload(userId: String, projectId: String, repoName: String, fullPath: String, sequence: Int, response: HttpServletResponse): ResponseEntity<InputStreamResource> {

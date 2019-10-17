@@ -1,5 +1,0 @@
-dependencies {
-    api project(":common:common-service")
-    api project(":common:common-mongo")
-    api project(":metadata:api-metadata")
-}

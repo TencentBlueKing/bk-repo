@@ -1,12 +1,12 @@
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.repository.pojo.repo
 
 /**
  * 仓库存储身份信息
  *
  * @author: carrypan
- * @date: 2019-09-10
+ * @date: 2019-10-16
  */
-data class TStorageCredentials(
+data class StorageCredentials(
     var type: String,
     var credentials: String
 )

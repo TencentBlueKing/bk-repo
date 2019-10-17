@@ -46,7 +46,7 @@ interface DownloadResource {
     ): ResponseEntity<InputStreamResource>
 
     @ApiOperation("查询分块信息")
-    @GetMapping("/block/info/{projectId}/{repoName}/**")
+    @GetMapping("/info/{projectId}/{repoName}/**")
     fun queryBlockInfo(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)

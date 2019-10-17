@@ -19,19 +19,19 @@ internal class NodeUtilsTest {
 
     @Test
     fun parseDirName() {
-        assertEquals(ROOT_PATH, NodeUtils.parsePathName("/"))
-        assertEquals(ROOT_PATH, NodeUtils.parsePathName("  /   "))
-        assertEquals("/a/", NodeUtils.parsePathName("  /   a"))
-        assertEquals("/a/b/", NodeUtils.parsePathName("  /   a  /b"))
-        assertEquals("/a/b/", NodeUtils.parsePathName("  /   a  /b/"))
+        assertEquals(ROOT_PATH, NodeUtils.parseFullPath("/"))
+        assertEquals(ROOT_PATH, NodeUtils.parseFullPath("  /   "))
+        assertEquals(ROOT_PATH, NodeUtils.parseFullPath("  "))
+        assertEquals("/a", NodeUtils.parseFullPath("  /   a"))
+        assertEquals("/a/b", NodeUtils.parseFullPath("  /   a  /b"))
+        assertEquals("/a/b", NodeUtils.parseFullPath("  /   a  /b/"))
 
-        assertThrows<ErrorCodeException> { NodeUtils.parsePathName(" ") }
-        assertDoesNotThrow { NodeUtils.parsePathName("/1/2/3/4/5/6/7/8/9/10") }
-        assertThrows<ErrorCodeException> { NodeUtils.parsePathName("/1/2/3/4/5/6/7/8/9/10/11") }
-        assertThrows<ErrorCodeException> { NodeUtils.parsePathName("/../") }
-        assertThrows<ErrorCodeException> { NodeUtils.parsePathName("/./") }
-        assertDoesNotThrow { NodeUtils.parsePathName("/.1/") }
-        assertDoesNotThrow { NodeUtils.parsePathName("/..../") }
+        assertDoesNotThrow { NodeUtils.parseFullPath("/1/2/3/4/5/6/7/8/9/10") }
+        assertThrows<ErrorCodeException> { NodeUtils.parseFullPath("/1/2/3/4/5/6/7/8/9/10/11") }
+        assertThrows<ErrorCodeException> { NodeUtils.parseFullPath("/../") }
+        assertThrows<ErrorCodeException> { NodeUtils.parseFullPath("/./") }
+        assertDoesNotThrow { NodeUtils.parseFullPath("/.1/") }
+        assertDoesNotThrow { NodeUtils.parseFullPath("/..../") }
     }
 
     @Test
@@ -80,6 +80,10 @@ internal class NodeUtilsTest {
     fun formatPath() {
         assertEquals("/.*|^/a/", NodeUtils.formatPath("/.*|^/a"))
         assertEquals("/.*|^/a", NodeUtils.formatFullPath("/.*|^/a"))
+
+
+        assertEquals("/a/b/", NodeUtils.formatPath("/a/b"))
+        assertEquals("/a/b/", NodeUtils.formatPath("/a/b/"))
     }
 
 }

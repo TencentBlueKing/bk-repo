@@ -34,6 +34,8 @@ data class NodeInfo(
     val size: Long,
     @ApiModelProperty("文件sha256")
     val sha256: String? = null,
-    @ApiModelProperty("所属仓库id")
-    val repositoryId: String
+    @ApiModelProperty("所属项目id")
+    val projectId: String,
+    @ApiModelProperty("所属仓库名称")
+    val repoName: String
 )

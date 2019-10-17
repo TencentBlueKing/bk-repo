@@ -11,10 +11,15 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("创建或更新元数据请求")
 data class MetadataUpsertRequest(
-    @ApiModelProperty("仓库id")
-    val repositoryId: String,
-    @ApiModelProperty("路径")
+    @ApiModelProperty("项目id", required = true)
+    val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    val repoName: String,
+    @ApiModelProperty("节点完整路径", required = true)
     val fullPath: String,
-    @ApiModelProperty("元数据key-value数据")
-    val metadata: Map<String, String>
+    @ApiModelProperty("元数据key-value数据", required = true)
+    val metadata: Map<String, String>,
+
+    @ApiModelProperty("操作用户", required = true)
+    val operator: String
 )

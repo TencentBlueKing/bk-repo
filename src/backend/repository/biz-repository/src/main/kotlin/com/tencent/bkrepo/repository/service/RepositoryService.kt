@@ -1,25 +1,28 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.ELEMENT_NOT_FOUND
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXIST
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.REPOSITORY_NOT_FOUND
+import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.Repository
+import com.tencent.bkrepo.repository.pojo.repo.StorageCredentials
+import com.tencent.bkrepo.repository.repository.NodeRepository
 import com.tencent.bkrepo.repository.repository.RepoRepository
-import com.tencent.bkrepo.repository.repository.StorageCredentialsRepository
+import com.tencent.bkrepo.repository.util.NodeUtils
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -32,49 +35,47 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class RepositoryService @Autowired constructor(
     private val repoRepository: RepoRepository,
-    private val credentialsRepository: StorageCredentialsRepository,
-    private val nodeService: NodeService,
+    private val nodeRepository: NodeRepository,
     private val mongoTemplate: MongoTemplate
 ) {
-    fun getDetailById(id: String): Repository? {
-        val repository = toRepository(repoRepository.findByIdOrNull(id)) ?: return null
-        credentialsRepository.findByRepositoryId(repository.id)?.let {
-            repository.storageType = it.type
-            repository.storageCredentials = it.credentials
+    private fun queryModel(projectId: String, name: String, type: String? = null): TRepository? {
+        if (projectId.isBlank() || name.isBlank()) return null
+
+        val criteria = Criteria.where("projectId").`is`(projectId).and("name").`is`(name)
+
+        if (!type.isNullOrBlank()) {
+            criteria.and("type").`is`(type)
         }
-        return repository
+        return mongoTemplate.findOne(Query(criteria), TRepository::class.java)
     }
 
-    fun query(projectId: String, repoName: String, type: String): Repository? {
-        projectId.takeIf { it.isNotBlank() && repoName.isNotBlank() && type.isNotBlank() } ?: return null
-        val query = Query(Criteria.where("projectId").`is`(projectId)
-                .and("name").`is`(repoName)
-                .and("type").`is`(type))
-
-        val repository = toRepository(mongoTemplate.findOne(query, TRepository::class.java)) ?: return null
-
-        credentialsRepository.findByRepositoryId(repository.id)?.let {
-            repository.storageType = it.type
-            repository.storageCredentials = it.credentials
-        }
-
-        return repository
+    fun queryDetail(projectId: String, name: String, type: String? = null): Repository? {
+        return convert(queryModel(projectId, name, type))
     }
 
     fun list(projectId: String): List<Repository> {
-        return repoRepository.findByProjectId(projectId)
+        val query = createListQuery(projectId)
+
+        return mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
     }
 
     fun page(projectId: String, page: Int, size: Int): Page<Repository> {
-        val tRepositoryPage = repoRepository.findByProjectId(projectId, PageRequest.of(page, size))
-        return Page(page, size, tRepositoryPage.totalElements, tRepositoryPage.content)
+        val query = createListQuery(projectId).with(PageRequest.of(page, size))
+        val data = mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
+        val count = mongoTemplate.count(query, TRepository::class.java)
+
+        return Page(page, size, count, data)
     }
 
-    fun exist(projectId: String, name: String): Boolean {
-        takeIf { projectId.isNotBlank() && name.isNotBlank() } ?: return false
-        val query = Query(Criteria.where("projectId").`is`(projectId)
-                .and("name").`is`(name))
-        return mongoTemplate.exists(query, TRepository::class.java)
+    fun exist(projectId: String, name: String, type: String? = null): Boolean {
+        if (projectId.isBlank() || name.isBlank()) return false
+        val criteria = Criteria.where("projectId").`is`(projectId).and("name").`is`(name)
+
+        if (!type.isNullOrBlank()) {
+            criteria.and("type").`is`(type)
+        }
+
+        return mongoTemplate.exists(Query(criteria), TRepository::class.java)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -88,79 +89,108 @@ class RepositoryService @Autowired constructor(
                 public = it.public,
                 description = it.description,
                 extension = it.extension,
+                storageCredentials = it.storageCredentials?.let { item -> TStorageCredentials(item.type, item.credentials) },
                 projectId = it.projectId,
-                createdBy = it.createdBy,
+
+                createdBy = it.operator,
                 createdDate = LocalDateTime.now(),
-                lastModifiedBy = it.createdBy,
+                lastModifiedBy = it.operator,
                 lastModifiedDate = LocalDateTime.now()
             )
         }
         val idValue = IdValue(repoRepository.insert(tRepository).id!!)
 
-        if (repoCreateRequest.storageType != null && repoCreateRequest.storageCredentials != null) {
-            val tStorageCredentials = repoCreateRequest.let {
-                TStorageCredentials(
-                        repositoryId = idValue.id,
-                        type = it.storageType!!,
-                        credentials = it.storageCredentials!!,
-                        createdBy = it.createdBy,
-                        createdDate = LocalDateTime.now(),
-                        lastModifiedBy = it.createdBy,
-                        lastModifiedDate = LocalDateTime.now()
-                )
-            }
-
-            credentialsRepository.insert(tStorageCredentials)
-        }
-
         // 创建根节点
-        nodeService.createRootPath(idValue.id, repoCreateRequest.createdBy)
+        createRootPath(repoCreateRequest.projectId, repoCreateRequest.name, repoCreateRequest.operator)
+
+        logger.info("Create repository [$repoCreateRequest] success.")
         return idValue
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun updateById(id: String, repoUpdateRequest: RepoUpdateRequest) {
-        val repository = repoRepository.findByIdOrNull(id) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
-        // 如果修改了name，校验唯一性
-        repoUpdateRequest.name?.takeUnless {
-            repository.name != it && exist(repository.projectId, it)
-        } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
+    fun update(repoUpdateRequest: RepoUpdateRequest) {
+        val projectId = repoUpdateRequest.projectId
+        val name = repoUpdateRequest.name
+        val repository = queryModel(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
 
         with(repoUpdateRequest) {
-            name?.let { repository.name = it }
             category?.let { repository.category = it }
             public?.let { repository.public = it }
             extension?.let { repository.extension = it }
             description?.let { repository.description = it }
-            repository.lastModifiedBy = modifiedBy
+            repository.lastModifiedBy = repoUpdateRequest.operator
             repository.lastModifiedDate = LocalDateTime.now()
         }
 
+        logger.info("Update repository [$projectId/$name] [$repoUpdateRequest] success.")
         repoRepository.save(repository)
     }
 
+    /**
+     * 用于测试的函数，不会对外提供
+     */
+    fun delete(projectId: String, name: String) {
+        val repository = queryModel(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
+
+        repoRepository.deleteById(repository.id!!)
+        mongoTemplate.remove(Query(Criteria
+                .where("projectId")
+                .`is`(repository.projectId)
+                .and("repoName").`is`(repository.name)
+        ), TNode::class.java)
+
+        logger.info("Delete repository [$projectId/$name] success.")
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
-    fun deleteById(id: String) {
-        repoRepository.deleteById(id)
-        nodeService.deleteByRepositoryId(id)
-        credentialsRepository.deleteByRepositoryId(id)
+    fun createRootPath(projectId: String, repoName: String, createdBy: String) {
+        if (!exist(projectId, repoName, NodeUtils.ROOT_PATH)) {
+            val node = TNode(
+                    folder = true,
+                    path = NodeUtils.ROOT_PATH,
+                    name = "",
+                    fullPath = NodeUtils.ROOT_PATH,
+                    size = 0,
+                    projectId = projectId,
+                    repoName = repoName,
+                    createdBy = createdBy,
+                    createdDate = LocalDateTime.now(),
+                    lastModifiedBy = createdBy,
+                    lastModifiedDate = LocalDateTime.now()
+            )
+            nodeRepository.insert(node)
+        }
+    }
+
+    private fun createListQuery(projectId: String): Query {
+        val query = Query(Criteria.where("projectId").`is`(projectId)).with(Sort.by("name"))
+        query.fields().exclude("storageCredentials")
+
+        return query
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(RepositoryService::class.java)
 
-        fun toRepository(tRepository: TRepository?): Repository? {
+        private fun convert(tRepository: TRepository?): Repository? {
             return tRepository?.let {
                 Repository(
-                        it.id!!,
-                        it.name,
-                        it.type,
-                        it.category,
-                        it.public,
-                        it.description,
-                        it.extension,
-                        it.projectId
+                        id = it.id!!,
+                        name = it.name,
+                        type = it.type,
+                        category = it.category,
+                        public = it.public,
+                        description = it.description,
+                        extension = it.extension,
+                        storageCredentials = convert(it.storageCredentials),
+                        projectId = it.projectId
                 )
+            }
+        }
+
+        private fun convert(tStorageCredentials: TStorageCredentials?): StorageCredentials? {
+            return tStorageCredentials?.let {
+                StorageCredentials(type = it.type, credentials = it.credentials)
             }
         }
     }

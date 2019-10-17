@@ -56,17 +56,11 @@ interface OperateResource {
     ): Response<List<FileInfo>>
 
     @ApiOperation("搜索文件")
-    @PostMapping("/search/{projectId}/{repoName}")
+    @PostMapping("/search")
     fun searchFile(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ApiParam("项目id", required = true)
-        @PathVariable
-        projectId: String,
-        @ApiParam("仓库名称", required = true)
-        @PathVariable
-        repoName: String,
         @RequestBody
         searchRequest: FileSearchRequest
     ): Response<List<FileInfo>>
