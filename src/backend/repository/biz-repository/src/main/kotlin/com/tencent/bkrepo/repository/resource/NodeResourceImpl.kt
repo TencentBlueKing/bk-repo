@@ -9,9 +9,10 @@ import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import com.tencent.bkrepo.repository.service.NodeService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -54,8 +55,13 @@ class NodeResourceImpl @Autowired constructor(
         return Response.success(nodeService.create(nodeCreateRequest))
     }
 
-    override fun update(nodeUpdateRequest: NodeUpdateRequest): Response<Void> {
-        nodeService.update(nodeUpdateRequest)
+    override fun rename(nodeRenameRequest: NodeRenameRequest): Response<Void> {
+        nodeService.rename(nodeRenameRequest)
+        return Response.success()
+    }
+
+    override fun move(nodeMoveRequest: NodeMoveRequest): Response<Void> {
+        nodeService.move(nodeMoveRequest)
         return Response.success()
     }
 

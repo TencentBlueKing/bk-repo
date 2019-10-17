@@ -16,5 +16,7 @@ data class FileCopyRequest(
     @ApiModelProperty("目标仓库", required = false)
     val toRepoName: String,
     @ApiModelProperty("目标路径", required = true)
-    val toPath: String
+    val toPath: String,
+    @ApiModelProperty("是否覆盖同名文件", required = false)
+    val overwrite: Boolean = false
 )

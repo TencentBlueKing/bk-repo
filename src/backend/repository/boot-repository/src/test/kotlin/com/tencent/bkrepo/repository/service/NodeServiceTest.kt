@@ -4,7 +4,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.apache.commons.lang.RandomStringUtils
 import org.junit.jupiter.api.AfterEach
@@ -75,6 +74,19 @@ internal class NodeServiceTest @Autowired constructor(
     }
 
     @Test
+    fun list2() {
+        nodeService.create(createRequest("/a/"))
+        nodeService.create(createRequest("/b"))
+        val size = 20
+        repeat(size) { i -> nodeService.create(createRequest("/a/$i.txt", false)) }
+        repeat(size) { i -> nodeService.create(createRequest("/b/$i.txt", false)) }
+
+        assertEquals(0, nodeService.list(projectId, repoName, "", includeFolder = false, deep = false).size)
+        assertEquals(2, nodeService.list(projectId, repoName, "", includeFolder = true, deep = false).size)
+        assertEquals(42, nodeService.list(projectId, repoName, "", includeFolder = true, deep = true).size)
+    }
+
+    @Test
     fun page() {
         nodeService.create(createRequest("/a/b/c"))
 
@@ -107,6 +119,8 @@ internal class NodeServiceTest @Autowired constructor(
         createRequest("  / a /   b /  1.txt   ", false)
         nodeService.create(createRequest("  / a /   b /  1.txt   ", false))
         assertTrue(nodeService.exist(projectId, repoName, "/a/b/1.txt"))
+        assertTrue(nodeService.exist(projectId, repoName, "/a"))
+        assertTrue(nodeService.exist(projectId, repoName, "/a/b"))
     }
 
     @Test
@@ -122,7 +136,6 @@ internal class NodeServiceTest @Autowired constructor(
     fun createFile() {
         nodeService.create(createRequest("  / a /   b /  1.txt  ", false))
         assertThrows<ErrorCodeException> { nodeService.create(createRequest("  / a /   b /  1.txt  ", false)) }
-
         val node = nodeService.queryDetail(projectId, repoName, "/a/b/1.txt")!!.nodeInfo
 
         assertEquals(operator, node.createdBy)
@@ -156,31 +169,6 @@ internal class NodeServiceTest @Autowired constructor(
         assertEquals(null, node.sha256)
     }
 
-    @Test
-    fun updateById() {
-        nodeService.create(createRequest("/a/b/1.txt", false))
-
-        nodeService.update(NodeUpdateRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = "/a/b/1.txt",
-                newFullPath = "/c/d/e/2.txt.txt",
-                operator = operator))
-
-        val node = nodeService.queryDetail(projectId, repoName, "/c/d/e/2.txt.txt")!!.nodeInfo
-
-        assertEquals(operator, node.createdBy)
-        assertNotNull(node.createdDate)
-        assertEquals(operator, node.lastModifiedBy)
-        assertNotNull(node.lastModifiedDate)
-
-        assertEquals(false, node.folder)
-        assertEquals("/c/d/e/", node.path)
-        assertEquals("2.txt.txt", node.name)
-        assertEquals("/c/d/e/2.txt.txt", node.fullPath)
-
-        assertTrue(nodeService.exist(projectId, repoName, "/c"))
-    }
 
     @Test
     fun softDeleteById() {
