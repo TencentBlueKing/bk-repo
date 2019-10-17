@@ -100,9 +100,6 @@ class RepositoryService @Autowired constructor(
         }
         val idValue = IdValue(repoRepository.insert(tRepository).id!!)
 
-        // 创建根节点
-        createRootPath(repoCreateRequest.projectId, repoCreateRequest.name, repoCreateRequest.operator)
-
         logger.info("Create repository [$repoCreateRequest] success.")
         return idValue
     }
@@ -140,26 +137,6 @@ class RepositoryService @Autowired constructor(
         ), TNode::class.java)
 
         logger.info("Delete repository [$projectId/$name] success.")
-    }
-
-    @Transactional(rollbackFor = [Throwable::class])
-    fun createRootPath(projectId: String, repoName: String, createdBy: String) {
-        if (!exist(projectId, repoName, NodeUtils.ROOT_PATH)) {
-            val node = TNode(
-                    folder = true,
-                    path = NodeUtils.ROOT_PATH,
-                    name = "",
-                    fullPath = NodeUtils.ROOT_PATH,
-                    size = 0,
-                    projectId = projectId,
-                    repoName = repoName,
-                    createdBy = createdBy,
-                    createdDate = LocalDateTime.now(),
-                    lastModifiedBy = createdBy,
-                    lastModifiedDate = LocalDateTime.now()
-            )
-            nodeRepository.insert(node)
-        }
     }
 
     private fun createListQuery(projectId: String): Query {

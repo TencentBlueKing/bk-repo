@@ -9,9 +9,10 @@ import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -117,14 +118,20 @@ interface NodeResource {
         @RequestBody nodeCreateRequest: NodeCreateRequest
     ): Response<IdValue>
 
-    @ApiOperation("更新名称")
-    @PutMapping("/update")
-    fun update(
-        @RequestBody nodeUpdateRequest: NodeUpdateRequest
+    @ApiOperation("重命名节点")
+    @PutMapping("/rename")
+    fun rename(
+        @RequestBody nodeRenameRequest: NodeRenameRequest
+    ): Response<Void>
+
+    @ApiOperation("移动节点")
+    @PutMapping("/move")
+    fun move(
+        @RequestBody nodeMoveRequest: NodeMoveRequest
     ): Response<Void>
 
     @ApiOperation("复制节点")
-    @PostMapping("/copy")
+    @PutMapping("/copy")
     fun copy(
         @RequestBody nodeCopyRequest: NodeCopyRequest
     ): Response<Void>

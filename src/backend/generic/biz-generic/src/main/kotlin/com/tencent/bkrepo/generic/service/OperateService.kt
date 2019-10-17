@@ -9,12 +9,18 @@ import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.generic.pojo.FileDetail
 import com.tencent.bkrepo.generic.pojo.FileInfo
 import com.tencent.bkrepo.generic.pojo.FileSizeInfo
+import com.tencent.bkrepo.generic.pojo.operate.FileCopyRequest
+import com.tencent.bkrepo.generic.pojo.operate.FileMoveRequest
+import com.tencent.bkrepo.generic.pojo.operate.FileRenameRequest
 import com.tencent.bkrepo.generic.pojo.operate.FileSearchRequest
 import com.tencent.bkrepo.repository.api.NodeResource
+import com.tencent.bkrepo.repository.pojo.node.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.format.DateTimeFormatter
@@ -82,28 +88,75 @@ class OperateService(
         logger.info("user[$userId] mkdirs [$fullUrl] success")
     }
 
-    fun move(userId: String, projectId: String, repoName: String, fullPath: String, toPath: String) {
-        // TODO: 鉴权
+    fun delete(userId: String, projectId: String, repoName: String, fullPath: String) {
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+        val fullUrl = "$projectId/$repoName/$fullPath"
+        val deleteRequest = NodeDeleteRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                operator = userId
+        )
+        val result = nodeResource.delete(deleteRequest)
 
-        nodeResource.queryDetail(projectId, repoName, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
+        if (result.isNotOk()) {
+            logger.warn("user[$userId] delete [$fullUrl] failed: [${result.code}, ${result.message}]")
+            throw ExternalErrorCodeException(result.code, result.message)
+        }
 
-        val updateRequest = NodeUpdateRequest(
+        logger.info("user[$userId] delete [$fullUrl] success")
+    }
+
+    fun rename(userId: String, projectId: String, repoName: String, fullPath: String, fileRenameRequest: FileRenameRequest) {
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+
+        val fullUrl = "$projectId/$repoName/$fullPath"
+        val newFullPath = fileRenameRequest.newFullPath
+        val renameRequest = NodeRenameRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                newFullPath = fileRenameRequest.newFullPath,
+                operator = userId
+        )
+        val result = nodeResource.rename(renameRequest)
+
+        if (result.isNotOk()) {
+            logger.warn("user[$userId] rename [$fullUrl] to [$newFullPath] failed: [${result.code}, ${result.message}]")
+            throw ExternalErrorCodeException(result.code, result.message)
+        }
+
+        logger.info("user[$userId] rename [$fullUrl] to [$newFullPath] success")
+    }
+
+    fun move(userId: String, projectId: String, repoName: String, fullPath: String, fileMoveRequest: FileMoveRequest) {
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+
+        val fullUrl = "$projectId/$repoName/$fullPath"
+        val toPath = fileMoveRequest.toPath
+        val renameRequest = NodeMoveRequest(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = fullPath,
                 newFullPath = toPath,
+                overwrite = fileMoveRequest.overwrite,
                 operator = userId
         )
-        val result = nodeResource.update(updateRequest)
+        val result = nodeResource.move(renameRequest)
 
         if (result.isNotOk()) {
-            logger.warn("user[$userId] move [$projectId/${repoName}$fullPath] to [$toPath] failed: [${result.code}, ${result.message}]")
+            logger.warn("user[$userId] move [$fullUrl] to [$toPath] failed: [${result.code}, ${result.message}]")
             throw ExternalErrorCodeException(result.code, result.message)
         }
+
+        logger.info("user[$userId] move [$fullUrl] to [$toPath] success")
     }
 
-    fun copy(userId: String, projectId: String, repoName: String, fullPath: String, toProjectId: String, toRepoName: String, toPath: String) {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+    fun copy(userId: String, projectId: String, repoName: String, fullPath: String, fileCopyRequest: FileCopyRequest) {
+        val toProjectId = fileCopyRequest.toProjectId
+        val toRepoName = fileCopyRequest.toRepoName
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, toProjectId, toRepoName))
     }
 
     companion object {
