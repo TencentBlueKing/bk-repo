@@ -7,6 +7,7 @@ import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.repomd.UploadContext
 import java.io.InputStream
 import javax.ws.rs.core.Response
+import org.springframework.http.ResponseEntity
 
 class DockerArtifactoryService(var workContext: DockerWorkContext, var id: String) : Repo<DockerWorkContext> {
 
@@ -85,23 +86,23 @@ class DockerArtifactoryService(var workContext: DockerWorkContext, var id: Strin
 //        return req
 //    }
 
-    override fun upload(context: UploadContext): Response {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
+    override fun upload(context: UploadContext): ResponseEntity<Any> {
+        return ResponseEntity.ok().body("ok")
 //        val res = JerseyArtifactoryResponse()
 //        val properties = this.parseUploadProperties(context)
 //        val req = ArtifactoryDeployRequestBuilder(this.repoPath(context.getPath())).inputStream(context.getContent()).properties(properties).contentLength(this.contentLength(context)).build()
 //        val headers = Maps.newHashMap<String, String>()
 //        headers.putAll(context.getRequestHeaders())
-//        if (StringUtils.isNotBlank(context.getSha1())) {
-//            headers["X-Checksum-Sha1"] = context.getSha1()
+//        if (StringUtils.isNotBlank(context.sha1)) {
+//            headers["X-Checksum-Sha1"] = context.sha1
 //        }
 //
-//        if (StringUtils.isNotBlank(context.getSha256())) {
-//            headers["X-Checksum-Sha256"] = context.getSha256()
+//        if (StringUtils.isNotBlank(context.sha256)) {
+//            headers["X-Checksum-Sha256"] = context.sha256
 //        }
 //
-//        if (StringUtils.isNotBlank(context.getMd5())) {
-//            headers["X-Checksum-Md5"] = context.getMd5()
+//        if (StringUtils.isNotBlank(context.md5)) {
+//            headers["X-Checksum-Md5"] = context.md5
 //        }
 //
 //        req.addHeaders(headers)

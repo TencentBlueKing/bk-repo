@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.google.common.base.Joiner
 import com.tencent.bkrepo.docker.DockerWorkContext
 import com.tencent.bkrepo.docker.artifact.util.DockerUtil
-import com.tencent.bkrepo.docker.exception.DockerLockManifestException
 import com.tencent.bkrepo.docker.exception.DockerNotFoundException
 import com.tencent.bkrepo.docker.exception.DockerSyncManifestException
 import com.tencent.bkrepo.docker.manifest.ManifestDeserializer
@@ -12,10 +11,8 @@ import com.tencent.bkrepo.docker.manifest.ManifestJson
 import com.tencent.bkrepo.docker.manifest.ManifestListSchema2Deserializer
 import com.tencent.bkrepo.docker.manifest.ManifestType
 import com.tencent.bkrepo.docker.repomd.Artifact
-import com.tencent.bkrepo.docker.repomd.DownloadContext
 import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.repomd.UploadContext
-import com.tencent.bkrepo.docker.repomd.util.PathUtils
 import com.tencent.bkrepo.docker.util.DockerSchemaUtils
 import com.tencent.bkrepo.docker.util.DockerUtils
 import com.tencent.bkrepo.docker.util.JsonUtil
@@ -33,11 +30,13 @@ import java.net.URI
 import java.util.*
 import java.util.function.Predicate
 import java.util.regex.Pattern
-import org.springframework.http.HttpHeaders
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.UriBuilder
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.io.IOUtils
+import org.apache.commons.io.output.NullOutputStream
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpHeaders
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 
 @Service
@@ -69,79 +68,79 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
         return Response.ok("{}").header("Docker-Distribution-Api-Version", "registry/2.0").build()
     }
 
-    override fun deleteManifest(dockerRepo: String, reference: String): Response {
-        try {
-            val digest = DockerDigest(reference)
-            return this.deleteManifestByDigest(dockerRepo, digest)
-        } catch (var4: Exception) {
-            log.trace("Unable to parse digest, deleting manifest by tag '{}'", reference)
-            return this.deleteManifestByTag(dockerRepo, reference)
-        }
-    }
+//    override fun deleteManifest(dockerRepo: String, reference: String): Response {
+//        try {
+//            val digest = DockerDigest(reference)
+//            return this.deleteManifestByDigest(dockerRepo, digest)
+//        } catch (var4: Exception) {
+//            log.trace("Unable to parse digest, deleting manifest by tag '{}'", reference)
+//            return this.deleteManifestByTag(dockerRepo, reference)
+//        }
+//    }
+//
+//    private fun deleteManifestByDigest(dockerRepo: String, digest: DockerDigest): Response {
+//        log.info("Deleting docker manifest for repo '{}' and digest '{}' in repo '{}'", *arrayOf(dockerRepo, digest, this.repo.getRepoId()))
+//        val manifests = this.repo.findArtifacts(dockerRepo, "manifest.json")
+//        val var4 = manifests.iterator()
+//
+//        while (var4.hasNext()) {
+//            val manifest = var4.next() as Artifact
+//            if (this.repo.canWrite(manifest.getPath())) {
+//                val manifestDigest = this.repo.getAttribute(manifest.getPath(), digest.getDigestAlg()) as String
+//                if (StringUtils.isNotBlank(manifestDigest) && StringUtils.equals(manifestDigest, digest.getDigestHex()) && this.repo.delete(PathUtils.getParent(manifest.getPath())!!)) {
+//                    return Response.status(202).header("Docker-Distribution-Api-Version", "registry/2.0").build()
+//                }
+//            }
+//        }
+//
+//        return DockerV2Errors.manifestUnknown(digest.toString())
+//    }
 
-    private fun deleteManifestByDigest(dockerRepo: String, digest: DockerDigest): Response {
-        log.info("Deleting docker manifest for repo '{}' and digest '{}' in repo '{}'", *arrayOf(dockerRepo, digest, this.repo.getRepoId()))
-        val manifests = this.repo.findArtifacts(dockerRepo, "manifest.json")
-        val var4 = manifests.iterator()
+//    private fun deleteManifestByTag(dockerRepo: String, tag: String): Response {
+//        val tagPath = "$dockerRepo/$tag"
+//        val manifestPath = "$tagPath/manifest.json"
+//        if (!this.repo.exists(manifestPath)) {
+//            return DockerV2Errors.manifestUnknown(manifestPath)
+//        } else if (this.repo.delete(tagPath)) {
+//            return Response.status(202).header("Docker-Distribution-Api-Version", "registry/2.0").build()
+//        } else {
+//            log.warn("Unable to delete tag '{}'", manifestPath)
+//            return DockerV2Errors.manifestUnknown(manifestPath)
+//        }
+//    }
 
-        while (var4.hasNext()) {
-            val manifest = var4.next() as Artifact
-            if (this.repo.canWrite(manifest.getPath())) {
-                val manifestDigest = this.repo.getAttribute(manifest.getPath(), digest.getDigestAlg()) as String
-                if (StringUtils.isNotBlank(manifestDigest) && StringUtils.equals(manifestDigest, digest.getDigestHex()) && this.repo.delete(PathUtils.getParent(manifest.getPath())!!)) {
-                    return Response.status(202).header("Docker-Distribution-Api-Version", "registry/2.0").build()
-                }
-            }
-        }
-
-        return DockerV2Errors.manifestUnknown(digest.toString())
-    }
-
-    private fun deleteManifestByTag(dockerRepo: String, tag: String): Response {
-        val tagPath = "$dockerRepo/$tag"
-        val manifestPath = "$tagPath/manifest.json"
-        if (!this.repo.exists(manifestPath)) {
-            return DockerV2Errors.manifestUnknown(manifestPath)
-        } else if (this.repo.delete(tagPath)) {
-            return Response.status(202).header("Docker-Distribution-Api-Version", "registry/2.0").build()
-        } else {
-            log.warn("Unable to delete tag '{}'", manifestPath)
-            return DockerV2Errors.manifestUnknown(manifestPath)
-        }
-    }
-
-    override fun uploadManifest(dockerRepo: String, tag: String, mediaType: String, data: ByteArray): Response {
-        log.info("Deploying docker manifest for repo '{}' and tag '{}' into repo '{}'", *arrayOf<Any>(dockerRepo, tag, this.repo.getRepoId()))
-        var lockId: String = ""
-        val manifestType = ManifestType.from(mediaType)
-        val manifestPath = buildManifestPathFromType(dockerRepo, tag, manifestType)
-        log.info("manifest path to {} .", manifestPath)
-        if (!this.repo.canWrite(manifestPath)) {
-            log.debug("Attempt to write manifest to {} failed the permission check.", manifestPath)
-            return DockerV2Errors.unauthorizedUpload()
-            // return this.consumeStreamAndReturnError(dockerRepo, tag, stream)
-        } else {
-            val var9: Response
-            try {
-                // lockId = (this.repo.getWorkContextC() as DockerWorkContext).obtainManifestLock("$dockerRepo/$tag")
-                val digest = this.processUploadedManifestType(dockerRepo, tag, manifestPath, manifestType, data)
-                return Response.status(201).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", digest).build()
-            } catch (var14: DockerLockManifestException) {
-                // this.logException(var14)
-                var9 = DockerV2Errors.manifestConcurrent(var14.message!!)
-                return var9
-            } catch (var15: Exception) {
-                // this.logException(var15)
-                var9 = DockerV2Errors.manifestInvalid(var15.message!!)
-            } finally {
-                // IOUtils.closeQuietly(stream)
-                // this.releaseManifestLock(lockId, dockerRepo, tag)
-                // (this.repo.getWorkContextC() as DockerWorkContext).cleanup(this.repo.getRepoId(), "$dockerRepo/_uploads")
-            }
-
-            return var9
-        }
-    }
+//    override fun uploadManifest(dockerRepo: String, tag: String, mediaType: String, data: ByteArray): Response {
+//        log.info("Deploying docker manifest for repo '{}' and tag '{}' into repo '{}'", *arrayOf<Any>(dockerRepo, tag, this.repo.getRepoId()))
+//        var lockId: String = ""
+//        val manifestType = ManifestType.from(mediaType)
+//        val manifestPath = buildManifestPathFromType(dockerRepo, tag, manifestType)
+//        log.info("manifest path to {} .", manifestPath)
+//        if (!this.repo.canWrite(manifestPath)) {
+//            log.debug("Attempt to write manifest to {} failed the permission check.", manifestPath)
+//            return DockerV2Errors.unauthorizedUpload()
+//            // return this.consumeStreamAndReturnError(dockerRepo, tag, stream)
+//        } else {
+//            val var9: Response
+//            try {
+//                // lockId = (this.repo.getWorkContextC() as DockerWorkContext).obtainManifestLock("$dockerRepo/$tag")
+//                val digest = this.processUploadedManifestType(dockerRepo, tag, manifestPath, manifestType, data)
+//                return Response.status(201).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", digest).build()
+//            } catch (var14: DockerLockManifestException) {
+//                // this.logException(var14)
+//                var9 = DockerV2Errors.manifestConcurrent(var14.message!!)
+//                return var9
+//            } catch (var15: Exception) {
+//                // this.logException(var15)
+//                var9 = DockerV2Errors.manifestInvalid(var15.message!!)
+//            } finally {
+//                // IOUtils.closeQuietly(stream)
+//                // this.releaseManifestLock(lockId, dockerRepo, tag)
+//                // (this.repo.getWorkContextC() as DockerWorkContext).cleanup(this.repo.getRepoId(), "$dockerRepo/_uploads")
+//            }
+//
+//            return var9
+//        }
+//    }
 
     private fun buildManifestPathFromType(dockerRepo: String, tag: String, manifestType: ManifestType): String {
         val manifestPath: String
@@ -173,7 +172,7 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
                 log.info("start to upload manifest : {}", manifestType.toString())
                 val response = this.repo.upload(this.manifestUploadContext(manifestType, manifestMetadata, manifestPath, manifestBytes))
                 if (!this.uploadSuccessful(response)) {
-                    throw IOException(response.getEntity().toString())
+                    throw IOException(response.toString())
                 } else {
                     val params = this.buildManifestPropertyMap(dockerRepo, tag, digest!!, manifestType)
                     this.repo.setAttributes(manifestPath, params)
@@ -213,7 +212,7 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
             this.repo.setAttributes(manifestPath, params)
             (this.repo.getWorkContextC() as DockerWorkContext).onTagPushedSuccessfully(this.repo.getRepoId(), dockerRepo, tag)
         } else {
-            throw IOException(response.getEntity().toString())
+            throw IOException(response.toString())
         }
     }
 
@@ -226,8 +225,8 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
         return context
     }
 
-    private fun uploadSuccessful(response: Response): Boolean {
-        val status = response.status
+    private fun uploadSuccessful(response: ResponseEntity<Any>): Boolean {
+        val status = response.statusCodeValue
         return status == Response.Status.OK.statusCode || status == Response.Status.CREATED.statusCode
     }
 
@@ -301,50 +300,17 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
         return context
     }
 
-    private fun consumeStreamAndReturnError(dockerRepo: String, identifier: String, stream: InputStream): Response {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-//        try {
-//            val output = NullOutputStream()
-//            var var5: Throwable? = null
-//
-//            try {
-//                IOUtils.copy(stream, output)
-//            } catch (var23: Throwable) {
-//                var5 = var23
-//                throw var23
-//            } finally {
-//                if (output != null !!) {
-//                    if (var5 != null) {
-//                        try {
-//                            output.close()
-//                        } catch (var22: Throwable) {
-//                            var5.addSuppressed(var22)
-//                        }
-//                    } else {
-//                        output.close()
-//                    }
-//                }
-//            }
-//        } catch (var25: IOException) {
-//            log.debug("Failed to consume incoming stream for " + this.repo.getRepoId() + ":" + dockerRepo + "/" + identifier, var25)
-//        } finally {
-//            IOUtils.closeQuietly(stream)
-//        }
-//
-//        return DockerV2Errors.unauthorizedUpload()
-    }
-
-    override fun isBlobExists(name: String, digest: DockerDigest): Response {
+    override fun isBlobExists(name: String, digest: DockerDigest): ResponseEntity<Any> {
         if (DockerSchemaUtils.isEmptyBlob(digest)) {
             log.debug("Request for empty layer for image {}, returning dummy HEAD response.", name)
             return DockerSchemaUtils.emptyBlobHeadResponse()
         } else {
             val blob = DockerUtils.getBlobFromRepoPath(this.repo, digest.filename(), name)
             if (blob != null) {
-                val response = Response.ok().header("Docker-Distribution-Api-Version", "registry/2.0")
-                        .header("Docker-Content-Digest", digest)
-                        .header("Content-Length", blob.getLength())
-                        .header("Content-Type", "application/octet-stream").build()
+                val response = ResponseEntity.ok().header("Docker-Distribution-Api-Version", "registry/2.0")
+                        .header("Docker-Content-Digest", digest.toString())
+                        .header("Content-Length", blob.getLength().toString())
+                        .header("Content-Type", "application/octet-stream").build<Any>()
                 return response
             } else {
                 return DockerV2Errors.blobUnknown(digest.toString())
@@ -352,21 +318,21 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
         }
     }
 
-    override fun getBlob(dockerRepo: String, digest: DockerDigest): Response {
-        log.info("Fetching docker blob '{}' from repo '{}'", digest, this.repo.getRepoId())
-        if (DockerSchemaUtils.isEmptyBlob(digest)) {
-            log.debug("Request for empty layer for image {}, returning dummy GET response.", dockerRepo)
-            return DockerSchemaUtils.emptyBlobGetResponse()
-        } else {
-            val blob = this.getRepoBlob(digest)
-            if (blob != null) {
-                val response = this.repo.download(DownloadContext(blob.getPath(), this.httpHeaders).header("artifactory.disableRedirect", "false"))
-                return Response.fromResponse(response).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", digest).build()
-            } else {
-                return DockerV2Errors.blobUnknown(digest.toString())
-            }
-        }
-    }
+//    override fun getBlob(dockerRepo: String, digest: DockerDigest): Response {
+//        log.info("Fetching docker blob '{}' from repo '{}'", digest, this.repo.getRepoId())
+//        if (DockerSchemaUtils.isEmptyBlob(digest)) {
+//            log.debug("Request for empty layer for image {}, returning dummy GET response.", dockerRepo)
+//            return DockerSchemaUtils.emptyBlobGetResponse()
+//        } else {
+//            val blob = this.getRepoBlob(digest)
+//            if (blob != null) {
+//                val response = this.repo.download(DownloadContext(blob.getPath(), this.httpHeaders).header("artifactory.disableRedirect", "false"))
+//                return Response.fromResponse(response).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", digest).build()
+//            } else {
+//                return DockerV2Errors.blobUnknown(digest.toString())
+//            }
+//        }
+//    }
 
     private fun getRepoBlob(digest: DockerDigest): Artifact? {
         var repoBlobs = this.repo.findArtifacts("", digest.filename())
@@ -389,7 +355,7 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
         return null
     }
 
-    override fun startBlobUpload(projectId:String,repoName:String, name: String, mount: String?): Response {
+    override fun startBlobUpload(projectId: String, repoName: String, name: String, mount: String?): ResponseEntity<Any> {
         var dockerRepo = "/$projectId/$repoName/$name"
         val uploadDirectory = "$dockerRepo/_uploads"
         if (!this.repo.canWrite(uploadDirectory)) {
@@ -402,13 +368,13 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
                 if (mountableBlob != null) {
                     location = this.getDockerURI("$dockerRepo/blobs/$mount")
                     log.debug("Found accessible blob at {}/{} to mount onto {}", *arrayOf<Any>(mountableBlob.getRepoId(), mountableBlob.getPath(), this.repo.getRepoId() + "/" + dockerRepo + "/" + mount))
-                    return Response.status(201).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", mount).header("Content-Length", 0).header("Location", location).build()
+                    return ResponseEntity.status(201).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", mount).header("Content-Length", "0").header("Location", location.toString()).build()
                 }
             }
 
             val uuid = UUID.randomUUID().toString()
             location = this.getDockerURI("$dockerRepo/blobs/uploads/$uuid")
-            return Response.status(202).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Upload-Uuid", uuid).header("Location", location).build()
+            return ResponseEntity.status(202).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Upload-Uuid", uuid).header("Location", location.toString()).build()
         }
     }
 
@@ -444,5 +410,95 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
             log.debug("X-Forwarded-Proto does not exist, returning https.")
             return "https"
         }
+    }
+
+    fun uploadBlob(dockerRepo: String, digest: DockerDigest, uuid: String, stream: InputStream): ResponseEntity<Any> {
+        return if (this.putHasStream()) this.uploadBlobFromPut(dockerRepo, digest, stream) else this.finishPatchUpload(dockerRepo, digest, uuid)
+    }
+
+    private fun putHasStream(): Boolean {
+        val headerValues = httpHeaders.get("User-Agent")
+        if (headerValues != null) {
+            val headerIter = headerValues!!.iterator()
+
+            while (headerIter.hasNext()) {
+                val userAgent = headerIter.next() as String
+                log.debug("User agent header: {}", userAgent)
+                if (OLD_USER_AGENT_PATTERN.matcher(userAgent).matches()) {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    private fun uploadBlobFromPut(dockerRepo: String, digest: DockerDigest, stream: InputStream): ResponseEntity<Any> {
+        val blobPath = dockerRepo + "/" + "_uploads" + "/" + digest.filename()
+        if (!this.repo.canWrite(blobPath)) {
+            return this.consumeStreamAndReturnError(dockerRepo, digest.toString(), stream)
+        } else {
+            log.info("Deploying docker blob '{}' into repo '{}'", blobPath, this.repo.getRepoId())
+            val response = this.repo.upload(UploadContext(blobPath).content(stream))
+            if (response != null && this.uploadSuccessful(response)) {
+                this.repo.setAttribute(blobPath, digest.getDigestAlg(), digest.getDigestHex())
+                val location = this.getDockerURI("$dockerRepo/blobs/$digest")
+                return ResponseEntity.created(location).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", digest.toString()).build()
+            } else {
+                log.warn("Error uploading blob '{}' got status '{}' and message: '{}'", *arrayOf(blobPath, response.statusCodeValue, response.toString()))
+                return DockerV2Errors.blobUploadInvalid(response.toString())
+            }
+        }
+    }
+
+    private fun finishPatchUpload(dockerRepo: String, digest: DockerDigest, uuid: String): ResponseEntity<Any> {
+        val uuidPath = "$dockerRepo/_uploads/$uuid"
+        if (this.repo.exists(uuidPath)) {
+            val blobPath = dockerRepo + "/" + "_uploads" + "/" + digest.filename()
+            this.repo.copy(uuidPath, blobPath)
+            (this.repo.getWorkContextC() as DockerWorkContext).setSystem()
+
+            try {
+                this.repo.delete(uuidPath)
+            } finally {
+                (this.repo.getWorkContextC() as DockerWorkContext).unsetSystem()
+            }
+
+            this.repo.setAttribute(blobPath, digest.getDigestAlg(), digest.getDigestHex())
+            val location = this.getDockerURI("$dockerRepo/blobs/$digest")
+            return ResponseEntity.created(location).header("Docker-Distribution-Api-Version", "registry/2.0").header("Content-Length", "0").header("Docker-Content-Digest", digest.toString()).build()
+        } else {
+            return DockerV2Errors.blobUnknown(digest.toString())
+        }
+    }
+
+    private fun consumeStreamAndReturnError(dockerRepo: String, identifier: String, stream: InputStream): ResponseEntity<Any> {
+        try {
+            val output = NullOutputStream()
+            var throwable: Throwable? = null
+            try {
+                IOUtils.copy(stream, output)
+            } catch (throwablec: Throwable) {
+                throwable = throwablec
+                throw throwablec
+            } finally {
+                if (output != null) {
+                    if (throwable != null) {
+                        try {
+                            output.close()
+                        } catch (throwablecc: Throwable) {
+                            throwable.addSuppressed(throwablecc)
+                        }
+                    } else {
+                        output.close()
+                    }
+                }
+            }
+        } catch (exception: IOException) {
+            log.debug("Failed to consume incoming stream for " + this.repo.getRepoId() + ":" + dockerRepo + "/" + identifier, exception)
+        } finally {
+            IOUtils.closeQuietly(stream)
+        }
+        return DockerV2Errors.unauthorizedUpload()
     }
 }

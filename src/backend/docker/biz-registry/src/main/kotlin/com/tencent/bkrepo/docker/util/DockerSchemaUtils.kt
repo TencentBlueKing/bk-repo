@@ -8,11 +8,11 @@ import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.v2.helpers.DockerSearchBlobPolicy
 import com.tencent.bkrepo.docker.v2.model.DockerDigest
 import java.io.IOException
-import javax.ws.rs.core.Response
 import javax.xml.bind.DatatypeConverter
 import org.apache.commons.io.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
+import org.springframework.http.ResponseEntity
 
 class DockerSchemaUtils {
     companion object {
@@ -33,12 +33,12 @@ class DockerSchemaUtils {
             return DockerDigest("sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4")
         }
 
-        fun emptyBlobHeadResponse(): Response {
-            return Response.ok().header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", emptyBlobDigest()).header("Content-Length", 32).header("Content-Type", "application/octet-stream").build()
+        fun emptyBlobHeadResponse(): ResponseEntity<Any> {
+            return ResponseEntity.ok().header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", emptyBlobDigest().toString()).header("Content-Length", "32").header("Content-Type", "application/octet-stream").build()
         }
 
-        fun emptyBlobGetResponse(): Response {
-            return Response.ok().entity(EMPTY_BLOB_CONTENT).header("Content-Length", 32).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", emptyBlobDigest()).header("Content-Type", "application/octet-stream").build()
+        fun emptyBlobGetResponse(): ResponseEntity<Any> {
+            return ResponseEntity.ok().header("Content-Length", "32").header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", emptyBlobDigest().toString()).header("Content-Type", "application/octet-stream").body(EMPTY_BLOB_CONTENT)
         }
 
         fun fetchSchema2ManifestConfig(repo: Repo<DockerWorkContext>, manifestBytes: ByteArray, dockerRepoPath: String, tag: String): ByteArray {
