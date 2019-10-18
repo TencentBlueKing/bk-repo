@@ -10,9 +10,9 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -110,7 +110,7 @@ interface NodeResource {
     @PostMapping("/search")
     fun search(
         @RequestBody nodeSearchRequest: NodeSearchRequest
-    ): Response<List<NodeInfo>>
+    ): Response<Page<NodeInfo>>
 
     @ApiOperation("创建节点")
     @PostMapping

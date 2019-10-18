@@ -1,6 +1,6 @@
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.service.config
 
-import com.tencent.bkrepo.generic.annotation.WildcardParam
+import com.tencent.bkrepo.common.api.annotation.WildcardParam
 import javax.servlet.http.HttpServletRequest
 import org.springframework.core.MethodParameter
 import org.springframework.util.AntPathMatcher

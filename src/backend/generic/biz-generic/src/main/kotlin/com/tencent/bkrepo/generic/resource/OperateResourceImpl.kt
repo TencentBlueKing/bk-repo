@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.generic.resource
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.api.OperateResource
 import com.tencent.bkrepo.generic.pojo.FileDetail
@@ -28,7 +29,7 @@ class OperateResourceImpl @Autowired constructor(
         return Response.success(operateService.listFile(userId, projectId, repoName, path, includeFolder, deep))
     }
 
-    override fun searchFile(userId: String, searchRequest: FileSearchRequest): Response<List<FileInfo>> {
+    override fun searchFile(userId: String, searchRequest: FileSearchRequest): Response<Page<FileInfo>> {
         return Response.success(operateService.searchFile(userId, searchRequest))
     }
 
@@ -50,18 +51,18 @@ class OperateResourceImpl @Autowired constructor(
         return Response.success()
     }
 
-    override fun rename(userId: String, projectId: String, repoName: String, fullPath: String, renameRequest: FileRenameRequest): Response<Void> {
-        operateService.rename(userId, projectId, repoName, fullPath, renameRequest)
+    override fun rename(userId: String, renameRequest: FileRenameRequest): Response<Void> {
+        operateService.rename(userId, renameRequest)
         return Response.success()
     }
 
-    override fun move(userId: String, projectId: String, repoName: String, fullPath: String, moveRequest: FileMoveRequest): Response<Void> {
-        operateService.move(userId, projectId, repoName, fullPath, moveRequest)
+    override fun move(userId: String, moveRequest: FileMoveRequest): Response<Void> {
+        operateService.move(userId, moveRequest)
         return Response.success()
     }
 
-    override fun copy(userId: String, projectId: String, repoName: String, fullPath: String, copyRequest: FileCopyRequest): Response<Void> {
-        operateService.copy(userId, projectId, repoName, fullPath, copyRequest)
+    override fun copy(userId: String, copyRequest: FileCopyRequest): Response<Void> {
+        operateService.copy(userId, copyRequest)
         return Response.success()
     }
 }

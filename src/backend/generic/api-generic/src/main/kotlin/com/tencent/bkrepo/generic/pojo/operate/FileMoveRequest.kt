@@ -11,8 +11,18 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("文件移动请求")
 data class FileMoveRequest(
-    @ApiModelProperty("目标路径", required = true)
-    val toPath: String,
-    @ApiModelProperty("是否覆盖同名文件", required = false)
+    @ApiModelProperty("源项目id", required = true)
+    val srcProjectId: String,
+    @ApiModelProperty("源仓库名称", required = true)
+    val srcRepoName: String,
+    @ApiModelProperty("源节点完整路径", required = true)
+    val srcFullPath: String,
+    @ApiModelProperty("目的项目id", required = false)
+    val destProjectId: String? = null,
+    @ApiModelProperty("目的仓库名称", required = false)
+    val destRepoName: String? = null,
+    @ApiModelProperty("目的路径", required = true)
+    val destPath: String,
+    @ApiModelProperty("同名文件是否覆盖", required = false)
     val overwrite: Boolean = false
 )
