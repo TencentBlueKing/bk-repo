@@ -37,11 +37,13 @@ class OperateService(
     private val authService: AuthService
 ) {
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
+        logger.info("listFile, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
         authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
         return nodeResource.list(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
     }
 
     fun searchFile(userId: String, searchRequest: FileSearchRequest): List<FileInfo> {
+        logger.info("searchFile, searchRequest: $searchRequest")
         authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, searchRequest.projectId, searchRequest.repoName))
         return nodeResource.search(
                 searchRequest.let {
@@ -56,18 +58,21 @@ class OperateService(
     }
 
     fun getFileDetail(userId: String, projectId: String, repoName: String, fullPath: String): FileDetail {
+        logger.info("getFileDetail, projectId: $projectId, repoName: $repoName, fullPath, $fullPath")
         authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
         val nodeDetail = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileDetail(toFileInfo(nodeDetail.nodeInfo), nodeDetail.metadata)
     }
 
     fun getFileSize(userId: String, projectId: String, repoName: String, fullPath: String): FileSizeInfo {
+        logger.info("getFileSize, projectId: $projectId, repoName: $repoName, fullPath, $fullPath")
         authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
         val nodeSizeInfo = nodeResource.getSize(projectId, repoName, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileSizeInfo(subFileCount = nodeSizeInfo.subNodeCount, size = nodeSizeInfo.size)
     }
 
     fun mkdir(userId: String, projectId: String, repoName: String, fullPath: String) {
+        logger.info("mkdir, projectId: $projectId, repoName: $repoName, fullPath, $fullPath")
         authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
         val fullUrl = "$projectId/$repoName/$fullPath"
         val createRequest = NodeCreateRequest(
@@ -89,6 +94,7 @@ class OperateService(
     }
 
     fun delete(userId: String, projectId: String, repoName: String, fullPath: String) {
+        logger.info("delete, projectId: $projectId, repoName: $repoName, fullPath, $fullPath")
         authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
         val fullUrl = "$projectId/$repoName/$fullPath"
         val deleteRequest = NodeDeleteRequest(
