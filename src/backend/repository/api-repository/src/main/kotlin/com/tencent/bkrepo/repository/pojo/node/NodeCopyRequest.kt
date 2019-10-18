@@ -12,17 +12,19 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("节点复制请求")
 data class NodeCopyRequest(
     @ApiModelProperty("源项目id", required = true)
-    val fromProjectId: String,
+    val srcProjectId: String,
     @ApiModelProperty("源仓库名称", required = true)
-    val fromRepoName: String,
-    @ApiModelProperty("源节点路径", required = false)
-    val fromPath: String? = null,
+    val srcRepoName: String,
+    @ApiModelProperty("源节点路径", required = true)
+    val srcFullPath: String,
     @ApiModelProperty("目的项目id", required = false)
-    val toProjectId: String? = null,
+    val destProjectId: String? = null,
     @ApiModelProperty("目的仓库名称", required = false)
-    val toRepoIName: String? = null,
-    @ApiModelProperty("目的节点路径", required = true)
-    val toPath: String,
+    val destRepoName: String? = null,
+    @ApiModelProperty("目的路径", required = true)
+    val destPath: String,
+    @ApiModelProperty("同名文件是否覆盖", required = false)
+    val overwrite: Boolean = false,
 
     @ApiModelProperty("操作者", required = true)
     val operator: String

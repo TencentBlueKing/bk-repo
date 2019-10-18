@@ -1,8 +1,12 @@
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
+import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils.fileSha256
@@ -36,6 +40,7 @@ import org.springframework.web.multipart.MultipartFile
  */
 @Service
 class UploadService @Autowired constructor(
+    private val permissionService: PermissionService,
     private val uploadTransactionRepository: UploadTransactionRepository,
     private val blockRecordRepository: BlockRecordRepository,
     private val repositoryResource: RepositoryResource,
@@ -47,14 +52,13 @@ class UploadService @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     fun simpleUpload(userId: String, projectId: String, repoName: String, fullPath: String, sha256: String?, expires: Long, overwrite: Boolean, file: MultipartFile) {
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
         val fullUri = "$projectId/$repoName/$formattedFullPath"
-
         // 参数格式校验
         expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
         file.takeUnless { it.isEmpty } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_NULL, "file")
-
-        // TODO: 校验权限
 
         // 校验sha256
         val calculatedSha256 = fileSha256(listOf(file.inputStream))
@@ -94,13 +98,12 @@ class UploadService @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     fun preCheck(userId: String, projectId: String, repoName: String, fullPath: String, sha256: String?, expires: Long, overwrite: Boolean): UploadTransactionInfo {
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
         val fullUri = "$projectId/$repoName/$formattedFullPath"
-
         // 参数校验
         expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
-
-        // TODO: 校验权限
 
         // 判断仓库是否存在
         repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
@@ -138,11 +141,12 @@ class UploadService @Autowired constructor(
         file.takeUnless { it.isEmpty } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_NULL, "file")
         sequence.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sequence")
 
-        // TODO: 校验权限
-
         // 判断uploadId是否存在
         val uploadTransaction = uploadTransactionRepository.findByIdOrNull(uploadId) ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, uploadId)
         val fullUri = "$uploadId/$sequence"
+        // 鉴权
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, uploadTransaction.projectId, uploadTransaction.repoName))
+
         // 判断仓库是否存在
         val repository = repositoryResource.queryDetail(uploadTransaction.projectId, uploadTransaction.repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$userId] upload block [$fullUri] failed: ${uploadTransaction.repoName} not found")
@@ -183,13 +187,13 @@ class UploadService @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     fun abortUpload(userId: String, uploadId: String) {
-        // TODO: 校验权限
-
         // 判断uploadId是否存在
         val uploadTransaction = uploadTransactionRepository.findByIdOrNull(uploadId) ?: run {
             logger.warn("user[$userId] abort upload [$uploadId] failed: $uploadId not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, uploadId)
         }
+        // 鉴权
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, uploadTransaction.projectId, uploadTransaction.repoName))
         // 查询repository
         val repository = repositoryResource.queryDetail(uploadTransaction.projectId, uploadTransaction.repoName, REPO_TYPE).data
         // 查询分块记录
@@ -209,13 +213,13 @@ class UploadService @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     fun completeUpload(userId: String, uploadId: String, blockSha256ListStr: String?) {
-        // TODO: 校验权限
-
         // 判断uploadId是否存在
         val uploadTransaction = uploadTransactionRepository.findByIdOrNull(uploadId) ?: run {
             logger.warn("user[$userId] complete upload [$uploadId] failed: $uploadId not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, uploadId)
         }
+        // 鉴权
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, uploadTransaction.projectId, uploadTransaction.repoName))
         // 校验分块sha256
         val sortedUploadedBlockRecordList = blockRecordRepository.findByUploadId(uploadId).sortedBy { it.sequence }
         // 分块记录不能为空
@@ -276,7 +280,9 @@ class UploadService @Autowired constructor(
 
     fun queryBlockInfo(userId: String, uploadId: String): List<BlockInfo> {
         // 判断uploadId是否存在
-        uploadTransactionRepository.findByIdOrNull(uploadId) ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, uploadId)
+        val uploadTransaction = uploadTransactionRepository.findByIdOrNull(uploadId) ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, uploadId)
+        // 鉴权
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, uploadTransaction.projectId, uploadTransaction.repoName))
         return blockRecordRepository.findByUploadId(uploadId).map { BlockInfo(size = it.size, sha256 = it.sha256, sequence = it.sequence) }
     }
 

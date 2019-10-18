@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.generic.annotation
+package com.tencent.bkrepo.common.api.annotation
 
 /**
  * 通配符参数注解

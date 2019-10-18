@@ -1,7 +1,11 @@
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
 import com.tencent.bkrepo.generic.constant.CONTENT_DISPOSITION_TEMPLATE
@@ -30,16 +34,17 @@ import org.springframework.stereotype.Service
  */
 @Service
 class DownloadService @Autowired constructor(
-    private val repositoryResource: RepositoryResource,
-    private val nodeResource: NodeResource,
-    private val fileStorage: FileStorage
+        private val permissionService: PermissionService,
+        private val repositoryResource: RepositoryResource,
+        private val nodeResource: NodeResource,
+        private val fileStorage: FileStorage
 
 ) {
     fun simpleDownload(userId: String, projectId: String, repoName: String, fullPath: String, response: HttpServletResponse): ResponseEntity<InputStreamResource> {
-        // TODO: 校验权限
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
         val fullUri = "$projectId/$repoName/$fullPath"
-
         // 查询repository
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$userId] simply download file  [$fullUri] failed: $repoName not found")
@@ -80,9 +85,9 @@ class DownloadService @Autowired constructor(
     }
 
     fun queryBlockInfo(userId: String, projectId: String, repoName: String, fullPath: String): List<BlockInfo> {
-        // TODO: 校验权限
-        val fullUri = "$projectId/$repoName/$fullPath"
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
+        val fullUri = "$projectId/$repoName/$fullPath"
         // 查询节点
         val node = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
             logger.warn("user[$userId] query file info [$fullUri] failed: $fullPath not found")
@@ -96,7 +101,8 @@ class DownloadService @Autowired constructor(
     }
 
     fun blockDownload(userId: String, projectId: String, repoName: String, fullPath: String, sequence: Int, response: HttpServletResponse): ResponseEntity<InputStreamResource> {
-        // TODO: 校验权限
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+
         val fullUri = "$projectId/$repoName/$fullPath"
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
         // 查询仓库

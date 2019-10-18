@@ -3,7 +3,8 @@ dependencies {
     api project(":common:common-client")
     api project(":common:common-storage")
     api project(":common:common-mongo")
+    api project(":common:common-auth")
     api project(":generic:api-generic")
     api project(":repository:api-repository")
-    api project(":auth:api-auth")
+
 }
