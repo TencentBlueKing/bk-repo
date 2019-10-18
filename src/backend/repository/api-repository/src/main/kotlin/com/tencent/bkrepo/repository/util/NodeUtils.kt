@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.util
 
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.NODE_PATH_INVALID
 
 /**
  * 节点相关工具类
@@ -72,21 +72,19 @@ object NodeUtils {
      * 解析目录名称，返回格式/a/b/c/，根目录返回/
      * 出错则抛出异常
      */
-    fun parsePathName(input: String): String {
-        val dirName = input.trim()
-        if (dirName.isEmpty()) return ROOT_PATH
+    fun parseFullPath(input: String): String {
+        val fullPath = input.trim()
+        if (isRootPath(fullPath)) return ROOT_PATH
 
-        dirName.takeIf { it.startsWith(FILE_SEPARATOR) }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "Directory name {$dirName} is invalid, it should start with '$FILE_SEPARATOR'.")
+        fullPath.takeIf { it.startsWith(FILE_SEPARATOR) } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
 
-        val nameList = dirName.split(FILE_SEPARATOR).filter { it.isNotBlank() }.map { parseFileName(it) }.toList()
-        nameList.takeIf { it.size <= MAX_DIR_DEPTH }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "The depth of directory should not exceed $MAX_DIR_DEPTH.")
+        val nameList = fullPath.split(FILE_SEPARATOR).filter { it.isNotBlank() }.map { parseFileName(it) }.toList()
+        nameList.takeIf { it.size <= MAX_DIR_DEPTH } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
 
         val builder = StringBuilder()
         nameList.forEach { builder.append(FILE_SEPARATOR).append(it) }
 
-        return builder.append(FILE_SEPARATOR).toString()
+        return builder.toString()
     }
 
     /**
@@ -95,14 +93,10 @@ object NodeUtils {
      */
     fun parseFileName(input: String): String {
         val fileName = input.trim()
-        fileName.takeIf { it.isNotBlank() }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "File name can not be blank.")
-        fileName.takeUnless { forbiddenNameList.contains(it) }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
-        fileName.takeUnless { it.contains(FILE_SEPARATOR) }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "File name {$input} should not contain '$FILE_SEPARATOR'.")
-        fileName.takeIf { it.length <= MAX_FILENAME_LENGTH }
-                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "The length of name {$input} should not exceed $MAX_FILENAME_LENGTH.")
+        fileName.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
+        fileName.takeUnless { forbiddenNameList.contains(it) } ?: throw ErrorCodeException(NODE_PATH_INVALID)
+        fileName.takeUnless { it.contains(FILE_SEPARATOR) } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
+        fileName.takeIf { it.length <= MAX_FILENAME_LENGTH } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
         return fileName
     }
 

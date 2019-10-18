@@ -21,12 +21,12 @@ import org.springframework.web.bind.annotation.RestController
 class RepositoryResourceImpl @Autowired constructor(
     private val repositoryService: RepositoryService
 ) : RepositoryResource {
-    override fun query(projectId: String, repoName: String, type: String): Response<Repository?> {
-        return Response.success(repositoryService.query(projectId, repoName, type))
+    override fun queryDetail(projectId: String, name: String): Response<Repository?> {
+        return Response.success(repositoryService.queryDetail(projectId, name))
     }
 
-    override fun detail(id: String): Response<Repository?> {
-        return Response.success(repositoryService.getDetailById(id))
+    override fun queryDetail(projectId: String, name: String, type: String): Response<Repository?> {
+        return Response.success(repositoryService.queryDetail(projectId, name, type))
     }
 
     override fun list(projectId: String): Response<List<Repository>> {
@@ -41,13 +41,13 @@ class RepositoryResourceImpl @Autowired constructor(
         return Response.success(repositoryService.create(repoCreateRequest))
     }
 
-    override fun update(id: String, repoUpdateRequest: RepoUpdateRequest): Response<Void> {
-        repositoryService.updateById(id, repoUpdateRequest)
+    override fun update(repoUpdateRequest: RepoUpdateRequest): Response<Void> {
+        repositoryService.update(repoUpdateRequest)
         return Response.success()
     }
 
-    override fun delete(id: String): Response<Void> {
-        repositoryService.deleteById(id)
+    override fun delete(projectId: String, name: String): Response<Void> {
+        repositoryService.delete(projectId, name)
         return Response.success()
     }
 }

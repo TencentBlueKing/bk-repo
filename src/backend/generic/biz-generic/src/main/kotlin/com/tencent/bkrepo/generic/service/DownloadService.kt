@@ -38,37 +38,40 @@ class DownloadService @Autowired constructor(
     fun simpleDownload(userId: String, projectId: String, repoName: String, fullPath: String, response: HttpServletResponse): ResponseEntity<InputStreamResource> {
         // TODO: 校验权限
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
+        val fullUri = "$projectId/$repoName/$fullPath"
 
-        // 查询仓库
-        val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] failed: $repoName not found")
+        // 查询repository
+        val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
+            logger.warn("user[$userId] simply download file  [$fullUri] failed: $repoName not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         }
+
         // 查询节点
-        val node = nodeResource.queryDetail(repository.id, fullPath).data ?: run {
-            logger.warn("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] failed: $fullPath not found")
+        val node = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
+            logger.warn("user[$userId] simply download file [$fullUri] failed: $fullPath not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         }
 
         // 如果为目录
         if (node.nodeInfo.folder) {
-            logger.warn("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] failed: $fullPath not found")
+            logger.warn("user[$userId] simply download file [$fullUri] failed: $fullPath not found")
             throw ErrorCodeException(GenericMessageCode.DOWNLOAD_FOLDER_FORBIDDEN)
         }
 
         // 如果为分块文件
         if (node.isBlockFile()) {
-            logger.warn("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] failed: $fullPath is a block file")
+            logger.warn("user[$userId] simply download file [$fullUri] failed: $fullPath is a block file")
             throw ErrorCodeException(GenericMessageCode.DOWNLOAD_BLOCK_FORBIDDEN)
         }
 
         // fileStorage
-        val inputStream = fileStorage.load(node.nodeInfo.sha256!!, CredentialsUtils.readString(repository.storageType, repository.storageCredentials)) ?: run {
-            logger.warn("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] failed: file data not found")
+        val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
+        val inputStream = fileStorage.load(node.nodeInfo.sha256!!, storageCredentials) ?: run {
+            logger.warn("user[$userId] simply download file [$fullUri] failed: file data not found")
             throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
         }
 
-        logger.info("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] success.")
+        logger.info("user[$userId] simply download file [$fullUri] success.")
         return ResponseEntity
                 .ok()
                 .contentType(determineMediaType(formattedFullPath))
@@ -76,24 +79,13 @@ class DownloadService @Autowired constructor(
                 .body(InputStreamResource(inputStream))
     }
 
-    private fun determineMediaType(fullPath: String): MediaType {
-        val mimeType = MimeMappings.DEFAULT.get(NodeUtils.getExtension(fullPath)) ?: DEFAULT_MIME_TYPE
-        return MediaType.parseMediaType(mimeType)
-    }
-
-    fun queryFileInfo(userId: String, projectId: String, repoName: String, fullPath: String): List<BlockInfo> {
+    fun queryBlockInfo(userId: String, projectId: String, repoName: String, fullPath: String): List<BlockInfo> {
         // TODO: 校验权限
-        val formattedFullPath = NodeUtils.formatFullPath(fullPath)
-
-        // 查询仓库
-        val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId] query file info [$projectId/$repoName/$formattedFullPath] failed: $repoName not found")
-            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
-        }
+        val fullUri = "$projectId/$repoName/$fullPath"
 
         // 查询节点
-        val node = nodeResource.queryDetail(repository.id, fullPath).data ?: run {
-            logger.warn("user[$userId] query file info [$projectId/$repoName/$formattedFullPath] failed: $fullPath not found")
+        val node = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
+            logger.warn("user[$userId] query file info [$fullUri] failed: $fullPath not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         }
 
@@ -105,35 +97,46 @@ class DownloadService @Autowired constructor(
 
     fun blockDownload(userId: String, projectId: String, repoName: String, fullPath: String, sequence: Int, response: HttpServletResponse): ResponseEntity<InputStreamResource> {
         // TODO: 校验权限
+        val fullUri = "$projectId/$repoName/$fullPath"
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
-
         // 查询仓库
-        val repository = repositoryResource.query(projectId, repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] failed: $repoName not found")
+        val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
+            logger.warn("user[$userId] block download file [$fullUri] failed: $repoName not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         }
         // 查询节点
-        val node = nodeResource.queryDetail(repository.id, fullPath).data ?: run {
-            logger.warn("user[$userId] simply download file [$projectId/$repoName/$formattedFullPath] failed: $fullPath not found")
+        val node = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
+            logger.warn("user[$userId] block download file [$fullUri] failed: $fullPath not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         }
-
-        node.takeIf { node.isBlockFile() }?.run {
+        if (node.isBlockFile()) {
             node.blockList!!.find { it.sequence == sequence }?.run {
                 // fileStorage
-                val inputStream = fileStorage.load(this.sha256, CredentialsUtils.readString(repository.storageType, repository.storageCredentials)) ?: run {
-                    logger.warn("user[$userId] download block [$projectId/$repoName/$formattedFullPath/$sequence] failed: file data not found")
+                val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
+                val inputStream = fileStorage.load(this.sha256, storageCredentials) ?: run {
+                    logger.warn("user[$userId] download block [$fullUri/$sequence] failed: file data not found")
                     throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
                 }
 
-                logger.info("user[$userId] download block [$projectId/$repoName/$formattedFullPath/$sequence] success.")
+                logger.info("user[$userId] download block [$fullUri/$sequence] success.")
                 return ResponseEntity
                         .ok()
                         .contentType(determineMediaType(formattedFullPath))
                         .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(node.nodeInfo.name))
                         .body(InputStreamResource(inputStream))
-            } ?: throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
-        } ?: throw ErrorCodeException(GenericMessageCode.DOWNLOAD_SIMPLE_FORBIDDEN)
+            } ?: run {
+                logger.warn("user[$userId] download block [$fullUri/$sequence] failed: file data not found")
+                throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
+            }
+        } else {
+            logger.warn("user[$userId] download block [$fullUri/$sequence] failed: $fullUri is a simple file")
+            throw ErrorCodeException(GenericMessageCode.DOWNLOAD_SIMPLE_FORBIDDEN)
+        }
+    }
+
+    private fun determineMediaType(fullPath: String): MediaType {
+        val mimeType = MimeMappings.DEFAULT.get(NodeUtils.getExtension(fullPath)) ?: DEFAULT_MIME_TYPE
+        return MediaType.parseMediaType(mimeType)
     }
 
     companion object {

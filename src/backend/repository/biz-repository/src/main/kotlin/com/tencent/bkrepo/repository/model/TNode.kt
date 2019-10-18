@@ -21,12 +21,13 @@ data class TNode(
     var path: String,
     var name: String,
     var fullPath: String,
-    var repositoryId: String,
     var size: Long,
     var expireDate: LocalDateTime? = null,
     var sha256: String? = null,
     var deleted: LocalDateTime? = null,
-
     var metadata: Map<String, String>? = null,
-    var blockList: List<TFileBlock>? = null
+    var blockList: List<TFileBlock>? = null,
+
+    var projectId: String,
+    var repoName: String
 )

@@ -4,12 +4,15 @@ import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
+import com.tencent.bkrepo.repository.pojo.node.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -35,28 +38,47 @@ import org.springframework.web.bind.annotation.RequestParam
 interface NodeResource {
 
     @ApiOperation("根据路径查看节点详情")
-    @GetMapping("/query/{repositoryId}")
+    @GetMapping("/query/{projectId}/{repoName}/{repoType}")
     fun queryDetail(
-        @ApiParam(value = "仓库id", required = true)
-        @PathVariable repositoryId: String,
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "仓库类型", required = true)
+        @PathVariable repoType: String,
         @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
     ): Response<NodeDetail?>
 
-    @ApiOperation("根据路径查看节点详是否存在")
-    @GetMapping("/exist/{repositoryId}")
+    @ApiOperation("根据路径查看节点详情")
+    @GetMapping("/query/{projectId}/{repoName}")
+    fun queryDetail(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "节点完整路径", required = true)
+        @RequestParam fullPath: String
+    ): Response<NodeDetail?>
+
+    @ApiOperation("根据路径查看节点是否存在")
+    @GetMapping("/exist/{projectId}/{repoName}")
     fun exist(
-        @ApiParam(value = "仓库id", required = true)
-        @PathVariable repositoryId: String,
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
         @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
     ): Response<Boolean>
 
     @ApiOperation("列表查询指定目录下所有节点")
-    @GetMapping("/list/{repositoryId}")
+    @GetMapping("/list/{projectId}/{repoName}")
     fun list(
-        @ApiParam(value = "仓库id", required = true)
-        @PathVariable repositoryId: String,
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
         @ApiParam(value = "所属目录", required = true)
         @RequestParam path: String,
         @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
@@ -66,14 +88,16 @@ interface NodeResource {
     ): Response<List<NodeInfo>>
 
     @ApiOperation("分页查询指定目录下所有节点")
-    @GetMapping("/page/{page}/{size}/{repositoryId}")
+    @GetMapping("/page/{projectId}/{repoName}/{page}/{size}")
     fun page(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
         @ApiParam(value = "当前页", required = true, example = "0")
         @PathVariable page: Int,
         @ApiParam(value = "分页大小", required = true, example = "20")
         @PathVariable size: Int,
-        @ApiParam(value = "仓库id", required = true)
-        @PathVariable repositoryId: String,
         @ApiParam(value = "所属目录", required = true)
         @RequestParam path: String,
         @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
@@ -83,44 +107,48 @@ interface NodeResource {
     ): Response<Page<NodeInfo>>
 
     @ApiOperation("搜索文件")
-    @PostMapping("/search/{repositoryId}")
+    @PostMapping("/search")
     fun search(
-        @ApiParam(value = "仓库id", required = true)
-        @PathVariable repositoryId: String,
-        @ApiParam(value = "节点搜索请求", required = true)
         @RequestBody nodeSearchRequest: NodeSearchRequest
     ): Response<List<NodeInfo>>
 
     @ApiOperation("创建节点")
     @PostMapping
     fun create(
-        @ApiParam(value = "创建节点请求", required = true)
         @RequestBody nodeCreateRequest: NodeCreateRequest
     ): Response<IdValue>
 
-    @ApiOperation("修改节点")
-    @PutMapping("/{id}")
-    fun update(
-        @ApiParam(value = "节点id", required = true)
-        @PathVariable id: String,
-        @ApiParam(value = "更新节点请求", required = true)
-        @RequestBody nodeUpdateRequest: NodeUpdateRequest
+    @ApiOperation("重命名节点")
+    @PutMapping("/rename")
+    fun rename(
+        @RequestBody nodeRenameRequest: NodeRenameRequest
     ): Response<Void>
 
-    @ApiOperation("根据id删除节点")
-    @DeleteMapping("/{id}")
+    @ApiOperation("移动节点")
+    @PutMapping("/move")
+    fun move(
+        @RequestBody nodeMoveRequest: NodeMoveRequest
+    ): Response<Void>
+
+    @ApiOperation("复制节点")
+    @PutMapping("/copy")
+    fun copy(
+        @RequestBody nodeCopyRequest: NodeCopyRequest
+    ): Response<Void>
+
+    @ApiOperation("删除节点")
+    @DeleteMapping("/delete")
     fun delete(
-        @ApiParam(value = "节点id", required = true)
-        @PathVariable id: String,
-        @ApiParam(value = "修改者", required = true)
-        @RequestParam modifiedBy: String
+        @RequestBody nodeDeleteRequest: NodeDeleteRequest
     ): Response<Void>
 
     @ApiOperation("查询节点大小信息")
-    @DeleteMapping("/size/{repositoryId}")
-    fun getNodeSize(
-        @ApiParam(value = "仓库id", required = true)
-        @PathVariable repositoryId: String,
+    @GetMapping("/size/{projectId}/{repoName}")
+    fun getSize(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
         @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
     ): Response<NodeSizeInfo>

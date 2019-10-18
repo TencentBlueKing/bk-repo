@@ -12,7 +12,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("节点大小信息")
 data class NodeSizeInfo(
     @ApiModelProperty("子节点数量")
-    val subNodeCount: Long,
+    val subNodeCount: Long = 0,
     @ApiModelProperty("大小")
     val size: Long
 )

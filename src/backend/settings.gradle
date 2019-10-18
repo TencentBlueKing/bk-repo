@@ -24,11 +24,6 @@ include ":repository:api-repository"
 include ":repository:biz-repository"
 include ":repository:boot-repository"
 
-include ":metadata"
-include ":metadata:api-metadata"
-include ":metadata:biz-metadata"
-include ":metadata:boot-metadata"
-
 include ":generic"
 include ":generic:api-generic"
 include ":generic:biz-generic"

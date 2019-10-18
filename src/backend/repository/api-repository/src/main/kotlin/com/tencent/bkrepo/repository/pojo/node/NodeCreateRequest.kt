@@ -11,16 +11,14 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("创建节点请求")
 data class NodeCreateRequest(
+    @ApiModelProperty("所属项目", required = true)
+    val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    val repoName: String,
     @ApiModelProperty("是否为文件夹")
     val folder: Boolean,
-    @ApiModelProperty("路径")
-    val path: String,
-    @ApiModelProperty("资源名称")
-    val name: String,
-    @ApiModelProperty("所属仓库id")
-    val repositoryId: String,
-    @ApiModelProperty("创建者")
-    val createdBy: String,
+    @ApiModelProperty("完整路径")
+    val fullPath: String,
     @ApiModelProperty("过期时间，单位天(0代表永久保存)")
     val expires: Long = 0,
     @ApiModelProperty("是否覆盖")
@@ -32,6 +30,9 @@ data class NodeCreateRequest(
     @ApiModelProperty("分块信息列表")
     val blockList: List<FileBlock>? = null,
     @ApiModelProperty("元数据信息")
-    val metadata: Map<String, String>? = null
+    val metadata: Map<String, String>? = null,
+
+    @ApiModelProperty("创建者")
+    val operator: String
 
 )

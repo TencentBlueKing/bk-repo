@@ -1,42 +1,43 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.ELEMENT_CANNOT_BE_MODIFIED
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.ELEMENT_NOT_FOUND
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXIST
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.repository.constant.RepositoryMessageCode
+import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.FOLDER_CANNOT_BE_MODIFIED
 import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.FileBlock
+import com.tencent.bkrepo.repository.pojo.node.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeUpdateRequest
 import com.tencent.bkrepo.repository.repository.NodeRepository
-import com.tencent.bkrepo.repository.util.NodeUtils
-import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 import com.tencent.bkrepo.repository.util.NodeUtils.combineFullPath
 import com.tencent.bkrepo.repository.util.NodeUtils.escapeRegex
 import com.tencent.bkrepo.repository.util.NodeUtils.formatFullPath
 import com.tencent.bkrepo.repository.util.NodeUtils.formatPath
-import com.tencent.bkrepo.repository.util.NodeUtils.parseFileName
-import com.tencent.bkrepo.repository.util.NodeUtils.parsePathName
-import java.time.LocalDateTime
+import com.tencent.bkrepo.repository.util.NodeUtils.getName
+import com.tencent.bkrepo.repository.util.NodeUtils.getParentPath
+import com.tencent.bkrepo.repository.util.NodeUtils.isRootPath
+import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 节点service
@@ -47,44 +48,44 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class NodeService @Autowired constructor(
     private val nodeRepository: NodeRepository,
+    private val repositoryService: RepositoryService,
     private val mongoTemplate: MongoTemplate
 ) {
-    fun queryNodeDetail(repositoryId: String, fullPath: String): NodeDetail? {
-        val formattedPath = formatFullPath(fullPath)
-        val tNode = mongoTemplate.findOne(Query(
-                Criteria.where("repositoryId").`is`(repositoryId)
-                        .and("fullPath").`is`(formattedPath)
-                        .and("deleted").`is`(null)
-        ), TNode::class.java)
+    fun queryDetail(projectId: String, repoName: String, fullPath: String, repoType: String? = null): NodeDetail? {
+        checkRepository(projectId, repoName, repoType)
+        val formattedFullPath = formatFullPath(fullPath)
 
-        return convertToDetail(tNode) ?: return null
+        return convertToDetail(queryModel(projectId, repoName, formattedFullPath))
     }
 
-    fun queryNodeInfo(repositoryId: String, fullPath: String): NodeInfo? {
-        val formattedPath = formatFullPath(fullPath)
-        val tNode = mongoTemplate.findOne(createNodeQuery().addCriteria(
-                Criteria.where("repositoryId").`is`(repositoryId)
-                        .and("fullPath").`is`(formattedPath)
-                        .and("deleted").`is`(null)
-        ), TNode::class.java)
+    private fun queryModel(projectId: String, repoName: String, fullPath: String): TNode? {
+        val query = createNodeQuery(projectId, repoName, fullPath, withDetail = true)
 
-        return convert(tNode) ?: return null
+        return mongoTemplate.findOne(query, TNode::class.java)
     }
 
-    fun getNodeSize(repositoryId: String, fullPath: String): NodeSizeInfo {
-        val formattedPath = formatPath(fullPath)
-        val escapedPath = escapeRegex(formattedPath)
+    fun getSize(projectId: String, repoName: String, fullPath: String): NodeSizeInfo {
+        checkRepository(projectId, repoName)
 
-        val criteria = Criteria.where("repositoryId").`is`(repositoryId)
+        val formattedFullPath = formatFullPath(fullPath)
+        val node = queryModel(projectId, repoName, formattedFullPath)
+                ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, formattedFullPath)
+        // 节点为文件直接返回
+        if (!node.folder) {
+            return NodeSizeInfo(size = node.size)
+        }
+        val escapedPath = escapeRegex(formatPath(formattedFullPath))
+
+        val criteria = Criteria.where("projectId").`is`(projectId)
+                .and("repoName").`is`(repoName)
                 .and("fullPath").regex("^$escapedPath")
                 .and("deleted").`is`(null)
 
         val count = mongoTemplate.count(Query(criteria), TNode::class.java)
 
         val aggregation = Aggregation.newAggregation(
-                Aggregation.project("repositoryId", "size", "folder", "fullPath", "deleted"),
                 Aggregation.match(criteria),
-                Aggregation.group("repositoryId").sum("size").`as`("size")
+                Aggregation.group().sum("size").`as`("size")
         )
         val aggregateResult = mongoTemplate.aggregate(aggregation, TNode::class.java, HashMap::class.java)
         val size = aggregateResult.mappedResults.takeIf { it.size > 0 }?.run {
@@ -93,14 +94,16 @@ class NodeService @Autowired constructor(
         return NodeSizeInfo(subNodeCount = count, size = size)
     }
 
-    fun list(repositoryId: String, path: String, includeFolder: Boolean, deep: Boolean): List<NodeInfo> {
-        val query = createListQuery(repositoryId, path, includeFolder, deep)
+    fun list(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<NodeInfo> {
+        checkRepository(projectId, repoName)
+        val query = createListQuery(projectId, repoName, path, includeFolder, deep)
 
         return mongoTemplate.find(query, TNode::class.java).map { convert(it)!! }
     }
 
-    fun page(repositoryId: String, path: String, page: Int, size: Int, includeFolder: Boolean, deep: Boolean): Page<NodeInfo> {
-        val query = createListQuery(repositoryId, path, includeFolder, deep).with(PageRequest.of(page, size))
+    fun page(projectId: String, repoName: String, path: String, page: Int, size: Int, includeFolder: Boolean, deep: Boolean): Page<NodeInfo> {
+        checkRepository(projectId, repoName)
+        val query = createListQuery(projectId, repoName, path, includeFolder, deep).with(PageRequest.of(page, size))
 
         val listData = mongoTemplate.find(query, TNode::class.java).map { convert(it)!! }
         val count = mongoTemplate.count(query, TNode::class.java)
@@ -108,163 +111,194 @@ class NodeService @Autowired constructor(
         return Page(page, size, count, listData)
     }
 
-    fun search(repositoryId: String, nodeSearchRequest: NodeSearchRequest): List<NodeInfo> {
-        // TODO: 实现搜索
-        return emptyList()
+    fun search(nodeSearchRequest: NodeSearchRequest): List<NodeInfo> {
+        val projectId = nodeSearchRequest.projectId
+        val repoName = nodeSearchRequest.repoName
+        checkRepository(projectId, repoName)
+
+        val query = createNodeQuery(projectId, repoName)
+        // 路径匹配
+        val criteria = Criteria()
+        val criteriaList = nodeSearchRequest.pathPattern.map {
+            val escapedPath = escapeRegex(formatPath(it))
+            Criteria.where("fullPath").regex("^$escapedPath")
+        }
+        criteria.orOperator(*criteriaList.toTypedArray())
+        // 元数据匹配
+        nodeSearchRequest.metadataCondition.filterKeys { it.isNotBlank() }.forEach { (key, value) -> criteria.and("metadata.$key").`is`(value) }
+        query.addCriteria(criteria)
+
+        return mongoTemplate.find(query, TNode::class.java).map { convert(it)!! }
     }
 
-    fun exist(repositoryId: String, fullPath: String): Boolean {
+    fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
         val formattedPath = formatFullPath(fullPath)
-        val query = Query(Criteria.where("repositoryId").`is`(repositoryId)
-                .and("fullPath").`is`(formattedPath)
-                .and("deleted").`is`(null))
+        if(isRootPath(fullPath)) return true
+        val query = createNodeQuery(projectId, repoName, formattedPath)
 
         return mongoTemplate.exists(query, TNode::class.java)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun createRootPath(repositoryId: String, createdBy: String) {
-        if (!exist(repositoryId, ROOT_PATH)) {
-            val node = TNode(
-                folder = true,
-                path = ROOT_PATH,
-                name = "",
-                fullPath = ROOT_PATH,
-                repositoryId = repositoryId,
-                size = 0,
-                createdBy = createdBy,
-                createdDate = LocalDateTime.now(),
-                lastModifiedBy = createdBy,
-                lastModifiedDate = LocalDateTime.now()
-            )
-            nodeRepository.insert(node)
-        }
-    }
-
-    @Transactional(rollbackFor = [Throwable::class])
     fun create(nodeCreateRequest: NodeCreateRequest): IdValue {
-        val path = parsePathName(nodeCreateRequest.path)
-        val name = parseFileName(nodeCreateRequest.name)
-        val fullPath = combineFullPath(path, name)
+        val projectId = nodeCreateRequest.projectId
+        val repoName = nodeCreateRequest.repoName
+        val fullPath = parseFullPath(nodeCreateRequest.fullPath)
+
+        checkRepository(projectId, repoName)
         // 路径唯一性校验
-        val existNode = queryNodeInfo(nodeCreateRequest.repositoryId, fullPath)
+        val existNode = queryModel(projectId, repoName, fullPath)
         if (existNode != null) {
-            if (!nodeCreateRequest.overwrite) {
-                throw ErrorCodeException(PARAMETER_IS_EXIST)
-            } else if (existNode.folder || nodeCreateRequest.folder) {
-                throw ErrorCodeException(ELEMENT_CANNOT_BE_MODIFIED)
-            } else {
+            if (!nodeCreateRequest.overwrite) throw ErrorCodeException(PARAMETER_IS_EXIST, fullPath)
+            else if (existNode.folder || nodeCreateRequest.folder) throw ErrorCodeException(FOLDER_CANNOT_BE_MODIFIED)
+            else {
                 // 存在相同路径文件节点且允许覆盖，删除之前的节点
-                deleteById(existNode.id, nodeCreateRequest.createdBy, false)
+                deleteByPath(projectId, repoName, fullPath, nodeCreateRequest.operator)
             }
         }
         // 判断父目录是否存在，不存在先创建
-        mkdirs(nodeCreateRequest.repositoryId, nodeCreateRequest.path, nodeCreateRequest.createdBy)
+        mkdirs(projectId, repoName, getParentPath(fullPath), nodeCreateRequest.operator)
         // 创建节点
         val node = nodeCreateRequest.let {
             TNode(
                 folder = it.folder,
-                path = path,
-                name = name,
+                path = getParentPath(fullPath),
+                name = getName(fullPath),
                 fullPath = fullPath,
-                repositoryId = it.repositoryId,
                 expireDate = if (it.folder) null else parseExpireDate(it.expires),
                 size = if (it.folder) 0 else it.size ?: 0,
                 sha256 = if (it.folder) null else it.sha256,
                 metadata = it.metadata ?: emptyMap(),
-                createdBy = it.createdBy,
+                projectId = projectId,
+                repoName = repoName,
+                createdBy = it.operator,
                 createdDate = LocalDateTime.now(),
-                lastModifiedBy = it.createdBy,
+                lastModifiedBy = it.operator,
                 lastModifiedDate = LocalDateTime.now()
             )
         }
         node.blockList = nodeCreateRequest.blockList?.map { TFileBlock(sequence = it.sequence, sha256 = it.sha256, size = it.size) }
         // 保存节点
-        return IdValue(nodeRepository.insert(node).id!!)
+        val idValue = IdValue(nodeRepository.insert(node).id!!)
+
+        logger.info("Create node [$nodeCreateRequest] success.")
+        return idValue
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun updateById(id: String, nodeUpdateRequest: NodeUpdateRequest) {
-        val node = nodeRepository.findByIdOrNull(id) ?: throw ErrorCodeException(ELEMENT_NOT_FOUND)
-        // 文件夹不允许修改
-        node.takeIf { !it.folder } ?: throw ErrorCodeException(ELEMENT_CANNOT_BE_MODIFIED)
+    fun rename(nodeRenameRequest: NodeRenameRequest) {
+        val projectId = nodeRenameRequest.projectId
+        val repoName = nodeRenameRequest.repoName
+        val operator = nodeRenameRequest.operator
+        val formattedFullPath = formatFullPath(nodeRenameRequest.fullPath)
+        val formattedNewFullPath = formatFullPath(nodeRenameRequest.newFullPath)
+        val newPath = getParentPath(formattedNewFullPath)
+        val newName = getName(formattedNewFullPath)
 
-        with(nodeUpdateRequest) {
-            path?.let { node.path = parsePathName(it) }
-            name?.let { node.name = parseFileName(it) }
-            expires?.let { node.expireDate = parseExpireDate(expires) }
-            node.lastModifiedDate = LocalDateTime.now()
-            node.lastModifiedBy = modifiedBy
+        checkRepository(projectId, repoName)
+        val node = queryModel(projectId, repoName, formattedFullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, formattedFullPath)
+        // 检查新路径是否被占用
+        if(exist(projectId, repoName, formattedNewFullPath)) {
+            logger.info("Rename node [$nodeRenameRequest] failed: $formattedNewFullPath is exist.")
+            throw ErrorCodeException(PARAMETER_IS_EXIST, formattedNewFullPath)
+        }
+        // 判断新目录是否存在，不存在先创建
+        mkdirs(projectId, repoName, newPath, operator)
+        // 修改自己
+        val selfQuery = createNodeQuery(projectId, repoName, formattedFullPath)
+        val selfUpdate = createPathUpdate(newPath, newName, operator)
+        mongoTemplate.updateFirst(selfQuery, selfUpdate, TNode::class.java)
+        // 如果为文件夹，查询子节点并修改
+        if(node.folder) {
+            val newParentPath = formatPath(formattedNewFullPath)
+            val query = createNodeQuery(projectId, repoName).addCriteria(Criteria.where("fullPath").regex("^${escapeRegex(formattedFullPath)}/"))
+
+            mongoTemplate.find(query, TNode::class.java).forEach {
+                val update = createPathUpdate(newParentPath, it.name, operator)
+                mongoTemplate.updateFirst(Query.query(Criteria.where("_id").`is`(it.id)), update, TNode::class.java)
+            }
         }
 
-        val newFullPath = combineFullPath(node.path, node.name)
-        // 如果path和name有变化，校验唯一性
-        if (node.fullPath != newFullPath) {
-            takeIf { !exist(node.repositoryId, newFullPath) } ?: throw ErrorCodeException(PARAMETER_IS_EXIST, newFullPath)
-            node.fullPath = newFullPath
-            // 判断父目录是否存在，不存在先创建
-            mkdirs(node.repositoryId, node.path, nodeUpdateRequest.modifiedBy)
-        }
-
-        nodeRepository.save(node)
+        logger.info("Rename node [$nodeRenameRequest] success. ")
     }
 
-    /**
-     * 删除文件，定期清理
-     */
     @Transactional(rollbackFor = [Throwable::class])
-    fun deleteById(id: String, modifiedBy: String, soft: Boolean = true) {
-        val node = nodeRepository.findByIdOrNull(id) ?: return
-        deleteByPath(node.repositoryId, node.fullPath, modifiedBy, soft)
+    fun move(nodeMoveRequest: NodeMoveRequest) {
+        val projectId = nodeMoveRequest.projectId
+        val repoName = nodeMoveRequest.repoName
+        val operator = nodeMoveRequest.operator
+        val formattedFullPath = formatFullPath(nodeMoveRequest.fullPath)
+        val formattedNewFullPath = formatFullPath(nodeMoveRequest.newFullPath)
+        val newPath = getParentPath(formattedNewFullPath)
+        val newName = getName(formattedNewFullPath)
+
+        checkRepository(projectId, repoName)
+        // 修改自己
+        val node = queryModel(projectId, repoName, formattedFullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, formattedFullPath)
+        // 查询新路径是否存在
+        val exist = exist(projectId, repoName, formattedNewFullPath)
+
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    fun copy(nodeCopyRequest: NodeCopyRequest) {
+        // TODO:
+        // val node = queryNodeDetail(nodeCopyRequest.fromRepoId, nodeCopyRequest)
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    fun delete(nodeDeleteRequest: NodeDeleteRequest) {
+        with(nodeDeleteRequest) {
+            checkRepository(this.projectId, this.repoName)
+            deleteByPath(this.projectId, this.repoName, this.fullPath, this.operator)
+        }
     }
 
     /**
      * 根据全路径删除文件或者目录
      */
     @Transactional(rollbackFor = [Throwable::class])
-    fun deleteByPath(repositoryId: String, fullPath: String, modifiedBy: String, soft: Boolean = true) {
-        val formattedPath = formatFullPath(fullPath)
+    fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String, soft: Boolean = true) {
+        checkRepository(projectId, repoName)
+        val formattedFullPath = formatFullPath(fullPath)
+        val formattedPath = formatPath(formattedFullPath)
         val escapedPath = escapeRegex(formattedPath)
-        val query = Query(Criteria.where("repositoryId").`is`(repositoryId)
-                .orOperator(Criteria.where("fullPath").regex("^$escapedPath/"), Criteria.where("fullPath").`is`(formattedPath))
-                .and("deleted").`is`(null))
+        val query = createNodeQuery(projectId, repoName)
+        query.addCriteria(Criteria().orOperator(
+                Criteria.where("fullPath").regex("^$escapedPath/"),
+                Criteria.where("fullPath").`is`(formattedFullPath)
+        ))
         if (soft) {
             // 软删除
             val update = Update.update("deleted", LocalDateTime.now())
                     .set("lastModifiedDate", LocalDateTime.now())
-                    .set("lastModifiedBy", modifiedBy)
+                    .set("lastModifiedBy", operator)
             mongoTemplate.updateMulti(query, update, TNode::class.java)
         } else {
             // 硬删除
             mongoTemplate.remove(query, TNode::class.java)
         }
-    }
-
-    /**
-     * 删除某个仓库下所有文件
-     * 因为仓库已经删除，因此永久删除文件，不做保留
-     */
-    @Transactional(rollbackFor = [Throwable::class])
-    fun deleteByRepositoryId(repoId: String) {
-        val query = Query(Criteria.where("repositoryId").`is`(repoId))
-        mongoTemplate.remove(query, TNode::class.java)
+        logger.info("Delete node [$projectId/$repoName/$fullPath] by [$operator] success.")
     }
 
     /**
      * 递归创建目录
      */
-    private fun mkdirs(repositoryId: String, path: String, createdBy: String) {
-        if (!exist(repositoryId, path)) {
-            val parentPath = NodeUtils.getParentPath(path)
-            val name = NodeUtils.getName(path)
-            mkdirs(repositoryId, parentPath, createdBy)
+    private fun mkdirs(projectId: String, repoName: String, path: String, createdBy: String) {
+        if (!exist(projectId, repoName, path)) {
+            val parentPath = getParentPath(path)
+            val name = getName(path)
+            mkdirs(projectId, repoName, parentPath, createdBy)
             nodeRepository.insert(TNode(
                     folder = true,
                     path = parentPath,
                     name = name,
                     fullPath = combineFullPath(parentPath, name),
-                    repositoryId = repositoryId,
                     size = 0,
+                    expireDate = null,
+                    metadata = emptyMap(),
+                    projectId = projectId,
+                    repoName = repoName,
                     createdBy = createdBy,
                     createdDate = LocalDateTime.now(),
                     lastModifiedBy = createdBy,
@@ -273,25 +307,46 @@ class NodeService @Autowired constructor(
         }
     }
 
-    private fun createNodeQuery(): Query {
-        val query = Query().with(Sort.by("name"))
-        query.fields().exclude("metadata").exclude("blockList")
+    fun checkRepository(projectId: String, repoName: String, repoType: String? = null) {
+        if (!repositoryService.exist(projectId, repoName, repoType)) {
+            throw ErrorCodeException(RepositoryMessageCode.REPOSITORY_NOT_FOUND, repoName)
+        }
+    }
+
+    private fun createNodeQuery(projectId: String, repoName: String, fullPath: String? = null, withDetail: Boolean = false): Query {
+        val criteria = Criteria.where("projectId").`is`(projectId)
+                .and("repoName").`is`(repoName)
+                .and("deleted").`is`(null)
+
+        val query = Query(criteria)
+
+        fullPath?.run { criteria.and("fullPath").`is`(fullPath) }
+        takeUnless { withDetail }.run { query.fields().exclude("metadata").exclude("blockList") }
+
         return query
     }
 
-    private fun createListQuery(repositoryId: String, path: String, includeFolder: Boolean, deep: Boolean): Query {
+    private fun createPathUpdate(path: String, name: String, operator: String): Update {
+        return Update.update("lastModifiedBy", operator)
+                .set("lastModifiedDate", LocalDateTime.now())
+                .set("path", path)
+                .set("name", name)
+                .set("fullPath", path + name)
+    }
+
+    private fun createListQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Query {
         val formattedPath = formatPath(path)
         val escapedPath = escapeRegex(formattedPath)
-        val criteria = Criteria.where("repositoryId").`is`(repositoryId).and("deleted").`is`(null)
+        val query = createNodeQuery(projectId, repoName)
         if (deep) {
-            criteria.and("fullPath").regex("^$escapedPath")
+            query.addCriteria(Criteria.where("fullPath").regex("^$escapedPath"))
         } else {
-            criteria.and("path").`is`(formattedPath)
+            query.addCriteria(Criteria.where("path").`is`(formattedPath))
         }
         if (!includeFolder) {
-            criteria.and("folder").`is`(false)
+            query.addCriteria(Criteria.where("folder").`is`(false))
         }
-        return createNodeQuery().addCriteria(criteria)
+        return query
     }
 
     private fun parseExpireDate(expireDays: Long?): LocalDateTime? {
@@ -317,7 +372,8 @@ class NodeService @Autowired constructor(
                     fullPath = it.fullPath,
                     size = it.size,
                     sha256 = it.sha256,
-                    repositoryId = it.repositoryId
+                    repoName = it.repoName,
+                    projectId = it.projectId
                 )
             }
         }

@@ -13,6 +13,7 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import okio.Buffer
 import org.apache.commons.lang3.RandomStringUtils
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Disabled
@@ -40,7 +41,8 @@ class IntegrationTest {
         val content = RandomStringUtils.randomAlphabetic(100)
         val sha256 = FileDigestUtils.fileSha256(listOf(content.byteInputStream()))
 
-        val formBody = MultipartBody.Builder().setType(MultipartBody.FORM)
+        val formBody = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
                 .addFormDataPart("file", "filename", RequestBody.create(MediaType.parse("text/plain"), content))
                 .addFormDataPart("sha256", sha256)
                 .addFormDataPart("overwrite", "true")
@@ -51,9 +53,7 @@ class IntegrationTest {
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                 .post(formBody)
                 .build()
-        val response = client.newCall(request).execute()
-        println(response.body()?.string())
-        Assertions.assertTrue(response.isSuccessful)
+        checkResponse(client.newCall(request).execute(), object: TypeReference<Response<Void>>(){})
 
 
         val downloadRequest = Request.Builder().url("http://127.0.0.1:8001/download/simple/test/test/root/random.txt")
@@ -106,7 +106,7 @@ class IntegrationTest {
 
             val blockRequest = Request.Builder().url("http://127.0.0.1:8001/upload/block/$uploadId/$i")
                     .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-                    .post(blockFormBody)
+                    .put(blockFormBody)
                     .build()
             checkResponse(client.newCall(blockRequest).execute(), object: TypeReference<Response<Void>>(){})
         }
@@ -123,7 +123,7 @@ class IntegrationTest {
 
         checkResponse(client.newCall(completeRequest).execute(), object: TypeReference<Response<Void>>(){})
         // 查询分块
-        val blockInfoRequest = Request.Builder().url("http://127.0.0.1:8001/download/block/info/test/test/root/random1000.txt")
+        val blockInfoRequest = Request.Builder().url("http://127.0.0.1:8001/download/info/test/test/root/random1000.txt")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                 .build()
         val blockList = checkResponse(client.newCall(blockInfoRequest).execute(), object: TypeReference<Response<List<BlockInfo>>>(){})
