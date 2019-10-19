@@ -3,6 +3,8 @@ package com.tencent.bkrepo.docker.util
 import com.google.common.base.Joiner
 import com.google.common.collect.Iterables
 import com.tencent.bkrepo.docker.DockerWorkContext
+import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
 import com.tencent.bkrepo.docker.repomd.Artifact
 import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.v2.helpers.DockerSearchBlobPolicy
@@ -79,7 +81,7 @@ abstract class DockerUtils {
             return repositoryPath(repository) + "/" + tagName + "/" + "tag.json"
         }
 
-        fun getBlobGlobally(repo: Repo<DockerWorkContext>, blobFilename: String, searchPolicy: DockerSearchBlobPolicy): Artifact? {
+        fun getBlobGlobally(repo: DockerArtifactoryService, blobFilename: String, searchPolicy: DockerSearchBlobPolicy): Artifact? {
             var repoBlobs = (repo.getWorkContextC() as DockerWorkContext).findBlobsGlobally(blobFilename, searchPolicy)
             if (repoBlobs != null && !Iterables.isEmpty(repoBlobs!!)) {
                 // TODO : iter
@@ -105,7 +107,7 @@ abstract class DockerUtils {
             return null
         }
 
-        fun getManifestConfigBlob(repo: Repo<DockerWorkContext>, blobFilename: String, dockerRepoPath: String, tag: String): Artifact? {
+        fun getManifestConfigBlob(repo: DockerArtifactoryService, blobFilename: String, dockerRepoPath: String, tag: String): Artifact? {
             val configPath = Joiner.on("/").join(dockerRepoPath, tag, *arrayOf<Any>(blobFilename))
             log.debug("Searching manifest config blob in: '{}'", configPath)
             if (repo.exists(configPath)) {
@@ -119,7 +121,7 @@ abstract class DockerUtils {
             return getBlobFromRepoPath(repo, blobFilename, dockerRepoPath)
         }
 
-        fun getBlobFromRepoPath(repo: Repo<DockerWorkContext>, blobFilename: String, dockerRepoPath: String): Artifact? {
+        fun getBlobFromRepoPath(repo: DockerArtifactoryService, blobFilename: String, dockerRepoPath: String): Artifact? {
             val tempBlobPath = "$dockerRepoPath/_uploads/$blobFilename"
             log.info("Searching blob in '{}'", tempBlobPath)
             var blob: Artifact?

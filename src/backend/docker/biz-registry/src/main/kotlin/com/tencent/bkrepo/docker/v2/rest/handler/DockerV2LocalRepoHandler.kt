@@ -3,6 +3,7 @@ package com.tencent.bkrepo.docker.v2.rest.handler
 import com.fasterxml.jackson.databind.JsonNode
 import com.google.common.base.Joiner
 import com.tencent.bkrepo.docker.DockerWorkContext
+import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
 import com.tencent.bkrepo.docker.artifact.util.DockerUtil
 import com.tencent.bkrepo.docker.exception.DockerNotFoundException
 import com.tencent.bkrepo.docker.exception.DockerSyncManifestException
@@ -23,6 +24,7 @@ import com.tencent.bkrepo.docker.v2.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.v2.model.DockerDigest
 import com.tencent.bkrepo.docker.v2.model.ManifestMetadata
 import com.tencent.bkrepo.docker.v2.rest.errors.DockerV2Errors
+import org.apache.commons.io.FileUtils
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
@@ -35,19 +37,19 @@ import javax.ws.rs.core.UriBuilder
 import org.apache.commons.io.IOUtils
 import org.apache.commons.io.output.NullOutputStream
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import com.tencent.bkrepo.common.storage.util.DataDigestUtils
+import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 
 @Service
-class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
+class DockerV2LocalRepoHandler @Autowired constructor(
+        private val repo : DockerArtifactoryService
+) : DockerV2RepoHandler {
 
-    private var repo: Repo<DockerWorkContext> = DockerUtil.createDockerRepoContext("docker-local")
-    public lateinit var httpHeaders: HttpHeaders
-    init {
-        // this.repo = DockerUtil.createDockerRepoContext("aaaa")
-        // this.httpHeaders = HttpHeaders.
-    }
+    public var httpHeaders: HttpHeaders  = HttpHeaders.EMPTY
 
     companion object {
         private val manifestSyncer = DockerManifestSyncer()
@@ -412,11 +414,13 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
         }
     }
 
-    fun uploadBlob(dockerRepo: String, digest: DockerDigest, uuid: String, stream: InputStream): ResponseEntity<Any> {
-        return if (this.putHasStream()) this.uploadBlobFromPut(dockerRepo, digest, stream) else this.finishPatchUpload(dockerRepo, digest, uuid)
+    fun uploadBlob(projectId: String,repoName: String,name: String, digest: DockerDigest, uuid: String, stream: InputStream): ResponseEntity<Any> {
+
+        return if (this.putHasStream()) this.uploadBlobFromPut(projectId, repoName,name, digest, stream) else this.finishPatchUpload(projectId, repoName,name, digest, uuid)
     }
 
     private fun putHasStream(): Boolean {
+        return true
         val headerValues = httpHeaders.get("User-Agent")
         if (headerValues != null) {
             val headerIter = headerValues!!.iterator()
@@ -433,15 +437,17 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
         return false
     }
 
-    private fun uploadBlobFromPut(dockerRepo: String, digest: DockerDigest, stream: InputStream): ResponseEntity<Any> {
-        val blobPath = dockerRepo + "/" + "_uploads" + "/" + digest.filename()
+    private fun uploadBlobFromPut(projectId: String,repoName: String,name: String, digest: DockerDigest, stream: InputStream): ResponseEntity<Any> {
+        var dockerRepo = "/$projectId/$repoName/$name"
+        val blobPath = dockerRepo + "/" + "_uploads" + "/"+digest.toString()
         if (!this.repo.canWrite(blobPath)) {
             return this.consumeStreamAndReturnError(dockerRepo, digest.toString(), stream)
         } else {
             log.info("Deploying docker blob '{}' into repo '{}'", blobPath, this.repo.getRepoId())
-            val response = this.repo.upload(UploadContext(blobPath).content(stream))
+            var context = UploadContext(blobPath).content(stream).projectId(projectId).repoName(repoName).sha256(digest.getDigestHex())
+            val response = this.repo.upload(context)
             if (response != null && this.uploadSuccessful(response)) {
-                this.repo.setAttribute(blobPath, digest.getDigestAlg(), digest.getDigestHex())
+                //this.repo.setAttribute(blobPath, digest.getDigestAlg(), digest.getDigestHex())
                 val location = this.getDockerURI("$dockerRepo/blobs/$digest")
                 return ResponseEntity.created(location).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", digest.toString()).build()
             } else {
@@ -451,7 +457,8 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
         }
     }
 
-    private fun finishPatchUpload(dockerRepo: String, digest: DockerDigest, uuid: String): ResponseEntity<Any> {
+    private fun finishPatchUpload(projectId: String,repoName: String,name: String, digest: DockerDigest, uuid: String): ResponseEntity<Any> {
+        var dockerRepo = "/$projectId/$repoName/$name"
         val uuidPath = "$dockerRepo/_uploads/$uuid"
         if (this.repo.exists(uuidPath)) {
             val blobPath = dockerRepo + "/" + "_uploads" + "/" + digest.filename()
@@ -469,6 +476,25 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
             return ResponseEntity.created(location).header("Docker-Distribution-Api-Version", "registry/2.0").header("Content-Length", "0").header("Docker-Content-Digest", digest.toString()).build()
         } else {
             return DockerV2Errors.blobUnknown(digest.toString())
+        }
+    }
+
+    fun patchUpload(dockerRepo: String, uuid: String, stream: InputStream): ResponseEntity<Any> {
+        val blobPath = "$dockerRepo/_uploads/$uuid"
+        if (!this.repo.canWrite(blobPath)) {
+            return this.consumeStreamAndReturnError(dockerRepo, uuid, stream)
+        } else {
+            val response = this.repo.upload(UploadContext(blobPath).content(stream))
+            if (this.uploadSuccessful(response)) {
+                val artifact = this.repo.artifact(blobPath)
+                if (artifact != null) {
+                    val location = this.getDockerURI("$dockerRepo/blobs/uploads/$uuid")
+                    return ResponseEntity.status(202).header("Content-Length", "0").header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Upload-Uuid", uuid).header("Location", location.toString()).header("Range", "0-" + (artifact.getLength() - 1L)).build()
+                }
+            }
+
+            log.warn("Error uploading blob '{}' got status '{}' and message: '{}'", *arrayOf<Any>(blobPath, response.statusCode, response.toString()))
+            return DockerV2Errors.blobUploadInvalid(response.toString())
         }
     }
 
@@ -500,5 +526,15 @@ class DockerV2LocalRepoHandler() : DockerV2RepoHandler {
             IOUtils.closeQuietly(stream)
         }
         return DockerV2Errors.unauthorizedUpload()
+    }
+
+     fun testUpload(stream: InputStream): ResponseEntity<Any> {
+         var context :UploadContext = UploadContext()
+         context.repoName = "docker-local"
+         context.path = "/data/ops/docker-local"
+         context.projectId = "ops"
+         context.content = stream
+         context.sha256 = "f68ca2a4f15ce42ff9a8ac469f7c6447d42655afd7ba50d995507525fff18d08"
+         return this.repo.upload(context)
     }
 }

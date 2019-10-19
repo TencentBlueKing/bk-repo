@@ -2,6 +2,8 @@ package com.tencent.bkrepo.docker.util
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.docker.DockerWorkContext
+import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
 import com.tencent.bkrepo.docker.manifest.ManifestType
 import com.tencent.bkrepo.docker.repomd.Artifact
 import com.tencent.bkrepo.docker.repomd.Repo
@@ -41,7 +43,7 @@ class DockerSchemaUtils {
             return ResponseEntity.ok().header("Content-Length", "32").header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", emptyBlobDigest().toString()).header("Content-Type", "application/octet-stream").body(EMPTY_BLOB_CONTENT)
         }
 
-        fun fetchSchema2ManifestConfig(repo: Repo<DockerWorkContext>, manifestBytes: ByteArray, dockerRepoPath: String, tag: String): ByteArray {
+        fun fetchSchema2ManifestConfig(repo: DockerArtifactoryService, manifestBytes: ByteArray, dockerRepoPath: String, tag: String): ByteArray {
             try {
                 val manifest = JsonUtil.readTree(manifestBytes)
                 if (manifest != null) {
@@ -82,7 +84,7 @@ class DockerSchemaUtils {
             return ByteArray(0)
         }
 
-        fun fetchSchema2Manifest(repo: Repo<DockerWorkContext>, schema2Path: String): ByteArray {
+        fun fetchSchema2Manifest(repo: DockerArtifactoryService, schema2Path: String): ByteArray {
             try {
                 val manifestStream = (repo.getWorkContextC() as DockerWorkContext).readGlobal(schema2Path)
                 var var3: Throwable? = null
@@ -114,7 +116,7 @@ class DockerSchemaUtils {
             }
         }
 
-        fun fetchSchema2Path(repo: Repo<DockerWorkContext>, dockerRepo: String, manifestListBytes: ByteArray, searchGlobally: Boolean): String {
+        fun fetchSchema2Path(repo: DockerArtifactoryService, dockerRepo: String, manifestListBytes: ByteArray, searchGlobally: Boolean): String {
             try {
                 val manifestList = JsonUtil.readTree(manifestListBytes)
                 if (manifestList != null) {

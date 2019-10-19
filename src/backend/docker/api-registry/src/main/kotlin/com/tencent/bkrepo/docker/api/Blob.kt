@@ -26,6 +26,8 @@ interface Blob {
     @ApiOperation("上传blob文件")
     @PutMapping("{projectId}/{repoName}/{name}/blobs/uploads/{uuid}")
     fun uploadBlob(
+        @RequestHeader
+        headers: HttpHeaders,
         @PathVariable
         @ApiParam(value = "projectId", required = true)
         projectId: String,
@@ -78,7 +80,7 @@ interface Blob {
 //        digest: String
 //    ): Response
 
-    @ApiOperation("获取blob文件")
+    @ApiOperation("开始上传blob文件")
     @RequestMapping(method = [RequestMethod.POST], value = ["{projectId}/{repoName}/{name}/blobs/uploads"])
     fun startBlobUpload(
         @RequestHeader
@@ -95,5 +97,30 @@ interface Blob {
         @RequestParam
         @ApiParam(value = "mount", required = false)
         mount: String?
+    ): ResponseEntity<Any>
+
+    @ApiOperation("分片上传blob文件")
+    @RequestMapping(method = [RequestMethod.PATCH], value = ["{projectId}/{repoName}/{name}/blobs/uploads/{uuid}"])
+    fun patchUpload(
+            @RequestHeader
+            headers: HttpHeaders,
+            @PathVariable
+            @ApiParam(value = "projectId", required = true)
+            projectId: String,
+            @PathVariable
+            @ApiParam(value = "repoName", required = true)
+            repoName: String,
+            @PathVariable
+            @ApiParam(value = "name", required = true)
+            name: String,
+            @PathVariable
+            @ApiParam(value = "uuid", required = false)
+            uuid: String
+    ): ResponseEntity<Any>
+
+    @ApiOperation("获取blob文件")
+    @RequestMapping(method = [RequestMethod.PUT], value = ["test/uploads"])
+    fun test(
+            request: HttpServletRequest
     ): ResponseEntity<Any>
 }

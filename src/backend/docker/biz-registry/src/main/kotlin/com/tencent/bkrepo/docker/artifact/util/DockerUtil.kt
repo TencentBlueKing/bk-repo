@@ -36,9 +36,9 @@ object DockerUtil {
 //        return model
 //    }
 
-    fun createDockerRepoContext(repoKey: String): DockerArtifactoryService {
-        // val repoPath = RepoPathFactory.create(repoKey)
-        val context = DockerPackageWorkContext()
-        return DockerArtifactoryService(context, repoKey)
-    }
+//    fun createDockerRepoContext(repoKey: String): DockerArtifactoryService {
+//        // val repoPath = RepoPathFactory.create(repoKey)
+//        val context = DockerPackageWorkContext()
+//        return DockerArtifactoryService(context, repoKey)
+//    }
 }

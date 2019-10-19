@@ -6,12 +6,15 @@ import com.google.common.collect.SetMultimap
 import java.io.InputStream
 
 class UploadContext {
-    var path: String? = null
+    var path: String = ""
     var content: InputStream? = null
     var contentLength: Long = 0
-    var sha1: String? = null
-    var sha256: String? = null
-    var md5: String? = null
+    var sha1: String = ""
+    var sha256: String = ""
+    var md5: String = ""
+    var projectId : String= ""
+    var repoName : String = ""
+    var userId :String = "bk_admin"
     private val requestHeaders = Maps.newHashMap<String, String>()
     var attributes: SetMultimap<String, String> = LinkedHashMultimap.create()
 
@@ -48,6 +51,21 @@ class UploadContext {
 
     fun md5(md5: String): UploadContext {
         this.md5 = md5
+        return this
+    }
+
+    fun projectId(projectId: String): UploadContext {
+        this.projectId = projectId
+        return this
+    }
+
+    fun repoName(repoName: String): UploadContext {
+        this.repoName = repoName
+        return this
+    }
+
+    fun use(repoName: String): UploadContext {
+        this.repoName = repoName
         return this
     }
 
