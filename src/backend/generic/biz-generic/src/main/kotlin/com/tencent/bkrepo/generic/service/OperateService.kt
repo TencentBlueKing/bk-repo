@@ -6,6 +6,8 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.generic.pojo.FileDetail
 import com.tencent.bkrepo.generic.pojo.FileInfo
 import com.tencent.bkrepo.generic.pojo.FileSizeInfo
@@ -19,11 +21,11 @@ import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
+import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.time.format.DateTimeFormatter
 
 /**
  * 文件操作服务类
@@ -34,42 +36,52 @@ import java.time.format.DateTimeFormatter
 @Service
 class OperateService(
     private val nodeResource: NodeResource,
-    private val authService: AuthService
+    private val permissionService: PermissionService
 ) {
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+
         return nodeResource.list(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
     }
 
-    fun searchFile(userId: String, searchRequest: FileSearchRequest): List<FileInfo> {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, searchRequest.projectId, searchRequest.repoName))
-        return nodeResource.search(
-                searchRequest.let {
-                    NodeSearchRequest(
-                            projectId = it.projectId,
-                            repoName = it.repoName,
-                            pathPattern = it.pathPattern,
-                            metadataCondition = it.metadataCondition
-                    )
-                }
-        ).data?.map { toFileInfo(it) } ?: emptyList()
+    fun searchFile(userId: String, request: FileSearchRequest): Page<FileInfo> {
+        request.repoNameList.forEach {
+            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, request.projectId, it))
+        }
+
+        val searchRequest = with(request) {
+            NodeSearchRequest(
+                    projectId = projectId,
+                    repoNameList = repoNameList,
+                    pathPattern = pathPattern,
+                    metadataCondition = metadataCondition,
+                    page = page,
+                    size = size
+            )
+        }
+        val nodePage = nodeResource.search(searchRequest).data
+        val records = nodePage?.records?.map { toFileInfo(it) } ?: emptyList()
+        return Page(request.page, request.size, nodePage?.count ?: 0, records)
     }
 
     fun getFileDetail(userId: String, projectId: String, repoName: String, fullPath: String): FileDetail {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+
         val nodeDetail = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileDetail(toFileInfo(nodeDetail.nodeInfo), nodeDetail.metadata)
     }
 
     fun getFileSize(userId: String, projectId: String, repoName: String, fullPath: String): FileSizeInfo {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+
         val nodeSizeInfo = nodeResource.getSize(projectId, repoName, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileSizeInfo(subFileCount = nodeSizeInfo.subNodeCount, size = nodeSizeInfo.size)
     }
 
     fun mkdir(userId: String, projectId: String, repoName: String, fullPath: String) {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
-        val fullUrl = "$projectId/$repoName/$fullPath"
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+
+        val fullUri = "$projectId/$repoName/$fullPath"
         val createRequest = NodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -81,16 +93,17 @@ class OperateService(
         val result = nodeResource.create(createRequest)
 
         if (result.isNotOk()) {
-            logger.warn("user[$userId] mkdirs [$fullUrl] failed: [${result.code}, ${result.message}]")
+            logger.warn("user[$userId] mkdirs [$fullUri] failed: [${result.code}, ${result.message}]")
             throw ExternalErrorCodeException(result.code, result.message)
         }
 
-        logger.info("user[$userId] mkdirs [$fullUrl] success")
+        logger.info("user[$userId] mkdirs [$fullUri] success")
     }
 
     fun delete(userId: String, projectId: String, repoName: String, fullPath: String) {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
-        val fullUrl = "$projectId/$repoName/$fullPath"
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+
+        val fullUri = "$projectId/$repoName/$fullPath"
         val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -100,63 +113,86 @@ class OperateService(
         val result = nodeResource.delete(deleteRequest)
 
         if (result.isNotOk()) {
-            logger.warn("user[$userId] delete [$fullUrl] failed: [${result.code}, ${result.message}]")
+            logger.warn("user[$userId] delete [$fullUri] failed: [${result.code}, ${result.message}]")
             throw ExternalErrorCodeException(result.code, result.message)
         }
 
-        logger.info("user[$userId] delete [$fullUrl] success")
+        logger.info("user[$userId] delete [$fullUri] success")
     }
 
-    fun rename(userId: String, projectId: String, repoName: String, fullPath: String, fileRenameRequest: FileRenameRequest) {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+    fun rename(userId: String, request: FileRenameRequest) {
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, request.projectId, request.repoName))
 
-        val fullUrl = "$projectId/$repoName/$fullPath"
-        val newFullPath = fileRenameRequest.newFullPath
-        val renameRequest = NodeRenameRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                newFullPath = fileRenameRequest.newFullPath,
-                operator = userId
-        )
+        val fullUri = "${request.projectId}/${request.repoName}/${request.fullPath}"
+        val renameRequest = with(request) {
+            NodeRenameRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath,
+                    newFullPath = newFullPath,
+                    operator = userId
+            )
+        }
         val result = nodeResource.rename(renameRequest)
-
         if (result.isNotOk()) {
-            logger.warn("user[$userId] rename [$fullUrl] to [$newFullPath] failed: [${result.code}, ${result.message}]")
+            logger.warn("user[$userId] rename [$fullUri] to [${request.newFullPath}] failed: [${result.code}, ${result.message}]")
             throw ExternalErrorCodeException(result.code, result.message)
         }
-
-        logger.info("user[$userId] rename [$fullUrl] to [$newFullPath] success")
+        logger.info("user[$userId] rename [$fullUri] to [${request.newFullPath}] success")
     }
 
-    fun move(userId: String, projectId: String, repoName: String, fullPath: String, fileMoveRequest: FileMoveRequest) {
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+    fun move(userId: String, request: FileMoveRequest) {
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, request.srcProjectId, request.srcRepoName))
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, request.destProjectId, request.destRepoName))
 
-        val fullUrl = "$projectId/$repoName/$fullPath"
-        val toPath = fileMoveRequest.toPath
-        val renameRequest = NodeMoveRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                newFullPath = toPath,
-                overwrite = fileMoveRequest.overwrite,
-                operator = userId
-        )
-        val result = nodeResource.move(renameRequest)
-
-        if (result.isNotOk()) {
-            logger.warn("user[$userId] move [$fullUrl] to [$toPath] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
+        val srcUri = "${request.srcProjectId}/${request.srcRepoName}/${request.srcFullPath}"
+        val destUri = "${request.destProjectId}/${request.destRepoName}/${request.destPath}"
+        val moveRequest = with(request) {
+            NodeMoveRequest(
+                    srcProjectId = srcProjectId,
+                    srcRepoName = srcRepoName,
+                    srcFullPath = srcFullPath,
+                    destProjectId = destProjectId,
+                    destRepoName = destRepoName,
+                    destPath = destPath,
+                    overwrite = overwrite,
+                    operator = userId
+            )
         }
 
-        logger.info("user[$userId] move [$fullUrl] to [$toPath] success")
+        val result = nodeResource.move(moveRequest)
+        if (result.isNotOk()) {
+            logger.warn("user[$userId] move [$srcUri] to [$destUri] failed: [${result.code}, ${result.message}]")
+            throw ExternalErrorCodeException(result.code, result.message)
+        }
+        logger.info("user[$userId] move [$srcUri] to [$destUri] success")
     }
 
-    fun copy(userId: String, projectId: String, repoName: String, fullPath: String, fileCopyRequest: FileCopyRequest) {
-        val toProjectId = fileCopyRequest.toProjectId
-        val toRepoName = fileCopyRequest.toRepoName
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
-        authService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, toProjectId, toRepoName))
+    fun copy(userId: String, request: FileCopyRequest) {
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, request.srcProjectId, request.srcRepoName))
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, request.destProjectId, request.destRepoName))
+
+        val srcUri = "${request.srcProjectId}/${request.srcRepoName}/${request.srcFullPath}"
+        val destUri = "${request.destProjectId}/${request.destRepoName}/${request.destPath}"
+        val copyRequest = with(request) {
+            NodeCopyRequest(
+                    srcProjectId = srcProjectId,
+                    srcRepoName = srcRepoName,
+                    srcFullPath = srcFullPath,
+                    destProjectId = destProjectId,
+                    destRepoName = destRepoName,
+                    destPath = destPath,
+                    overwrite = overwrite,
+                    operator = userId
+            )
+        }
+
+        val result = nodeResource.copy(copyRequest)
+        if (result.isNotOk()) {
+            logger.warn("user[$userId] copy [$srcUri] to [$destUri] failed: [${result.code}, ${result.message}]")
+            throw ExternalErrorCodeException(result.code, result.message)
+        }
+        logger.info("user[$userId] copy [$srcUri] to [$destUri] success")
     }
 
     companion object {

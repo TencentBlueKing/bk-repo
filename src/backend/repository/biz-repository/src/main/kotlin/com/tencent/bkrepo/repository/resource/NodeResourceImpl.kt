@@ -10,9 +10,9 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import com.tencent.bkrepo.repository.service.NodeService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -47,7 +47,7 @@ class NodeResourceImpl @Autowired constructor(
         return Response.success(nodeService.page(projectId, repoName, path, page, size, includeFolder, deep))
     }
 
-    override fun search(nodeSearchRequest: NodeSearchRequest): Response<List<NodeInfo>> {
+    override fun search(nodeSearchRequest: NodeSearchRequest): Response<Page<NodeInfo>> {
         return Response.success(nodeService.search(nodeSearchRequest))
     }
 

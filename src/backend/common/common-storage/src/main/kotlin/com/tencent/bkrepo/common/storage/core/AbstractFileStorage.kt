@@ -77,7 +77,6 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
                 inputStream
             }
         } ?: load(path, hash, getClient(credentials))
-
     }
 
     override fun exist(hash: String, credentials: ClientCredentials?): Boolean {

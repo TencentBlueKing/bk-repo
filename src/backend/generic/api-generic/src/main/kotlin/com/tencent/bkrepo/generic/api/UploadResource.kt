@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.generic.api
 
+import com.tencent.bkrepo.common.api.annotation.WildcardParam
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.generic.annotation.WildcardParam
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.upload.BlockUploadRequest
 import com.tencent.bkrepo.generic.pojo.upload.SimpleUploadRequest

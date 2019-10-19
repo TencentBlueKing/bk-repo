@@ -14,7 +14,6 @@ import com.tencent.bkrepo.repository.pojo.repo.Repository
 import com.tencent.bkrepo.repository.pojo.repo.StorageCredentials
 import com.tencent.bkrepo.repository.repository.NodeRepository
 import com.tencent.bkrepo.repository.repository.RepoRepository
-import com.tencent.bkrepo.repository.util.NodeUtils
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

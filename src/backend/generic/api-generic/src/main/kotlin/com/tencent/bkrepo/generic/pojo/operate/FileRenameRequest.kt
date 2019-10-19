@@ -11,6 +11,12 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("文件重命名请求")
 data class FileRenameRequest(
-    @ApiModelProperty("新的完整路径", required = true)
+    @ApiModelProperty("所属项目", required = true)
+    val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    val repoName: String,
+    @ApiModelProperty("节点完整路径", required = true)
+    val fullPath: String,
+    @ApiModelProperty("节点新完整路径", required = true)
     val newFullPath: String
 )

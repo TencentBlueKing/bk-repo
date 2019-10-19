@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.service.config
 
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
