@@ -1,23 +1,49 @@
 package com.tencent.bkrepo.docker.artifact.repomd
 
+import com.tencent.bkrepo.common.api.constant.CommonMessageCode
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.docker.DockerWorkContext
 import com.tencent.bkrepo.docker.repomd.Artifact
 import com.tencent.bkrepo.docker.repomd.DownloadContext
 import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.repomd.UploadContext
+import com.tencent.bkrepo.repository.api.NodeResource
+import com.tencent.bkrepo.common.storage.core.FileStorage
+import com.tencent.bkrepo.common.storage.util.CredentialsUtils
+import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import com.tencent.bkrepo.repository.api.RepositoryResource
+import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
+import com.tencent.bkrepo.repository.util.NodeUtils
+import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import java.io.InputStream
 import javax.ws.rs.core.Response
+import org.slf4j.LoggerFactory
+import org.springframework.http.ResponseEntity
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
+import org.apache.commons.io.IOUtils
 
-class DockerArtifactoryService(var workContext: DockerWorkContext, var id: String) : Repo<DockerWorkContext> {
+
+@Service
+class DockerArtifactoryService @Autowired constructor(
+        private val repositoryResource: RepositoryResource,
+        private val nodeResource: NodeResource,
+        private val fileStorage: FileStorage
+
+)  {
 
     // protected var propertiesService: PropertiesService ？
-
-    protected lateinit var context: DockerWorkContext
     protected lateinit var repoKey: String
+    protected lateinit var context: DockerWorkContext
+
+
 
     init {
-        this.context = workContext
-        this.repoKey = id
+        this.context = DockerPackageWorkContext()
+        this.repoKey = "docker-local"
     }
 
 //    override  fun read(path: String): InputStream {
@@ -39,15 +65,15 @@ class DockerArtifactoryService(var workContext: DockerWorkContext, var id: Strin
 //        }
 //    }
 
-    override fun getRepoId(): String {
+     fun getRepoId(): String {
         return this.repoKey
     }
 
-    override fun getWorkContextC(): DockerWorkContext {
+     fun getWorkContextC(): DockerWorkContext {
         return this.context
     }
 
-    override fun write(path: String, `in`: InputStream) {
+     fun write(path: String, `in`: InputStream) {
 //        val repoPath = this.repoPath(path)
 //
 //        try {
@@ -57,7 +83,7 @@ class DockerArtifactoryService(var workContext: DockerWorkContext, var id: Strin
 //        }
     }
 
-    override fun delete(path: String): Boolean {
+     fun delete(path: String): Boolean {
         print("wwwwwwwww")
         return true
 //        val statusHolder: BasicStatusHolder
@@ -70,7 +96,7 @@ class DockerArtifactoryService(var workContext: DockerWorkContext, var id: Strin
 //        return !statusHolder.isError()
     }
 
-    override fun download(downloadContext: DownloadContext): Response {
+     fun download(downloadContext: DownloadContext): Response {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
     }
 
@@ -85,23 +111,58 @@ class DockerArtifactoryService(var workContext: DockerWorkContext, var id: Strin
 //        return req
 //    }
 
-    override fun upload(context: UploadContext): Response {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
+    @Transactional(rollbackFor = [Throwable::class])
+     fun upload(context: UploadContext): ResponseEntity<Any> {
+        // TODO: 校验权限
+
+        // 校验sha256
+//        val calculatedSha256 = FileDigestUtils.fileSha256(listOf(context.content!!))
+//        if (context.sha256 != null && calculatedSha256 != context.sha256) {
+//            logger.warn("user[${context.userId}]  upload  file [$fullUri] failed: file sha256 verification failed")
+//            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
+//        }
+
+        // 判断仓库是否存在
+        val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+            logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
+            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
+        }
+
+        // 保存节点
+        val result = nodeResource.create(NodeCreateRequest(
+                projectId = context.projectId,
+                repoName = context.repoName,
+                folder = false,
+                fullPath = context.path ,
+                size = context.contentLength,
+                sha256 = context.sha256,
+                operator = context.userId
+        ))
+
+        if (result.isOk()) {
+            val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
+            fileStorage.store(context.sha256, context.content!!, storageCredentials)
+            logger.info("user[$context.userId] simply upload file [$context.path] success")
+        } else {
+            logger.warn("user[$context.userId] simply upload file [$context.path] failed: [${result.code}, ${result.message}]")
+            throw ExternalErrorCodeException(result.code, result.message)
+        }
+        return ResponseEntity.ok().body("ok")
 //        val res = JerseyArtifactoryResponse()
 //        val properties = this.parseUploadProperties(context)
 //        val req = ArtifactoryDeployRequestBuilder(this.repoPath(context.getPath())).inputStream(context.getContent()).properties(properties).contentLength(this.contentLength(context)).build()
 //        val headers = Maps.newHashMap<String, String>()
 //        headers.putAll(context.getRequestHeaders())
-//        if (StringUtils.isNotBlank(context.getSha1())) {
-//            headers["X-Checksum-Sha1"] = context.getSha1()
+//        if (StringUtils.isNotBlank(context.sha1)) {
+//            headers["X-Checksum-Sha1"] = context.sha1
 //        }
 //
-//        if (StringUtils.isNotBlank(context.getSha256())) {
-//            headers["X-Checksum-Sha256"] = context.getSha256()
+//        if (StringUtils.isNotBlank(context.sha256)) {
+//            headers["X-Checksum-Sha256"] = context.sha256
 //        }
 //
-//        if (StringUtils.isNotBlank(context.getMd5())) {
-//            headers["X-Checksum-Md5"] = context.getMd5()
+//        if (StringUtils.isNotBlank(context.md5)) {
+//            headers["X-Checksum-Md5"] = context.md5
 //        }
 //
 //        req.addHeaders(headers)
@@ -140,13 +201,13 @@ class DockerArtifactoryService(var workContext: DockerWorkContext, var id: Strin
 //        }
 //    }
 
-    override fun copy(from: String, to: String): Boolean {
+     fun copy(from: String, to: String): Boolean {
         return true
 //        val status = this.repoService.copyMultiTx(this.repoPath(from), this.repoPath(to), false, true, true)
 //        return !status.isError() && !status.hasWarnings()
     }
 
-    override fun move(from: String, to: String): Boolean {
+     fun move(from: String, to: String): Boolean {
         return true
 //        val status = this.repoService.moveMultiTx(this.repoPath(from), this.repoPath(to), false, true, true)
 //        return !status.isError() && !status.hasWarnings()
@@ -162,12 +223,12 @@ class DockerArtifactoryService(var workContext: DockerWorkContext, var id: Strin
 //        return if (properties.containsKey(key)) properties.get(key) else null
 //    }
 
-    override fun setAttribute(path: String, key: String, value: Any) {
+     fun setAttribute(path: String, key: String, value: Any) {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
         // this.setProperties(path, key, value)
     }
 
-    override fun setAttributes(path: String, key: String, vararg values: Any) {
+     fun setAttributes(path: String, key: String, vararg values: Any) {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
         //   this.setProperties(path, key, *values)
     }
@@ -180,22 +241,22 @@ class DockerArtifactoryService(var workContext: DockerWorkContext, var id: Strin
 //        this.removePropertyValues(path, key, values)
 //    }
 
-    override fun setAttributes(path: String, keyValueMap: Map<String, String>) {
+     fun setAttributes(path: String, keyValueMap: Map<String, String>) {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
         // this.setProperties(path, keyValueMap)
     }
 
-    override fun exists(path: String): Boolean {
+     fun exists(path: String): Boolean {
         return true
 //        return this.repoService.exists(this.repoPath(path))
     }
 
-    override fun canRead(path: String): Boolean {
+     fun canRead(path: String): Boolean {
         return true
 //        return this.authorizationService.canRead(this.repoPath(path))
     }
 
-    override fun canWrite(path: String): Boolean {
+     fun canWrite(path: String): Boolean {
         return true
 //        val repoPath = this.repoPath(path)
 //        val repo = this.repoService.getLocalRepository(repoPath)
@@ -254,20 +315,20 @@ class DockerArtifactoryService(var workContext: DockerWorkContext, var id: Strin
 //        }
     }
 
-    override fun artifact(path: String): Artifact? {
+     fun artifact(path: String): Artifact? {
         // TODO("consctruct Artifact from path")
         throw UnsupportedOperationException("NOT IMPLEMENTED")
     }
 
-    override fun findArtifacts(query: String): Iterable<Artifact> {
+     fun findArtifacts(query: String): Iterable<Artifact> {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
     }
 
-    override fun findArtifacts(var1: String, var2: String): Iterable<Artifact> {
+     fun findArtifacts(var1: String, var2: String): Iterable<Artifact> {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
     }
 
-    override fun getAttribute(path: String, key: String): Any {
+     fun getAttribute(path: String, key: String): Any {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
     }
 
@@ -281,4 +342,8 @@ class DockerArtifactoryService(var workContext: DockerWorkContext, var id: Strin
 //        contextAttributes.forEach(BiConsumer<String, String> { properties.put() })
 //        return properties
 //    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(DockerArtifactoryService::class.java)
+    }
 }

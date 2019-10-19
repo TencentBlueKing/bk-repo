@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.docker.manifest
 
 import com.tencent.bkrepo.docker.DockerWorkContext
-import com.tencent.bkrepo.docker.repomd.Repo
+import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
+//import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.util.DockerSchemaUtils
 import com.tencent.bkrepo.docker.v2.model.DockerDigest
 import com.tencent.bkrepo.docker.v2.model.ManifestMetadata
@@ -9,7 +11,7 @@ import com.tencent.bkrepo.docker.v2.model.ManifestMetadata
 class ManifestDeserializer {
     companion object {
 
-        fun deserialize(repo: Repo<DockerWorkContext>, dockerRepo: String, tag: String, manifestType: ManifestType, manifestBytes: ByteArray, digest: DockerDigest): ManifestMetadata {
+        fun deserialize(repo: DockerArtifactoryService, dockerRepo: String, tag: String, manifestType: ManifestType, manifestBytes: ByteArray, digest: DockerDigest): ManifestMetadata {
             var manifestBytes = manifestBytes
             when (manifestType) {
                 ManifestType.Schema1 -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)

@@ -2,6 +2,8 @@ package com.tencent.bkrepo.docker.v2.helpers
 
 import com.google.common.collect.Sets
 import com.tencent.bkrepo.docker.DockerWorkContext
+import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
 import com.tencent.bkrepo.docker.repomd.Artifact
 import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.repomd.util.PathUtils
@@ -20,7 +22,7 @@ import org.springframework.stereotype.Component
 class DockerManifestSyncer() {
 
     @Throws(IOException::class)
-    fun sync(repo: Repo<DockerWorkContext>, info: ManifestMetadata, dockerRepo: String, tag: String): Boolean {
+    fun sync(repo: DockerArtifactoryService, info: ManifestMetadata, dockerRepo: String, tag: String): Boolean {
         log.info("Starting to sync docker repository blobs")
         val var5 = info.blobsInfo.iterator()
 
@@ -82,7 +84,7 @@ class DockerManifestSyncer() {
         return "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == blobInfo.mediaType
     }
 
-    private fun removeUnreferencedBlobs(repo: Repo<DockerWorkContext>, repoTag: String, info: ManifestMetadata) {
+    private fun removeUnreferencedBlobs(repo: DockerArtifactoryService, repoTag: String, info: ManifestMetadata) {
         log.debug("Starting to remove unreferenced blobs from '{}'", repoTag)
         val manifestBlobs = Sets.newHashSet<String>()
         val var5 = info.blobsInfo.iterator()
@@ -113,12 +115,12 @@ class DockerManifestSyncer() {
         log.debug("Completed unreferenced blobs cleanup from '{}'", repoTag)
     }
 
-    protected fun copyBlobFromFirstReadableDockerRepo(repo: Repo<DockerWorkContext>, blobFilename: String, targetPath: String): Boolean {
+    protected fun copyBlobFromFirstReadableDockerRepo(repo: DockerArtifactoryService, blobFilename: String, targetPath: String): Boolean {
         val blob = DockerUtils.getBlobGlobally(repo, blobFilename, DockerSearchBlobPolicy.SHA_256)
         return this.copyBlob(repo, blobFilename, targetPath, blob)
     }
 
-    protected fun copyBlob(repo: Repo<DockerWorkContext>, blobFilename: String, targetPath: String, blob: Artifact?): Boolean {
+    protected fun copyBlob(repo: DockerArtifactoryService, blobFilename: String, targetPath: String, blob: Artifact?): Boolean {
         if (blob != null) {
             val sourcePath = DockerUtils.getFullPath(blob, repo.getWorkContextC() as DockerWorkContext)
             if (!StringUtils.equals(sourcePath, targetPath)) {
@@ -130,7 +132,7 @@ class DockerManifestSyncer() {
         return false
     }
 
-    private fun moveBlobFromTempDir(repo: Repo<DockerWorkContext>, tempBlobPath: String, finalBlobPath: String) {
+    private fun moveBlobFromTempDir(repo: DockerArtifactoryService, tempBlobPath: String, finalBlobPath: String) {
         log.debug("Moving temp blob from '{}' to '{}'", tempBlobPath, finalBlobPath)
         repo.copy(tempBlobPath, finalBlobPath)
         (repo.getWorkContextC() as DockerWorkContext).setSystem()
