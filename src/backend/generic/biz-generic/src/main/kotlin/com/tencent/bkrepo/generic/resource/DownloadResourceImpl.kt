@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.api.DownloadResource
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.service.DownloadService
+import com.tencent.bkrepo.generic.util.PathUtils
 import javax.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.InputStreamResource
@@ -21,14 +22,14 @@ class DownloadResourceImpl @Autowired constructor(
     private val downloadService: DownloadService
 ) : DownloadResource {
     override fun simpleDownload(userId: String, projectId: String, repoName: String, fullPath: String, response: HttpServletResponse): ResponseEntity<InputStreamResource> {
-        return downloadService.simpleDownload(userId, projectId, repoName, fullPath, response)
+        return downloadService.simpleDownload(userId, projectId, repoName, PathUtils.toFullPath(fullPath), response)
     }
 
     override fun queryBlockInfo(userId: String, projectId: String, repoName: String, fullPath: String): Response<List<BlockInfo>> {
-        return Response.success(downloadService.queryBlockInfo(userId, projectId, repoName, fullPath))
+        return Response.success(downloadService.queryBlockInfo(userId, projectId, repoName, PathUtils.toFullPath(fullPath)))
     }
 
     override fun blockDownload(userId: String, projectId: String, repoName: String, fullPath: String, sequence: Int, response: HttpServletResponse): ResponseEntity<InputStreamResource> {
-        return downloadService.blockDownload(userId, projectId, repoName, fullPath, sequence, response)
+        return downloadService.blockDownload(userId, projectId, repoName, PathUtils.toFullPath(fullPath), sequence, response)
     }
 }

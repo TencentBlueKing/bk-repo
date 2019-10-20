@@ -11,6 +11,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataUpsertRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataUpsertRequest
 import com.tencent.bkrepo.repository.service.MetadataService
+import com.tencent.bkrepo.repository.util.PathUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
@@ -27,7 +28,7 @@ class UserMetadataResourceImpl @Autowired constructor(
 ) : UserMetadataResource {
     override fun query(userId: String, projectId: String, repoName: String, fullPath: String): Response<Map<String, String>> {
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-        return Response.success(metadataService.query(projectId, repoName, fullPath))
+        return Response.success(metadataService.query(projectId, repoName, PathUtils.toFullPath(fullPath)))
     }
 
     override fun upsert(userId: String, projectId: String, repoName: String, fullPath: String, metadataUpsertRequest: UserMetadataUpsertRequest): Response<Void> {
@@ -35,7 +36,7 @@ class UserMetadataResourceImpl @Autowired constructor(
         val request = MetadataUpsertRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = fullPath,
+                fullPath = PathUtils.toFullPath(fullPath),
                 metadata = metadataUpsertRequest.metadata,
                 operator = userId
         )
@@ -48,7 +49,7 @@ class UserMetadataResourceImpl @Autowired constructor(
         val request = MetadataDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = fullPath,
+                fullPath = PathUtils.toFullPath(fullPath),
                 keyList = metadataDeleteRequest.keyList,
                 operator = userId
         )
