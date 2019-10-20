@@ -39,6 +39,7 @@ class OperateService(
     private val permissionService: PermissionService
 ) {
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
+        logger.info("listFile, userId: $userId, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
         return nodeResource.list(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
@@ -79,6 +80,7 @@ class OperateService(
     }
 
     fun mkdir(userId: String, projectId: String, repoName: String, fullPath: String) {
+        logger.info("mkdir, userId: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
 
         val fullUri = "$projectId/$repoName/$fullPath"
