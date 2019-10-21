@@ -43,7 +43,6 @@ class DownloadService @Autowired constructor(
     fun simpleDownload(userId: String, projectId: String, repoName: String, fullPath: String, response: HttpServletResponse): ResponseEntity<InputStreamResource> {
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
-        val formattedFullPath = NodeUtils.formatFullPath(fullPath)
         val fullUri = "$projectId/$repoName/$fullPath"
         // 查询repository
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
@@ -79,7 +78,7 @@ class DownloadService @Autowired constructor(
         logger.info("user[$userId] simply download file [$fullUri] success.")
         return ResponseEntity
                 .ok()
-                .contentType(determineMediaType(formattedFullPath))
+                .contentType(determineMediaType(fullPath))
                 .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(node.nodeInfo.name))
                 .body(InputStreamResource(inputStream))
     }
@@ -104,7 +103,6 @@ class DownloadService @Autowired constructor(
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
         val fullUri = "$projectId/$repoName/$fullPath"
-        val formattedFullPath = NodeUtils.formatFullPath(fullPath)
         // 查询仓库
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$userId] block download file [$fullUri] failed: $repoName not found")
@@ -127,7 +125,7 @@ class DownloadService @Autowired constructor(
                 logger.info("user[$userId] download block [$fullUri/$sequence] success.")
                 return ResponseEntity
                         .ok()
-                        .contentType(determineMediaType(formattedFullPath))
+                        .contentType(determineMediaType(fullPath))
                         .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(node.nodeInfo.name))
                         .body(InputStreamResource(inputStream))
             } ?: run {
