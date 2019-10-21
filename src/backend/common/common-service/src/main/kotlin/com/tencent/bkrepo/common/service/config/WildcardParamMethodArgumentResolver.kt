@@ -20,7 +20,7 @@ class WildcardParamMethodArgumentResolver : HandlerMethodArgumentResolver {
     override fun resolveArgument(parameter: MethodParameter, container: ModelAndViewContainer?, nativeWebRequest: NativeWebRequest, factory: WebDataBinderFactory?): Any? {
         val request = nativeWebRequest.getNativeRequest(HttpServletRequest::class.java)
         return if (request == null) null
-        else AntPathMatcher().extractPathWithinPattern(
+        else AntPathMatcher.DEFAULT_PATH_SEPARATOR + AntPathMatcher().extractPathWithinPattern(
                 request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as String,
                 request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE) as String)
     }
