@@ -51,7 +51,7 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
         val path = locateStrategy.locate(hash)
 
         localFileCache?.run {
-            val cachedFile = this.cache(path, hash, inputStream)
+            val cachedFile = this.cache(hash, inputStream)
             store(path, hash, cachedFile, getClient(credentials))
         } ?: store(path, hash, inputStream, getClient(credentials))
 
@@ -62,7 +62,7 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
         val path = locateStrategy.locate(hash)
 
         delete(path, hash, getClient(credentials))
-        localFileCache?.remove(path, hash)
+        localFileCache?.remove(hash)
 
         logger.debug("File $hash hash been removed.")
     }
@@ -71,9 +71,9 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
         val path = locateStrategy.locate(hash)
 
         return localFileCache?.run {
-            this.get(path, hash)?.inputStream() ?: let {
+            this.get(hash)?.inputStream() ?: let {
                 val inputStream = load(path, hash, getClient(credentials))
-                inputStream?.let { this.cache(path, hash, it) }
+                inputStream?.let { this.cache(hash, it) }
                 inputStream
             }
         } ?: load(path, hash, getClient(credentials))
@@ -83,9 +83,11 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
         val path = locateStrategy.locate(hash)
 
         return localFileCache?.run {
-            this.get(path, hash)?.let { true }
+            this.get(hash)?.let { true }
         } ?: exist(path, hash, getClient(credentials))
     }
+
+    override fun getStorageProperties() = properties
 
     /**
      * 根据credentials创建client

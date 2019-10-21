@@ -1,2 +1,3 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.tencent.bkrepo.common.storage.StorageAutoConfiguration
+com.tencent.bkrepo.common.storage.StorageAutoConfiguration,\
+com.tencent.bkrepo.common.storage.schedule.StorageSchedule

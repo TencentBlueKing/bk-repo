@@ -31,4 +31,9 @@ interface FileStorage {
      * 判断是否存在
      */
     fun exist(hash: String, credentials: ClientCredentials? = null): Boolean
+
+    /**
+     * 获取存储属性
+     */
+    fun getStorageProperties(): StorageProperties
 }
