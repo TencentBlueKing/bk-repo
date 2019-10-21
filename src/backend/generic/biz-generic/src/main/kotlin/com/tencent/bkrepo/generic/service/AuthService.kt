@@ -4,6 +4,8 @@ import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceProjectResource
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.CreateProjectRequest
+import com.tencent.bkrepo.common.api.constant.CommonMessageCode
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.generic.constant.REPO_TYPE
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
@@ -40,6 +42,9 @@ class AuthService @Autowired constructor(
                 val repoName = request.repo!!
                 val repo = repositoryResource.queryDetail(request.project!!, repoName, REPO_TYPE).data
                 if (repo == null) {
+                    if (repoName != "custom" && repoName != "pipeline" && repoName != "report"){
+                        throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
+                    }
                     logger.info("repo($repoName) not exist, create it")
                     repositoryResource.create(
                         RepoCreateRequest(
