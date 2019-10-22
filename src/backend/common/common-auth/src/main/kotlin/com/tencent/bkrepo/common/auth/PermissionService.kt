@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 /**
@@ -19,14 +20,19 @@ import org.springframework.stereotype.Service
 class PermissionService @Autowired constructor(
     private val servicePermissionResource: ServicePermissionResource
 ) {
+    @Value("\${auth.enabled:true}")
+    private val authEnabled: Boolean = true
+
     fun checkPermission(request: CheckPermissionRequest) {
-        val response = servicePermissionResource.checkPermission(request)
-        if (response.isNotOk()) {
-            logger.error("Check permission [$request] error: [${response.code}, ${response.message}]")
-            throw ExternalErrorCodeException(response.code, response.message)
+        if(authEnabled) {
+            val response = servicePermissionResource.checkPermission(request)
+            if (response.isNotOk()) {
+                logger.error("Check permission [$request] error: [${response.code}, ${response.message}]")
+                throw ExternalErrorCodeException(response.code, response.message)
+            }
+            val hasPermission = response.data ?: false
+            takeIf { hasPermission } ?: throw ErrorCodeException(PERMISSION_DENIED)
         }
-        val hasPermission = response.data ?: false
-        takeIf { hasPermission } ?: throw ErrorCodeException(PERMISSION_DENIED)
     }
 
     companion object {
