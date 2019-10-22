@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.storage.core
 
-import com.google.common.io.ByteStreams
 import java.io.File
 import java.io.InputStream
+import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
 
 /**
@@ -13,33 +13,38 @@ import org.slf4j.LoggerFactory
  */
 class LocalFileCache(private val cachePath: String) {
 
-    fun cache(path: String, filename: String, inputStream: InputStream): File {
-        val subDirectory = File(cachePath, path)
-        subDirectory.mkdirs()
-        val file = File(subDirectory, filename)
-        val outputStream = file.outputStream()
-        ByteStreams.copy(inputStream, outputStream)
-        outputStream.close()
-        logger.debug("File $filename has been cached in local.")
-        return file
+    init {
+        val directory = File(cachePath)
+        directory.mkdirs()
     }
 
-    fun get(path: String, filename: String): File? {
-        val subDirectory = File(cachePath, path)
-        val file = File(subDirectory, filename)
+    fun cache(filename: String, inputStream: InputStream): File {
+        val file = File(cachePath, filename)
+        file.outputStream().use {
+            IOUtils.copyLarge(inputStream, it)
+            logger.debug("File $filename has been cached in local.")
+            return file
+        }
+    }
+
+    fun get(filename: String): File? {
+        val file = File(cachePath, filename)
         return if (file.exists() && file.isFile) {
             logger.debug("Cached file $filename is hit.")
             file
         } else null
     }
 
-    fun remove(path: String, filename: String) {
-        val subDirectory = File(cachePath, path)
-        val file = File(subDirectory, filename)
+    fun remove(filename: String) {
+        val file = File(cachePath, filename)
         if (file.exists() && file.isFile) {
             file.delete()
             logger.debug("File $filename has been removed in local cache.")
         }
+    }
+
+    fun touch(filename: String): File {
+        return File(cachePath, filename)
     }
 
     companion object {
