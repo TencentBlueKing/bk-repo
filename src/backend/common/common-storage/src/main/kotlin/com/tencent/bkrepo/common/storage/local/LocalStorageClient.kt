@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.storage.local
 
-import org.apache.commons.io.IOUtils
 import java.io.File
 import java.io.InputStream
+import org.apache.commons.io.IOUtils
 
 /**
  * 本地文件存储客户端
@@ -29,7 +29,7 @@ class LocalStorageClient(private val directory: String) {
     fun delete(path: String, filename: String) {
         val subDirectory = File(directory, path)
         val file = File(subDirectory, filename)
-        if(file.isFile) {
+        if (file.isFile) {
             file.delete()
         }
     }

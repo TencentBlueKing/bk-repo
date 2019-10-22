@@ -39,7 +39,6 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
         if (properties.localCache.enabled) {
             localFileCache = LocalFileCache(properties.localCache.path)
         }
-
     }
 
     @Suppress("UNCHECKED_CAST")

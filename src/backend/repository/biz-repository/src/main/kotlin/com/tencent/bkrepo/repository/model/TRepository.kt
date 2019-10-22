@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.repository.model
 
 import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
+import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
-import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.mapping.Document
 
 /**
@@ -14,7 +14,7 @@ import org.springframework.data.mongodb.core.mapping.Document
  */
 @Document("repository")
 @CompoundIndexes(
-    CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true)
+        CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true)
 )
 data class TRepository(
     var id: String? = null,

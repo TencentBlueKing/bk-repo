@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.common.storage.core
 
-import org.apache.commons.io.IOUtils
-import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
+import org.apache.commons.io.IOUtils
+import org.slf4j.LoggerFactory
 
 /**
  * 本地文件缓存

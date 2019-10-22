@@ -17,17 +17,16 @@ import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.util.NodeUtils
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.web.server.MimeMappings
-import org.springframework.http.HttpHeaders
-import org.springframework.stereotype.Service
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.RandomAccessFile
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.web.server.MimeMappings
+import org.springframework.http.HttpHeaders
+import org.springframework.stereotype.Service
 
 /**
  * 通用文件下载服务类
@@ -37,10 +36,10 @@ import javax.servlet.http.HttpServletResponse
  */
 @Service
 class DownloadService @Autowired constructor(
-        private val permissionService: PermissionService,
-        private val repositoryResource: RepositoryResource,
-        private val nodeResource: NodeResource,
-        private val fileStorage: FileStorage
+    private val permissionService: PermissionService,
+    private val repositoryResource: RepositoryResource,
+    private val nodeResource: NodeResource,
+    private val fileStorage: FileStorage
 
 ) {
     fun simpleDownload(userId: String, projectId: String, repoName: String, fullPath: String, request: HttpServletRequest, response: HttpServletResponse) {
@@ -127,14 +126,14 @@ class DownloadService @Autowired constructor(
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(nodeInfo.name))
         response.setHeader(HttpHeaders.ACCEPT_RANGES, "bytes")
 
-        request.getHeader("Range")?.run{
+        request.getHeader("Range")?.run {
             parseContentRange(this, fileLength)?.run {
                 start?.let { readStart = start }
                 end?.let { readEnd = end + 1 }
 
                 response.status = HttpServletResponse.SC_PARTIAL_CONTENT
                 response.setHeader(HttpHeaders.CONTENT_RANGE, "bytes $start-$end/$fileLength")
-            } ?: run{
+            } ?: run {
                 response.status = HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE
                 logger.warn("Range download failed: range is invalid")
                 return
@@ -152,12 +151,12 @@ class DownloadService @Autowired constructor(
             val buffer = ByteArray(bufferSize)
 
             var current = readStart
-            while((current + bufferSize) <= readEnd) {
+            while ((current + bufferSize) <= readEnd) {
                 val readLength = it.read(buffer)
                 current += readLength
                 out.write(buffer, 0, readLength)
             }
-            if(current < readEnd) {
+            if (current < readEnd) {
                 val readLength = it.read(buffer, 0, (readEnd - current).toInt())
                 out.write(buffer, 0, readLength)
             }
@@ -186,15 +185,15 @@ class DownloadService @Autowired constructor(
         return try {
             rangeHeader?.takeIf { it.isNotBlank() && it.contains("-") && it.contains("bytes=") }?.run {
                 val items = rangeHeader.replace("bytes=", "").trim().split("-")
-                if(items.size < 2) return null
+                if (items.size < 2) return null
 
-                val left = if(items[0].isBlank()) null else items[0].toLong()
-                val right = if(items[1].isBlank()) null else items[1].toLong()
+                val left = if (items[0].isBlank()) null else items[0].toLong()
+                val right = if (items[1].isBlank()) null else items[1].toLong()
                 // check parameter
-                if(left == null && right == null) return null
-                if(left?.compareTo(right ?: total-1) ?: -1 >= 0) return null
-                if(right?.compareTo(total-1) ?: -1 >= 0) return null
-                if(right?.compareTo(0) ?: 1 <= 0) return null
+                if (left == null && right == null) return null
+                if (left?.compareTo(right ?: total - 1) ?: -1 >= 0) return null
+                if (right?.compareTo(total - 1) ?: -1 >= 0) return null
+                if (right?.compareTo(0) ?: 1 <= 0) return null
 
                 return when {
                     left == null -> Range(total - right!!, total - 1)
@@ -205,7 +204,6 @@ class DownloadService @Autowired constructor(
         } catch (exception: Exception) {
             null
         }
-
     }
 
     companion object {

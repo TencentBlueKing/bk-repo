@@ -24,7 +24,7 @@ class PermissionService @Autowired constructor(
     private val authEnabled: Boolean = true
 
     fun checkPermission(request: CheckPermissionRequest) {
-        if(authEnabled) {
+        if (authEnabled) {
             val response = servicePermissionResource.checkPermission(request)
             if (response.isNotOk()) {
                 logger.error("Check permission [$request] error: [${response.code}, ${response.message}]")

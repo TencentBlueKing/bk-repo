@@ -13,7 +13,6 @@ import com.tencent.cos.model.ObjectMetadata
 import com.tencent.cos.model.PutObjectRequest
 import com.tencent.cos.region.Region
 import com.tencent.cos.transfer.TransferManager
-import org.apache.commons.io.IOUtils
 import java.io.File
 import java.io.InputStream
 import java.util.concurrent.LinkedBlockingQueue
@@ -72,7 +71,7 @@ class InnerCosFileStorage(
     }
 
     override fun load(path: String, filename: String, client: InnerCosClient): File? {
-        return if(exist(path, filename, client)) {
+        return if (exist(path, filename, client)) {
             val file = createFile(filename)
             val getObjectRequest = GetObjectRequest(client.bucketName, filename)
             val transferManager = TransferManager(client.cosClient, executor, false)
