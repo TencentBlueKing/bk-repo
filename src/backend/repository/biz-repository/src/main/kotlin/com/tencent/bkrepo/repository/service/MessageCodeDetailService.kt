@@ -69,7 +69,7 @@ class MessageCodeDetailService @Autowired constructor(
                     value = objectMapper.writeValueAsString(messageCodeDetail),
                     expired = false
             )
-        } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_EXIST)
+        } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_EXIST, messageCodeCreateRequest.messageCode)
     }
 
     companion object {
