@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.storage.local
 
+import com.google.common.io.ByteStreams
 import java.io.File
 import java.io.InputStream
-import org.apache.commons.io.IOUtils
 
 /**
  * 本地文件存储客户端
@@ -22,7 +22,7 @@ class LocalStorageClient(private val directory: String) {
         val subDirectory = File(directory, path)
         subDirectory.mkdirs()
         File(subDirectory, filename).outputStream().use {
-            IOUtils.copyLarge(inputStream, it)
+            ByteStreams.copy(inputStream, it)
         }
     }
 

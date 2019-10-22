@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.storage.core
 
+import com.google.common.io.ByteStreams
 import java.io.File
 import java.io.InputStream
-import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
 
 /**
@@ -21,7 +21,7 @@ class LocalFileCache(private val cachePath: String) {
     fun cache(filename: String, inputStream: InputStream): File {
         val file = File(cachePath, filename)
         file.outputStream().use {
-            IOUtils.copyLarge(inputStream, it)
+            ByteStreams.copy(inputStream, it)
             logger.debug("File $filename has been cached in local.")
             return file
         }
