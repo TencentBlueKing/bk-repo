@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.storage.core
 
+import java.io.File
 import java.io.InputStream
 
 /**
@@ -13,14 +14,14 @@ import java.io.InputStream
 interface FileStorage {
 
     /**
-     * 存储文件。文件存储完成后inputStream不会关闭，由调用方关闭
+     * 存储文件。
      */
     fun store(hash: String, inputStream: InputStream, credentials: ClientCredentials? = null)
 
     /**
      * 加载文件。记住InputStream用完后关闭
      */
-    fun load(hash: String, credentials: ClientCredentials? = null): InputStream?
+    fun load(hash: String, credentials: ClientCredentials? = null): File?
 
     /**
      * 删除文件

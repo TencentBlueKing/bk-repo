@@ -21,8 +21,8 @@ class StorageSchedule @Autowired constructor(
         private val fileStorage: FileStorage
 ){
 
-    // 10分钟执行一次
-    @Scheduled(fixedRate = 1000 * 60 * 10)
+    // 1小时执行一次
+    @Scheduled(fixedRate = 1000 * 60 * 60)
     fun cleanLocalCacheFiles() {
         val properties = fileStorage.getStorageProperties()
         if(properties.localCache.enabled) {

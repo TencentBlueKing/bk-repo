@@ -15,16 +15,19 @@ import com.tencent.bkrepo.generic.constant.REPO_TYPE
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.util.NodeUtils
-import javax.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.web.server.MimeMappings
-import org.springframework.core.io.InputStreamResource
 import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.io.BufferedOutputStream
+import java.io.File
+import java.io.RandomAccessFile
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
+
 
 /**
  * 通用文件下载服务类
@@ -40,7 +43,7 @@ class DownloadService @Autowired constructor(
         private val fileStorage: FileStorage
 
 ) {
-    fun simpleDownload(userId: String, projectId: String, repoName: String, fullPath: String, response: HttpServletResponse): ResponseEntity<InputStreamResource> {
+    fun simpleDownload(userId: String, projectId: String, repoName: String, fullPath: String, request: HttpServletRequest, response: HttpServletResponse) {
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
         val fullUri = "$projectId/$repoName/$fullPath"
@@ -70,17 +73,97 @@ class DownloadService @Autowired constructor(
 
         // fileStorage
         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-        val inputStream = fileStorage.load(node.nodeInfo.sha256!!, storageCredentials) ?: run {
+        val file = fileStorage.load(node.nodeInfo.sha256!!, storageCredentials) ?: run {
             logger.warn("user[$userId] simply download file [$fullUri] failed: file data not found")
             throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
         }
 
-        logger.info("user[$userId] simply download file [$fullUri] success.")
-        return ResponseEntity
-                .ok()
-                .contentType(determineMediaType(fullPath))
-                .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(node.nodeInfo.name))
-                .body(InputStreamResource(inputStream))
+        handleDownload(node.nodeInfo, file, request, response)
+    }
+
+    fun blockDownload(userId: String, projectId: String, repoName: String, fullPath: String, sequence: Int, request: HttpServletRequest, response: HttpServletResponse) {
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+
+        val fullUri = "$projectId/$repoName/$fullPath"
+        // 查询仓库
+        val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
+            logger.warn("user[$userId] block download file [$fullUri] failed: $repoName not found")
+            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
+        }
+        // 查询节点
+        val node = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
+            logger.warn("user[$userId] block download file [$fullUri] failed: $fullPath not found")
+            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
+        }
+        if (node.isBlockFile()) {
+            node.blockList!!.find { it.sequence == sequence }?.run {
+                // fileStorage
+                val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
+                val file = fileStorage.load(this.sha256, storageCredentials) ?: run {
+                    logger.warn("user[$userId] download block [$fullUri/$sequence] failed: file data not found")
+                    throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
+                }
+
+                handleDownload(node.nodeInfo, file, request, response)
+            } ?: run {
+                logger.warn("user[$userId] download block [$fullUri/$sequence] failed: file data not found")
+                throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
+            }
+        } else {
+            logger.warn("user[$userId] download block [$fullUri/$sequence] failed: $fullUri is a simple file")
+            throw ErrorCodeException(GenericMessageCode.DOWNLOAD_SIMPLE_FORBIDDEN)
+        }
+    }
+
+    private fun determineMediaType(name: String): String {
+        return MimeMappings.DEFAULT.get(NodeUtils.getExtension(name)) ?: DEFAULT_MIME_TYPE
+    }
+
+    private fun handleDownload(nodeInfo: NodeInfo, file: File, request: HttpServletRequest, response: HttpServletResponse) {
+        val fileLength = file.length()
+        var readStart = 0L
+        var readEnd = fileLength
+
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(nodeInfo.name))
+        response.setHeader(HttpHeaders.ACCEPT_RANGES, "bytes")
+
+        request.getHeader("Range")?.run{
+            parseContentRange(this, fileLength)?.run {
+                start?.let { readStart = start }
+                end?.let { readEnd = end + 1 }
+
+                response.status = HttpServletResponse.SC_PARTIAL_CONTENT
+                response.setHeader(HttpHeaders.CONTENT_RANGE, "bytes $start-$end/$fileLength")
+            } ?: run{
+                response.status = HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE
+                logger.warn("Range download failed: range is invalid")
+                return
+            }
+        }
+
+        response.setHeader(HttpHeaders.CONTENT_LENGTH, (readEnd - readStart).toString())
+        response.contentType = determineMediaType(nodeInfo.name)
+
+        RandomAccessFile(file, "r").use {
+            it.seek(readStart)
+            val out = BufferedOutputStream(response.outputStream)
+
+            val bufferSize = 1024
+            val buffer = ByteArray(bufferSize)
+
+            var current = readStart
+            while((current + bufferSize) <= readEnd) {
+                val readLength = it.read(buffer)
+                current += readLength
+                out.write(buffer, 0, readLength)
+            }
+            if(current < readEnd) {
+                val readLength = it.read(buffer, 0, (readEnd - current).toInt())
+                out.write(buffer, 0, readLength)
+            }
+            out.flush()
+            response.flushBuffer()
+        }
     }
 
     fun queryBlockInfo(userId: String, projectId: String, repoName: String, fullPath: String): List<BlockInfo> {
@@ -99,51 +182,35 @@ class DownloadService @Autowired constructor(
         } ?: return emptyList()
     }
 
-    fun blockDownload(userId: String, projectId: String, repoName: String, fullPath: String, sequence: Int, response: HttpServletResponse): ResponseEntity<InputStreamResource> {
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+    private fun parseContentRange(rangeHeader: String?, total: Long): Range? {
+        return try {
+            rangeHeader?.takeIf { it.isNotBlank() && it.contains("-") && it.contains("bytes=") }?.run {
+                val items = rangeHeader.replace("bytes=", "").trim().split("-")
+                if(items.size < 2) return null
 
-        val fullUri = "$projectId/$repoName/$fullPath"
-        // 查询仓库
-        val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId] block download file [$fullUri] failed: $repoName not found")
-            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
-        }
-        // 查询节点
-        val node = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
-            logger.warn("user[$userId] block download file [$fullUri] failed: $fullPath not found")
-            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
-        }
-        if (node.isBlockFile()) {
-            node.blockList!!.find { it.sequence == sequence }?.run {
-                // fileStorage
-                val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-                val inputStream = fileStorage.load(this.sha256, storageCredentials) ?: run {
-                    logger.warn("user[$userId] download block [$fullUri/$sequence] failed: file data not found")
-                    throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
+                val left = if(items[0].isBlank()) null else items[0].toLong()
+                val right = if(items[1].isBlank()) null else items[1].toLong()
+                // check parameter
+                if(left == null && right == null) return null
+                if(left?.compareTo(right ?: total-1) ?: -1 >= 0) return null
+                if(right?.compareTo(total-1) ?: -1 >= 0) return null
+                if(right?.compareTo(0) ?: 1 <= 0) return null
+
+                return when {
+                    left == null -> Range(total - right!!, total - 1)
+                    right == null -> Range(left, total - 1)
+                    else -> Range(left, right)
                 }
-
-                logger.info("user[$userId] download block [$fullUri/$sequence] success.")
-                return ResponseEntity
-                        .ok()
-                        .contentType(determineMediaType(fullPath))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(node.nodeInfo.name))
-                        .body(InputStreamResource(inputStream))
-            } ?: run {
-                logger.warn("user[$userId] download block [$fullUri/$sequence] failed: file data not found")
-                throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
             }
-        } else {
-            logger.warn("user[$userId] download block [$fullUri/$sequence] failed: $fullUri is a simple file")
-            throw ErrorCodeException(GenericMessageCode.DOWNLOAD_SIMPLE_FORBIDDEN)
+        } catch (exception: Exception) {
+            null
         }
-    }
 
-    private fun determineMediaType(fullPath: String): MediaType {
-        val mimeType = MimeMappings.DEFAULT.get(NodeUtils.getExtension(fullPath)) ?: DEFAULT_MIME_TYPE
-        return MediaType.parseMediaType(mimeType)
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(DownloadService::class.java)
     }
 }
+
+data class Range(val start: Long?, val end: Long?)

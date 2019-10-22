@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.common.storage.core
 
-import com.google.common.io.ByteStreams
+import org.apache.commons.io.IOUtils
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
-import org.slf4j.LoggerFactory
 
 /**
  * 本地文件缓存
@@ -20,11 +20,11 @@ class LocalFileCache(private val cachePath: String) {
 
     fun cache(filename: String, inputStream: InputStream): File {
         val file = File(cachePath, filename)
-        val outputStream = file.outputStream()
-        ByteStreams.copy(inputStream, outputStream)
-        outputStream.close()
-        logger.debug("File $filename has been cached in local.")
-        return file
+        file.outputStream().use {
+            IOUtils.copyLarge(inputStream, it)
+            logger.debug("File $filename has been cached in local.")
+            return file
+        }
     }
 
     fun get(filename: String): File? {
@@ -41,6 +41,10 @@ class LocalFileCache(private val cachePath: String) {
             file.delete()
             logger.debug("File $filename has been removed in local cache.")
         }
+    }
+
+    fun touch(filename: String): File {
+        return File(cachePath, filename)
     }
 
     companion object {

@@ -24,7 +24,7 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
 
     private var clientCache: LoadingCache<Credentials, Client>? = null
 
-    private var localFileCache: LocalFileCache? = null
+    protected var localFileCache: LocalFileCache? = null
 
     init {
         if (properties.clientCache.enabled) {
@@ -39,6 +39,7 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
         if (properties.localCache.enabled) {
             localFileCache = LocalFileCache(properties.localCache.path)
         }
+
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -50,12 +51,14 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
     override fun store(hash: String, inputStream: InputStream, credentials: ClientCredentials?) {
         val path = locateStrategy.locate(hash)
 
-        localFileCache?.run {
-            val cachedFile = this.cache(hash, inputStream)
-            store(path, hash, cachedFile, getClient(credentials))
-        } ?: store(path, hash, inputStream, getClient(credentials))
+        inputStream.use {
+            localFileCache?.run {
+                val cachedFile = this.cache(hash, it)
+                store(path, hash, cachedFile, getClient(credentials))
+            } ?: store(path, hash, it, getClient(credentials))
 
-        logger.debug("File $hash has been stored.")
+            logger.debug("File $hash has been stored.")
+        }
     }
 
     override fun delete(hash: String, credentials: ClientCredentials?) {
@@ -67,16 +70,9 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
         logger.debug("File $hash hash been removed.")
     }
 
-    override fun load(hash: String, credentials: ClientCredentials?): InputStream? {
+    override fun load(hash: String, credentials: ClientCredentials?): File? {
         val path = locateStrategy.locate(hash)
-
-        return localFileCache?.run {
-            this.get(hash)?.inputStream() ?: let {
-                val inputStream = load(path, hash, getClient(credentials))
-                inputStream?.let { this.cache(hash, it) }
-                inputStream
-            }
-        } ?: load(path, hash, getClient(credentials))
+        return localFileCache?.run { this.get(hash) } ?: load(path, hash, getClient(credentials))
     }
 
     override fun exist(hash: String, credentials: ClientCredentials?): Boolean {
@@ -105,7 +101,7 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
     protected abstract fun store(path: String, filename: String, inputStream: InputStream, client: Client)
     protected abstract fun store(path: String, filename: String, file: File, client: Client)
     protected abstract fun delete(path: String, filename: String, client: Client)
-    protected abstract fun load(path: String, filename: String, client: Client): InputStream?
+    protected abstract fun load(path: String, filename: String, client: Client): File?
     protected abstract fun exist(path: String, filename: String, client: Client): Boolean
 
     companion object {
