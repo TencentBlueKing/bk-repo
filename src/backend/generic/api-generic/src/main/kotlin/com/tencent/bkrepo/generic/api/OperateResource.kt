@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam
  * @date: 2019-09-29
  */
 @Api("文件操作接口")
-@RequestMapping
+@RequestMapping("/")
 interface OperateResource {
 
     @ApiOperation("列出目录下的文件")
