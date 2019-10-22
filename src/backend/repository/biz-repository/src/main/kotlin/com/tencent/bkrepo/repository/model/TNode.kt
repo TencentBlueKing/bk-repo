@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.repository.model
 
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.mapping.Document
 
@@ -10,6 +12,10 @@ import org.springframework.data.mongodb.core.mapping.Document
  * @date: 2019-09-10
  */
 @Document("node")
+@CompoundIndexes(
+     CompoundIndex(name = "projectId_repoName_fullPath_idx", def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'deleted': 1}", unique = true),
+     CompoundIndex(name = "projectId_repoName_path_idx", def = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}")
+)
 data class TNode(
     var id: String? = null,
     var createdBy: String,
