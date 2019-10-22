@@ -62,10 +62,7 @@ class InnerCosFileStorage(
         val transferManager = TransferManager(client.cosClient, executor, false)
         val objectMetadata = ObjectMetadata().apply { contentLength = fileSize }
         val putObjectRequest = PutObjectRequest(client.bucketName, filename, inputStream, objectMetadata)
-        val upload = transferManager.upload(putObjectRequest)
-        // 等待传输结束
-        upload.waitForCompletion()
-        transferManager.shutdownNow()
+        transferManager.upload(putObjectRequest)
     }
 
     override fun delete(path: String, filename: String, client: InnerCosClient) {
@@ -73,10 +70,14 @@ class InnerCosFileStorage(
         client.cosClient.deleteObject(deleteObjectRequest)
     }
 
-    override fun load(path: String, filename: String, client: InnerCosClient): InputStream? {
+    override fun load(path: String, filename: String, client: InnerCosClient): File? {
         return if (exist(path, filename, client)) {
+            val file = createFile(filename)
             val getObjectRequest = GetObjectRequest(client.bucketName, filename)
-            client.cosClient.getObject(getObjectRequest).objectContent
+            val transferManager = TransferManager(client.cosClient, executor, false)
+            val download = transferManager.download(getObjectRequest, file)
+            download.waitForCompletion()
+            return file
         } else null
     }
 
@@ -88,5 +89,9 @@ class InnerCosFileStorage(
             exists = cosServiceException.statusCode != HttpStatus.SC_NOT_FOUND
         }
         return exists
+    }
+
+    private fun createFile(filename: String): File? {
+        return localFileCache!!.touch(filename)
     }
 }
