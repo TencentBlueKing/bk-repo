@@ -42,14 +42,14 @@ class MessageCodeDetailService @Autowired constructor(
     }
 
     /**
-     * 获取code信息详细信息
+     * 获取message code信息
      */
     fun getMessageCodeDetail(messageCode: String): MessageCodeDetail? {
         return toMessageCodeDetail(messageCodeDetailRepository.findByMessageCode(messageCode))
     }
 
     /**
-     * 添加code信息信息
+     * 添加message code信息
      */
     fun create(messageCodeCreateRequest: MessageCodeCreateRequest) {
         logger.info("create message code detail: $messageCodeCreateRequest")
