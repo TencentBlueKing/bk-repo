@@ -9,11 +9,6 @@ include ":common:common-mongo"
 include ":common:common-service"
 include ":common:common-storage"
 
-include ":demo"
-include ":demo:api-demo"
-include ":demo:biz-demo"
-include ":demo:boot-demo"
-
 include ":docker"
 include ":docker:api-registry"
 include ":docker:biz-registry"
