@@ -25,5 +25,5 @@ object UploadFileStoreUtils {
 
     fun deleteFile(fullPath: String) {
         File(fullPath).delete()
-    }`
+    }
 }
