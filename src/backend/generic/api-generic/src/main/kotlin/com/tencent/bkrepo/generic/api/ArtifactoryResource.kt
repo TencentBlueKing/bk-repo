@@ -38,7 +38,7 @@ interface ArtifactoryResource {
     ): Response<Void>
 
     @ApiOperation("下载文件")
-    @PutMapping("/{projectId}/{repoName}/**")
+    @GetMapping("/{projectId}/{repoName}/**")
     fun download(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
@@ -53,7 +53,7 @@ interface ArtifactoryResource {
         @WildcardParam
         fullPath: String,
         response: HttpServletResponse
-    ): ResponseEntity<InputStreamResource>
+    )
 
     @ApiOperation("listFile")
     @GetMapping("/api/storage/{projectId}/{repoName}/**")
@@ -71,5 +71,5 @@ interface ArtifactoryResource {
         @WildcardParam
         fullPath: String,
         response: HttpServletResponse
-    ): ResponseEntity<InputStreamResource>
+    )
 }
