@@ -55,6 +55,7 @@ class ArtifactoryService @Autowired constructor(
         var cacheFileFullPath: String? = null
         try{
             val cacheFileAndSize = UploadFileStoreUtils.storeFile(request.inputStream)
+            logger.info("cacheFileAndSize")
             cacheFileFullPath = cacheFileAndSize.first
             val cacheFileSize = cacheFileAndSize.second
             val calculatedSha256 = FileDigestUtils.fileSha256(listOf(File(cacheFileFullPath).inputStream()))
@@ -94,8 +95,11 @@ class ArtifactoryService @Autowired constructor(
                 logger.error("upsert metadata failed")
                 throw ExternalErrorCodeException(result.code, result.message)
             }
+        } catch (e: Exception) {
+            logger.error("upload file error: ", e)
+            throw throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR, "", "upload file error")
         } finally {
-            if(cacheFileFullPath.isNullOrBlank()) File(cacheFileFullPath).delete()
+            if(!cacheFileFullPath.isNullOrBlank()) File(cacheFileFullPath).delete()
         }
     }
 
@@ -130,7 +134,7 @@ class ArtifactoryService @Autowired constructor(
         logger.info("listFile, userId: $userId, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
         val dirDetail = nodeResource.queryDetail(projectId, repoName, path).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, path)
-        val fileList = nodeResource.list(projectId, repoName, path, includeFolder, deep).data?.map { OperateService.toFileInfo(it) } ?: emptyList()
+        val fileList = nodeResource.list(projectId, repoName, path, includeFolder, deep).data?: emptyList()
         return JfrogFilesData(
             uri = dirDetail.nodeInfo.fullPath,
             created = dirDetail.nodeInfo.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
@@ -138,7 +142,7 @@ class ArtifactoryService @Autowired constructor(
                 JfrogFile(
                     uri = it.fullPath,
                     size = it.size,
-                    lastModified = it.lastModifiedDate,
+                    lastModified = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     folder = it.folder,
                     sha1 = ""
                 )
