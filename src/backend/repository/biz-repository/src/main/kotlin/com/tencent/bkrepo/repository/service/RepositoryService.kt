@@ -49,16 +49,19 @@ class RepositoryService @Autowired constructor(
     }
 
     fun queryDetail(projectId: String, name: String, type: String? = null): Repository? {
+        logger.info("queryDetail, projectId: $projectId, name: $name, type: $type")
         return convert(queryModel(projectId, name, type))
     }
 
     fun list(projectId: String): List<Repository> {
+        logger.info("list, projectId: $projectId")
         val query = createListQuery(projectId)
 
         return mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
     }
 
     fun page(projectId: String, page: Int, size: Int): Page<Repository> {
+        logger.info("page, projectId: $projectId, page: $page, size: $size")
         val query = createListQuery(projectId).with(PageRequest.of(page, size))
         val data = mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
         val count = mongoTemplate.count(query, TRepository::class.java)
@@ -67,6 +70,7 @@ class RepositoryService @Autowired constructor(
     }
 
     fun exist(projectId: String, name: String, type: String? = null): Boolean {
+        logger.info("exist, projectId: $projectId, name: $name, type: $type")
         if (projectId.isBlank() || name.isBlank()) return false
         val criteria = Criteria.where("projectId").`is`(projectId).and("name").`is`(name)
 
@@ -79,6 +83,7 @@ class RepositoryService @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     fun create(repoCreateRequest: RepoCreateRequest): IdValue {
+        logger.info("create, repoCreateRequest: $repoCreateRequest")
         repoCreateRequest.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
 
         val tRepository = repoCreateRequest.let { TRepository(
@@ -99,12 +104,13 @@ class RepositoryService @Autowired constructor(
         }
         val idValue = IdValue(repoRepository.insert(tRepository).id!!)
 
-        logger.info("Create repository [$repoCreateRequest] success.")
+        logger.info("Create repository [$repoCreateRequest] success, idValue: $idValue")
         return idValue
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     fun update(repoUpdateRequest: RepoUpdateRequest) {
+        logger.info("update, repoUpdateRequest: $repoUpdateRequest")
         val projectId = repoUpdateRequest.projectId
         val name = repoUpdateRequest.name
         val repository = queryModel(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
@@ -126,6 +132,7 @@ class RepositoryService @Autowired constructor(
      * 用于测试的函数，不会对外提供
      */
     fun delete(projectId: String, name: String) {
+        logger.info("delete, projectId: $projectId, name: $name")
         val repository = queryModel(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
 
         repoRepository.deleteById(repository.id!!)

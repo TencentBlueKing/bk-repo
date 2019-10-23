@@ -4,6 +4,7 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataUpsertRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -25,11 +26,13 @@ class MetadataService @Autowired constructor(
     private val mongoTemplate: MongoTemplate
 ) {
     fun query(projectId: String, repoName: String, fullPath: String): Map<String, String> {
+        logger.info("query, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         nodeService.checkRepository(projectId, repoName)
         return mongoTemplate.findOne(createQuery(projectId, repoName, fullPath), TNode::class.java)?.metadata ?: emptyMap()
     }
 
     fun upsert(metadataUpsertRequest: MetadataUpsertRequest) {
+        logger.info("upsert, metadataUpsertRequest: $metadataUpsertRequest")
         val projectId = metadataUpsertRequest.projectId
         val repoName = metadataUpsertRequest.repoName
         nodeService.checkRepository(projectId, repoName)
@@ -41,6 +44,7 @@ class MetadataService @Autowired constructor(
     }
 
     fun delete(metadataDeleteRequest: MetadataDeleteRequest) {
+        logger.info("delete, metadataDeleteRequest: $metadataDeleteRequest")
         val projectId = metadataDeleteRequest.projectId
         val repoName = metadataDeleteRequest.repoName
         nodeService.checkRepository(projectId, repoName)
@@ -60,5 +64,9 @@ class MetadataService @Autowired constructor(
                         .and("fullPath").`is`(formattedPath)
                         .and("deleted").`is`(null)
         )
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(MetadataService::class.java)
     }
 }

@@ -64,6 +64,7 @@ class NodeService @Autowired constructor(
      * 查询节点详情
      */
     fun queryDetail(projectId: String, repoName: String, fullPath: String, repoType: String? = null): NodeDetail? {
+        logger.info("queryDetail, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, repoType: $repoType")
         checkRepository(projectId, repoName, repoType)
         val formattedFullPath = formatFullPath(fullPath)
 
@@ -74,6 +75,7 @@ class NodeService @Autowired constructor(
      * 计算文件或者文件夹大小
      */
     fun getSize(projectId: String, repoName: String, fullPath: String): NodeSizeInfo {
+        logger.info("getSize, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         checkRepository(projectId, repoName)
 
         val formattedFullPath = formatFullPath(fullPath)
@@ -102,9 +104,9 @@ class NodeService @Autowired constructor(
      * 列表查询节点
      */
     fun list(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<NodeInfo> {
+        logger.info("list, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
         checkRepository(projectId, repoName)
         val query = nodeListQuery(projectId, repoName, path, includeFolder, deep)
-
         return mongoTemplate.find(query, TNode::class.java).map { convert(it)!! }
     }
 
@@ -112,6 +114,7 @@ class NodeService @Autowired constructor(
      * 分页查询节点
      */
     fun page(projectId: String, repoName: String, path: String, page: Int, size: Int, includeFolder: Boolean, deep: Boolean): Page<NodeInfo> {
+        logger.info("page, projectId: $projectId, repoName: $repoName, path: $path, page: $page, size: $size, includeFolder: $includeFolder, deep: $deep")
         page.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "page")
         size.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "size")
         checkRepository(projectId, repoName)
@@ -128,6 +131,7 @@ class NodeService @Autowired constructor(
      * 搜索节点
      */
     fun search(searchRequest: NodeSearchRequest): Page<NodeInfo> {
+        logger.info("search, searchRequest: $searchRequest")
         searchRequest.page.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "page")
         searchRequest.size.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "size")
         searchRequest.repoNameList.forEach { checkRepository(searchRequest.projectId, it) }
@@ -144,6 +148,7 @@ class NodeService @Autowired constructor(
      * 判断节点是否存在
      */
     fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
+        logger.info("exist, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         val formattedPath = formatFullPath(fullPath)
         if (isRootPath(fullPath)) return true
         val query = nodeQuery(projectId, repoName, formattedPath)
@@ -156,6 +161,7 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun create(createRequest: NodeCreateRequest): IdValue {
+        logger.info("create, createRequest: $createRequest")
         val projectId = createRequest.projectId
         val repoName = createRequest.repoName
         val fullPath = parseFullPath(createRequest.fullPath)
@@ -207,6 +213,7 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun rename(renameRequest: NodeRenameRequest) {
+        logger.info("rename, renameRequest: $renameRequest")
         val projectId = renameRequest.projectId
         val repoName = renameRequest.repoName
         val fullPath = formatFullPath(renameRequest.fullPath)
@@ -231,6 +238,7 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun move(moveRequest: NodeMoveRequest) {
+        logger.info("move, moveRequest: $moveRequest")
         val srcProjectId = moveRequest.srcProjectId
         val srcRepoName = moveRequest.srcRepoName
         val srcFullPath = formatFullPath(moveRequest.srcFullPath)
@@ -271,6 +279,7 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun copy(copyRequest: NodeCopyRequest) {
+        logger.info("copy, copyRequest: $copyRequest")
         val srcProjectId = copyRequest.srcProjectId
         val srcRepoName = copyRequest.srcRepoName
         val srcFullPath = formatFullPath(copyRequest.srcFullPath)
@@ -305,6 +314,7 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun delete(deleteRequest: NodeDeleteRequest) {
+        logger.info("delete, deleteRequest: $deleteRequest")
         with(deleteRequest) {
             checkRepository(this.projectId, this.repoName)
             deleteByPath(this.projectId, this.repoName, this.fullPath, this.operator)
@@ -500,6 +510,7 @@ class NodeService @Autowired constructor(
      * 检查仓库是否存在，不存在则抛异常
      */
     fun checkRepository(projectId: String, repoName: String, repoType: String? = null) {
+        logger.info("checkRepository, projectId: $projectId, repoName: $repoName, repoType: $repoType")
         if (!repositoryService.exist(projectId, repoName, repoType)) {
             throw ErrorCodeException(RepositoryMessageCode.REPOSITORY_NOT_FOUND, repoName)
         }

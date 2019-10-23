@@ -39,21 +39,21 @@ import javax.servlet.http.HttpServletResponse
  */
 @Service
 class ArtifactoryService @Autowired constructor(
-        private val permissionService: PermissionService,
-        private val repositoryResource: RepositoryResource,
-        private val nodeResource: NodeResource,
-        private val metadataResource: MetadataResource,
-        private val fileStorage: FileStorage
+    private val permissionService: PermissionService,
+    private val repositoryResource: RepositoryResource,
+    private val nodeResource: NodeResource,
+    private val metadataResource: MetadataResource,
+    private val fileStorage: FileStorage
 ) {
     @Transactional(rollbackFor = [Throwable::class])
     fun upload(userId: String, projectId: String, repoName: String, fullPath: String, metadata: Map<String, String>, request: HttpServletRequest) {
-        logger.info("upload, user: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
+        logger.info("upload, user: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, metadata: $metadata, ")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
 
         var cacheFileFullPath: String? = null
-        try{
+        try {
             val cacheFileAndSize = UploadFileStoreUtils.storeFile(request.inputStream)
             logger.info("cacheFileAndSize")
             cacheFileFullPath = cacheFileAndSize.first
@@ -61,17 +61,18 @@ class ArtifactoryService @Autowired constructor(
             val calculatedSha256 = FileDigestUtils.fileSha256(listOf(File(cacheFileFullPath).inputStream()))
 
             // 保存节点
-            val result = nodeResource.create(NodeCreateRequest(
-                projectId = projectId,
-                repoName = repoName,
-                folder = false,
-                fullPath = fullPath,
-                expires = 0,
-                overwrite = true,
-                size = cacheFileSize,
-                sha256 = calculatedSha256,
-                operator = userId
-            ))
+            val result = nodeResource.create(
+                NodeCreateRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    folder = false,
+                    fullPath = fullPath,
+                    expires = 0,
+                    overwrite = true,
+                    size = cacheFileSize,
+                    sha256 = calculatedSha256,
+                    operator = userId
+                ))
 
             if (result.isOk()) {
                 val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
@@ -91,7 +92,7 @@ class ArtifactoryService @Autowired constructor(
                     operator = userId
                 )
             )
-            if(metadataResult.isNotOk()){
+            if (metadataResult.isNotOk()) {
                 logger.error("upsert metadata failed")
                 throw ExternalErrorCodeException(result.code, result.message)
             }
@@ -99,7 +100,7 @@ class ArtifactoryService @Autowired constructor(
             logger.error("upload file error: ", e)
             throw throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR, "", "upload file error")
         } finally {
-            if(!cacheFileFullPath.isNullOrBlank()) File(cacheFileFullPath).delete()
+            if (!cacheFileFullPath.isNullOrBlank()) File(cacheFileFullPath).delete()
         }
     }
 
@@ -133,8 +134,9 @@ class ArtifactoryService @Autowired constructor(
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): JfrogFilesData {
         logger.info("listFile, userId: $userId, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-        val dirDetail = nodeResource.queryDetail(projectId, repoName, path).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, path)
-        val fileList = nodeResource.list(projectId, repoName, path, includeFolder, deep).data?: emptyList()
+        val dirDetail = nodeResource.queryDetail(projectId, repoName, path).data
+            ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, path)
+        val fileList = nodeResource.list(projectId, repoName, path, includeFolder, deep).data ?: emptyList()
         return JfrogFilesData(
             uri = dirDetail.nodeInfo.fullPath,
             created = dirDetail.nodeInfo.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),

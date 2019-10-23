@@ -1,9 +1,8 @@
 package com.tencent.bkrepo.generic.util
 
-import com.google.common.io.ByteStreams
 import org.apache.commons.io.IOUtils
-import org.slf4j.LoggerFactory
-import java.io.*
+import java.io.File
+import java.io.InputStream
 import java.util.*
 
 object UploadFileStoreUtils {
@@ -26,5 +25,5 @@ object UploadFileStoreUtils {
 
     fun deleteFile(fullPath: String) {
         File(fullPath).delete()
-    }
+    }`
 }
