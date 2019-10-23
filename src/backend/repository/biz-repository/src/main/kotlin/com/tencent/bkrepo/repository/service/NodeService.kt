@@ -476,7 +476,7 @@ class NodeService @Autowired constructor(
         if (!exist(projectId, repoName, path)) {
             val parentPath = getParentPath(path)
             val name = getName(path)
-            if(!isRootPath(path)) {
+            if (!isRootPath(path)) {
                 mkdirs(projectId, repoName, parentPath, createdBy)
             }
             nodeRepository.insert(TNode(
