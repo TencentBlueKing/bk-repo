@@ -145,7 +145,6 @@ class NodeService @Autowired constructor(
      */
     fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
         val formattedPath = formatFullPath(fullPath)
-        if (isRootPath(fullPath)) return true
         val query = nodeQuery(projectId, repoName, formattedPath)
 
         return mongoTemplate.exists(query, TNode::class.java)
@@ -477,7 +476,9 @@ class NodeService @Autowired constructor(
         if (!exist(projectId, repoName, path)) {
             val parentPath = getParentPath(path)
             val name = getName(path)
-            mkdirs(projectId, repoName, parentPath, createdBy)
+            if(!isRootPath(path)) {
+                mkdirs(projectId, repoName, parentPath, createdBy)
+            }
             nodeRepository.insert(TNode(
                     folder = true,
                     path = parentPath,
