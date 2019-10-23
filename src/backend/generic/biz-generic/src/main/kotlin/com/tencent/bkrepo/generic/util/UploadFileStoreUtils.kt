@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.generic.util
 
 import com.google.common.io.ByteStreams
+import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
 import java.io.*
 import java.util.*
@@ -14,8 +15,12 @@ object UploadFileStoreUtils {
 
     fun storeFile(inputStream: InputStream): Pair<String, Long> {
         val cacheFile = File(FILE_STORE_DIR, UUID.randomUUID().toString())
-        cacheFile.outputStream().use {
-            return Pair(cacheFile.absolutePath, ByteStreams.copy(inputStream, it))
+        val fileOutputStream = cacheFile.outputStream()
+        try {
+            return Pair(cacheFile.absolutePath, IOUtils.copyLarge(inputStream, fileOutputStream))
+        } finally {
+            IOUtils.closeQuietly(inputStream)
+            IOUtils.closeQuietly(fileOutputStream)
         }
     }
 
