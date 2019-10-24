@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.generic.resource
 
+import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.api.ArtifactoryResource
 import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFilesData
@@ -14,7 +15,10 @@ import javax.servlet.http.HttpServletResponse
 class ArtifactoryResourceImpl @Autowired constructor(
     private val artifactoryService: ArtifactoryService
 ) : ArtifactoryResource {
-    override fun upload(userId: String, projectId: String, repoName: String, request: HttpServletRequest): Response<Void> {
+    override fun upload(request: HttpServletRequest): Response<Void> {
+        val userId = "necrohuang"//request.getHeader(AUTH_HEADER_USER_ID)
+        val projectId = "repo-dev-test"
+        val repoName = "custom"
         artifactoryService.upload(userId, projectId, repoName, "/data/aac.txt", parseMetaData(request.requestURI), request)
         return Response.success()
     }
