@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.model
 
+import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 
 /**
@@ -11,6 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 @Document("message_code_detail")
 data class TMessageCodeDetail(
     var id: String? = null,
+    @Indexed(unique = true)
     var messageCode: String,
     var moduleCode: String,
     var messageDetailZhCn: String,

@@ -41,7 +41,6 @@ class OperateService(
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
         logger.info("listFile, userId: $userId, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-
         return nodeResource.list(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
     }
 

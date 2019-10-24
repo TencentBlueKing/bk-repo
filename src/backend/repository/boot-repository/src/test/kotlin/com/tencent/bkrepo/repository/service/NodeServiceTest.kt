@@ -14,6 +14,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -61,6 +62,23 @@ internal class NodeServiceTest @Autowired constructor(
     fun tearDown() {
         repositoryService.delete(projectId, repoName)
     }
+
+    @Test
+    @DisplayName("根节点相关测试")
+    fun rootNodeTest() {
+        assertNull(nodeService.queryDetail(projectId, repoName, "/"))
+        assertEquals(0, nodeService.list(projectId, repoName, "/", true, deep = true).size)
+
+        nodeService.create(createRequest("/1.txt", false))
+        assertNotNull(nodeService.queryDetail(projectId, repoName, "/"))
+        assertEquals(1, nodeService.list(projectId, repoName, "/", false, deep = true).size)
+
+        nodeService.create(createRequest("/a/b/1.txt", false))
+        assertNotNull(nodeService.queryDetail(projectId, repoName, "/"))
+
+        assertEquals(2, nodeService.list(projectId, repoName, "/", false, deep = true).size)
+    }
+
 
     @Test
     @DisplayName("列表查询")

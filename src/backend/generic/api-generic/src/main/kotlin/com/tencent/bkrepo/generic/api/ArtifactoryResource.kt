@@ -5,30 +5,24 @@ import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.pojo.BlockInfo
+import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFilesData
+import com.tencent.bkrepo.generic.pojo.upload.SimpleUploadRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
-import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.core.io.InputStreamResource
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
+import javax.servlet.http.HttpServletRequest
 
-/**
- * 下载接口
- *
- * @author: carrypan
- * @date: 2019-09-28
- */
-@Api("下载接口")
-@RequestMapping("/download")
-interface DownloadResource {
-
-    @ApiOperation("简单下载")
-    @GetMapping("/simple/{projectId}/{repoName}/**")
-    fun simpleDownload(
+@Api("蓝盾适配接口")
+@RequestMapping("/artifactory")
+interface ArtifactoryResource {
+    @ApiOperation("上传文件")
+    @PutMapping("/{projectId}/{repoName}/**")
+    fun upload(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
@@ -41,13 +35,12 @@ interface DownloadResource {
         @ApiParam(hidden = true)
         @WildcardParam
         fullPath: String,
-        request: HttpServletRequest,
-        response: HttpServletResponse
-    )
+        request: HttpServletRequest
+    ): Response<Void>
 
-    @ApiOperation("分块下载")
-    @GetMapping("/block/{projectId}/{repoName}/**")
-    fun blockDownload(
+    @ApiOperation("下载文件")
+    @GetMapping("/{projectId}/{repoName}/**")
+    fun download(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
@@ -60,16 +53,12 @@ interface DownloadResource {
         @ApiParam(hidden = true)
         @WildcardParam
         fullPath: String,
-        @ApiParam("分块序号", required = true)
-        @RequestParam("sequence")
-        sequence: Int,
-        request: HttpServletRequest,
         response: HttpServletResponse
     )
 
-    @ApiOperation("查询分块信息")
-    @GetMapping("/info/{projectId}/{repoName}/**")
-    fun queryBlockInfo(
+    @ApiOperation("listFile")
+    @GetMapping("/api/storage/{projectId}/{repoName}/**")
+    fun listFile(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
@@ -81,6 +70,7 @@ interface DownloadResource {
         repoName: String,
         @ApiParam(hidden = true)
         @WildcardParam
-        fullPath: String
-    ): Response<List<BlockInfo>>
+        fullPath: String,
+        response: HttpServletResponse
+    ): JfrogFilesData
 }

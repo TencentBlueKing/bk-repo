@@ -11,7 +11,6 @@ import com.tencent.bkrepo.generic.pojo.operate.FileMoveRequest
 import com.tencent.bkrepo.generic.pojo.operate.FileRenameRequest
 import com.tencent.bkrepo.generic.pojo.operate.FileSearchRequest
 import com.tencent.bkrepo.generic.service.OperateService
-import com.tencent.bkrepo.generic.util.PathUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
@@ -27,7 +26,7 @@ class OperateResourceImpl @Autowired constructor(
 ) : OperateResource {
 
     override fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Response<List<FileInfo>> {
-        return Response.success(operateService.listFile(userId, projectId, repoName, PathUtils.toFullPath(path), includeFolder, deep))
+        return Response.success(operateService.listFile(userId, projectId, repoName, path, includeFolder, deep))
     }
 
     override fun searchFile(userId: String, searchRequest: FileSearchRequest): Response<Page<FileInfo>> {
@@ -35,20 +34,20 @@ class OperateResourceImpl @Autowired constructor(
     }
 
     override fun getFileDetail(userId: String, projectId: String, repoName: String, fullPath: String): Response<FileDetail> {
-        return Response.success(operateService.getFileDetail(userId, projectId, repoName, PathUtils.toFullPath(fullPath)))
+        return Response.success(operateService.getFileDetail(userId, projectId, repoName, fullPath))
     }
 
     override fun getFileSize(userId: String, projectId: String, repoName: String, fullPath: String): Response<FileSizeInfo> {
-        return Response.success(operateService.getFileSize(userId, projectId, repoName, PathUtils.toFullPath(fullPath)))
+        return Response.success(operateService.getFileSize(userId, projectId, repoName, fullPath))
     }
 
     override fun mkdir(userId: String, projectId: String, repoName: String, fullPath: String): Response<Void> {
-        operateService.mkdir(userId, projectId, repoName, PathUtils.toFullPath(fullPath))
+        operateService.mkdir(userId, projectId, repoName, fullPath)
         return Response.success()
     }
 
     override fun delete(userId: String, projectId: String, repoName: String, fullPath: String): Response<Void> {
-        operateService.delete(userId, projectId, repoName, PathUtils.toFullPath(fullPath))
+        operateService.delete(userId, projectId, repoName, fullPath)
         return Response.success()
     }
 
