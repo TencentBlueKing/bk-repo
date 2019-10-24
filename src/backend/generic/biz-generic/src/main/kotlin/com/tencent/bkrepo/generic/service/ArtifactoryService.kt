@@ -47,7 +47,7 @@ class ArtifactoryService @Autowired constructor(
 ) {
     @Transactional(rollbackFor = [Throwable::class])
     fun upload(userId: String, projectId: String, repoName: String, fullPath: String, metadata: Map<String, String>, request: HttpServletRequest) {
-        logger.info("upload, user: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, metadata: $metadata, ")
+        logger.info("upload, user: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, metadata: $metadata")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
@@ -55,11 +55,10 @@ class ArtifactoryService @Autowired constructor(
         var cacheFileFullPath: String? = null
         try {
             val cacheFileAndSize = UploadFileStoreUtils.storeFile(request.inputStream)
-            logger.info("cacheFileAndSize")
+            logger.info("cacheFileAndSize: ${cacheFileAndSize.first}, ${cacheFileAndSize.second}")
             cacheFileFullPath = cacheFileAndSize.first
             val cacheFileSize = cacheFileAndSize.second
             val calculatedSha256 = FileDigestUtils.fileSha256(listOf(File(cacheFileFullPath).inputStream()))
-
             // 保存节点
             val result = nodeResource.create(
                 NodeCreateRequest(
@@ -83,19 +82,22 @@ class ArtifactoryService @Autowired constructor(
             }
 
             // 保存元数据
-            val metadataResult = metadataResource.upsert(
-                MetadataUpsertRequest(
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = fullPath,
-                    metadata = metadata,
-                    operator = userId
+            if(metadata.isNotEmpty()){
+                val metadataResult = metadataResource.upsert(
+                    MetadataUpsertRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = fullPath,
+                        metadata = metadata,
+                        operator = userId
+                    )
                 )
-            )
-            if (metadataResult.isNotOk()) {
-                logger.error("upsert metadata failed")
-                throw ExternalErrorCodeException(result.code, result.message)
+                if (metadataResult.isNotOk()) {
+                    logger.error("upsert metadata failed")
+                    throw ExternalErrorCodeException(result.code, result.message)
+                }
             }
+
         } catch (e: Exception) {
             logger.error("upload file error: ", e)
             throw throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR, "", "upload file error")
