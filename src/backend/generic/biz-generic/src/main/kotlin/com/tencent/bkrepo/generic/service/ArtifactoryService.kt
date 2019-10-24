@@ -48,6 +48,14 @@ class ArtifactoryService @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     fun upload(userId: String, projectId: String, repoName: String, fullPath: String, metadata: Map<String, String>, request: HttpServletRequest) {
         logger.info("upload, user: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, metadata: $metadata")
+
+        val inputstream = request.inputStream
+        logger.info("inputstream: $inputstream")
+        logger.info("inputstream.isFinished: ${inputstream.isFinished}")
+        logger.info("inputstream.isReady: ${inputstream.isReady}")
+        logger.info("inputstream.markSupported(): ${inputstream.markSupported()}")
+        logger.info("inputstream.read(): ${inputstream.read()}")
+
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
