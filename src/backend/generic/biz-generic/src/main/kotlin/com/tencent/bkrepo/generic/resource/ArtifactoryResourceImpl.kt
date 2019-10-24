@@ -14,8 +14,8 @@ import javax.servlet.http.HttpServletResponse
 class ArtifactoryResourceImpl @Autowired constructor(
     private val artifactoryService: ArtifactoryService
 ) : ArtifactoryResource {
-    override fun upload(userId: String, projectId: String, repoName: String, fullPath: String, request: HttpServletRequest): Response<Void> {
-        artifactoryService.upload(userId, projectId, repoName, fullPath, parseMetaData(request.requestURI), request)
+    override fun upload(userId: String, projectId: String, repoName: String, request: HttpServletRequest): Response<Void> {
+        artifactoryService.upload(userId, projectId, repoName, "/data/aac.txt", parseMetaData(request.requestURI), request)
         return Response.success()
     }
 

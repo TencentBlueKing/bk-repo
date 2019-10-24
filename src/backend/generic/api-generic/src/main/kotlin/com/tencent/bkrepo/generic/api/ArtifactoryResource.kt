@@ -32,9 +32,6 @@ interface ArtifactoryResource {
         @ApiParam("仓库名称", required = true)
         @PathVariable
         repoName: String,
-        @ApiParam(hidden = true)
-        @PathVariable
-        fullPath: String,
         request: HttpServletRequest
     ): Response<Void>
 
