@@ -13,3 +13,7 @@ spring:
         format: YAML
         data-key: data
         profileSeparator: '::'
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: false

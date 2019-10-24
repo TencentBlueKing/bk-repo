@@ -10,7 +10,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
  * @author: carrypan
  * @date: 2019-10-08
  */
-@Configuration
+//@Configuration
 class WebMvcConfig : WebMvcConfigurer {
 
     override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
