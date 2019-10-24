@@ -33,7 +33,7 @@ interface ArtifactoryResource {
         @PathVariable
         repoName: String,
         @ApiParam(hidden = true)
-        @WildcardParam
+        @PathVariable
         fullPath: String,
         request: HttpServletRequest
     ): Response<Void>
