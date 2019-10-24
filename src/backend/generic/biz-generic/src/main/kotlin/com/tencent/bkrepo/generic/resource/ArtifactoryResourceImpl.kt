@@ -15,11 +15,8 @@ import javax.servlet.http.HttpServletResponse
 class ArtifactoryResourceImpl @Autowired constructor(
     private val artifactoryService: ArtifactoryService
 ) : ArtifactoryResource {
-    override fun upload(request: HttpServletRequest): Response<Void> {
-        val userId = "necrohuang"//request.getHeader(AUTH_HEADER_USER_ID)
-        val projectId = "repo-dev-test"
-        val repoName = "custom"
-        artifactoryService.upload(userId, projectId, repoName, "/data/aac.txt", parseMetaData(request.requestURI), request)
+    override fun upload(userId: String, projectId: String, repoName: String, fullPath: String, request: HttpServletRequest): Response<Void> {
+        artifactoryService.upload(userId, projectId, repoName, fullPath, parseMetaData(request.requestURI), request)
         return Response.success()
     }
 
@@ -31,7 +28,8 @@ class ArtifactoryResourceImpl @Autowired constructor(
         return artifactoryService.listFile(userId, projectId, repoName, fullPath, includeFolder = true, deep = true)
     }
 
-    private fun parseMetaData(fullPath: String): Map<String, String> {
+    private fun parseMetaData(fullPath: String)
+        : Map<String, String> {
         val splits = fullPath.split(";")
         val metadataMap = mutableMapOf<String, String>()
 

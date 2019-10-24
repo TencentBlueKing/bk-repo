@@ -21,11 +21,20 @@ import javax.servlet.http.HttpServletRequest
 @RequestMapping("/artifactory")
 interface ArtifactoryResource {
     @ApiOperation("上传文件")
-    @PutMapping("/**")
+    @PutMapping("/{projectId}/{repoName}/**")
     fun upload(
-//        @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-//        @RequestHeader(AUTH_HEADER_USER_ID)
-//        userId: String,
+        @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+        @RequestHeader(AUTH_HEADER_USER_ID)
+        userId: String,
+        @ApiParam("项目id", required = true)
+        @PathVariable
+        projectId: String,
+        @ApiParam("仓库名称", required = true)
+        @PathVariable
+        repoName: String,
+        @ApiParam(hidden = true)
+        @WildcardParam
+        fullPath: String,
         request: HttpServletRequest
     ): Response<Void>
 
