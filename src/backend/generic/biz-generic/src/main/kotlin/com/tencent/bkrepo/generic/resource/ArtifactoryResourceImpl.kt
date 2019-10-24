@@ -2,6 +2,7 @@ package com.tencent.bkrepo.generic.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.api.ArtifactoryResource
+import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFilesData
 import com.tencent.bkrepo.generic.service.ArtifactoryService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,8 +23,8 @@ class ArtifactoryResourceImpl @Autowired constructor(
         artifactoryService.download(userId, projectId, repoName, fullPath, response)
     }
 
-    override fun listFile(userId: String, projectId: String, repoName: String, fullPath: String, response: HttpServletResponse) {
-        val data = artifactoryService.listFile(userId, projectId, repoName, fullPath, includeFolder = true, deep = true)
+    override fun listFile(userId: String, projectId: String, repoName: String, fullPath: String, response: HttpServletResponse): JfrogFilesData {
+        return artifactoryService.listFile(userId, projectId, repoName, fullPath, includeFolder = true, deep = true)
     }
 
     fun parseMetaData(fullPath: String): Map<String, String> {

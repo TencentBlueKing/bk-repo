@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.pojo.BlockInfo
+import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFilesData
 import com.tencent.bkrepo.generic.pojo.upload.SimpleUploadRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -71,5 +72,5 @@ interface ArtifactoryResource {
         @WildcardParam
         fullPath: String,
         response: HttpServletResponse
-    )
+    ): JfrogFilesData
 }
