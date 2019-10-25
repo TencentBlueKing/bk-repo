@@ -2,6 +2,7 @@ package com.tencent.bkrepo.generic.api
 
 import com.tencent.bkrepo.common.api.annotation.WildcardParam
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFileUploadResponse
 import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFilesData
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -29,7 +30,7 @@ interface ArtifactoryResource {
         @WildcardParam
         fullPath: String,
         request: HttpServletRequest
-    ): Response<Void>
+    ): JfrogFileUploadResponse
 
     @ApiOperation("下载文件")
     @GetMapping("/{projectId}/{repoName}/**")

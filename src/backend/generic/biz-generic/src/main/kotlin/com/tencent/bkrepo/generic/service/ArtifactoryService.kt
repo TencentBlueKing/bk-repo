@@ -14,6 +14,7 @@ import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.REPO_TYPE
 import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFile
+import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFileUploadResponse
 import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFilesData
 import com.tencent.bkrepo.generic.util.UploadFileStoreUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
@@ -27,6 +28,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.File
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -46,7 +48,13 @@ class ArtifactoryService @Autowired constructor(
     private val fileStorage: FileStorage
 ) {
     @Transactional(rollbackFor = [Throwable::class])
-    fun upload(projectId: String, repoName: String, fullPath: String, metadata: Map<String, String>, request: HttpServletRequest) {
+    fun upload(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        metadata: Map<String, String>,
+        request: HttpServletRequest
+    ): JfrogFileUploadResponse {
         logger.info("upload, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, metadata: $metadata")
 
         val inputstream = request.inputStream
@@ -86,7 +94,7 @@ class ArtifactoryService @Autowired constructor(
             }
 
             // 保存元数据
-            if(metadata.isNotEmpty()){
+            if (metadata.isNotEmpty()) {
                 val metadataResult = metadataResource.upsert(
                     MetadataUpsertRequest(
                         projectId = projectId,
@@ -102,6 +110,16 @@ class ArtifactoryService @Autowired constructor(
                 }
             }
 
+            return JfrogFileUploadResponse(
+                repo = repoName,
+                path = fullPath,
+                created = LocalTime.now().format(DateTimeFormatter.ISO_DATE_TIME),
+                createdBy = "admin",
+                downloadUri = "",
+                mimeType = "",
+                size = cacheFileSize.toString(),
+                uri = ""
+            )
         } catch (e: Exception) {
             logger.error("upload file error: ", e)
             throw throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR, "", "upload file error")
