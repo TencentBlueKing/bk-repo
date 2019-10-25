@@ -14,9 +14,12 @@ class Configuration {
     fun hiddenHttpMethodFilter(): HiddenHttpMethodFilter {
         return object: OrderedHiddenHttpMethodFilter() {
             override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
-                logger.info("hiddenHttpMethodFilter, requestURI: ${request.requestURI}")
-                filterChain.doFilter(request, response);
-                //super.doFilterInternal(request, response, filterChain)
+                if(request.method == "PUT" && request.requestURI.startsWith("/artifactory")){
+                    logger.info("hiddenHttpMethodFilter, requestURI: ${request.requestURI}")
+                    filterChain.doFilter(request, response);
+                } else {
+                    super.doFilterInternal(request, response, filterChain)
+                }
             }
         }
     }
