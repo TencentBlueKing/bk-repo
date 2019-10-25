@@ -50,7 +50,7 @@ class ArtifactoryService @Autowired constructor(
         logger.info("upload, user: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, metadata: $metadata")
 
         val inputstream = request.inputStream
-        logger.info("${inputstream.isFinished}")
+        logger.info("inputstream.isFinished: ${inputstream.isFinished}")
 
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data

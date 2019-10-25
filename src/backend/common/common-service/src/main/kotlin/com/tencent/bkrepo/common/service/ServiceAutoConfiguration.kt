@@ -22,17 +22,6 @@ import javax.servlet.http.HttpServletResponse
 @ConditionalOnWebApplication
 @EnableDiscoveryClient
 class ServiceAutoConfiguration {
-
-    @Bean
-    fun hiddenHttpMethodFilter(): HiddenHttpMethodFilter {
-        return object: OrderedHiddenHttpMethodFilter() {
-            override fun doFilterInternal(request: HttpServletRequest, response: HttpServletResponse, filterChain: FilterChain) {
-                filterChain.doFilter(request, response);
-                //super.doFilterInternal(request, response, filterChain)
-            }
-        }
-    }
-
     @Bean
     fun feignWebRegistrations(): WebMvcRegistrations {
         return object : WebMvcRegistrations {

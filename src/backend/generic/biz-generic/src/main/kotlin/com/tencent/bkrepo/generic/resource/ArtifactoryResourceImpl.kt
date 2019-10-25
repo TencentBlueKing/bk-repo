@@ -28,8 +28,7 @@ class ArtifactoryResourceImpl @Autowired constructor(
         return artifactoryService.listFile(userId, projectId, repoName, fullPath, includeFolder = true, deep = true)
     }
 
-    private fun parseMetaData(fullPath: String)
-        : Map<String, String> {
+    private fun parseMetaData(fullPath: String): Map<String, String> {
         val splits = fullPath.split(";")
         val metadataMap = mutableMapOf<String, String>()
 
