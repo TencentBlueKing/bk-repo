@@ -46,13 +46,13 @@ class ArtifactoryService @Autowired constructor(
     private val fileStorage: FileStorage
 ) {
     @Transactional(rollbackFor = [Throwable::class])
-    fun upload(userId: String, projectId: String, repoName: String, fullPath: String, metadata: Map<String, String>, request: HttpServletRequest) {
-        logger.info("upload, user: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, metadata: $metadata")
+    fun upload(projectId: String, repoName: String, fullPath: String, metadata: Map<String, String>, request: HttpServletRequest) {
+        logger.info("upload, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, metadata: $metadata")
 
         val inputstream = request.inputStream
         logger.info("inputstream.isFinished: ${inputstream.isFinished}")
 
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+        //permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
 
@@ -74,7 +74,7 @@ class ArtifactoryService @Autowired constructor(
                     overwrite = true,
                     size = cacheFileSize,
                     sha256 = calculatedSha256,
-                    operator = userId
+                    operator = "admin"
                 ))
 
             if (result.isOk()) {
@@ -93,7 +93,7 @@ class ArtifactoryService @Autowired constructor(
                         repoName = repoName,
                         fullPath = fullPath,
                         metadata = metadata,
-                        operator = userId
+                        operator = "admin"
                     )
                 )
                 if (metadataResult.isNotOk()) {
@@ -110,9 +110,9 @@ class ArtifactoryService @Autowired constructor(
         }
     }
 
-    fun download(userId: String, projectId: String, repoName: String, fullPath: String, response: HttpServletResponse) {
-        logger.info("upload, user: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+    fun download(projectId: String, repoName: String, fullPath: String, response: HttpServletResponse) {
+        logger.info("upload, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
+        //permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
@@ -137,9 +137,9 @@ class ArtifactoryService @Autowired constructor(
         ByteStreams.copy(file.inputStream(), response.outputStream)
     }
 
-    fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): JfrogFilesData {
-        logger.info("listFile, userId: $userId, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+    fun listFile(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): JfrogFilesData {
+        logger.info("listFile, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
+        //permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
         val dirDetail = nodeResource.queryDetail(projectId, repoName, path).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, path)
         val fileList = nodeResource.list(projectId, repoName, path, includeFolder, deep).data ?: emptyList()
