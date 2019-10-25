@@ -28,6 +28,8 @@ import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.File
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.servlet.http.HttpServletRequest
@@ -113,7 +115,7 @@ class ArtifactoryService @Autowired constructor(
             return JfrogFileUploadResponse(
                 repo = repoName,
                 path = fullPath,
-                created = LocalTime.now().format(DateTimeFormatter.ISO_DATE_TIME),
+                created = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME),
                 createdBy = "admin",
                 downloadUri = "",
                 mimeType = "",
