@@ -62,7 +62,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         private val TMP_UPLOADS_PATH_ELEMENT = "/_uploads/"
 
         override fun test(artifact: Artifact): Boolean {
-            return !artifact.getPath().contains("/_uploads/")
+            return !artifact.getArtifactPath().contains("/_uploads/")
         }
     }
 
@@ -346,7 +346,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
 
             while (var3.hasNext()) {
                 val repoBlob = var3.next()
-                val blobPath = repoBlob.getPath()
+                val blobPath = repoBlob.getArtifactPath()
                 if (this.repo.canRead(blobPath)) {
                     log.debug("Found repo blob at '{}'", blobPath)
                     return repoBlob
@@ -369,7 +369,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
                 val mountableBlob = DockerUtils.getBlobGlobally(this.repo, mountDigest.filename(), DockerSearchBlobPolicy.SHA_256)
                 if (mountableBlob != null) {
                     location = this.getDockerURI("$dockerRepo/blobs/$mount")
-                    log.debug("Found accessible blob at {}/{} to mount onto {}", *arrayOf<Any>(mountableBlob.getRepoId(), mountableBlob.getPath(), this.repo.getRepoId() + "/" + dockerRepo + "/" + mount))
+                    log.debug("Found accessible blob at {}/{} to mount onto {}", *arrayOf<Any>(mountableBlob.getRepoId(), mountableBlob.getArtifactPath(), this.repo.getRepoId() + "/" + dockerRepo + "/" + mount))
                     return ResponseEntity.status(201).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", mount).header("Content-Length", "0").header("Location", location.toString()).build()
                 }
             }
@@ -420,7 +420,6 @@ class DockerV2LocalRepoHandler @Autowired constructor(
     }
 
     private fun putHasStream(): Boolean {
-        return true
         val headerValues = httpHeaders.get("User-Agent")
         if (headerValues != null) {
             val headerIter = headerValues!!.iterator()
@@ -484,7 +483,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         if (!this.repo.canWrite(blobPath)) {
             return this.consumeStreamAndReturnError(dockerRepo, uuid, stream)
         } else {
-            val response = this.repo.upload(UploadContext(blobPath).content(stream))
+            val response = this.repo.writeLocal(blobPath,stream)
             if (this.uploadSuccessful(response)) {
                 val artifact = this.repo.artifact(blobPath)
                 if (artifact != null) {

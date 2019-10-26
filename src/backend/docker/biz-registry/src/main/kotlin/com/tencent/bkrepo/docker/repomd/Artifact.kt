@@ -1,20 +1,28 @@
 package com.tencent.bkrepo.docker.repomd
 
-abstract class Artifact : DirectoryItem {
+ class Artifact(contentLength: Long , fielSha256: String )  {
 
-    abstract fun getMd5(): String
+     var fielSha256 : String= ""
+     var contentLength : Long = 0
+     var path : String = ""
+     init {
+         this.fielSha256 = fielSha256
+         this.contentLength = contentLength
+     }
 
-    abstract fun getSha1(): String
+     fun getSha256():String{
+         return  this.fielSha256
+     }
 
-    abstract fun getSha256(): String
+     fun getLength():Long{
+         return  this.contentLength
+     }
 
-    abstract fun getLength(): Long
+     fun getArtifactPath():String {
+         return  this.path
+     }
 
-    abstract fun getLastModified(): Long
-
-    abstract fun getName(): String
-
-    override fun isFolder(): Boolean {
-        return false
-    }
+     fun getRepoId() :String{
+         return ""
+     }
 }

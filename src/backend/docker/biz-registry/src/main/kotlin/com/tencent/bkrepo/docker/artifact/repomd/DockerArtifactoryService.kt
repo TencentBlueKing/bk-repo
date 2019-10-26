@@ -25,6 +25,8 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
 import org.apache.commons.io.IOUtils
+import com.tencent.bkrepo.common.storage.util.DataDigestUtils
+import java.io.File
 
 
 @Service
@@ -46,6 +48,18 @@ class DockerArtifactoryService @Autowired constructor(
         this.repoKey = "docker-local"
     }
 
+
+
+    fun writeLocal(path: String, inputStream: InputStream) :ResponseEntity<Any> {
+        val f = File(path)
+        if (!f.exists()) {
+            f.createNewFile()
+            f.writeBytes(inputStream.readBytes())
+        }else{
+            f.appendBytes(inputStream.readBytes())
+        }
+        return ResponseEntity.ok().body("ok")
+    }
 //    override  fun read(path: String): InputStream {
 //        val repoPath = this.repoPath(path)
 //        log.debug("Acquiring the content stream for '{}'", repoPath)
@@ -316,6 +330,12 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
      fun artifact(path: String): Artifact? {
+         val file = File(path)
+         val content = file.readBytes()
+         val sha256  = DataDigestUtils.sha256FromByteArray(content)
+         var length = content.size
+//         val contents = file.readText()
+//         println(contents)
         // TODO("consctruct Artifact from path")
         throw UnsupportedOperationException("NOT IMPLEMENTED")
     }

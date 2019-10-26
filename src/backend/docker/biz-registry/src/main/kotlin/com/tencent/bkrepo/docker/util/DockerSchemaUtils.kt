@@ -138,7 +138,7 @@ class DockerSchemaUtils {
 
                             val artifacts = repo.findArtifacts(dockerRepo, manifestFilename)
                             if (artifacts != null && artifacts!!.iterator().hasNext()) {
-                                return (artifacts!!.iterator().next() as Artifact).getPath()
+                                return (artifacts!!.iterator().next() as Artifact).getArtifactPath()
                             }
                         }
                     }
