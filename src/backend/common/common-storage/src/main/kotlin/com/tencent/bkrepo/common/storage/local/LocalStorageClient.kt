@@ -21,23 +21,23 @@ class LocalStorageClient(private val directory: String) {
     fun store(path: String, filename: String, inputStream: InputStream) {
         val subDirectory = File(directory, path)
         subDirectory.mkdirs()
-        val out = File(subDirectory, filename).outputStream()
-        ByteStreams.copy(inputStream, out)
-        out.close()
+        File(subDirectory, filename).outputStream().use {
+            ByteStreams.copy(inputStream, it)
+        }
     }
 
     fun delete(path: String, filename: String) {
         val subDirectory = File(directory, path)
         val file = File(subDirectory, filename)
         if (file.isFile) {
-            file.deleteOnExit()
+            file.delete()
         }
     }
 
-    fun load(path: String, filename: String): InputStream? {
+    fun load(path: String, filename: String): File? {
         val subDirectory = File(directory, path)
         val file = File(subDirectory, filename)
-        return if (file.isFile) file.inputStream() else null
+        return if (file.isFile) file else null
     }
 
     fun exist(path: String, filename: String): Boolean {

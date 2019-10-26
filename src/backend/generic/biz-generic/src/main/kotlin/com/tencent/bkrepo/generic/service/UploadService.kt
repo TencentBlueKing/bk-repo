@@ -89,7 +89,7 @@ class UploadService @Autowired constructor(
         if (result.isOk()) {
             val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
             fileStorage.store(calculatedSha256, file.inputStream, storageCredentials)
-            logger.info("user[$userId] simply upload file [$fullUri] success")
+            logger.debug("user[$userId] simply upload file [$fullUri] success")
         } else {
             logger.warn("user[$userId] simply upload file [$fullUri] failed: [${result.code}, ${result.message}]")
             throw ExternalErrorCodeException(result.code, result.message)
@@ -182,7 +182,7 @@ class UploadService @Autowired constructor(
         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
         fileStorage.store(calculatedSha256, file.inputStream, storageCredentials)
 
-        logger.info("user[$userId] upload block [$fullUri] success.")
+        logger.debug("user[$userId] upload block [$fullUri] success.")
     }
 
     @Transactional(rollbackFor = [Throwable::class])

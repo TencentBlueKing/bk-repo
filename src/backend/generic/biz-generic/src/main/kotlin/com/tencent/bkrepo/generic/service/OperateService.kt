@@ -39,12 +39,13 @@ class OperateService(
     private val permissionService: PermissionService
 ) {
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
+        logger.info("listFile, userId: $userId, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-
         return nodeResource.list(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
     }
 
     fun searchFile(userId: String, request: FileSearchRequest): Page<FileInfo> {
+        logger.info("searchFile, userId: $userId, request: $request")
         request.repoNameList.forEach {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, request.projectId, it))
         }
@@ -65,6 +66,7 @@ class OperateService(
     }
 
     fun getFileDetail(userId: String, projectId: String, repoName: String, fullPath: String): FileDetail {
+        logger.info("getFileDetail, userId: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
         val nodeDetail = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
@@ -72,6 +74,7 @@ class OperateService(
     }
 
     fun getFileSize(userId: String, projectId: String, repoName: String, fullPath: String): FileSizeInfo {
+        logger.info("getFileSize, userId: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
         val nodeSizeInfo = nodeResource.getSize(projectId, repoName, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
@@ -79,6 +82,7 @@ class OperateService(
     }
 
     fun mkdir(userId: String, projectId: String, repoName: String, fullPath: String) {
+        logger.info("mkdir, userId: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
 
         val fullUri = "$projectId/$repoName/$fullPath"
@@ -101,6 +105,7 @@ class OperateService(
     }
 
     fun delete(userId: String, projectId: String, repoName: String, fullPath: String) {
+        logger.info("delete, userId: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
 
         val fullUri = "$projectId/$repoName/$fullPath"
@@ -121,6 +126,7 @@ class OperateService(
     }
 
     fun rename(userId: String, request: FileRenameRequest) {
+        logger.info("rename, userId: $userId, request: $request")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, request.projectId, request.repoName))
 
         val fullUri = "${request.projectId}/${request.repoName}/${request.fullPath}"
@@ -142,6 +148,7 @@ class OperateService(
     }
 
     fun move(userId: String, request: FileMoveRequest) {
+        logger.info("move, userId: $userId, request: $request")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, request.srcProjectId, request.srcRepoName))
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, request.destProjectId, request.destRepoName))
 
@@ -169,7 +176,8 @@ class OperateService(
     }
 
     fun copy(userId: String, request: FileCopyRequest) {
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, request.srcProjectId, request.srcRepoName))
+        logger.info("copy, userId: $userId, request: $request")
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, request.srcProjectId, request.srcRepoName))
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, request.destProjectId, request.destRepoName))
 
         val srcUri = "${request.srcProjectId}/${request.srcRepoName}/${request.srcFullPath}"
