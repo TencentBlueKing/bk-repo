@@ -14,6 +14,7 @@ import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.REPO_TYPE
 import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFile
+import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFileUploadResponse
 import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFilesData
 import com.tencent.bkrepo.generic.util.UploadFileStoreUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
@@ -27,6 +28,9 @@ import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.File
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -46,15 +50,25 @@ class ArtifactoryService @Autowired constructor(
     private val fileStorage: FileStorage
 ) {
     @Transactional(rollbackFor = [Throwable::class])
-    fun upload(userId: String, projectId: String, repoName: String, fullPath: String, metadata: Map<String, String>, request: HttpServletRequest) {
-        logger.info("upload, user: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, metadata: $metadata")
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+    fun upload(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        metadata: Map<String, String>,
+        request: HttpServletRequest
+    ): JfrogFileUploadResponse {
+        logger.info("upload, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, metadata: $metadata")
+
+        val inputstream = request.inputStream
+        logger.info("inputstream.isFinished: ${inputstream.isFinished}")
+
+        //permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
 
         var cacheFileFullPath: String? = null
         try {
-            val cacheFileAndSize = UploadFileStoreUtils.storeFile(request.inputStream)
+            val cacheFileAndSize = UploadFileStoreUtils.storeFile(inputstream)
             logger.info("cacheFileAndSize: ${cacheFileAndSize.first}, ${cacheFileAndSize.second}")
             cacheFileFullPath = cacheFileAndSize.first
             val cacheFileSize = cacheFileAndSize.second
@@ -70,7 +84,7 @@ class ArtifactoryService @Autowired constructor(
                     overwrite = true,
                     size = cacheFileSize,
                     sha256 = calculatedSha256,
-                    operator = userId
+                    operator = "admin"
                 ))
 
             if (result.isOk()) {
@@ -82,14 +96,14 @@ class ArtifactoryService @Autowired constructor(
             }
 
             // 保存元数据
-            if(metadata.isNotEmpty()){
+            if (metadata.isNotEmpty()) {
                 val metadataResult = metadataResource.upsert(
                     MetadataUpsertRequest(
                         projectId = projectId,
                         repoName = repoName,
                         fullPath = fullPath,
                         metadata = metadata,
-                        operator = userId
+                        operator = "admin"
                     )
                 )
                 if (metadataResult.isNotOk()) {
@@ -98,6 +112,16 @@ class ArtifactoryService @Autowired constructor(
                 }
             }
 
+            return JfrogFileUploadResponse(
+                repo = repoName,
+                path = fullPath,
+                created = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME),
+                createdBy = "admin",
+                downloadUri = "",
+                mimeType = "",
+                size = cacheFileSize.toString(),
+                uri = ""
+            )
         } catch (e: Exception) {
             logger.error("upload file error: ", e)
             throw throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR, "", "upload file error")
@@ -106,9 +130,9 @@ class ArtifactoryService @Autowired constructor(
         }
     }
 
-    fun download(userId: String, projectId: String, repoName: String, fullPath: String, response: HttpServletResponse) {
-        logger.info("upload, user: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+    fun download(projectId: String, repoName: String, fullPath: String, response: HttpServletResponse) {
+        logger.info("upload, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
+        //permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
@@ -133,9 +157,9 @@ class ArtifactoryService @Autowired constructor(
         ByteStreams.copy(file.inputStream(), response.outputStream)
     }
 
-    fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): JfrogFilesData {
-        logger.info("listFile, userId: $userId, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+    fun listFile(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): JfrogFilesData {
+        logger.info("listFile, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
+        //permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
         val dirDetail = nodeResource.queryDetail(projectId, repoName, path).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, path)
         val fileList = nodeResource.list(projectId, repoName, path, includeFolder, deep).data ?: emptyList()
