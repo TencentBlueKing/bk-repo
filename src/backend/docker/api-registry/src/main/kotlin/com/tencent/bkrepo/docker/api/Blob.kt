@@ -115,7 +115,8 @@ interface Blob {
             name: String,
             @PathVariable
             @ApiParam(value = "uuid", required = false)
-            uuid: String
+            uuid: String,
+            request: HttpServletRequest
     ): ResponseEntity<Any>
 
     @ApiOperation("获取blob文件")

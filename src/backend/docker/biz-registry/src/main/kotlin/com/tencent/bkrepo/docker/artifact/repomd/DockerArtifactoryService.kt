@@ -25,6 +25,9 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
 import org.apache.commons.io.IOUtils
+import com.tencent.bkrepo.common.storage.util.DataDigestUtils
+import java.io.File
+import java.nio.file.Path
 
 
 @Service
@@ -38,6 +41,7 @@ class DockerArtifactoryService @Autowired constructor(
     // protected var propertiesService: PropertiesService ？
     protected lateinit var repoKey: String
     protected lateinit var context: DockerWorkContext
+    private val localPath :String ="/Users/owen/data"
 
 
 
@@ -46,6 +50,23 @@ class DockerArtifactoryService @Autowired constructor(
         this.repoKey = "docker-local"
     }
 
+
+
+    fun writeLocal(path: String, name :String,  inputStream: InputStream) :ResponseEntity<Any> {
+
+        val filePath = localPath + path
+        var fullPath = localPath + path + "/"+name
+
+        val f = File(filePath).mkdirs()
+        val file  = File(fullPath)
+        if (!file.exists()) {
+            file.createNewFile()
+            file.writeBytes(inputStream.readBytes())
+        }else{
+            file.appendBytes(inputStream.readBytes())
+        }
+        return ResponseEntity.ok().body("ok")
+    }
 //    override  fun read(path: String): InputStream {
 //        val repoPath = this.repoPath(path)
 //        log.debug("Acquiring the content stream for '{}'", repoPath)
@@ -148,37 +169,48 @@ class DockerArtifactoryService @Autowired constructor(
             throw ExternalErrorCodeException(result.code, result.message)
         }
         return ResponseEntity.ok().body("ok")
-//        val res = JerseyArtifactoryResponse()
-//        val properties = this.parseUploadProperties(context)
-//        val req = ArtifactoryDeployRequestBuilder(this.repoPath(context.getPath())).inputStream(context.getContent()).properties(properties).contentLength(this.contentLength(context)).build()
-//        val headers = Maps.newHashMap<String, String>()
-//        headers.putAll(context.getRequestHeaders())
-//        if (StringUtils.isNotBlank(context.sha1)) {
-//            headers["X-Checksum-Sha1"] = context.sha1
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    fun uploadFromLocal(path: String,context: UploadContext): ResponseEntity<Any> {
+        // TODO: 校验权限
+
+        // 校验sha256
+//        val calculatedSha256 = FileDigestUtils.fileSha256(listOf(context.content!!))
+//        if (context.sha256 != null && calculatedSha256 != context.sha256) {
+//            logger.warn("user[${context.userId}]  upload  file [$fullUri] failed: file sha256 verification failed")
+//            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
 //        }
-//
-//        if (StringUtils.isNotBlank(context.sha256)) {
-//            headers["X-Checksum-Sha256"] = context.sha256
-//        }
-//
-//        if (StringUtils.isNotBlank(context.md5)) {
-//            headers["X-Checksum-Md5"] = context.md5
-//        }
-//
-//        req.addHeaders(headers)
-//
-//        try {
-//            this.uploadService.upload(req, res)
-//            return res.build()
-//        } catch (var7: RestException) {
-//            return Response.status(var7.getStatusCode()).entity(var7.getMessage()).build()
-//        } catch (var8: RepoRejectException) {
-//            log.error(var8.getMessage(), var8)
-//            return Response.status(Response.Status.BAD_REQUEST).entity(var8.getMessage()).build()
-//        } catch (var8: IOException) {
-//            log.error(var8.getMessage(), var8)
-//            return Response.status(Response.Status.BAD_REQUEST).entity(var8.getMessage()).build()
-//        }
+
+        // 判断仓库是否存在
+        val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+            logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
+            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
+        }
+        var fullPath = localPath + path
+        var content  = File(fullPath).readBytes()
+        context.content(content.inputStream()).contentLength(content.size.toLong())
+
+        // 保存节点
+        val result = nodeResource.create(NodeCreateRequest(
+                projectId = context.projectId,
+                repoName = context.repoName,
+                folder = false,
+                fullPath = context.path ,
+                size = context.contentLength,
+                sha256 = context.sha256,
+                operator = context.userId
+        ))
+
+        if (result.isOk()) {
+            val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
+            fileStorage.store(context.sha256, context.content!!, storageCredentials)
+            logger.info("user[$context.userId] simply upload file [$context.path] success")
+        } else {
+            logger.warn("user[$context.userId] simply upload file [$context.path] failed: [${result.code}, ${result.message}]")
+            throw ExternalErrorCodeException(result.code, result.message)
+        }
+        return ResponseEntity.ok().body("ok")
     }
 
 //    private fun contentLength(context: UploadContext): Long {
@@ -316,8 +348,16 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
      fun artifact(path: String): Artifact? {
+         val fullPath = localPath + path
+         val file = File(fullPath)
+         val content = file.readBytes()
+         val sha256  = DataDigestUtils.sha256FromByteArray(content)
+         var length = content.size
+         return Artifact(length,sha256)
+//         val contents = file.readText()
+//         println(contents)
         // TODO("consctruct Artifact from path")
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
+      //  throw UnsupportedOperationException("NOT IMPLEMENTED")
     }
 
      fun findArtifacts(query: String): Iterable<Artifact> {

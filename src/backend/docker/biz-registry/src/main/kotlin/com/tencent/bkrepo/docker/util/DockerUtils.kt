@@ -141,7 +141,7 @@ abstract class DockerUtils {
         }
 
         fun getFullPath(artifact: Artifact, workContext: DockerWorkContext): String {
-            return workContext.translateRepoId(artifact.getRepoId()) + "/" + artifact.getPath()
+            return workContext.translateRepoId(artifact.getRepoId()) + "/" + artifact.getArtifactPath()
         }
     }
 }

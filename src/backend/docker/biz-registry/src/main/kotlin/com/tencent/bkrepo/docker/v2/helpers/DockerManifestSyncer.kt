@@ -103,7 +103,7 @@ class DockerManifestSyncer() {
 
             while (var11.hasNext()) {
                 val artifact = var11.next() as Artifact
-                val path = artifact.getPath()
+                val path = artifact.getArtifactPath()
                 val filename = PathUtils.getFileName(path)
                 if (!StringUtils.equals(filename, "manifest.json") && !manifestBlobs.contains(filename)) {
                     log.info("Removing the unreferenced blob '{}'", path)
