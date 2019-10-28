@@ -43,6 +43,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import com.tencent.bkrepo.common.storage.util.DataDigestUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import javax.servlet.http.HttpServletRequest
 
 @Service
 class DockerV2LocalRepoHandler @Autowired constructor(
@@ -459,15 +460,16 @@ class DockerV2LocalRepoHandler @Autowired constructor(
     private fun finishPatchUpload(projectId: String,repoName: String,name: String, digest: DockerDigest, uuid: String): ResponseEntity<Any> {
         var dockerRepo = "/$projectId/$repoName/$name"
         val uuidPath = "$dockerRepo/_uploads/$uuid"
+        var context = UploadContext(dockerRepo).projectId(projectId).repoName(repoName)
         if (this.repo.exists(uuidPath)) {
             val blobPath = dockerRepo + "/" + "_uploads" + "/" + digest.filename()
-            this.repo.copy(uuidPath, blobPath)
-            (this.repo.getWorkContextC() as DockerWorkContext).setSystem()
+            this.repo.uploadFromLocal(uuidPath, context)
+            //(this.repo.getWorkContextC() as DockerWorkContext).setSystem()
 
             try {
                 this.repo.delete(uuidPath)
             } finally {
-                (this.repo.getWorkContextC() as DockerWorkContext).unsetSystem()
+                //(this.repo.getWorkContextC() as DockerWorkContext).unsetSystem()
             }
 
             this.repo.setAttribute(blobPath, digest.getDigestAlg(), digest.getDigestHex())
@@ -478,12 +480,15 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         }
     }
 
-    fun patchUpload(dockerRepo: String, uuid: String, stream: InputStream): ResponseEntity<Any> {
+    fun patchUpload(projectId: String,repoName: String,name: String, uuid: String,request: HttpServletRequest): ResponseEntity<Any> {
+        val stream = request.inputStream
+        var dockerRepo = "/$projectId/$repoName/$name"
+        val path  = "$dockerRepo/_uploads/"
         val blobPath = "$dockerRepo/_uploads/$uuid"
         if (!this.repo.canWrite(blobPath)) {
-            return this.consumeStreamAndReturnError(dockerRepo, uuid, stream)
+            return this.consumeStreamAndReturnError(blobPath, uuid, stream)
         } else {
-            val response = this.repo.writeLocal(blobPath,stream)
+            val response = this.repo.writeLocal(path, uuid ,stream)
             if (this.uploadSuccessful(response)) {
                 val artifact = this.repo.artifact(blobPath)
                 if (artifact != null) {

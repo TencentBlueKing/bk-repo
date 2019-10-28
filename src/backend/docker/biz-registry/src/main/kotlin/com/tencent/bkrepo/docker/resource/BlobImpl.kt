@@ -62,10 +62,11 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoHandler) 
             projectId: String,
             repoName: String,
             name: String,
-            uuid: String
+            uuid: String,
+            request: HttpServletRequest
     ): ResponseEntity<Any> {
         dockerRepo.httpHeaders = headers
-        return dockerRepo.startBlobUpload(projectId, repoName, name, uuid)
+        return dockerRepo.patchUpload(projectId, repoName, name, uuid,request)
     }
 
     override fun test(

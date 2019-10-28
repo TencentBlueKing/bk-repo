@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.docker.repomd
 
- class Artifact(contentLength: Long , fielSha256: String )  {
+ class Artifact(contentLength: Int , fielSha256: String )  {
 
      var fielSha256 : String= ""
-     var contentLength : Long = 0
+     var contentLength : Int = 0
      var path : String = ""
      init {
          this.fielSha256 = fielSha256
@@ -14,7 +14,7 @@ package com.tencent.bkrepo.docker.repomd
          return  this.fielSha256
      }
 
-     fun getLength():Long{
+     fun getLength():Int{
          return  this.contentLength
      }
 
