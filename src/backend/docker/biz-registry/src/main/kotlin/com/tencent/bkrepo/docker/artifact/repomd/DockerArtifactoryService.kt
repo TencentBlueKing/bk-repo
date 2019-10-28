@@ -117,6 +117,11 @@ class DockerArtifactoryService @Autowired constructor(
 //        return !statusHolder.isError()
     }
 
+    fun deleteLocal(path: String): Boolean {
+        var f = File(localPath+path)
+        return f.delete()
+    }
+
      fun download(downloadContext: DownloadContext): Response {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
     }
@@ -189,7 +194,7 @@ class DockerArtifactoryService @Autowired constructor(
         }
         var fullPath = localPath + path
         var content  = File(fullPath).readBytes()
-        context.content(content.inputStream()).contentLength(content.size.toLong())
+        context.content(content.inputStream()).contentLength(content.size.toLong()).sha256(DataDigestUtils.sha256FromByteArray(content))
 
         // 保存节点
         val result = nodeResource.create(NodeCreateRequest(
@@ -201,7 +206,9 @@ class DockerArtifactoryService @Autowired constructor(
                 sha256 = context.sha256,
                 operator = context.userId
         ))
-
+        println("aaaaaaaaaaaaaaaa")
+        println(context.sha256)
+        println(content.size)
         if (result.isOk()) {
             val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
             fileStorage.store(context.sha256, context.content!!, storageCredentials)

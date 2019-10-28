@@ -467,12 +467,12 @@ class DockerV2LocalRepoHandler @Autowired constructor(
             //(this.repo.getWorkContextC() as DockerWorkContext).setSystem()
 
             try {
-                this.repo.delete(uuidPath)
+                this.repo.deleteLocal(uuidPath)
             } finally {
                 //(this.repo.getWorkContextC() as DockerWorkContext).unsetSystem()
             }
 
-            this.repo.setAttribute(blobPath, digest.getDigestAlg(), digest.getDigestHex())
+            //this.repo.setAttribute(blobPath, digest.getDigestAlg(), digest.getDigestHex())
             val location = this.getDockerURI("$dockerRepo/blobs/$digest")
             return ResponseEntity.created(location).header("Docker-Distribution-Api-Version", "registry/2.0").header("Content-Length", "0").header("Docker-Content-Digest", digest.toString()).build()
         } else {
