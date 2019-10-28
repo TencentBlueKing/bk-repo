@@ -130,6 +130,7 @@ class NodeService @Autowired constructor(
     fun search(searchRequest: NodeSearchRequest): Page<NodeInfo> {
         searchRequest.page.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "page")
         searchRequest.size.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "size")
+        searchRequest.repoNameList.takeIf { it.isNotEmpty() } ?: throw ErrorCodeException(PARAMETER_INVALID, "repoNameList")
         searchRequest.repoNameList.forEach { checkRepository(searchRequest.projectId, it) }
 
         val query = nodeSearchQuery(searchRequest)
