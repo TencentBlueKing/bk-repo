@@ -42,7 +42,9 @@ object QueryHelper {
                 val escapedPath = NodeUtils.escapeRegex(NodeUtils.formatPath(it))
                 Criteria.where("fullPath").regex("^$escapedPath")
             }
-            criteria.orOperator(*criteriaList.toTypedArray())
+            if(criteriaList.isNotEmpty()) {
+                criteria.orOperator(*criteriaList.toTypedArray())
+            }
             // 元数据匹配
             metadataCondition.filterKeys { it.isNotBlank() }.forEach { (key, value) -> criteria.and("metadata.$key").`is`(value) }
 
