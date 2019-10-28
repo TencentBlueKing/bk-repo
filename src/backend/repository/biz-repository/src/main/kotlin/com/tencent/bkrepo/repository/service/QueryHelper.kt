@@ -35,6 +35,7 @@ object QueryHelper {
             val criteria = Criteria.where("projectId").`is`(projectId)
                     .and("repoName").`in`(repoNameList)
                     .and("deleted").`is`(null)
+                    .and("name").ne("")
 
             // 路径匹配
             val criteriaList = pathPattern.map {
@@ -55,6 +56,7 @@ object QueryHelper {
         val criteria = Criteria.where("projectId").`is`(projectId)
                 .and("repoName").`is`(repoName)
                 .and("deleted").`is`(null)
+                .and("name").ne("")
 
         if (deep) criteria.and("fullPath").regex("^$escapedPath")
         else criteria.and("path").`is`(formattedPath)
