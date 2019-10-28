@@ -2,7 +2,7 @@
 
 <configuration debug="false" scan="false">
     <springProperty scope="context" name="logging.path" source="logging.path" defaultValue="logs"/>
-    <springProperty scope="context" name="application.name" source="spring.application.name"/>
+    <springProperty scope="context" name="application.name" source="spring.application.name" defaultValue="application"/>
 
     <property name="logging.app.file" value="${logging.path}/${application.name}.log"/>
     <property name="logging.framework.file" value="${logging.path}/${application.name}-framework.log"/>
@@ -28,20 +28,6 @@
         </encoder>
     </appender>
 
-    <appender name="error_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${logging.error.file}</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${logging.error.file}.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
-        <encoder>
-            <pattern>${logging.file.pattern}</pattern>
-        </encoder>
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <level>ERROR</level>
-        </filter>
-    </appender>
-
     <appender name="framework_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${logging.framework.file}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -53,13 +39,29 @@
         </encoder>
     </appender>
 
+    <appender name="error_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.error.file}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${logging.error.file}.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${logging.file.pattern}</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${logging.console.pattern}</pattern>
         </encoder>
     </appender>
 
-    <springProfile name="!prod">
+    <springProfile name="default">
         <logger name="com.tencent.bkrepo" level="DEBUG" additivity="false">
             <appender-ref ref="console"/>
         </logger>
@@ -68,12 +70,26 @@
         </root>
     </springProfile>
 
-    <springProfile name="prod, test, dev">
-        <logger name="com.tencent.bkrepo" level="WARN">
+    <springProfile name="test, dev">
+        <logger name="com.tencent.bkrepo" level="DEBUG">
             <appender-ref ref="app_log"/>
         </logger>
 
-        <logger name="org" level="WARN" additivity="false">
+        <logger name="org" level="INFO">
+            <appender-ref ref="framework_log"/>
+        </logger>
+
+        <root level="ERROR">
+            <appender-ref ref="error_log"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="prod">
+        <logger name="com.tencent.bkrepo" level="INFO">
+            <appender-ref ref="app_log"/>
+        </logger>
+
+        <logger name="org" level="WARN">
             <appender-ref ref="framework_log"/>
         </logger>
 
