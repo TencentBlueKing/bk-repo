@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.generic.api
 
 import com.tencent.bkrepo.common.api.annotation.WildcardParam
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFileUploadResponse
 import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFilesData
 import io.swagger.annotations.Api
