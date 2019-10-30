@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.storage.core
+package com.tencent.bkrepo.common.storage
 
 /**
  * 仓库类别枚举类

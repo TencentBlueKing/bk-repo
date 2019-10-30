@@ -9,5 +9,9 @@ import com.tencent.bkrepo.common.storage.core.ClientCredentials
  * @date: 2019-09-17
  */
 class LocalStorageCredentials : ClientCredentials {
-    var path: String = "/data/upload"
+    var path: String = "upload"
+
+    override fun toString(): String {
+        return "LocalStorageCredentials[path: $path]"
+    }
 }

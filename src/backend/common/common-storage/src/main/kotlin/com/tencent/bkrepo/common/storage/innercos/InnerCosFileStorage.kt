@@ -1,7 +1,8 @@
 package com.tencent.bkrepo.common.storage.innercos
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
+import com.tencent.bkrepo.common.storage.cache.CachedFileStorage
+import com.tencent.bkrepo.common.storage.cache.FileCache
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
 import com.tencent.cos.COSClient
 import com.tencent.cos.ClientConfig
@@ -9,12 +10,10 @@ import com.tencent.cos.auth.BasicCOSCredentials
 import com.tencent.cos.exception.CosServiceException
 import com.tencent.cos.model.DeleteObjectRequest
 import com.tencent.cos.model.GetObjectRequest
-import com.tencent.cos.model.ObjectMetadata
 import com.tencent.cos.model.PutObjectRequest
 import com.tencent.cos.region.Region
 import com.tencent.cos.transfer.TransferManager
 import java.io.File
-import java.io.InputStream
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -27,12 +26,13 @@ import org.apache.http.HttpStatus
  * @date: 2019-09-17
  */
 class InnerCosFileStorage(
+    fileCache: FileCache,
     locateStrategy: LocateStrategy,
     properties: InnerCosProperties
-) : AbstractFileStorage<InnerCosCredentials, InnerCosClient>(locateStrategy, properties) {
+) : CachedFileStorage<InnerCosCredentials, InnerCosClient>(fileCache, locateStrategy, properties) {
 
     private val executor = ThreadPoolExecutor(100, 200, 5L, TimeUnit.SECONDS,
-            LinkedBlockingQueue(1024), ThreadFactoryBuilder().setNameFormat("innercos-storage-uploader-pool-%d").build(),
+            LinkedBlockingQueue(1024), ThreadFactoryBuilder().setNameFormat("inner-cos-storage-uploader-pool-%d").build(),
             ThreadPoolExecutor.AbortPolicy())
 
     override fun createClient(credentials: InnerCosCredentials): InnerCosClient {
@@ -46,42 +46,29 @@ class InnerCosFileStorage(
         super.onClientRemoval(credentials, client)
     }
 
-    override fun store(path: String, filename: String, file: File, client: InnerCosClient) {
-        // 支持根据文件的大小自动选择单文件上传或者分块上传
+    override fun doStore(path: String, filename: String, cachedFile: File, client: InnerCosClient) {
         val transferManager = TransferManager(client.cosClient, executor, false)
-        val putObjectRequest = PutObjectRequest(client.bucketName, filename, file)
+        val putObjectRequest = PutObjectRequest(client.bucketName, filename, cachedFile)
         val upload = transferManager.upload(putObjectRequest)
-        // 等待传输结束
         upload.waitForCompletion()
         transferManager.shutdownNow()
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream, client: InnerCosClient) {
-        val fileSize = inputStream.available().toLong()
-        // 支持根据文件的大小自动选择单文件上传或者分块上传
-        val transferManager = TransferManager(client.cosClient, executor, false)
-        val objectMetadata = ObjectMetadata().apply { contentLength = fileSize }
-        val putObjectRequest = PutObjectRequest(client.bucketName, filename, inputStream, objectMetadata)
-        transferManager.upload(putObjectRequest)
-    }
-
-    override fun delete(path: String, filename: String, client: InnerCosClient) {
+    override fun doDelete(path: String, filename: String, client: InnerCosClient) {
         val deleteObjectRequest = DeleteObjectRequest(client.bucketName, filename)
         client.cosClient.deleteObject(deleteObjectRequest)
     }
 
-    override fun load(path: String, filename: String, client: InnerCosClient): File? {
-        return if (exist(path, filename, client)) {
-            val file = createFile(filename)
-            val getObjectRequest = GetObjectRequest(client.bucketName, filename)
-            val transferManager = TransferManager(client.cosClient, executor, false)
-            val download = transferManager.download(getObjectRequest, file)
-            download.waitForCompletion()
-            return file
-        } else null
+    override fun doLoad(path: String, filename: String, file: File, client: InnerCosClient): File? {
+        val getObjectRequest = GetObjectRequest(client.bucketName, filename)
+        val transferManager = TransferManager(client.cosClient, executor, false)
+        val download = transferManager.download(getObjectRequest, file)
+        download.waitForCompletion()
+        transferManager.shutdownNow()
+        return file
     }
 
-    override fun exist(path: String, filename: String, client: InnerCosClient): Boolean {
+    override fun checkExist(path: String, filename: String, client: InnerCosClient): Boolean {
         var exists = true
         try {
             client.cosClient.getObjectMetadata(client.bucketName, filename)
@@ -89,9 +76,5 @@ class InnerCosFileStorage(
             exists = cosServiceException.statusCode != HttpStatus.SC_NOT_FOUND
         }
         return exists
-    }
-
-    private fun createFile(filename: String): File? {
-        return localFileCache!!.touch(filename)
     }
 }

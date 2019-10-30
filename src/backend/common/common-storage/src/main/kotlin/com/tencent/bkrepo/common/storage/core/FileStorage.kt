@@ -14,27 +14,22 @@ import java.io.InputStream
 interface FileStorage {
 
     /**
-     * 存储文件。
+     * 存储文件
      */
-    fun store(hash: String, inputStream: InputStream, credentials: ClientCredentials? = null)
+    fun store(hash: String, inputStream: InputStream, clientCredentials: ClientCredentials? = null)
 
     /**
-     * 加载文件。记住InputStream用完后关闭
+     * 加载文件
      */
-    fun load(hash: String, credentials: ClientCredentials? = null): File?
+    fun load(hash: String, clientCredentials: ClientCredentials? = null): File?
 
     /**
      * 删除文件
      */
-    fun delete(hash: String, credentials: ClientCredentials? = null)
+    fun delete(hash: String, clientCredentials: ClientCredentials? = null)
 
     /**
      * 判断是否存在
      */
-    fun exist(hash: String, credentials: ClientCredentials? = null): Boolean
-
-    /**
-     * 获取存储属性
-     */
-    fun getStorageProperties(): StorageProperties
+    fun exist(hash: String, clientCredentials: ClientCredentials? = null): Boolean
 }
