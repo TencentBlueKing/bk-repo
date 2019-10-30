@@ -206,9 +206,9 @@ class DownloadService @Autowired constructor(
         }
     }
 
+    data class Range(val start: Long?, val end: Long?)
+
     companion object {
         private val logger = LoggerFactory.getLogger(DownloadService::class.java)
     }
 }
-
-data class Range(val start: Long?, val end: Long?)

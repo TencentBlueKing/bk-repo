@@ -1,17 +1,15 @@
 package com.tencent.bkrepo.generic.resource
 
+import com.tencent.bkrepo.common.api.pojo.OctetStreamFileItem
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.api.UploadResource
 import com.tencent.bkrepo.generic.pojo.BlockInfo
-import com.tencent.bkrepo.generic.pojo.upload.BlockUploadRequest
-import com.tencent.bkrepo.generic.pojo.upload.SimpleUploadRequest
 import com.tencent.bkrepo.generic.pojo.upload.UploadCompleteRequest
-import com.tencent.bkrepo.generic.pojo.upload.UploadPreCheckRequest
 import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.UploadService
+import javax.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.multipart.MultipartFile
 
 /**
  * 通用文件上传服务接口实现类
@@ -24,19 +22,17 @@ class UploadResourceImpl @Autowired constructor(
     private val uploadService: UploadService
 ) : UploadResource {
 
-    override fun simpleUpload(userId: String, projectId: String, repoName: String, fullPath: String, file: MultipartFile, request: SimpleUploadRequest): Response<Void> {
-        val path = request.fullPath ?: fullPath
-        uploadService.simpleUpload(userId, projectId, repoName, path, request.sha256, request.expires, request.overwrite, file)
+    override fun simpleUpload(userId: String, projectId: String, repoName: String, fullPath: String, fileItem: OctetStreamFileItem, request: HttpServletRequest): Response<Void> {
+        uploadService.simpleUpload(userId, projectId, repoName, fullPath, fileItem, request)
         return Response.success()
     }
 
-    override fun preCheck(userId: String, projectId: String, repoName: String, fullPath: String, request: UploadPreCheckRequest): Response<UploadTransactionInfo> {
-        val path = request.fullPath ?: fullPath
-        return Response.success(uploadService.preCheck(userId, projectId, repoName, path, request.sha256, request.expires, request.overwrite))
+    override fun preCheck(userId: String, projectId: String, repoName: String, fullPath: String, request: HttpServletRequest): Response<UploadTransactionInfo> {
+        return Response.success(uploadService.preCheck(userId, projectId, repoName, fullPath, request))
     }
 
-    override fun blockUpload(userId: String, uploadId: String, sequence: Int, file: MultipartFile, request: BlockUploadRequest): Response<Void> {
-        uploadService.blockUpload(userId, uploadId, sequence, file, request.size, request.sha256)
+    override fun blockUpload(userId: String, uploadId: String, sequence: Int, fileItem: OctetStreamFileItem, request: HttpServletRequest): Response<Void> {
+        uploadService.blockUpload(userId, uploadId, sequence, fileItem, request)
         return Response.success()
     }
 
