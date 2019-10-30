@@ -82,26 +82,41 @@ abstract class DockerUtils {
         }
 
         fun getBlobGlobally(repo: DockerArtifactoryService, blobFilename: String, searchPolicy: DockerSearchBlobPolicy): Artifact? {
-            var repoBlobs = (repo.getWorkContextC() as DockerWorkContext).findBlobsGlobally(blobFilename, searchPolicy)
-            if (repoBlobs != null && !Iterables.isEmpty(repoBlobs!!)) {
-                // TODO : iter
+//                var repoBlobs = (repo.getWorkContextC() as DockerWorkContext).findBlobsGlobally(blobFilename, searchPolicy)
+//                if (repoBlobs != null && !Iterables.isEmpty(repoBlobs!!)) {
+//                    // TODO : iter
 //                val var10001 = DockerV2LocalRepoHandler.nonTempUploads
 //                var10001.javaClass
 //                repoBlobs = Iterables.filter(repoBlobs!!, Predicate<var10001.javaClass> { var10001.test(it) })
-                if (!Iterables.isEmpty(repoBlobs!!)) {
-                    var foundBlob = repoBlobs!!.iterator().next() as Artifact
-                    val var5 = repoBlobs!!.iterator()
+//                    if (!Iterables.isEmpty(repoBlobs!!)) {
+//                        var foundBlob = repoBlobs!!.iterator().next() as Artifact
+//                        val var5 = repoBlobs!!.iterator()
+//
+//                        while (var5.hasNext()) {
+//                            val blob = var5.next() as Artifact
+//                            if (repo.getRepoId().equals(blob.getRepoId())) {
+//                                foundBlob = blob
+//                                break
+//                            }
+//                        }
+//
+//                        return foundBlob
+//                    }
+//                }
 
-                    while (var5.hasNext()) {
-                        val blob = var5.next() as Artifact
-                        if (repo.getRepoId().equals(blob.getRepoId())) {
-                            foundBlob = blob
-                            break
-                        }
-                    }
+            return null
+        }
 
-                    return foundBlob
+        fun findBlobGlobally(repo: DockerArtifactoryService, projectId :String,repoName: String,path: String, fileDigest:String): Artifact? {
+            val fullPath = "/$projectId/$repoName/$path"
+            var nodeDetail = repo.findArtifacts(projectId, repoName,path )
+            if (nodeDetail == null) {
+                return null
+            }else{
+                if (nodeDetail.nodeInfo.sha256 == fileDigest) {
+                    return Artifact(fullPath).sha256(nodeDetail.nodeInfo.sha256!!).contentLength(nodeDetail.nodeInfo.size)
                 }
+                return null
             }
 
             return null
@@ -118,14 +133,14 @@ abstract class DockerUtils {
                 }
             }
 
-            return getBlobFromRepoPath(repo, blobFilename, dockerRepoPath)
+            return getBlobFromRepoPath(repo, blobFilename, dockerRepoPath,"","")
         }
 
-        fun getBlobFromRepoPath(repo: DockerArtifactoryService, blobFilename: String, dockerRepoPath: String): Artifact? {
-            val tempBlobPath = "$dockerRepoPath/_uploads/$blobFilename"
+        fun getBlobFromRepoPath(repo: DockerArtifactoryService, projectId: String, repoName:String ,path: String, fileDigest:String): Artifact? {
+            val tempBlobPath = "/$projectId/$repoName/_uploads/$path"
             log.info("Searching blob in '{}'", tempBlobPath)
             var blob: Artifact?
-            if (repo.exists(tempBlobPath)) {
+            if (repo.existsLocal(tempBlobPath)) {
                 log.debug("Blob found in: '{}'", tempBlobPath)
                 blob = repo.artifact(tempBlobPath)
                 return blob
@@ -135,8 +150,8 @@ abstract class DockerUtils {
 //                }
             }
 
-            log.debug("Attempting to search blob {} globally", blobFilename)
-            blob = getBlobGlobally(repo, blobFilename, DockerSearchBlobPolicy.SHA_256)
+            log.debug("Attempting to search blob {} globally", path)
+            blob = findBlobGlobally(repo, projectId, repoName,path,fileDigest)
             return blob
         }
 

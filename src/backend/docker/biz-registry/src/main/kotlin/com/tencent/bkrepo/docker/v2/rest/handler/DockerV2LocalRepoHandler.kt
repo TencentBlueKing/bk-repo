@@ -43,7 +43,11 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import com.tencent.bkrepo.common.storage.util.DataDigestUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import com.tencent.bkrepo.docker.repomd.DownloadContext
 import javax.servlet.http.HttpServletRequest
+import org.springframework.core.io.InputStreamResource
+import org.springframework.http.HttpStatus
+
 
 @Service
 class DockerV2LocalRepoHandler @Autowired constructor(
@@ -303,13 +307,17 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         return context
     }
 
-    override fun isBlobExists(name: String, digest: DockerDigest): ResponseEntity<Any> {
+    override fun isBlobExists(projectId: String, repoName: String,name: String, digest: DockerDigest): ResponseEntity<Any> {
+        val repoPath = "/$projectId/$repoName/$name"
         if (DockerSchemaUtils.isEmptyBlob(digest)) {
-            log.debug("Request for empty layer for image {}, returning dummy HEAD response.", name)
+            log.debug("Request for empty layer for image {}, returning dummy HEAD response.", repoPath)
             return DockerSchemaUtils.emptyBlobHeadResponse()
         } else {
-            val blob = DockerUtils.getBlobFromRepoPath(this.repo, digest.filename(), name)
+            println("aaaaaaaaaaaaaaa")
+            val blob = DockerUtils.getBlobFromRepoPath(this.repo, projectId,repoName,name,digest.getDigestHex())
+            println("bbbbbbbbbbbbbbb")
             if (blob != null) {
+                println("cccccccccccc")
                 val response = ResponseEntity.ok().header("Docker-Distribution-Api-Version", "registry/2.0")
                         .header("Docker-Content-Digest", digest.toString())
                         .header("Content-Length", blob.getLength().toString())
@@ -321,37 +329,36 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         }
     }
 
-//    override fun getBlob(dockerRepo: String, digest: DockerDigest): Response {
-//        log.info("Fetching docker blob '{}' from repo '{}'", digest, this.repo.getRepoId())
-//        if (DockerSchemaUtils.isEmptyBlob(digest)) {
-//            log.debug("Request for empty layer for image {}, returning dummy GET response.", dockerRepo)
-//            return DockerSchemaUtils.emptyBlobGetResponse()
-//        } else {
-//            val blob = this.getRepoBlob(digest)
-//            if (blob != null) {
-//                val response = this.repo.download(DownloadContext(blob.getPath(), this.httpHeaders).header("artifactory.disableRedirect", "false"))
-//                return Response.fromResponse(response).header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Content-Digest", digest).build()
-//            } else {
-//                return DockerV2Errors.blobUnknown(digest.toString())
-//            }
-//        }
-//    }
+    override fun getBlob(projectId: String,repoName:String,name:String,  digest: DockerDigest): ResponseEntity<Any> {
+        log.info("Fetching docker blob '{}' from repo '{}'", digest, this.repo.getRepoId())
+        var dockerRepo = "/$projectId/$repoName/$name"
+        if (DockerSchemaUtils.isEmptyBlob(digest)) {
+            log.debug("Request for empty layer for image {}, returning dummy GET response.", dockerRepo)
+            return DockerSchemaUtils.emptyBlobGetResponse()
+        } else {
+            val blob = this.getRepoBlob(projectId, repoName, name,digest)
+            if (blob != null) {
 
-    private fun getRepoBlob(digest: DockerDigest): Artifact? {
-        var repoBlobs = this.repo.findArtifacts("", digest.filename())
-        if (repoBlobs != null) {
-            val var10001 = nonTempUploads
-            var10001.javaClass
-            // repoBlobs = Iterables.filter(repoBlobs, Predicate<T> { var10001.test(it) })
-            val var3 = repoBlobs.iterator()
+                var context = DownloadContext(dockerRepo).projectId(projectId).repoName(repoName).sha256(digest.getDigestHex())
+                var file = this.repo.download(context)
+                val inputStreamResource = InputStreamResource(file.inputStream())
+                httpHeaders.contentLength = file.length()
+                httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
+                httpHeaders.set("Docker-Content-Digest", digest.toString())
+                return ResponseEntity(inputStreamResource, httpHeaders, HttpStatus.OK)
+            } else {
+                return DockerV2Errors.blobUnknown(digest.toString())
+            }
+        }
+    }
 
-            while (var3.hasNext()) {
-                val repoBlob = var3.next()
-                val blobPath = repoBlob.getArtifactPath()
-                if (this.repo.canRead(blobPath)) {
-                    log.debug("Found repo blob at '{}'", blobPath)
-                    return repoBlob
-                }
+    private fun getRepoBlob(projectId: String,repoName:String,name:String, digest: DockerDigest): Artifact? {
+        var repoBlobs = this.repo.findArtifacts(projectId, repoName,name)
+        if (repoBlobs == null) {
+            return null
+        }else{
+            if (repoBlobs.nodeInfo.sha256  == digest.getDigestHex()) {
+                return Artifact("/$projectId/$repoName/$name")
             }
         }
 
@@ -415,7 +422,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         }
     }
 
-    fun uploadBlob(projectId: String,repoName: String,name: String, digest: DockerDigest, uuid: String, stream: InputStream): ResponseEntity<Any> {
+    override fun uploadBlob(projectId: String,repoName: String,name: String, digest: DockerDigest, uuid: String, stream: InputStream): ResponseEntity<Any> {
 
         return if (this.putHasStream()) this.uploadBlobFromPut(projectId, repoName,name, digest, stream) else this.finishPatchUpload(projectId, repoName,name, digest, uuid)
     }
@@ -480,7 +487,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         }
     }
 
-    fun patchUpload(projectId: String,repoName: String,name: String, uuid: String,request: HttpServletRequest): ResponseEntity<Any> {
+    override fun patchUpload(projectId: String,repoName: String,name: String, uuid: String,request: HttpServletRequest): ResponseEntity<Any> {
         val stream = request.inputStream
         var dockerRepo = "/$projectId/$repoName/$name"
         val path  = "$dockerRepo/_uploads/"

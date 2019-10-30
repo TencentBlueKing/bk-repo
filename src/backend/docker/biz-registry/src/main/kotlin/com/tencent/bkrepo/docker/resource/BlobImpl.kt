@@ -33,18 +33,17 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoHandler) 
         name: String,
         digest: String
     ): ResponseEntity<Any> {
-        return dockerRepo.isBlobExists(name, DockerDigest(digest))
+        return dockerRepo.isBlobExists(projectId, repoName, name,DockerDigest(digest))
     }
 
-//    override fun getBlob(
-//        projectId: String,
-//        repoName: String,
-//        name: String,
-//        digest: String
-//    ): Response {
-//        var dockerRepoName = projectId + "/" + repoName + "/" + name
-//        return dockerRepo.isBlobExists(dockerRepoName, DockerDigest(digest))
-//    }
+    override fun getBlob(
+        projectId: String,
+        repoName: String,
+        name: String,
+        digest: String
+    ): ResponseEntity<Any> {
+        return dockerRepo.getBlob(projectId,repoName, name, DockerDigest(digest))
+    }
 
    override fun startBlobUpload(
        headers: HttpHeaders,

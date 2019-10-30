@@ -63,22 +63,22 @@ interface Blob {
         digest: String
     ): ResponseEntity<Any>
 
-//    @ApiOperation("获取blob文件")
-//    @RequestMapping(method = [RequestMethod.GET], value = ["{projectId}/{repoName}/{name}/blobs/{digest}"])
-//    fun getBlob(
-//        @PathVariable
-//        @ApiParam(value = "projectId", required = true)
-//        projectId: String,
-//        @PathVariable
-//        @ApiParam(value = "repoName", required = true)
-//        repoName: String,
-//        @PathVariable
-//        @ApiParam(value = "name", required = true)
-//        name: String,
-//        @PathVariable
-//        @ApiParam(value = "digest", required = true)
-//        digest: String
-//    ): Response
+    @ApiOperation("获取blob文件")
+    @RequestMapping(method = [RequestMethod.GET], value = ["{projectId}/{repoName}/{name}/blobs/{digest}"])
+    fun getBlob(
+        @PathVariable
+        @ApiParam(value = "projectId", required = true)
+        projectId: String,
+        @PathVariable
+        @ApiParam(value = "repoName", required = true)
+        repoName: String,
+        @PathVariable
+        @ApiParam(value = "name", required = true)
+        name: String,
+        @PathVariable
+        @ApiParam(value = "digest", required = true)
+        digest: String
+    ): ResponseEntity<Any>
 
     @ApiOperation("开始上传blob文件")
     @RequestMapping(method = [RequestMethod.POST], value = ["{projectId}/{repoName}/{name}/blobs/uploads"])
