@@ -14,8 +14,6 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty
 @ConfigurationProperties("storage.innercos")
 class InnerCosProperties : StorageProperties() {
 
-    var enabled: Boolean = false
-
     @NestedConfigurationProperty
     override var credentials: ClientCredentials = InnerCosCredentials()
 }

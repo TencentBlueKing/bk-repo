@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.storage.util
 
-import com.tencent.bkrepo.common.storage.core.StorageTypeEnum
+import com.tencent.bkrepo.common.storage.StorageTypeEnum
 import com.tencent.bkrepo.common.storage.innercos.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.local.LocalStorageCredentials
 import org.junit.jupiter.api.Test

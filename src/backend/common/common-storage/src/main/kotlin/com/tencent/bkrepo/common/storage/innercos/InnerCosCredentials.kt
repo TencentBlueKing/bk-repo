@@ -13,4 +13,8 @@ class InnerCosCredentials : ClientCredentials {
     var secretKey: String? = null
     var region: String? = null
     var bucket = ""
+
+    override fun toString(): String {
+        return "InnerCosCredentials[region: $region, bucket: $bucket]"
+    }
 }

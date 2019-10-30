@@ -6,6 +6,10 @@ import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
+import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
+import com.tencent.bkrepo.generic.constant.HEADER_SHA256
+import com.tencent.bkrepo.generic.constant.HEADER_SIZE
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
 import okhttp3.MediaType
@@ -42,23 +46,17 @@ class IntegrationTest {
     @Test
     @DisplayName("随机字符串简单上传/下载测试")
     fun randomStringSimpleFileTest() {
-        val content = RandomStringUtils.randomAlphabetic(100)
+        val content = RandomStringUtils.randomAlphabetic(1024)
         val sha256 = FileDigestUtils.fileSha256(listOf(content.byteInputStream()))
-
-        val formBody = MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("file", "filename", RequestBody.create(MediaType.parse("text/plain"), content))
-                .addFormDataPart("sha256", sha256)
-                .addFormDataPart("overwrite", "true")
-                .build()
-
 
         val request = Request.Builder().url("http://127.0.0.1:8001/upload/simple/test/test/root/random.txt")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-                .post(formBody)
+                .header(BKREPO_META_PREFIX + "key", "value")
+                .header(HEADER_SHA256, sha256)
+                .header(HEADER_OVERWRITE, "true")
+                .put(RequestBody.create(MediaType.parse("application/octet-stream"), content))
                 .build()
         checkResponse(client.newCall(request).execute(), object: TypeReference<Response<Void>>(){})
-
 
         val downloadRequest = Request.Builder().url("http://127.0.0.1:8001/download/simple/test/test/root/random.txt")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
@@ -79,15 +77,10 @@ class IntegrationTest {
 
         val uploadSha256 = FileDigestUtils.fileSha256(listOf(file.inputStream()))
 
-        val formBody = MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("file", "filename", RequestBody.create(MediaType.parse("text/plain"), file))
-                .addFormDataPart("overwrite", "true")
-                .build()
-
         val request = Request.Builder().url("http://127.0.0.1:8001/upload/simple/test/test/root/opencv.zip")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-                .post(formBody)
+                .header(HEADER_OVERWRITE, "true")
+                .post(RequestBody.create(MediaType.parse("application/octet-stream"), file))
                 .build()
         checkResponse(client.newCall(request).execute(), object: TypeReference<Response<Void>>(){})
 
@@ -136,15 +129,12 @@ class IntegrationTest {
             val byteArrayInputStream = ByteArrayInputStream(buffer)
             val blockSha256 = FileDigestUtils.fileSha256(listOf(byteArrayInputStream))
             sha256List.add(blockSha256)
-            val blockFormBody = MultipartBody.Builder().setType(MultipartBody.FORM)
-                    .addFormDataPart("file", "filename", RequestBody.create(MediaType.parse("text/plain"), buffer))
-                    .addFormDataPart("sha256", blockSha256)
-                    .addFormDataPart("size", blockSize.toString())
-                    .build()
 
             val blockRequest = Request.Builder().url("http://127.0.0.1:8001/upload/block/$uploadId/$i")
                     .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
-                    .put(blockFormBody)
+                    .header(HEADER_SHA256, blockSha256)
+                    .header(HEADER_SIZE, blockSize.toString())
+                    .post(RequestBody.create(MediaType.parse("application/octet-stream"), buffer))
                     .build()
             checkResponse(client.newCall(blockRequest).execute(), object: TypeReference<Response<Void>>(){})
         }

@@ -8,26 +8,9 @@ package com.tencent.bkrepo.common.storage.core
  */
 abstract class StorageProperties {
 
-        open var localCache: LocalCache = LocalCache()
-
         open var clientCache: ClientCache = ClientCache()
 
         open lateinit var credentials: ClientCredentials
-
-        class LocalCache {
-                /**
-                 * 本地文件缓存开关
-                 */
-                var enabled: Boolean = true
-                /**
-                 * 存放缓存文件的本地目录
-                 */
-                var path: String = "/data/cached"
-                /**
-                 * 缓存文件时间，单位秒
-                 */
-                var expires: Long = 60 * 60L
-        }
 
         class ClientCache {
                 /**

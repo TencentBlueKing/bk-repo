@@ -34,7 +34,6 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class RepositoryService @Autowired constructor(
     private val repoRepository: RepoRepository,
-    private val nodeRepository: NodeRepository,
     private val mongoTemplate: MongoTemplate
 ) {
     private fun queryModel(projectId: String, name: String, type: String? = null): TRepository? {

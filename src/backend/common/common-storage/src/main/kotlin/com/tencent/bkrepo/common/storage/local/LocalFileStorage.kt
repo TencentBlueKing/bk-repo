@@ -16,9 +16,7 @@ class LocalFileStorage(
     properties: LocalStorageProperties
 ) : AbstractFileStorage<LocalStorageCredentials, LocalStorageClient>(locateStrategy, properties) {
 
-    override fun store(path: String, filename: String, file: File, client: LocalStorageClient) {
-        file.inputStream().use { client.store(path, filename, file.inputStream()) }
-    }
+    override fun createClient(credentials: LocalStorageCredentials) = LocalStorageClient(credentials.path)
 
     override fun store(path: String, filename: String, inputStream: InputStream, client: LocalStorageClient) {
         client.store(path, filename, inputStream)
@@ -35,6 +33,4 @@ class LocalFileStorage(
     override fun exist(path: String, filename: String, client: LocalStorageClient): Boolean {
         return client.exist(path, filename)
     }
-
-    override fun createClient(credentials: LocalStorageCredentials) = LocalStorageClient(credentials.path)
 }

@@ -15,5 +15,6 @@ class WebMvcConfig : WebMvcConfigurer {
 
     override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
         resolvers.add(WildcardParamMethodArgumentResolver())
+        resolvers.add(OctetStreamFileItemMethodArgumentResolver())
     }
 }

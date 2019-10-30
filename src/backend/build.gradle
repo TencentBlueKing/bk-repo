@@ -11,6 +11,7 @@ buildscript {
         jasyptVersion = "2.1.2"
         awsS3Version = "1.11.631"
         guavaVersion = "28.1-jre"
+        commonsIoVersion = "2.6"
     }
 
     repositories {
@@ -129,7 +130,8 @@ subprojects {
             dependency "com.github.ulisesbocchio:jasypt-spring-boot-starter:$jasyptVersion"
             dependency "com.amazonaws:aws-java-sdk-s3:$awsS3Version"
             dependency "com.google.guava:guava:$guavaVersion"
-            
+            dependency "commons-io:commons-io:$commonsIoVersion"
+
         }
 
     }

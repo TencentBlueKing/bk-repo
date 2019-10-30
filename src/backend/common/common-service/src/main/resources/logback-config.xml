@@ -61,7 +61,7 @@
         </encoder>
     </appender>
 
-    <springProfile name="default">
+    <springProfile name="default, carrypan">
         <logger name="com.tencent.bkrepo" level="DEBUG" additivity="false">
             <appender-ref ref="console"/>
         </logger>

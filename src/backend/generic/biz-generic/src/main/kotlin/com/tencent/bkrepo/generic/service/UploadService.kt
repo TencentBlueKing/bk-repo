@@ -6,10 +6,15 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.OctetStreamFileItem
 import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils.fileSha256
+import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
+import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
+import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
+import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.REPO_TYPE
 import com.tencent.bkrepo.generic.constant.UploadStatusEnum
 import com.tencent.bkrepo.generic.model.TBlockRecord
@@ -24,13 +29,13 @@ import com.tencent.bkrepo.repository.pojo.node.FileBlock
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
 import java.time.LocalDateTime
+import javax.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.multipart.MultipartFile
 
 /**
  * 通用文件上传服务类
@@ -51,17 +56,26 @@ class UploadService @Autowired constructor(
     private val uploadTransactionExpires: Long = 3600 * 12
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun simpleUpload(userId: String, projectId: String, repoName: String, fullPath: String, sha256: String?, expires: Long, overwrite: Boolean, file: MultipartFile) {
+    fun simpleUpload(userId: String, projectId: String, repoName: String, fullPath: String, fileItem: OctetStreamFileItem, request: HttpServletRequest) {
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
 
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
         val fullUri = "$projectId/$repoName/$formattedFullPath"
+        // 解析参数
+        val sha256 = getHeader(HEADER_SHA256, request)
+        val expires = getLongHeader(HEADER_EXPIRES, request)
+        val overwrite = getBooleanHeader(HEADER_OVERWRITE, request)
+        val metadata = parseMetadata(request)
+        val contentLength = request.contentLengthLong
+        val size = fileItem.getSize()
+
         // 参数格式校验
         expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
-        file.takeUnless { it.isEmpty } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_NULL, "file")
+        contentLength.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "content length")
+        size.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_NULL, "file content")
 
         // 校验sha256
-        val calculatedSha256 = fileSha256(listOf(file.inputStream))
+        val calculatedSha256 = fileSha256(listOf(fileItem.getInputStream()))
         if (sha256 != null && calculatedSha256 != sha256) {
             logger.warn("user[$userId] simply upload file [$fullUri] failed: file sha256 verification failed")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
@@ -81,15 +95,16 @@ class UploadService @Autowired constructor(
                 fullPath = formattedFullPath,
                 expires = expires,
                 overwrite = overwrite,
-                size = file.size,
+                size = size,
                 sha256 = calculatedSha256,
+                metadata = metadata,
                 operator = userId
         ))
 
         if (result.isOk()) {
             val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-            fileStorage.store(calculatedSha256, file.inputStream, storageCredentials)
-            logger.debug("user[$userId] simply upload file [$fullUri] success")
+            fileStorage.store(calculatedSha256, fileItem.getInputStream(), storageCredentials)
+            logger.info("user[$userId] simply upload file [$fullUri] success")
         } else {
             logger.warn("user[$userId] simply upload file [$fullUri] failed: [${result.code}, ${result.message}]")
             throw ExternalErrorCodeException(result.code, result.message)
@@ -97,8 +112,12 @@ class UploadService @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun preCheck(userId: String, projectId: String, repoName: String, fullPath: String, sha256: String?, expires: Long, overwrite: Boolean): UploadTransactionInfo {
+    fun preCheck(userId: String, projectId: String, repoName: String, fullPath: String, request: HttpServletRequest): UploadTransactionInfo {
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+
+        // 解析参数
+        val expires = getLongHeader(HEADER_EXPIRES, request)
+        val overwrite = getBooleanHeader(HEADER_OVERWRITE, request)
 
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
         val fullUri = "$projectId/$repoName/$formattedFullPath"
@@ -136,14 +155,21 @@ class UploadService @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun blockUpload(userId: String, uploadId: String, sequence: Int, file: MultipartFile, size: Long?, sha256: String?) {
+    fun blockUpload(userId: String, uploadId: String, sequence: Int, fileItem: OctetStreamFileItem, request: HttpServletRequest) {
+        // 解析参数
+        val sha256 = getHeader(HEADER_SHA256, request)
+        val contentLength = request.contentLengthLong
+        val size = fileItem.getSize()
+
         // 参数校验
-        file.takeUnless { it.isEmpty } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_NULL, "file")
         sequence.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sequence")
+        contentLength.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "content length")
+        size.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_NULL, "file content")
 
         // 判断uploadId是否存在
         val uploadTransaction = uploadTransactionRepository.findByIdOrNull(uploadId) ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, uploadId)
         val fullUri = "$uploadId/$sequence"
+
         // 鉴权
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, uploadTransaction.projectId, uploadTransaction.repoName))
 
@@ -152,13 +178,9 @@ class UploadService @Autowired constructor(
             logger.warn("user[$userId] upload block [$fullUri] failed: ${uploadTransaction.repoName} not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, uploadTransaction.repoName)
         }
-        // 校验size
-        if (size != null && file.size != size) {
-            logger.warn("user[$userId] upload block [$fullUri] failed: file size verification failed")
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
-        }
+
         // 校验sha256
-        val calculatedSha256 = fileSha256(listOf(file.inputStream))
+        val calculatedSha256 = fileSha256(listOf(fileItem.getInputStream()))
         if (sha256 != null && calculatedSha256 != sha256) {
             logger.warn("user[$userId] upload block [$fullUri] failed: file sha256 verification failed")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
@@ -173,16 +195,16 @@ class UploadService @Autowired constructor(
                 lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now(),
                 sequence = sequence,
-                size = file.size,
+                size = size,
                 sha256 = calculatedSha256,
                 uploadId = uploadId
         ))
 
         // 保存文件
         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-        fileStorage.store(calculatedSha256, file.inputStream, storageCredentials)
+        fileStorage.store(calculatedSha256, fileItem.getInputStream(), storageCredentials)
 
-        logger.debug("user[$userId] upload block [$fullUri] success.")
+        logger.info("user[$userId] upload block [$fullUri] success.")
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -228,7 +250,6 @@ class UploadService @Autowired constructor(
             throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_NULL, "file block record")
         }
         // 分块记录数量一致性
-        logger.debug("blockSha256Str: $blockSha256ListStr")
         val blockSha256List = blockSha256ListStr?.split(",")
 
         blockSha256List?.run {
@@ -284,6 +305,43 @@ class UploadService @Autowired constructor(
         // 鉴权
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, uploadTransaction.projectId, uploadTransaction.repoName))
         return blockRecordRepository.findByUploadId(uploadId).map { BlockInfo(size = it.size, sha256 = it.sha256, sequence = it.sequence) }
+    }
+
+    private fun getLongHeader(header: String, request: HttpServletRequest): Long {
+        return try {
+            getHeader(header, request)?.toLong() ?: 0L
+        } catch (exception: Exception) {
+            0L
+        }
+    }
+
+    private fun getBooleanHeader(header: String, request: HttpServletRequest): Boolean {
+        return try {
+            getHeader(header, request)?.toBoolean() ?: false
+        } catch (exception: Exception) {
+            false
+        }
+    }
+
+    private fun getHeader(header: String, request: HttpServletRequest): String? {
+        return request.getHeader(header)
+    }
+
+    private fun parseMetadata(request: HttpServletRequest): Map<String, String> {
+        val metadata = HashMap<String, String>()
+        val headerNames = request.headerNames
+        while (headerNames.hasMoreElements()) {
+            val headerName = headerNames.nextElement()
+            if (headerName.startsWith(BKREPO_META_PREFIX)) {
+                val key = headerName.replace(BKREPO_META_PREFIX, "")
+                if (key.trim().isNotEmpty()) {
+                    val value = request.getHeader(headerName)
+                    metadata[key] = value
+                }
+            }
+        }
+
+        return metadata
     }
 
     companion object {
