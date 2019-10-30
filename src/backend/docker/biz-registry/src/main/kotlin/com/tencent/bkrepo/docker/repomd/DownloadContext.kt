@@ -3,15 +3,40 @@ package com.tencent.bkrepo.docker.repomd
 import com.google.common.collect.Maps
 import lombok.Generated
 import org.springframework.http.HttpHeaders
+import java.io.InputStream
 
-public class DownloadContext(path: String, httpHeaders: HttpHeaders) {
+public class DownloadContext(path: String) {
     val FORCE_GET_STREAM_HEADER = "artifactory.disableRedirect"
-    private var path: String? = null
     private var skipStatsUpdate = false
     private val requestHeaders = Maps.newHashMap<String, String>()
 
-    fun path(path: String): DownloadContext {
-        this.path = path
+    var name: String = ""
+    var content: InputStream? = null
+    var contentLength: Long = 0
+    var sha1: String = ""
+    var sha256: String = ""
+    var md5: String = ""
+    var projectId : String= ""
+    var repoName : String = ""
+    var userId :String = "bk_admin"
+
+    fun path(name: String): DownloadContext {
+        this.name = name
+        return this
+    }
+
+    fun projectId(projectId: String): DownloadContext {
+        this.projectId = projectId
+        return this
+    }
+
+    fun repoName(repoName: String): DownloadContext {
+        this.repoName = repoName
+        return this
+    }
+
+    fun sha256(sha256: String): DownloadContext {
+        this.sha256 = sha256
         return this
     }
 
@@ -24,7 +49,7 @@ public class DownloadContext(path: String, httpHeaders: HttpHeaders) {
     }
 
     fun getPath(): String {
-        return this.path!!
+        return this.name
     }
 
     fun getRequestHeaders(): kotlin.collections.Map<String, String> {

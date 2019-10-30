@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional
 import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
 import org.apache.commons.io.IOUtils
 import com.tencent.bkrepo.common.storage.util.DataDigestUtils
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import java.io.File
 import java.nio.file.Path
 
@@ -117,8 +118,26 @@ class DockerArtifactoryService @Autowired constructor(
 //        return !statusHolder.isError()
     }
 
-     fun download(downloadContext: DownloadContext): Response {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
+    fun deleteLocal(path: String): Boolean {
+        var f = File(localPath+path)
+        return f.delete()
+    }
+
+     fun download(context: DownloadContext): File {
+         // query repository
+         val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+             logger.warn("user[$context.userId] simply download file  [$context.path] failed: $context.repoName not found")
+             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
+         }
+
+         // fileStorage
+         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
+         var file = fileStorage.load(context.sha256, storageCredentials) //?: run {
+//             logger.warn("user[$context.userId] simply download file [$context.path] failed: file data not found")
+//         }
+         //File("aaaa")
+         //return ResponseEntity.ok().body("ok")
+         return file!!
     }
 
 //    private fun getInternalArtifactoryRequestForDownload(downloadContext: DownloadContext): InternalArtifactoryRequest {
@@ -189,7 +208,7 @@ class DockerArtifactoryService @Autowired constructor(
         }
         var fullPath = localPath + path
         var content  = File(fullPath).readBytes()
-        context.content(content.inputStream()).contentLength(content.size.toLong())
+        context.content(content.inputStream()).contentLength(content.size.toLong()).sha256(DataDigestUtils.sha256FromByteArray(content))
 
         // 保存节点
         val result = nodeResource.create(NodeCreateRequest(
@@ -201,7 +220,6 @@ class DockerArtifactoryService @Autowired constructor(
                 sha256 = context.sha256,
                 operator = context.userId
         ))
-
         if (result.isOk()) {
             val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
             fileStorage.store(context.sha256, context.content!!, storageCredentials)
@@ -283,6 +301,12 @@ class DockerArtifactoryService @Autowired constructor(
 //        return this.repoService.exists(this.repoPath(path))
     }
 
+    fun existsLocal(path: String): Boolean {
+        val fullPath = localPath + path
+        val file = File(fullPath)
+        return  file.exists()
+    }
+
      fun canRead(path: String): Boolean {
         return true
 //        return this.authorizationService.canRead(this.repoPath(path))
@@ -352,16 +376,17 @@ class DockerArtifactoryService @Autowired constructor(
          val file = File(fullPath)
          val content = file.readBytes()
          val sha256  = DataDigestUtils.sha256FromByteArray(content)
-         var length = content.size
-         return Artifact(length,sha256)
-//         val contents = file.readText()
-//         println(contents)
-        // TODO("consctruct Artifact from path")
-      //  throw UnsupportedOperationException("NOT IMPLEMENTED")
+         var length = content.size.toLong()
+         return Artifact(fullPath).sha256(sha256).contentLength(length)
     }
 
-     fun findArtifacts(query: String): Iterable<Artifact> {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
+     fun findArtifacts(projectId: String, repoName:String, name:String): NodeDetail? {
+         // 查询node节点
+         val nodes = nodeResource.queryDetail(projectId, repoName, name).data ?: run {
+             logger.warn("find artifacts  failed: $projectId, $repoName, $name found no artifacts")
+             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, projectId+":"+repoName+":"+name)
+         }
+         return nodes
     }
 
      fun findArtifacts(var1: String, var2: String): Iterable<Artifact> {

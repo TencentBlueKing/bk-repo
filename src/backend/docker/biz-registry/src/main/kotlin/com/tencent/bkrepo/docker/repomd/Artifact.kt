@@ -1,20 +1,35 @@
 package com.tencent.bkrepo.docker.repomd
 
- class Artifact(contentLength: Int , fielSha256: String )  {
+ class Artifact(path: String )  {
 
-     var fielSha256 : String= ""
-     var contentLength : Int = 0
+     var fielSha256 : String? = null
+     var contentLength : Long = 0
      var path : String = ""
+
      init {
-         this.fielSha256 = fielSha256
-         this.contentLength = contentLength
+         this.path = path
      }
 
-     fun getSha256():String{
+     fun sha256(fielSha256: String):Artifact {
+         this.fielSha256 = fielSha256
+         return this
+     }
+
+     fun contentLength(contentLength: Long):Artifact {
+         this.contentLength = contentLength
+         return this
+     }
+
+     fun path(path :String):Artifact{
+         this.path = path
+         return this
+     }
+
+     fun getSha256():String?{
          return  this.fielSha256
      }
 
-     fun getLength():Int{
+     fun getLength():Long{
          return  this.contentLength
      }
 
