@@ -17,7 +17,6 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @ConditionalOnWebApplication
 @EnableDiscoveryClient
 class ServiceAutoConfiguration {
-
     @Bean
     fun feignWebRegistrations(): WebMvcRegistrations {
         return object : WebMvcRegistrations {

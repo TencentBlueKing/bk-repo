@@ -169,8 +169,8 @@ internal class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("判断节点是否存在")
     fun existTest() {
-        assertTrue(nodeService.exist(projectId, repoName, ""))
-        assertTrue(nodeService.exist(projectId, repoName, "/"))
+        assertFalse(nodeService.exist(projectId, repoName, ""))
+        assertFalse(nodeService.exist(projectId, repoName, "/"))
 
         createRequest("  / a /   b /  1.txt   ", false)
         nodeService.create(createRequest("  / a /   b /  1.txt   ", false))

@@ -1,7 +1,10 @@
 package com.tencent.bkrepo.generic.resource
 
+import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.api.ArtifactoryResource
+import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFile
+import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFileUploadResponse
 import com.tencent.bkrepo.generic.pojo.artifactory.JfrogFilesData
 import com.tencent.bkrepo.generic.service.ArtifactoryService
 import org.slf4j.LoggerFactory
@@ -14,17 +17,16 @@ import javax.servlet.http.HttpServletResponse
 class ArtifactoryResourceImpl @Autowired constructor(
     private val artifactoryService: ArtifactoryService
 ) : ArtifactoryResource {
-    override fun upload(userId: String, projectId: String, repoName: String, fullPath: String, request: HttpServletRequest): Response<Void> {
-        artifactoryService.upload(userId, projectId, repoName, fullPath, parseMetaData(request.requestURI), request)
-        return Response.success()
+    override fun upload(projectId: String, repoName: String, fullPath: String, request: HttpServletRequest): JfrogFileUploadResponse {
+        return artifactoryService.upload(projectId, repoName, fullPath, parseMetaData(request.requestURI), request)
     }
 
-    override fun download(userId: String, projectId: String, repoName: String, fullPath: String, response: HttpServletResponse) {
-        artifactoryService.download(userId, projectId, repoName, fullPath, response)
+    override fun download(projectId: String, repoName: String, fullPath: String, response: HttpServletResponse) {
+        artifactoryService.download(projectId, repoName, fullPath, response)
     }
 
-    override fun listFile(userId: String, projectId: String, repoName: String, fullPath: String, response: HttpServletResponse): JfrogFilesData {
-        return artifactoryService.listFile(userId, projectId, repoName, fullPath, includeFolder = true, deep = true)
+    override fun listFile(projectId: String, repoName: String, fullPath: String, response: HttpServletResponse): JfrogFilesData {
+        return artifactoryService.listFile(projectId, repoName, fullPath, includeFolder = true, deep = true)
     }
 
     private fun parseMetaData(fullPath: String): Map<String, String> {

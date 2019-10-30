@@ -35,13 +35,16 @@ object QueryHelper {
             val criteria = Criteria.where("projectId").`is`(projectId)
                     .and("repoName").`in`(repoNameList)
                     .and("deleted").`is`(null)
+                    .and("name").ne("")
 
             // 路径匹配
             val criteriaList = pathPattern.map {
                 val escapedPath = NodeUtils.escapeRegex(NodeUtils.formatPath(it))
                 Criteria.where("fullPath").regex("^$escapedPath")
             }
-            criteria.orOperator(*criteriaList.toTypedArray())
+            if(criteriaList.isNotEmpty()) {
+                criteria.orOperator(*criteriaList.toTypedArray())
+            }
             // 元数据匹配
             metadataCondition.filterKeys { it.isNotBlank() }.forEach { (key, value) -> criteria.and("metadata.$key").`is`(value) }
 
@@ -55,6 +58,7 @@ object QueryHelper {
         val criteria = Criteria.where("projectId").`is`(projectId)
                 .and("repoName").`is`(repoName)
                 .and("deleted").`is`(null)
+                .and("name").ne("")
 
         if (deep) criteria.and("fullPath").regex("^$escapedPath")
         else criteria.and("path").`is`(formattedPath)

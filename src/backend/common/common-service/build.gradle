@@ -8,6 +8,5 @@ dependencies {
     api "org.springframework.cloud:spring-cloud-starter-consul-config"
     api "org.springframework.boot:spring-boot-starter-web"
     api "org.springframework.boot:spring-boot-starter-undertow"
-    api "org.springframework.boot:spring-boot-starter-log4j2"
     api "com.github.ulisesbocchio:jasypt-spring-boot-starter"
 }
