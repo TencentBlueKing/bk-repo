@@ -44,6 +44,7 @@ import org.springframework.stereotype.Service
 import com.tencent.bkrepo.common.storage.util.DataDigestUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.docker.repomd.DownloadContext
+import org.apache.http.client.methods.HttpHead
 import javax.servlet.http.HttpServletRequest
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.HttpStatus
@@ -54,7 +55,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         private val repo : DockerArtifactoryService
 ) : DockerV2RepoHandler {
 
-    public var httpHeaders: HttpHeaders  = HttpHeaders.EMPTY
+    public var httpHeaders: HttpHeaders  = HttpHeaders()
 
     companion object {
         private val manifestSyncer = DockerManifestSyncer()
@@ -313,11 +314,8 @@ class DockerV2LocalRepoHandler @Autowired constructor(
             log.debug("Request for empty layer for image {}, returning dummy HEAD response.", repoPath)
             return DockerSchemaUtils.emptyBlobHeadResponse()
         } else {
-            println("aaaaaaaaaaaaaaa")
             val blob = DockerUtils.getBlobFromRepoPath(this.repo, projectId,repoName,name,digest.getDigestHex())
-            println("bbbbbbbbbbbbbbb")
             if (blob != null) {
-                println("cccccccccccc")
                 val response = ResponseEntity.ok().header("Docker-Distribution-Api-Version", "registry/2.0")
                         .header("Docker-Content-Digest", digest.toString())
                         .header("Content-Length", blob.getLength().toString())
@@ -353,7 +351,8 @@ class DockerV2LocalRepoHandler @Autowired constructor(
     }
 
     private fun getRepoBlob(projectId: String,repoName:String,name:String, digest: DockerDigest): Artifact? {
-        var repoBlobs = this.repo.findArtifacts(projectId, repoName,name)
+        var dockerRepo = "/$projectId/$repoName/$name"
+        var repoBlobs = this.repo.findArtifacts(projectId, repoName,dockerRepo)
         if (repoBlobs == null) {
             return null
         }else{

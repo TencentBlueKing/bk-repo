@@ -109,7 +109,7 @@ abstract class DockerUtils {
 
         fun findBlobGlobally(repo: DockerArtifactoryService, projectId :String,repoName: String,path: String, fileDigest:String): Artifact? {
             val fullPath = "/$projectId/$repoName/$path"
-            var nodeDetail = repo.findArtifacts(projectId, repoName,path )
+            var nodeDetail = repo.findArtifacts(projectId, repoName,fullPath )
             if (nodeDetail == null) {
                 return null
             }else{
@@ -149,7 +149,6 @@ abstract class DockerUtils {
 //                    return blob
 //                }
             }
-
             log.debug("Attempting to search blob {} globally", path)
             blob = findBlobGlobally(repo, projectId, repoName,path,fileDigest)
             return blob
