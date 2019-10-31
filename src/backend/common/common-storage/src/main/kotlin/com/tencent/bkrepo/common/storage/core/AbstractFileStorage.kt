@@ -43,7 +43,8 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
 
         try {
             inputStream.use {
-                if (exist(hash, credentials)) {
+                val client = getClient(credentials)
+                if (exist(path, hash, client)) {
                     logger.debug("File [$hash] exists on [$credentials], skip store")
                     return
                 }
