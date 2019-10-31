@@ -3,9 +3,7 @@ package com.tencent.bkrepo.docker.v2.helpers
 import com.google.common.collect.Sets
 import com.tencent.bkrepo.docker.DockerWorkContext
 import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
-import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
 import com.tencent.bkrepo.docker.repomd.Artifact
-import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.repomd.util.PathUtils
 import com.tencent.bkrepo.docker.util.DockerSchemaUtils
 import com.tencent.bkrepo.docker.util.DockerUtils

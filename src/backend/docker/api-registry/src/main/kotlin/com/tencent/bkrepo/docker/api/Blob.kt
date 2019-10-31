@@ -102,26 +102,20 @@ interface Blob {
     @ApiOperation("分片上传blob文件")
     @RequestMapping(method = [RequestMethod.PATCH], value = ["{projectId}/{repoName}/{name}/blobs/uploads/{uuid}"])
     fun patchUpload(
-            @RequestHeader
-            headers: HttpHeaders,
-            @PathVariable
-            @ApiParam(value = "projectId", required = true)
-            projectId: String,
-            @PathVariable
-            @ApiParam(value = "repoName", required = true)
-            repoName: String,
-            @PathVariable
-            @ApiParam(value = "name", required = true)
-            name: String,
-            @PathVariable
-            @ApiParam(value = "uuid", required = false)
-            uuid: String,
-            request: HttpServletRequest
-    ): ResponseEntity<Any>
-
-    @ApiOperation("获取blob文件")
-    @RequestMapping(method = [RequestMethod.PUT], value = ["test/uploads"])
-    fun test(
-            request: HttpServletRequest
+        @RequestHeader
+        headers: HttpHeaders,
+        @PathVariable
+        @ApiParam(value = "projectId", required = true)
+        projectId: String,
+        @PathVariable
+        @ApiParam(value = "repoName", required = true)
+        repoName: String,
+        @PathVariable
+        @ApiParam(value = "name", required = true)
+        name: String,
+        @PathVariable
+        @ApiParam(value = "uuid", required = false)
+        uuid: String,
+        request: HttpServletRequest
     ): ResponseEntity<Any>
 }

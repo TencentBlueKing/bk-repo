@@ -2,6 +2,7 @@ package com.tencent.bkrepo.docker.resource
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.bkrepo.docker.api.Manifest
+import javax.servlet.http.HttpServletRequest
 import javax.ws.rs.core.Response
 import okhttp3.MediaType
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,9 +23,9 @@ class ManifestImpl @Autowired constructor(val objectMapper: ObjectMapper) : Mani
         projectId: String,
         repoName: String,
         name: String,
-        reference: String,
+        tag: String,
         contentTypeHeader: String,
-        body: String
+        request: HttpServletRequest
     ): Response {
         var mediaType = MediaType.parse(contentTypeHeader).toString()
 //        var headers: HttpHeaders

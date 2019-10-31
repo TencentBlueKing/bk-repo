@@ -1,8 +1,5 @@
 package com.tencent.bkrepo.docker.artifact.util
 
-import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
-import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
-
 object DockerUtil {
 
 //    fun fromV2Info(info: ManifestMetadata, convertSizeToHumanReadable: Boolean): DockerV2InfoModel {

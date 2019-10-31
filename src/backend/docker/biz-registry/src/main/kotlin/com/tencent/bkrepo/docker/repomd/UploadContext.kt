@@ -12,9 +12,9 @@ class UploadContext {
     var sha1: String = ""
     var sha256: String = ""
     var md5: String = ""
-    var projectId : String= ""
-    var repoName : String = ""
-    var userId :String = "bk_admin"
+    var projectId: String = ""
+    var repoName: String = ""
+    var userId: String = "bk_admin"
     private val requestHeaders = Maps.newHashMap<String, String>()
     var attributes: SetMultimap<String, String> = LinkedHashMultimap.create()
 
