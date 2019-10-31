@@ -1,6 +1,6 @@
 spring:
   application:
-    name: bkrepo-auth
+    name: auth
   cloud:
     consul:
       discovery:
