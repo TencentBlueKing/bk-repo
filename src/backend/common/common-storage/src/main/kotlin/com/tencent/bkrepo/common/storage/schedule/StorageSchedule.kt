@@ -13,8 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled
  */
 class StorageSchedule(private val fileCache: FileCache) {
     // 1小时执行一次
-    // @Scheduled(fixedRate = 1000 * 60 * 60)
-    @Scheduled(fixedRate = 1000 * 60 * 1)
+    @Scheduled(fixedRate = 1000 * 60 * 60)
     fun cleanLocalCacheFiles() {
         logger.info("开始清理缓存文件")
         try {
