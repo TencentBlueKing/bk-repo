@@ -111,6 +111,7 @@ class IntegrationTest {
                 .build()
         val request = Request.Builder().url("http://127.0.0.1:8001/upload/precheck/test/test/root/random1000.txt")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
+                .header(HEADER_OVERWRITE, "true")
                 .post(formBody)
                 .build()
 
@@ -134,7 +135,7 @@ class IntegrationTest {
                     .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                     .header(HEADER_SHA256, blockSha256)
                     .header(HEADER_SIZE, blockSize.toString())
-                    .post(RequestBody.create(MediaType.parse("application/octet-stream"), buffer))
+                    .put(RequestBody.create(MediaType.parse("application/octet-stream"), buffer))
                     .build()
             checkResponse(client.newCall(blockRequest).execute(), object: TypeReference<Response<Void>>(){})
         }
