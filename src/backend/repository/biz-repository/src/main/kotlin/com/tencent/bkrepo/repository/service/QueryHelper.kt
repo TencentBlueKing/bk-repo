@@ -48,7 +48,7 @@ object QueryHelper {
             // 元数据匹配
             metadataCondition.filterKeys { it.isNotBlank() }.forEach { (key, value) -> criteria.and("metadata.$key").`is`(value) }
 
-            Query(criteria).with(PageRequest.of(page, size)).with(Sort.by("name"))
+            Query(criteria).with(PageRequest.of(page, size)).with(Sort.by("fullPath"))
         }
     }
 
@@ -69,7 +69,7 @@ object QueryHelper {
     }
 
     fun nodeListQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Query {
-        return Query.query(nodeListCriteria(projectId, repoName, path, includeFolder, deep)).with(Sort.by("name"))
+        return Query.query(nodeListCriteria(projectId, repoName, path, includeFolder, deep)).with(Sort.by("fullPath"))
     }
 
     fun nodePageQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean, page: Int, size: Int): Query {
