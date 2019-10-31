@@ -19,9 +19,9 @@ class DockerV2Errors {
             return ResponseEntity.status(400).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "BLOB_UPLOAD_INVALID", "There was an error processing the upload and it must be restarted.", "\"description\":\"$message\""))
         }
 
-//        fun manifestInvalid(message: Any): Response {
-//            return Response.status(400).header("Docker-Distribution-Api-Version", "registry/2.0").type(MediaType.APPLICATION_JSON_TYPE).entity(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "MANIFEST_INVALID", "manifest invalid", "\"description\":\"$message\"")).build()
-//        }
+        fun manifestInvalid(message: Any): ResponseEntity<Any> {
+            return ResponseEntity.status(400).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "MANIFEST_INVALID", "manifest invalid", "\"description\":\"$message\""))
+        }
 //
 //        fun manifestUnknown(manifest: String): Response {
 //            return Response.status(404).header("Docker-Distribution-Api-Version", "registry/2.0").type(MediaType.APPLICATION_JSON_TYPE).entity(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "MANIFEST_UNKNOWN", "The named manifest is not known to the registry.", "\"manifest\":\"$manifest\"")).build()
@@ -45,8 +45,8 @@ class DockerV2Errors {
 //            return Response.status(404).header("Docker-Distribution-Api-Version", "registry/2.0").type(MediaType.APPLICATION_JSON_TYPE).entity(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "NAME_UNKNOWN", "Repository name not known to registry.", "\"name\":\"$dockerRepo\"")).build()
 //        }
 //
-//        fun manifestConcurrent(message: Any): Response {
-//            return Response.status(400).header("Docker-Distribution-Api-Version", "registry/2.0").type(MediaType.APPLICATION_JSON_TYPE).entity(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "MANIFEST_INVALID", "MANIFEST-CONCURRENT-EXCEPTION", "\"description\":\"$message\"")).build()
-//        }
+        fun manifestConcurrent(message: Any): ResponseEntity<Any> {
+            return ResponseEntity.status(400).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "MANIFEST_INVALID", "MANIFEST-CONCURRENT-EXCEPTION", "\"description\":\"$message\""))
+        }
     }
 }

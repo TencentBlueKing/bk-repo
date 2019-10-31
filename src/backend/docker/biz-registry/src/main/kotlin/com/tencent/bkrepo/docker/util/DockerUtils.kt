@@ -1,12 +1,9 @@
 package com.tencent.bkrepo.docker.util
 
 import com.google.common.base.Joiner
-import com.google.common.collect.Iterables
 import com.tencent.bkrepo.docker.DockerWorkContext
 import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
-import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
 import com.tencent.bkrepo.docker.repomd.Artifact
-import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.v2.helpers.DockerSearchBlobPolicy
 import org.slf4j.LoggerFactory
 
@@ -107,12 +104,12 @@ abstract class DockerUtils {
             return null
         }
 
-        fun findBlobGlobally(repo: DockerArtifactoryService, projectId :String,repoName: String,path: String, fileDigest:String): Artifact? {
+        fun findBlobGlobally(repo: DockerArtifactoryService, projectId: String, repoName: String, path: String, fileDigest: String): Artifact? {
             val fullPath = "/$projectId/$repoName/$path"
-            var nodeDetail = repo.findArtifacts(projectId, repoName,fullPath )
+            var nodeDetail = repo.findArtifacts(projectId, repoName, fullPath)
             if (nodeDetail == null) {
                 return null
-            }else{
+            } else {
                 if (nodeDetail.nodeInfo.sha256 == fileDigest) {
                     return Artifact(fullPath).sha256(nodeDetail.nodeInfo.sha256!!).contentLength(nodeDetail.nodeInfo.size)
                 }
@@ -133,10 +130,10 @@ abstract class DockerUtils {
                 }
             }
 
-            return getBlobFromRepoPath(repo, blobFilename, dockerRepoPath,"","")
+            return getBlobFromRepoPath(repo, blobFilename, dockerRepoPath, "", "")
         }
 
-        fun getBlobFromRepoPath(repo: DockerArtifactoryService, projectId: String, repoName:String ,path: String, fileDigest:String): Artifact? {
+        fun getBlobFromRepoPath(repo: DockerArtifactoryService, projectId: String, repoName: String, path: String, fileDigest: String): Artifact? {
             val tempBlobPath = "/$projectId/$repoName/_uploads/$path"
             log.info("Searching blob in '{}'", tempBlobPath)
             var blob: Artifact?
@@ -150,7 +147,7 @@ abstract class DockerUtils {
 //                }
             }
             log.debug("Attempting to search blob {} globally", path)
-            blob = findBlobGlobally(repo, projectId, repoName,path,fileDigest)
+            blob = findBlobGlobally(repo, projectId, repoName, path, fileDigest)
             return blob
         }
 

@@ -1,9 +1,7 @@
 package com.tencent.bkrepo.docker.manifest
 
-import com.tencent.bkrepo.docker.DockerWorkContext
 import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
-import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
-//import com.tencent.bkrepo.docker.repomd.Repo
+// import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.util.DockerSchemaUtils
 import com.tencent.bkrepo.docker.v2.model.DockerDigest
 import com.tencent.bkrepo.docker.v2.model.ManifestMetadata

@@ -3,67 +3,55 @@ package com.tencent.bkrepo.docker.artifact.repomd
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
-import com.tencent.bkrepo.docker.DockerWorkContext
-import com.tencent.bkrepo.docker.repomd.Artifact
-import com.tencent.bkrepo.docker.repomd.DownloadContext
-import com.tencent.bkrepo.docker.repomd.Repo
-import com.tencent.bkrepo.docker.repomd.UploadContext
-import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
-import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import com.tencent.bkrepo.common.storage.util.DataDigestUtils
+import com.tencent.bkrepo.docker.DockerWorkContext
+import com.tencent.bkrepo.docker.constant.REPO_TYPE
+import com.tencent.bkrepo.docker.repomd.Artifact
+import com.tencent.bkrepo.docker.repomd.DownloadContext
+import com.tencent.bkrepo.docker.repomd.UploadContext
+import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
-import com.tencent.bkrepo.repository.util.NodeUtils
-import org.springframework.beans.factory.annotation.Autowired
-import com.tencent.bkrepo.docker.constant.REPO_TYPE
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import java.io.File
 import java.io.InputStream
-import javax.ws.rs.core.Response
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
-import org.apache.commons.io.IOUtils
-import com.tencent.bkrepo.common.storage.util.DataDigestUtils
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import java.io.File
-import java.nio.file.Path
-
 
 @Service
 class DockerArtifactoryService @Autowired constructor(
-        private val repositoryResource: RepositoryResource,
-        private val nodeResource: NodeResource,
-        private val fileStorage: FileStorage
+    private val repositoryResource: RepositoryResource,
+    private val nodeResource: NodeResource,
+    private val fileStorage: FileStorage
 
-)  {
+) {
 
     // protected var propertiesService: PropertiesService ？
     protected lateinit var repoKey: String
     protected lateinit var context: DockerWorkContext
-    private val localPath :String ="/Users/owen/data"
-
-
+    private val localPath: String = "/Users/owen/data"
 
     init {
         this.context = DockerPackageWorkContext()
         this.repoKey = "docker-local"
     }
 
-
-
-    fun writeLocal(path: String, name :String,  inputStream: InputStream) :ResponseEntity<Any> {
+    fun writeLocal(path: String, name: String, inputStream: InputStream): ResponseEntity<Any> {
 
         val filePath = localPath + path
-        var fullPath = localPath + path + "/"+name
+        var fullPath = localPath + path + "/" + name
 
         val f = File(filePath).mkdirs()
-        val file  = File(fullPath)
+        val file = File(fullPath)
         if (!file.exists()) {
             file.createNewFile()
             file.writeBytes(inputStream.readBytes())
-        }else{
+        } else {
             file.appendBytes(inputStream.readBytes())
         }
         return ResponseEntity.ok().body("ok")
@@ -87,15 +75,15 @@ class DockerArtifactoryService @Autowired constructor(
 //        }
 //    }
 
-     fun getRepoId(): String {
+    fun getRepoId(): String {
         return this.repoKey
     }
 
-     fun getWorkContextC(): DockerWorkContext {
+    fun getWorkContextC(): DockerWorkContext {
         return this.context
     }
 
-     fun write(path: String, `in`: InputStream) {
+    fun write(path: String, `in`: InputStream) {
 //        val repoPath = this.repoPath(path)
 //
 //        try {
@@ -119,7 +107,7 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
     fun deleteLocal(path: String): Boolean {
-        var f = File(localPath+path)
+        var f = File(localPath + path)
         return f.delete()
     }
 
@@ -132,11 +120,11 @@ class DockerArtifactoryService @Autowired constructor(
 
          // fileStorage
          val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-         var file = fileStorage.load(context.sha256, storageCredentials) //?: run {
+         var file = fileStorage.load(context.sha256, storageCredentials) // ?: run {
 //             logger.warn("user[$context.userId] simply download file [$context.path] failed: file data not found")
 //         }
-         //File("aaaa")
-         //return ResponseEntity.ok().body("ok")
+         // File("aaaa")
+         // return ResponseEntity.ok().body("ok")
          return file!!
     }
 
@@ -173,7 +161,7 @@ class DockerArtifactoryService @Autowired constructor(
                 projectId = context.projectId,
                 repoName = context.repoName,
                 folder = false,
-                fullPath = context.path ,
+                fullPath = context.path,
                 size = context.contentLength,
                 sha256 = context.sha256,
                 operator = context.userId
@@ -191,7 +179,7 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun uploadFromLocal(path: String,context: UploadContext): ResponseEntity<Any> {
+    fun uploadFromLocal(path: String, context: UploadContext): ResponseEntity<Any> {
         // TODO: 校验权限
 
         // 校验sha256
@@ -207,7 +195,7 @@ class DockerArtifactoryService @Autowired constructor(
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
         }
         var fullPath = localPath + path
-        var content  = File(fullPath).readBytes()
+        var content = File(fullPath).readBytes()
         context.content(content.inputStream()).contentLength(content.size.toLong()).sha256(DataDigestUtils.sha256FromByteArray(content))
 
         // 保存节点
@@ -215,7 +203,7 @@ class DockerArtifactoryService @Autowired constructor(
                 projectId = context.projectId,
                 repoName = context.repoName,
                 folder = false,
-                fullPath = context.path ,
+                fullPath = context.path,
                 size = context.contentLength,
                 sha256 = context.sha256,
                 operator = context.userId
@@ -304,7 +292,7 @@ class DockerArtifactoryService @Autowired constructor(
     fun existsLocal(path: String): Boolean {
         val fullPath = localPath + path
         val file = File(fullPath)
-        return  file.exists()
+        return file.exists()
     }
 
      fun canRead(path: String): Boolean {
@@ -375,16 +363,16 @@ class DockerArtifactoryService @Autowired constructor(
          val fullPath = localPath + path
          val file = File(fullPath)
          val content = file.readBytes()
-         val sha256  = DataDigestUtils.sha256FromByteArray(content)
+         val sha256 = DataDigestUtils.sha256FromByteArray(content)
          var length = content.size.toLong()
          return Artifact(fullPath).sha256(sha256).contentLength(length)
     }
 
-     fun findArtifacts(projectId: String, repoName:String, name:String): NodeDetail? {
+     fun findArtifacts(projectId: String, repoName: String, name: String): NodeDetail? {
          // 查询node节点
          val nodes = nodeResource.queryDetail(projectId, repoName, name).data ?: run {
              logger.warn("find artifacts  failed: $projectId, $repoName, $name found no artifacts")
-             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, projectId+":"+repoName+":"+name)
+             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, projectId + ":" + repoName + ":" + name)
          }
          return nodes
     }
