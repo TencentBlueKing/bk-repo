@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 
@@ -31,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface UploadResource {
 
     @ApiOperation("简单上传")
-    @PostMapping("/simple/{projectId}/{repoName}/**")
+    @PutMapping("/simple/{projectId}/{repoName}/**")
     fun simpleUpload(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
@@ -69,7 +70,7 @@ interface UploadResource {
     ): Response<UploadTransactionInfo>
 
     @ApiOperation("分块上传")
-    @PostMapping("/block/{uploadId}/{sequence}")
+    @PutMapping("/block/{uploadId}/{sequence}")
     fun blockUpload(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
