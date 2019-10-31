@@ -1,6 +1,6 @@
 spring:
   application:
-    name: bkrepo-generic
+    name: generic
   cloud:
     consul:
       discovery:

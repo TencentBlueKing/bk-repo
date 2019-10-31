@@ -1,6 +1,6 @@
 spring:
   application:
-    name: bkrepo-repository
+    name: repository
   cloud:
     consul:
       discovery:
