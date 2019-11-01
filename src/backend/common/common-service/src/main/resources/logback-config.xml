@@ -5,6 +5,7 @@
     <springProperty scope="context" name="application.name" source="spring.application.name" defaultValue="application"/>
 
     <property name="logging.app.file" value="${logging.path}/${application.name}.log"/>
+    <property name="logging.api.file" value="${logging.path}/${application.name}-api.log"/>
     <property name="logging.framework.file" value="${logging.path}/${application.name}-framework.log"/>
     <property name="logging.error.file" value="${logging.path}/${application.name}-error.log"/>
     <property name="logging.access.file" value="${logging.path}/${application.name}-access.log"/>
@@ -20,6 +21,18 @@
         <file>${logging.app.file}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${logging.app.file}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <maxFileSize>1GB</maxFileSize>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${logging.file.pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="api_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.api.file}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${logging.api.file}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <maxHistory>30</maxHistory>
             <maxFileSize>1GB</maxFileSize>
         </rollingPolicy>
@@ -61,8 +74,11 @@
         </encoder>
     </appender>
 
-    <springProfile name="default, carrypan">
+    <springProfile name="default">
         <logger name="com.tencent.bkrepo" level="DEBUG" additivity="false">
+            <appender-ref ref="console"/>
+        </logger>
+        <logger name="com.tencent.bkrepo.common.service.config.FeignFilterRequestMappingHandlerMapping" level="INFO" additivity="false">
             <appender-ref ref="console"/>
         </logger>
         <root level="INFO">
@@ -73,6 +89,10 @@
     <springProfile name="test, dev">
         <logger name="com.tencent.bkrepo" level="DEBUG">
             <appender-ref ref="app_log"/>
+        </logger>
+
+        <logger name="ServiceResourceApi" level="INFO" additivity="false">
+            <appender-ref ref="api_log"/>
         </logger>
 
         <logger name="org" level="INFO">
@@ -87,6 +107,10 @@
     <springProfile name="prod">
         <logger name="com.tencent.bkrepo" level="INFO">
             <appender-ref ref="app_log"/>
+        </logger>
+
+        <logger name="ServiceResourceApi" level="INFO" additivity="false">
+            <appender-ref ref="api_log"/>
         </logger>
 
         <logger name="org" level="WARN">

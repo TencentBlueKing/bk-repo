@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.common.client
 
+import com.tencent.bkrepo.common.client.log.Slf4jFeignLogger
 import feign.RequestInterceptor
 import org.springframework.cloud.openfeign.EnableFeignClients
+import org.springframework.cloud.openfeign.FeignLoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.context.request.RequestContextHolder
@@ -31,5 +33,11 @@ class ClientAutoConfiguration {
                 requestTemplate.header("Cookie", cookieBuilder.toString()) // 设置cookie信息
             }
         }
+    }
+
+    @Bean
+    fun feignLoggerFactory(): FeignLoggerFactory {
+        val feignLogger = Slf4jFeignLogger()
+        return FeignLoggerFactory { feignLogger }
     }
 }
