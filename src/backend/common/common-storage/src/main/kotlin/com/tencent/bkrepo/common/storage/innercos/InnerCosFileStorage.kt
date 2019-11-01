@@ -7,6 +7,8 @@ import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
 import com.tencent.cos.COSClient
 import com.tencent.cos.ClientConfig
 import com.tencent.cos.auth.BasicCOSCredentials
+import com.tencent.cos.cl5.CL5Info
+import com.tencent.cos.endpoint.CL5EndpointResolver
 import com.tencent.cos.exception.CosServiceException
 import com.tencent.cos.model.DeleteObjectRequest
 import com.tencent.cos.model.GetObjectRequest
@@ -38,6 +40,11 @@ class InnerCosFileStorage(
     override fun createClient(credentials: InnerCosCredentials): InnerCosClient {
         val basicCOSCredentials = BasicCOSCredentials(credentials.secretId, credentials.secretKey)
         val clientConfig = ClientConfig(Region(credentials.region))
+        if(credentials.modId != null && credentials.cmdId != null) {
+            // 开启cl5
+            val cl5Info = CL5Info(credentials.modId!!, credentials.cmdId!!, credentials.timeout)
+            clientConfig.endpointResolver = CL5EndpointResolver(cl5Info)
+        }
         return InnerCosClient(credentials.bucket, COSClient(basicCOSCredentials, clientConfig))
     }
 
