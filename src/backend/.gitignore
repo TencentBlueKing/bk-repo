@@ -11,3 +11,5 @@ reports/
 gradle/
 gradlew
 gradlew.bat
+
+data/
