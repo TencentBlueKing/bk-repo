@@ -13,6 +13,9 @@ class InnerCosCredentials : ClientCredentials {
     var secretKey: String? = null
     var region: String? = null
     var bucket = ""
+    var modId: Int? = null
+    var cmdId: Int? = null
+    var timeout: Float = 0.5F
 
     override fun toString(): String {
         return "InnerCosCredentials[region: $region, bucket: $bucket]"
