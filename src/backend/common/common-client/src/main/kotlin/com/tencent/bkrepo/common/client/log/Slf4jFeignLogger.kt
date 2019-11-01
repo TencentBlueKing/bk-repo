@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.client.log
 
-import feign.Logger
 import feign.Request
 import feign.Response
 import org.slf4j.LoggerFactory
