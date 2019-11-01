@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.auth.service.inner
+package com.tencent.bkrepo.auth.pojo
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType

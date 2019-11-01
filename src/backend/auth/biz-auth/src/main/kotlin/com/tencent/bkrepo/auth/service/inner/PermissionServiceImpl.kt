@@ -4,6 +4,7 @@ import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.PermissionInstance
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.repository.PermissionRepository

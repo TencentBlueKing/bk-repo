@@ -39,6 +39,5 @@ class ProjectServiceImpl @Autowired constructor(
 
     override fun deleteByName(name: String) {
         projectRepository.deleteByName(name)
-
     }
 }
