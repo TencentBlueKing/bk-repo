@@ -1,7 +1,7 @@
 server:
-  port: 80
+  port: 8080
 
 spring:
   application:
-    name: bk-repo
+    name: bkrepo
 
