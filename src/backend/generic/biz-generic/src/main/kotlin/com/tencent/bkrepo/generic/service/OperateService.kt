@@ -41,7 +41,8 @@ class OperateService(
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
         logger.info("listFile, userId: $userId, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-        return nodeResource.list(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
+        return nodeResource.list(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) }
+            ?: emptyList()
     }
 
     fun searchFile(userId: String, request: FileSearchRequest): Page<FileInfo> {
@@ -52,12 +53,12 @@ class OperateService(
 
         val searchRequest = with(request) {
             NodeSearchRequest(
-                    projectId = projectId,
-                    repoNameList = repoNameList,
-                    pathPattern = pathPattern,
-                    metadataCondition = metadataCondition,
-                    page = page,
-                    size = size
+                projectId = projectId,
+                repoNameList = repoNameList,
+                pathPattern = pathPattern,
+                metadataCondition = metadataCondition,
+                page = page,
+                size = size
             )
         }
         val nodePage = nodeResource.search(searchRequest).data
@@ -69,7 +70,8 @@ class OperateService(
         logger.info("getFileDetail, userId: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
-        val nodeDetail = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
+        val nodeDetail = nodeResource.queryDetail(projectId, repoName, fullPath).data
+            ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileDetail(toFileInfo(nodeDetail.nodeInfo), nodeDetail.metadata)
     }
 
@@ -77,7 +79,8 @@ class OperateService(
         logger.info("getFileSize, userId: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
-        val nodeSizeInfo = nodeResource.getSize(projectId, repoName, fullPath).data ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
+        val nodeSizeInfo = nodeResource.getSize(projectId, repoName, fullPath).data
+            ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileSizeInfo(subFileCount = nodeSizeInfo.subNodeCount, size = nodeSizeInfo.size)
     }
 
@@ -87,12 +90,12 @@ class OperateService(
 
         val fullUri = "$projectId/$repoName/$fullPath"
         val createRequest = NodeCreateRequest(
-                projectId = projectId,
-                repoName = repoName,
-                folder = true,
-                fullPath = fullPath,
-                overwrite = false,
-                operator = userId
+            projectId = projectId,
+            repoName = repoName,
+            folder = true,
+            fullPath = fullPath,
+            overwrite = false,
+            operator = userId
         )
         val result = nodeResource.create(createRequest)
 
@@ -110,10 +113,10 @@ class OperateService(
 
         val fullUri = "$projectId/$repoName/$fullPath"
         val deleteRequest = NodeDeleteRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                operator = userId
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            operator = userId
         )
         val result = nodeResource.delete(deleteRequest)
 
@@ -132,11 +135,11 @@ class OperateService(
         val fullUri = "${request.projectId}/${request.repoName}/${request.fullPath}"
         val renameRequest = with(request) {
             NodeRenameRequest(
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = fullPath,
-                    newFullPath = newFullPath,
-                    operator = userId
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                newFullPath = newFullPath,
+                operator = userId
             )
         }
         val result = nodeResource.rename(renameRequest)
@@ -156,14 +159,14 @@ class OperateService(
         val destUri = "${request.destProjectId}/${request.destRepoName}/${request.destPath}"
         val moveRequest = with(request) {
             NodeMoveRequest(
-                    srcProjectId = srcProjectId,
-                    srcRepoName = srcRepoName,
-                    srcFullPath = srcFullPath,
-                    destProjectId = destProjectId,
-                    destRepoName = destRepoName,
-                    destPath = destPath,
-                    overwrite = overwrite,
-                    operator = userId
+                srcProjectId = srcProjectId,
+                srcRepoName = srcRepoName,
+                srcFullPath = srcFullPath,
+                destProjectId = destProjectId,
+                destRepoName = destRepoName,
+                destPath = destPath,
+                overwrite = overwrite,
+                operator = userId
             )
         }
 
@@ -184,14 +187,14 @@ class OperateService(
         val destUri = "${request.destProjectId}/${request.destRepoName}/${request.destPath}"
         val copyRequest = with(request) {
             NodeCopyRequest(
-                    srcProjectId = srcProjectId,
-                    srcRepoName = srcRepoName,
-                    srcFullPath = srcFullPath,
-                    destProjectId = destProjectId,
-                    destRepoName = destRepoName,
-                    destPath = destPath,
-                    overwrite = overwrite,
-                    operator = userId
+                srcProjectId = srcProjectId,
+                srcRepoName = srcRepoName,
+                srcFullPath = srcFullPath,
+                destProjectId = destProjectId,
+                destRepoName = destRepoName,
+                destPath = destPath,
+                overwrite = overwrite,
+                operator = userId
             )
         }
 
@@ -207,7 +210,8 @@ class OperateService(
         private val logger = LoggerFactory.getLogger(OperateService::class.java)
 
         fun toFileInfo(nodeInfo: NodeInfo): FileInfo {
-            return nodeInfo.let { FileInfo(
+            return nodeInfo.let {
+                FileInfo(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
@@ -217,8 +221,11 @@ class OperateService(
                     name = it.name,
                     fullPath = it.fullPath,
                     size = it.size,
-                    sha256 = it.sha256
-            ) }
+                    sha256 = it.sha256,
+                    projectId = it.projectId,
+                    repoName = it.repoName
+                )
+            }
         }
     }
 }
