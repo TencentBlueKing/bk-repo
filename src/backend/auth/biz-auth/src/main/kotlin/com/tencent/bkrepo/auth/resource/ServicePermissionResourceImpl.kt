@@ -50,26 +50,26 @@ class ServicePermissionResourceImpl @Autowired constructor(
 
                 }
                 ResourceType.PROJECT -> {
-                    if (project.isNullOrBlank()) {
+                    if (projectId.isNullOrBlank()) {
                         throw ErrorCodeException(PARAMETER_INVALID, "projectId required")
                     }
                 }
                 ResourceType.REPO -> {
-                    if (project.isNullOrBlank()) {
+                    if (projectId.isNullOrBlank()) {
                         throw ErrorCodeException(PARAMETER_INVALID, "projectId required")
                     }
-                    if (repo.isNullOrBlank()) {
+                    if (repoName.isNullOrBlank()) {
                         throw ErrorCodeException(PARAMETER_INVALID, "repoId required")
                     }
                 }
                 ResourceType.NODE -> {
-                    if (project.isNullOrBlank()) {
+                    if (projectId.isNullOrBlank()) {
                         throw ErrorCodeException(PARAMETER_INVALID, "node required")
                     }
-                    if (repo.isNullOrBlank()) {
+                    if (repoName.isNullOrBlank()) {
                         throw ErrorCodeException(PARAMETER_INVALID, "repoId required")
                     }
-                    if (node.isNullOrBlank()) {
+                    if (path.isNullOrBlank()) {
                         throw ErrorCodeException(PARAMETER_INVALID, "node required")
                     }
                 }
