@@ -1,17 +1,23 @@
 package com.tencent.bkrepo.docker.repomd
 
- class Artifact(path: String) {
+ class Artifact(projectId:String, repoName:String ,path: String) {
 
-     var fielSha256: String? = null
+     var sha256: String? = null
+
      var contentLength: Long = 0
+
      var path: String = ""
+
+     var projectId:String = ""
+
+     var repoName:String = ""
 
      init {
          this.path = path
      }
 
      fun sha256(fielSha256: String): Artifact {
-         this.fielSha256 = fielSha256
+         this.sha256 = fielSha256
          return this
      }
 
@@ -20,13 +26,19 @@ package com.tencent.bkrepo.docker.repomd
          return this
      }
 
-     fun path(path: String): Artifact {
-         this.path = path
+     fun projectId(projectId: String): Artifact {
+         this.projectId = projectId
          return this
      }
 
-     fun getSha256(): String? {
-         return this.fielSha256
+     fun repoName(repoName: String): Artifact {
+         this.repoName = repoName
+         return this
+     }
+
+     fun path(path: String): Artifact {
+         this.path = path
+         return this
      }
 
      fun getLength(): Long {

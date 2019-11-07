@@ -5,7 +5,7 @@ import java.io.InputStream
 import lombok.Generated
 import org.springframework.http.HttpHeaders
 
-public class DownloadContext(path: String) {
+public class DownloadContext(projectId: String,repoName: String,path: String) {
     val FORCE_GET_STREAM_HEADER = "artifactory.disableRedirect"
     private var skipStatsUpdate = false
     private val requestHeaders = Maps.newHashMap<String, String>()

@@ -5,7 +5,7 @@ import com.google.common.collect.Maps
 import com.google.common.collect.SetMultimap
 import java.io.InputStream
 
-class UploadContext {
+class WriteContext {
     var path: String = ""
     var content: InputStream? = null
     var contentLength: Long = 0
@@ -18,58 +18,59 @@ class UploadContext {
     private val requestHeaders = Maps.newHashMap<String, String>()
     var attributes: SetMultimap<String, String> = LinkedHashMultimap.create()
 
-    constructor(projectId:String,repoName: String,path: String) {
+
+    constructor(projectId: String, repoName: String,path: String) {
         this.projectId = projectId
         this.repoName = repoName
         this.path = path
     }
 
-    fun path(path: String): UploadContext {
+    fun path(path: String): WriteContext {
         this.path = path
         return this
     }
 
-    fun content(content: InputStream): UploadContext {
+    fun content(content: InputStream): WriteContext {
         this.content = content
         return this
     }
 
-    fun contentLength(contentLength: Long): UploadContext {
+    fun contentLength(contentLength: Long): WriteContext {
         this.contentLength = contentLength
         return this
     }
 
-    fun sha1(sha1: String): UploadContext {
+    fun sha1(sha1: String): WriteContext {
         this.sha1 = sha1
         return this
     }
 
-    fun sha256(sha256: String): UploadContext {
+    fun sha256(sha256: String): WriteContext {
         this.sha256 = sha256
         return this
     }
 
-    fun md5(md5: String): UploadContext {
+    fun md5(md5: String): WriteContext {
         this.md5 = md5
         return this
     }
 
-    fun projectId(projectId: String): UploadContext {
+    fun projectId(projectId: String): WriteContext {
         this.projectId = projectId
         return this
     }
 
-    fun repoName(repoName: String): UploadContext {
+    fun repoName(repoName: String): WriteContext {
         this.repoName = repoName
         return this
     }
 
-    fun use(repoName: String): UploadContext {
+    fun use(repoName: String): WriteContext {
         this.repoName = repoName
         return this
     }
 
-    fun header(key: String?, value: String?): UploadContext {
+    fun header(key: String?, value: String?): WriteContext {
         if (key != null && value != null) {
             this.requestHeaders[key] = value
         }
@@ -77,7 +78,7 @@ class UploadContext {
         return this
     }
 
-    fun attributes(attributes: SetMultimap<String, String>): UploadContext {
+    fun attributes(attributes: SetMultimap<String, String>): WriteContext {
         if (!attributes.isEmpty) {
             this.attributes = attributes
         }
