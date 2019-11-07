@@ -1,9 +1,10 @@
 package com.tencent.bkrepo.repository.model
 
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
+import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
  * 资源模型
@@ -11,10 +12,10 @@ import org.springframework.data.mongodb.core.mapping.Document
  * @author: carrypan
  * @date: 2019-09-10
  */
-@Document("node")
+@ShardingDocument("node")
 @CompoundIndexes(
-        CompoundIndex(name = "projectId_repoName_fullPath_idx", def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'deleted': 1}", unique = true),
-        CompoundIndex(name = "projectId_repoName_path_idx", def = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}")
+        CompoundIndex(name = "projectId_repoName_fullPath_idx", def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'deleted': 1}", unique = true, background = true),
+        CompoundIndex(name = "projectId_repoName_path_idx", def = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}", background = true)
 )
 data class TNode(
     var id: String? = null,
@@ -34,6 +35,7 @@ data class TNode(
     var metadata: Map<String, String>? = null,
     var blockList: List<TFileBlock>? = null,
 
+    @ShardingKey(count = 256)
     var projectId: String,
     var repoName: String
 )

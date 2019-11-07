@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXI
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.repository.constant.RepositoryMessageCode
 import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
@@ -142,6 +143,15 @@ class RepositoryService @Autowired constructor(
         query.fields().exclude("storageCredentials")
 
         return query
+    }
+
+    /**
+     * 检查仓库是否存在，不存在则抛异常
+     */
+    fun checkRepository(projectId: String, repoName: String, repoType: String? = null) {
+        if (!exist(projectId, repoName, repoType)) {
+            throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
+        }
     }
 
     companion object {

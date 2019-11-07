@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataUpsertRequest
@@ -21,36 +22,36 @@ import org.springframework.stereotype.Service
  */
 @Service
 class MetadataService @Autowired constructor(
-    private val nodeService: NodeService,
-    private val mongoTemplate: MongoTemplate
+    private val repositoryService: RepositoryService,
+    private val nodeDao: NodeDao
 ) {
     fun query(projectId: String, repoName: String, fullPath: String): Map<String, String> {
-        nodeService.checkRepository(projectId, repoName)
-        return mongoTemplate.findOne(createQuery(projectId, repoName, fullPath), TNode::class.java)?.metadata ?: emptyMap()
+        repositoryService.checkRepository(projectId, repoName)
+        return nodeDao.findOne(createQuery(projectId, repoName, fullPath))?.metadata ?: emptyMap()
     }
 
     fun upsert(metadataUpsertRequest: MetadataUpsertRequest) {
         val projectId = metadataUpsertRequest.projectId
         val repoName = metadataUpsertRequest.repoName
-        nodeService.checkRepository(projectId, repoName)
+        repositoryService.checkRepository(projectId, repoName)
 
         val query = createQuery(projectId, repoName, metadataUpsertRequest.fullPath)
         val update = Update()
         metadataUpsertRequest.metadata.filterKeys { it.isNotBlank() }.forEach { (key, value) -> update.set("metadata.$key", value) }
-        mongoTemplate.upsert(query, update, TNode::class)
+        nodeDao.upsert(query, update)
     }
 
     fun delete(metadataDeleteRequest: MetadataDeleteRequest) {
         val projectId = metadataDeleteRequest.projectId
         val repoName = metadataDeleteRequest.repoName
-        nodeService.checkRepository(projectId, repoName)
+        repositoryService.checkRepository(projectId, repoName)
         val query = createQuery(projectId, repoName, metadataDeleteRequest.fullPath)
 
         val update = Update()
         metadataDeleteRequest.keyList.filter { it.isNotBlank() }.forEach {
             update.unset("metadata.$it")
         }
-        mongoTemplate.updateFirst(query, update, TNode::class)
+        nodeDao.updateFirst(query, update)
     }
 
     private fun createQuery(projectId: String, repoName: String, fullPath: String): Query {
