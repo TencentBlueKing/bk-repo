@@ -25,7 +25,7 @@ object QueryHelper {
         val query = Query(criteria)
 
         fullPath?.run { criteria.and("fullPath").`is`(fullPath) }
-        takeUnless { withDetail }.run { query.fields().exclude("metadata").exclude("blockList") }
+        if( !withDetail ) { query.fields().exclude("metadata").exclude("blockList") }
 
         return query
     }

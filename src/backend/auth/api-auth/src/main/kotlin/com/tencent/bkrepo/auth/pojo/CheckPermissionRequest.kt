@@ -13,10 +13,10 @@ data class CheckPermissionRequest(
     val resourceType: ResourceType,
     @ApiModelProperty("Action")
     val action: PermissionAction,
-    @ApiModelProperty("项目")
-    val project: String? = null,
-    @ApiModelProperty("仓库")
-    val repo: String? = null,
-    @ApiModelProperty("node路径")
-    val node: String? = null
+    @ApiModelProperty("项目ID")
+    val projectId: String? = null,
+    @ApiModelProperty("仓库名称")
+    val repoName: String? = null,
+    @ApiModelProperty("路径")
+    val path: String? = null
 )
