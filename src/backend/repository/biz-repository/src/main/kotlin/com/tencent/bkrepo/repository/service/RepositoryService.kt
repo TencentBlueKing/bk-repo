@@ -4,7 +4,6 @@ import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXI
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.repository.constant.RepositoryMessageCode
 import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
@@ -13,7 +12,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.Repository
 import com.tencent.bkrepo.repository.pojo.repo.StorageCredentials
-import com.tencent.bkrepo.repository.repository.NodeRepository
 import com.tencent.bkrepo.repository.repository.RepoRepository
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory

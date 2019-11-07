@@ -21,7 +21,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.repository.NodeRepository
 import com.tencent.bkrepo.repository.service.QueryHelper.nodeDeleteUpdate
 import com.tencent.bkrepo.repository.service.QueryHelper.nodeListCriteria
 import com.tencent.bkrepo.repository.service.QueryHelper.nodeListQuery
@@ -41,9 +40,7 @@ import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
-import org.springframework.data.mongodb.core.aggregation.MatchOperation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
