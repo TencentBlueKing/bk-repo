@@ -25,7 +25,7 @@ object QueryHelper {
         val query = Query(criteria)
 
         fullPath?.run { criteria.and("fullPath").`is`(fullPath) }
-        if( !withDetail ) { query.fields().exclude("metadata").exclude("blockList") }
+        if (!withDetail) { query.fields().exclude("metadata").exclude("blockList") }
 
         return query
     }
@@ -42,7 +42,7 @@ object QueryHelper {
                 val escapedPath = NodeUtils.escapeRegex(NodeUtils.formatPath(it))
                 Criteria.where("fullPath").regex("^$escapedPath")
             }
-            if(criteriaList.isNotEmpty()) {
+            if (criteriaList.isNotEmpty()) {
                 criteria.orOperator(*criteriaList.toTypedArray())
             }
             // 元数据匹配

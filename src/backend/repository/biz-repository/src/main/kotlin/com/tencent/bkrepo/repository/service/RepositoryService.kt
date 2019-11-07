@@ -12,7 +12,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.Repository
 import com.tencent.bkrepo.repository.pojo.repo.StorageCredentials
-import com.tencent.bkrepo.repository.repository.NodeRepository
 import com.tencent.bkrepo.repository.repository.RepoRepository
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
@@ -149,6 +148,15 @@ class RepositoryService @Autowired constructor(
         query.fields().exclude("storageCredentials")
 
         return query
+    }
+
+    /**
+     * 检查仓库是否存在，不存在则抛异常
+     */
+    fun checkRepository(projectId: String, repoName: String, repoType: String? = null) {
+        if (!exist(projectId, repoName, repoType)) {
+            throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
+        }
     }
 
     companion object {
