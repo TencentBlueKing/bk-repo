@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.constant.RepositoryMessageCode
 import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.FOLDER_CANNOT_BE_MODIFIED
+import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.FileBlock
@@ -20,7 +21,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.repository.NodeRepository
 import com.tencent.bkrepo.repository.service.QueryHelper.nodeDeleteUpdate
 import com.tencent.bkrepo.repository.service.QueryHelper.nodeListCriteria
 import com.tencent.bkrepo.repository.service.QueryHelper.nodeListQuery
@@ -40,7 +40,6 @@ import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -55,17 +54,15 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Service
 class NodeService @Autowired constructor(
-    private val nodeRepository: NodeRepository,
     private val repositoryService: RepositoryService,
-    private val mongoTemplate: MongoTemplate
+    private val nodeDao: NodeDao
 ) {
 
     /**
      * 查询节点详情
      */
     fun queryDetail(projectId: String, repoName: String, fullPath: String, repoType: String? = null): NodeDetail? {
-        logger.info("queryDetail, projectId: $projectId, repoName: $repoName, fullPath: $fullPath, repoType: $repoType")
-        checkRepository(projectId, repoName, repoType)
+        repositoryService.checkRepository(projectId, repoName, repoType)
         val formattedFullPath = formatFullPath(fullPath)
 
         return convertToDetail(queryModel(projectId, repoName, formattedFullPath))
@@ -75,8 +72,7 @@ class NodeService @Autowired constructor(
      * 计算文件或者文件夹大小
      */
     fun getSize(projectId: String, repoName: String, fullPath: String): NodeSizeInfo {
-        logger.info("getSize, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
-        checkRepository(projectId, repoName)
+        repositoryService.checkRepository(projectId, repoName)
 
         val formattedFullPath = formatFullPath(fullPath)
         val node = queryModel(projectId, repoName, formattedFullPath)
@@ -87,13 +83,13 @@ class NodeService @Autowired constructor(
         }
 
         val criteria = nodeListCriteria(projectId, repoName, formatPath(formattedFullPath), includeFolder = true, deep = true)
-        val count = mongoTemplate.count(Query(criteria), TNode::class.java)
+        val count = nodeDao.count(Query(criteria))
 
         val aggregation = Aggregation.newAggregation(
                 Aggregation.match(criteria),
                 Aggregation.group().sum("size").`as`("size")
         )
-        val aggregateResult = mongoTemplate.aggregate(aggregation, TNode::class.java, HashMap::class.java)
+        val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
         val size = aggregateResult.mappedResults.takeIf { it.size > 0 }?.run {
             this[0].getOrDefault("size", 0) as Long
         } ?: 0
@@ -104,25 +100,24 @@ class NodeService @Autowired constructor(
      * 列表查询节点
      */
     fun list(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<NodeInfo> {
-        logger.info("list, projectId: $projectId, repoName: $repoName, path: $path, includeFolder: $includeFolder, deep: $deep")
-        checkRepository(projectId, repoName)
+        repositoryService.checkRepository(projectId, repoName)
         val query = nodeListQuery(projectId, repoName, path, includeFolder, deep)
-        return mongoTemplate.find(query, TNode::class.java).map { convert(it)!! }
+
+        return nodeDao.find(query).map { convert(it)!! }
     }
 
     /**
      * 分页查询节点
      */
     fun page(projectId: String, repoName: String, path: String, page: Int, size: Int, includeFolder: Boolean, deep: Boolean): Page<NodeInfo> {
-        logger.info("page, projectId: $projectId, repoName: $repoName, path: $path, page: $page, size: $size, includeFolder: $includeFolder, deep: $deep")
         page.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "page")
         size.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "size")
-        checkRepository(projectId, repoName)
+        repositoryService.checkRepository(projectId, repoName)
 
         val query = nodePageQuery(projectId, repoName, path, includeFolder, deep, page, size)
 
-        val listData = mongoTemplate.find(query, TNode::class.java).map { convert(it)!! }
-        val count = mongoTemplate.count(query, TNode::class.java)
+        val listData = nodeDao.find(query).map { convert(it)!! }
+        val count = nodeDao.count(query)
 
         return Page(page, size, count, listData)
     }
@@ -131,16 +126,15 @@ class NodeService @Autowired constructor(
      * 搜索节点
      */
     fun search(searchRequest: NodeSearchRequest): Page<NodeInfo> {
-        logger.info("search, searchRequest: $searchRequest")
         searchRequest.page.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "page")
         searchRequest.size.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "size")
         searchRequest.repoNameList.takeIf { it.isNotEmpty() } ?: throw ErrorCodeException(PARAMETER_INVALID, "repoNameList")
-        searchRequest.repoNameList.forEach { checkRepository(searchRequest.projectId, it) }
+        searchRequest.repoNameList.forEach { repositoryService.checkRepository(searchRequest.projectId, it) }
 
         val query = nodeSearchQuery(searchRequest)
 
-        val listData = mongoTemplate.find(query, TNode::class.java).map { convert(it)!! }
-        val count = mongoTemplate.count(query, TNode::class.java)
+        val listData = nodeDao.find(query).map { convert(it)!! }
+        val count = nodeDao.count(query)
 
         return Page(searchRequest.page, searchRequest.size, count, listData)
     }
@@ -149,11 +143,10 @@ class NodeService @Autowired constructor(
      * 判断节点是否存在
      */
     fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
-        logger.info("exist, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         val formattedPath = formatFullPath(fullPath)
         val query = nodeQuery(projectId, repoName, formattedPath)
 
-        return mongoTemplate.exists(query, TNode::class.java)
+        return nodeDao.exists(query)
     }
 
     /**
@@ -162,11 +155,12 @@ class NodeService @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     fun create(createRequest: NodeCreateRequest): IdValue {
         logger.info("create, createRequest: $createRequest")
+
         val projectId = createRequest.projectId
         val repoName = createRequest.repoName
         val fullPath = parseFullPath(createRequest.fullPath)
 
-        checkRepository(projectId, repoName)
+        repositoryService.checkRepository(projectId, repoName)
         // 路径唯一性校验
         val existNode = queryModel(projectId, repoName, fullPath)
         if (existNode != null) {
@@ -200,7 +194,7 @@ class NodeService @Autowired constructor(
         }
         node.blockList = createRequest.blockList?.map { TFileBlock(sequence = it.sequence, sha256 = it.sha256, size = it.size) }
         // 保存节点
-        val idValue = IdValue(nodeRepository.insert(node).id!!)
+        val idValue = IdValue(nodeDao.insert(node).id!!)
 
         logger.info("Create node [$createRequest] success.")
         return idValue
@@ -213,13 +207,12 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun rename(renameRequest: NodeRenameRequest) {
-        logger.info("rename, renameRequest: $renameRequest")
         val projectId = renameRequest.projectId
         val repoName = renameRequest.repoName
         val fullPath = formatFullPath(renameRequest.fullPath)
         val newFullPath = formatFullPath(renameRequest.newFullPath)
 
-        checkRepository(projectId, repoName)
+        repositoryService.checkRepository(projectId, repoName)
         val node = queryModel(projectId, repoName, fullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, fullPath)
         doRename(node, newFullPath, renameRequest.operator)
 
@@ -238,7 +231,6 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun move(moveRequest: NodeMoveRequest) {
-        logger.info("move, moveRequest: $moveRequest")
         val srcProjectId = moveRequest.srcProjectId
         val srcRepoName = moveRequest.srcRepoName
         val srcFullPath = formatFullPath(moveRequest.srcFullPath)
@@ -247,8 +239,8 @@ class NodeService @Autowired constructor(
         val destRepoName = moveRequest.destRepoName ?: srcRepoName
         val destPath = formatPath(moveRequest.destPath)
 
-        checkRepository(srcProjectId, srcRepoName)
-        checkRepository(destProjectId, destRepoName)
+        repositoryService.checkRepository(srcProjectId, srcRepoName)
+        repositoryService.checkRepository(destProjectId, destRepoName)
 
         val node = queryModel(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, srcFullPath)
         // 确保目的目录是否存在
@@ -279,7 +271,6 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun copy(copyRequest: NodeCopyRequest) {
-        logger.info("copy, copyRequest: $copyRequest")
         val srcProjectId = copyRequest.srcProjectId
         val srcRepoName = copyRequest.srcRepoName
         val srcFullPath = formatFullPath(copyRequest.srcFullPath)
@@ -288,8 +279,8 @@ class NodeService @Autowired constructor(
         val destRepoName = copyRequest.destRepoName ?: srcRepoName
         val destPath = formatPath(copyRequest.destPath)
 
-        checkRepository(srcProjectId, srcRepoName)
-        checkRepository(destProjectId, destRepoName)
+        repositoryService.checkRepository(srcProjectId, srcRepoName)
+        repositoryService.checkRepository(destProjectId, destRepoName)
 
         val node = queryModel(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, srcFullPath)
 
@@ -314,9 +305,8 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun delete(deleteRequest: NodeDeleteRequest) {
-        logger.info("delete, deleteRequest: $deleteRequest")
         with(deleteRequest) {
-            checkRepository(this.projectId, this.repoName)
+            repositoryService.checkRepository(this.projectId, this.repoName)
             deleteByPath(this.projectId, this.repoName, this.fullPath, this.operator)
         }
     }
@@ -342,14 +332,14 @@ class NodeService @Autowired constructor(
             val newParentPath = formatPath(newFullPath)
             val fullPath = formatPath(node.fullPath)
             val query = nodeListQuery(projectId, repoName, fullPath, includeFolder = true, deep = false)
-            mongoTemplate.find(query, TNode::class.java).forEach { doRename(it, newParentPath + it.name, operator) }
+            nodeDao.find(query).forEach { doRename(it, newParentPath + it.name, operator) }
             // 删除自己
-            mongoTemplate.remove(nodeQuery(projectId, repoName, node.fullPath), TNode::class.java)
+            nodeDao.remove(nodeQuery(projectId, repoName, node.fullPath))
         } else {
             // 修改自己
             val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
             val selfUpdate = nodePathUpdate(newPath, newName, operator)
-            mongoTemplate.updateFirst(selfQuery, selfUpdate, TNode::class.java)
+            nodeDao.updateFirst(selfQuery, selfUpdate)
         }
     }
 
@@ -373,21 +363,21 @@ class NodeService @Autowired constructor(
             val formattedPath = formatPath(node.fullPath)
             val destSubPath = formatPath(destPath + node.name)
             val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = true, deep = false)
-            val subNodes = mongoTemplate.find(query, TNode::class.java)
+            val subNodes = nodeDao.find(query)
             subNodes.forEach { doMove(it, destProjectId, destRepoName, destSubPath, overwrite, operator) }
             // 文件移动时，目的路径的目录已经自动创建，因此删除源目录
-            mongoTemplate.remove(nodeQuery(projectId, repoName, node.fullPath), TNode::class.java)
+            nodeDao.remove(nodeQuery(projectId, repoName, node.fullPath))
         } else {
             // 如果待移动的节点为文件且存在冲突&允许覆盖，删除目的节点
             if (existNode != null && overwrite) {
                 val query = nodeQuery(destProjectId, destRepoName, existNode.fullPath)
                 val update = nodeDeleteUpdate(operator)
-                mongoTemplate.updateMulti(query, update, TNode::class.java)
+                nodeDao.updateMulti(query, update)
             }
             // 移动节点
             val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
             val selfUpdate = nodeRepoUpdate(destProjectId, destRepoName, destPath, node.name, operator)
-            mongoTemplate.updateFirst(selfQuery, selfUpdate, TNode::class.java)
+            nodeDao.updateFirst(selfQuery, selfUpdate)
         }
     }
 
@@ -411,14 +401,14 @@ class NodeService @Autowired constructor(
             val formattedPath = formatPath(node.fullPath)
             val destSubPath = formatPath(destPath + node.name)
             val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = true, deep = false)
-            val subNodes = mongoTemplate.find(query, TNode::class.java)
+            val subNodes = nodeDao.find(query)
             subNodes.forEach { doCopy(it, destProjectId, destRepoName, destSubPath, overwrite, operator) }
         } else {
             // 如果待移动的节点为文件且存在冲突&允许覆盖，删除目的节点
             if (existNode != null && overwrite) {
                 val query = nodeQuery(destProjectId, destRepoName, existNode.fullPath)
                 val update = nodeDeleteUpdate(operator)
-                mongoTemplate.updateMulti(query, update, TNode::class.java)
+                nodeDao.updateMulti(query, update)
             }
             // copy自身
             val newNode = node.copy(
@@ -432,7 +422,7 @@ class NodeService @Autowired constructor(
                     lastModifiedBy = operator,
                     lastModifiedDate = LocalDateTime.now()
             )
-            mongoTemplate.save(newNode)
+            nodeDao.insert(newNode)
         }
     }
 
@@ -452,7 +442,7 @@ class NodeService @Autowired constructor(
      * 根据全路径删除文件或者目录
      */
     fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String, soft: Boolean = true) {
-        checkRepository(projectId, repoName)
+        repositoryService.checkRepository(projectId, repoName)
         val formattedFullPath = formatFullPath(fullPath)
         val formattedPath = formatPath(formattedFullPath)
         val escapedPath = escapeRegex(formattedPath)
@@ -463,10 +453,10 @@ class NodeService @Autowired constructor(
         ))
         if (soft) {
             // 软删除
-            mongoTemplate.updateMulti(query, nodeDeleteUpdate(operator), TNode::class.java)
+            nodeDao.updateMulti(query, nodeDeleteUpdate(operator))
         } else {
             // 硬删除
-            mongoTemplate.remove(query, TNode::class.java)
+            nodeDao.remove(query)
         }
         logger.info("Delete node [$projectId/$repoName/$fullPath] by [$operator] success.")
     }
@@ -477,7 +467,7 @@ class NodeService @Autowired constructor(
     private fun queryModel(projectId: String, repoName: String, fullPath: String): TNode? {
         val query = nodeQuery(projectId, repoName, formatFullPath(fullPath), withDetail = true)
 
-        return mongoTemplate.findOne(query, TNode::class.java)
+        return nodeDao.findOne(query)
     }
 
     /**
@@ -490,7 +480,7 @@ class NodeService @Autowired constructor(
             if (!isRootPath(path)) {
                 mkdirs(projectId, repoName, parentPath, createdBy)
             }
-            nodeRepository.insert(TNode(
+            nodeDao.insert(TNode(
                     folder = true,
                     path = parentPath,
                     name = name,
@@ -505,16 +495,6 @@ class NodeService @Autowired constructor(
                     lastModifiedBy = createdBy,
                     lastModifiedDate = LocalDateTime.now()
             ))
-        }
-    }
-
-    /**
-     * 检查仓库是否存在，不存在则抛异常
-     */
-    fun checkRepository(projectId: String, repoName: String, repoType: String? = null) {
-        logger.info("checkRepository, projectId: $projectId, repoName: $repoName, repoType: $repoType")
-        if (!repositoryService.exist(projectId, repoName, repoType)) {
-            throw ErrorCodeException(RepositoryMessageCode.REPOSITORY_NOT_FOUND, repoName)
         }
     }
 
