@@ -104,14 +104,13 @@ abstract class DockerUtils {
             return null
         }
 
-        fun findBlobGlobally(repo: DockerArtifactoryService, projectId: String, repoName: String, path: String, fileDigest: String): Artifact? {
-            //val fullPath = "/$projectId/$repoName/$path"
-            var nodeDetail = repo.findArtifacts(projectId, repoName, path)
+        fun findBlobGlobally(repo: DockerArtifactoryService, projectId: String, repoName: String, dockerRepo: String, fileDigest: String): Artifact? {
+            var nodeDetail = repo.findArtifacts(projectId, repoName, dockerRepo,fileDigest)
             if (nodeDetail == null) {
                 return null
             } else {
                 if (nodeDetail.nodeInfo.sha256 == fileDigest) {
-                    return Artifact(projectId, repoName, path).sha256(nodeDetail.nodeInfo.sha256!!).contentLength(nodeDetail.nodeInfo.size)
+                    return Artifact(projectId, repoName, dockerRepo).sha256(nodeDetail.nodeInfo.sha256!!).contentLength(nodeDetail.nodeInfo.size)
                 }
                 return null
             }
@@ -135,8 +134,8 @@ abstract class DockerUtils {
         }
 
         // get blob from local path
-        fun getBlobFromRepoPath(repo: DockerArtifactoryService, projectId: String, repoName: String, dockerRepoPath: String, blobFilename: String): Artifact? {
-            val tempBlobPath = dockerRepoPath + "/" + "_uploads" + "/" + blobFilename
+        fun getBlobFromRepoPath(repo: DockerArtifactoryService, projectId: String, repoName: String, dockerRepo: String, blobFilename: String): Artifact? {
+            val tempBlobPath = dockerRepo + "/" + "_uploads" + "/" + blobFilename
             log.info("Searching blob in '{}'", tempBlobPath)
             var blob: Artifact?
             if (repo.existsLocal(projectId, repoName, tempBlobPath)) {
@@ -148,10 +147,9 @@ abstract class DockerUtils {
 //                    return blob
 //                }
             }
-            return null
-//            log.debug("Attempting to search blob {} globally", path)
-//            blob = findBlobGlobally(repo, projectId, repoName, path, fileDigest)
-//            return blob
+            log.debug("Attempting to search  blob {} globally", dockerRepo)
+            blob = findBlobGlobally(repo, projectId, repoName, dockerRepo, blobFilename)
+            return blob
         }
 
         fun getFullPath(artifact: Artifact, workContext: DockerWorkContext): String {

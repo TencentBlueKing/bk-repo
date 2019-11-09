@@ -46,10 +46,10 @@ class DockerArtifactoryService @Autowired constructor(
         this.repoKey = "docker-local"
     }
 
-    fun writeLocal(path: String, name: String, inputStream: InputStream): ResponseEntity<Any> {
+    fun writeLocal(projectId:String, repoName: String,dockerRepo: String, name: String, inputStream: InputStream): ResponseEntity<Any> {
 
-        val filePath = localPath + path
-        var fullPath = localPath + path + "/" + name
+        val filePath = "$localPath/$projectId/$repoName/$dockerRepo/"
+        var fullPath = "/$localPath/$projectId/$repoName/$dockerRepo/$name"
 
         File(filePath).mkdirs()
         val file = File(fullPath)
@@ -235,7 +235,7 @@ class DockerArtifactoryService @Autowired constructor(
             logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
         }
-        var fullPath = localPath + path
+        var fullPath = "$localPath/${context.projectId}/${context.repoName}/$path"
         var content = File(fullPath).readBytes()
         context.content(content.inputStream()).contentLength(content.size.toLong()).sha256(DataDigestUtils.sha256FromByteArray(content))
 
@@ -399,11 +399,13 @@ class DockerArtifactoryService @Autowired constructor(
         return Artifact(projectId, repoName, fullPath).sha256(sha256).contentLength(length)
     }
 
-    fun findArtifacts(projectId: String, repoName: String, name: String): NodeDetail? {
-        // 查询node节点
-        val nodes = nodeResource.queryDetail(projectId, repoName, name).data ?: run {
-            logger.warn("find artifacts  failed: $projectId, $repoName, $name found no artifacts")
-            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, projectId + ":" + repoName + ":" + name)
+    fun findArtifacts(projectId: String, repoName: String, dockerRepo: String, fileName: String): NodeDetail? {
+        // query node info
+        var fullPath = "/$dockerRepo/$fileName"
+        val nodes = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
+            logger.warn("find artifacts  failed: $projectId, $repoName, $fullPath found no artifacts")
+            return  null
+            //throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, projectId + ":" + repoName + ":" + fullPath)
         }
         return nodes
     }
