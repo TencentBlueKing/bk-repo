@@ -18,6 +18,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeOperateRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
@@ -216,7 +217,7 @@ class NodeService @Autowired constructor(
         val node = queryModel(projectId, repoName, fullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, fullPath)
         doRename(node, newFullPath, renameRequest.operator)
 
-        logger.info("Rename node [$renameRequest] success. ")
+        logger.info("Rename node [$renameRequest] success.")
     }
 
     /**
@@ -231,32 +232,7 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun move(moveRequest: NodeMoveRequest) {
-        val srcProjectId = moveRequest.srcProjectId
-        val srcRepoName = moveRequest.srcRepoName
-        val srcFullPath = formatFullPath(moveRequest.srcFullPath)
-
-        val destProjectId = moveRequest.destProjectId ?: srcProjectId
-        val destRepoName = moveRequest.destRepoName ?: srcRepoName
-        val destPath = formatPath(moveRequest.destPath)
-
-        repositoryService.checkRepository(srcProjectId, srcRepoName)
-        repositoryService.checkRepository(destProjectId, destRepoName)
-
-        val node = queryModel(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, srcFullPath)
-        // 确保目的目录是否存在
-        val destPathNode = queryModel(destProjectId, destRepoName, destPath)
-        if (destPathNode != null) {
-            // 目的节点存在且为文件，出错
-            if (!destPathNode.folder) {
-                logger.warn("Move node [${node.fullPath}] failed: Destination path: [$destPath] is exist and is a file.")
-                throw ErrorCodeException(NOT_SUPPORTED)
-            }
-        } else {
-            // 创建新路径
-            mkdirs(destProjectId, destRepoName, destPath, moveRequest.operator)
-        }
-
-        doMove(node, destProjectId, destRepoName, destPath, moveRequest.overwrite, moveRequest.operator)
+        handleOperateRequest(moveRequest)
     }
 
     /**
@@ -271,33 +247,7 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun copy(copyRequest: NodeCopyRequest) {
-        val srcProjectId = copyRequest.srcProjectId
-        val srcRepoName = copyRequest.srcRepoName
-        val srcFullPath = formatFullPath(copyRequest.srcFullPath)
-
-        val destProjectId = copyRequest.destProjectId ?: srcProjectId
-        val destRepoName = copyRequest.destRepoName ?: srcRepoName
-        val destPath = formatPath(copyRequest.destPath)
-
-        repositoryService.checkRepository(srcProjectId, srcRepoName)
-        repositoryService.checkRepository(destProjectId, destRepoName)
-
-        val node = queryModel(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, srcFullPath)
-
-        // 确保目的目录是否存在
-        val destPathNode = queryModel(destProjectId, destRepoName, destPath)
-        if (destPathNode != null && !destPathNode.folder) {
-            // 目的节点存在且为文件，出错
-            if (!destPathNode.folder) {
-                logger.warn("Copy node [${node.fullPath}] failed: Destination path: [$destPath] is exist and is a file.")
-                throw ErrorCodeException(NOT_SUPPORTED)
-            }
-        } else {
-            // 创建新路径
-            mkdirs(destProjectId, destRepoName, destPath, copyRequest.operator)
-        }
-        // 递归copy
-        doCopy(node, destProjectId, destRepoName, destPath, copyRequest.overwrite, copyRequest.operator)
+        handleOperateRequest(copyRequest)
     }
 
     /**
@@ -322,7 +272,7 @@ class NodeService @Autowired constructor(
 
         // 检查新路径是否被占用
         if (exist(projectId, repoName, newFullPath)) {
-            logger.info("Rename node [${node.fullPath}] failed: $newFullPath is exist.")
+            logger.warn("Rename node [${node.fullPath}] failed: $newFullPath is exist.")
             throw ErrorCodeException(PARAMETER_IS_EXIST, newFullPath)
         }
 
@@ -340,89 +290,6 @@ class NodeService @Autowired constructor(
             val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
             val selfUpdate = nodePathUpdate(newPath, newName, operator)
             nodeDao.updateFirst(selfQuery, selfUpdate)
-        }
-    }
-
-    /**
-     * 将节点移动到指定目录下
-     */
-    private fun doMove(node: TNode, destProjectId: String, destRepoName: String, destPath: String, overwrite: Boolean, operator: String) {
-        val projectId = node.projectId
-        val repoName = node.repoName
-
-        // 确保目的节点路径不冲突
-        val existNode = queryModel(destProjectId, destRepoName, destPath + node.name)
-        checkConflict(node, existNode, overwrite)
-
-        // 目录深度优先遍历，确保出错时，源节点结构不受影响
-        if (node.folder) {
-            // 如果待移动的节点为目录，则在目的路径创建同名目录
-            if (existNode == null) {
-                mkdirs(destProjectId, destRepoName, formatPath(destPath + node.name), operator)
-            }
-            val formattedPath = formatPath(node.fullPath)
-            val destSubPath = formatPath(destPath + node.name)
-            val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = true, deep = false)
-            val subNodes = nodeDao.find(query)
-            subNodes.forEach { doMove(it, destProjectId, destRepoName, destSubPath, overwrite, operator) }
-            // 文件移动时，目的路径的目录已经自动创建，因此删除源目录
-            nodeDao.remove(nodeQuery(projectId, repoName, node.fullPath))
-        } else {
-            // 如果待移动的节点为文件且存在冲突&允许覆盖，删除目的节点
-            if (existNode != null && overwrite) {
-                val query = nodeQuery(destProjectId, destRepoName, existNode.fullPath)
-                val update = nodeDeleteUpdate(operator)
-                nodeDao.updateMulti(query, update)
-            }
-            // 移动节点
-            val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
-            val selfUpdate = nodeRepoUpdate(destProjectId, destRepoName, destPath, node.name, operator)
-            nodeDao.updateFirst(selfQuery, selfUpdate)
-        }
-    }
-
-    /**
-     * 将节点拷贝到指定目录下
-     */
-    private fun doCopy(node: TNode, destProjectId: String, destRepoName: String, destPath: String, overwrite: Boolean, operator: String) {
-        val projectId = node.projectId
-        val repoName = node.repoName
-
-        // 确保目的节点路径不冲突
-        val existNode = queryModel(projectId, repoName, destPath + node.name)
-        checkConflict(node, existNode, overwrite)
-
-        // 目录深度优先遍历，确保出错时，源节点结构不受影响
-        if (node.folder) {
-            // 如果待复制的节点为目录，则在目的路径创建同名目录
-            if (existNode == null) {
-                mkdirs(destProjectId, destRepoName, formatPath(destPath + node.name), operator)
-            }
-            val formattedPath = formatPath(node.fullPath)
-            val destSubPath = formatPath(destPath + node.name)
-            val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = true, deep = false)
-            val subNodes = nodeDao.find(query)
-            subNodes.forEach { doCopy(it, destProjectId, destRepoName, destSubPath, overwrite, operator) }
-        } else {
-            // 如果待移动的节点为文件且存在冲突&允许覆盖，删除目的节点
-            if (existNode != null && overwrite) {
-                val query = nodeQuery(destProjectId, destRepoName, existNode.fullPath)
-                val update = nodeDeleteUpdate(operator)
-                nodeDao.updateMulti(query, update)
-            }
-            // copy自身
-            val newNode = node.copy(
-                    id = null,
-                    path = destPath,
-                    fullPath = destPath + node.name,
-                    projectId = destProjectId,
-                    repoName = destRepoName,
-                    createdBy = operator,
-                    createdDate = LocalDateTime.now(),
-                    lastModifiedBy = operator,
-                    lastModifiedDate = LocalDateTime.now()
-            )
-            nodeDao.insert(newNode)
         }
     }
 
@@ -495,6 +362,105 @@ class NodeService @Autowired constructor(
                     lastModifiedBy = createdBy,
                     lastModifiedDate = LocalDateTime.now()
             ))
+        }
+    }
+
+    /**
+     * 处理节点操作请求
+     */
+    private fun handleOperateRequest(request: NodeOperateRequest) {
+        val srcProjectId = request.srcProjectId
+        val srcRepoName = request.srcRepoName
+        val srcFullPath = formatFullPath(request.srcFullPath)
+
+        val destProjectId = request.destProjectId ?: srcProjectId
+        val destRepoName = request.destRepoName ?: srcRepoName
+        val destPath = formatPath(request.destPath)
+
+        repositoryService.checkRepository(srcProjectId, srcRepoName)
+        repositoryService.checkRepository(destProjectId, destRepoName)
+
+        val node = queryModel(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, srcFullPath)
+
+        // 确保目的目录是否存在
+        val destPathNode = queryModel(destProjectId, destRepoName, destPath)
+        if (destPathNode != null && !destPathNode.folder) {
+            // 目的节点存在且为文件，出错
+            if (!destPathNode.folder) {
+                logger.warn("[${request.getOperateName()}] node [${node.fullPath}] failed: Destination path: [$destPath] is exist and is a file.")
+                throw ErrorCodeException(NOT_SUPPORTED)
+            }
+        } else {
+            // 创建新路径
+            mkdirs(destProjectId, destRepoName, destPath, request.operator)
+        }
+        // 递归操作
+        operateNode(node, destPath, request)
+
+        logger.info("[${request.getOperateName()}] node success: [$request]")
+    }
+
+    /**
+     * 操作节点
+     */
+    private fun operateNode(node: TNode, destPath: String, request: NodeOperateRequest) {
+        val projectId = node.projectId
+        val repoName = node.repoName
+        val overwrite = request.overwrite
+        val destProjectId = request.destProjectId ?: node.projectId
+        val destRepoName = request.destRepoName ?: node.repoName
+        val operator = request.operator
+
+        // 确保目的节点路径不冲突
+        val existNode = queryModel(projectId, repoName, destPath + node.name)
+        checkConflict(node, existNode, overwrite)
+
+        // 目录深度优先遍历，确保出错时，源节点结构不受影响
+        if (node.folder) {
+            // 如果待复制的节点为目录，则在目的路径创建同名目录
+            if (existNode == null) {
+                mkdirs(destProjectId, destRepoName, formatPath(destPath + node.name), operator)
+            }
+            val formattedPath = formatPath(node.fullPath)
+            val destSubPath = formatPath(destPath + node.name)
+            val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = true, deep = false)
+            val subNodes = nodeDao.find(query)
+            subNodes.forEach { operateNode(it, destSubPath, request) }
+
+            // 文件移动时，目的路径的目录已经自动创建，因此删除源目录
+            if(request is NodeMoveRequest) {
+                nodeDao.remove(nodeQuery(projectId, repoName, node.fullPath))
+            }
+        } else {
+            // 如果待移动的节点为文件且存在冲突&允许覆盖，删除目的节点
+            if (existNode != null && overwrite) {
+                val query = nodeQuery(destProjectId, destRepoName, existNode.fullPath)
+                val update = nodeDeleteUpdate(operator)
+                nodeDao.updateMulti(query, update)
+            }
+            when(request) {
+                is NodeMoveRequest -> {
+                    // 移动节点
+                    val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
+                    val selfUpdate = nodeRepoUpdate(destProjectId, destRepoName, destPath, node.name, operator)
+                    nodeDao.updateFirst(selfQuery, selfUpdate)
+                }
+                is NodeCopyRequest -> {
+                    // copy自身
+                    val newNode = node.copy(
+                            id = null,
+                            path = destPath,
+                            fullPath = destPath + node.name,
+                            projectId = destProjectId,
+                            repoName = destRepoName,
+                            createdBy = operator,
+                            createdDate = LocalDateTime.now(),
+                            lastModifiedBy = operator,
+                            lastModifiedDate = LocalDateTime.now()
+                    )
+                    nodeDao.insert(newNode)
+                }
+            }
         }
     }
 
