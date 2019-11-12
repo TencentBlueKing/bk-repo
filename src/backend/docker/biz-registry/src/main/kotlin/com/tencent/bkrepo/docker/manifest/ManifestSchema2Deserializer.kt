@@ -12,6 +12,7 @@ import java.util.Collections
 import kotlin.collections.Map.Entry
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
+import java.util.stream.StreamSupport
 
 class ManifestSchema2Deserializer {
     companion object {
@@ -40,17 +41,21 @@ class ManifestSchema2Deserializer {
             val historySize = if (history == null) 0 else history!!.size()
             var historyCounter = 0L
             if (history != null) {
-                val iterable = Iterable<JsonNode> { history.elements() }
                 // TODO: resolve params pass
-                // historyCounter = StreamSupport.stream(iterable.spliterator(), false).filter(Predicate<T> { notEmptyHistoryLayer(it) }).count()
-            }
+                val iterable = Iterable<JsonNode> { history.elements() }
+                historyCounter = StreamSupport.stream(iterable.spliterator(), false).filter { notEmptyHistoryLayer(it) }.count()
 
-            val foreignHasHistory = layers.size() as Long == historyCounter
+            }
+            log.info("dddddddddddddddddddd")
+            val foreignHasHistory = layers.size().toLong()  == historyCounter
+            log.info("eeeeeeeeeeeeeeeeeee")
             var iterationsCounter = 0
             var historyIndex = 0
 
             var layersIndex = 0
             while (historyIndex < historySize || layersIndex < layers.size()) {
+                log.info("aaaaaaaaaaaaaaa {}",historyIndex)
+                log.info("bbbbbbbbbbbbbb {}",layersIndex)
                 val historyLayer = if (history == null) null else history!!.get(historyIndex)
                 val layer = layers.get(layersIndex)
                 var size = 0L
@@ -78,20 +83,26 @@ class ManifestSchema2Deserializer {
 
                 populateWithMediaType(layer, blobInfo)
                 manifestMetadata.blobsInfo.add(blobInfo)
-                if (historyIndex == historyIndex && layersIndex == layersIndex) {
-                    breakeCircuit(manifestBytes, jsonBytes, "Loop Indexes not Incing")
-                }
-
+//                if (historyIndex == historySize && layersIndex == layers.size()) {
+//                    log.info("ttttttttttttttt {}",historyIndex)
+//                    log.info("mmmmmmmmmmmmmm {}",historySize)
+//                    log.info("fffffffffffffff {}", layersIndex )
+//                    log.info("nnnnnnnnnnnnn {}", layers.size() )
+//                    breakeCircuit(manifestBytes, jsonBytes, "Loop Indexes not Incing")
+//                }
                 checkCircuitBreaker(manifestBytes, jsonBytes, iterationsCounter)
                 ++iterationsCounter
             }
-
+            log.info("lllllllllllllllllll")
             Collections.reverse(manifestMetadata.blobsInfo)
+            log.info("ffffffffffffffff {} ",config.toString())
             manifestMetadata.tagInfo.totalSize = totalSize
-            val dockerMetadata = JsonUtil.readValue(config, DockerImageMetadata::class.java) as DockerImageMetadata
+            val dockerMetadata = JsonUtil.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
+            log.info("ggggggggggggggg")
             populatePorts(manifestMetadata, dockerMetadata)
             populateVolumes(manifestMetadata, dockerMetadata)
             populateLabels(manifestMetadata, dockerMetadata)
+            log.info("ccccccccccccccccccccccc {}",manifestMetadata.toString())
             return manifestMetadata
         }
 
@@ -196,10 +207,10 @@ class ManifestSchema2Deserializer {
 
         private fun addLabels(manifestMetadata: ManifestMetadata, labels: Map<String, String>?) {
             if (labels != null) {
-                val var2 = labels.entries.iterator()
+                val iter = labels.entries.iterator()
 
-                while (var2.hasNext()) {
-                    val label = var2.next() as Entry<String, String>
+                while (iter.hasNext()) {
+                    val label = iter.next()
                     manifestMetadata.tagInfo.labels.put(label.key, label.value)
                 }
             }

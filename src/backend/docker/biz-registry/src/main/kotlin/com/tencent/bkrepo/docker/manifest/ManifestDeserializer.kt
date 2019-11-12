@@ -15,6 +15,7 @@ class ManifestDeserializer {
                 ManifestType.Schema1 -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 ManifestType.Schema1Signed -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 ManifestType.Schema2 -> {
+                    print("bbbbbbbbbbbbbbbbbbbb")
                     val manifestJsonBytes = DockerSchemaUtils.fetchSchema2ManifestConfig(repo, projectId, repoName, manifestBytes, dockerRepo, tag)
                     return ManifestSchema2Deserializer.deserialize(manifestBytes, manifestJsonBytes, dockerRepo, tag, digest)
                 }

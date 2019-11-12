@@ -19,6 +19,13 @@ public class DownloadContext(projectId: String,repoName: String,path: String) {
     var projectId: String = ""
     var repoName: String = ""
     var userId: String = "bk_admin"
+    var fullPath :String=""
+
+    init{
+        this.projectId = projectId
+        this.repoName = repoName
+        this.fullPath = path
+    }
 
     fun path(name: String): DownloadContext {
         this.name = name

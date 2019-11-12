@@ -89,10 +89,9 @@ class DockerArtifactoryService @Autowired constructor(
     fun readGlobal(context: DownloadContext): InputStream {
         // query repository
         val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$context.userId] simply download file  [$context.path] failed: $context.repoName not found")
+            logger.warn("user[$context.userId] read global file  [$context.path] failed: $context.repoName not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
         }
-
         // get content from storage
         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
         var file = fileStorage.load(context.sha256, storageCredentials)
@@ -147,9 +146,9 @@ class DockerArtifactoryService @Autowired constructor(
         return true
     }
 
-    fun deleteLocal(path: String): Boolean {
-        var f = File(localPath + path)
-        return f.delete()
+    fun deleteLocal(projectId: String,repoName: String,path: String): Boolean {
+        val fullPath = "$localPath/$projectId/$repoName/$path"
+        return File(fullPath).delete()
     }
 
     fun download(context: DownloadContext): File {
@@ -390,13 +389,13 @@ class DockerArtifactoryService @Autowired constructor(
         return Artifact(projectId, repoName, dockerRepo).sha256(sha256).contentLength(length)
     }
 
-    fun artifact(projectId: String, repoName: String, dockerRepo: String): Artifact? {
-        val fullPath = localPath + ""
-        val file = File(fullPath)
-        val content = file.readBytes()
-        val sha256 = DataDigestUtils.sha256FromByteArray(content)
-        var length = content.size.toLong()
-        return Artifact(projectId, repoName, fullPath).sha256(sha256).contentLength(length)
+    fun artifact(projectId: String, repoName: String, fullPath: String): Artifact? {
+        val nodes = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
+            logger.warn("find artifacts  failed: $projectId, $repoName, $fullPath found no artifacts")
+            return  null
+            //throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, projectId + ":" + repoName + ":" + fullPath)
+        }
+        return Artifact(projectId, repoName, fullPath).sha256(nodes.nodeInfo.sha256!!).contentLength(nodes.nodeInfo.size)
     }
 
     fun findArtifacts(projectId: String, repoName: String, dockerRepo: String, fileName: String): NodeDetail? {

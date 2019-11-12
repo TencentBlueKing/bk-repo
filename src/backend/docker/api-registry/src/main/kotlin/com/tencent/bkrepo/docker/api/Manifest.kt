@@ -3,8 +3,8 @@ package com.tencent.bkrepo.docker.api
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
+import org.springframework.http.ResponseEntity
 import javax.servlet.http.HttpServletRequest
-import javax.ws.rs.core.Response
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestHeader
@@ -37,7 +37,7 @@ interface Manifest {
         tag: String,
         @ApiParam
         @RequestHeader(value = "Content-Type", required = true)
-        contentTypeHeader: String,
+        contentType: String,
         request: HttpServletRequest
-    ): Response
+    ): ResponseEntity<Any>
 }

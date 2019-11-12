@@ -113,9 +113,8 @@ class DockerV2LocalRepoHandler @Autowired constructor(
 //    }
 
     override fun uploadManifest(projectId: String, repoName: String, dockerRepo: String, tag: String, mediaType: String, stream: InputStream): ResponseEntity<Any> {
-        //val dockerRepo = "/$projectId/$repoName/$name"
         log.info("Deploying docker manifest for repo '{}' and tag '{}' into repo '{}'", *arrayOf<Any>(dockerRepo, tag, this.repo.getRepoId()))
-        var lockId: String = ""
+        //var lockId: String = ""
         val manifestType = ManifestType.from(mediaType)
         val manifestPath = buildManifestPathFromType(dockerRepo, tag, manifestType)
         log.info("manifest path to {} .", manifestPath)
@@ -158,7 +157,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
 
     @Throws(IOException::class, DockerSyncManifestException::class)
     private fun processUploadedManifestType(projectId: String, repoName: String, dockerRepo: String, tag: String, manifestPath: String, manifestType: ManifestType, stream: InputStream): DockerDigest {
-        // var dockerRepo = "/$projectId/$repoName/$name"
+        print("dddddddddddddd")
         val manifestBytes = IOUtils.toByteArray(stream)
         val digest = DockerManifestDigester.calc(manifestBytes)
         log.info("digest : {}", digest)
@@ -464,20 +463,21 @@ class DockerV2LocalRepoHandler @Autowired constructor(
 
     private fun finishPatchUpload(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest, uuid: String): ResponseEntity<Any> {
         val uuidPath = "$dockerRepo/_uploads/$uuid"
-        var context = UploadContext(projectId, repoName, dockerRepo).projectId(projectId).repoName(repoName)
+        val fileName = digest.filename()
         if (this.repo.exists(uuidPath)) {
-            val blobPath = dockerRepo + "/" + "_uploads" + "/" + digest.filename()
+            val blobPath = "/$dockerRepo/_uploads/$fileName"
+            var context = UploadContext(projectId, repoName, blobPath)
             this.repo.uploadFromLocal(uuidPath, context)
             // (this.repo.getWorkContextC() as DockerWorkContext).setSystem()
 
             try {
-                this.repo.deleteLocal(uuidPath)
+                this.repo.deleteLocal(projectId, repoName, uuidPath)
             } finally {
                 // (this.repo.getWorkContextC() as DockerWorkContext).unsetSystem()
             }
 
-            // this.repo.setAttribute(blobPath, digest.getDigestAlg(), digest.getDigestHex())
-            val location = this.getDockerURI("$dockerRepo/blobs/$digest")
+            //this.repo.setAttribute(blobPath, digest.getDigestAlg(), digest.getDigestHex())
+            val location = this.getDockerURI("$projectId/$repoName/$dockerRepo/blobs/$digest")
             return ResponseEntity.created(location).header("Docker-Distribution-Api-Version", "registry/2.0").header("Content-Length", "0").header("Docker-Content-Digest", digest.toString()).build()
         } else {
             return DockerV2Errors.blobUnknown(digest.toString())
@@ -506,31 +506,34 @@ class DockerV2LocalRepoHandler @Autowired constructor(
     }
 
     private fun consumeStreamAndReturnError(dockerRepo: String, identifier: String, stream: InputStream): ResponseEntity<Any> {
-        try {
-            val output = NullOutputStream()
-            var throwable: Throwable? = null
-            try {
-                IOUtils.copy(stream, output)
-            } catch (throwablec: Throwable) {
-                throwable = throwablec
-                throw throwablec
-            } finally {
-                if (output != null) {
-                    if (throwable != null) {
-                        try {
-                            output.close()
-                        } catch (throwablecc: Throwable) {
-                            throwable.addSuppressed(throwablecc)
-                        }
-                    } else {
-                        output.close()
-                    }
-                }
-            }
-        } catch (exception: IOException) {
-            log.debug("Failed to consume incoming stream for " + this.repo.getRepoId() + ":" + dockerRepo + "/" + identifier, exception)
-        } finally {
-            IOUtils.closeQuietly(stream)
+//        try {
+//            val output = NullOutputStream()
+//            var throwable: Throwable? = null
+//            try {
+//                IOUtils.copy(stream, output)
+//            } catch (throwablec: Throwable) {
+//                throwable = throwablec
+//                throw throwablec
+//            } finally {
+//                if (output != null) {
+//                    if (throwable != null) {
+//                        try {
+//                            output.close()
+//                        } catch (throwablecc: Throwable) {
+//                            throwable.addSuppressed(throwablecc)
+//                        }
+//                    } else {
+//                        output.close()
+//                    }
+//                }
+//            }
+//        } catch (exception: IOException) {
+//            log.debug("Failed to consume incoming stream for " + this.repo.getRepoId() + ":" + dockerRepo + "/" + identifier, exception)
+//        } finally {
+//            IOUtils.closeQuietly(stream)
+//        }
+        NullOutputStream().use {
+            IOUtils.copy(stream, it)
         }
         return DockerV2Errors.unauthorizedUpload()
     }
