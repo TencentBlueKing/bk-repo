@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServletResponse
 interface DevopsResource {
 
     @ApiOperation("创建外部下载URL")
-    @PostMapping("createExternalUrl")
+    @PostMapping("/createExternalUrl")
     fun createExternalDownloadUrl(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
