@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.generic.resource
 
+import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.api.DevopsResource
 import com.tencent.bkrepo.generic.pojo.devops.ExternalUrlRequest
 import com.tencent.bkrepo.generic.service.DevopsService
@@ -14,8 +15,8 @@ class DevopsResourceImpl @Autowired constructor(
     private val devopsService: DevopsService,
     private val downloadService: DownloadService
 ) : DevopsResource {
-    override fun createExternalDownloadUrl(userId: String, externalUrlRequest: ExternalUrlRequest) {
-        devopsService.createExternalDownloadUrl(userId, externalUrlRequest)
+    override fun createExternalDownloadUrl(userId: String, externalUrlRequest: ExternalUrlRequest): Response<String> {
+        return Response(devopsService.createExternalDownloadUrl(userId, externalUrlRequest))
     }
 
     override fun externalDownload(

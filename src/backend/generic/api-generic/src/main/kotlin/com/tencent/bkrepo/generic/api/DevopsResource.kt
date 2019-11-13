@@ -3,6 +3,7 @@ package com.tencent.bkrepo.generic.api
 import com.tencent.bkrepo.common.api.annotation.WildcardParam
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
+import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.generic.pojo.devops.ExternalUrlRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -32,7 +33,7 @@ interface DevopsResource {
         userId: String,
         @RequestBody
         searchRequest: ExternalUrlRequest
-    )
+    ): Response<String>
 
     @ApiOperation("外部下载")
     @GetMapping("/external/{projectId}/{repoName}/**")
