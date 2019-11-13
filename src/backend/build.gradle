@@ -12,6 +12,7 @@ buildscript {
         awsS3Version = "1.11.631"
         guavaVersion = "28.1-jre"
         commonsIoVersion = "2.6"
+        skywalkingVersion = "6.1.0"
     }
 
     repositories {
@@ -131,6 +132,7 @@ subprojects {
             dependency "com.amazonaws:aws-java-sdk-s3:$awsS3Version"
             dependency "com.google.guava:guava:$guavaVersion"
             dependency "commons-io:commons-io:$commonsIoVersion"
+            dependency "org.apache.skywalking:apm-toolkit-logback-1.x:$skywalkingVersion"
 
         }
 
