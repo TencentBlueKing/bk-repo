@@ -5,18 +5,20 @@ import com.tencent.bkrepo.generic.api.DevopsResource
 import com.tencent.bkrepo.generic.pojo.devops.ExternalUrlRequest
 import com.tencent.bkrepo.generic.service.DevopsService
 import com.tencent.bkrepo.generic.service.DownloadService
+import com.tencent.bkrepo.generic.service.OperateService
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-@Controller
+@RestController
 class DevopsResourceImpl @Autowired constructor(
     private val devopsService: DevopsService,
-    private val downloadService: DownloadService
+    private val downloadService: DownloadService,
+    private val operateService: OperateService
 ) : DevopsResource {
-    override fun createExternalDownloadUrl(userId: String, externalUrlRequest: ExternalUrlRequest): Response<String> {
-        return Response(devopsService.createExternalDownloadUrl(userId, externalUrlRequest))
+    override fun createExternalDownloadUrl(userId: String, request: ExternalUrlRequest): Response<String> {
+        return Response(devopsService.createExternalDownloadUrl(userId, request))
     }
 
     override fun externalDownload(

@@ -32,7 +32,7 @@ interface DevopsResource {
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
         @RequestBody
-        searchRequest: ExternalUrlRequest
+        request: ExternalUrlRequest
     ): Response<String>
 
     @ApiOperation("外部下载")

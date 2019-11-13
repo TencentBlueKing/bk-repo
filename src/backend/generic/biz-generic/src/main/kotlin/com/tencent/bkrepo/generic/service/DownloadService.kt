@@ -95,7 +95,7 @@ class DownloadService @Autowired constructor(
             "fullPath: $fullPath, token: $token")
 
         val token = downloadTokenRepository.findOneByToken(token)
-            ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, "", "invalid token")
+            ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, token)
         if (token.expireTime.isBefore(LocalDateTime.now())) {
             throw ErrorCodeException(CommonMessageCode.PERMISSION_DENIED, "", "expired token")
         }
