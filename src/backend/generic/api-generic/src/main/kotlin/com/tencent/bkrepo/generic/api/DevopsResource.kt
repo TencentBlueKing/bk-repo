@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletResponse
 /**
  * 蓝盾相关接口
  */
-@Api("")
+@Api("蓝盾")
 @RequestMapping("/devops")
 interface DevopsResource {
 
