@@ -13,20 +13,22 @@ import com.tencent.bkrepo.generic.constant.DEFAULT_MIME_TYPE
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.REPO_TYPE
 import com.tencent.bkrepo.generic.pojo.BlockInfo
+import com.tencent.bkrepo.generic.repository.DownloadTokenRepository
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.util.NodeUtils
-import java.io.BufferedOutputStream
-import java.io.File
-import java.io.RandomAccessFile
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
+import java.io.BufferedOutputStream
+import java.io.File
+import java.io.RandomAccessFile
+import java.time.LocalDateTime
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 /**
  * 通用文件下载服务类
@@ -39,11 +41,67 @@ class DownloadService @Autowired constructor(
     private val permissionService: PermissionService,
     private val repositoryResource: RepositoryResource,
     private val nodeResource: NodeResource,
-    private val fileStorage: FileStorage
-
+    private val fileStorage: FileStorage,
+    private val downloadTokenRepository: DownloadTokenRepository
 ) {
     fun simpleDownload(userId: String, projectId: String, repoName: String, fullPath: String, request: HttpServletRequest, response: HttpServletResponse) {
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+
+        val fullUri = "$projectId/$repoName/$fullPath"
+        // 查询repository
+        val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
+            logger.warn("user[$userId] simply download file  [$fullUri] failed: $repoName not found")
+            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
+        }
+
+        // 查询节点
+        val node = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
+            logger.warn("user[$userId] simply download file [$fullUri] failed: $fullPath not found")
+            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
+        }
+
+        // 如果为目录
+        if (node.nodeInfo.folder) {
+            logger.warn("user[$userId] simply download file [$fullUri] failed: $fullPath not found")
+            throw ErrorCodeException(GenericMessageCode.DOWNLOAD_FOLDER_FORBIDDEN)
+        }
+
+        // 如果为分块文件
+        if (node.isBlockFile()) {
+            logger.warn("user[$userId] simply download file [$fullUri] failed: $fullPath is a block file")
+            throw ErrorCodeException(GenericMessageCode.DOWNLOAD_BLOCK_FORBIDDEN)
+        }
+
+        // fileStorage
+        val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
+        val file = fileStorage.load(node.nodeInfo.sha256!!, storageCredentials) ?: run {
+            logger.warn("user[$userId] simply download file [$fullUri] failed: file data not found")
+            throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
+        }
+
+        handleDownload(node.nodeInfo, file, request, response)
+    }
+
+    fun externalDownload(
+        userId: String,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        token: String,
+        request: HttpServletRequest,
+        response: HttpServletResponse
+    ) {
+        logger.info("externalDownload, userId: $userId, projectId: $projectId, repoName: $repoName, " +
+            "fullPath: $fullPath, token: $token")
+
+        val token = downloadTokenRepository.findOneByToken(token)
+            ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, "", "invalid token")
+        if (token.expireTime.isBefore(LocalDateTime.now())) {
+            throw ErrorCodeException(CommonMessageCode.PERMISSION_DENIED, "", "expired token")
+        }
+        if (token.downloadUser != userId) {
+            throw ErrorCodeException(CommonMessageCode.PERMISSION_DENIED, "", "invalid token")
+        }
 
         val fullUri = "$projectId/$repoName/$fullPath"
         // 查询repository
