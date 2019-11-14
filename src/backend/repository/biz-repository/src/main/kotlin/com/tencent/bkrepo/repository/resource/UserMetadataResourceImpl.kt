@@ -30,13 +30,13 @@ class UserMetadataResourceImpl @Autowired constructor(
         return Response.success(metadataService.query(projectId, repoName, fullPath))
     }
 
-    override fun upsert(userId: String, projectId: String, repoName: String, fullPath: String, metadataSaveRequest: UserMetadataSaveRequest): Response<Void> {
+    override fun save(userId: String, projectId: String, repoName: String, fullPath: String, metadataSaveRequest: UserMetadataSaveRequest): Response<Void> {
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
         val request = MetadataSaveRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                metadata = metadataSaveRequest.metadata
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            metadata = metadataSaveRequest.metadata
         )
         metadataService.save(request)
         return Response.success()
@@ -45,10 +45,10 @@ class UserMetadataResourceImpl @Autowired constructor(
     override fun delete(userId: String, projectId: String, repoName: String, fullPath: String, metadataDeleteRequest: UserMetadataDeleteRequest): Response<Void> {
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
         val request = MetadataDeleteRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                keyList = metadataDeleteRequest.keyList
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            keyList = metadataDeleteRequest.keyList
         )
         metadataService.delete(request)
         return Response.success()
