@@ -10,7 +10,7 @@ import io.swagger.annotations.ApiModelProperty
  * @date: 2019-09-26
  */
 @ApiModel("创建或更新元数据请求")
-data class UserMetadataUpsertRequest(
+data class UserMetadataSaveRequest(
     @ApiModelProperty("元数据key-value数据", required = true)
     val metadata: Map<String, String>
 )

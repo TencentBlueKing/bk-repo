@@ -28,6 +28,6 @@ data class NodeMoveRequest(
 
     @ApiModelProperty("操作者", required = true)
     override val operator: String
-): NodeOperateRequest() {
+) : NodeOperateRequest() {
     override fun getOperateName() = "Move"
 }
