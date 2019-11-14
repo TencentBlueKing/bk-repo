@@ -96,6 +96,15 @@ object QueryHelper {
         return update(operator).set("deleted", LocalDateTime.now())
     }
 
+    fun nodeMetadataQuery(projectId: String, repoName: String, fullPath: String, key: String): Query {
+        return Query(Criteria.where("projectId").`is`(projectId)
+            .and("repoName").`is`(repoName)
+            .and("fullPath").`is`(fullPath)
+            .and("deleted").`is`(null)
+            .and("metadata.key").`is`(key)
+        )
+    }
+
     private fun update(operator: String): Update {
         return Update()
                 .set("lastModifiedDate", LocalDateTime.now())

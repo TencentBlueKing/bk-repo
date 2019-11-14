@@ -11,6 +11,7 @@ import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.FOLDER_CANNO
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.FileBlock
 import com.tencent.bkrepo.repository.pojo.node.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
@@ -57,6 +58,7 @@ import org.springframework.transaction.annotation.Transactional
 class NodeService @Autowired constructor(
     private val repositoryService: RepositoryService,
     private val fileReferenceService: FileReferenceService,
+    private val metadataService: MetadataService,
     private val nodeDao: NodeDao
 ) {
 
@@ -182,7 +184,6 @@ class NodeService @Autowired constructor(
                 expireDate = if (it.folder) null else parseExpireDate(it.expires),
                 size = if (it.folder) 0 else it.size ?: 0,
                 sha256 = if (it.folder) null else it.sha256,
-                metadata = it.metadata ?: emptyMap(),
                 projectId = projectId,
                 repoName = repoName,
                 createdBy = it.operator,
@@ -194,6 +195,10 @@ class NodeService @Autowired constructor(
         node.blockList = createRequest.blockList?.map { TFileBlock(sequence = it.sequence, sha256 = it.sha256, size = it.size) }
         // 保存节点
         val idValue = IdValue(addNode(node).id!!)
+        // 保存元数据
+        createRequest.metadata?.let {
+            metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it))
+        }
         logger.info("Create node [$createRequest] success.")
 
         return idValue
@@ -350,7 +355,7 @@ class NodeService @Autowired constructor(
                     fullPath = combineFullPath(parentPath, name),
                     size = 0,
                     expireDate = null,
-                    metadata = emptyMap(),
+                    metadata = emptyList(),
                     projectId = projectId,
                     repoName = repoName,
                     createdBy = createdBy,
@@ -505,7 +510,7 @@ class NodeService @Autowired constructor(
             return tNode?.let {
                 NodeDetail(
                     nodeInfo = convert(it)!!,
-                    metadata = it.metadata ?: emptyMap(),
+                    metadata = MetadataService.convert(it.metadata),
                     blockList = it.blockList?.map { item -> convert(item) }
                 )
             }

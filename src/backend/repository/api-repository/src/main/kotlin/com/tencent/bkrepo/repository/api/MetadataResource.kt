@@ -3,7 +3,7 @@ package com.tencent.bkrepo.repository.api
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataUpsertRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -39,7 +39,7 @@ interface MetadataResource {
 
     @ApiOperation("创建/更新元数据列表")
     @PostMapping
-    fun upsert(@RequestBody metadataUpsertRequest: MetadataUpsertRequest): Response<Void>
+    fun save(@RequestBody metadataSaveRequest: MetadataSaveRequest): Response<Void>
 
     @ApiOperation("删除元数据")
     @DeleteMapping

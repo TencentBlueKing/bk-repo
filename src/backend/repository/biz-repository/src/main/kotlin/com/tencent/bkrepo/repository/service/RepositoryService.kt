@@ -122,7 +122,7 @@ class RepositoryService @Autowired constructor(
     }
 
     /**
-     * 用于测试的函数，不会对外提供
+     * 用于测试的函数，不对外提供
      */
     fun delete(projectId: String, name: String) {
         val repository = queryModel(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)

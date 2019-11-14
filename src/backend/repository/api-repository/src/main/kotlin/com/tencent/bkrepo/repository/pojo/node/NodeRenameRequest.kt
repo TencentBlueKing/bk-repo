@@ -12,14 +12,15 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("节点重命名请求")
 data class NodeRenameRequest(
     @ApiModelProperty("所属项目", required = true)
-    val projectId: String,
+    override val projectId: String,
     @ApiModelProperty("仓库名称", required = true)
-    val repoName: String,
+    override val repoName: String,
     @ApiModelProperty("节点完整路径", required = true)
-    val fullPath: String,
+    override val fullPath: String,
+
     @ApiModelProperty("节点新完整路径", required = true)
     val newFullPath: String,
-
     @ApiModelProperty("操作用户", required = true)
     val operator: String
-)
+
+) : BaseNodeRequest()
