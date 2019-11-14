@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.REPOSITORY_NOT_FOUND
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class RepositoryService @Autowired constructor(
     private val repoRepository: RepoRepository,
+    private val nodeDao: NodeDao,
     private val mongoTemplate: MongoTemplate
 ) {
     private fun queryModel(projectId: String, name: String, type: String? = null): TRepository? {
@@ -127,11 +128,11 @@ class RepositoryService @Autowired constructor(
         val repository = queryModel(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
 
         repoRepository.deleteById(repository.id!!)
-        mongoTemplate.remove(Query(Criteria
+        nodeDao.remove(Query(Criteria
                 .where("projectId")
                 .`is`(repository.projectId)
                 .and("repoName").`is`(repository.name)
-        ), TNode::class.java)
+        ))
 
         logger.info("Delete repository [$projectId/$name] success.")
     }

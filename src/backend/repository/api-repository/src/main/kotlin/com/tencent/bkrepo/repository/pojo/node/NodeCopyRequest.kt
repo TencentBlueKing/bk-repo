@@ -10,7 +10,7 @@ import io.swagger.annotations.ApiModelProperty
  * @date: 2019-10-15
  */
 @ApiModel("节点复制请求")
-data class NodeCopyRequest (
+data class NodeCopyRequest(
     @ApiModelProperty("源项目id", required = true)
     override val srcProjectId: String,
     @ApiModelProperty("源仓库名称", required = true)
@@ -28,6 +28,6 @@ data class NodeCopyRequest (
 
     @ApiModelProperty("操作者", required = true)
     override val operator: String
-): NodeOperateRequest() {
+) : NodeOperateRequest() {
     override fun getOperateName() = "Copy"
 }
