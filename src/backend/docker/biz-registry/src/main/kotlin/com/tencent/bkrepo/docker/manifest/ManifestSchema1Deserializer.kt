@@ -18,9 +18,9 @@ class ManifestSchema1Deserializer {
         fun deserialize(manifestBytes: ByteArray, digest: DockerDigest): ManifestMetadata {
             try {
                 return applyAttributesFromContent(manifestBytes, digest)
-            } catch (var3: IOException) {
-                log.error("Unable to deserialize the manifest.json file: {}", var3.message, var3)
-                throw RuntimeException(var3)
+            } catch (exception: IOException) {
+                log.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
+                throw RuntimeException(exception)
             }
         }
 

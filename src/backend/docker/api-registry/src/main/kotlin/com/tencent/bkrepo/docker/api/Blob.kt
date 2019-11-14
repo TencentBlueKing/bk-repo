@@ -81,7 +81,7 @@ interface Blob {
     ): ResponseEntity<Any>
 
     @ApiOperation("开始上传blob文件")
-    @RequestMapping(method = [RequestMethod.POST], value = ["{projectId}/{repoName}/{name}/blobs/uploads"])
+    @RequestMapping(method = [RequestMethod.POST], value = ["{projectId}/{repoName}/{name:.+}/blobs/uploads"])
     fun startBlobUpload(
         @RequestHeader
         headers: HttpHeaders,

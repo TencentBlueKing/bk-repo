@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.JsonNode
 import java.io.Serializable
 
+
 class DockerImageMetadata : Serializable {
     @JsonProperty("id")
     var id: String? = null
@@ -18,9 +19,9 @@ class DockerImageMetadata : Serializable {
     @JsonProperty("author")
     var author: String? = null
     @JsonProperty("container_config")
-    var containerConfig: Config? = null
+    var containerConfig: DockerImageMetadata.Config? = null
     @JsonProperty("config")
-    var config: Config? = null
+    var config: DockerImageMetadata.Config? = null
     @JsonProperty("architecture")
     var architecture: String? = null
     @JsonProperty("os")
@@ -62,7 +63,7 @@ class DockerImageMetadata : Serializable {
         @JsonProperty("Env")
         var env: List<String>? = null
         @JsonProperty("Cmd")
-        var cmd: List<String> ? = null
+        var cmd: List<String>? = null
         @JsonProperty("Image")
         var image: String? = null
         @JsonProperty("Volumes")

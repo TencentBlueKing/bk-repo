@@ -11,10 +11,15 @@ import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import com.tencent.bkrepo.docker.repomd.Artifact
 import com.tencent.bkrepo.docker.repomd.DownloadContext
 import com.tencent.bkrepo.docker.repomd.UploadContext
+import com.tencent.bkrepo.docker.repomd.WriteContext
+import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataUpsertRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import java.io.File
 import java.io.InputStream
 import org.slf4j.LoggerFactory
@@ -25,9 +30,11 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class DockerArtifactoryService @Autowired constructor(
-    private val repositoryResource: RepositoryResource,
-    private val nodeResource: NodeResource,
-    private val fileStorage: FileStorage
+        private val repositoryResource: RepositoryResource,
+        private val nodeResource: NodeResource,
+        private val fileStorage: FileStorage,
+        private val metadataService: MetadataResource
+
 
 ) {
 
@@ -41,12 +48,12 @@ class DockerArtifactoryService @Autowired constructor(
         this.repoKey = "docker-local"
     }
 
-    fun writeLocal(path: String, name: String, inputStream: InputStream): ResponseEntity<Any> {
+    fun writeLocal(projectId:String, repoName: String,dockerRepo: String, name: String, inputStream: InputStream): ResponseEntity<Any> {
 
-        val filePath = localPath + path
-        var fullPath = localPath + path + "/" + name
+        val filePath = "$localPath/$projectId/$repoName/$dockerRepo/"
+        var fullPath = "/$localPath/$projectId/$repoName/$dockerRepo/$name"
 
-        val f = File(filePath).mkdirs()
+        File(filePath).mkdirs()
         val file = File(fullPath)
         if (!file.exists()) {
             file.createNewFile()
@@ -56,76 +63,91 @@ class DockerArtifactoryService @Autowired constructor(
         }
         return ResponseEntity.ok().body("ok")
     }
-//    override  fun read(path: String): InputStream {
-//        val repoPath = this.repoPath(path)
-//        log.debug("Acquiring the content stream for '{}'", repoPath)
-//
-//        try {
-//            val requestContext = NullRequestContext(repoPath)
-//            val repo = this.repoService.getLocalRepository(repoPath)
-//            val info = repo.getInfo(requestContext)
-//            val handle = this.repoService.getResourceStreamHandle(requestContext, repo, info)
-//            return handle.getInputStream()
-//        } catch (var7: BinaryRejectedException) {
-//            throw IllegalStateException("Unauthorized: " + var7.getMessage(), var7)
-//        } catch (var7: RepoRejectException) {
-//            throw IllegalStateException("Unauthorized: " + var7.getMessage(), var7)
-//        } catch (var8: Exception) {
-//            throw IllegalStateException("Failed to retrieve resource " + repoPath + ": " + var8.message, var8)
-//        }
-//    }
 
-    fun getRepoId(): String {
-        return this.repoKey
+    fun readLocal(projectId: String,repoName: String,path: String):InputStream{
+        var fullPath = "$localPath/$projectId/$repoName/$path"
+        return  File(fullPath).inputStream()
     }
+
+
+    fun readGlobal(context: DownloadContext): InputStream {
+        // query repository
+        val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+            logger.warn("user[$context.userId] read global file  [$context.path] failed: $context.repoName not found")
+            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
+        }
+        // get content from storage
+        val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
+        var file = fileStorage.load(context.sha256, storageCredentials)
+        return file!!.inputStream()
+    }
+
+//    fun getRepoId(): String {
+//        return this.repoKey
+//    }
 
     fun getWorkContextC(): DockerWorkContext {
         return this.context
     }
 
-    fun write(path: String, `in`: InputStream) {
-//        val repoPath = this.repoPath(path)
-//
-//        try {
-//            this.repoService.saveFileInternal(repoPath, `in`)
-//        } catch (var5: Exception) {
-//            throw RuntimeException("Failed to save stream to $repoPath", var5)
-//        }
+
+    fun write(context: WriteContext) {
+        try {
+            // check the repo
+            val repository = repositoryResource.queryDetail(context.projectId , context.repoName, REPO_TYPE).data
+                    ?: run {
+                        logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
+                        throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
+                    }
+
+            // save the node
+            val result = nodeResource.create(NodeCreateRequest(
+                    projectId = context.projectId,
+                    repoName = context.repoName,
+                    folder = false,
+                    fullPath = context.path,
+                    size = context.contentLength,
+                    sha256 = context.sha256,
+                    operator = context.userId
+            ))
+
+            if (result.isOk()) {
+                val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
+                fileStorage.store(context.sha256, context.content!!, storageCredentials)
+                logger.info("user[$context.userId] simply upload file [$context.path] success")
+            } else {
+                logger.warn("user[$context.userId] simply upload file [$context.path] failed: [${result.code}, ${result.message}]")
+                throw ExternalErrorCodeException(result.code, result.message)
+            }
+        } catch (exception: Exception) {
+            throw RuntimeException("Failed to save stream to ${context.path}", exception)
+        }
     }
 
-     fun delete(path: String): Boolean {
-        print("wwwwwwwww")
+    fun delete(path: String): Boolean {
         return true
-//        val statusHolder: BasicStatusHolder
-//        if (this.repoService.virtualRepositoryByKey(this.id) != null) {
-//            statusHolder = this.repoService.undeploy(this.repoPath(path), false)
-//        } else {
-//            statusHolder = this.repoService.undeploy(this.repoPath(path), false, true)
-//        }
-//
-//        return !statusHolder.isError()
     }
 
-    fun deleteLocal(path: String): Boolean {
-        var f = File(localPath + path)
-        return f.delete()
+    fun deleteLocal(projectId: String,repoName: String,path: String): Boolean {
+        val fullPath = "$localPath/$projectId/$repoName/$path"
+        return File(fullPath).delete()
     }
 
-     fun download(context: DownloadContext): File {
-         // query repository
-         val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
-             logger.warn("user[$context.userId] simply download file  [$context.path] failed: $context.repoName not found")
-             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
-         }
+    fun download(context: DownloadContext): File {
+        // query repository
+        val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+            logger.warn("user[$context.userId] simply download file  [$context.path] failed: $context.repoName not found")
+            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
+        }
 
-         // fileStorage
-         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-         var file = fileStorage.load(context.sha256, storageCredentials) // ?: run {
+        // fileStorage
+        val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
+        var file = fileStorage.load(context.sha256, storageCredentials) // ?: run {
 //             logger.warn("user[$context.userId] simply download file [$context.path] failed: file data not found")
 //         }
-         // File("aaaa")
-         // return ResponseEntity.ok().body("ok")
-         return file!!
+        // File("aaaa")
+        // return ResponseEntity.ok().body("ok")
+        return file!!
     }
 
 //    private fun getInternalArtifactoryRequestForDownload(downloadContext: DownloadContext): InternalArtifactoryRequest {
@@ -140,7 +162,7 @@ class DockerArtifactoryService @Autowired constructor(
 //    }
 
     @Transactional(rollbackFor = [Throwable::class])
-     fun upload(context: UploadContext): ResponseEntity<Any> {
+    fun upload(context: UploadContext): ResponseEntity<Any> {
         // TODO: 校验权限
 
         // 校验sha256
@@ -194,7 +216,7 @@ class DockerArtifactoryService @Autowired constructor(
             logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
         }
-        var fullPath = localPath + path
+        var fullPath = "$localPath/${context.projectId}/${context.repoName}/$path"
         var content = File(fullPath).readBytes()
         context.content(content.inputStream()).contentLength(content.size.toLong()).sha256(DataDigestUtils.sha256FromByteArray(content))
 
@@ -239,16 +261,22 @@ class DockerArtifactoryService @Autowired constructor(
 //        }
 //    }
 
-     fun copy(from: String, to: String): Boolean {
+    fun copy(from: String, to: String): Boolean {
         return true
 //        val status = this.repoService.copyMultiTx(this.repoPath(from), this.repoPath(to), false, true, true)
 //        return !status.isError() && !status.hasWarnings()
     }
 
-     fun move(from: String, to: String): Boolean {
+    fun move(projectId: String,repoName: String, from: String, to: String): Boolean {
+        logger.info("rename, path: $from, to: $to")
+        val renameRequest  = NodeRenameRequest(projectId, repoName, from, to ,"bk_admin")
+        val result = nodeResource.rename(renameRequest)
+        if (result.isNotOk()) {
+            logger.warn("reanme  [$from] to [$to] failed: [${result.code}, ${result.message}]")
+            throw ExternalErrorCodeException(result.code, result.message)
+        }
+        logger.info(" rename [$from] to [$to}] success")
         return true
-//        val status = this.repoService.moveMultiTx(this.repoPath(from), this.repoPath(to), false, true, true)
-//        return !status.isError() && !status.hasWarnings()
     }
 
 //    override fun getAttribute(path: String, key: String): Any? {
@@ -261,12 +289,8 @@ class DockerArtifactoryService @Autowired constructor(
 //        return if (properties.containsKey(key)) properties.get(key) else null
 //    }
 
-     fun setAttribute(path: String, key: String, value: Any) {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-        // this.setProperties(path, key, value)
-    }
 
-     fun setAttributes(path: String, key: String, vararg values: Any) {
+    fun setAttributes(path: String, key: String, vararg values: Any) {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
         //   this.setProperties(path, key, *values)
     }
@@ -279,28 +303,37 @@ class DockerArtifactoryService @Autowired constructor(
 //        this.removePropertyValues(path, key, values)
 //    }
 
-     fun setAttributes(path: String, keyValueMap: Map<String, String>) {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-        // this.setProperties(path, keyValueMap)
+//    fun setAttributes(path: String, keyValueMap: Map<String, String>) {
+//
+//        throw UnsupportedOperationException("NOT IMPLEMENTED")
+//        // this.setProperties(path, keyValueMap)
+//    }
+
+    fun setAttributes(projectId: String, repoName: String, path: String, keyValueMap: Map<String, String>) {
+        metadataService.upsert(MetadataUpsertRequest(projectId, repoName, path, keyValueMap, "bk_admin"))
     }
 
-     fun exists(path: String): Boolean {
-        return true
+    fun getAttribute(projectId: String, repoName: String, fullPath: String,key:String) :String?{
+        return metadataService.query(projectId,repoName,fullPath).data!!.get(key)
+    }
+
+    fun exists(projectId: String, repoName: String, dockerRepo: String): Boolean {
+        return nodeResource.exist(projectId, repoName, dockerRepo).data!!
 //        return this.repoService.exists(this.repoPath(path))
     }
 
-    fun existsLocal(path: String): Boolean {
-        val fullPath = localPath + path
+    fun existsLocal(projectId:String, repoName:String, path: String): Boolean {
+        val fullPath = "$localPath/$projectId/$repoName/$path"
         val file = File(fullPath)
         return file.exists()
     }
 
-     fun canRead(path: String): Boolean {
+    fun canRead(path: String): Boolean {
         return true
 //        return this.authorizationService.canRead(this.repoPath(path))
     }
 
-     fun canWrite(path: String): Boolean {
+    fun canWrite(path: String): Boolean {
         return true
 //        val repoPath = this.repoPath(path)
 //        val repo = this.repoService.getLocalRepository(repoPath)
@@ -318,83 +351,41 @@ class DockerArtifactoryService @Autowired constructor(
 //        return this.authorizationService.canDelete(this.repoPath(path))
     }
 
-    private fun setProperties(path: String, key: String, vararg values: Any) {
-//        val existingProperties = this.propertiesService.getProperties(this.repoPath(path))
-//        existingProperties.removeAll(key)
-//        val var6 = values.size
-//
-//        for (var7 in 0 until var6) {
-//            val value = values[var7]
-//            if (value != null) {
-//                existingProperties.put(key, value.toString())
-//            }
-//        }
-//
-//        this.propertiesService.setProperties(this.repoPath(path), existingProperties, true)
+
+    fun artifactLocal(projectId: String, repoName: String, dockerRepo: String): Artifact? {
+        val fullPath = "$localPath/$projectId/$repoName/$dockerRepo"
+        val file = File(fullPath)
+        val content = file.readBytes()
+        val sha256 = DataDigestUtils.sha256FromByteArray(content)
+        var length = content.size.toLong()
+        return Artifact(projectId, repoName, dockerRepo).sha256(sha256).contentLength(length)
     }
 
-    private fun setProperties(path: String, propsMap: Map<String, String>) {
-//        val finalExistingProperties = this.propertiesService.getProperties(this.repoPath(path))
-//        propsMap.forEach { (key, value) ->
-//            finalExistingProperties.removeAll(key)
-//            if (value != null) {
-//                finalExistingProperties.put(key, value)
-//            }
-//
-//        }
-//        this.propertiesService.setProperties(this.repoPath(path), finalExistingProperties, true)
+    fun artifact(projectId: String, repoName: String, fullPath: String): Artifact? {
+        val nodes = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
+            logger.warn("find artifact failed: $projectId, $repoName, $fullPath found no artifacts")
+            return  null
+            //throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, projectId + ":" + repoName + ":" + fullPath)
+        }
+        return Artifact(projectId, repoName, fullPath).sha256(nodes.nodeInfo.sha256!!).contentLength(nodes.nodeInfo.size)
     }
 
-    private fun addProperty(path: String, propKey: String, values: Array<Any>) {
-//        if (ArrayUtils.isNotEmpty(values)) {
-//            val valuesToAdd = HashSet(Arrays.asList(*values))
-//            this.propertiesService.addProperties(this.repoPath(path), propKey, valuesToAdd, true)
-//        }
+    fun findArtifacts(projectId: String, repoName: String, dockerRepo: String, fileName: String): NodeDetail? {
+        // query node info
+        var fullPath = "/$dockerRepo/$fileName"
+        val nodes = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
+            logger.warn("find artifacts failed: $projectId, $repoName, $fullPath found no node")
+            return  null
+        }
+        return nodes
     }
 
-    private fun removePropertyValues(path: String, propKey: String, values: Array<Any>) {
-//        if (ArrayUtils.isNotEmpty(values)) {
-//            val valuesToRemove = HashSet(Arrays.asList(*values))
-//            this.propertiesService.removePropertyValues(this.repoPath(path), propKey, valuesToRemove, true)
-//        }
-    }
 
-     fun artifact(path: String): Artifact? {
-         val fullPath = localPath + path
-         val file = File(fullPath)
-         val content = file.readBytes()
-         val sha256 = DataDigestUtils.sha256FromByteArray(content)
-         var length = content.size.toLong()
-         return Artifact(fullPath).sha256(sha256).contentLength(length)
-    }
 
-     fun findArtifacts(projectId: String, repoName: String, name: String): NodeDetail? {
-         // 查询node节点
-         val nodes = nodeResource.queryDetail(projectId, repoName, name).data ?: run {
-             logger.warn("find artifacts  failed: $projectId, $repoName, $name found no artifacts")
-             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, projectId + ":" + repoName + ":" + name)
-         }
-         return nodes
-    }
-
-     fun findArtifacts(var1: String, var2: String): Iterable<Artifact> {
+    fun findArtifacts(var1: String, var2: String): Iterable<Artifact> {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
     }
 
-     fun getAttribute(path: String, key: String): Any {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-    }
-
-//    protected fun repoPath(path: String?): RepoPath {
-//        return RepoPathFactory.create(this.id, path)
-//    }
-//
-//    private fun parseUploadProperties(context: UploadContext): Properties {
-//        val contextAttributes = context.getAttributes()
-//        val properties = InfoFactoryHolder.get().createProperties() as Properties
-//        contextAttributes.forEach(BiConsumer<String, String> { properties.put() })
-//        return properties
-//    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(DockerArtifactoryService::class.java)

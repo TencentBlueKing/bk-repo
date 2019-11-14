@@ -26,11 +26,11 @@ enum class ManifestType private constructor(private val mediaType: String) {
         }
 
         fun from(contentType: String): ManifestType {
-            val var1 = values()
-            val var2 = var1.size
+            val values = values()
+            val size = values.size
 
-            for (var3 in 0 until var2) {
-                val manifestType = var1[var3]
+            for (index in 0 until size) {
+                val manifestType = values[index]
                 if (manifestType.mediaType == contentType) {
                     return manifestType
                 }

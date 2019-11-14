@@ -22,10 +22,10 @@ class DockerV2Errors {
         fun manifestInvalid(message: Any): ResponseEntity<Any> {
             return ResponseEntity.status(400).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "MANIFEST_INVALID", "manifest invalid", "\"description\":\"$message\""))
         }
-//
-//        fun manifestUnknown(manifest: String): Response {
-//            return Response.status(404).header("Docker-Distribution-Api-Version", "registry/2.0").type(MediaType.APPLICATION_JSON_TYPE).entity(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "MANIFEST_UNKNOWN", "The named manifest is not known to the registry.", "\"manifest\":\"$manifest\"")).build()
-//        }
+
+        fun manifestUnknown(manifest: String): ResponseEntity<Any> {
+            return ResponseEntity.status(404).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "MANIFEST_UNKNOWN", "The named manifest is not known to the registry.", "\"manifest\":\"$manifest\""))
+        }
 
         fun unauthorizedUpload(): ResponseEntity<Any> {
             return ResponseEntity.status(403).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "UNAUTHORIZED", "The client does not have permission to push to the repository.", ""))

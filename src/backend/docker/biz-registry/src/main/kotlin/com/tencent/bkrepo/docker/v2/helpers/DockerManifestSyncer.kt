@@ -1,9 +1,11 @@
 package com.tencent.bkrepo.docker.v2.helpers
 
 import com.google.common.collect.Sets
+import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.docker.DockerWorkContext
 import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
 import com.tencent.bkrepo.docker.repomd.Artifact
+import com.tencent.bkrepo.docker.repomd.WriteContext
 import com.tencent.bkrepo.docker.repomd.util.PathUtils
 import com.tencent.bkrepo.docker.util.DockerSchemaUtils
 import com.tencent.bkrepo.docker.util.DockerUtils
@@ -20,48 +22,50 @@ import org.springframework.stereotype.Component
 class DockerManifestSyncer() {
 
     @Throws(IOException::class)
-    fun sync(repo: DockerArtifactoryService, info: ManifestMetadata, dockerRepo: String, tag: String): Boolean {
+    fun sync(repo: DockerArtifactoryService, info: ManifestMetadata, projectId:String,repoName:String, dockerRepo: String, tag: String): Boolean {
         log.info("Starting to sync docker repository blobs")
-        val var5 = info.blobsInfo.iterator()
+        val manifestInfo = info.blobsInfo.iterator()
 
-        while (var5.hasNext()) {
-            val blobInfo = var5.next() as DockerBlobInfo
+        while (manifestInfo.hasNext()) {
+            val blobInfo = manifestInfo.next() as DockerBlobInfo
             log.info(" docker digest {}", blobInfo.digest)
             if (blobInfo.digest != null && !this.isForeignLayer(blobInfo)) {
                 val blobDigest = DockerDigest(blobInfo.digest!!)
                 val blobFilename = blobDigest.filename()
                 log.info(" blob file name digest {}", blobFilename)
-                val tempBlobPath = "$dockerRepo/_uploads/$blobFilename"
-                val finalBlobPath = "$dockerRepo/$tag/$blobFilename"
-                if (!repo.exists(finalBlobPath)) {
+                val tempBlobPath = "/$dockerRepo/_uploads/$blobFilename"
+                val finalBlobPath = "/$dockerRepo/$tag/$blobFilename"
+                if (!repo.exists(projectId, repoName, finalBlobPath)) {
                     if (DockerSchemaUtils.isEmptyBlob(blobDigest)) {
-                        log.debug("Found empty layer {} in manifest for image {} - creating blob in path {}", *arrayOf<Any>(blobFilename, dockerRepo, finalBlobPath))
+                        log.debug("Found empty layer {} in manifest for image {} - creating blob in path {}", blobFilename, dockerRepo, finalBlobPath)
                         val blobContent = ByteArrayInputStream(DockerSchemaUtils.EMPTY_BLOB_CONTENT)
-                        var var12: Throwable? = null
-
-                        try {
-                            repo.write(finalBlobPath, blobContent)
-                        } catch (var21: Throwable) {
-                            var12 = var21
-                            throw var21
-                        } finally {
-                            if (blobContent != null) {
-                                if (var12 != null) {
-                                    try {
-                                        blobContent.close()
-                                    } catch (var20: Throwable) {
-                                        var12.addSuppressed(var20)
-                                    }
-                                } else {
-                                    blobContent.close()
-                                }
-                            }
+                        blobContent.use {
+                            repo.write(WriteContext(projectId,repoName,finalBlobPath).content(it))
                         }
-                    } else if (repo.exists(tempBlobPath)) {
-                        this.moveBlobFromTempDir(repo, tempBlobPath, finalBlobPath)
+//                        var emptyException: Throwable? = null
+//                        try {
+//                            repo.write(WriteContext(projectId,repoName,finalBlobPath).content(blobContent))
+//                        } catch (writeException: Throwable) {
+//                            emptyException = writeException
+//                            throw writeException
+//                        } finally {
+//                            if (blobContent != null) {
+//                                if (emptyException != null) {
+//                                    try {
+//                                        blobContent.close()
+//                                    } catch (closeException: Throwable) {
+//                                        emptyException.addSuppressed(closeException)
+//                                    }
+//                                } else {
+//                                    blobContent.close()
+//                                }
+//                            }
+//                        }
+                    } else if (repo.exists(projectId,repoName, tempBlobPath)) {
+                        this.moveBlobFromTempDir(repo,projectId,repoName, tempBlobPath, finalBlobPath)
                     } else {
                         log.debug("Blob temp file '{}' doesn't exist in temp, trying other tags", tempBlobPath)
-                        val targetPath = repo.getRepoId() + "/" + finalBlobPath
+                        val targetPath = repoName + "/" + finalBlobPath
                         if (!this.copyBlobFromFirstReadableDockerRepo(repo, blobFilename, targetPath)) {
                             log.error("Could not find temp blob '{}'", tempBlobPath)
                             return false
@@ -73,7 +77,7 @@ class DockerManifestSyncer() {
             }
         }
 
-        this.removeUnreferencedBlobs(repo, "$dockerRepo/$tag", info)
+        //this.removeUnreferencedBlobs(repo, "$dockerRepo/$tag", info)
         log.debug("Finished syncing docker repository blobs")
         return true
     }
@@ -85,10 +89,10 @@ class DockerManifestSyncer() {
     private fun removeUnreferencedBlobs(repo: DockerArtifactoryService, repoTag: String, info: ManifestMetadata) {
         log.debug("Starting to remove unreferenced blobs from '{}'", repoTag)
         val manifestBlobs = Sets.newHashSet<String>()
-        val var5 = info.blobsInfo.iterator()
+        val blobsInfo = info.blobsInfo.iterator()
 
-        while (var5.hasNext()) {
-            val blobInfo = var5.next() as DockerBlobInfo
+        while (blobsInfo.hasNext()) {
+            val blobInfo = blobsInfo.next() as DockerBlobInfo
             if (blobInfo.digest != null) {
                 val blobDigest = DockerDigest(blobInfo.digest!!)
                 manifestBlobs.add(blobDigest.filename())
@@ -130,15 +134,13 @@ class DockerManifestSyncer() {
         return false
     }
 
-    private fun moveBlobFromTempDir(repo: DockerArtifactoryService, tempBlobPath: String, finalBlobPath: String) {
+    private fun moveBlobFromTempDir(repo: DockerArtifactoryService, projectId: String,repoName: String,tempBlobPath: String, finalBlobPath: String) {
         log.debug("Moving temp blob from '{}' to '{}'", tempBlobPath, finalBlobPath)
-        repo.copy(tempBlobPath, finalBlobPath)
-        (repo.getWorkContextC() as DockerWorkContext).setSystem()
-
+        // move from tmmp path
         try {
-            repo.delete(tempBlobPath)
+            repo.move(projectId,repoName, tempBlobPath,finalBlobPath)
         } finally {
-            (repo.getWorkContextC() as DockerWorkContext).unsetSystem()
+            //(repo.getWorkContextC() as DockerWorkContext).unsetSystem()
         }
     }
 

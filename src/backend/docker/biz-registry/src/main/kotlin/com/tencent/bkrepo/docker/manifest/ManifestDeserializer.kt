@@ -9,13 +9,13 @@ import com.tencent.bkrepo.docker.v2.model.ManifestMetadata
 class ManifestDeserializer {
     companion object {
 
-        fun deserialize(repo: DockerArtifactoryService, dockerRepo: String, tag: String, manifestType: ManifestType, manifestBytes: ByteArray, digest: DockerDigest): ManifestMetadata {
+        fun deserialize(repo: DockerArtifactoryService, projectId: String, repoName: String, dockerRepo: String, tag: String, manifestType: ManifestType, manifestBytes: ByteArray, digest: DockerDigest): ManifestMetadata {
             var manifestBytes = manifestBytes
             when (manifestType) {
                 ManifestType.Schema1 -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 ManifestType.Schema1Signed -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 ManifestType.Schema2 -> {
-                    val manifestJsonBytes = DockerSchemaUtils.fetchSchema2ManifestConfig(repo, manifestBytes, dockerRepo, tag)
+                    val manifestJsonBytes = DockerSchemaUtils.fetchSchema2ManifestConfig(repo, projectId, repoName, manifestBytes, dockerRepo, tag)
                     return ManifestSchema2Deserializer.deserialize(manifestBytes, manifestJsonBytes, dockerRepo, tag, digest)
                 }
                 ManifestType.Schema2List -> {
