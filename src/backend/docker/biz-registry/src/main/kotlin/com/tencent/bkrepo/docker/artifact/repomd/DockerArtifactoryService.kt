@@ -18,6 +18,7 @@ import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataUpsertRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import java.io.File
 import java.io.InputStream
@@ -33,6 +34,7 @@ class DockerArtifactoryService @Autowired constructor(
         private val nodeResource: NodeResource,
         private val fileStorage: FileStorage,
         private val metadataService: MetadataResource
+
 
 ) {
 
@@ -66,24 +68,6 @@ class DockerArtifactoryService @Autowired constructor(
         var fullPath = "$localPath/$projectId/$repoName/$path"
         return  File(fullPath).inputStream()
     }
-//    override  fun read(path: String): InputStream {
-//        val repoPath = this.repoPath(path)
-//        log.debug("Acquiring the content stream for '{}'", repoPath)
-//
-//        try {
-//            val requestContext = NullRequestContext(repoPath)
-//            val repo = this.repoService.getLocalRepository(repoPath)
-//            val info = repo.getInfo(requestContext)
-//            val handle = this.repoService.getResourceStreamHandle(requestContext, repo, info)
-//            return handle.getInputStream()
-//        } catch (var7: BinaryRejectedException) {
-//            throw IllegalStateException("Unauthorized: " + var7.getMessage(), var7)
-//        } catch (var7: RepoRejectException) {
-//            throw IllegalStateException("Unauthorized: " + var7.getMessage(), var7)
-//        } catch (var8: Exception) {
-//            throw IllegalStateException("Failed to retrieve resource " + repoPath + ": " + var8.message, var8)
-//        }
-//    }
 
 
     fun readGlobal(context: DownloadContext): InputStream {
@@ -98,16 +82,14 @@ class DockerArtifactoryService @Autowired constructor(
         return file!!.inputStream()
     }
 
-    fun getRepoId(): String {
-        return this.repoKey
-    }
+//    fun getRepoId(): String {
+//        return this.repoKey
+//    }
 
     fun getWorkContextC(): DockerWorkContext {
         return this.context
     }
 
-    fun write(path: String, stream: InputStream) {
-    }
 
     fun write(context: WriteContext) {
         try {
@@ -285,10 +267,16 @@ class DockerArtifactoryService @Autowired constructor(
 //        return !status.isError() && !status.hasWarnings()
     }
 
-    fun move(from: String, to: String): Boolean {
+    fun move(projectId: String,repoName: String, from: String, to: String): Boolean {
+        logger.info("rename, path: $from, to: $to")
+        val renameRequest  = NodeRenameRequest(projectId, repoName, from, to ,"bk_admin")
+        val result = nodeResource.rename(renameRequest)
+        if (result.isNotOk()) {
+            logger.warn("reanme  [$from] to [$to] failed: [${result.code}, ${result.message}]")
+            throw ExternalErrorCodeException(result.code, result.message)
+        }
+        logger.info(" rename [$from] to [$to}] success")
         return true
-//        val status = this.repoService.moveMultiTx(this.repoPath(from), this.repoPath(to), false, true, true)
-//        return !status.isError() && !status.hasWarnings()
     }
 
 //    override fun getAttribute(path: String, key: String): Any? {
@@ -301,10 +289,6 @@ class DockerArtifactoryService @Autowired constructor(
 //        return if (properties.containsKey(key)) properties.get(key) else null
 //    }
 
-    fun setAttribute(path: String, key: String, value: Any) {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-        // this.setProperties(path, key, value)
-    }
 
     fun setAttributes(path: String, key: String, vararg values: Any) {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
@@ -319,19 +303,18 @@ class DockerArtifactoryService @Autowired constructor(
 //        this.removePropertyValues(path, key, values)
 //    }
 
-    fun setAttributes(path: String, keyValueMap: Map<String, String>) {
-
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-        // this.setProperties(path, keyValueMap)
-    }
+//    fun setAttributes(path: String, keyValueMap: Map<String, String>) {
+//
+//        throw UnsupportedOperationException("NOT IMPLEMENTED")
+//        // this.setProperties(path, keyValueMap)
+//    }
 
     fun setAttributes(projectId: String, repoName: String, path: String, keyValueMap: Map<String, String>) {
         metadataService.upsert(MetadataUpsertRequest(projectId, repoName, path, keyValueMap, "bk_admin"))
     }
 
-    fun exists(path: String): Boolean {
-        return true
-//        return this.repoService.exists(this.repoPath(path))
+    fun getAttribute(projectId: String, repoName: String, fullPath: String,key:String) :String?{
+        return metadataService.query(projectId,repoName,fullPath).data!!.get(key)
     }
 
     fun exists(projectId: String, repoName: String, dockerRepo: String): Boolean {
@@ -368,17 +351,6 @@ class DockerArtifactoryService @Autowired constructor(
 //        return this.authorizationService.canDelete(this.repoPath(path))
     }
 
-    private fun setProperties(path: String, key: String, vararg values: Any) {
-    }
-
-    private fun setProperties(path: String, propsMap: Map<String, String>) {
-    }
-
-    private fun addProperty(path: String, propKey: String, values: Array<Any>) {
-    }
-
-    private fun removePropertyValues(path: String, propKey: String, values: Array<Any>) {
-    }
 
     fun artifactLocal(projectId: String, repoName: String, dockerRepo: String): Artifact? {
         val fullPath = "$localPath/$projectId/$repoName/$dockerRepo"
@@ -391,7 +363,7 @@ class DockerArtifactoryService @Autowired constructor(
 
     fun artifact(projectId: String, repoName: String, fullPath: String): Artifact? {
         val nodes = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
-            logger.warn("find artifacts  failed: $projectId, $repoName, $fullPath found no artifacts")
+            logger.warn("find artifact failed: $projectId, $repoName, $fullPath found no artifacts")
             return  null
             //throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, projectId + ":" + repoName + ":" + fullPath)
         }
@@ -402,25 +374,15 @@ class DockerArtifactoryService @Autowired constructor(
         // query node info
         var fullPath = "/$dockerRepo/$fileName"
         val nodes = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
-            logger.warn("find artifacts  failed: $projectId, $repoName, $fullPath found no artifacts")
+            logger.warn("find artifacts failed: $projectId, $repoName, $fullPath found no node")
             return  null
-            //throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, projectId + ":" + repoName + ":" + fullPath)
         }
         return nodes
     }
 
-    fun findArtifacts(fileName: String): Iterable<Artifact> {
-//        var nodeSearchParams = NodeSearchRequest()
-//        nodeResource.search()
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-    }
 
 
     fun findArtifacts(var1: String, var2: String): Iterable<Artifact> {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-    }
-
-    fun getAttribute(path: String, key: String): Any {
         throw UnsupportedOperationException("NOT IMPLEMENTED")
     }
 

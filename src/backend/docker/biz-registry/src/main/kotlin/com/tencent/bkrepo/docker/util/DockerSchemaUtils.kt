@@ -51,31 +51,12 @@ class DockerSchemaUtils {
                     val manifestConfigFilename = DockerDigest(digest).filename()
                     val manifestConfigFile = DockerUtils.getManifestConfigBlob(repo, manifestConfigFilename, projectId, repoName, dockerRepoPath, tag)
                     if (manifestConfigFile != null) {
-                        //val manifestStream = (repo.getWorkContextC() as DockerWorkContext).readGlobal(DockerUtils.getFullPath(manifestConfigFile, repo.getWorkContextC() as DockerWorkContext))
+
                         val manifestStream = repo.readGlobal(DownloadContext(projectId, repoName, manifestConfigFile.path).sha256(manifestConfigFile.sha256!!))
-                        var throwa: Throwable? = null
-
-                        val bytes: ByteArray
-                        try {
-                            bytes = IOUtils.toByteArray(manifestStream!!)
-                        } catch (exception1: Throwable) {
-                            throwa = exception1
-                            throw exception1
-                        } finally {
-                            if (manifestStream != null) {
-                                if (throwa != null) {
-                                    try {
-                                        manifestStream!!.close()
-                                    } catch (exception2: Throwable) {
-                                        throwa.addSuppressed(exception2)
-                                    }
-                                } else {
-                                    manifestStream!!.close()
-                                }
-                            }
+                        manifestStream.use {
+                             var bytes = IOUtils.toByteArray(it)
+                             return bytes
                         }
-
-                        return bytes
                     }
                 }
             } catch (ioException: IOException) {
@@ -86,35 +67,44 @@ class DockerSchemaUtils {
         }
 
         fun fetchSchema2Manifest(repo: DockerArtifactoryService, schema2Path: String): ByteArray {
-            try {
-                val manifestStream = (repo.getWorkContextC() as DockerWorkContext).readGlobal(schema2Path)
-                var gThrow: Throwable? = null
-
-                val byteArray: ByteArray
-                try {
-                    byteArray = IOUtils.toByteArray(manifestStream!!)
-                } catch (throw1: Throwable) {
-                    gThrow = throw1
-                    throw throw1
-                } finally {
-                    if (manifestStream != null) {
-                        if (gThrow != null) {
-                            try {
-                                manifestStream!!.close()
-                            } catch (throw2: Throwable) {
-                                gThrow.addSuppressed(throw2)
-                            }
-                        } else {
-                            manifestStream!!.close()
-                        }
-                    }
-                }
-
+            val manifestStream = repo.getWorkContextC().readGlobal(schema2Path)
+            manifestStream.use {
+                val byteArray = IOUtils.toByteArray(it)
                 return byteArray
-            } catch (exception: IOException) {
-                log.error("Error fetching manifest schema2: " + exception.message, exception)
-                return ByteArray(0)
+
             }
+//            try {
+//                val manifestStream = repo.getWorkContextC().readGlobal(schema2Path)
+//                manifestStream.use {
+//                    var byteArray = IOUtils.toByteArray(it)
+//                }
+//                var gThrow: Throwable? = null
+//
+//                val byteArray: ByteArray
+//                try {
+//                    byteArray = IOUtils.toByteArray(manifestStream!!)
+//                } catch (throw1: Throwable) {
+//                    gThrow = throw1
+//                    throw throw1
+//                } finally {
+//                    if (manifestStream != null) {
+//                        if (gThrow != null) {
+//                            try {
+//                                manifestStream!!.close()
+//                            } catch (throw2: Throwable) {
+//                                gThrow.addSuppressed(throw2)
+//                            }
+//                        } else {
+//                            manifestStream!!.close()
+//                        }
+//                    }
+//                }
+//
+//                return byteArray
+//            } catch (exception: IOException) {
+//                log.error("Error fetching manifest schema2: " + exception.message, exception)
+//                return ByteArray(0)
+//            }
         }
 
         fun fetchSchema2Path(repo: DockerArtifactoryService, dockerRepo: String, manifestListBytes: ByteArray, searchGlobally: Boolean): String {

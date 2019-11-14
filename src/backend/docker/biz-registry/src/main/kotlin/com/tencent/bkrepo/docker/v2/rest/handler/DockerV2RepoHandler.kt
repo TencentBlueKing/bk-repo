@@ -22,9 +22,9 @@ interface DockerV2RepoHandler {
     fun uploadManifest(projectId: String, repoName: String, name: String, tag: String, mediaType: String, stream: InputStream): ResponseEntity<Any>
 
 //    fun getManifest(var1: String, var2: String): Response
-//
-//    fun deleteManifest(var1: String, var2: String): Response
-//
+
+    fun deleteManifest(projectId: String, repoName: String,dockerRepo: String, reference: String): ResponseEntity<Any>
+
 //    fun getTags(var1: String, var2: Int, var3: String): Response
 //
 //    fun catalog(var1: Int, var2: String): Response

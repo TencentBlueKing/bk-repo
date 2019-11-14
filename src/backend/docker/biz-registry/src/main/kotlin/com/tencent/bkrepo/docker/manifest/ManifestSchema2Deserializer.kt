@@ -25,9 +25,9 @@ class ManifestSchema2Deserializer {
                 manifestMetadata.tagInfo.title = "$dockerRepo:$tag"
                 manifestMetadata.tagInfo.digest = digest
                 return applyAttributesFromContent(manifestBytes, jsonBytes, manifestMetadata)
-            } catch (var6: IOException) {
-                log.error("Unable to deserialize the manifest.json file: {}", var6.message, var6)
-                throw RuntimeException(var6)
+            } catch (exception: IOException) {
+                log.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
+                throw RuntimeException(exception)
             }
         }
 
@@ -46,16 +46,12 @@ class ManifestSchema2Deserializer {
                 historyCounter = StreamSupport.stream(iterable.spliterator(), false).filter { notEmptyHistoryLayer(it) }.count()
 
             }
-            log.info("dddddddddddddddddddd")
             val foreignHasHistory = layers.size().toLong()  == historyCounter
-            log.info("eeeeeeeeeeeeeeeeeee")
             var iterationsCounter = 0
             var historyIndex = 0
 
             var layersIndex = 0
             while (historyIndex < historySize || layersIndex < layers.size()) {
-                log.info("aaaaaaaaaaaaaaa {}",historyIndex)
-                log.info("bbbbbbbbbbbbbb {}",layersIndex)
                 val historyLayer = if (history == null) null else history!!.get(historyIndex)
                 val layer = layers.get(layersIndex)
                 var size = 0L
@@ -84,25 +80,17 @@ class ManifestSchema2Deserializer {
                 populateWithMediaType(layer, blobInfo)
                 manifestMetadata.blobsInfo.add(blobInfo)
 //                if (historyIndex == historySize && layersIndex == layers.size()) {
-//                    log.info("ttttttttttttttt {}",historyIndex)
-//                    log.info("mmmmmmmmmmmmmm {}",historySize)
-//                    log.info("fffffffffffffff {}", layersIndex )
-//                    log.info("nnnnnnnnnnnnn {}", layers.size() )
 //                    breakeCircuit(manifestBytes, jsonBytes, "Loop Indexes not Incing")
 //                }
                 checkCircuitBreaker(manifestBytes, jsonBytes, iterationsCounter)
                 ++iterationsCounter
             }
-            log.info("lllllllllllllllllll")
             Collections.reverse(manifestMetadata.blobsInfo)
-            log.info("ffffffffffffffff {} ",config.toString())
             manifestMetadata.tagInfo.totalSize = totalSize
             val dockerMetadata = JsonUtil.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
-            log.info("ggggggggggggggg")
             populatePorts(manifestMetadata, dockerMetadata)
             populateVolumes(manifestMetadata, dockerMetadata)
             populateLabels(manifestMetadata, dockerMetadata)
-            log.info("ccccccccccccccccccccccc {}",manifestMetadata.toString())
             return manifestMetadata
         }
 
