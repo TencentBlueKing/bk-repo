@@ -11,6 +11,7 @@ import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.FOLDER_CANNO
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.FileBlock
 import com.tencent.bkrepo.repository.pojo.node.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
@@ -56,6 +57,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class NodeService @Autowired constructor(
     private val repositoryService: RepositoryService,
+    private val fileReferenceService: FileReferenceService,
+    private val metadataService: MetadataService,
     private val nodeDao: NodeDao
 ) {
 
@@ -116,7 +119,6 @@ class NodeService @Autowired constructor(
         repositoryService.checkRepository(projectId, repoName)
 
         val query = nodePageQuery(projectId, repoName, path, includeFolder, deep, page, size)
-
         val listData = nodeDao.find(query).map { convert(it)!! }
         val count = nodeDao.count(query)
 
@@ -184,7 +186,6 @@ class NodeService @Autowired constructor(
                 expireDate = if (it.folder) null else parseExpireDate(it.expires),
                 size = if (it.folder) 0 else it.size ?: 0,
                 sha256 = if (it.folder) null else it.sha256,
-                metadata = it.metadata ?: emptyMap(),
                 projectId = projectId,
                 repoName = repoName,
                 createdBy = it.operator,
@@ -195,9 +196,13 @@ class NodeService @Autowired constructor(
         }
         node.blockList = createRequest.blockList?.map { TFileBlock(sequence = it.sequence, sha256 = it.sha256, size = it.size) }
         // 保存节点
-        val idValue = IdValue(nodeDao.insert(node).id!!)
-
+        val idValue = IdValue(addNode(node).id!!)
+        // 保存元数据
+        createRequest.metadata?.let {
+            metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it))
+        }
         logger.info("Create node [$createRequest] success.")
+
         return idValue
     }
 
@@ -296,7 +301,7 @@ class NodeService @Autowired constructor(
     /**
      * 检测两个节点在移动或者拷贝时是否存在冲突
      */
-    fun checkConflict(node: TNode, existNode: TNode?, overwrite: Boolean) {
+    private fun checkConflict(node: TNode, existNode: TNode?, overwrite: Boolean) {
         if (existNode == null) return
         if (node.folder && existNode.folder) return
         if (!node.folder && !node.folder && overwrite) return
@@ -344,24 +349,24 @@ class NodeService @Autowired constructor(
         if (!exist(projectId, repoName, path)) {
             val parentPath = getParentPath(path)
             val name = getName(path)
-            if (!isRootPath(path)) {
-                mkdirs(projectId, repoName, parentPath, createdBy)
-            }
-            nodeDao.insert(TNode(
+            path.takeUnless { isRootPath(it) }?.run { mkdirs(projectId, repoName, parentPath, createdBy) }
+            val node = TNode(
                     folder = true,
                     path = parentPath,
                     name = name,
                     fullPath = combineFullPath(parentPath, name),
                     size = 0,
                     expireDate = null,
-                    metadata = emptyMap(),
+                    metadata = emptyList(),
                     projectId = projectId,
                     repoName = repoName,
                     createdBy = createdBy,
                     createdDate = LocalDateTime.now(),
                     lastModifiedBy = createdBy,
                     lastModifiedDate = LocalDateTime.now()
-            ))
+            )
+
+            addNode(node)
         }
     }
 
@@ -428,7 +433,7 @@ class NodeService @Autowired constructor(
             subNodes.forEach { operateNode(it, destSubPath, request) }
 
             // 文件移动时，目的路径的目录已经自动创建，因此删除源目录
-            if(request is NodeMoveRequest) {
+            if (request is NodeMoveRequest) {
                 nodeDao.remove(nodeQuery(projectId, repoName, node.fullPath))
             }
         } else {
@@ -438,7 +443,7 @@ class NodeService @Autowired constructor(
                 val update = nodeDeleteUpdate(operator)
                 nodeDao.updateMulti(query, update)
             }
-            when(request) {
+            when (request) {
                 is NodeMoveRequest -> {
                     // 移动节点
                     val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
@@ -458,10 +463,17 @@ class NodeService @Autowired constructor(
                             lastModifiedBy = operator,
                             lastModifiedDate = LocalDateTime.now()
                     )
-                    nodeDao.insert(newNode)
+                    addNode(newNode)
                 }
             }
         }
+    }
+
+    private fun addNode(node: TNode): TNode {
+        val result = nodeDao.insert(node)
+        node.takeUnless { it.folder }?.run { fileReferenceService.increment(this) }
+
+        return result
     }
 
     /**
@@ -500,7 +512,7 @@ class NodeService @Autowired constructor(
             return tNode?.let {
                 NodeDetail(
                     nodeInfo = convert(it)!!,
-                    metadata = it.metadata ?: emptyMap(),
+                    metadata = MetadataService.convert(it.metadata),
                     blockList = it.blockList?.map { item -> convert(item) }
                 )
             }

@@ -319,6 +319,24 @@ internal class NodeServiceTest @Autowired constructor(
     }
 
     @Test
+    @DisplayName("重命名文件2")
+    fun rename2Test() {
+        nodeService.create(createRequest("/a/b/c", true))
+
+
+        val renameRequest = NodeRenameRequest(projectId = projectId, repoName = repoName, fullPath = "/a/b/c", newFullPath = "/a/d/c", operator = operator)
+        nodeService.rename(renameRequest)
+
+        assertTrue(nodeService.exist(projectId, repoName, "/a"))
+        assertTrue(nodeService.exist(projectId, repoName, "/a/b"))
+        assertFalse(nodeService.exist(projectId, repoName, "/a/b/c"))
+
+        assertTrue(nodeService.exist(projectId, repoName, "/a/d"))
+        assertTrue(nodeService.exist(projectId, repoName, "/a/d/c"))
+
+    }
+
+    @Test
     @DisplayName("重命名文件，遇同名文件抛异常")
     fun renameThrowTest() {
         nodeService.create(createRequest("/a/b/1.txt", false))

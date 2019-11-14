@@ -7,9 +7,9 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.repository.api.UserMetadataResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataUpsertRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataUpsertRequest
+import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataSaveRequest
 import com.tencent.bkrepo.repository.service.MetadataService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -30,16 +30,15 @@ class UserMetadataResourceImpl @Autowired constructor(
         return Response.success(metadataService.query(projectId, repoName, fullPath))
     }
 
-    override fun upsert(userId: String, projectId: String, repoName: String, fullPath: String, metadataUpsertRequest: UserMetadataUpsertRequest): Response<Void> {
+    override fun upsert(userId: String, projectId: String, repoName: String, fullPath: String, metadataSaveRequest: UserMetadataSaveRequest): Response<Void> {
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
-        val request = MetadataUpsertRequest(
+        val request = MetadataSaveRequest(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = fullPath,
-                metadata = metadataUpsertRequest.metadata,
-                operator = userId
+                metadata = metadataSaveRequest.metadata
         )
-        metadataService.upsert(request)
+        metadataService.save(request)
         return Response.success()
     }
 
@@ -49,8 +48,7 @@ class UserMetadataResourceImpl @Autowired constructor(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = fullPath,
-                keyList = metadataDeleteRequest.keyList,
-                operator = userId
+                keyList = metadataDeleteRequest.keyList
         )
         metadataService.delete(request)
         return Response.success()

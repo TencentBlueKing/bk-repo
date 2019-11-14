@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataUpsertRequest
+import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataSaveRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -62,7 +62,7 @@ interface UserMetadataResource {
         @WildcardParam
         fullPath: String,
         @RequestBody
-        metadataUpsertRequest: UserMetadataUpsertRequest
+        metadataSaveRequest: UserMetadataSaveRequest
     ): Response<Void>
 
     @ApiOperation("删除元数据")
