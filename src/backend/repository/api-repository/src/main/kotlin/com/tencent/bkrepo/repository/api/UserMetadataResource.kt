@@ -48,7 +48,7 @@ interface UserMetadataResource {
 
     @ApiOperation("创建/更新元数据列表")
     @PostMapping("/{projectId}/{repoName}/**")
-    fun upsert(
+    fun save(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
