@@ -15,7 +15,7 @@ import com.tencent.bkrepo.docker.repomd.WriteContext
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataUpsertRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
@@ -310,7 +310,7 @@ class DockerArtifactoryService @Autowired constructor(
 //    }
 
     fun setAttributes(projectId: String, repoName: String, path: String, keyValueMap: Map<String, String>) {
-        metadataService.upsert(MetadataUpsertRequest(projectId, repoName, path, keyValueMap, "bk_admin"))
+        metadataService.save(MetadataSaveRequest(projectId, repoName, path, keyValueMap))
     }
 
     fun getAttribute(projectId: String, repoName: String, fullPath: String,key:String) :String?{
@@ -335,15 +335,6 @@ class DockerArtifactoryService @Autowired constructor(
 
     fun canWrite(path: String): Boolean {
         return true
-//        val repoPath = this.repoPath(path)
-//        val repo = this.repoService.getLocalRepository(repoPath)
-//        val statusHolder = repo.assertValidPath(repoPath, false)
-//        if (statusHolder.isError()) {
-//            log.warn(statusHolder.getStatusMsg())
-//            return false
-//        } else {
-//            return this.authorizationService.canDeploy(this.repoPath(path))
-//        }
     }
 
     fun canDelete(path: String): Boolean {
