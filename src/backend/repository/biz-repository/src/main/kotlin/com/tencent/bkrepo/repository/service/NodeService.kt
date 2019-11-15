@@ -42,6 +42,7 @@ import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -364,7 +365,6 @@ class NodeService @Autowired constructor(
                     lastModifiedBy = createdBy,
                     lastModifiedDate = LocalDateTime.now()
             )
-
             addNode(node)
         }
     }
@@ -469,10 +469,14 @@ class NodeService @Autowired constructor(
     }
 
     private fun addNode(node: TNode): TNode {
-        val result = nodeDao.insert(node)
-        node.takeUnless { it.folder }?.run { fileReferenceService.increment(this) }
+        try {
+            nodeDao.insert(node)
+            node.takeUnless { it.folder }?.run { fileReferenceService.increment(this) }
+        } catch (exception: DuplicateKeyException) {
+            logger.warn("add node[$node] error: [${exception.message}]")
+        }
 
-        return result
+        return node
     }
 
     /**
