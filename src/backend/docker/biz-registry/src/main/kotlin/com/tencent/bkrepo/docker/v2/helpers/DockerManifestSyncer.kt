@@ -42,25 +42,6 @@ class DockerManifestSyncer() {
                         blobContent.use {
                             repo.write(WriteContext(projectId,repoName,finalBlobPath).content(it))
                         }
-//                        var emptyException: Throwable? = null
-//                        try {
-//                            repo.write(WriteContext(projectId,repoName,finalBlobPath).content(blobContent))
-//                        } catch (writeException: Throwable) {
-//                            emptyException = writeException
-//                            throw writeException
-//                        } finally {
-//                            if (blobContent != null) {
-//                                if (emptyException != null) {
-//                                    try {
-//                                        blobContent.close()
-//                                    } catch (closeException: Throwable) {
-//                                        emptyException.addSuppressed(closeException)
-//                                    }
-//                                } else {
-//                                    blobContent.close()
-//                                }
-//                            }
-//                        }
                     } else if (repo.exists(projectId,repoName, tempBlobPath)) {
                         this.moveBlobFromTempDir(repo,projectId,repoName, tempBlobPath, finalBlobPath)
                     } else {
@@ -87,7 +68,7 @@ class DockerManifestSyncer() {
     }
 
     private fun removeUnreferencedBlobs(repo: DockerArtifactoryService, repoTag: String, info: ManifestMetadata) {
-        log.debug("Starting to remove unreferenced blobs from '{}'", repoTag)
+/*        log.debug("Starting to remove unreferenced blobs from '{}'", repoTag)
         val manifestBlobs = Sets.newHashSet<String>()
         val blobsInfo = info.blobsInfo.iterator()
 
@@ -112,7 +93,7 @@ class DockerManifestSyncer() {
                     repo.delete(path)
                 }
             }
-        }
+        }*/
 
         log.debug("Completed unreferenced blobs cleanup from '{}'", repoTag)
     }

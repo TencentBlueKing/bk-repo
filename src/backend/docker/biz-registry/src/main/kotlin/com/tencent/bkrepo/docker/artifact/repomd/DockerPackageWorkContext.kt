@@ -37,7 +37,7 @@ class DockerPackageWorkContext() : DockerWorkContext {
     }
 
     override fun cleanup(repoId: String, uploadsPath: String) {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
+        return
         // (ContextHelper.get().beanForType(DockerService::class.java) as DockerService).cleanup(repoId, uploadsPath)
     }
 

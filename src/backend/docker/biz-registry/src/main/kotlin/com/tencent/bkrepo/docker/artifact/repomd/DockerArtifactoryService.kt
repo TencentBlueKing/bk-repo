@@ -339,7 +339,6 @@ class DockerArtifactoryService @Autowired constructor(
 
     fun canDelete(path: String): Boolean {
         return true
-//        return this.authorizationService.canDelete(this.repoPath(path))
     }
 
 
@@ -372,10 +371,6 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
 
-
-    fun findArtifacts(var1: String, var2: String): Iterable<Artifact> {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-    }
 
 
     companion object {
