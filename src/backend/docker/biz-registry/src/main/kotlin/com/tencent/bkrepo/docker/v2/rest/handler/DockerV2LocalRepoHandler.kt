@@ -72,6 +72,85 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         return Response.ok("{}").header("Content-Type", "application/json").header("Docker-Distribution-Api-Version", "registry/2.0").build()
     }
 
+//    fun getManifest(dockerRepo: String, reference: String): Response {
+//        try {
+//            val digest = DockerDigest(reference)
+//            return this.getManifestByDigest(dockerRepo, digest)
+//        } catch (var4: Exception) {
+//            log.trace("Unable to parse digest, fetching manifest by tag '{}'", reference)
+//            return this.getManifestByTag(dockerRepo, reference)
+//        }
+//    }
+//
+//    private Response getManifestByTag(String dockerRepo, String tag)
+//    {
+//        val useManifestType = this.chooseManifestType(dockerRepo, tag)
+//        val manifestPath = buildManifestPathFromType(dockerRepo, tag, useManifestType)
+//        if (!this.repo.canRead(manifestPath)) {
+//            return DockerV2Errors.unauthorizedManifest(manifestPath, null as String?)
+//        } else if (!this.repo.exists(manifestPath)) {
+//            return DockerV2Errors.manifestUnknown(manifestPath)
+//        } else {
+//            val manifestBytes: ByteArray
+//            try {
+//                val stream = this.repo.read(manifestPath)
+//                var var7: Throwable? = null
+//
+//                try {
+//                    manifestBytes = IOUtils.toByteArray(stream!!)
+//                } catch (var19: Throwable) {
+//                    var7 = var19
+//                    throw var19
+//                } finally {
+//                    if (stream != null) {
+//                        if (var7 != null) {
+//                            try {
+//                                stream!!.close()
+//                            } catch (var17: Throwable) {
+//                                var7.addSuppressed(var17)
+//                            }
+//
+//                        } else {
+//                            stream!!.close()
+//                        }
+//                    }
+//
+//                }
+//            } catch (var21: IOException) {
+//                return getErrorResponse("Error reading manifest", manifestPath, var21)
+//            } catch (var21: RuntimeException) {
+//                return getErrorResponse("Error reading manifest", manifestPath, var21)
+//            }
+//
+//            if (!useManifestType.equals(ManifestType.Schema2List)) {
+//                val response = this.convertManifestIfNeeded(dockerRepo, tag, manifestPath, manifestBytes)
+//                if (response != null) {
+//                    return response
+//                }
+//            }
+//
+//            log.info("Fetching docker manifest for repo '{}' and tag '{}' in repo '{}'", *arrayOf(dockerRepo, tag, this.repo.getId()))
+//
+//            val digest: DockerDigest
+//            try {
+//                digest = DockerManifestDigester.calc(manifestBytes)
+//            } catch (var18: IOException) {
+//                return getErrorResponse("Error calculating manifest", manifestPath, var18)
+//            } catch (var18: RuntimeException) {
+//                return getErrorResponse("Error calculating manifest", manifestPath, var18)
+//            }
+//
+//            val downloadContext = DownloadContext(manifestPath, this.httpHeaders)
+//            downloadContext.setSkipStatsUpdate(true)
+//            downloadContext.header("artifactory.disableRedirect", "true")
+//            val response = this.repo.download(downloadContext)
+//            val metadata = response.getMetadata()
+//            metadata.add("Docker-Distribution-Api-Version", "registry/2.0")
+//            metadata.add("Docker-Content-Digest", digest)
+//            metadata.putSingle("Content-Type", DockerSchemaUtils.getManifestType(manifestPath, this.repo))
+//            return response
+//        }
+
     override fun deleteManifest(projectId: String, repoName: String, dockerRepo: String, reference: String): ResponseEntity<Any> {
         try {
             val digest = DockerDigest(reference)

@@ -35,17 +35,14 @@ class DockerArtifactoryService @Autowired constructor(
         private val fileStorage: FileStorage,
         private val metadataService: MetadataResource
 
-
 ) {
 
     // protected var propertiesService: PropertiesService ？
-    protected lateinit var repoKey: String
     protected lateinit var context: DockerWorkContext
     private val localPath: String = "/Users/owen/data"
 
     init {
         this.context = DockerPackageWorkContext()
-        this.repoKey = "docker-local"
     }
 
     fun writeLocal(projectId:String, repoName: String,dockerRepo: String, name: String, inputStream: InputStream): ResponseEntity<Any> {
@@ -94,12 +91,11 @@ class DockerArtifactoryService @Autowired constructor(
     fun write(context: WriteContext) {
         try {
             // check the repo
-            val repository = repositoryResource.queryDetail(context.projectId , context.repoName, REPO_TYPE).data
+            val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data
                     ?: run {
                         logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
                         throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
                     }
-
             // save the node
             val result = nodeResource.create(NodeCreateRequest(
                     projectId = context.projectId,
@@ -142,35 +138,14 @@ class DockerArtifactoryService @Autowired constructor(
 
         // fileStorage
         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-        var file = fileStorage.load(context.sha256, storageCredentials) // ?: run {
-//             logger.warn("user[$context.userId] simply download file [$context.path] failed: file data not found")
-//         }
-        // File("aaaa")
-        // return ResponseEntity.ok().body("ok")
+        var file = fileStorage.load(context.sha256, storageCredentials)
         return file!!
     }
 
-//    private fun getInternalArtifactoryRequestForDownload(downloadContext: DownloadContext): InternalArtifactoryRequest {
-//        val requestHeaders = downloadContext.getRequestHeaders()
-//        val isRedirectDisabled = requestHeaders.get("artifactory.disableRedirect") as String
-//        checkNotNull(isRedirectDisabled) { "Must provide artifactory.disableRedirect header as part of request" }
-//        val repoPath = this.repoPath(downloadContext.getPath())
-//        val req = if (java.lang.Boolean.valueOf(isRedirectDisabled)) InternalRequestFactory.createInternalRequestDisableRedirect(repoPath) else InternalRequestFactory.createInternalRequestEnableRedirect(repoPath)
-//        req.setSkipStatsUpdate(downloadContext.isSkipStatsUpdate())
-//        req.addHeaders(requestHeaders)
-//        return req
-//    }
 
     @Transactional(rollbackFor = [Throwable::class])
     fun upload(context: UploadContext): ResponseEntity<Any> {
         // TODO: 校验权限
-
-        // 校验sha256
-//        val calculatedSha256 = FileDigestUtils.fileSha256(listOf(context.content!!))
-//        if (context.sha256 != null && calculatedSha256 != context.sha256) {
-//            logger.warn("user[${context.userId}]  upload  file [$fullUri] failed: file sha256 verification failed")
-//            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
-//        }
 
         // 判断仓库是否存在
         val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
@@ -204,14 +179,8 @@ class DockerArtifactoryService @Autowired constructor(
     fun uploadFromLocal(path: String, context: UploadContext): ResponseEntity<Any> {
         // TODO: 校验权限
 
-        // 校验sha256
-//        val calculatedSha256 = FileDigestUtils.fileSha256(listOf(context.content!!))
-//        if (context.sha256 != null && calculatedSha256 != context.sha256) {
-//            logger.warn("user[${context.userId}]  upload  file [$fullUri] failed: file sha256 verification failed")
-//            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
-//        }
-
         // 判断仓库是否存在
+
         val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
@@ -220,16 +189,19 @@ class DockerArtifactoryService @Autowired constructor(
         var content = File(fullPath).readBytes()
         context.content(content.inputStream()).contentLength(content.size.toLong()).sha256(DataDigestUtils.sha256FromByteArray(content))
 
-        // 保存节点
-        val result = nodeResource.create(NodeCreateRequest(
+        val node = NodeCreateRequest(
                 projectId = context.projectId,
                 repoName = context.repoName,
                 folder = false,
                 fullPath = context.path,
                 size = context.contentLength,
                 sha256 = context.sha256,
-                operator = context.userId
-        ))
+                operator = context.userId,
+                metadata = emptyMap()
+        )
+        // save node request
+        val result = nodeResource.create(node)
+
         if (result.isOk()) {
             val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
             fileStorage.store(context.sha256, context.content!!, storageCredentials)
@@ -240,6 +212,7 @@ class DockerArtifactoryService @Autowired constructor(
         }
         return ResponseEntity.ok().body("ok")
     }
+
 
 //    private fun contentLength(context: UploadContext): Long {
 //        if (context.getContentLength() > 0L) {
