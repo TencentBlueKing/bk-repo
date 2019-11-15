@@ -186,6 +186,7 @@ class NodeService @Autowired constructor(
                 sha256 = if (it.folder) null else it.sha256,
                 projectId = projectId,
                 repoName = repoName,
+                metadata = emptyList(),
                 createdBy = it.operator,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = it.operator,
