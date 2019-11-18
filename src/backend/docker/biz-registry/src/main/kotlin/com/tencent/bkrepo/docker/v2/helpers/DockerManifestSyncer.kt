@@ -27,7 +27,7 @@ class DockerManifestSyncer() {
         val manifestInfo = info.blobsInfo.iterator()
 
         while (manifestInfo.hasNext()) {
-            val blobInfo = manifestInfo.next() as DockerBlobInfo
+            val blobInfo = manifestInfo.next()
             log.info(" docker digest {}", blobInfo.digest)
             if (blobInfo.digest != null && !this.isForeignLayer(blobInfo)) {
                 val blobDigest = DockerDigest(blobInfo.digest!!)
@@ -40,7 +40,7 @@ class DockerManifestSyncer() {
                         log.debug("Found empty layer {} in manifest for image {} - creating blob in path {}", blobFilename, dockerRepo, finalBlobPath)
                         val blobContent = ByteArrayInputStream(DockerSchemaUtils.EMPTY_BLOB_CONTENT)
                         blobContent.use {
-                            repo.write(WriteContext(projectId,repoName,finalBlobPath).content(it))
+                            repo.write(WriteContext(projectId,repoName,finalBlobPath).content(it).sha256(DockerSchemaUtils.emptyBlobDigest().getDigestHex()))
                         }
                     } else if (repo.exists(projectId,repoName, tempBlobPath)) {
                         this.moveBlobFromTempDir(repo,projectId,repoName, tempBlobPath, finalBlobPath)
@@ -105,10 +105,10 @@ class DockerManifestSyncer() {
 
     protected fun copyBlob(repo: DockerArtifactoryService, blobFilename: String, targetPath: String, blob: Artifact?): Boolean {
         if (blob != null) {
-            val sourcePath = DockerUtils.getFullPath(blob, repo.getWorkContextC() as DockerWorkContext)
+            val sourcePath = DockerUtils.getFullPath(blob, repo.getWorkContextC() )
             if (!StringUtils.equals(sourcePath, targetPath)) {
-                log.debug("Found {} in path {}, copying over to {}", *arrayOf<Any>(blobFilename, sourcePath, targetPath))
-                return (repo.getWorkContextC() as DockerWorkContext).copy(sourcePath, targetPath)
+                log.debug("Found {} in path {}, copying over to {}", blobFilename, sourcePath, targetPath)
+                return repo.getWorkContextC().copy(sourcePath, targetPath)
             }
         }
 
