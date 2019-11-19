@@ -26,6 +26,6 @@ class ServiceAutoConfiguration {
 
     @Bean
     fun objectMapper(): ObjectMapper {
-        return JsonUtils.getObjectMapper()
+        return JsonUtils.objectMapper
     }
 }
