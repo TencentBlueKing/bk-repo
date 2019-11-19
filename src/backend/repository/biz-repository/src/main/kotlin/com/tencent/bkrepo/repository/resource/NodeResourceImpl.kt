@@ -32,11 +32,11 @@ class NodeResourceImpl @Autowired constructor(
 ) : NodeResource {
 
     override fun queryDetail(projectId: String, repoName: String, repoType: String, fullPath: String): Response<NodeDetail?> {
-        return Response.success(nodeService.queryDetail(projectId, repoName, fullPath, repoType))
+        return Response.success(nodeService.detail(projectId, repoName, fullPath, repoType))
     }
 
     override fun queryDetail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
-        return Response.success(nodeService.queryDetail(projectId, repoName, fullPath))
+        return Response.success(nodeService.detail(projectId, repoName, fullPath))
     }
 
     override fun exist(projectId: String, repoName: String, fullPath: String): Response<Boolean> {

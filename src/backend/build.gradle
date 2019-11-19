@@ -133,7 +133,7 @@ subprojects {
             dependency "com.google.guava:guava:$guavaVersion"
             dependency "commons-io:commons-io:$commonsIoVersion"
             dependency "org.apache.skywalking:apm-toolkit-logback-1.x:$skywalkingVersion"
-
+            dependency "org.apache.skywalking:apm-toolkit-trace:$skywalkingVersion"
         }
 
     }
@@ -157,7 +157,7 @@ subprojects {
                         password MAVEN_SNAPSHOT_REPO_PASSWORD
                     }
                 } else {
-                    url = MAVEN_REPO_DEPLOY_URL=
+                    url = MAVEN_REPO_DEPLOY_URL
 
                     credentials {
                         username MAVEN_REPO_USERNAME
