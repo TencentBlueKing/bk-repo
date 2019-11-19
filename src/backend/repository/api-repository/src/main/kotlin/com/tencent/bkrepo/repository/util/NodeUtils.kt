@@ -52,7 +52,7 @@ object NodeUtils {
      */
     fun formatPath(input: String): String {
         val path = formatFullPath(input)
-        return if (isRootPath(path)) path else path + FILE_SEPARATOR
+        return if (isRootPath(path)) ROOT_PATH else path + FILE_SEPARATOR
     }
 
     /**

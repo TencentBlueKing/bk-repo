@@ -46,7 +46,10 @@ object QueryHelper {
                 criteria.orOperator(*criteriaList.toTypedArray())
             }
             // 元数据匹配
-            metadataCondition.filterKeys { it.isNotBlank() }.forEach { (key, value) -> criteria.and("metadata.$key").`is`(value) }
+            metadataCondition.filterKeys { it.isNotBlank() }.forEach { (key, value) ->
+                criteria.and("metadata.key").`is`(key)
+                .and("metadata.value").`is`(value)
+            }
 
             Query(criteria).with(PageRequest.of(page, size)).with(Sort.by("fullPath"))
         }
