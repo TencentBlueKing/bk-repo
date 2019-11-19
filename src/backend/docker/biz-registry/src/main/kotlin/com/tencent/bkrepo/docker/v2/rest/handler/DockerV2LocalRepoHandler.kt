@@ -45,6 +45,10 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.util.stream.Collectors
+import java.util.stream.Stream
+import java.util.stream.StreamSupport
+import org.springframework.http.MediaType
 
 @Service
 class DockerV2LocalRepoHandler @Autowired constructor(
@@ -68,88 +72,66 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         }
     }
 
-    override fun ping(): Response {
-        return Response.ok("{}").header("Content-Type", "application/json").header("Docker-Distribution-Api-Version", "registry/2.0").build()
+    override fun ping(): ResponseEntity<Any> {
+        return ResponseEntity.ok().header("Content-Type","application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body("{}")
     }
 
-//    fun getManifest(dockerRepo: String, reference: String): Response {
-//        try {
-//            val digest = DockerDigest(reference)
-//            return this.getManifestByDigest(dockerRepo, digest)
-//        } catch (var4: Exception) {
-//            log.trace("Unable to parse digest, fetching manifest by tag '{}'", reference)
-//            return this.getManifestByTag(dockerRepo, reference)
+    override  fun getManifest(projectId: String, repoName: String,dockerRepo: String, reference: String): ResponseEntity<Any> {
+        try {
+            val digest = DockerDigest(reference)
+            return this.getManifestByDigest(projectId,repoName,dockerRepo, DockerDigest(reference))
+        } catch (var4: Exception) {
+            log.trace("Unable to parse digest, fetching manifest by tag '{}'", reference)
+            return this.getManifestByTag(dockerRepo, reference)
+        }
+    }
+
+    private fun getManifestByDigest(projectId: String,repoName: String,dockerRepo: String, digest: DockerDigest): ResponseEntity<Any>  {
+        return ResponseEntity.status(200).build()
+    }
+//        log.info("Fetching docker manifest for repo '{}' and digest '{}' in repo '{}'", dockerRepo, digest, repoName)
+//        val matchedManifest = this.findMatchingArtifacts(projectId,repoName,dockerRepo, digest, "manifest.json")
+//        var matched: Artifact? = matchedManifest.findFirst().orElse(null)
+//        if (matched == null) {
+//            val acceptable = this.getAcceptableManifestTypes()
+//            if (acceptable.contains(ManifestType.Schema2List)) {
+//                matched = this.findMatchingArtifacts(projectId, repoName, dockerRepo, digest, "list.manifest.json").peek({ artifact -> log.debug("{} was found searching for {} ", "list.manifest.json", digest) }).findFirst().orElse(null)
+//            }
 //        }
+//
+//        return if (matched == null) DockerV2Errors.manifestUnknown(digest.toString()) else this.buildManifestResponse(projectId, repoName,dockerRepo,digest, matched)
 //    }
-//
-//    private Response getManifestByTag(String dockerRepo, String tag)
-//    {
-//        val useManifestType = this.chooseManifestType(dockerRepo, tag)
-//        val manifestPath = buildManifestPathFromType(dockerRepo, tag, useManifestType)
-//        if (!this.repo.canRead(manifestPath)) {
-//            return DockerV2Errors.unauthorizedManifest(manifestPath, null as String?)
-//        } else if (!this.repo.exists(manifestPath)) {
-//            return DockerV2Errors.manifestUnknown(manifestPath)
-//        } else {
-//            val manifestBytes: ByteArray
-//            try {
-//                val stream = this.repo.read(manifestPath)
-//                var var7: Throwable? = null
-//
-//                try {
-//                    manifestBytes = IOUtils.toByteArray(stream!!)
-//                } catch (var19: Throwable) {
-//                    var7 = var19
-//                    throw var19
-//                } finally {
-//                    if (stream != null) {
-//                        if (var7 != null) {
-//                            try {
-//                                stream!!.close()
-//                            } catch (var17: Throwable) {
-//                                var7.addSuppressed(var17)
-//                            }
-//
-//                        } else {
-//                            stream!!.close()
-//                        }
-//                    }
-//
-//                }
-//            } catch (var21: IOException) {
-//                return getErrorResponse("Error reading manifest", manifestPath, var21)
-//            } catch (var21: RuntimeException) {
-//                return getErrorResponse("Error reading manifest", manifestPath, var21)
-//            }
-//
-//            if (!useManifestType.equals(ManifestType.Schema2List)) {
-//                val response = this.convertManifestIfNeeded(dockerRepo, tag, manifestPath, manifestBytes)
-//                if (response != null) {
-//                    return response
-//                }
-//            }
-//
-//            log.info("Fetching docker manifest for repo '{}' and tag '{}' in repo '{}'", *arrayOf(dockerRepo, tag, this.repo.getId()))
-//
-//            val digest: DockerDigest
-//            try {
-//                digest = DockerManifestDigester.calc(manifestBytes)
-//            } catch (var18: IOException) {
-//                return getErrorResponse("Error calculating manifest", manifestPath, var18)
-//            } catch (var18: RuntimeException) {
-//                return getErrorResponse("Error calculating manifest", manifestPath, var18)
-//            }
-//
-//            val downloadContext = DownloadContext(manifestPath, this.httpHeaders)
-//            downloadContext.setSkipStatsUpdate(true)
-//            downloadContext.header("artifactory.disableRedirect", "true")
-//            val response = this.repo.download(downloadContext)
-//            val metadata = response.getMetadata()
-//            metadata.add("Docker-Distribution-Api-Version", "registry/2.0")
-//            metadata.add("Docker-Content-Digest", digest)
-//            metadata.putSingle("Content-Type", DockerSchemaUtils.getManifestType(manifestPath, this.repo))
-//            return response
-//        }
+
+//    private fun findMatchingArtifacts(projectId:String,repoName: String, dockerRepo: String, digest: DockerDigest, filename: String): Stream<Artifact> {
+//        val artifacts = this.repo.findArtifacts(projectId,repoName, dockerRepo, filename)
+//        return Stream
+////        return StreamSupport.stream(artifacts.spliterator(), false).filter({ artifact -> this.repo.canRead(artifact.getPath()) }).filter({ artifact ->
+////            val artifactDigest = this.repo.getAttribute(projectId,repoName,artifact.getPath(), digest.getDigestAlg() as String
+////            StringUtils.isNotBlank(artifactDigest) && StringUtils.equals(artifactDigest, digest.getHex())
+////        })
+//    }
+
+    private fun getAcceptableManifestTypes(): List<ManifestType> {
+        //historyCounter = StreamSupport.stream(iterable.spliterator(), false).filter { notEmptyHistoryLayer(it) }.count()
+        //return this.httpHeaders.getAccept().stream().filter { Objects.nonNull(it) }.map { ManifestType.from(it)}.toList()
+        return emptyList()
+    }
+
+    private fun getManifestByTag(dockerRepo:String, tag:String):ResponseEntity<Any> {
+        return ResponseEntity.status(200).build()
+    }
+
+    private fun buildManifestResponse(projectId:String,repoName: String, dockerRepo: String,digest: DockerDigest, manifest: Artifact): ResponseEntity<Any> {
+
+        var context = DownloadContext(projectId, repoName, dockerRepo).projectId(projectId).repoName(repoName).sha256(digest.getDigestHex())
+        var file = this.repo.download(context)
+        val inputStreamResource = InputStreamResource(file.inputStream())
+        httpHeaders.contentLength = file.length()
+        httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
+        httpHeaders.set("Docker-Content-Digest", digest.toString())
+        httpHeaders.set("Content-Type", DockerSchemaUtils.getManifestType(manifest.path, this.repo).toString())
+        return ResponseEntity(inputStreamResource, httpHeaders, HttpStatus.OK)
+    }
 
     override fun deleteManifest(projectId: String, repoName: String, dockerRepo: String, reference: String): ResponseEntity<Any> {
         try {

@@ -22,8 +22,8 @@ class DockerSchemaUtils {
         val EMPTY_BLOB_CONTENT = DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")
         private val EMPTY_BLOB_SIZE = 32
 
-        fun getManifestType(manifestPath: String, repo: Repo<DockerWorkContext>): ManifestType {
-            val manifestType = repo.getAttribute(manifestPath, "docker.manifest.type") as String
+        fun getManifestType(manifestPath: String, repo: DockerArtifactoryService): ManifestType {
+            val manifestType = repo.getAttribute("","",manifestPath, "docker.manifest.type") as String
             return if (StringUtils.isBlank(manifestType)) ManifestType.Schema1Signed else ManifestType.from(manifestType)
         }
 
