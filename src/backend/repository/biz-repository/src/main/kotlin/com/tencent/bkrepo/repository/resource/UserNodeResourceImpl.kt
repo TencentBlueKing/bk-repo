@@ -42,7 +42,7 @@ class UserNodeResourceImpl @Autowired constructor(
     override fun detail(userId: String, artifactLocation: ArtifactLocation): Response<NodeDetail?> {
         artifactLocation.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-            val nodeDetail = nodeService.queryDetail(projectId, repoName, fullPath) ?: throw ErrorCodeException(
+            val nodeDetail = nodeService.detail(projectId, repoName, fullPath) ?: throw ErrorCodeException(
                 CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
             return Response.success(nodeDetail)
         }
