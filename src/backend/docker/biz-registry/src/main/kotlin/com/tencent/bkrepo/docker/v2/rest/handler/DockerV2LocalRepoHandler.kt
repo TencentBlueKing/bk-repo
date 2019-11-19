@@ -24,6 +24,7 @@ import com.tencent.bkrepo.docker.v2.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.v2.model.DockerDigest
 import com.tencent.bkrepo.docker.v2.model.ManifestMetadata
 import com.tencent.bkrepo.docker.v2.rest.errors.DockerV2Errors
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.apache.commons.lang.StringUtils
 import java.io.ByteArrayInputStream
 import java.io.IOException
@@ -49,6 +50,7 @@ import java.util.stream.Collectors
 import java.util.stream.Stream
 import java.util.stream.StreamSupport
 import org.springframework.http.MediaType
+import kotlin.streams.toList
 
 @Service
 class DockerV2LocalRepoHandler @Autowired constructor(
@@ -73,56 +75,81 @@ class DockerV2LocalRepoHandler @Autowired constructor(
     }
 
     override fun ping(): ResponseEntity<Any> {
-        return ResponseEntity.ok().header("Content-Type","application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body("{}")
+        return ResponseEntity.ok().header("Content-Type", "application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body("{}")
     }
 
-    override  fun getManifest(projectId: String, repoName: String,dockerRepo: String, reference: String): ResponseEntity<Any> {
+    override fun getManifest(projectId: String, repoName: String, dockerRepo: String, reference: String): ResponseEntity<Any> {
         try {
             val digest = DockerDigest(reference)
-            return this.getManifestByDigest(projectId,repoName,dockerRepo, DockerDigest(reference))
-        } catch (var4: Exception) {
+            return this.getManifestByDigest(projectId, repoName, dockerRepo, digest)
+        } catch (exception: Exception) {
             log.trace("Unable to parse digest, fetching manifest by tag '{}'", reference)
-            return this.getManifestByTag(dockerRepo, reference)
+            return this.getManifestByTag(projectId,repoName, dockerRepo, reference)
         }
     }
 
-    private fun getManifestByDigest(projectId: String,repoName: String,dockerRepo: String, digest: DockerDigest): ResponseEntity<Any>  {
-        return ResponseEntity.status(200).build()
-    }
-//        log.info("Fetching docker manifest for repo '{}' and digest '{}' in repo '{}'", dockerRepo, digest, repoName)
-//        val matchedManifest = this.findMatchingArtifacts(projectId,repoName,dockerRepo, digest, "manifest.json")
-//        var matched: Artifact? = matchedManifest.findFirst().orElse(null)
-//        if (matched == null) {
-//            val acceptable = this.getAcceptableManifestTypes()
-//            if (acceptable.contains(ManifestType.Schema2List)) {
-//                matched = this.findMatchingArtifacts(projectId, repoName, dockerRepo, digest, "list.manifest.json").peek({ artifact -> log.debug("{} was found searching for {} ", "list.manifest.json", digest) }).findFirst().orElse(null)
-//            }
-//        }
-//
-//        return if (matched == null) DockerV2Errors.manifestUnknown(digest.toString()) else this.buildManifestResponse(projectId, repoName,dockerRepo,digest, matched)
-//    }
+    private fun getManifestByDigest(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest): ResponseEntity<Any> {
+        log.info("Fetching docker manifest for repo '{}' and digest '{}' in repo '{}'", dockerRepo, digest, repoName)
+        var matched = this.findMatchingArtifacts(projectId, repoName, dockerRepo, digest, "manifest.json")
+        if (matched == null) {
+            val acceptable = this.getAcceptableManifestTypes()
+            if (acceptable.contains(ManifestType.Schema2List)) {
+                matched = this.findMatchingArtifacts(projectId, repoName, dockerRepo, digest, "list.manifest.json")
+            }
+        }
 
-//    private fun findMatchingArtifacts(projectId:String,repoName: String, dockerRepo: String, digest: DockerDigest, filename: String): Stream<Artifact> {
-//        val artifacts = this.repo.findArtifacts(projectId,repoName, dockerRepo, filename)
-//        return Stream
-////        return StreamSupport.stream(artifacts.spliterator(), false).filter({ artifact -> this.repo.canRead(artifact.getPath()) }).filter({ artifact ->
-////            val artifactDigest = this.repo.getAttribute(projectId,repoName,artifact.getPath(), digest.getDigestAlg() as String
-////            StringUtils.isNotBlank(artifactDigest) && StringUtils.equals(artifactDigest, digest.getHex())
-////        })
-//    }
+        return if (matched == null) DockerV2Errors.manifestUnknown(digest.toString()) else this.buildManifestResponse(projectId, repoName, dockerRepo, digest, matched)
+    }
+
+    private fun findMatchingArtifacts(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest, filename: String): Artifact? {
+        var nodeDetail = this.repo.findArtifacts(projectId, repoName, dockerRepo, filename)
+        if (nodeDetail == null) {
+            return null
+        }
+        var sha256 = nodeDetail.nodeInfo.sha256
+        return Artifact(projectId, repoName, dockerRepo).sha256(sha256.toString())
+    }
 
     private fun getAcceptableManifestTypes(): List<ManifestType> {
-        //historyCounter = StreamSupport.stream(iterable.spliterator(), false).filter { notEmptyHistoryLayer(it) }.count()
-        //return this.httpHeaders.getAccept().stream().filter { Objects.nonNull(it) }.map { ManifestType.from(it)}.toList()
-        return emptyList()
+        return this.httpHeaders.getAccept().stream().filter { Objects.nonNull(it) }.map { ManifestType.from(it) }.toList()
     }
 
-    private fun getManifestByTag(dockerRepo:String, tag:String):ResponseEntity<Any> {
-        return ResponseEntity.status(200).build()
+    private fun getManifestByTag(projectId: String,repoName: String,dockerRepo: String, tag: String): ResponseEntity<Any> {
+        val useManifestType = this.chooseManifestType(projectId,repoName,dockerRepo, tag)
+        val manifestPath = buildManifestPathFromType(dockerRepo, tag, useManifestType)
+        if (!this.repo.canRead(manifestPath))  {
+            return DockerV2Errors.unauthorizedManifest(manifestPath, null as String?)
+        } else if (!this.repo.exists(projectId,repoName,manifestPath)) {
+            return DockerV2Errors.manifestUnknown(manifestPath)
+        } else {
+            var manifest = this.repo.findArtifacts(projectId, repoName, dockerRepo, manifestPath)
+            if (manifest == null) {
+                return DockerV2Errors.manifestUnknown(manifestPath)
+            } else {
+                return this.getManifestByDigest(projectId,repoName,dockerRepo,DockerDigest(manifest.nodeInfo.sha256))
+            }
+        }
     }
 
-    private fun buildManifestResponse(projectId:String,repoName: String, dockerRepo: String,digest: DockerDigest, manifest: Artifact): ResponseEntity<Any> {
+    private fun chooseManifestType(projectId: String,repoName: String,dockerRepo: String, tag: String): ManifestType {
+        val acceptable = this.getAcceptableManifestTypes()
+        if (acceptable.contains(ManifestType.Schema2List)) {
+            val manifestPath = buildManifestPathFromType(dockerRepo, tag, ManifestType.Schema2List)
+            if (this.repo.exists(projectId,repoName,manifestPath)) {
+                return ManifestType.Schema2List
+            }
+        }
 
+        return if (acceptable.contains(ManifestType.Schema2)) {
+            ManifestType.Schema2
+        } else if (acceptable.contains(ManifestType.Schema1Signed)) {
+            ManifestType.Schema1Signed
+        } else {
+            if (acceptable.contains(ManifestType.Schema1)) ManifestType.Schema1 else ManifestType.Schema1Signed
+        }
+    }
+
+    private fun buildManifestResponse(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest, manifest: Artifact): ResponseEntity<Any> {
         var context = DownloadContext(projectId, repoName, dockerRepo).projectId(projectId).repoName(repoName).sha256(digest.getDigestHex())
         var file = this.repo.download(context)
         val inputStreamResource = InputStreamResource(file.inputStream())
@@ -175,7 +202,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
     }
 
     override fun uploadManifest(projectId: String, repoName: String, dockerRepo: String, tag: String, mediaType: String, stream: InputStream): ResponseEntity<Any> {
-        log.info("Deploying docker manifest for repo '{}' and tag '{}' into repo '{}' mediatype", dockerRepo, tag, repoName,mediaType)
+        log.info("Deploying docker manifest for repo '{}' and tag '{}' into repo '{}' mediatype", dockerRepo, tag, repoName, mediaType)
         val manifestType = ManifestType.from(mediaType)
         val manifestPath = buildManifestPathFromType(dockerRepo, tag, manifestType)
         log.info("manifest path to {} .", manifestPath)

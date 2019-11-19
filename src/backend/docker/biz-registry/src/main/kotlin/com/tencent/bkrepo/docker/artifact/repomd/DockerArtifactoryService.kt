@@ -82,10 +82,6 @@ class DockerArtifactoryService @Autowired constructor(
         return file!!.inputStream()
     }
 
-//    fun getRepoId(): String {
-//        return this.repoKey
-//    }
-
     fun getWorkContextC(): DockerWorkContext {
         return this.context
     }
@@ -164,7 +160,9 @@ class DockerArtifactoryService @Autowired constructor(
                 fullPath = context.path,
                 size = context.contentLength,
                 sha256 = context.sha256,
-                operator = context.userId
+                operator = context.userId,
+                metadata = emptyMap(),
+                overwrite = true
         ))
 
         if (result.isOk()) {
@@ -200,7 +198,8 @@ class DockerArtifactoryService @Autowired constructor(
                 size = context.contentLength,
                 sha256 = context.sha256,
                 operator = context.userId,
-                metadata = emptyMap()
+                metadata = emptyMap(),
+                overwrite = true
         )
         // save node request
         val result = nodeResource.create(node)
