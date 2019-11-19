@@ -1,16 +1,18 @@
-package com.tencent.bkrepo.repository.pojo.node
+package com.tencent.bkrepo.repository.pojo.node.user
 
+import com.tencent.bkrepo.repository.pojo.UserRequest
+import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 /**
- * 节点移动请求
+ * 用户节点复制请求
  *
  * @author: carrypan
- * @date: 2019-10-17
+ * @date: 2019-10-15
  */
-@ApiModel("节点移动请求")
-data class NodeMoveRequest(
+@ApiModel("用户节点复制请求")
+data class UserNodeCopyRequest(
     @ApiModelProperty("源项目id", required = true)
     override val srcProjectId: String,
     @ApiModelProperty("源仓库名称", required = true)
@@ -24,10 +26,7 @@ data class NodeMoveRequest(
     @ApiModelProperty("目的路径", required = true)
     override val destPath: String,
     @ApiModelProperty("同名文件是否覆盖", required = false)
-    override val overwrite: Boolean = false,
-
-    @ApiModelProperty("操作者", required = true)
-    override val operator: String
-) : NodeOperateRequest() {
-    override fun getOperateName() = "Move"
+    override val overwrite: Boolean = false
+) : CrossRepoNodeRequest, UserRequest {
+    override fun getOperateName() = "copy"
 }

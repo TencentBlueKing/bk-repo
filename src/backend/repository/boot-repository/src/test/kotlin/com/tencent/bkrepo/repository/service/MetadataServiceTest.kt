@@ -3,7 +3,7 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.apache.commons.lang.RandomStringUtils
 import org.junit.jupiter.api.AfterEach
@@ -51,7 +51,7 @@ class MetadataServiceTest @Autowired constructor(
 
     @AfterEach
     fun tearDown() {
-        //repositoryService.delete(projectId, repoName)
+        repositoryService.delete(projectId, repoName)
     }
 
     @Test
@@ -60,7 +60,7 @@ class MetadataServiceTest @Autowired constructor(
         metadata["name"] = "c.txt"
         metadata["createdBy"] = "system"
         
-        val createRequest =  NodeCreateRequest(
+        val createRequest = NodeCreateRequest(
             projectId = projectId,
             repoName = repoName,
             folder = false,
@@ -125,7 +125,7 @@ class MetadataServiceTest @Autowired constructor(
         Assertions.assertEquals("0", dbMetadata["size"])
     }
 
-    private fun createRequest(): NodeCreateRequest{
+    private fun createRequest(): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = projectId,
             repoName = repoName,

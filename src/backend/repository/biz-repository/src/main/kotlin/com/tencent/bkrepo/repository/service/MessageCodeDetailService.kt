@@ -80,7 +80,7 @@ class MessageCodeDetailService @Autowired constructor(
                 MessageCodeDetail(
                         it.id!!,
                         it.messageCode,
-                        SystemModuleEnum.getSystemModule(it.moduleCode).name,
+                        SystemModuleEnum.lookup(it.moduleCode).name,
                         it.messageDetailZhCn,
                         it.messageDetailZhTw,
                         it.messageDetailEn

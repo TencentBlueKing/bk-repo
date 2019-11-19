@@ -26,7 +26,7 @@ import com.tencent.bkrepo.generic.repository.UploadTransactionRepository
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.node.FileBlock
-import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
 import java.time.LocalDateTime
 import javax.servlet.http.HttpServletRequest
@@ -88,7 +88,8 @@ class UploadService @Autowired constructor(
         }
 
         // 保存节点
-        val result = nodeResource.create(NodeCreateRequest(
+        val result = nodeResource.create(
+            NodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
                 folder = false,
@@ -99,7 +100,8 @@ class UploadService @Autowired constructor(
                 sha256 = calculatedSha256,
                 metadata = metadata,
                 operator = userId
-        ))
+            )
+        )
 
         if (result.isOk()) {
             val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
@@ -275,7 +277,8 @@ class UploadService @Autowired constructor(
         // 保存节点
         val totalSize = sortedUploadedBlockRecordList.sumBy { it.size.toInt() }.toLong()
         val blockList = sortedUploadedBlockRecordList.map { FileBlock(sequence = it.sequence, size = it.size, sha256 = it.sha256) }
-        val result = nodeResource.create(NodeCreateRequest(
+        val result = nodeResource.create(
+            NodeCreateRequest(
                 projectId = uploadTransaction.projectId,
                 repoName = uploadTransaction.repoName,
                 folder = false,
@@ -285,7 +288,8 @@ class UploadService @Autowired constructor(
                 size = totalSize,
                 blockList = blockList,
                 operator = userId
-        ))
+            )
+        )
 
         if (result.isOk()) {
             // 删除分块记录

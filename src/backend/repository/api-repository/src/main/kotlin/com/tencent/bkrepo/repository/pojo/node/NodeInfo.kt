@@ -11,8 +11,6 @@ import java.time.LocalDateTime
  */
 @ApiModel("节点信息")
 data class NodeInfo(
-    @ApiModelProperty("节点id")
-    val id: String,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建时间")

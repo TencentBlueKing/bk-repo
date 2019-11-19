@@ -1,17 +1,19 @@
 package com.tencent.bkrepo.common.mongo.dao.sharding
 
+import com.mongodb.BasicDBList
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
+import java.lang.reflect.Field
+import javax.annotation.PostConstruct
 import org.apache.commons.lang3.reflect.FieldUtils
 import org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation
+import org.bson.Document
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.annotation.AnnotationUtils
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Query
-import java.lang.reflect.Field
-import javax.annotation.PostConstruct
 
 /**
  * mongodb 支持分表的数据访问层抽象类
@@ -129,14 +131,14 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
 
     override fun determineCollectionName(entity: E): String {
         val shardingValue = FieldUtils.readField(shardingField, entity, true)
-        requireNotNull(shardingValue) { "sharding value shouldn't be empty !" }
+        requireNotNull(shardingValue) { "sharding value can not be empty !" }
 
         return shardingKeyToCollectionName(shardingValue)
     }
 
     override fun determineCollectionName(query: Query): String {
-        val shardingValue = query.queryObject[shardingColumn]
-        requireNotNull(shardingValue) { "sharding value shouldn't be empty !" }
+        val shardingValue = determineCollectionName(query.queryObject)
+        requireNotNull(shardingValue) { "sharding value can not empty !" }
 
         return shardingKeyToCollectionName(shardingValue)
     }
@@ -146,14 +148,26 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         val pipeline = aggregation.toPipeline(Aggregation.DEFAULT_CONTEXT)
         for (document in pipeline) {
             if (document.containsKey("\$match")) {
-                val subDocument = document["\$match"] as org.bson.Document
+                val subDocument = document["\$match"] as Document
                 shardingValue = subDocument["projectId"]
                 break
             }
         }
 
-        requireNotNull(shardingValue) { "sharding value shouldn't be empty !" }
+        requireNotNull(shardingValue) { "sharding value can not be empty!" }
         return shardingKeyToCollectionName(shardingValue)
+    }
+
+    private fun determineCollectionName(document: Document): Any? {
+        for ((key, value) in document) {
+            if (key == shardingColumn) return value
+            if (key == "\$and") {
+                for (element in value as BasicDBList) {
+                    determineCollectionName(element as Document)?.let { return it }
+                }
+            }
+        }
+        return null
     }
 
     companion object {
