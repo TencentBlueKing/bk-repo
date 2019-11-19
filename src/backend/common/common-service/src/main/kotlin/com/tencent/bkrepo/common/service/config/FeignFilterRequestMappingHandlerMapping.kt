@@ -12,10 +12,9 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * @author: carrypan
  * @date: 2019/11/1
  */
-class FeignFilterRequestMappingHandlerMapping: RequestMappingHandlerMapping() {
+class FeignFilterRequestMappingHandlerMapping : RequestMappingHandlerMapping() {
 
     override fun isHandler(beanType: Class<*>): Boolean {
         return AnnotatedElementUtils.hasAnnotation(beanType, Controller::class.java) || AnnotatedElementUtils.hasAnnotation(beanType, RestController::class.java)
     }
-
 }

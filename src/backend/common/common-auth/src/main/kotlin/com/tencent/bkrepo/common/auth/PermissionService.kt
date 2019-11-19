@@ -31,7 +31,7 @@ class PermissionService @Autowired constructor(
                 throw ExternalErrorCodeException(response.code, response.message)
             }
             val hasPermission = response.data ?: false
-            takeIf { hasPermission } ?: throw ErrorCodeException(PERMISSION_DENIED)
+            if (!hasPermission) throw ErrorCodeException(PERMISSION_DENIED)
         }
     }
 

@@ -16,13 +16,13 @@ import com.tencent.bkrepo.generic.pojo.operate.FileMoveRequest
 import com.tencent.bkrepo.generic.pojo.operate.FileRenameRequest
 import com.tencent.bkrepo.generic.pojo.operate.FileSearchRequest
 import com.tencent.bkrepo.repository.api.NodeResource
-import com.tencent.bkrepo.repository.pojo.node.NodeCopyRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -51,12 +51,12 @@ class OperateService(
 
         val searchRequest = with(request) {
             NodeSearchRequest(
-                    projectId = projectId,
-                    repoNameList = repoNameList,
-                    pathPattern = pathPattern,
-                    metadataCondition = metadataCondition,
-                    page = page,
-                    size = size
+                projectId = projectId,
+                repoNameList = repoNameList,
+                pathPattern = pathPattern,
+                metadataCondition = metadataCondition,
+                page = page,
+                size = size
             )
         }
         val nodePage = nodeResource.search(searchRequest).data
@@ -83,12 +83,12 @@ class OperateService(
 
         val fullUri = "$projectId/$repoName/$fullPath"
         val createRequest = NodeCreateRequest(
-                projectId = projectId,
-                repoName = repoName,
-                folder = true,
-                fullPath = fullPath,
-                overwrite = false,
-                operator = userId
+            projectId = projectId,
+            repoName = repoName,
+            folder = true,
+            fullPath = fullPath,
+            overwrite = false,
+            operator = userId
         )
         val result = nodeResource.create(createRequest)
 
@@ -105,10 +105,10 @@ class OperateService(
 
         val fullUri = "$projectId/$repoName/$fullPath"
         val deleteRequest = NodeDeleteRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                operator = userId
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            operator = userId
         )
         val result = nodeResource.delete(deleteRequest)
 
@@ -126,11 +126,11 @@ class OperateService(
         val fullUri = "${request.projectId}/${request.repoName}/${request.fullPath}"
         val renameRequest = with(request) {
             NodeRenameRequest(
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = fullPath,
-                    newFullPath = newFullPath,
-                    operator = userId
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                newFullPath = newFullPath,
+                operator = userId
             )
         }
         val result = nodeResource.rename(renameRequest)
@@ -149,14 +149,14 @@ class OperateService(
         val destUri = "${request.destProjectId}/${request.destRepoName}/${request.destPath}"
         val moveRequest = with(request) {
             NodeMoveRequest(
-                    srcProjectId = srcProjectId,
-                    srcRepoName = srcRepoName,
-                    srcFullPath = srcFullPath,
-                    destProjectId = destProjectId,
-                    destRepoName = destRepoName,
-                    destPath = destPath,
-                    overwrite = overwrite,
-                    operator = userId
+                srcProjectId = srcProjectId,
+                srcRepoName = srcRepoName,
+                srcFullPath = srcFullPath,
+                destProjectId = destProjectId,
+                destRepoName = destRepoName,
+                destPath = destPath,
+                overwrite = overwrite,
+                operator = userId
             )
         }
 
@@ -176,14 +176,14 @@ class OperateService(
         val destUri = "${request.destProjectId}/${request.destRepoName}/${request.destPath}"
         val copyRequest = with(request) {
             NodeCopyRequest(
-                    srcProjectId = srcProjectId,
-                    srcRepoName = srcRepoName,
-                    srcFullPath = srcFullPath,
-                    destProjectId = destProjectId,
-                    destRepoName = destRepoName,
-                    destPath = destPath,
-                    overwrite = overwrite,
-                    operator = userId
+                srcProjectId = srcProjectId,
+                srcRepoName = srcRepoName,
+                srcFullPath = srcFullPath,
+                destProjectId = destProjectId,
+                destRepoName = destRepoName,
+                destPath = destPath,
+                overwrite = overwrite,
+                operator = userId
             )
         }
 
