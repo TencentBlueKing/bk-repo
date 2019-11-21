@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.resolver
+package com.tencent.bkrepo.common.artifact.resolve
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactPath
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactPath

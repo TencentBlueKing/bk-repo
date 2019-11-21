@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.resolver
+package com.tencent.bkrepo.common.artifact.resolve
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileItem
 import java.io.File
@@ -12,12 +12,12 @@ import org.apache.commons.io.FileCleaningTracker
  */
 class ArtifactFileItemFactory(
     private val sizeThreshold: Int = DEFAULT_SIZE_THRESHOLD,
-    private val repository: File = File(System.getProperty("java.io.tmpdir")),
+    private val directory: File = File(System.getProperty("java.io.tmpdir")),
     private val tracker: FileCleaningTracker? = null
 ) {
 
     fun build(): ArtifactFileItem {
-        val fileItem = ArtifactFileItem(repository, sizeThreshold)
+        val fileItem = ArtifactFileItem(directory, sizeThreshold)
         tracker?.track(fileItem.getTempFile(), fileItem)
         return fileItem
     }

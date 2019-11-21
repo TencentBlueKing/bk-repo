@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.common.artifact
 
-import com.tencent.bkrepo.common.artifact.resolver.ArtifactInfoMethodArgumentResolver
-import com.tencent.bkrepo.common.artifact.resolver.ArtifactPathResolver
-import com.tencent.bkrepo.common.artifact.resolver.DefaultArtifactPathResolver
-import com.tencent.bkrepo.common.artifact.resolver.ArtifactDataMethodArgumentResolver
+import com.tencent.bkrepo.common.artifact.resolve.ArtifactInfoMethodArgumentResolver
+import com.tencent.bkrepo.common.artifact.resolve.ArtifactPathResolver
+import com.tencent.bkrepo.common.artifact.resolve.DefaultArtifactPathResolver
+import com.tencent.bkrepo.common.artifact.resolve.ArtifactDataMethodArgumentResolver
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean

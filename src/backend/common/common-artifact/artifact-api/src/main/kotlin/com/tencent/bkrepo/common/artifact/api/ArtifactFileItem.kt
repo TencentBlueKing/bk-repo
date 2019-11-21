@@ -16,7 +16,7 @@ import org.apache.commons.io.output.DeferredFileOutputStream
  * @date: 2019/10/30
  */
 open class ArtifactFileItem(
-    private val repository: File,
+    private val directory: File,
     sizeThreshold: Int
 ) {
 
@@ -72,7 +72,7 @@ open class ArtifactFileItem(
     fun getTempFile(): File {
         if (tempFile == null) {
             val tempFileName = "upload_${uid}_${getUniqueId()}.tmp"
-            tempFile = File(repository, tempFileName)
+            tempFile = File(directory, tempFileName)
         }
         return tempFile as File
     }
