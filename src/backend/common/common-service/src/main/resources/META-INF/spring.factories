@@ -2,6 +2,5 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
 com.tencent.bkrepo.common.service.ServiceAutoConfiguration,\
 com.tencent.bkrepo.common.service.swagger.SwaggerAutoConfiguration,\
 com.tencent.bkrepo.common.service.exception.GlobalExceptionHandlerResolver,\
-com.tencent.bkrepo.common.service.config.WebMvcConfig,\
 com.tencent.bkrepo.common.service.util.MessageCodeUtils,\
 com.tencent.bkrepo.common.service.util.SpringContextUtils

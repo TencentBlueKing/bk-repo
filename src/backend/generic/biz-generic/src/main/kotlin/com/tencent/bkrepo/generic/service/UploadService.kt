@@ -6,7 +6,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
-import com.tencent.bkrepo.common.api.pojo.OctetStreamFileItem
+import com.tencent.bkrepo.common.artifact.api.ArtifactFileItem
 import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
@@ -56,7 +56,7 @@ class UploadService @Autowired constructor(
     private val uploadTransactionExpires: Long = 3600 * 12
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun simpleUpload(userId: String, projectId: String, repoName: String, fullPath: String, fileItem: OctetStreamFileItem, request: HttpServletRequest) {
+    fun simpleUpload(userId: String, projectId: String, repoName: String, fullPath: String, fileItem: ArtifactFileItem, request: HttpServletRequest) {
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
 
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
@@ -157,7 +157,7 @@ class UploadService @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun blockUpload(userId: String, uploadId: String, sequence: Int, fileItem: OctetStreamFileItem, request: HttpServletRequest) {
+    fun blockUpload(userId: String, uploadId: String, sequence: Int, fileItem: ArtifactFileItem, request: HttpServletRequest) {
         // 解析参数
         val sha256 = getHeader(HEADER_SHA256, request)
         val contentLength = request.contentLengthLong

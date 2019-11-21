@@ -1,0 +1,6 @@
+dependencies {
+    api "commons-fileupload:commons-fileupload"
+    api "org.springframework.boot:spring-boot-starter-web"
+    api "org.springframework.boot:spring-boot-starter-undertow"
+    api project(":common:common-artifact:artifact-api")
+}

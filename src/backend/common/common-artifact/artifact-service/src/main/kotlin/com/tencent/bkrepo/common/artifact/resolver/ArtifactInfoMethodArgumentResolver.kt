@@ -1,5 +1,7 @@
-package com.tencent.bkrepo.common.artifact.locator
+package com.tencent.bkrepo.common.artifact.resolver
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import javax.servlet.http.HttpServletRequest
 import org.springframework.core.MethodParameter
 import org.springframework.util.AntPathMatcher
@@ -10,14 +12,15 @@ import org.springframework.web.method.support.ModelAndViewContainer
 import org.springframework.web.servlet.HandlerMapping
 
 /**
- * ArtifactLocateInfo参数解析器
+ * 构件位置信息参数解析器
  *
  * @author: carrypan
  * @date: 2019/11/19
  */
-class ArtifactLocatorMethodArgumentResolver : HandlerMethodArgumentResolver {
+class ArtifactInfoMethodArgumentResolver(private val artifactPathResolver: ArtifactPathResolver) : HandlerMethodArgumentResolver {
     override fun supportsParameter(parameter: MethodParameter): Boolean {
-        return parameter.parameterType.isAssignableFrom(ArtifactLocation::class.java) && parameter.hasParameterAnnotation(ArtifactLocator::class.java)
+        return parameter.parameterType.isAssignableFrom(ArtifactCoordinate::class.java) && parameter.hasParameterAnnotation(
+            ArtifactInfo::class.java)
     }
 
     override fun resolveArgument(parameter: MethodParameter, container: ModelAndViewContainer?, nativeWebRequest: NativeWebRequest, factory: WebDataBinderFactory?): Any? {
@@ -33,7 +36,9 @@ class ArtifactLocatorMethodArgumentResolver : HandlerMethodArgumentResolver {
             )
         } ?: ROOT_PATH
 
-        return ArtifactLocation(projectId, repoName, fullPath)
+        val artifactPath = artifactPathResolver.resolve(fullPath)
+
+        return ArtifactCoordinate(projectId, repoName, artifactPath)
     }
 
     companion object {

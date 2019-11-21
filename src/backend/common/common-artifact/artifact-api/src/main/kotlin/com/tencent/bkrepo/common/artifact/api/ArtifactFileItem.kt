@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.api.pojo
+package com.tencent.bkrepo.common.artifact.api
 
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -8,7 +8,6 @@ import java.io.InputStream
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import org.apache.commons.io.output.DeferredFileOutputStream
-import org.slf4j.LoggerFactory
 
 /**
  * application/octet-stream 流文件
@@ -16,7 +15,7 @@ import org.slf4j.LoggerFactory
  * @author: carrypan
  * @date: 2019/10/30
  */
-open class OctetStreamFileItem(
+open class ArtifactFileItem(
     private val repository: File,
     sizeThreshold: Int
 ) {
@@ -124,8 +123,6 @@ open class OctetStreamFileItem(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(OctetStreamFileItem::class.java)
-
         /**
          * UID used in unique file name generation.
          */

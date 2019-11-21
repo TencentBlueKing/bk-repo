@@ -1,23 +1,23 @@
-package com.tencent.bkrepo.common.service.config
+package com.tencent.bkrepo.common.artifact.resolver
 
-import com.tencent.bkrepo.common.api.pojo.OctetStreamFileItem
+import com.tencent.bkrepo.common.artifact.api.ArtifactFileItem
 import java.io.File
 import org.apache.commons.io.FileCleaningTracker
 
 /**
- * OctetStreamFileItem工厂方法
+ * ArtifactFileItem工厂方法
  *
  * @author: carrypan
  * @date: 2019/10/30
  */
-class OctetStreamFileItemFactory(
+class ArtifactFileItemFactory(
     private val sizeThreshold: Int = DEFAULT_SIZE_THRESHOLD,
     private val repository: File = File(System.getProperty("java.io.tmpdir")),
     private val tracker: FileCleaningTracker? = null
 ) {
 
-    fun build(): OctetStreamFileItem {
-        val fileItem = OctetStreamFileItem(repository, sizeThreshold)
+    fun build(): ArtifactFileItem {
+        val fileItem = ArtifactFileItem(repository, sizeThreshold)
         tracker?.track(fileItem.getTempFile(), fileItem)
         return fileItem
     }

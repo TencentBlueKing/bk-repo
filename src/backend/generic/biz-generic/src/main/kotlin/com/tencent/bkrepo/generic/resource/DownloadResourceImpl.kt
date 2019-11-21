@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.generic.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
 import com.tencent.bkrepo.generic.api.DownloadResource
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.service.DownloadService
@@ -20,16 +21,23 @@ import org.springframework.web.bind.annotation.ResponseBody
 class DownloadResourceImpl @Autowired constructor(
     private val downloadService: DownloadService
 ) : DownloadResource {
-    override fun simpleDownload(userId: String, projectId: String, repoName: String, fullPath: String, request: HttpServletRequest, response: HttpServletResponse) {
-        downloadService.simpleDownload(userId, projectId, repoName, fullPath, request, response)
+
+    override fun simpleDownload(userId: String, artifactCoordinate: ArtifactCoordinate, request: HttpServletRequest, response: HttpServletResponse) {
+        artifactCoordinate.run {
+            downloadService.simpleDownload(userId, projectId, repoName, artifactPath.fullPath, request, response)
+        }
     }
 
-    override fun blockDownload(userId: String, projectId: String, repoName: String, fullPath: String, sequence: Int, request: HttpServletRequest, response: HttpServletResponse) {
-        downloadService.blockDownload(userId, projectId, repoName, fullPath, sequence, request, response)
+    override fun blockDownload(userId: String, artifactCoordinate: ArtifactCoordinate, sequence: Int, request: HttpServletRequest, response: HttpServletResponse) {
+        artifactCoordinate.run {
+            downloadService.blockDownload(userId, projectId, repoName, artifactPath.fullPath, sequence, request, response)
+        }
     }
 
     @ResponseBody
-    override fun queryBlockInfo(userId: String, projectId: String, repoName: String, fullPath: String): Response<List<BlockInfo>> {
-        return Response.success(downloadService.queryBlockInfo(userId, projectId, repoName, fullPath))
+    override fun queryBlockInfo(userId: String, artifactCoordinate: ArtifactCoordinate): Response<List<BlockInfo>> {
+        return artifactCoordinate.run {
+            Response.success(downloadService.queryBlockInfo(userId, projectId, repoName, artifactPath.fullPath))
+        }
     }
 }

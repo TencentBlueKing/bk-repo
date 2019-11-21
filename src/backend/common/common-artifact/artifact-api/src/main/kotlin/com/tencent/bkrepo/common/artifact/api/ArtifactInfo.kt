@@ -1,7 +1,7 @@
-package com.tencent.bkrepo.common.artifact.locator
+package com.tencent.bkrepo.common.artifact.api
 
 /**
- * 构件定位器注解
+ * 构件信息注解
  *
  * @author: carrypan
  * @date: 2019/11/19
@@ -9,8 +9,8 @@ package com.tencent.bkrepo.common.artifact.locator
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
 @MustBeDocumented
-annotation class ArtifactLocator {
+annotation class ArtifactInfo {
     companion object {
-        const val ARTIFACT_LOCATE_URI = "/{projectId}/{repoName}/**"
+        const val ARTIFACT_COORDINATE_URI = "/{projectId}/{repoName}/**"
     }
 }

@@ -1,12 +1,12 @@
-package com.tencent.bkrepo.common.api.annotation
+package com.tencent.bkrepo.common.artifact.api
 
 /**
- * 通配符参数注解
+ * 构件数据注解
  *
  * @author: carrypan
- * @date: 2019-10-08
+ * @date: 2019/11/19
  */
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
 @MustBeDocumented
-annotation class WildcardParam
+annotation class ArtifactData

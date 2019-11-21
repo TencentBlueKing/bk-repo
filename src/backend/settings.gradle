@@ -6,13 +6,16 @@ include ":common:common-auth"
 include ":common:common-client"
 include ":common:common-redis"
 include ":common:common-mongo"
-include ":common:common-artifact"
 include ":common:common-service"
 include ":common:common-storage"
 
 include ":common:common-query"
 include ":common:common-query:query-api"
 include ":common:common-query:query-mongo"
+
+include ":common:common-artifact"
+include ":common:common-artifact:artifact-api"
+include ":common:common-artifact:artifact-service"
 
 include ":docker"
 include ":docker:api-registry"

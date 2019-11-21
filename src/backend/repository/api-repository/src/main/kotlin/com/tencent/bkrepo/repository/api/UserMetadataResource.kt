@@ -3,9 +3,9 @@ package com.tencent.bkrepo.repository.api
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.locator.ArtifactLocation
-import com.tencent.bkrepo.common.artifact.locator.ArtifactLocator
-import com.tencent.bkrepo.common.artifact.locator.ArtifactLocator.Companion.ARTIFACT_LOCATE_URI
+import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo.Companion.ARTIFACT_COORDINATE_URI
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataSaveRequest
@@ -31,35 +31,35 @@ import org.springframework.web.bind.annotation.RequestMapping
 @RequestMapping("/user/metadata")
 interface UserMetadataResource {
     @ApiOperation("查询元数据列表")
-    @GetMapping(ARTIFACT_LOCATE_URI)
+    @GetMapping(ARTIFACT_COORDINATE_URI)
     fun query(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactLocator
-        artifactLocation: ArtifactLocation
+        @ArtifactInfo
+        artifactCoordinate: ArtifactCoordinate
     ): Response<Map<String, String>>
 
     @ApiOperation("创建/更新元数据列表")
-    @PostMapping(ARTIFACT_LOCATE_URI)
+    @PostMapping(ARTIFACT_COORDINATE_URI)
     fun save(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactLocator
-        artifactLocation: ArtifactLocation,
+        @ArtifactInfo
+        artifactCoordinate: ArtifactCoordinate,
         @RequestBody
         metadataSaveRequest: UserMetadataSaveRequest
     ): Response<Void>
 
     @ApiOperation("删除元数据")
-    @DeleteMapping(ARTIFACT_LOCATE_URI)
+    @DeleteMapping(ARTIFACT_COORDINATE_URI)
     fun delete(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactLocator
-        artifactLocation: ArtifactLocation,
+        @ArtifactInfo
+        artifactCoordinate: ArtifactCoordinate,
         @RequestBody
         metadataDeleteRequest: UserMetadataDeleteRequest
     ): Response<Void>

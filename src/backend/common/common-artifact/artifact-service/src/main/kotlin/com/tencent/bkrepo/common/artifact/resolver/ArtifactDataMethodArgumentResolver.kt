@@ -1,7 +1,7 @@
-package com.tencent.bkrepo.common.service.config
+package com.tencent.bkrepo.common.artifact.resolver
 
-import com.tencent.bkrepo.common.api.annotation.OctetStream
-import com.tencent.bkrepo.common.api.pojo.OctetStreamFileItem
+import com.tencent.bkrepo.common.artifact.api.ArtifactData
+import com.tencent.bkrepo.common.artifact.api.ArtifactFileItem
 import javax.servlet.http.HttpServletRequest
 import org.apache.commons.fileupload.servlet.FileCleanerCleanup.FILE_CLEANING_TRACKER_ATTRIBUTE
 import org.apache.commons.fileupload.util.Streams
@@ -18,7 +18,7 @@ import org.springframework.web.method.support.ModelAndViewContainer
  * @author: carrypan
  * @date: 2019-10-30
  */
-class OctetStreamFileItemMethodArgumentResolver : HandlerMethodArgumentResolver {
+class ArtifactDataMethodArgumentResolver : HandlerMethodArgumentResolver {
     override fun resolveArgument(parameter: MethodParameter, container: ModelAndViewContainer?, nativeWebRequest: NativeWebRequest, factory: WebDataBinderFactory?): Any? {
         val request = nativeWebRequest.getNativeRequest(HttpServletRequest::class.java)
         return request?.let {
@@ -27,7 +27,7 @@ class OctetStreamFileItemMethodArgumentResolver : HandlerMethodArgumentResolver 
                 fileCleaningTracker = FileCleaningTracker()
                 it.servletContext.setAttribute(FILE_CLEANING_TRACKER_ATTRIBUTE, fileCleaningTracker)
             }
-            val fileItem = OctetStreamFileItemFactory(tracker = fileCleaningTracker).build()
+            val fileItem = ArtifactFileItemFactory(tracker = fileCleaningTracker).build()
             try {
                 Streams.copy(it.inputStream, fileItem.outputStream, true)
                 fileItem
@@ -43,6 +43,6 @@ class OctetStreamFileItemMethodArgumentResolver : HandlerMethodArgumentResolver 
     }
 
     override fun supportsParameter(parameter: MethodParameter): Boolean {
-        return parameter.parameterType.isAssignableFrom(OctetStreamFileItem::class.java) && parameter.hasParameterAnnotation(OctetStream::class.java)
+        return parameter.parameterType.isAssignableFrom(ArtifactFileItem::class.java) && parameter.hasParameterAnnotation(ArtifactData::class.java)
     }
 }

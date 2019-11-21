@@ -2,7 +2,6 @@ dependencies {
     api project(":common:common-api")
     api project(":common:common-redis")
 
-    implementation "commons-io:commons-io"
     api "io.springfox:springfox-swagger2"
     api "org.springframework.boot:spring-boot-starter-actuator"
     api "org.springframework.cloud:spring-cloud-starter-consul-discovery"

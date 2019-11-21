@@ -4,9 +4,9 @@ import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.locator.ArtifactLocation
-import com.tencent.bkrepo.common.artifact.locator.ArtifactLocator
-import com.tencent.bkrepo.common.artifact.locator.ArtifactLocator.Companion.ARTIFACT_LOCATE_URI
+import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo.Companion.ARTIFACT_COORDINATE_URI
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -38,33 +38,33 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface UserNodeResource {
 
     @ApiOperation("根据路径查看节点详情")
-    @GetMapping(ARTIFACT_LOCATE_URI)
+    @GetMapping(ARTIFACT_COORDINATE_URI)
     fun detail(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactLocator
-        artifactLocation: ArtifactLocation
+        @ArtifactInfo
+        artifactCoordinate: ArtifactCoordinate
     ): Response<NodeDetail?>
 
     @ApiOperation("创建文件夹")
-    @PostMapping(ARTIFACT_LOCATE_URI)
+    @PostMapping(ARTIFACT_COORDINATE_URI)
     fun mkdir(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactLocator
-        artifactLocation: ArtifactLocation
+        @ArtifactInfo
+        artifactCoordinate: ArtifactCoordinate
     ): Response<Void>
 
     @ApiOperation("删除节点")
-    @DeleteMapping(ARTIFACT_LOCATE_URI)
+    @DeleteMapping(ARTIFACT_COORDINATE_URI)
     fun delete(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactLocator
-        artifactLocation: ArtifactLocation
+        @ArtifactInfo
+        artifactCoordinate: ArtifactCoordinate
     ): Response<Void>
 
     @ApiOperation("重命名节点")
@@ -95,13 +95,13 @@ interface UserNodeResource {
     ): Response<Void>
 
     @ApiOperation("查询节点大小信息")
-    @GetMapping("/size/$ARTIFACT_LOCATE_URI")
+    @GetMapping("/size/$ARTIFACT_COORDINATE_URI")
     fun computeSize(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactLocator
-        artifactLocation: ArtifactLocation
+        @ArtifactInfo
+        artifactCoordinate: ArtifactCoordinate
     ): Response<NodeSizeInfo>
 
     @ApiOperation("自定义查询节点")

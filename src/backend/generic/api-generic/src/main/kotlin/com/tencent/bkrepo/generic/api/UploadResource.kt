@@ -1,11 +1,13 @@
 package com.tencent.bkrepo.generic.api
 
-import com.tencent.bkrepo.common.api.annotation.OctetStream
-import com.tencent.bkrepo.common.api.annotation.WildcardParam
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
-import com.tencent.bkrepo.common.api.pojo.OctetStreamFileItem
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
+import com.tencent.bkrepo.common.artifact.api.ArtifactData
+import com.tencent.bkrepo.common.artifact.api.ArtifactFileItem
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo.Companion.ARTIFACT_COORDINATE_URI
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.upload.UploadCompleteRequest
 import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
@@ -32,40 +34,26 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface UploadResource {
 
     @ApiOperation("简单上传")
-    @PutMapping("/simple/{projectId}/{repoName}/**")
+    @PutMapping("/simple/$ARTIFACT_COORDINATE_URI")
     fun simpleUpload(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ApiParam("项目id", required = true)
-        @PathVariable
-        projectId: String,
-        @ApiParam("仓库名称", required = true)
-        @PathVariable
-        repoName: String,
-        @ApiParam(hidden = true)
-        @WildcardParam
-        fullPath: String,
-        @OctetStream
-        fileItem: OctetStreamFileItem,
+        @ArtifactInfo
+        artifactCoordinate: ArtifactCoordinate,
+        @ArtifactData
+        fileItem: ArtifactFileItem,
         request: HttpServletRequest
     ): Response<Void>
 
     @ApiOperation("分块上传预检")
-    @PostMapping("/precheck/{projectId}/{repoName}/**")
+    @PostMapping("/precheck/$ARTIFACT_COORDINATE_URI")
     fun preCheck(
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ApiParam("项目id", required = true)
-        @PathVariable
-        projectId: String,
-        @ApiParam("仓库名称", required = true)
-        @PathVariable
-        repoName: String,
-        @ApiParam(hidden = true)
-        @WildcardParam
-        fullPath: String,
+        @ArtifactInfo
+        artifactCoordinate: ArtifactCoordinate,
         request: HttpServletRequest
     ): Response<UploadTransactionInfo>
 
@@ -81,8 +69,8 @@ interface UploadResource {
         @ApiParam("分块序号，从1开始", required = true)
         @PathVariable
         sequence: Int,
-        @OctetStream
-        fileItem: OctetStreamFileItem,
+        @ArtifactData
+        fileItem: ArtifactFileItem,
         request: HttpServletRequest
     ): Response<Void>
 
