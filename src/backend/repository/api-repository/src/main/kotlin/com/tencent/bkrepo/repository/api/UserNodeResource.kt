@@ -4,9 +4,9 @@ import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo.Companion.ARTIFACT_COORDINATE_URI
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable.Companion.ARTIFACT_COORDINATE_URI
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -43,8 +43,8 @@ interface UserNodeResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo
     ): Response<NodeDetail?>
 
     @ApiOperation("创建文件夹")
@@ -53,8 +53,8 @@ interface UserNodeResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo
     ): Response<Void>
 
     @ApiOperation("删除节点")
@@ -63,8 +63,8 @@ interface UserNodeResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo
     ): Response<Void>
 
     @ApiOperation("重命名节点")
@@ -100,8 +100,8 @@ interface UserNodeResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo
     ): Response<NodeSizeInfo>
 
     @ApiOperation("自定义查询节点")

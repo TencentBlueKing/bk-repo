@@ -15,7 +15,7 @@ import org.apache.commons.io.output.DeferredFileOutputStream
  * @author: carrypan
  * @date: 2019/10/30
  */
-open class ArtifactFileItem(
+open class ArtifactFile(
     private val directory: File,
     sizeThreshold: Int
 ) {

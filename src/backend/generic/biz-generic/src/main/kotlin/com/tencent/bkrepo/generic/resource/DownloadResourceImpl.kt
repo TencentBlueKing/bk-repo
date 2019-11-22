@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.generic.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.generic.api.DownloadResource
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.service.DownloadService
@@ -22,22 +22,22 @@ class DownloadResourceImpl @Autowired constructor(
     private val downloadService: DownloadService
 ) : DownloadResource {
 
-    override fun simpleDownload(userId: String, artifactCoordinate: ArtifactCoordinate, request: HttpServletRequest, response: HttpServletResponse) {
-        artifactCoordinate.run {
-            downloadService.simpleDownload(userId, projectId, repoName, artifactPath.fullPath, request, response)
+    override fun simpleDownload(userId: String, artifactInfo: ArtifactInfo, request: HttpServletRequest, response: HttpServletResponse) {
+        artifactInfo.run {
+            downloadService.simpleDownload(userId, projectId, repoName, this.coordinate.fullPath, request, response)
         }
     }
 
-    override fun blockDownload(userId: String, artifactCoordinate: ArtifactCoordinate, sequence: Int, request: HttpServletRequest, response: HttpServletResponse) {
-        artifactCoordinate.run {
-            downloadService.blockDownload(userId, projectId, repoName, artifactPath.fullPath, sequence, request, response)
+    override fun blockDownload(userId: String, artifactInfo: ArtifactInfo, sequence: Int, request: HttpServletRequest, response: HttpServletResponse) {
+        artifactInfo.run {
+            downloadService.blockDownload(userId, projectId, repoName, this.coordinate.fullPath, sequence, request, response)
         }
     }
 
     @ResponseBody
-    override fun queryBlockInfo(userId: String, artifactCoordinate: ArtifactCoordinate): Response<List<BlockInfo>> {
-        return artifactCoordinate.run {
-            Response.success(downloadService.queryBlockInfo(userId, projectId, repoName, artifactPath.fullPath))
+    override fun queryBlockInfo(userId: String, artifactInfo: ArtifactInfo): Response<List<BlockInfo>> {
+        return artifactInfo.run {
+            Response.success(downloadService.queryBlockInfo(userId, projectId, repoName, this.coordinate.fullPath))
         }
     }
 }

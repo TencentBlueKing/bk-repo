@@ -3,9 +3,9 @@ package com.tencent.bkrepo.repository.api
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo.Companion.ARTIFACT_COORDINATE_URI
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable.Companion.ARTIFACT_COORDINATE_URI
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataSaveRequest
@@ -36,8 +36,8 @@ interface UserMetadataResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo
     ): Response<Map<String, String>>
 
     @ApiOperation("创建/更新元数据列表")
@@ -46,8 +46,8 @@ interface UserMetadataResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate,
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo,
         @RequestBody
         metadataSaveRequest: UserMetadataSaveRequest
     ): Response<Void>
@@ -58,8 +58,8 @@ interface UserMetadataResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate,
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo,
         @RequestBody
         metadataDeleteRequest: UserMetadataDeleteRequest
     ): Response<Void>

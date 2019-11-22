@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.artifact.api
 
 /**
- * 构件数据注解
+ * 构件路径变量注解
  *
  * @author: carrypan
  * @date: 2019/11/19
@@ -9,4 +9,8 @@ package com.tencent.bkrepo.common.artifact.api
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
 @MustBeDocumented
-annotation class ArtifactData
+annotation class ArtifactPathVariable {
+    companion object {
+        const val ARTIFACT_COORDINATE_URI = "/{projectId}/{repoName}/**"
+    }
+}

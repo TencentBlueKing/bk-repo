@@ -4,9 +4,9 @@ import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo.Companion.ARTIFACT_COORDINATE_URI
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable.Companion.ARTIFACT_COORDINATE_URI
 import com.tencent.bkrepo.generic.pojo.FileDetail
 import com.tencent.bkrepo.generic.pojo.FileInfo
 import com.tencent.bkrepo.generic.pojo.FileSizeInfo
@@ -42,8 +42,8 @@ interface OperateResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate,
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo,
         @ApiParam("是否包含目录", required = false, defaultValue = "false")
         @RequestParam
         includeFolder: Boolean = true,
@@ -68,8 +68,8 @@ interface OperateResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo
     ): Response<FileDetail>
 
     @ApiOperation("查询文件(夹)大小")
@@ -78,8 +78,8 @@ interface OperateResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo
     ): Response<FileSizeInfo>
 
     @ApiOperation("创建文件夹")
@@ -88,8 +88,8 @@ interface OperateResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo
     ): Response<Void>
 
     @ApiOperation("删除文件(夹)")
@@ -98,8 +98,8 @@ interface OperateResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo
     ): Response<Void>
 
     @ApiOperation("重命名文件(夹)")

@@ -6,7 +6,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
-import com.tencent.bkrepo.common.artifact.api.ArtifactFileItem
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
@@ -56,7 +56,7 @@ class UploadService @Autowired constructor(
     private val uploadTransactionExpires: Long = 3600 * 12
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun simpleUpload(userId: String, projectId: String, repoName: String, fullPath: String, fileItem: ArtifactFileItem, request: HttpServletRequest) {
+    fun simpleUpload(userId: String, projectId: String, repoName: String, fullPath: String, file: ArtifactFile, request: HttpServletRequest) {
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
 
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
@@ -67,7 +67,7 @@ class UploadService @Autowired constructor(
         val overwrite = getBooleanHeader(HEADER_OVERWRITE, request)
         val metadata = parseMetadata(request)
         val contentLength = request.contentLengthLong
-        val size = fileItem.getSize()
+        val size = file.getSize()
 
         // 参数格式校验
         expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
@@ -75,7 +75,7 @@ class UploadService @Autowired constructor(
         size.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_NULL, "file content")
 
         // 校验sha256
-        val calculatedSha256 = fileSha256(listOf(fileItem.getInputStream()))
+        val calculatedSha256 = fileSha256(listOf(file.getInputStream()))
         if (sha256 != null && calculatedSha256 != sha256) {
             logger.warn("user[$userId] simply upload file [$fullUri] failed: file sha256 verification failed")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
@@ -105,7 +105,7 @@ class UploadService @Autowired constructor(
 
         if (result.isOk()) {
             val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-            fileStorage.store(calculatedSha256, fileItem.getInputStream(), storageCredentials)
+            fileStorage.store(calculatedSha256, file.getInputStream(), storageCredentials)
             logger.info("user[$userId] simply upload file [$fullUri] success")
         } else {
             logger.warn("user[$userId] simply upload file [$fullUri] failed: [${result.code}, ${result.message}]")
@@ -157,11 +157,11 @@ class UploadService @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun blockUpload(userId: String, uploadId: String, sequence: Int, fileItem: ArtifactFileItem, request: HttpServletRequest) {
+    fun blockUpload(userId: String, uploadId: String, sequence: Int, file: ArtifactFile, request: HttpServletRequest) {
         // 解析参数
         val sha256 = getHeader(HEADER_SHA256, request)
         val contentLength = request.contentLengthLong
-        val size = fileItem.getSize()
+        val size = file.getSize()
 
         // 参数校验
         sequence.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sequence")
@@ -182,7 +182,7 @@ class UploadService @Autowired constructor(
         }
 
         // 校验sha256
-        val calculatedSha256 = fileSha256(listOf(fileItem.getInputStream()))
+        val calculatedSha256 = fileSha256(listOf(file.getInputStream()))
         if (sha256 != null && calculatedSha256 != sha256) {
             logger.warn("user[$userId] upload block [$fullUri] failed: file sha256 verification failed")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
@@ -204,7 +204,7 @@ class UploadService @Autowired constructor(
 
         // 保存文件
         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-        fileStorage.store(calculatedSha256, fileItem.getInputStream(), storageCredentials)
+        fileStorage.store(calculatedSha256, file.getInputStream(), storageCredentials)
 
         logger.info("user[$userId] upload block [$fullUri] success.")
     }

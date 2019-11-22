@@ -3,11 +3,10 @@ package com.tencent.bkrepo.generic.api
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
-import com.tencent.bkrepo.common.artifact.api.ArtifactData
-import com.tencent.bkrepo.common.artifact.api.ArtifactFileItem
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo.Companion.ARTIFACT_COORDINATE_URI
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable.Companion.ARTIFACT_COORDINATE_URI
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.upload.UploadCompleteRequest
 import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
@@ -39,10 +38,9 @@ interface UploadResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate,
-        @ArtifactData
-        fileItem: ArtifactFileItem,
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo,
+        file: ArtifactFile,
         request: HttpServletRequest
     ): Response<Void>
 
@@ -52,8 +50,8 @@ interface UploadResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate,
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo,
         request: HttpServletRequest
     ): Response<UploadTransactionInfo>
 
@@ -69,8 +67,7 @@ interface UploadResource {
         @ApiParam("分块序号，从1开始", required = true)
         @PathVariable
         sequence: Int,
-        @ArtifactData
-        fileItem: ArtifactFileItem,
+        file: ArtifactFile,
         request: HttpServletRequest
     ): Response<Void>
 

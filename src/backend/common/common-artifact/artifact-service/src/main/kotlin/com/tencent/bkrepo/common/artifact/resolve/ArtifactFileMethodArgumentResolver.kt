@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.common.artifact.resolve
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactData
-import com.tencent.bkrepo.common.artifact.api.ArtifactFileItem
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import javax.servlet.http.HttpServletRequest
 import org.apache.commons.fileupload.servlet.FileCleanerCleanup.FILE_CLEANING_TRACKER_ATTRIBUTE
 import org.apache.commons.fileupload.util.Streams
@@ -18,7 +17,7 @@ import org.springframework.web.method.support.ModelAndViewContainer
  * @author: carrypan
  * @date: 2019-10-30
  */
-class ArtifactDataMethodArgumentResolver : HandlerMethodArgumentResolver {
+class ArtifactFileMethodArgumentResolver : HandlerMethodArgumentResolver {
     override fun resolveArgument(parameter: MethodParameter, container: ModelAndViewContainer?, nativeWebRequest: NativeWebRequest, factory: WebDataBinderFactory?): Any? {
         val request = nativeWebRequest.getNativeRequest(HttpServletRequest::class.java)
         return request?.let {
@@ -27,13 +26,13 @@ class ArtifactDataMethodArgumentResolver : HandlerMethodArgumentResolver {
                 fileCleaningTracker = FileCleaningTracker()
                 it.servletContext.setAttribute(FILE_CLEANING_TRACKER_ATTRIBUTE, fileCleaningTracker)
             }
-            val fileItem = ArtifactFileItemFactory(tracker = fileCleaningTracker).build()
+            val file = ArtifactFileFactory(tracker = fileCleaningTracker).build()
             try {
-                Streams.copy(it.inputStream, fileItem.outputStream, true)
-                fileItem
+                Streams.copy(it.inputStream, file.outputStream, true)
+                file
             } catch (exception: Exception) {
                 try {
-                    fileItem.delete()
+                    file.delete()
                 } catch (ignored: Exception) {
                     // ignored
                 }
@@ -43,6 +42,6 @@ class ArtifactDataMethodArgumentResolver : HandlerMethodArgumentResolver {
     }
 
     override fun supportsParameter(parameter: MethodParameter): Boolean {
-        return parameter.parameterType.isAssignableFrom(ArtifactFileItem::class.java) && parameter.hasParameterAnnotation(ArtifactData::class.java)
+        return parameter.parameterType.isAssignableFrom(ArtifactFile::class.java)
     }
 }

@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.artifact.resolve
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import javax.servlet.http.HttpServletRequest
 import org.springframework.core.MethodParameter
 import org.springframework.util.AntPathMatcher
@@ -17,10 +17,10 @@ import org.springframework.web.servlet.HandlerMapping
  * @author: carrypan
  * @date: 2019/11/19
  */
-class ArtifactInfoMethodArgumentResolver(private val artifactPathResolver: ArtifactPathResolver) : HandlerMethodArgumentResolver {
+class ArtifactInfoMethodArgumentResolver(private val artifactCoordinateResolver: ArtifactCoordinateResolver) : HandlerMethodArgumentResolver {
     override fun supportsParameter(parameter: MethodParameter): Boolean {
-        return parameter.parameterType.isAssignableFrom(ArtifactCoordinate::class.java) && parameter.hasParameterAnnotation(
-            ArtifactInfo::class.java)
+        return parameter.parameterType.isAssignableFrom(ArtifactInfo::class.java) && parameter.hasParameterAnnotation(
+            ArtifactPathVariable::class.java)
     }
 
     override fun resolveArgument(parameter: MethodParameter, container: ModelAndViewContainer?, nativeWebRequest: NativeWebRequest, factory: WebDataBinderFactory?): Any? {
@@ -36,9 +36,9 @@ class ArtifactInfoMethodArgumentResolver(private val artifactPathResolver: Artif
             )
         } ?: ROOT_PATH
 
-        val artifactPath = artifactPathResolver.resolve(fullPath)
+        val artifactCoordinate = artifactCoordinateResolver.resolve(fullPath)
 
-        return ArtifactCoordinate(projectId, repoName, artifactPath)
+        return ArtifactInfo(projectId, repoName, artifactCoordinate)
     }
 
     companion object {

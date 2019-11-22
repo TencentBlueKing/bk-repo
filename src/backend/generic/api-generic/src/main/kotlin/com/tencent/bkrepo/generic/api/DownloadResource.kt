@@ -3,9 +3,9 @@ package com.tencent.bkrepo.generic.api
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactCoordinate
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo.Companion.ARTIFACT_COORDINATE_URI
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable.Companion.ARTIFACT_COORDINATE_URI
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -33,8 +33,8 @@ interface DownloadResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate,
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo,
         request: HttpServletRequest,
         response: HttpServletResponse
     )
@@ -45,8 +45,8 @@ interface DownloadResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate,
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo,
         @ApiParam("分块序号", required = true)
         @RequestParam("sequence")
         sequence: Int,
@@ -60,7 +60,7 @@ interface DownloadResource {
         @ApiParam(value = "用户id", required = true, defaultValue = AUTH_HEADER_USER_ID_DEFAULT_VALUE)
         @RequestHeader(AUTH_HEADER_USER_ID)
         userId: String,
-        @ArtifactInfo
-        artifactCoordinate: ArtifactCoordinate
+        @ArtifactPathVariable
+        artifactInfo: ArtifactInfo
     ): Response<List<BlockInfo>>
 }

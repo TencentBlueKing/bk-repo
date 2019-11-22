@@ -1,13 +1,15 @@
 package com.tencent.bkrepo.common.artifact.api
 
 /**
- * 构件位置信息
- *
+ * 构件坐标
  * @author: carrypan
- * @date: 2019/11/19
+ * @date: 2019/11/21
  */
-data class ArtifactCoordinate(
-    val projectId: String,
-    val repoName: String,
-    val artifactPath: ArtifactPath
-)
+interface ArtifactCoordinate {
+    val fullPath: String
+}
+
+/**
+ * 默认实现，只保留fullPath
+ */
+data class DefaultArtifactCoordinate(override val fullPath: String): ArtifactCoordinate
