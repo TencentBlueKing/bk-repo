@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.common.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.service.config.FeignFilterRequestMappingHandlerMapping
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
@@ -21,4 +23,8 @@ class ServiceAutoConfiguration {
         }
     }
 
+    @Bean
+    fun objectMapper(): ObjectMapper {
+        return JsonUtils.objectMapper
+    }
 }

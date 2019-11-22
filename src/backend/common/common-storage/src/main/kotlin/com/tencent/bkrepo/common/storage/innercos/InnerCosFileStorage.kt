@@ -40,7 +40,7 @@ class InnerCosFileStorage(
     override fun createClient(credentials: InnerCosCredentials): InnerCosClient {
         val basicCOSCredentials = BasicCOSCredentials(credentials.secretId, credentials.secretKey)
         val clientConfig = ClientConfig(Region(credentials.region))
-        if(credentials.modId != null && credentials.cmdId != null) {
+        if (credentials.modId != null && credentials.cmdId != null) {
             // 开启cl5
             val cl5Info = CL5Info(credentials.modId!!, credentials.cmdId!!, credentials.timeout)
             clientConfig.endpointResolver = CL5EndpointResolver(cl5Info)

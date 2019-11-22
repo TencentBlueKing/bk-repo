@@ -10,6 +10,10 @@ include ":common:common-artifact"
 include ":common:common-service"
 include ":common:common-storage"
 
+include ":common:common-query"
+include ":common:common-query:query-api"
+include ":common:common-query:query-mongo"
+
 include ":docker"
 include ":docker:api-registry"
 include ":docker:biz-registry"

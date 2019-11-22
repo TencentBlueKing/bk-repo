@@ -13,7 +13,7 @@ enum class SystemModuleEnum(val code: String) {
     GENERIC("11"); // 通用文件
 
     companion object {
-        fun getSystemModule(code: String): SystemModuleEnum {
+        fun lookup(code: String): SystemModuleEnum {
             var module = COMMON
             values().forEach { if (it.code == code) {
                 module = it

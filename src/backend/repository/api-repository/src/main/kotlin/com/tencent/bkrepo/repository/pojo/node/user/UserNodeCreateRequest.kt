@@ -1,5 +1,8 @@
-package com.tencent.bkrepo.repository.pojo.node
+package com.tencent.bkrepo.repository.pojo.node.user
 
+import com.tencent.bkrepo.repository.pojo.UserRequest
+import com.tencent.bkrepo.repository.pojo.node.FileBlock
+import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -10,15 +13,15 @@ import io.swagger.annotations.ApiModelProperty
  * @date: 2019-09-22
  */
 @ApiModel("创建节点请求")
-data class NodeCreateRequest(
+data class UserNodeCreateRequest(
     @ApiModelProperty("所属项目", required = true)
-    val projectId: String,
+    override val projectId: String,
     @ApiModelProperty("仓库名称", required = true)
-    val repoName: String,
-    @ApiModelProperty("是否为文件夹")
+    override val repoName: String,
+    @ApiModelProperty("完整路径", required = true)
+    override val fullPath: String,
+    @ApiModelProperty("是否为文件夹", required = true)
     val folder: Boolean,
-    @ApiModelProperty("完整路径")
-    val fullPath: String,
     @ApiModelProperty("过期时间，单位天(0代表永久保存)")
     val expires: Long = 0,
     @ApiModelProperty("是否覆盖")
@@ -30,9 +33,5 @@ data class NodeCreateRequest(
     @ApiModelProperty("分块信息列表")
     val blockList: List<FileBlock>? = null,
     @ApiModelProperty("元数据信息")
-    val metadata: Map<String, String>? = null,
-
-    @ApiModelProperty("创建者")
-    val operator: String
-
-)
+    val metadata: Map<String, String>? = null
+) : NodeRequest, UserRequest

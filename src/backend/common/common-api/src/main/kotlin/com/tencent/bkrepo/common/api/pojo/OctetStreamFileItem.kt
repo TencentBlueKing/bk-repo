@@ -1,14 +1,14 @@
 package com.tencent.bkrepo.common.api.pojo
 
-import org.apache.commons.io.output.DeferredFileOutputStream
-import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+import org.apache.commons.io.output.DeferredFileOutputStream
+import org.slf4j.LoggerFactory
 
 /**
  * application/octet-stream 流文件
@@ -17,9 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger
  * @date: 2019/10/30
  */
 open class OctetStreamFileItem(
-        private val repository: File,
-        sizeThreshold: Int
-)  {
+    private val repository: File,
+    sizeThreshold: Int
+) {
 
     /**
      * The size of the item, in bytes. This is used to cache the size when a
@@ -78,11 +78,10 @@ open class OctetStreamFileItem(
         return tempFile as File
     }
 
-
     fun delete() {
         cachedContent = null
         val outputFile = getStoreLocation()
-        outputFile?.takeIf { this.isInMemory() && it.exists()}?.delete()
+        outputFile?.takeIf { this.isInMemory() && it.exists() }?.delete()
     }
 
     protected fun finalize() {

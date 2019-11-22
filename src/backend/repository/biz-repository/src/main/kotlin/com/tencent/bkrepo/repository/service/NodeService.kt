@@ -12,17 +12,17 @@ import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
 import com.tencent.bkrepo.repository.pojo.node.FileBlock
-import com.tencent.bkrepo.repository.pojo.node.NodeCopyRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeOperateRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.service.QueryHelper.nodeDeleteUpdate
 import com.tencent.bkrepo.repository.service.QueryHelper.nodeListCriteria
 import com.tencent.bkrepo.repository.service.QueryHelper.nodeListQuery
@@ -66,21 +66,21 @@ class NodeService @Autowired constructor(
     /**
      * 查询节点详情
      */
-    fun queryDetail(projectId: String, repoName: String, fullPath: String, repoType: String? = null): NodeDetail? {
+    fun detail(projectId: String, repoName: String, fullPath: String, repoType: String? = null): NodeDetail? {
         repositoryService.checkRepository(projectId, repoName, repoType)
         val formattedFullPath = formatFullPath(fullPath)
 
-        return convertToDetail(queryModel(projectId, repoName, formattedFullPath))
+        return convertToDetail(queryNode(projectId, repoName, formattedFullPath))
     }
 
     /**
      * 计算文件或者文件夹大小
      */
-    fun getSize(projectId: String, repoName: String, fullPath: String): NodeSizeInfo {
+    fun computeSize(projectId: String, repoName: String, fullPath: String): NodeSizeInfo {
         repositoryService.checkRepository(projectId, repoName)
 
         val formattedFullPath = formatFullPath(fullPath)
-        val node = queryModel(projectId, repoName, formattedFullPath)
+        val node = queryNode(projectId, repoName, formattedFullPath)
                 ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, formattedFullPath)
         // 节点为文件直接返回
         if (!node.folder) {
@@ -166,7 +166,7 @@ class NodeService @Autowired constructor(
 
         repositoryService.checkRepository(projectId, repoName)
         // 路径唯一性校验
-        val existNode = queryModel(projectId, repoName, fullPath)
+        val existNode = queryNode(projectId, repoName, fullPath)
         if (existNode != null) {
             if (!createRequest.overwrite) throw ErrorCodeException(PARAMETER_IS_EXIST, fullPath)
             else if (existNode.folder || createRequest.folder) throw ErrorCodeException(FOLDER_CANNOT_BE_MODIFIED)
@@ -198,7 +198,7 @@ class NodeService @Autowired constructor(
         }
         node.blockList = createRequest.blockList?.map { TFileBlock(sequence = it.sequence, sha256 = it.sha256, size = it.size) }
         // 保存节点
-        val idValue = IdValue(addNode(node).id!!)
+        val idValue = IdValue(doCreate(node).id!!)
         // 保存元数据
         createRequest.metadata?.let {
             metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it))
@@ -221,7 +221,7 @@ class NodeService @Autowired constructor(
         val newFullPath = formatFullPath(renameRequest.newFullPath)
 
         repositoryService.checkRepository(projectId, repoName)
-        val node = queryModel(projectId, repoName, fullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, fullPath)
+        val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, fullPath)
         doRename(node, newFullPath, renameRequest.operator)
 
         logger.info("Rename node [$renameRequest] success.")
@@ -239,7 +239,7 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun move(moveRequest: NodeMoveRequest) {
-        handleOperateRequest(moveRequest)
+        handleOperateRequest(moveRequest, moveRequest.operator)
     }
 
     /**
@@ -254,7 +254,7 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun copy(copyRequest: NodeCopyRequest) {
-        handleOperateRequest(copyRequest)
+        handleOperateRequest(copyRequest, copyRequest.operator)
     }
 
     /**
@@ -338,7 +338,7 @@ class NodeService @Autowired constructor(
     /**
      * 查询节点model
      */
-    private fun queryModel(projectId: String, repoName: String, fullPath: String): TNode? {
+    private fun queryNode(projectId: String, repoName: String, fullPath: String): TNode? {
         val query = nodeQuery(projectId, repoName, formatFullPath(fullPath), withDetail = true)
 
         return nodeDao.findOne(query)
@@ -367,14 +367,14 @@ class NodeService @Autowired constructor(
                     lastModifiedBy = createdBy,
                     lastModifiedDate = LocalDateTime.now()
             )
-            addNode(node)
+            doCreate(node)
         }
     }
 
     /**
      * 处理节点操作请求
      */
-    private fun handleOperateRequest(request: NodeOperateRequest) {
+    private fun handleOperateRequest(request: CrossRepoNodeRequest, operator: String) {
         val srcProjectId = request.srcProjectId
         val srcRepoName = request.srcRepoName
         val srcFullPath = formatFullPath(request.srcFullPath)
@@ -386,22 +386,22 @@ class NodeService @Autowired constructor(
         repositoryService.checkRepository(srcProjectId, srcRepoName)
         repositoryService.checkRepository(destProjectId, destRepoName)
 
-        val node = queryModel(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, srcFullPath)
+        val node = queryNode(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, srcFullPath)
 
         // 确保目的目录是否存在
-        val destPathNode = queryModel(destProjectId, destRepoName, destPath)
+        val destPathNode = queryNode(destProjectId, destRepoName, destPath)
         if (destPathNode != null && !destPathNode.folder) {
             // 目的节点存在且为文件，出错
             if (!destPathNode.folder) {
-                logger.warn("[${request.getOperateName()}] node [${node.fullPath}] failed: Destination path: [$destPath] is exist and is a file.")
+                logger.warn("[${request.getOperateName()}] node [${node.fullPath}] failed: Destination path[$destPath] is exist and is a file.")
                 throw ErrorCodeException(NOT_SUPPORTED)
             }
         } else {
             // 创建新路径
-            mkdirs(destProjectId, destRepoName, destPath, request.operator)
+            mkdirs(destProjectId, destRepoName, destPath, operator)
         }
         // 递归操作
-        operateNode(node, destPath, request)
+        operateNode(node, destPath, request, operator)
 
         logger.info("[${request.getOperateName()}] node success: [$request]")
     }
@@ -409,16 +409,15 @@ class NodeService @Autowired constructor(
     /**
      * 操作节点
      */
-    private fun operateNode(node: TNode, destPath: String, request: NodeOperateRequest) {
+    private fun operateNode(node: TNode, destPath: String, request: CrossRepoNodeRequest, operator: String) {
         val projectId = node.projectId
         val repoName = node.repoName
         val overwrite = request.overwrite
         val destProjectId = request.destProjectId ?: node.projectId
         val destRepoName = request.destRepoName ?: node.repoName
-        val operator = request.operator
 
         // 确保目的节点路径不冲突
-        val existNode = queryModel(projectId, repoName, destPath + node.name)
+        val existNode = queryNode(projectId, repoName, destPath + node.name)
         checkConflict(node, existNode, overwrite)
 
         // 目录深度优先遍历，确保出错时，源节点结构不受影响
@@ -431,7 +430,7 @@ class NodeService @Autowired constructor(
             val destSubPath = formatPath(destPath + node.name)
             val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = true, deep = false)
             val subNodes = nodeDao.find(query)
-            subNodes.forEach { operateNode(it, destSubPath, request) }
+            subNodes.forEach { operateNode(it, destSubPath, request, operator) }
 
             // 文件移动时，目的路径的目录已经自动创建，因此删除源目录
             if (request is NodeMoveRequest) {
@@ -464,13 +463,13 @@ class NodeService @Autowired constructor(
                             lastModifiedBy = operator,
                             lastModifiedDate = LocalDateTime.now()
                     )
-                    addNode(newNode)
+                    doCreate(newNode)
                 }
             }
         }
     }
 
-    private fun addNode(node: TNode): TNode {
+    private fun doCreate(node: TNode): TNode {
         try {
             nodeDao.insert(node)
             node.takeUnless { it.folder }?.run { fileReferenceService.increment(this) }
@@ -496,7 +495,6 @@ class NodeService @Autowired constructor(
         private fun convert(tNode: TNode?): NodeInfo? {
             return tNode?.let {
                 NodeInfo(
-                    id = it.id!!,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate,
                     lastModifiedBy = it.lastModifiedBy,

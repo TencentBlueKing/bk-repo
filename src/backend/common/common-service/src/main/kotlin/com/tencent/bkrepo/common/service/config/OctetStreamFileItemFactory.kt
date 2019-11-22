@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.service.config
 
 import com.tencent.bkrepo.common.api.pojo.OctetStreamFileItem
-import org.apache.commons.io.FileCleaningTracker
 import java.io.File
+import org.apache.commons.io.FileCleaningTracker
 
 /**
  * OctetStreamFileItem工厂方法
@@ -10,9 +10,11 @@ import java.io.File
  * @author: carrypan
  * @date: 2019/10/30
  */
-class OctetStreamFileItemFactory(private val sizeThreshold: Int = DEFAULT_SIZE_THRESHOLD,
-                                 private val repository: File = File(System.getProperty("java.io.tmpdir")),
-                                 private val tracker: FileCleaningTracker? = null) {
+class OctetStreamFileItemFactory(
+    private val sizeThreshold: Int = DEFAULT_SIZE_THRESHOLD,
+    private val repository: File = File(System.getProperty("java.io.tmpdir")),
+    private val tracker: FileCleaningTracker? = null
+) {
 
     fun build(): OctetStreamFileItem {
         val fileItem = OctetStreamFileItem(repository, sizeThreshold)

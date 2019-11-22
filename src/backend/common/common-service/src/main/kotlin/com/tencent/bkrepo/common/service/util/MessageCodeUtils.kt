@@ -121,7 +121,7 @@ class MessageCodeUtils @Autowired constructor() {
                     DEFAULT_LANGUAGE // 取不到语言信息默认为中文
                 }
                 val messageCodeDetail =
-                    JsonUtils.getObjectMapper().readValue(messageCodeDetailStr, MessageCodeDetail::class.java)
+                    JsonUtils.objectMapper.readValue(messageCodeDetailStr, MessageCodeDetail::class.java)
                 message = getMessageByLocale(messageCodeDetail, locale) // 根据字符集取出对应的状态码描述信息
                 if (null != params) {
                     val mf = MessageFormat(message)

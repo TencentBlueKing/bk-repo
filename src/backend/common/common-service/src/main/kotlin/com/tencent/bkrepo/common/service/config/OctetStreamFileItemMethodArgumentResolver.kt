@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.service.config
 
 import com.tencent.bkrepo.common.api.annotation.OctetStream
 import com.tencent.bkrepo.common.api.pojo.OctetStreamFileItem
+import javax.servlet.http.HttpServletRequest
 import org.apache.commons.fileupload.servlet.FileCleanerCleanup.FILE_CLEANING_TRACKER_ATTRIBUTE
 import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.io.FileCleaningTracker
@@ -10,7 +11,6 @@ import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
-import javax.servlet.http.HttpServletRequest
 
 /**
  * application/octet-stream流文件参数解析器
@@ -23,7 +23,7 @@ class OctetStreamFileItemMethodArgumentResolver : HandlerMethodArgumentResolver 
         val request = nativeWebRequest.getNativeRequest(HttpServletRequest::class.java)
         return request?.let {
             var fileCleaningTracker = it.servletContext.getAttribute(FILE_CLEANING_TRACKER_ATTRIBUTE) as? FileCleaningTracker
-            if(fileCleaningTracker == null) {
+            if (fileCleaningTracker == null) {
                 fileCleaningTracker = FileCleaningTracker()
                 it.servletContext.setAttribute(FILE_CLEANING_TRACKER_ATTRIBUTE, fileCleaningTracker)
             }
