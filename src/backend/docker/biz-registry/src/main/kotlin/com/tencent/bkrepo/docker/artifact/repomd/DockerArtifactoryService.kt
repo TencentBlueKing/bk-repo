@@ -15,11 +15,16 @@ import com.tencent.bkrepo.docker.repomd.WriteContext
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataUpsertRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.api.pojo.Page
 import java.io.File
 import java.io.InputStream
 import org.slf4j.LoggerFactory
@@ -35,17 +40,16 @@ class DockerArtifactoryService @Autowired constructor(
         private val fileStorage: FileStorage,
         private val metadataService: MetadataResource
 
-
 ) {
 
     // protected var propertiesService: PropertiesService ？
-    protected lateinit var repoKey: String
     protected lateinit var context: DockerWorkContext
+
+    //@ConfigurationProperties("local.path")
     private val localPath: String = "/Users/owen/data"
 
     init {
         this.context = DockerPackageWorkContext()
-        this.repoKey = "docker-local"
     }
 
     fun writeLocal(projectId:String, repoName: String,dockerRepo: String, name: String, inputStream: InputStream): ResponseEntity<Any> {
@@ -82,10 +86,6 @@ class DockerArtifactoryService @Autowired constructor(
         return file!!.inputStream()
     }
 
-//    fun getRepoId(): String {
-//        return this.repoKey
-//    }
-
     fun getWorkContextC(): DockerWorkContext {
         return this.context
     }
@@ -94,12 +94,11 @@ class DockerArtifactoryService @Autowired constructor(
     fun write(context: WriteContext) {
         try {
             // check the repo
-            val repository = repositoryResource.queryDetail(context.projectId , context.repoName, REPO_TYPE).data
+            val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data
                     ?: run {
                         logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
                         throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
                     }
-
             // save the node
             val result = nodeResource.create(NodeCreateRequest(
                     projectId = context.projectId,
@@ -142,36 +141,13 @@ class DockerArtifactoryService @Autowired constructor(
 
         // fileStorage
         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-        var file = fileStorage.load(context.sha256, storageCredentials) // ?: run {
-//             logger.warn("user[$context.userId] simply download file [$context.path] failed: file data not found")
-//         }
-        // File("aaaa")
-        // return ResponseEntity.ok().body("ok")
+        var file = fileStorage.load(context.sha256, storageCredentials)
         return file!!
     }
 
-//    private fun getInternalArtifactoryRequestForDownload(downloadContext: DownloadContext): InternalArtifactoryRequest {
-//        val requestHeaders = downloadContext.getRequestHeaders()
-//        val isRedirectDisabled = requestHeaders.get("artifactory.disableRedirect") as String
-//        checkNotNull(isRedirectDisabled) { "Must provide artifactory.disableRedirect header as part of request" }
-//        val repoPath = this.repoPath(downloadContext.getPath())
-//        val req = if (java.lang.Boolean.valueOf(isRedirectDisabled)) InternalRequestFactory.createInternalRequestDisableRedirect(repoPath) else InternalRequestFactory.createInternalRequestEnableRedirect(repoPath)
-//        req.setSkipStatsUpdate(downloadContext.isSkipStatsUpdate())
-//        req.addHeaders(requestHeaders)
-//        return req
-//    }
 
     @Transactional(rollbackFor = [Throwable::class])
     fun upload(context: UploadContext): ResponseEntity<Any> {
-        // TODO: 校验权限
-
-        // 校验sha256
-//        val calculatedSha256 = FileDigestUtils.fileSha256(listOf(context.content!!))
-//        if (context.sha256 != null && calculatedSha256 != context.sha256) {
-//            logger.warn("user[${context.userId}]  upload  file [$fullUri] failed: file sha256 verification failed")
-//            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
-//        }
-
         // 判断仓库是否存在
         val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
@@ -186,7 +162,9 @@ class DockerArtifactoryService @Autowired constructor(
                 fullPath = context.path,
                 size = context.contentLength,
                 sha256 = context.sha256,
-                operator = context.userId
+                operator = context.userId,
+                metadata = emptyMap(),
+                overwrite = true
         ))
 
         if (result.isOk()) {
@@ -202,15 +180,6 @@ class DockerArtifactoryService @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     fun uploadFromLocal(path: String, context: UploadContext): ResponseEntity<Any> {
-        // TODO: 校验权限
-
-        // 校验sha256
-//        val calculatedSha256 = FileDigestUtils.fileSha256(listOf(context.content!!))
-//        if (context.sha256 != null && calculatedSha256 != context.sha256) {
-//            logger.warn("user[${context.userId}]  upload  file [$fullUri] failed: file sha256 verification failed")
-//            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
-//        }
-
         // 判断仓库是否存在
         val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
@@ -220,16 +189,20 @@ class DockerArtifactoryService @Autowired constructor(
         var content = File(fullPath).readBytes()
         context.content(content.inputStream()).contentLength(content.size.toLong()).sha256(DataDigestUtils.sha256FromByteArray(content))
 
-        // 保存节点
-        val result = nodeResource.create(NodeCreateRequest(
+        val node = NodeCreateRequest(
                 projectId = context.projectId,
                 repoName = context.repoName,
                 folder = false,
                 fullPath = context.path,
                 size = context.contentLength,
                 sha256 = context.sha256,
-                operator = context.userId
-        ))
+                operator = context.userId,
+                metadata = emptyMap(),
+                overwrite = true
+        )
+        // save node request
+        val result = nodeResource.create(node)
+
         if (result.isOk()) {
             val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
             fileStorage.store(context.sha256, context.content!!, storageCredentials)
@@ -240,6 +213,7 @@ class DockerArtifactoryService @Autowired constructor(
         }
         return ResponseEntity.ok().body("ok")
     }
+
 
 //    private fun contentLength(context: UploadContext): Long {
 //        if (context.getContentLength() > 0L) {
@@ -261,10 +235,19 @@ class DockerArtifactoryService @Autowired constructor(
 //        }
 //    }
 
-    fun copy(from: String, to: String): Boolean {
+    fun copy(projectId: String,repoName: String, srcPath:String, destPath: String): Boolean {
+        val copyRequest = NodeCopyRequest(
+                srcProjectId = projectId,
+                srcRepoName = repoName,
+                srcFullPath = srcPath,
+                destProjectId = projectId,
+                destRepoName = repoName,
+                destPath = destPath,
+                overwrite = true,
+                operator = "bk_admin"
+        )
+        nodeResource.copy(copyRequest)
         return true
-//        val status = this.repoService.copyMultiTx(this.repoPath(from), this.repoPath(to), false, true, true)
-//        return !status.isError() && !status.hasWarnings()
     }
 
     fun move(projectId: String,repoName: String, from: String, to: String): Boolean {
@@ -290,10 +273,6 @@ class DockerArtifactoryService @Autowired constructor(
 //    }
 
 
-    fun setAttributes(path: String, key: String, vararg values: Any) {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-        //   this.setProperties(path, key, *values)
-    }
 
 //    fun addAttribute(path: String, key: String, vararg values: Any) {
 //        this.addProperty(path, key, values)
@@ -310,7 +289,7 @@ class DockerArtifactoryService @Autowired constructor(
 //    }
 
     fun setAttributes(projectId: String, repoName: String, path: String, keyValueMap: Map<String, String>) {
-        metadataService.upsert(MetadataUpsertRequest(projectId, repoName, path, keyValueMap, "bk_admin"))
+        metadataService.save(MetadataSaveRequest(projectId, repoName, path, keyValueMap))
     }
 
     fun getAttribute(projectId: String, repoName: String, fullPath: String,key:String) :String?{
@@ -335,20 +314,10 @@ class DockerArtifactoryService @Autowired constructor(
 
     fun canWrite(path: String): Boolean {
         return true
-//        val repoPath = this.repoPath(path)
-//        val repo = this.repoService.getLocalRepository(repoPath)
-//        val statusHolder = repo.assertValidPath(repoPath, false)
-//        if (statusHolder.isError()) {
-//            log.warn(statusHolder.getStatusMsg())
-//            return false
-//        } else {
-//            return this.authorizationService.canDeploy(this.repoPath(path))
-//        }
     }
 
     fun canDelete(path: String): Boolean {
         return true
-//        return this.authorizationService.canDelete(this.repoPath(path))
     }
 
 
@@ -365,12 +334,11 @@ class DockerArtifactoryService @Autowired constructor(
         val nodes = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
             logger.warn("find artifact failed: $projectId, $repoName, $fullPath found no artifacts")
             return  null
-            //throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, projectId + ":" + repoName + ":" + fullPath)
         }
         return Artifact(projectId, repoName, fullPath).sha256(nodes.nodeInfo.sha256!!).contentLength(nodes.nodeInfo.size)
     }
 
-    fun findArtifacts(projectId: String, repoName: String, dockerRepo: String, fileName: String): NodeDetail? {
+    fun findArtifact(projectId: String, repoName: String, dockerRepo: String, fileName: String): NodeDetail? {
         // query node info
         var fullPath = "/$dockerRepo/$fileName"
         val nodes = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
@@ -380,10 +348,32 @@ class DockerArtifactoryService @Autowired constructor(
         return nodes
     }
 
+    fun findArtifacts(projectId: String, repoName: String,fileName:String): List<Map<String,Any>> {
+        val projectId = Rule.QueryRule("projectId", projectId)
+        val repoName = Rule.QueryRule("repoName", repoName)
+        val name = Rule.QueryRule("name", fileName)
+        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, name))
+        val queryModel = QueryModel(
+                page = PageLimit(0, 10),
+                sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
+                select = mutableListOf("fullPath","path","size"),
+                rule = rule
+        )
 
+        val result =  nodeResource.query(queryModel).data?: run {
+            logger.warn("find artifacts failed: $projectId, $repoName, $name, $fileName found no node")
+            return  emptyList()
+        }
+        return result.records
+    }
 
-    fun findArtifacts(var1: String, var2: String): Iterable<Artifact> {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
+    fun findManifest(projectId: String, repoName: String, manifestPath:String): NodeDetail? {
+        // query node info
+        val nodes = nodeResource.queryDetail(projectId, repoName, manifestPath).data ?: run {
+            logger.warn("find manifest failed: $projectId, $repoName, $manifestPath found no node")
+            return  null
+        }
+        return nodes
     }
 
 

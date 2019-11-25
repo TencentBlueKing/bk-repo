@@ -31,20 +31,19 @@ class DockerV2Errors {
             return ResponseEntity.status(403).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "UNAUTHORIZED", "The client does not have permission to push to the repository.", ""))
         }
 
-//        @JvmOverloads
-//        fun unauthorized(tokenUrl: String, registryService: String, scopeType: String? = null, repo: String = "", scope: String = ""): Response {
-//            val scopeStr = if (scopeType != null) String.format(",scope=\"%s:%s:%s\"", scopeType, repo, scope) else ""
-//            return Response.status(401).header("Docker-Distribution-Api-Version", "registry/2.0").header("WWW-Authenticate", String.format("Bearer realm=\"%s\",service=\"%s\"", tokenUrl, registryService) + scopeStr).type(MediaType.APPLICATION_JSON_TYPE).entity(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":null}]}", "UNAUTHORIZED", "authentication required")).build()
-//        }
-//
-//        fun unauthorizedManifest(manifest: String, err: String?): Response {
-//            return Response.status(403).header("Docker-Distribution-Api-Version", "registry/2.0").type(MediaType.APPLICATION_JSON_TYPE).entity(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "UNAUTHORIZED", "The client does not have permission for manifest" + if (err != null) ": $err" else "", "\"manifest\":\"$manifest\"")).build()
-//        }
-//
-//        fun nameUnknown(dockerRepo: String): Response {
-//            return Response.status(404).header("Docker-Distribution-Api-Version", "registry/2.0").type(MediaType.APPLICATION_JSON_TYPE).entity(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "NAME_UNKNOWN", "Repository name not known to registry.", "\"name\":\"$dockerRepo\"")).build()
-//        }
-//
+        fun unauthorized(tokenUrl: String, registryService: String, scopeType: String? = null, repo: String = "", scope: String = ""): ResponseEntity<Any> {
+            val scopeStr = if (scopeType != null) String.format(",scope=\"%s:%s:%s\"", scopeType, repo, scope) else ""
+            return ResponseEntity.status(401).header("Docker-Distribution-Api-Version", "registry/2.0").header("WWW-Authenticate", String.format("Bearer realm=\"%s\",service=\"%s\"", tokenUrl, registryService) + scopeStr).contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":null}]}", "UNAUTHORIZED", "authentication required"))
+        }
+
+        fun unauthorizedManifest(manifest: String, err: String?): ResponseEntity<Any> {
+            return ResponseEntity.status(403).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "UNAUTHORIZED", "The client does not have permission for manifest" + if (err != null) ": $err" else "", "\"manifest\":\"$manifest\""))
+        }
+
+        fun nameUnknown(dockerRepo: String): ResponseEntity<Any> {
+            return ResponseEntity.status(404).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "NAME_UNKNOWN", "Repository name not known to registry.", "\"name\":\"$dockerRepo\""))
+        }
+
         fun manifestConcurrent(message: Any): ResponseEntity<Any> {
             return ResponseEntity.status(400).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "MANIFEST_INVALID", "MANIFEST-CONCURRENT-EXCEPTION", "\"description\":\"$message\""))
         }

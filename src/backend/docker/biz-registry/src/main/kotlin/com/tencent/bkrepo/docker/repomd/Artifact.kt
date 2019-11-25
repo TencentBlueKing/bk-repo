@@ -1,55 +1,58 @@
 package com.tencent.bkrepo.docker.repomd
 
- class Artifact(projectId:String, repoName:String ,path: String) {
+class Artifact(projectId: String, repoName: String, name: String) {
 
-     var sha256: String? = null
+    var sha256: String? = null
+    var contentLength: Long = 0
+    var name: String = ""
+    var path: String = ""
+    var projectId: String = ""
+    var repoName: String = ""
 
-     var contentLength: Long = 0
+    init {
+        this.projectId = projectId
+        this.repoName = repoName
+        this.name = name
+    }
 
-     var path: String = ""
+    fun sha256(fielSha256: String): Artifact {
+        this.sha256 = fielSha256
+        return this
+    }
 
-     var projectId:String = ""
+    fun contentLength(contentLength: Long): Artifact {
+        this.contentLength = contentLength
+        return this
+    }
 
-     var repoName:String = ""
+    fun projectId(projectId: String): Artifact {
+        this.projectId = projectId
+        return this
+    }
 
-     init {
-         this.path = path
-     }
+    fun repoName(repoName: String): Artifact {
+        this.repoName = repoName
+        return this
+    }
 
-     fun sha256(fielSha256: String): Artifact {
-         this.sha256 = fielSha256
-         return this
-     }
+    fun path(path: String): Artifact {
+        this.path = path
+        return this
+    }
 
-     fun contentLength(contentLength: Long): Artifact {
-         this.contentLength = contentLength
-         return this
-     }
+//     fun getSha256(): String? {
+//         return this.fielSha256
+//     }
 
-     fun projectId(projectId: String): Artifact {
-         this.projectId = projectId
-         return this
-     }
+    fun getLength(): Long {
+        return this.contentLength
+    }
 
-     fun repoName(repoName: String): Artifact {
-         this.repoName = repoName
-         return this
-     }
+    fun getArtifactPath(): String {
+        return this.path
+    }
 
-     fun path(path: String): Artifact {
-         this.path = path
-         return this
-     }
-
-     fun getLength(): Long {
-         return this.contentLength
-     }
-
-     fun getArtifactPath(): String {
-         return this.path
-     }
-
-     fun getRepoId(): String {
-         return ""
-     }
+    fun getRepoId(): String {
+        return ""
+    }
 }

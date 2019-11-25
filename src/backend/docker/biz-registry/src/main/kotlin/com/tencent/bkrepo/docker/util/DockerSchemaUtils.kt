@@ -22,9 +22,8 @@ class DockerSchemaUtils {
         val EMPTY_BLOB_CONTENT = DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")
         private val EMPTY_BLOB_SIZE = 32
 
-        fun getManifestType(manifestPath: String, repo: Repo<DockerWorkContext>): ManifestType {
-            val manifestType = repo.getAttribute(manifestPath, "docker.manifest.type") as String
-            return if (StringUtils.isBlank(manifestType)) ManifestType.Schema1Signed else ManifestType.from(manifestType)
+        fun getManifestType(projectId: String, repoName:String,manifestPath: String, repo: DockerArtifactoryService): String? {
+            return  repo.getAttribute(projectId,repoName,manifestPath, "docker.manifest.type")
         }
 
         fun isEmptyBlob(digest: DockerDigest): Boolean {
@@ -51,11 +50,10 @@ class DockerSchemaUtils {
                     val manifestConfigFilename = DockerDigest(digest).filename()
                     val manifestConfigFile = DockerUtils.getManifestConfigBlob(repo, manifestConfigFilename, projectId, repoName, dockerRepoPath, tag)
                     if (manifestConfigFile != null) {
-
                         val manifestStream = repo.readGlobal(DownloadContext(projectId, repoName, manifestConfigFile.path).sha256(manifestConfigFile.sha256!!))
                         manifestStream.use {
-                             var bytes = IOUtils.toByteArray(it)
-                             return bytes
+                            var bytes = IOUtils.toByteArray(it)
+                            return bytes
                         }
                     }
                 }
@@ -73,65 +71,29 @@ class DockerSchemaUtils {
                 return byteArray
 
             }
-//            try {
-//                val manifestStream = repo.getWorkContextC().readGlobal(schema2Path)
-//                manifestStream.use {
-//                    var byteArray = IOUtils.toByteArray(it)
-//                }
-//                var gThrow: Throwable? = null
-//
-//                val byteArray: ByteArray
-//                try {
-//                    byteArray = IOUtils.toByteArray(manifestStream!!)
-//                } catch (throw1: Throwable) {
-//                    gThrow = throw1
-//                    throw throw1
-//                } finally {
-//                    if (manifestStream != null) {
-//                        if (gThrow != null) {
-//                            try {
-//                                manifestStream!!.close()
-//                            } catch (throw2: Throwable) {
-//                                gThrow.addSuppressed(throw2)
-//                            }
-//                        } else {
-//                            manifestStream!!.close()
-//                        }
-//                    }
-//                }
-//
-//                return byteArray
-//            } catch (exception: IOException) {
-//                log.error("Error fetching manifest schema2: " + exception.message, exception)
-//                return ByteArray(0)
-//            }
         }
 
-        fun fetchSchema2Path(repo: DockerArtifactoryService, dockerRepo: String, manifestListBytes: ByteArray, searchGlobally: Boolean): String {
+        fun fetchSchema2Path(repo: DockerArtifactoryService, projectId: String, repoName: String, dockerRepo: String, manifestListBytes: ByteArray, searchGlobally: Boolean): String {
             try {
                 val manifestList = JsonUtil.readTree(manifestListBytes)
-                if (manifestList != null) {
-                    val manifests = manifestList.get("manifests")
-                    val maniIter = manifests.iterator()
+                val manifests = manifestList.get("manifests")
+                val maniIter = manifests.iterator()
 
-                    while (maniIter.hasNext()) {
-                        val manifest = maniIter.next() as JsonNode
-                        val platform = manifest.get("platform")
-                        val architecture = platform.get("architecture").asText()
-                        val os = platform.get("os").asText()
-                        if (StringUtils.equals(architecture, "amd64") && StringUtils.equals(os, "linux")) {
-                            val digest = manifest.get("digest").asText()
-                            val manifestFilename = DockerDigest(digest).filename()
-                            if (searchGlobally) {
-                                val manifestFile = DockerUtils.getBlobGlobally(repo, manifestFilename, DockerSearchBlobPolicy.SHA_256)
-                                return if (manifestFile == null) "" else DockerUtils.getFullPath(manifestFile, repo.getWorkContextC() as DockerWorkContext)
-                            }
-
-                            val artifacts = repo.findArtifacts(dockerRepo, manifestFilename)
-                            if (artifacts != null && artifacts!!.iterator().hasNext()) {
-                                return (artifacts!!.iterator().next() as Artifact).path
-                            }
+                while (maniIter.hasNext()) {
+                    val manifest = maniIter.next() as JsonNode
+                    val platform = manifest.get("platform")
+                    val architecture = platform.get("architecture").asText()
+                    val os = platform.get("os").asText()
+                    if (StringUtils.equals(architecture, "amd64") && StringUtils.equals(os, "linux")) {
+                        val digest = manifest.get("digest").asText()
+                        val manifestFilename = DockerDigest(digest).filename()
+                        if (searchGlobally) {
+                            val manifestFile = DockerUtils.findBlobGlobally(repo, projectId, repoName, manifestFilename, manifestFilename)
+                            return if (manifestFile == null) "" else DockerUtils.getFullPath(manifestFile, repo.getWorkContextC() as DockerWorkContext)
                         }
+
+                        val artifact = repo.artifact(projectId, repoName, dockerRepo)
+                        return artifact!!.path
                     }
                 }
             } catch (ioException: IOException) {

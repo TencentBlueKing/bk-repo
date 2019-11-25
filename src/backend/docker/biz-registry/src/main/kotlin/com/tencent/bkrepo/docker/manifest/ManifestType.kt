@@ -2,7 +2,8 @@ package com.tencent.bkrepo.docker.manifest
 
 import com.tencent.bkrepo.docker.util.JsonUtil
 import java.io.IOException
-import javax.ws.rs.core.MediaType
+//import javax.ws.rs.core.MediaType
+import org.springframework.http.MediaType
 
 enum class ManifestType private constructor(private val mediaType: String) {
     Schema1("application/vnd.docker.distribution.manifest.v1+json"),
@@ -17,12 +18,12 @@ enum class ManifestType private constructor(private val mediaType: String) {
     companion object {
 
         fun from(mediaType: MediaType?): ManifestType {
-            var contentType = ""
-            if (mediaType != null) {
-                contentType = mediaType.toString()
-            }
+//            var contentType = ""
+//            if (mediaType != null) {
+               // contentType = mediaType.toString()
+//            }
 
-            return from(contentType)
+            return from(mediaType.toString())
         }
 
         fun from(contentType: String): ManifestType {

@@ -19,7 +19,7 @@ class ManifestDeserializer {
                     return ManifestSchema2Deserializer.deserialize(manifestBytes, manifestJsonBytes, dockerRepo, tag, digest)
                 }
                 ManifestType.Schema2List -> {
-                    val schema2Path = DockerSchemaUtils.fetchSchema2Path(repo, dockerRepo, manifestBytes, true)
+                    val schema2Path = DockerSchemaUtils.fetchSchema2Path(repo,projectId,repoName, dockerRepo, manifestBytes, true)
                     manifestBytes = DockerSchemaUtils.fetchSchema2Manifest(repo, schema2Path)
                     return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 }
