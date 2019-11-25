@@ -1,6 +1,11 @@
 dependencies {
-    api "commons-fileupload:commons-fileupload"
-    api "org.springframework.boot:spring-boot-starter-web"
-    api "org.springframework.boot:spring-boot-starter-undertow"
+    implementation project(":common:common-api")
+    implementation project(":common:common-auth")
+    implementation project(":repository:api-repository")
     api project(":common:common-artifact:artifact-api")
+
+    implementation "javax.servlet:javax.servlet-api"
+    implementation "commons-fileupload:commons-fileupload"
+    implementation "org.springframework.boot:spring-boot-starter-web"
+    api "org.springframework.boot:spring-boot-starter-aop"
 }

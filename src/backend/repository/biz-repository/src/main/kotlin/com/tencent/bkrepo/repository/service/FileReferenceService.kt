@@ -26,7 +26,7 @@ class FileReferenceService @Autowired constructor(
         val fileReference = queryBySha256(sha256) ?: createNewReference(sha256)
         fileReference.count += count
         fileReferenceDao.save(fileReference)
-        logger.info("increment [$count] references of file [$sha256]")
+        logger.info("Increment [$count] references of file [$sha256]")
     }
 
     fun increment(sha256List: List<String>) {
@@ -45,7 +45,7 @@ class FileReferenceService @Autowired constructor(
         val fileReference = queryBySha256(sha256) ?: return
         fileReference.count = if (fileReference.count >= count) fileReference.count - count else 0
         fileReferenceDao.save(fileReference)
-        logger.info("decrement [$count] references of file [$sha256]")
+        logger.info("Decrement [$count] references of file [$sha256]")
     }
 
     fun queryBySha256(sha256: String): TFileReference? {
@@ -59,7 +59,7 @@ class FileReferenceService @Autowired constructor(
 
     private fun validateParameter(sha256: String, count: Int) {
         sha256.takeIf { it.isNotBlank() } ?: throw IllegalArgumentException("The sha256 of reference file can not be blank")
-        count.takeIf { it >= 0 } ?: throw IllegalArgumentException("reference increment should be greater than 0")
+        count.takeIf { it >= 0 } ?: throw IllegalArgumentException("Reference increment should be greater than 0")
     }
 
     companion object {

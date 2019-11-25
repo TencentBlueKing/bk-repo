@@ -10,4 +10,8 @@ data class ArtifactInfo(
     val projectId: String,
     val repoName: String,
     val coordinate: ArtifactCoordinate
-)
+) {
+    fun getUri(): String {
+        return "$projectId/$repoName${coordinate.fullPath}"
+    }
+}

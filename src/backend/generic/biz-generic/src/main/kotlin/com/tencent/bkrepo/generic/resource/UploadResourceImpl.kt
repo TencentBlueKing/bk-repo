@@ -8,7 +8,6 @@ import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.upload.UploadCompleteRequest
 import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.UploadService
-import javax.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
@@ -22,24 +21,19 @@ import org.springframework.web.bind.annotation.RestController
 class UploadResourceImpl @Autowired constructor(
     private val uploadService: UploadService
 ) : UploadResource {
-    override fun simpleUpload(userId: String, artifactInfo: ArtifactInfo, file: ArtifactFile, request: HttpServletRequest): Response<Void> {
-        return artifactInfo.run {
-            uploadService.simpleUpload(userId, projectId, repoName, this.coordinate.fullPath, file, request)
-            Response.success()
-        }
-    }
-
-    override fun preCheck(userId: String, artifactInfo: ArtifactInfo, request: HttpServletRequest): Response<UploadTransactionInfo> {
-        return artifactInfo.run {
-            Response.success(uploadService.preCheck(userId, projectId, repoName, this.coordinate.fullPath, request))
-        }
-    }
-
-    override fun blockUpload(userId: String, uploadId: String, sequence: Int, file: ArtifactFile, request: HttpServletRequest): Response<Void> {
-        uploadService.blockUpload(userId, uploadId, sequence, file, request)
+    override fun simpleUpload(userId: String, artifactInfo: ArtifactInfo, file: ArtifactFile): Response<Void> {
+        uploadService.simpleUpload(userId, artifactInfo, file)
         return Response.success()
     }
 
+    override fun preCheck(userId: String, artifactInfo: ArtifactInfo): Response<UploadTransactionInfo> {
+        return Response.success(uploadService.preCheck(userId, artifactInfo))
+    }
+
+    override fun blockUpload(userId: String, uploadId: String, sequence: Int, file: ArtifactFile): Response<Void> {
+        uploadService.blockUpload(userId, uploadId, sequence, file)
+        return Response.success()
+    }
 
     override fun abortUpload(userId: String, uploadId: String): Response<Void> {
         uploadService.abortUpload(userId, uploadId)

@@ -7,7 +7,13 @@ import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.auth.PermissionService
+import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
+import com.tencent.bkrepo.common.service.util.HeaderUtils.getHeader
+import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils.fileSha256
@@ -37,6 +43,8 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+
+
 /**
  * 通用文件上传服务类
  *
@@ -55,16 +63,20 @@ class UploadService @Autowired constructor(
     @Value("\${upload.transaction.expires:43200}")
     private val uploadTransactionExpires: Long = 3600 * 12
 
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    fun simpleUpload(userId: String, projectId: String, repoName: String, fullPath: String, file: ArtifactFile, request: HttpServletRequest) {
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+    fun simpleUpload(userId: String, artifactInfo: ArtifactInfo, file: ArtifactFile) {
+        val request = HttpContextHolder.getRequest()
 
+        val projectId = artifactInfo.projectId
+        val repoName = artifactInfo.repoName
+        val fullPath = artifactInfo.coordinate.fullPath
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
-        val fullUri = "$projectId/$repoName/$formattedFullPath"
+
         // 解析参数
-        val sha256 = getHeader(HEADER_SHA256, request)
-        val expires = getLongHeader(HEADER_EXPIRES, request)
-        val overwrite = getBooleanHeader(HEADER_OVERWRITE, request)
+        val sha256 = getHeader(HEADER_SHA256)
+        val expires = getLongHeader(HEADER_EXPIRES)
+        val overwrite = getBooleanHeader(HEADER_OVERWRITE)
         val metadata = parseMetadata(request)
         val contentLength = request.contentLengthLong
         val size = file.getSize()
@@ -77,13 +89,13 @@ class UploadService @Autowired constructor(
         // 校验sha256
         val calculatedSha256 = fileSha256(listOf(file.getInputStream()))
         if (sha256 != null && calculatedSha256 != sha256) {
-            logger.warn("user[$userId] simply upload file [$fullUri] failed: file sha256 verification failed")
+            logger.warn("User[$userId] simply upload file [${artifactInfo.getUri()}] failed: file sha256 verification failed")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
         }
 
         // 判断仓库是否存在
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId] simply upload file  [$fullUri] failed: $repoName not found")
+            logger.warn("User[$userId] simply upload file  [${artifactInfo.getUri()}] failed: $repoName not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         }
 
@@ -106,35 +118,36 @@ class UploadService @Autowired constructor(
         if (result.isOk()) {
             val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
             fileStorage.store(calculatedSha256, file.getInputStream(), storageCredentials)
-            logger.info("user[$userId] simply upload file [$fullUri] success")
+            logger.info("User[$userId] simply upload file [${artifactInfo.getUri()}] success")
         } else {
-            logger.warn("user[$userId] simply upload file [$fullUri] failed: [${result.code}, ${result.message}]")
+            logger.warn("User[$userId] simply upload file [${artifactInfo.getUri()}] failed: [${result.code}, ${result.message}]")
             throw ExternalErrorCodeException(result.code, result.message)
         }
     }
 
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    fun preCheck(userId: String, projectId: String, repoName: String, fullPath: String, request: HttpServletRequest): UploadTransactionInfo {
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
-
+    fun preCheck(userId: String, artifactInfo: ArtifactInfo): UploadTransactionInfo {
         // 解析参数
-        val expires = getLongHeader(HEADER_EXPIRES, request)
-        val overwrite = getBooleanHeader(HEADER_OVERWRITE, request)
-
+        val projectId = artifactInfo.projectId
+        val repoName = artifactInfo.repoName
+        val fullPath = artifactInfo.coordinate.fullPath
         val formattedFullPath = NodeUtils.formatFullPath(fullPath)
-        val fullUri = "$projectId/$repoName/$formattedFullPath"
+        val expires = getLongHeader(HEADER_EXPIRES)
+        val overwrite = getBooleanHeader(HEADER_OVERWRITE)
+
         // 参数校验
         expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
 
         // 判断仓库是否存在
         repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId] preCheck [$fullUri] failed: $repoName not found")
+            logger.warn("User[$userId] preCheck [${artifactInfo.getUri()}] failed: $repoName not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         }
 
         // 判断文件是否存在
         if (!overwrite && nodeResource.exist(projectId, repoName, fullPath).data == true) {
-            logger.warn("user[$userId] preCheck [$fullUri] failed: file already exists")
+            logger.warn("User[$userId] preCheck [${artifactInfo.getUri()}] failed: file already exists")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_EXIST, formattedFullPath)
         }
 
@@ -157,9 +170,10 @@ class UploadService @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun blockUpload(userId: String, uploadId: String, sequence: Int, file: ArtifactFile, request: HttpServletRequest) {
+    fun blockUpload(userId: String, uploadId: String, sequence: Int, file: ArtifactFile) {
+        val request = HttpContextHolder.getRequest()
         // 解析参数
-        val sha256 = getHeader(HEADER_SHA256, request)
+        val sha256 = getHeader(HEADER_SHA256)
         val contentLength = request.contentLengthLong
         val size = file.getSize()
 
@@ -177,14 +191,14 @@ class UploadService @Autowired constructor(
 
         // 判断仓库是否存在
         val repository = repositoryResource.queryDetail(uploadTransaction.projectId, uploadTransaction.repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId] upload block [$fullUri] failed: ${uploadTransaction.repoName} not found")
+            logger.warn("User[$userId] upload block [$fullUri] failed: ${uploadTransaction.repoName} not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, uploadTransaction.repoName)
         }
 
         // 校验sha256
         val calculatedSha256 = fileSha256(listOf(file.getInputStream()))
         if (sha256 != null && calculatedSha256 != sha256) {
-            logger.warn("user[$userId] upload block [$fullUri] failed: file sha256 verification failed")
+            logger.warn("User[$userId] upload block [$fullUri] failed: file sha256 verification failed")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
         }
         // 删除旧的分块记录
@@ -206,14 +220,14 @@ class UploadService @Autowired constructor(
         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
         fileStorage.store(calculatedSha256, file.getInputStream(), storageCredentials)
 
-        logger.info("user[$userId] upload block [$fullUri] success.")
+        logger.info("User[$userId] upload block [$fullUri] success.")
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     fun abortUpload(userId: String, uploadId: String) {
         // 判断uploadId是否存在
         val uploadTransaction = uploadTransactionRepository.findByIdOrNull(uploadId) ?: run {
-            logger.warn("user[$userId] abort upload [$uploadId] failed: $uploadId not found")
+            logger.warn("User[$userId] abort upload [$uploadId] failed: $uploadId not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, uploadId)
         }
         // 鉴权
@@ -232,14 +246,14 @@ class UploadService @Autowired constructor(
         // 删除上传事物
         uploadTransactionRepository.deleteById(uploadTransaction.id!!)
 
-        logger.info("user[$userId] abort upload block [${uploadTransaction.projectId}/${uploadTransaction.repoName}${uploadTransaction.fullPath}] success.")
+        logger.info("User[$userId] abort upload block [${uploadTransaction.projectId}/${uploadTransaction.repoName}${uploadTransaction.fullPath}] success.")
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     fun completeUpload(userId: String, uploadId: String, blockSha256ListStr: String?) {
         // 判断uploadId是否存在
         val uploadTransaction = uploadTransactionRepository.findByIdOrNull(uploadId) ?: run {
-            logger.warn("user[$userId] complete upload [$uploadId] failed: $uploadId not found")
+            logger.warn("User[$userId] complete upload [$uploadId] failed: $uploadId not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, uploadId)
         }
         // 鉴权
@@ -248,7 +262,7 @@ class UploadService @Autowired constructor(
         val sortedUploadedBlockRecordList = blockRecordRepository.findByUploadId(uploadId).sortedBy { it.sequence }
         // 分块记录不能为空
         if (sortedUploadedBlockRecordList.isEmpty()) {
-            logger.warn("user[$userId] complete upload [$uploadId] failed: block record is empty")
+            logger.warn("User[$userId] complete upload [$uploadId] failed: block record is empty")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_NULL, "file block record")
         }
         // 分块记录数量一致性
@@ -256,20 +270,20 @@ class UploadService @Autowired constructor(
 
         blockSha256List?.run {
             if (this.size != sortedUploadedBlockRecordList.size) {
-                logger.warn("user[$userId] complete upload [$uploadId] failed: block count verification failed")
+                logger.warn("User[$userId] complete upload [$uploadId] failed: block count verification failed")
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "file block count")
             }
         }
         // 分块记录完整性
         for (i in sortedUploadedBlockRecordList.indices) {
             if (sortedUploadedBlockRecordList[i].sequence != i + 1) {
-                logger.warn("user[$userId] complete upload [$uploadId] failed: lock block ${i + 1}")
+                logger.warn("User[$userId] complete upload [$uploadId] failed: lock block ${i + 1}")
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_IS_NULL, "file block $${i + 1}")
             }
 
             blockSha256List?.run {
                 if (this[i] != sortedUploadedBlockRecordList[i].sha256) {
-                    logger.warn("user[$userId] complete upload [$uploadId] failed: block ${i + 1} sha256 verification failed")
+                    logger.warn("User[$userId] complete upload [$uploadId] failed: block ${i + 1} sha256 verification failed")
                     throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "file block ${i + 1}")
                 }
             }
@@ -296,9 +310,9 @@ class UploadService @Autowired constructor(
             blockRecordRepository.deleteByUploadId(uploadId)
             // 删除上传事物
             uploadTransactionRepository.deleteById(uploadId)
-            logger.info("user[$userId] complete upload [$uploadId] success")
+            logger.info("User[$userId] complete upload [$uploadId] success")
         } else {
-            logger.warn("user[$userId] complete upload [$uploadId] failed: [${result.code}, ${result.message}]")
+            logger.warn("User[$userId] complete upload [$uploadId] failed: [${result.code}, ${result.message}]")
             throw ExternalErrorCodeException(result.code, result.message)
         }
     }
@@ -311,25 +325,6 @@ class UploadService @Autowired constructor(
         return blockRecordRepository.findByUploadId(uploadId).map { BlockInfo(size = it.size, sha256 = it.sha256, sequence = it.sequence) }
     }
 
-    private fun getLongHeader(header: String, request: HttpServletRequest): Long {
-        return try {
-            getHeader(header, request)?.toLong() ?: 0L
-        } catch (exception: Exception) {
-            0L
-        }
-    }
-
-    private fun getBooleanHeader(header: String, request: HttpServletRequest): Boolean {
-        return try {
-            getHeader(header, request)?.toBoolean() ?: false
-        } catch (exception: Exception) {
-            false
-        }
-    }
-
-    private fun getHeader(header: String, request: HttpServletRequest): String? {
-        return request.getHeader(header)
-    }
 
     private fun parseMetadata(request: HttpServletRequest): Map<String, String> {
         val metadata = HashMap<String, String>()
