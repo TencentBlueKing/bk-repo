@@ -107,7 +107,6 @@ abstract class DockerUtils {
 
         fun findBlobGlobally(repo: DockerArtifactoryService, projectId: String, repoName: String, dockerRepo: String, fileName: String): Artifact? {
             val result = repo.findArtifacts(projectId, repoName, fileName)
-            log.info("yyyyyyyyyyy {} ,{} ,{},{} ", projectId, repoName, dockerRepo, fileName)
             if (result.size == 0){
                 return null
             }

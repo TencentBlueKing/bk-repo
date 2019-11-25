@@ -50,7 +50,6 @@ class DockerSchemaUtils {
                     val manifestConfigFilename = DockerDigest(digest).filename()
                     val manifestConfigFile = DockerUtils.getManifestConfigBlob(repo, manifestConfigFilename, projectId, repoName, dockerRepoPath, tag)
                     if (manifestConfigFile != null) {
-                        log.info("vvvvvvvvvvvvvvvvvv {}", manifestConfigFile.sha256)
                         val manifestStream = repo.readGlobal(DownloadContext(projectId, repoName, manifestConfigFile.path).sha256(manifestConfigFile.sha256!!))
                         manifestStream.use {
                             var bytes = IOUtils.toByteArray(it)

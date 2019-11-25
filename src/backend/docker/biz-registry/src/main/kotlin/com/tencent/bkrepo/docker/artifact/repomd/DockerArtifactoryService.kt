@@ -80,7 +80,6 @@ class DockerArtifactoryService @Autowired constructor(
             logger.warn("user[$context.userId] read global file  [$context.path] failed: $context.repoName not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
         }
-        logger.info("fffffffffffffffffff {}", context.sha256)
         // get content from storage
         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
         var file = fileStorage.load(context.sha256, storageCredentials)
@@ -181,10 +180,7 @@ class DockerArtifactoryService @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     fun uploadFromLocal(path: String, context: UploadContext): ResponseEntity<Any> {
-        // TODO: 校验权限
-
         // 判断仓库是否存在
-
         val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
@@ -252,8 +248,6 @@ class DockerArtifactoryService @Autowired constructor(
         )
         nodeResource.copy(copyRequest)
         return true
-//        val status = this.repoService.copyMultiTx(this.repoPath(from), this.repoPath(to), false, true, true)
-//        return !status.isError() && !status.hasWarnings()
     }
 
     fun move(projectId: String,repoName: String, from: String, to: String): Boolean {

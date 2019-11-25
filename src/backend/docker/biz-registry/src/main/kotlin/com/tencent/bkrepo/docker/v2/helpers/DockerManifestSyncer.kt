@@ -46,7 +46,8 @@ class DockerManifestSyncer() {
                         this.moveBlobFromTempDir(repo, projectId, repoName, tempBlobPath, finalBlobPath)
                     } else {
                         log.debug("Blob temp file '{}' doesn't exist in temp, trying other tags", tempBlobPath)
-                        if (!this.copyBlobFromFirstReadableDockerRepo(repo, projectId,repoName,dockerRepo,blobFilename, finalBlobPath)) {
+                        val targetPath = "/$dockerRepo/$tag/"
+                        if (!this.copyBlobFromFirstReadableDockerRepo(repo, projectId,repoName,dockerRepo,blobFilename, targetPath)) {
                             log.error("Could not find temp blob '{}'", tempBlobPath)
                             return false
                         }
