@@ -32,4 +32,22 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoHandl
     ): ResponseEntity<Any> {
         return dockerRepo.uploadManifest(projectId, repoName, name, tag,contentType, request.inputStream)
     }
+
+    override fun getManifest(
+            projectId: String,
+            repoName: String,
+            name: String,
+            reference: String
+    ): ResponseEntity<Any> {
+        return dockerRepo.getManifest(projectId, repoName, name, reference)
+    }
+
+    override fun existManifest(
+            projectId: String,
+            repoName: String,
+            name: String,
+            reference: String
+    ): ResponseEntity<Any> {
+        return dockerRepo.getManifest(projectId, repoName, name, reference)
+    }
 }

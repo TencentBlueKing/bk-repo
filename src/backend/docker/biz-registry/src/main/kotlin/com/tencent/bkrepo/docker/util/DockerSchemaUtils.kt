@@ -22,9 +22,8 @@ class DockerSchemaUtils {
         val EMPTY_BLOB_CONTENT = DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")
         private val EMPTY_BLOB_SIZE = 32
 
-        fun getManifestType(manifestPath: String, repo: DockerArtifactoryService): ManifestType {
-            val manifestType = repo.getAttribute("","",manifestPath, "docker.manifest.type") as String
-            return if (StringUtils.isBlank(manifestType)) ManifestType.Schema1Signed else ManifestType.from(manifestType)
+        fun getManifestType(projectId: String, repoName:String,manifestPath: String, repo: DockerArtifactoryService): String? {
+            return  repo.getAttribute(projectId,repoName,manifestPath, "docker.manifest.type")
         }
 
         fun isEmptyBlob(digest: DockerDigest): Boolean {
@@ -51,7 +50,7 @@ class DockerSchemaUtils {
                     val manifestConfigFilename = DockerDigest(digest).filename()
                     val manifestConfigFile = DockerUtils.getManifestConfigBlob(repo, manifestConfigFilename, projectId, repoName, dockerRepoPath, tag)
                     if (manifestConfigFile != null) {
-
+                        log.info("vvvvvvvvvvvvvvvvvv {}", manifestConfigFile.sha256)
                         val manifestStream = repo.readGlobal(DownloadContext(projectId, repoName, manifestConfigFile.path).sha256(manifestConfigFile.sha256!!))
                         manifestStream.use {
                             var bytes = IOUtils.toByteArray(it)

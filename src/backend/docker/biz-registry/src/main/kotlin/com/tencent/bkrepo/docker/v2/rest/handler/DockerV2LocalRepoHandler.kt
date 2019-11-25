@@ -57,7 +57,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         private val repo: DockerArtifactoryService
 ) : DockerV2RepoHandler {
 
-    public var httpHeaders: HttpHeaders = HttpHeaders()
+    var httpHeaders: HttpHeaders = HttpHeaders()
 
     companion object {
         private val manifestSyncer = DockerManifestSyncer()
@@ -84,7 +84,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
             return this.getManifestByDigest(projectId, repoName, dockerRepo, digest)
         } catch (exception: Exception) {
             log.trace("Unable to parse digest, fetching manifest by tag '{}'", reference)
-            return this.getManifestByTag(projectId,repoName, dockerRepo, reference)
+            return this.getManifestByTag(projectId, repoName, dockerRepo, reference)
         }
     }
 
@@ -102,7 +102,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
     }
 
     private fun findMatchingArtifacts(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest, filename: String): Artifact? {
-        var nodeDetail = this.repo.findArtifacts(projectId, repoName, dockerRepo, filename)
+        var nodeDetail = this.repo.findArtifact(projectId, repoName, dockerRepo, filename)
         if (nodeDetail == null) {
             return null
         }
@@ -114,28 +114,30 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         return this.httpHeaders.getAccept().stream().filter { Objects.nonNull(it) }.map { ManifestType.from(it) }.toList()
     }
 
-    private fun getManifestByTag(projectId: String,repoName: String,dockerRepo: String, tag: String): ResponseEntity<Any> {
-        val useManifestType = this.chooseManifestType(projectId,repoName,dockerRepo, tag)
+    private fun getManifestByTag(projectId: String, repoName: String, dockerRepo: String, tag: String): ResponseEntity<Any> {
+        val useManifestType = this.chooseManifestType(projectId, repoName, dockerRepo, tag)
         val manifestPath = buildManifestPathFromType(dockerRepo, tag, useManifestType)
-        if (!this.repo.canRead(manifestPath))  {
+        if (!this.repo.canRead(manifestPath)) {
             return DockerV2Errors.unauthorizedManifest(manifestPath, null as String?)
-        } else if (!this.repo.exists(projectId,repoName,manifestPath)) {
+        } else if (!this.repo.exists(projectId, repoName, manifestPath)) {
             return DockerV2Errors.manifestUnknown(manifestPath)
         } else {
-            var manifest = this.repo.findArtifacts(projectId, repoName, dockerRepo, manifestPath)
+            var manifest = this.repo.findManifest(projectId, repoName, manifestPath)
             if (manifest == null) {
                 return DockerV2Errors.manifestUnknown(manifestPath)
             } else {
-                return this.getManifestByDigest(projectId,repoName,dockerRepo,DockerDigest(manifest.nodeInfo.sha256))
+                val artifact = Artifact(projectId,repoName,manifestPath).sha256(manifest.nodeInfo.sha256!!)
+                return this.buildManifestResponse(projectId, repoName, manifestPath, DockerDigest("sh256:${manifest.nodeInfo.sha256}"),artifact)
             }
         }
+        return DockerV2Errors.manifestUnknown(manifestPath)
     }
 
-    private fun chooseManifestType(projectId: String,repoName: String,dockerRepo: String, tag: String): ManifestType {
+    private fun chooseManifestType(projectId: String, repoName: String, dockerRepo: String, tag: String): ManifestType {
         val acceptable = this.getAcceptableManifestTypes()
         if (acceptable.contains(ManifestType.Schema2List)) {
             val manifestPath = buildManifestPathFromType(dockerRepo, tag, ManifestType.Schema2List)
-            if (this.repo.exists(projectId,repoName,manifestPath)) {
+            if (this.repo.exists(projectId, repoName, manifestPath)) {
                 return ManifestType.Schema2List
             }
         }
@@ -156,7 +158,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         httpHeaders.contentLength = file.length()
         httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
         httpHeaders.set("Docker-Content-Digest", digest.toString())
-        httpHeaders.set("Content-Type", DockerSchemaUtils.getManifestType(manifest.path, this.repo).toString())
+        httpHeaders.set("Content-Type", DockerSchemaUtils.getManifestType(projectId,repoName, dockerRepo, this.repo))
         return ResponseEntity(inputStreamResource, httpHeaders, HttpStatus.OK)
     }
 
@@ -374,7 +376,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
     }
 
     override fun isBlobExists(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest): ResponseEntity<Any> {
-        log.info("is blob exist upload {}", digest.getDigestHex())
+        log.info("is blob exist upload {}, {},{},{}", projectId,repoName, dockerRepo, digest.getDigestHex())
         if (DockerSchemaUtils.isEmptyBlob(digest)) {
             log.debug("Request for empty layer for image {}, returning dummy HEAD response.", dockerRepo)
             return DockerSchemaUtils.emptyBlobHeadResponse()
@@ -414,15 +416,11 @@ class DockerV2LocalRepoHandler @Autowired constructor(
     }
 
     private fun getRepoBlob(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest): Artifact? {
-        var repoBlobs = this.repo.findArtifacts(projectId, repoName, dockerRepo, digest.filename())
-        if (repoBlobs == null) {
+        val result = this.repo.findArtifacts(projectId,repoName, digest.filename())
+        if (result.size == 0) {
             return null
-        } else {
-            if (repoBlobs.nodeInfo.sha256 == digest.getDigestHex()) {
-                return Artifact(projectId, repoName, dockerRepo)
-            }
         }
-        return null
+        return Artifact(projectId, repoName, dockerRepo).sha256(digest.filename())
     }
 
     override fun startBlobUpload(projectId: String, repoName: String, dockerRepo: String, mount: String?): ResponseEntity<Any> {

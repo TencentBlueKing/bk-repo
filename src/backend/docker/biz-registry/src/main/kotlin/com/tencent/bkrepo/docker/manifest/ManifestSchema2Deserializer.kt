@@ -24,6 +24,7 @@ class ManifestSchema2Deserializer {
                 val manifestMetadata = ManifestMetadata()
                 manifestMetadata.tagInfo.title = "$dockerRepo:$tag"
                 manifestMetadata.tagInfo.digest = digest
+                log.info("rrrrrrrrrrrrrrr {}", manifestBytes.toString())
                 return applyAttributesFromContent(manifestBytes, jsonBytes, manifestMetadata)
             } catch (exception: IOException) {
                 log.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
@@ -35,6 +36,7 @@ class ManifestSchema2Deserializer {
         private fun applyAttributesFromContent(manifestBytes: ByteArray, jsonBytes: ByteArray, manifestMetadata: ManifestMetadata): ManifestMetadata {
             val config = JsonUtil.readTree(jsonBytes)
             val manifest = JsonUtil.readTree(manifestBytes)
+            log.info("qqqqqqqqqqqqqqqqqqqqq {}",manifest.toString())
             var totalSize = 0L
             val history = config.get("history")
             val layers = manifest.get("layers")
@@ -57,6 +59,7 @@ class ManifestSchema2Deserializer {
                 var size = 0L
                 var digest: String? = null
                 if (notEmptyHistoryLayer(historyLayer) || !foreignHasHistory && isForeignLayer(layer)) {
+                    log.info("llllllllllllllllllllllll {}",layer.toString())
                     size = layer.get("size").asLong()
                     totalSize += size
                     digest = layer.get("digest").asText()
