@@ -22,8 +22,7 @@ interface UserRepositoryResource {
     @ApiOperation("创建仓库")
     @PostMapping
     fun create(
-        @RequestAttribute
-        userId: String,
+        @RequestAttribute userId: String,
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest
     ): Response<Void>
 }

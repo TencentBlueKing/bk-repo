@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.common.artifact.auth
 
+import com.tencent.bkrepo.common.artifact.config.ANONYMOUS_USER
 import com.tencent.bkrepo.common.artifact.config.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.config.REPO_NAME
+import com.tencent.bkrepo.common.artifact.config.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.common.artifact.resolve.ArtifactInfoMethodArgumentResolver
 import org.slf4j.LoggerFactory
@@ -39,8 +41,11 @@ class ClientAuthInterceptor: HandlerInterceptorAdapter() {
                 clientAuthHandler.onAuthenticateFailed(request, response)
                 false
             }
-        } else true
-
+        } else {
+            logger.debug("Skip authentication, set userId to anonymous.")
+            request.setAttribute(USER_KEY, ANONYMOUS_USER)
+            true
+        }
     }
 
     companion object {

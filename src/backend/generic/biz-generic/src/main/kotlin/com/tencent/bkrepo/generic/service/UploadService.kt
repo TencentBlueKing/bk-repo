@@ -317,7 +317,7 @@ class UploadService @Autowired constructor(
         }
     }
 
-    fun queryBlockInfo(userId: String, uploadId: String): List<BlockInfo> {
+    fun getUploadedBlockList(userId: String, uploadId: String): List<BlockInfo> {
         // 判断uploadId是否存在
         val uploadTransaction = uploadTransactionRepository.findByIdOrNull(uploadId) ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, uploadId)
         // 鉴权

@@ -119,7 +119,7 @@ class DownloadService @Autowired constructor(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    fun queryBlockInfo(userId: String, artifactInfo: ArtifactInfo): List<BlockInfo> {
+    fun getBlockList(userId: String, artifactInfo: ArtifactInfo): List<BlockInfo> {
         artifactInfo.run {
             // 查询节点
             val node = nodeResource.queryDetail(projectId, repoName, artifactInfo.coordinate.fullPath).data ?: run {
