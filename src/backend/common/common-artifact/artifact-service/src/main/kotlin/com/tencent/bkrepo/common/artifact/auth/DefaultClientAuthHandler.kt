@@ -60,7 +60,7 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
             return userId
         }
         val credentials = extractBasicAuth(request)
-        logger.debug("Extract credentials from header: [$credentials]")
+        logger.debug("Extract userId from header: [${credentials.username}]")
         // TODO: auth 进行认证
         return credentials.username
     }
