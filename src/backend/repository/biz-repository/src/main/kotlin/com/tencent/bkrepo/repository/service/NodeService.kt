@@ -48,6 +48,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.format.DateTimeFormatter
 
 /**
  * 节点service
@@ -494,9 +495,9 @@ class NodeService @Autowired constructor(
             return tNode?.let {
                 NodeInfo(
                     createdBy = it.createdBy,
-                    createdDate = it.createdDate,
+                    createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate,
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     folder = it.folder,
                     path = it.path,
                     name = it.name,
