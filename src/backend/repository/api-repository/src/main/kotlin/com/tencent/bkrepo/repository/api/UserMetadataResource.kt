@@ -27,31 +27,23 @@ interface UserMetadataResource {
     @ApiOperation("查询元数据列表")
     @GetMapping(ARTIFACT_COORDINATE_URI)
     fun query(
-        @RequestAttribute
-        userId: String,
-        @ArtifactPathVariable
-        artifactInfo: ArtifactInfo
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<Map<String, String>>
 
     @ApiOperation("创建/更新元数据列表")
     @PostMapping(ARTIFACT_COORDINATE_URI)
     fun save(
-        @RequestAttribute
-        userId: String,
-        @ArtifactPathVariable
-        artifactInfo: ArtifactInfo,
-        @RequestBody
-        metadataSaveRequest: UserMetadataSaveRequest
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @RequestBody metadataSaveRequest: UserMetadataSaveRequest
     ): Response<Void>
 
     @ApiOperation("删除元数据")
     @DeleteMapping(ARTIFACT_COORDINATE_URI)
     fun delete(
-        @RequestAttribute
-        userId: String,
-        @ArtifactPathVariable
-        artifactInfo: ArtifactInfo,
-        @RequestBody
-        metadataDeleteRequest: UserMetadataDeleteRequest
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @RequestBody metadataDeleteRequest: UserMetadataDeleteRequest
     ): Response<Void>
 }

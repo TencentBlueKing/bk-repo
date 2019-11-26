@@ -4,7 +4,6 @@ import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthInterceptor
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.auth.DefaultClientAuthHandler
-import com.tencent.bkrepo.common.artifact.config.DefaultArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.permission.DefaultPermissionCheckHandler
 import com.tencent.bkrepo.common.artifact.permission.PermissionAspect
 import com.tencent.bkrepo.common.artifact.permission.PermissionCheckHandler
@@ -48,7 +47,7 @@ class ArtifactAutoConfiguration {
             }
 
             override fun addInterceptors(registry: InterceptorRegistry) {
-                val clientAuthConfig = artifactConfiguration.clientAuthConfig
+                val clientAuthConfig = artifactConfiguration.getClientAuthConfig()
                 registry.addInterceptor(clientAuthInterceptor())
                     .addPathPatterns(clientAuthConfig.pathPatterns)
                     .excludePathPatterns(clientAuthConfig.excludePatterns)
@@ -74,8 +73,4 @@ class ArtifactAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(PermissionCheckHandler::class)
     fun permissionCheckHandler() : PermissionCheckHandler = DefaultPermissionCheckHandler()
-
-    @Bean
-    @ConditionalOnMissingBean(ArtifactConfiguration::class)
-    fun artifactConfiguration() : ArtifactConfiguration = DefaultArtifactConfiguration()
 }

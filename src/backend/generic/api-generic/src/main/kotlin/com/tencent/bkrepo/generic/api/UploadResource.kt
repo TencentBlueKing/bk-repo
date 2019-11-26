@@ -26,11 +26,11 @@ import org.springframework.web.bind.annotation.RequestMapping
  * @date: 2019-09-27
  */
 @Api("上传接口")
-@RequestMapping("/upload")
+@RequestMapping
 interface UploadResource {
 
     @ApiOperation("简单上传")
-    @PutMapping("/simple/$ARTIFACT_COORDINATE_URI")
+    @PutMapping(ARTIFACT_COORDINATE_URI)
     fun simpleUpload(
         @RequestAttribute
         userId: String,
@@ -84,12 +84,13 @@ interface UploadResource {
     ): Response<Void>
 
     @ApiOperation("查询上传分块")
-    @GetMapping("/info/{uploadId}")
-    fun queryBlockInfo(
+    @GetMapping("/block/{uploadId}")
+    fun getUploadedBlockList(
         @RequestAttribute
         userId: String,
         @ApiParam("上传事物id", required = true)
         @PathVariable
         uploadId: String
     ): Response<List<BlockInfo>>
+
 }

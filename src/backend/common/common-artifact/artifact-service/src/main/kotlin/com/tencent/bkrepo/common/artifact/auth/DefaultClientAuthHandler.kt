@@ -36,9 +36,10 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
 
     override fun needAuthenticate(uri: String, projectId: String?, repoName: String?): Boolean {
         if(projectId.isNullOrEmpty() || repoName.isNullOrEmpty()) {
-            return false
+            logger.debug("Can not extract projectId or repoName")
+            return true
         }
-        val typeName = artifactConfiguration.repositoryType.name
+        val typeName = artifactConfiguration.getRepositoryType()?.name ?: ""
         val response = repositoryResource.queryDetail(projectId, repoName, typeName)
         if(response.isNotOk()) {
             logger.warn("Query repository detail failed: [$response]")
