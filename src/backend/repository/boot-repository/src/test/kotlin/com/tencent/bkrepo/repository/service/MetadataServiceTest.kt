@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
+import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -41,7 +41,7 @@ class MetadataServiceTest @Autowired constructor(
                 projectId = projectId,
                 name = repoName,
                 type = "GENERIC",
-                category = RepositoryCategoryEnum.LOCAL,
+                category = RepositoryCategory.LOCAL,
                 public = true,
                 description = "简单描述",
                 operator = operator

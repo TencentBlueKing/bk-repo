@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
+import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import org.junit.jupiter.api.AfterEach
@@ -96,7 +96,7 @@ internal class RepositoryServiceTest @Autowired constructor(
         val repository = repositoryService.queryDetail(projectId, repoName, "GENERIC")!!
         assertEquals(repoName, repository.name)
         assertEquals("GENERIC", repository.type)
-        assertEquals(RepositoryCategoryEnum.LOCAL, repository.category)
+        assertEquals(RepositoryCategory.LOCAL, repository.category)
         assertEquals(true, repository.public)
         assertEquals(projectId, repository.projectId)
         assertEquals("简单描述", repository.description)
@@ -110,12 +110,12 @@ internal class RepositoryServiceTest @Autowired constructor(
         repositoryService.update(RepoUpdateRequest(
                 projectId = projectId,
                 name = repoName,
-                category = RepositoryCategoryEnum.REMOTE,
+                category = RepositoryCategory.REMOTE,
                 public = false,
                 description = "新的描述",
                 operator = operator))
         val repository = repositoryService.queryDetail(projectId, repoName)!!
-        assertEquals(RepositoryCategoryEnum.REMOTE, repository.category)
+        assertEquals(RepositoryCategory.REMOTE, repository.category)
         assertEquals(false, repository.public)
         assertEquals("新的描述", repository.description)
     }
@@ -138,7 +138,7 @@ internal class RepositoryServiceTest @Autowired constructor(
                 projectId = projectId,
                 name = name,
                 type = "GENERIC",
-                category = RepositoryCategoryEnum.LOCAL,
+                category = RepositoryCategory.LOCAL,
                 public = true,
                 description = "简单描述",
                 operator = operator

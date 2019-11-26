@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.repo
 
-import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
+import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -18,7 +18,7 @@ data class Repository(
     @ApiModelProperty("仓库类型")
     val type: String,
     @ApiModelProperty("仓库类别")
-    val category: RepositoryCategoryEnum,
+    val category: RepositoryCategory,
     @ApiModelProperty("是否公开")
     val public: Boolean,
     @ApiModelProperty("简要描述")
