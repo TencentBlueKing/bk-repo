@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.Repository
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -39,7 +39,7 @@ interface RepositoryResource {
         @PathVariable name: String,
         @ApiParam(value = "仓库类型", required = true)
         @PathVariable type: String
-    ): Response<Repository?>
+    ): Response<RepositoryInfo?>
 
     @ApiOperation("根据名称查询仓库")
     @GetMapping("/query/{projectId}/{name}")
@@ -48,14 +48,14 @@ interface RepositoryResource {
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable name: String
-    ): Response<Repository?>
+    ): Response<RepositoryInfo?>
 
     @ApiOperation("列表查询项目所有仓库")
     @GetMapping("/list/{projectId}")
     fun list(
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String
-    ): Response<List<Repository>>
+    ): Response<List<RepositoryInfo>>
 
     @ApiOperation("分页查询项目所有仓库")
     @GetMapping("/page/{page}/{size}/{projectId}")
@@ -66,7 +66,7 @@ interface RepositoryResource {
         @PathVariable size: Int,
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String
-    ): Response<Page<Repository>>
+    ): Response<Page<RepositoryInfo>>
 
     @ApiOperation("创建仓库")
     @PostMapping

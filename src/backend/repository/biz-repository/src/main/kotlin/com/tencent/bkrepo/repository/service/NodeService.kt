@@ -6,8 +6,8 @@ import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXI
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.repository.constant.RepositoryMessageCode
-import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.FOLDER_CANNOT_BE_MODIFIED
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.FOLDER_CANNOT_BE_MODIFIED
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
@@ -82,7 +82,7 @@ class NodeService @Autowired constructor(
 
         val formattedFullPath = formatFullPath(fullPath)
         val node = queryNode(projectId, repoName, formattedFullPath)
-                ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, formattedFullPath)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, formattedFullPath)
         // 节点为文件直接返回
         if (!node.folder) {
             return NodeSizeInfo(subNodeCount = 0, size = node.size)
@@ -220,7 +220,7 @@ class NodeService @Autowired constructor(
         val newFullPath = formatFullPath(renameRequest.newFullPath)
 
         repositoryService.checkRepository(projectId, repoName)
-        val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, fullPath)
+        val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
         doRename(node, newFullPath, renameRequest.operator)
 
         logger.info("Rename node [$renameRequest] success.")
@@ -385,7 +385,7 @@ class NodeService @Autowired constructor(
         repositoryService.checkRepository(srcProjectId, srcRepoName)
         repositoryService.checkRepository(destProjectId, destRepoName)
 
-        val node = queryNode(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(RepositoryMessageCode.NODE_NOT_FOUND, srcFullPath)
+        val node = queryNode(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, srcFullPath)
 
         // 确保目的目录是否存在
         val destPathNode = queryNode(destProjectId, destRepoName, destPath)

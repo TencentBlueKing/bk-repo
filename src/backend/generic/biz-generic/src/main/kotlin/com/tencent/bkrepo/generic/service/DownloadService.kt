@@ -5,6 +5,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.FileStorage
@@ -51,13 +52,13 @@ class DownloadService @Autowired constructor(
         // 查询repository
         val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
             logger.warn("User[$userId] simply download file [${artifactInfo.getUri()}] failed: $repoName not found")
-            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
+            throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
         }
 
         // 查询节点
         val node = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
             logger.warn("User[$userId] simply download file [${artifactInfo.getUri()}] failed: $fullPath not found")
-            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
+            throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
         }
 
         // 如果为目录

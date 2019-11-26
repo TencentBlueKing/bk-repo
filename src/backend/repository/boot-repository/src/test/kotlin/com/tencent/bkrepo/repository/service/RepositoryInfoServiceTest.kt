@@ -25,7 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest
  */
 @DisplayName("仓库服务测试")
 @SpringBootTest
-internal class RepositoryServiceTest @Autowired constructor(
+internal class RepositoryInfoServiceTest @Autowired constructor(
     private val repositoryService: RepositoryService
 ) {
 

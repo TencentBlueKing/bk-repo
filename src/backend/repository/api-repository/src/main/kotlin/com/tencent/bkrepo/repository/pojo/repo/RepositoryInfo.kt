@@ -10,9 +10,7 @@ import io.swagger.annotations.ApiModelProperty
  * @date: 2019-09-10
  */
 @ApiModel("仓库信息")
-data class Repository(
-    @ApiModelProperty("仓库id")
-    val id: String,
+data class RepositoryInfo(
     @ApiModelProperty("仓库名称")
     val name: String,
     @ApiModelProperty("仓库类型")

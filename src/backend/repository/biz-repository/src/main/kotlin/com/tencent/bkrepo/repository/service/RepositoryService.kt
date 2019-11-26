@@ -4,13 +4,13 @@ import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXI
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.REPOSITORY_NOT_FOUND
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.Repository
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.StorageCredentials
 import com.tencent.bkrepo.repository.repository.RepoRepository
 import java.time.LocalDateTime
@@ -47,17 +47,17 @@ class RepositoryService @Autowired constructor(
         return mongoTemplate.findOne(Query(criteria), TRepository::class.java)
     }
 
-    fun queryDetail(projectId: String, name: String, type: String? = null): Repository? {
+    fun queryDetail(projectId: String, name: String, type: String? = null): RepositoryInfo? {
         return convert(queryModel(projectId, name, type))
     }
 
-    fun list(projectId: String): List<Repository> {
+    fun list(projectId: String): List<RepositoryInfo> {
         val query = createListQuery(projectId)
 
         return mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
     }
 
-    fun page(projectId: String, page: Int, size: Int): Page<Repository> {
+    fun page(projectId: String, page: Int, size: Int): Page<RepositoryInfo> {
         val query = createListQuery(projectId).with(PageRequest.of(page, size))
         val data = mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
         val count = mongoTemplate.count(query, TRepository::class.java)
@@ -156,18 +156,17 @@ class RepositoryService @Autowired constructor(
     companion object {
         private val logger = LoggerFactory.getLogger(RepositoryService::class.java)
 
-        private fun convert(tRepository: TRepository?): Repository? {
+        private fun convert(tRepository: TRepository?): RepositoryInfo? {
             return tRepository?.let {
-                Repository(
-                        id = it.id!!,
-                        name = it.name,
-                        type = it.type,
-                        category = it.category,
-                        public = it.public,
-                        description = it.description,
-                        extension = it.extension,
-                        storageCredentials = convert(it.storageCredentials),
-                        projectId = it.projectId
+                RepositoryInfo(
+                    name = it.name,
+                    type = it.type,
+                    category = it.category,
+                    public = it.public,
+                    description = it.description,
+                    extension = it.extension,
+                    storageCredentials = convert(it.storageCredentials),
+                    projectId = it.projectId
                 )
             }
         }
