@@ -4,7 +4,7 @@ import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.locator.ArtifactLocation
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.repository.api.UserMetadataResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -26,20 +26,20 @@ class UserMetadataResourceImpl @Autowired constructor(
     private val permissionService: PermissionService,
     private val metadataService: MetadataService
 ) : UserMetadataResource {
-    override fun query(userId: String, artifactLocation: ArtifactLocation): Response<Map<String, String>> {
-        artifactLocation.run {
+    override fun query(userId: String, artifactInfo: ArtifactInfo): Response<Map<String, String>> {
+        artifactInfo.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-            return Response.success(metadataService.query(projectId, repoName, fullPath))
+            return Response.success(metadataService.query(projectId, repoName, this.coordinate.fullPath))
         }
     }
 
-    override fun save(userId: String, artifactLocation: ArtifactLocation, metadataSaveRequest: UserMetadataSaveRequest): Response<Void> {
-        artifactLocation.run {
+    override fun save(userId: String, artifactInfo: ArtifactInfo, metadataSaveRequest: UserMetadataSaveRequest): Response<Void> {
+        artifactInfo.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
             val request = MetadataSaveRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = fullPath,
+                fullPath = this.coordinate.fullPath,
                 metadata = metadataSaveRequest.metadata
             )
             metadataService.save(request)
@@ -47,13 +47,13 @@ class UserMetadataResourceImpl @Autowired constructor(
         }
     }
 
-    override fun delete(userId: String, artifactLocation: ArtifactLocation, metadataDeleteRequest: UserMetadataDeleteRequest): Response<Void> {
-        artifactLocation.run {
+    override fun delete(userId: String, artifactInfo: ArtifactInfo, metadataDeleteRequest: UserMetadataDeleteRequest): Response<Void> {
+        artifactInfo.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
             val request = MetadataDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = fullPath,
+                fullPath = this.coordinate.fullPath,
                 keyList = metadataDeleteRequest.keyList
             )
             metadataService.delete(request)

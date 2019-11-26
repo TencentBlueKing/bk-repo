@@ -7,7 +7,7 @@ import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.locator.ArtifactLocation
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.api.UserNodeResource
@@ -39,23 +39,23 @@ class UserNodeResourceImpl @Autowired constructor(
     private val permissionService: PermissionService
 ) : UserNodeResource {
 
-    override fun detail(userId: String, artifactLocation: ArtifactLocation): Response<NodeDetail?> {
-        artifactLocation.run {
+    override fun detail(userId: String, artifactInfo: ArtifactInfo): Response<NodeDetail?> {
+        artifactInfo.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-            val nodeDetail = nodeService.detail(projectId, repoName, fullPath) ?: throw ErrorCodeException(
-                CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
+            val nodeDetail = nodeService.detail(projectId, repoName, this.coordinate.fullPath) ?: throw ErrorCodeException(
+                CommonMessageCode.ELEMENT_NOT_FOUND, this.coordinate.fullPath)
             return Response.success(nodeDetail)
         }
     }
 
-    override fun mkdir(userId: String, artifactLocation: ArtifactLocation): Response<Void> {
-        artifactLocation.run {
+    override fun mkdir(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
+        artifactInfo.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             val createRequest = NodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
                 folder = true,
-                fullPath = fullPath,
+                fullPath = this.coordinate.fullPath,
                 overwrite = false,
                 operator = userId
             )
@@ -64,13 +64,13 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
-    override fun delete(userId: String, artifactLocation: ArtifactLocation): Response<Void> {
-        artifactLocation.run {
+    override fun delete(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
+        artifactInfo.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
             val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = fullPath,
+                fullPath = this.coordinate.fullPath,
                 operator = userId
             )
             nodeService.delete(deleteRequest)
@@ -131,10 +131,10 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
-    override fun computeSize(userId: String, artifactLocation: ArtifactLocation): Response<NodeSizeInfo> {
-        artifactLocation.run {
+    override fun computeSize(userId: String, artifactInfo: ArtifactInfo): Response<NodeSizeInfo> {
+        artifactInfo.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-            val nodeSizeInfo = nodeService.computeSize(projectId, repoName, fullPath)
+            val nodeSizeInfo = nodeService.computeSize(projectId, repoName, this.coordinate.fullPath)
             return Response.success(nodeSizeInfo)
         }
     }

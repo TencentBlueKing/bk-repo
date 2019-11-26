@@ -80,7 +80,7 @@ class IntegrationTest {
         val request = Request.Builder().url("http://127.0.0.1:8001/upload/simple/test/test/root/opencv.zip")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                 .header(HEADER_OVERWRITE, "true")
-                .post(RequestBody.create(MediaType.parse("application/octet-stream"), file))
+                .put(RequestBody.create(MediaType.parse("application/octet-stream"), file))
                 .build()
         checkResponse(client.newCall(request).execute(), object: TypeReference<Response<Void>>(){})
 
