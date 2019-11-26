@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.artifact.permission
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.config.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.config.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
 import org.aspectj.lang.ProceedingJoinPoint
@@ -40,6 +41,7 @@ class PermissionAspect {
             artifactInfo = findArtifactInfo(point.args) ?: throw PermissionCheckException("Can not find ArtifactInfo argument.")
             permissionCheckHandler.onPermissionCheck(userId, permission, artifactInfo)
             logger.debug("User[$userId] check permission [$permission] on [$artifactInfo] success.")
+            request.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
             permissionCheckHandler.onPermissionCheckSuccess(request, response)
         } catch (exception: PermissionCheckException) {
             logger.debug("User[$userId] check permission [$permission] on [$artifactInfo] failed: $exception")

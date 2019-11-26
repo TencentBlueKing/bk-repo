@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.artifact.repository.configuration.LocalConfiguration
 import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -44,6 +45,7 @@ class MetadataServiceTest @Autowired constructor(
                 category = RepositoryCategory.LOCAL,
                 public = true,
                 description = "简单描述",
+                configuration = LocalConfiguration(),
                 operator = operator
             )
         )

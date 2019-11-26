@@ -22,7 +22,7 @@ data class RepositoryInfo(
     @ApiModelProperty("简要描述")
     val description: String?,
     @ApiModelProperty("扩展信息")
-    val extension: Any?,
+    val configuration: RepositoryConfiguration,
     @ApiModelProperty("存储身份信息")
     var storageCredentials: StorageCredentials? = null,
 

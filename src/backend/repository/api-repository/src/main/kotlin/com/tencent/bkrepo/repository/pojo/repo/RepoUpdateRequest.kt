@@ -23,7 +23,7 @@ data class RepoUpdateRequest(
     @ApiModelProperty("简要描述", required = false)
     val description: String? = null,
     @ApiModelProperty("扩展信息", required = false)
-    val extension: Any? = null,
+    val configuration: RepositoryConfiguration? = null,
 
     @ApiModelProperty("操作用户", required = true)
     val operator: String

@@ -1,15 +1,22 @@
 package com.tencent.bkrepo.repository.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXIST
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.REPOSITORY_NOT_FOUND
+import com.tencent.bkrepo.common.artifact.repository.configuration.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.repository.configuration.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.repository.configuration.VirtualConfiguration
+import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryConfiguration
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.StorageCredentials
 import com.tencent.bkrepo.repository.repository.RepoRepository
@@ -34,9 +41,10 @@ import org.springframework.transaction.annotation.Transactional
 class RepositoryService @Autowired constructor(
     private val repoRepository: RepoRepository,
     private val nodeDao: NodeDao,
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
+    private val objectMapper: ObjectMapper
 ) {
-    private fun queryModel(projectId: String, name: String, type: String? = null): TRepository? {
+    private fun queryRepository(projectId: String, name: String, type: String? = null): TRepository? {
         if (projectId.isBlank() || name.isBlank()) return null
 
         val criteria = Criteria.where("projectId").`is`(projectId).and("name").`is`(name)
@@ -47,8 +55,8 @@ class RepositoryService @Autowired constructor(
         return mongoTemplate.findOne(Query(criteria), TRepository::class.java)
     }
 
-    fun queryDetail(projectId: String, name: String, type: String? = null): RepositoryInfo? {
-        return convert(queryModel(projectId, name, type))
+    fun detail(projectId: String, name: String, type: String? = null): RepositoryInfo? {
+        return convert(queryRepository(projectId, name, type))
     }
 
     fun list(projectId: String): List<RepositoryInfo> {
@@ -86,7 +94,7 @@ class RepositoryService @Autowired constructor(
                 category = it.category,
                 public = it.public,
                 description = it.description,
-                extension = it.extension,
+                configuration = objectMapper.writeValueAsString(it.configuration),
                 storageCredentials = it.storageCredentials?.let { item -> TStorageCredentials(item.type, item.credentials) },
                 projectId = it.projectId,
 
@@ -106,12 +114,12 @@ class RepositoryService @Autowired constructor(
     fun update(repoUpdateRequest: RepoUpdateRequest) {
         val projectId = repoUpdateRequest.projectId
         val name = repoUpdateRequest.name
-        val repository = queryModel(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
+        val repository = queryRepository(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
 
         with(repoUpdateRequest) {
             category?.let { repository.category = it }
             public?.let { repository.public = it }
-            extension?.let { repository.extension = it }
+            configuration?.let { repository.configuration = objectMapper.writeValueAsString(configuration) }
             description?.let { repository.description = it }
             repository.lastModifiedBy = repoUpdateRequest.operator
             repository.lastModifiedDate = LocalDateTime.now()
@@ -125,7 +133,7 @@ class RepositoryService @Autowired constructor(
      * 用于测试的函数，不对外提供
      */
     fun delete(projectId: String, name: String) {
-        val repository = queryModel(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
+        val repository = queryRepository(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
 
         repoRepository.deleteById(repository.id!!)
         nodeDao.remove(Query(Criteria
@@ -164,7 +172,7 @@ class RepositoryService @Autowired constructor(
                     category = it.category,
                     public = it.public,
                     description = it.description,
-                    extension = it.extension,
+                    configuration = convert(it.category, it.configuration),
                     storageCredentials = convert(it.storageCredentials),
                     projectId = it.projectId
                 )
@@ -176,5 +184,14 @@ class RepositoryService @Autowired constructor(
                 StorageCredentials(type = it.type, credentials = it.credentials)
             }
         }
+
+        private fun convert(category: RepositoryCategory, extension: String): RepositoryConfiguration {
+            return when (category) {
+                RepositoryCategory.LOCAL -> JsonUtils.objectMapper.readValue(extension, LocalConfiguration::class.java)
+                RepositoryCategory.REMOTE -> JsonUtils.objectMapper.readValue(extension, RemoteConfiguration::class.java)
+                RepositoryCategory.VIRTUAL -> JsonUtils.objectMapper.readValue(extension, VirtualConfiguration::class.java)
+            }
+        }
+
     }
 }
