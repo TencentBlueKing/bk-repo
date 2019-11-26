@@ -3,15 +3,15 @@ package com.tencent.bkrepo.common.artifact.config
 /**
  * 认证成功后username写入request attributes的key
  */
-const val USER_KEY = "artifact.userId"
+const val USER_KEY = "userId"
 /**
  * 查询仓库后将仓库写入request attributes的key
  */
-const val REPO_KEY = "artifact.repo"
+const val REPO_KEY = "repository"
 /**
  * 解析构件信息后写入request attributes的key
  */
-const val ARTIFACT_INFO_KEY = "artifact.info"
+const val ARTIFACT_INFO_KEY = "artifact"
 /**
  * 项目id字段
  */
