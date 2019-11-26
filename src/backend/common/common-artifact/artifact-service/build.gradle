@@ -2,6 +2,7 @@ dependencies {
     implementation project(":common:common-api")
     implementation project(":common:common-auth")
     implementation project(":repository:api-repository")
+    implementation project(":auth:api-auth")
     api project(":common:common-artifact:artifact-api")
 
     implementation "javax.servlet:javax.servlet-api"
