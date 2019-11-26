@@ -1,4 +1,3 @@
 dependencies {
     implementation "commons-io:commons-io"
-    api project(":auth:api-auth")
 }
