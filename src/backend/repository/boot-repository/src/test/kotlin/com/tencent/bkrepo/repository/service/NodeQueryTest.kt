@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
+import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.service.query.NodeQueryService
@@ -46,7 +46,7 @@ internal class NodeQueryTest @Autowired constructor(
                 projectId = projectId,
                 name = repoName,
                 type = "GENERIC",
-                category = RepositoryCategoryEnum.LOCAL,
+                category = RepositoryCategory.LOCAL,
                 public = true,
                 description = "简单描述",
                 operator = operator
