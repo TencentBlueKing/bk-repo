@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.io.FileOutputStream
 
 @Service
 class DockerArtifactoryService @Autowired constructor(
@@ -56,14 +57,16 @@ class DockerArtifactoryService @Autowired constructor(
 
         val filePath = "$localPath/$projectId/$repoName/$dockerRepo/"
         var fullPath = "/$localPath/$projectId/$repoName/$dockerRepo/$name"
-
         File(filePath).mkdirs()
         val file = File(fullPath)
         if (!file.exists()) {
             file.createNewFile()
-            file.writeBytes(inputStream.readBytes())
-        } else {
-            file.appendBytes(inputStream.readBytes())
+        }
+        val outputStream = FileOutputStream(file, true)
+        inputStream.use { input ->
+            outputStream.use { output ->
+                input.copyTo(output)
+            }
         }
         return ResponseEntity.ok().body("ok")
     }

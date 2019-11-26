@@ -126,8 +126,8 @@ class DockerV2LocalRepoHandler @Autowired constructor(
             if (manifest == null) {
                 return DockerV2Errors.manifestUnknown(manifestPath)
             } else {
-                val artifact = Artifact(projectId,repoName,manifestPath).sha256(manifest.nodeInfo.sha256!!)
-                return this.buildManifestResponse(projectId, repoName, manifestPath, DockerDigest("sh256:${manifest.nodeInfo.sha256}"),artifact)
+                val artifact = Artifact(projectId, repoName, manifestPath).sha256(manifest.nodeInfo.sha256!!)
+                return this.buildManifestResponse(projectId, repoName, manifestPath, DockerDigest("sh256:${manifest.nodeInfo.sha256}"), artifact)
             }
         }
         return DockerV2Errors.manifestUnknown(manifestPath)
@@ -155,10 +155,13 @@ class DockerV2LocalRepoHandler @Autowired constructor(
         var context = DownloadContext(projectId, repoName, dockerRepo).projectId(projectId).repoName(repoName).sha256(digest.getDigestHex())
         var file = this.repo.download(context)
         val inputStreamResource = InputStreamResource(file.inputStream())
-        httpHeaders.contentLength = file.length()
         httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
         httpHeaders.set("Docker-Content-Digest", digest.toString())
-        httpHeaders.set("Content-Type", DockerSchemaUtils.getManifestType(projectId,repoName, dockerRepo, this.repo))
+        httpHeaders.set("Content-Type", DockerSchemaUtils.getManifestType(projectId, repoName, dockerRepo, this.repo))
+        return ResponseEntity.ok()
+                .headers(httpHeaders)
+                .contentLength(file.length())
+                .body(inputStreamResource)
         return ResponseEntity(inputStreamResource, httpHeaders, HttpStatus.OK)
     }
 
@@ -376,7 +379,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
     }
 
     override fun isBlobExists(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest): ResponseEntity<Any> {
-        log.info("is blob exist upload {}, {},{},{}", projectId,repoName, dockerRepo, digest.getDigestHex())
+        log.info("is blob exist upload {}, {},{},{}", projectId, repoName, dockerRepo, digest.getDigestHex())
         if (DockerSchemaUtils.isEmptyBlob(digest)) {
             log.debug("Request for empty layer for image {}, returning dummy HEAD response.", dockerRepo)
             return DockerSchemaUtils.emptyBlobHeadResponse()
@@ -404,11 +407,14 @@ class DockerV2LocalRepoHandler @Autowired constructor(
             if (blob != null) {
                 var context = DownloadContext(projectId, repoName, dockerRepo).projectId(projectId).repoName(repoName).sha256(digest.getDigestHex())
                 var file = this.repo.download(context)
-                val inputStreamResource = InputStreamResource(file.inputStream())
-                httpHeaders.contentLength = file.length()
                 httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
                 httpHeaders.set("Docker-Content-Digest", digest.toString())
-                return ResponseEntity(inputStreamResource, httpHeaders, HttpStatus.OK)
+                val resource = InputStreamResource(file.inputStream());
+                return ResponseEntity.ok()
+                        .headers(httpHeaders)
+                        .contentLength(file.length())
+                        .contentType(MediaType.parseMediaType("application/octet-stream"))
+                        .body(resource)
             } else {
                 return DockerV2Errors.blobUnknown(digest.toString())
             }
@@ -416,7 +422,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
     }
 
     private fun getRepoBlob(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest): Artifact? {
-        val result = this.repo.findArtifacts(projectId,repoName, digest.filename())
+        val result = this.repo.findArtifacts(projectId, repoName, digest.filename())
         if (result.size == 0) {
             return null
         }
@@ -559,7 +565,7 @@ class DockerV2LocalRepoHandler @Autowired constructor(
                 }
             }
 
-            log.warn("Error uploading blob '{}' got status '{}' and message: '{}'", *arrayOf<Any>(blobPath, response.statusCode, response.toString()))
+            log.warn("Error uploading blob '{}' got status '{}' and message: '{}'", blobPath, response.statusCode, response.toString())
             return DockerV2Errors.blobUploadInvalid(response.toString())
         }
     }
