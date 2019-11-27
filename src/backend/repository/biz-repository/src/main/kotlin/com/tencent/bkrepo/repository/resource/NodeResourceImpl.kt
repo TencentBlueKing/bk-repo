@@ -3,17 +3,19 @@ package com.tencent.bkrepo.repository.resource
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.api.NodeResource
-import com.tencent.bkrepo.repository.pojo.node.NodeCopyRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.service.NodeService
+import com.tencent.bkrepo.repository.service.query.NodeQueryService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
@@ -25,14 +27,16 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class NodeResourceImpl @Autowired constructor(
-    private val nodeService: NodeService
+    private val nodeService: NodeService,
+    private val nodeQueryService: NodeQueryService
 ) : NodeResource {
+
     override fun queryDetail(projectId: String, repoName: String, repoType: String, fullPath: String): Response<NodeDetail?> {
-        return Response.success(nodeService.queryDetail(projectId, repoName, fullPath, repoType))
+        return Response.success(nodeService.detail(projectId, repoName, fullPath, repoType))
     }
 
     override fun queryDetail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
-        return Response.success(nodeService.queryDetail(projectId, repoName, fullPath))
+        return Response.success(nodeService.detail(projectId, repoName, fullPath))
     }
 
     override fun exist(projectId: String, repoName: String, fullPath: String): Response<Boolean> {
@@ -76,6 +80,10 @@ class NodeResourceImpl @Autowired constructor(
     }
 
     override fun getSize(projectId: String, repoName: String, fullPath: String): Response<NodeSizeInfo> {
-        return Response.success(nodeService.getSize(projectId, repoName, fullPath))
+        return Response.success(nodeService.computeSize(projectId, repoName, fullPath))
+    }
+
+    override fun query(queryModel: QueryModel): Response<Page<Map<String, Any>>> {
+        return Response.success(nodeQueryService.query(queryModel))
     }
 }

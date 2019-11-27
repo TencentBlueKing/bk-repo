@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.metadata
 
-import com.tencent.bkrepo.repository.pojo.node.BaseNodeRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -21,4 +21,4 @@ data class MetadataDeleteRequest(
     @ApiModelProperty("待删除的元数据key列表", required = true)
     val keyList: Set<String>
 
-) : BaseNodeRequest()
+) : NodeRequest

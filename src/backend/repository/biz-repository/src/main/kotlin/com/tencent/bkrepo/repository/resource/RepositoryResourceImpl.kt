@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.Repository
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.RepositoryService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -21,19 +21,19 @@ import org.springframework.web.bind.annotation.RestController
 class RepositoryResourceImpl @Autowired constructor(
     private val repositoryService: RepositoryService
 ) : RepositoryResource {
-    override fun queryDetail(projectId: String, name: String): Response<Repository?> {
-        return Response.success(repositoryService.queryDetail(projectId, name))
+    override fun detail(projectId: String, name: String): Response<RepositoryInfo?> {
+        return Response.success(repositoryService.detail(projectId, name))
     }
 
-    override fun queryDetail(projectId: String, name: String, type: String): Response<Repository?> {
-        return Response.success(repositoryService.queryDetail(projectId, name, type))
+    override fun detail(projectId: String, name: String, type: String): Response<RepositoryInfo?> {
+        return Response.success(repositoryService.detail(projectId, name, type))
     }
 
-    override fun list(projectId: String): Response<List<Repository>> {
+    override fun list(projectId: String): Response<List<RepositoryInfo>> {
         return Response.success(repositoryService.list(projectId))
     }
 
-    override fun page(page: Int, size: Int, projectId: String): Response<Page<Repository>> {
+    override fun page(page: Int, size: Int, projectId: String): Response<Page<RepositoryInfo>> {
         return Response.success(repositoryService.page(projectId, page, size))
     }
 

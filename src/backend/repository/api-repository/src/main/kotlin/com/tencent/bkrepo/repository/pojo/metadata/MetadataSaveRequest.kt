@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.metadata
 
-import com.tencent.bkrepo.repository.pojo.node.BaseNodeRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -21,4 +21,4 @@ data class MetadataSaveRequest(
     @ApiModelProperty("元数据key-value数据", required = true)
     val metadata: Map<String, String>
 
-) : BaseNodeRequest()
+) : NodeRequest

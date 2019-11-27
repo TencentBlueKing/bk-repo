@@ -1,11 +1,13 @@
 package com.tencent.bkrepo.generic.service
 
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.auth.PermissionService
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.permission.Permission
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
 import com.tencent.bkrepo.generic.constant.CONTENT_DISPOSITION_TEMPLATE
@@ -17,16 +19,16 @@ import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.util.NodeUtils
-import java.io.BufferedOutputStream
-import java.io.File
-import java.io.RandomAccessFile
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.io.BufferedOutputStream
+import java.io.File
+import java.io.RandomAccessFile
+import javax.servlet.http.HttpServletResponse
 
 /**
  * 通用文件下载服务类
@@ -36,62 +38,66 @@ import org.springframework.stereotype.Service
  */
 @Service
 class DownloadService @Autowired constructor(
-    private val permissionService: PermissionService,
     private val repositoryResource: RepositoryResource,
     private val nodeResource: NodeResource,
     private val fileStorage: FileStorage
-
 ) {
-    fun simpleDownload(userId: String, projectId: String, repoName: String, fullPath: String, request: HttpServletRequest, response: HttpServletResponse) {
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+    //@Permission(ResourceType.REPO, PermissionAction.READ)
+    @Transactional(rollbackFor = [Throwable::class])
+    fun simpleDownload(userId: String, artifactInfo: ArtifactInfo) {
+        val projectId = artifactInfo.projectId
+        val repoName = artifactInfo.repoName
+        val fullPath = artifactInfo.coordinate.fullPath
 
-        val fullUri = "$projectId/$repoName/$fullPath"
         // 查询repository
-        val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId] simply download file  [$fullUri] failed: $repoName not found")
-            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
+        val repository = repositoryResource.detail(projectId, repoName, REPO_TYPE).data ?: run {
+            logger.warn("User[$userId] simply download file [${artifactInfo.getUri()}] failed: $repoName not found")
+            throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
         }
 
         // 查询节点
         val node = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
-            logger.warn("user[$userId] simply download file [$fullUri] failed: $fullPath not found")
-            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
+            logger.warn("User[$userId] simply download file [${artifactInfo.getUri()}] failed: $fullPath not found")
+            throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
         }
 
         // 如果为目录
         if (node.nodeInfo.folder) {
-            logger.warn("user[$userId] simply download file [$fullUri] failed: $fullPath not found")
+            logger.warn("User[$userId] simply download file [${artifactInfo.getUri()}] failed: $fullPath is a directory")
             throw ErrorCodeException(GenericMessageCode.DOWNLOAD_FOLDER_FORBIDDEN)
         }
 
         // 如果为分块文件
         if (node.isBlockFile()) {
-            logger.warn("user[$userId] simply download file [$fullUri] failed: $fullPath is a block file")
+            logger.warn("User[$userId] simply download file [${artifactInfo.getUri()}] failed: $fullPath is a block file")
             throw ErrorCodeException(GenericMessageCode.DOWNLOAD_BLOCK_FORBIDDEN)
         }
 
         // fileStorage
         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
         val file = fileStorage.load(node.nodeInfo.sha256!!, storageCredentials) ?: run {
-            logger.warn("user[$userId] simply download file [$fullUri] failed: file data not found")
+            logger.warn("User[$userId] simply download file [${artifactInfo.getUri()}] failed: file data not found")
             throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
         }
 
-        handleDownload(node.nodeInfo, file, request, response)
+        handleDownload(node.nodeInfo, file)
     }
 
-    fun blockDownload(userId: String, projectId: String, repoName: String, fullPath: String, sequence: Int, request: HttpServletRequest, response: HttpServletResponse) {
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Transactional(rollbackFor = [Throwable::class])
+    fun blockDownload(userId: String, artifactInfo: ArtifactInfo, sequence: Int) {
+        val projectId = artifactInfo.projectId
+        val repoName = artifactInfo.repoName
+        val fullPath = artifactInfo.coordinate.fullPath
 
-        val fullUri = "$projectId/$repoName/$fullPath"
         // 查询仓库
-        val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId] block download file [$fullUri] failed: $repoName not found")
+        val repository = repositoryResource.detail(projectId, repoName, REPO_TYPE).data ?: run {
+            logger.warn("User[$userId] block download file [${artifactInfo.getUri()}] failed: $repoName not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         }
         // 查询节点
         val node = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
-            logger.warn("user[$userId] block download file [$fullUri] failed: $fullPath not found")
+            logger.warn("User[$userId] block download file [${artifactInfo.getUri()}] failed: $fullPath not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         }
         if (node.isBlockFile()) {
@@ -99,18 +105,33 @@ class DownloadService @Autowired constructor(
                 // fileStorage
                 val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
                 val file = fileStorage.load(this.sha256, storageCredentials) ?: run {
-                    logger.warn("user[$userId] download block [$fullUri/$sequence] failed: file data not found")
+                    logger.warn("User[$userId] download block [${artifactInfo.getUri()}/$sequence] failed: file data not found")
                     throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
                 }
-
-                handleDownload(node.nodeInfo, file, request, response)
+                handleDownload(node.nodeInfo, file)
             } ?: run {
-                logger.warn("user[$userId] download block [$fullUri/$sequence] failed: file data not found")
+                logger.warn("User[$userId] download block [${artifactInfo.getUri()}/$sequence] failed: file data not found")
                 throw ErrorCodeException(GenericMessageCode.FILE_DATA_NOT_FOUND)
             }
         } else {
-            logger.warn("user[$userId] download block [$fullUri/$sequence] failed: $fullUri is a simple file")
+            logger.warn("User[$userId] download block [${artifactInfo.getUri()}/$sequence] failed: it is a simple file")
             throw ErrorCodeException(GenericMessageCode.DOWNLOAD_SIMPLE_FORBIDDEN)
+        }
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    fun getBlockList(userId: String, artifactInfo: ArtifactInfo): List<BlockInfo> {
+        artifactInfo.run {
+            // 查询节点
+            val node = nodeResource.queryDetail(projectId, repoName, artifactInfo.coordinate.fullPath).data ?: run {
+                logger.warn("User[$userId] query file info [${artifactInfo.getUri()}] failed: node does not exist")
+                throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, artifactInfo.coordinate.fullPath)
+            }
+
+            // 如果为目录或简单上传的文件则返回空列表
+            node.takeIf { node.isBlockFile() }?.run {
+                return node.blockList!!.map { BlockInfo(size = it.size, sha256 = it.sha256, sequence = it.sequence) }
+            } ?: return emptyList()
         }
     }
 
@@ -118,7 +139,10 @@ class DownloadService @Autowired constructor(
         return MimeMappings.DEFAULT.get(NodeUtils.getExtension(name)) ?: DEFAULT_MIME_TYPE
     }
 
-    private fun handleDownload(nodeInfo: NodeInfo, file: File, request: HttpServletRequest, response: HttpServletResponse) {
+    private fun handleDownload(nodeInfo: NodeInfo, file: File) {
+        val request = HttpContextHolder.getRequest()
+        val response = HttpContextHolder.getResponse()
+
         val fileLength = file.length()
         var readStart = 0L
         var readEnd = fileLength
@@ -163,22 +187,6 @@ class DownloadService @Autowired constructor(
             out.flush()
             response.flushBuffer()
         }
-    }
-
-    fun queryBlockInfo(userId: String, projectId: String, repoName: String, fullPath: String): List<BlockInfo> {
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-
-        val fullUri = "$projectId/$repoName/$fullPath"
-        // 查询节点
-        val node = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
-            logger.warn("user[$userId] query file info [$fullUri] failed: $fullPath not found")
-            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
-        }
-
-        // 如果为目录或简单上传的文件则返回空列表
-        node.takeIf { node.isBlockFile() }?.run {
-            return node.blockList!!.map { BlockInfo(size = it.size, sha256 = it.sha256, sequence = it.sequence) }
-        } ?: return emptyList()
     }
 
     private fun parseContentRange(rangeHeader: String?, total: Long): Range? {

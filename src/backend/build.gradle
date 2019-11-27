@@ -7,11 +7,12 @@ buildscript {
         ktlintVersion = "0.34.2"
         swaggerCoreVersion = "1.5.22"
         swaggerFoxVersion = "2.9.2"
-        commonsCodecVersion = "1.10"
         jasyptVersion = "2.1.2"
         awsS3Version = "1.11.631"
         guavaVersion = "28.1-jre"
+        commonsCodecVersion = "1.10"
         commonsIoVersion = "2.6"
+        commonsUploadVersion = "1.4"
         skywalkingVersion = "6.1.0"
     }
 
@@ -127,13 +128,14 @@ subprojects {
             dependency "io.swagger:swagger-annotations:$swaggerCoreVersion"
             dependency "io.swagger:swagger-models:$swaggerCoreVersion"
             dependency "io.springfox:springfox-swagger2:$swaggerFoxVersion"
-            dependency "commons-codec:commons-codec:$commonsCodecVersion"
             dependency "com.github.ulisesbocchio:jasypt-spring-boot-starter:$jasyptVersion"
             dependency "com.amazonaws:aws-java-sdk-s3:$awsS3Version"
             dependency "com.google.guava:guava:$guavaVersion"
+            dependency "commons-codec:commons-codec:$commonsCodecVersion"
             dependency "commons-io:commons-io:$commonsIoVersion"
+            dependency "commons-fileupload:commons-fileupload:$commonsUploadVersion"
             dependency "org.apache.skywalking:apm-toolkit-logback-1.x:$skywalkingVersion"
-
+            dependency "org.apache.skywalking:apm-toolkit-trace:$skywalkingVersion"
         }
 
     }
@@ -157,7 +159,7 @@ subprojects {
                         password MAVEN_SNAPSHOT_REPO_PASSWORD
                     }
                 } else {
-                    url = MAVEN_REPO_DEPLOY_URL=
+                    url = MAVEN_REPO_DEPLOY_URL
 
                     credentials {
                         username MAVEN_REPO_USERNAME

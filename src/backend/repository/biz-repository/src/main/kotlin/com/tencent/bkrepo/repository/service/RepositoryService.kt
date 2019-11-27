@@ -1,16 +1,23 @@
 package com.tencent.bkrepo.repository.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXIST
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.REPOSITORY_NOT_FOUND
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.REPOSITORY_NOT_FOUND
+import com.tencent.bkrepo.common.artifact.repository.configuration.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.repository.configuration.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.repository.configuration.VirtualConfiguration
+import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.Repository
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryConfiguration
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.StorageCredentials
 import com.tencent.bkrepo.repository.repository.RepoRepository
 import java.time.LocalDateTime
@@ -34,9 +41,10 @@ import org.springframework.transaction.annotation.Transactional
 class RepositoryService @Autowired constructor(
     private val repoRepository: RepoRepository,
     private val nodeDao: NodeDao,
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
+    private val objectMapper: ObjectMapper
 ) {
-    private fun queryModel(projectId: String, name: String, type: String? = null): TRepository? {
+    private fun queryRepository(projectId: String, name: String, type: String? = null): TRepository? {
         if (projectId.isBlank() || name.isBlank()) return null
 
         val criteria = Criteria.where("projectId").`is`(projectId).and("name").`is`(name)
@@ -47,20 +55,17 @@ class RepositoryService @Autowired constructor(
         return mongoTemplate.findOne(Query(criteria), TRepository::class.java)
     }
 
-    fun queryDetail(projectId: String, name: String, type: String? = null): Repository? {
-        logger.info("queryDetail, projectId: $projectId, name: $name, type: $type")
-        return convert(queryModel(projectId, name, type))
+    fun detail(projectId: String, name: String, type: String? = null): RepositoryInfo? {
+        return convert(queryRepository(projectId, name, type))
     }
 
-    fun list(projectId: String): List<Repository> {
-        logger.info("list, projectId: $projectId")
+    fun list(projectId: String): List<RepositoryInfo> {
         val query = createListQuery(projectId)
 
         return mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
     }
 
-    fun page(projectId: String, page: Int, size: Int): Page<Repository> {
-        logger.info("page, projectId: $projectId, page: $page, size: $size")
+    fun page(projectId: String, page: Int, size: Int): Page<RepositoryInfo> {
         val query = createListQuery(projectId).with(PageRequest.of(page, size))
         val data = mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
         val count = mongoTemplate.count(query, TRepository::class.java)
@@ -69,7 +74,6 @@ class RepositoryService @Autowired constructor(
     }
 
     fun exist(projectId: String, name: String, type: String? = null): Boolean {
-        logger.info("exist, projectId: $projectId, name: $name, type: $type")
         if (projectId.isBlank() || name.isBlank()) return false
         val criteria = Criteria.where("projectId").`is`(projectId).and("name").`is`(name)
 
@@ -82,7 +86,6 @@ class RepositoryService @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     fun create(repoCreateRequest: RepoCreateRequest): IdValue {
-        logger.info("create, repoCreateRequest: $repoCreateRequest")
         repoCreateRequest.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
 
         val tRepository = repoCreateRequest.let { TRepository(
@@ -91,7 +94,7 @@ class RepositoryService @Autowired constructor(
                 category = it.category,
                 public = it.public,
                 description = it.description,
-                extension = it.extension,
+                configuration = objectMapper.writeValueAsString(it.configuration),
                 storageCredentials = it.storageCredentials?.let { item -> TStorageCredentials(item.type, item.credentials) },
                 projectId = it.projectId,
 
@@ -103,21 +106,20 @@ class RepositoryService @Autowired constructor(
         }
         val idValue = IdValue(repoRepository.insert(tRepository).id!!)
 
-        logger.info("Create repository [$repoCreateRequest] success, idValue: $idValue")
+        logger.info("Create repository [$repoCreateRequest] success.")
         return idValue
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     fun update(repoUpdateRequest: RepoUpdateRequest) {
-        logger.info("update, repoUpdateRequest: $repoUpdateRequest")
         val projectId = repoUpdateRequest.projectId
         val name = repoUpdateRequest.name
-        val repository = queryModel(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
+        val repository = queryRepository(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
 
         with(repoUpdateRequest) {
             category?.let { repository.category = it }
             public?.let { repository.public = it }
-            extension?.let { repository.extension = it }
+            configuration?.let { repository.configuration = objectMapper.writeValueAsString(configuration) }
             description?.let { repository.description = it }
             repository.lastModifiedBy = repoUpdateRequest.operator
             repository.lastModifiedDate = LocalDateTime.now()
@@ -131,8 +133,7 @@ class RepositoryService @Autowired constructor(
      * 用于测试的函数，不对外提供
      */
     fun delete(projectId: String, name: String) {
-        logger.info("delete, projectId: $projectId, name: $name")
-        val repository = queryModel(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
+        val repository = queryRepository(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
 
         repoRepository.deleteById(repository.id!!)
         nodeDao.remove(Query(Criteria
@@ -163,18 +164,17 @@ class RepositoryService @Autowired constructor(
     companion object {
         private val logger = LoggerFactory.getLogger(RepositoryService::class.java)
 
-        private fun convert(tRepository: TRepository?): Repository? {
+        private fun convert(tRepository: TRepository?): RepositoryInfo? {
             return tRepository?.let {
-                Repository(
-                        id = it.id!!,
-                        name = it.name,
-                        type = it.type,
-                        category = it.category,
-                        public = it.public,
-                        description = it.description,
-                        extension = it.extension,
-                        storageCredentials = convert(it.storageCredentials),
-                        projectId = it.projectId
+                RepositoryInfo(
+                    name = it.name,
+                    type = it.type,
+                    category = it.category,
+                    public = it.public,
+                    description = it.description,
+                    configuration = it.configuration,
+                    storageCredentials = convert(it.storageCredentials),
+                    projectId = it.projectId
                 )
             }
         }
@@ -184,5 +184,6 @@ class RepositoryService @Autowired constructor(
                 StorageCredentials(type = it.type, credentials = it.credentials)
             }
         }
+
     }
 }

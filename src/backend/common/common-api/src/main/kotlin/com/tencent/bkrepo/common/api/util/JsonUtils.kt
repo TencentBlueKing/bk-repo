@@ -1,109 +1,30 @@
 package com.tencent.bkrepo.common.api.util
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.Module
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
+import java.time.format.DateTimeFormatter.ISO_DATE_TIME
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 object JsonUtils {
-    private val objectMapper = ObjectMapper().apply {
-        registerModule(KotlinModule())
+    val objectMapper = jacksonObjectMapper().apply {
+        val javaTimeModule = JavaTimeModule()
+        javaTimeModule.addDeserializer(LocalDateTime::class.java, LocalDateTimeDeserializer(ISO_DATE_TIME))
+        javaTimeModule.addSerializer(LocalDateTime::class.java, LocalDateTimeSerializer(ISO_DATE_TIME))
+        registerModule(javaTimeModule)
+        registerModule(ParameterNamesModule())
+        registerModule(Jdk8Module())
+
         configure(SerializationFeature.INDENT_OUTPUT, true)
-        configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
         configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
-        setSerializationInclusion(JsonInclude.Include.NON_NULL)
-        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
     }
-
-    private val skipEmptyObjectMapper = ObjectMapper().apply {
-        registerModule(KotlinModule())
-        configure(SerializationFeature.INDENT_OUTPUT, true)
-        configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
-        configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
-        setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-    }
-
-    fun getObjectMapper() = objectMapper
-
-    fun registerModule(vararg subModules: Module) {
-        subModules.forEach { subModule ->
-            objectMapper.registerModule(subModule)
-            skipEmptyObjectMapper.registerModule(subModule)
-        }
-    }
-
-    /**
-     * 转成Json
-     */
-    fun toJson(bean: Any): String {
-        if (ReflectUtils.isNativeType(bean) || bean is String) {
-            return bean.toString()
-        }
-        return getObjectMapper().writeValueAsString(bean)!!
-    }
-
-    /**
-     * 将对象转可修改的Map,
-     * 注意：会忽略掉值为空串和null的属性
-     */
-    fun toMutableMapSkipEmpty(bean: Any): MutableMap<String, Any> {
-        if (ReflectUtils.isNativeType(bean)) {
-            return mutableMapOf()
-        }
-        return if (bean is String)
-            skipEmptyObjectMapper.readValue<MutableMap<String, Any>>(
-                bean.toString(),
-                object : TypeReference<MutableMap<String, Any>>() {})
-        else
-            skipEmptyObjectMapper.readValue<MutableMap<String, Any>>(
-                skipEmptyObjectMapper.writeValueAsString(bean),
-                object : TypeReference<MutableMap<String, Any>>() {})
-    }
-
-    /**
-     * 将对象转不可修改的Map
-     * 注意：会忽略掉值为null的属性
-     */
-    fun toMap(bean: Any): Map<String, Any> {
-        return when {
-            ReflectUtils.isNativeType(bean) -> mapOf()
-            bean is String -> to(bean)
-            else -> to(getObjectMapper().writeValueAsString(bean))
-        }
-    }
-
-    /**
-     * 将json转指定类型对象
-     * 这个只能做简单的转换List<String>, Map类型的，如果是自定义的类会被kotlin擦除成hashMap
-     * @param json json字符串
-     * @return 指定对象
-     */
-    private fun <T> to(json: String): T {
-        return getObjectMapper().readValue<T>(json, object : TypeReference<T>() {})
-    }
-
-    fun <T> to(json: String, typeReference: TypeReference<T>): T {
-        return getObjectMapper().readValue<T>(json, typeReference)
-    }
-
-    fun <T> to(json: String, type: Class<T>): T = getObjectMapper().readValue(json, type)
-
-    fun <T> toOrNull(json: String?, type: Class<T>): T? {
-        return if (json.isNullOrBlank()) {
-            null
-        } else {
-            getObjectMapper().readValue(json, type)
-        }
-    }
-
-    fun <T> mapTo(map: Map<String, Any>, type: Class<T>): T = getObjectMapper().readValue(
-        getObjectMapper().writeValueAsString(map), type
-    )
 }

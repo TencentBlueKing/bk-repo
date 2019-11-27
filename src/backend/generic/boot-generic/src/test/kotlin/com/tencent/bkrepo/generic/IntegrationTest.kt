@@ -49,7 +49,7 @@ class IntegrationTest {
         val content = RandomStringUtils.randomAlphabetic(1024)
         val sha256 = FileDigestUtils.fileSha256(listOf(content.byteInputStream()))
 
-        val request = Request.Builder().url("http://127.0.0.1:8001/upload/simple/test/test/root/random.txt")
+        val request = Request.Builder().url("http://127.0.0.1:8001/test/test/root/random.txt")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                 .header(BKREPO_META_PREFIX + "key", "value")
                 .header(HEADER_SHA256, sha256)
@@ -58,7 +58,7 @@ class IntegrationTest {
                 .build()
         checkResponse(client.newCall(request).execute(), object: TypeReference<Response<Void>>(){})
 
-        val downloadRequest = Request.Builder().url("http://127.0.0.1:8001/download/simple/test/test/root/random.txt")
+        val downloadRequest = Request.Builder().url("http://127.0.0.1:8001/test/test/root/random.txt")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                 .build()
 
@@ -77,10 +77,10 @@ class IntegrationTest {
 
         val uploadSha256 = FileDigestUtils.fileSha256(listOf(file.inputStream()))
 
-        val request = Request.Builder().url("http://127.0.0.1:8001/upload/simple/test/test/root/opencv.zip")
+        val request = Request.Builder().url("http://127.0.0.1:8001/test/test/root/opencv.zip")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                 .header(HEADER_OVERWRITE, "true")
-                .post(RequestBody.create(MediaType.parse("application/octet-stream"), file))
+                .put(RequestBody.create(MediaType.parse("application/octet-stream"), file))
                 .build()
         checkResponse(client.newCall(request).execute(), object: TypeReference<Response<Void>>(){})
 
@@ -88,7 +88,7 @@ class IntegrationTest {
         val uploadSpeed = file.length().toFloat() / 1024 / 1024 / totalTime
         println("上传平均速度: $uploadSpeed MB/S")
 
-        val downloadRequest = Request.Builder().url("http://127.0.0.1:8001/download/simple/test/test/root/opencv.zip")
+        val downloadRequest = Request.Builder().url("http://127.0.0.1:8001/test/test/root/opencv.zip")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                 .build()
 
@@ -109,7 +109,7 @@ class IntegrationTest {
                 .addFormDataPart("sha256", sha256)
                 .addFormDataPart("overwrite", "true")
                 .build()
-        val request = Request.Builder().url("http://127.0.0.1:8001/upload/precheck/test/test/root/random1000.txt")
+        val request = Request.Builder().url("http://127.0.0.1:8001/precheck/test/test/root/random1000.txt")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                 .header(HEADER_OVERWRITE, "true")
                 .post(formBody)
@@ -131,7 +131,7 @@ class IntegrationTest {
             val blockSha256 = FileDigestUtils.fileSha256(listOf(byteArrayInputStream))
             sha256List.add(blockSha256)
 
-            val blockRequest = Request.Builder().url("http://127.0.0.1:8001/upload/block/$uploadId/$i")
+            val blockRequest = Request.Builder().url("http://127.0.0.1:8001/block/$uploadId/$i")
                     .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                     .header(HEADER_SHA256, blockSha256)
                     .header(HEADER_SIZE, blockSize.toString())
@@ -145,20 +145,20 @@ class IntegrationTest {
                 .addFormDataPart("blockSha256ListStr", sha256List.joinToString(separator = ","))
                 .build()
 
-        val completeRequest = Request.Builder().url("http://127.0.0.1:8001/upload/complete/$uploadId")
+        val completeRequest = Request.Builder().url("http://127.0.0.1:8001/complete/$uploadId")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                 .post(completeFormBody)
                 .build()
 
         checkResponse(client.newCall(completeRequest).execute(), object: TypeReference<Response<Void>>(){})
         // 查询分块
-        val blockInfoRequest = Request.Builder().url("http://127.0.0.1:8001/download/info/test/test/root/random1000.txt")
+        val blockInfoRequest = Request.Builder().url("http://127.0.0.1:8001/block/list/test/test/root/random1000.txt")
                 .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                 .build()
         val blockList = checkResponse(client.newCall(blockInfoRequest).execute(), object: TypeReference<Response<List<BlockInfo>>>(){})
 
         blockList!!.forEach {
-            val downloadRequest = Request.Builder().url("http://127.0.0.1:8001/download/block/test/test/root/random1000.txt?sequence=${it.sequence}")
+            val downloadRequest = Request.Builder().url("http://127.0.0.1:8001/block/test/test/root/random1000.txt?sequence=${it.sequence}")
                     .header(AUTH_HEADER_USER_ID, AUTH_HEADER_USER_ID_DEFAULT_VALUE)
                     .build()
             val downloadResponse = client.newCall(downloadRequest).execute()

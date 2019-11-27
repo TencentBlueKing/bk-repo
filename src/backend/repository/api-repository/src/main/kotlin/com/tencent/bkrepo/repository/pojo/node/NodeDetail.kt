@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.node
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -18,6 +19,7 @@ data class NodeDetail(
     val blockList: List<FileBlock>? = null
 
 ) {
+    @JsonIgnore
     fun isBlockFile(): Boolean {
         return !blockList.isNullOrEmpty()
     }
