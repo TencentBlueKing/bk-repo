@@ -41,7 +41,7 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
             return true
         }
         val typeName = artifactConfiguration.getRepositoryType()?.name ?: ""
-        val response = repositoryResource.queryDetail(projectId, repoName, typeName)
+        val response = repositoryResource.detail(projectId, repoName, typeName)
         if(response.isNotOk()) {
             logger.warn("Query repository detail failed: [$response]")
             return true
