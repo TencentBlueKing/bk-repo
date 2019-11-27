@@ -11,12 +11,13 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TMetadata
-import com.tencent.bkrepo.repository.service.MetadataService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.Date
 
 /**
  * 节点自定义查询service
@@ -73,7 +74,9 @@ class NodeQueryService @Autowired constructor(
         val nodeList = nodeDao.find(query, MutableMap::class.java) as List<MutableMap<String, Any>>
         // metadata格式转换，并排除id字段
         nodeList.forEach {
-            it["metadata"]?.let { metadata -> it["metadata"] = MetadataService.convert(metadata as List<TMetadata>) }
+            it["metadata"]?.let { metadata -> it["metadata"] = convert(metadata as List<Map<String, String>>) }
+            it["createdDate"]?.let { createDate -> it["createdDate"] = LocalDateTime.ofInstant((createDate as Date).toInstant(), ZoneId.systemDefault()) }
+            it["lastModifiedDate"]?.let { lastModifiedDate -> it["lastModifiedDate"] = LocalDateTime.ofInstant((lastModifiedDate as Date).toInstant(), ZoneId.systemDefault()) }
             it.remove("_id")
         }
         val total = nodeDao.count(query)
@@ -82,5 +85,9 @@ class NodeQueryService @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeQueryService::class.java)
+
+        fun convert(metadataList: List<Map<String, String>>): Map<String, String> {
+            return metadataList.filter { it.containsKey("key") && it.containsKey("value") }.map { it.getValue("key") to it.getValue("value") }.toMap()
+        }
     }
 }

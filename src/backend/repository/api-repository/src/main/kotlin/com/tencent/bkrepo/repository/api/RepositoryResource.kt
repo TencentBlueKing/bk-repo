@@ -32,7 +32,7 @@ interface RepositoryResource {
 
     @ApiOperation("根据名称类型查询仓库")
     @GetMapping("/query/{projectId}/{name}/{type}")
-    fun queryDetail(
+    fun detail(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -43,7 +43,7 @@ interface RepositoryResource {
 
     @ApiOperation("根据名称查询仓库")
     @GetMapping("/query/{projectId}/{name}")
-    fun queryDetail(
+    fun detail(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)

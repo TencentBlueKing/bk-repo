@@ -62,7 +62,7 @@ internal class NodeServiceTest @Autowired constructor(
 
     @AfterEach
     fun tearDown() {
-        repositoryService.delete(projectId, repoName)
+        //repositoryService.delete(projectId, repoName)
     }
 
     @Test
@@ -554,6 +554,22 @@ internal class NodeServiceTest @Autowired constructor(
         )
         nodeService.copy(copyRequest)
 
+    }
+
+    @Test
+    @DisplayName("拷贝文件, 元数据一起拷贝")
+    fun copyWithMetadataTest() {
+        nodeService.create(createRequest("/a", false, metadata = mapOf("key" to "value")))
+
+        val copyRequest = NodeCopyRequest(
+            srcProjectId = projectId,
+            srcRepoName = repoName,
+            srcFullPath = "/a",
+            destPath = "/b",
+            operator = operator
+        )
+        nodeService.copy(copyRequest)
+        assertEquals("value", nodeService.detail(projectId, repoName, "/b/a")!!.metadata["key"])
     }
 
     private fun createRequest(fullPath: String = "/a/b/c", folder: Boolean = true, size: Long = 1, metadata: Map<String, String>? = null): NodeCreateRequest {

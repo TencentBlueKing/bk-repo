@@ -41,7 +41,7 @@ internal class RepositoryServiceTest @Autowired constructor(
 
     @AfterEach
     fun tearDown() {
-        //repositoryService.list(projectId).forEach { repositoryService.delete(projectId, it.name) }
+        repositoryService.list(projectId).forEach { repositoryService.delete(projectId, it.name) }
     }
 
 
@@ -101,7 +101,6 @@ internal class RepositoryServiceTest @Autowired constructor(
         assertEquals(true, repository.public)
         assertEquals(projectId, repository.projectId)
         assertEquals("简单描述", repository.description)
-        assertEquals(null, repository.configuration)
         assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
     }
 

@@ -172,7 +172,7 @@ class RepositoryService @Autowired constructor(
                     category = it.category,
                     public = it.public,
                     description = it.description,
-                    configuration = convert(it.category, it.configuration),
+                    configuration = it.configuration,
                     storageCredentials = convert(it.storageCredentials),
                     projectId = it.projectId
                 )
@@ -182,14 +182,6 @@ class RepositoryService @Autowired constructor(
         private fun convert(tStorageCredentials: TStorageCredentials?): StorageCredentials? {
             return tStorageCredentials?.let {
                 StorageCredentials(type = it.type, credentials = it.credentials)
-            }
-        }
-
-        private fun convert(category: RepositoryCategory, extension: String): RepositoryConfiguration {
-            return when (category) {
-                RepositoryCategory.LOCAL -> JsonUtils.objectMapper.readValue(extension, LocalConfiguration::class.java)
-                RepositoryCategory.REMOTE -> JsonUtils.objectMapper.readValue(extension, RemoteConfiguration::class.java)
-                RepositoryCategory.VIRTUAL -> JsonUtils.objectMapper.readValue(extension, VirtualConfiguration::class.java)
             }
         }
 

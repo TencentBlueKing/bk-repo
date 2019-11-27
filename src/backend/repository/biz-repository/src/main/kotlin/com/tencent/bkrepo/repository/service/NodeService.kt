@@ -452,15 +452,15 @@ class NodeService @Autowired constructor(
                 is NodeCopyRequest -> {
                     // copy自身
                     val newNode = node.copy(
-                            id = null,
-                            path = destPath,
-                            fullPath = destPath + node.name,
-                            projectId = destProjectId,
-                            repoName = destRepoName,
-                            createdBy = operator,
-                            createdDate = LocalDateTime.now(),
-                            lastModifiedBy = operator,
-                            lastModifiedDate = LocalDateTime.now()
+                        id = null,
+                        path = destPath,
+                        fullPath = destPath + node.name,
+                        projectId = destProjectId,
+                        repoName = destRepoName,
+                        createdBy = operator,
+                        createdDate = LocalDateTime.now(),
+                        lastModifiedBy = operator,
+                        lastModifiedDate = LocalDateTime.now()
                     )
                     doCreate(newNode)
                 }

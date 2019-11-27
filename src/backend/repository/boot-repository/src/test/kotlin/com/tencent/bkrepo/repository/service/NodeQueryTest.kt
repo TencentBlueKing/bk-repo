@@ -104,7 +104,6 @@ internal class NodeQueryTest @Autowired constructor(
         )
 
         val result = nodeQueryService.query(queryModel)
-        println(result)
         Assertions.assertEquals(1, result.count)
         Assertions.assertEquals(1, result.records.size)
         val node = result.records[0]

@@ -21,11 +21,11 @@ import org.springframework.web.bind.annotation.RestController
 class RepositoryResourceImpl @Autowired constructor(
     private val repositoryService: RepositoryService
 ) : RepositoryResource {
-    override fun queryDetail(projectId: String, name: String): Response<RepositoryInfo?> {
+    override fun detail(projectId: String, name: String): Response<RepositoryInfo?> {
         return Response.success(repositoryService.detail(projectId, name))
     }
 
-    override fun queryDetail(projectId: String, name: String, type: String): Response<RepositoryInfo?> {
+    override fun detail(projectId: String, name: String, type: String): Response<RepositoryInfo?> {
         return Response.success(repositoryService.detail(projectId, name, type))
     }
 
