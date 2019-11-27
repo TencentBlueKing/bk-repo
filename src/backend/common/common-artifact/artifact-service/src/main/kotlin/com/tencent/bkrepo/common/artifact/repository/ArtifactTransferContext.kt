@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.config.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.config.REPO_KEY
 import com.tencent.bkrepo.common.artifact.config.USER_KEY
+import com.tencent.bkrepo.common.artifact.repository.configuration.RepositoryConfigurationMapper
 import com.tencent.bkrepo.common.storage.core.ClientCredentials
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryConfiguration
@@ -35,6 +36,8 @@ class ArtifactTransferContext(val file: ArtifactInfo? = null) {
         repo = request.getAttribute(REPO_KEY) as RepositoryInfo
         artifactInfo = request.getAttribute(ARTIFACT_INFO_KEY) as ArtifactInfo
         storageCredentials = CredentialsUtils.readString(repo.storageCredentials?.type, repo.storageCredentials?.credentials)
-        repositoryConfiguration = repo.configuration
+        repositoryConfiguration = RepositoryConfigurationMapper.readString(repo.category, repo.configuration)
     }
+
+
 }
