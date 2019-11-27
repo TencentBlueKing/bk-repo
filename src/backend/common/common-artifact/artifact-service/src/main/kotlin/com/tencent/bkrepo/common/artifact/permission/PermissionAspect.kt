@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import org.aspectj.lang.reflect.MethodSignature
+import org.springframework.stereotype.Component
 
 /**
  *
@@ -19,6 +20,7 @@ import org.aspectj.lang.reflect.MethodSignature
  * @date: 2019/11/22
  */
 @Aspect
+@Component
 class PermissionAspect {
 
     @Autowired
