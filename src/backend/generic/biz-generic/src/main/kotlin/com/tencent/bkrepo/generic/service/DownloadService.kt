@@ -50,7 +50,7 @@ class DownloadService @Autowired constructor(
         val fullPath = artifactInfo.coordinate.fullPath
 
         // 查询repository
-        val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryResource.detail(projectId, repoName, REPO_TYPE).data ?: run {
             logger.warn("User[$userId] simply download file [${artifactInfo.getUri()}] failed: $repoName not found")
             throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
         }
@@ -91,7 +91,7 @@ class DownloadService @Autowired constructor(
         val fullPath = artifactInfo.coordinate.fullPath
 
         // 查询仓库
-        val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryResource.detail(projectId, repoName, REPO_TYPE).data ?: run {
             logger.warn("User[$userId] block download file [${artifactInfo.getUri()}] failed: $repoName not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, repoName)
         }

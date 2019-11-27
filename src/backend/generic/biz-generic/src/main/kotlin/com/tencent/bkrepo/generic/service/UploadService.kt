@@ -95,7 +95,7 @@ class UploadService @Autowired constructor(
         }
 
         // 判断仓库是否存在
-        val repository = repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryResource.detail(projectId, repoName, REPO_TYPE).data ?: run {
             logger.warn("User[$userId] simply upload file  [${artifactInfo.getUri()}] failed: $repoName not found")
             throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
         }
@@ -141,7 +141,7 @@ class UploadService @Autowired constructor(
         expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
 
         // 判断仓库是否存在
-        repositoryResource.queryDetail(projectId, repoName, REPO_TYPE).data ?: run {
+        repositoryResource.detail(projectId, repoName, REPO_TYPE).data ?: run {
             logger.warn("User[$userId] preCheck [${artifactInfo.getUri()}] failed: $repoName not found")
             throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
         }
@@ -191,7 +191,7 @@ class UploadService @Autowired constructor(
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, uploadTransaction.projectId, uploadTransaction.repoName))
 
         // 判断仓库是否存在
-        val repository = repositoryResource.queryDetail(uploadTransaction.projectId, uploadTransaction.repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryResource.detail(uploadTransaction.projectId, uploadTransaction.repoName, REPO_TYPE).data ?: run {
             logger.warn("User[$userId] upload block [$fullUri] failed: ${uploadTransaction.repoName} not found")
             throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, uploadTransaction.repoName)
         }
@@ -234,7 +234,7 @@ class UploadService @Autowired constructor(
         // 鉴权
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, uploadTransaction.projectId, uploadTransaction.repoName))
         // 查询repository
-        val repository = repositoryResource.queryDetail(uploadTransaction.projectId, uploadTransaction.repoName, REPO_TYPE).data
+        val repository = repositoryResource.detail(uploadTransaction.projectId, uploadTransaction.repoName, REPO_TYPE).data
         // 查询分块记录
         val blockRecordList = blockRecordRepository.findByUploadId(uploadId)
         // 删除文件
