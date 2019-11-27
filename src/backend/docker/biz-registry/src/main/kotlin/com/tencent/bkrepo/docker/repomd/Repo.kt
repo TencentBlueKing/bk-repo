@@ -16,12 +16,6 @@ interface Repo<C : WorkContext> {
 //
 //    fun children(var1: String): Iterable<DirectoryItem>?
 //
-    fun findArtifacts(var1: String, var2: String): Iterable<Artifact>
-//
-//    fun findArtifacts(var1: Map<String, String>): Iterable<Artifact>
-//
-//    @Deprecated("")
-    fun findArtifacts(var1: String): Iterable<Artifact>
 
 //    fun read(var1: String): InputStream
 

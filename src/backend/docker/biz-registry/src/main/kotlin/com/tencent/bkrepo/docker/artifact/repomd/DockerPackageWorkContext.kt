@@ -29,7 +29,7 @@ class DockerPackageWorkContext() : DockerWorkContext {
     }
 
     override fun isBlobReadable(blob: Artifact): Boolean {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
+        return true
     }
 
     override fun findBlobsGlobally(digestFileName: String, searchPolicy: DockerSearchBlobPolicy): Iterable<Artifact> {
@@ -37,7 +37,7 @@ class DockerPackageWorkContext() : DockerWorkContext {
     }
 
     override fun cleanup(repoId: String, uploadsPath: String) {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
+        return
         // (ContextHelper.get().beanForType(DockerService::class.java) as DockerService).cleanup(repoId, uploadsPath)
     }
 
@@ -66,13 +66,9 @@ class DockerPackageWorkContext() : DockerWorkContext {
     }
 
     override fun setSystem() {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-        // WorkContextAuthenticationHelper.setSystem(this)
     }
 
     override fun unsetSystem() {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-        // WorkContextAuthenticationHelper.unsetSystem(this)
     }
 
     override fun rewriteRepoURI(repoKey: String, uri: URI, headers: MutableSet<MutableMap.MutableEntry<String, List<String>>>): URI {

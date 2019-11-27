@@ -7,24 +7,24 @@ import javax.ws.rs.core.Response
 import org.springframework.http.ResponseEntity
 
 interface DockerV2RepoHandler {
-    fun ping(): Response
+    fun ping(): ResponseEntity<Any>
 
-    fun isBlobExists(projectId: String, repoName: String, name: String, digest: DockerDigest): ResponseEntity<Any>
+    fun isBlobExists(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest): ResponseEntity<Any>
 
-    fun getBlob(rojectId: String, repoName: String, name: String, digest: DockerDigest): ResponseEntity<Any>
+    fun getBlob(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest): ResponseEntity<Any>
 
-    fun startBlobUpload(projectId: String, repoName: String, name: String, digest: String?): ResponseEntity<Any>
+    fun startBlobUpload(projectId: String, repoName: String, dockerRepo: String, mount: String?): ResponseEntity<Any>
 
-    fun patchUpload(projectId: String, repoName: String, name: String, uuid: String, request: HttpServletRequest): ResponseEntity<Any>
+    fun patchUpload(projectId: String, repoName: String, dockerRepo: String, uuid: String, request: HttpServletRequest): ResponseEntity<Any>
 
-    fun uploadBlob(projectId: String, repoName: String, name: String, digest: DockerDigest, uuid: String, stream: InputStream): ResponseEntity<Any>
+    fun uploadBlob(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest, uuid: String, stream: InputStream): ResponseEntity<Any>
 
-    fun uploadManifest(projectId: String, repoName: String, name: String, tag: String, mediaType: String, stream: InputStream): ResponseEntity<Any>
+    fun uploadManifest(projectId: String, repoName: String, dockerRepo: String, tag: String, mediaType: String, stream: InputStream): ResponseEntity<Any>
 
-//    fun getManifest(var1: String, var2: String): Response
-//
-//    fun deleteManifest(var1: String, var2: String): Response
-//
+    fun getManifest(projectId: String, repoName: String,dockerRepo: String, reference: String): ResponseEntity<Any>
+
+    fun deleteManifest(projectId: String, repoName: String,dockerRepo: String, reference: String): ResponseEntity<Any>
+
 //    fun getTags(var1: String, var2: Int, var3: String): Response
 //
 //    fun catalog(var1: Int, var2: String): Response
