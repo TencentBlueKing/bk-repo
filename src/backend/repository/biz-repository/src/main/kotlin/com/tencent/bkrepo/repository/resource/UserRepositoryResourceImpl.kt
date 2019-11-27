@@ -24,7 +24,7 @@ class UserRepositoryResourceImpl @Autowired constructor(
     private val repositoryService: RepositoryService
 ) : UserRepositoryResource {
     override fun create(userId: String, userRepoCreateRequest: UserRepoCreateRequest): Response<Void> {
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, userRepoCreateRequest.projectId))
+        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.PROJECT, PermissionAction.MANAGE, userRepoCreateRequest.projectId))
 
         val createRequest = with(userRepoCreateRequest) {
             RepoCreateRequest(

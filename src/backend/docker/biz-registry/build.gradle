@@ -3,7 +3,10 @@ dependencies {
     api project(":common:common-client")
     api project(":common:common-api")
     api project(":common:common-storage")
+    api project(":common:common-query:query-api")
     api project(":docker:api-registry")
+    api project(":repository:api-repository")
+    api project(":repository:api-repository")
     // https://mvnrepository.com/artifact/javax.ws.rs/jsr311-api
     compile group: 'javax.ws.rs', name: 'jsr311-api', version: '1.1.1'
     compile group: 'org.projectlombok', name: 'lombok', version: '1.18.10'

@@ -31,5 +31,9 @@ data class FileInfo(
     @ApiModelProperty("文件大小，单位byte")
     val size: Long,
     @ApiModelProperty("文件sha256")
-    val sha256: String? = null
+    val sha256: String? = null,
+    @ApiModelProperty("项目ID")
+    val projectId: String,
+    @ApiModelProperty("仓库名称")
+    val repoName: String
 )

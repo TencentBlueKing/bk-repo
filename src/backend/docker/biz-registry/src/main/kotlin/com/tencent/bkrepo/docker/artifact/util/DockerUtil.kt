@@ -1,8 +1,5 @@
 package com.tencent.bkrepo.docker.artifact.util
 
-import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
-import com.tencent.bkrepo.docker.artifact.repomd.DockerPackageWorkContext
-
 object DockerUtil {
 
 //    fun fromV2Info(info: ManifestMetadata, convertSizeToHumanReadable: Boolean): DockerV2InfoModel {
@@ -36,9 +33,9 @@ object DockerUtil {
 //        return model
 //    }
 
-    fun createDockerRepoContext(repoKey: String): DockerArtifactoryService {
-        // val repoPath = RepoPathFactory.create(repoKey)
-        val context = DockerPackageWorkContext()
-        return DockerArtifactoryService(context, repoKey)
-    }
+//    fun createDockerRepoContext(repoKey: String): DockerArtifactoryService {
+//        // val repoPath = RepoPathFactory.create(repoKey)
+//        val context = DockerPackageWorkContext()
+//        return DockerArtifactoryService(context, repoKey)
+//    }
 }

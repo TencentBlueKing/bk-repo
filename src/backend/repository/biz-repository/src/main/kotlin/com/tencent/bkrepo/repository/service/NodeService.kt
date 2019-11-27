@@ -159,6 +159,8 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun create(createRequest: NodeCreateRequest): IdValue {
+        logger.info("create, createRequest: $createRequest")
+
         val projectId = createRequest.projectId
         val repoName = createRequest.repoName
         val fullPath = parseFullPath(createRequest.fullPath)

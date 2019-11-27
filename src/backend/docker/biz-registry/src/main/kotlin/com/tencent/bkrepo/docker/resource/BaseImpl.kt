@@ -1,19 +1,13 @@
 package com.tencent.bkrepo.docker.resource
 
-import io.swagger.annotations.ApiParam
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestParam
+
 import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.docker.api.Base
+import org.springframework.http.ResponseEntity
 
 @RestController
-class BaseImpl {
-
-    @GetMapping("/v2/base")
-    fun sayHello(
-        @RequestParam
-        @ApiParam(value = "姓名", required = true)
-        name: String
-    ): String {
-        return "Hello, $name!"
+class BaseImpl :Base{
+    override  fun ping(): ResponseEntity<Any> {
+        return ResponseEntity.ok().header("Content-Type","application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body("{}")
     }
 }

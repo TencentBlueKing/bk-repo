@@ -16,7 +16,6 @@ import org.springframework.core.Ordered
 @ConditionalOnWebApplication
 @EnableDiscoveryClient
 class ServiceAutoConfiguration {
-
     @Bean
     fun feignWebRegistrations(): WebMvcRegistrations {
         return object : WebMvcRegistrations {

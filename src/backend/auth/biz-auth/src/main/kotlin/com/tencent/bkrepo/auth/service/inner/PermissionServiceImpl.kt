@@ -4,6 +4,7 @@ import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.PermissionInstance
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.repository.PermissionRepository
@@ -94,7 +95,7 @@ class PermissionServiceImpl @Autowired constructor(
         return if (request.resourceType == ResourceType.SYSTEM) {
             user.admin
         } else {
-            val permissions = getPermission(request.userId, request.project!!)
+            val permissions = getPermission(request.userId, request.projectId!!)
             checkAuth(request, permissions)
         }
     }
@@ -122,7 +123,7 @@ class PermissionServiceImpl @Autowired constructor(
                 }
                 if (permission.resourceType == ResourceType.REPO) {
                     return permission.action == request.action
-                        && (permission.repoId == "*" || permission.repoId == request.repo)
+                        && (permission.repoId == "*" || permission.repoId == request.repoName)
                 }
                 return false
             }

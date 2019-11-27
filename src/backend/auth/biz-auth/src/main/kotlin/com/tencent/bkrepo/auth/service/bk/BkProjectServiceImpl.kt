@@ -19,8 +19,26 @@ class BkProjectServiceImpl @Autowired constructor(
     private val projectRepository: ProjectRepository
 ) : ProjectService {
     override fun getByName(name: String): Project? {
-        val project = projectRepository.findOneByName(name) ?: return null
-        return TransferUtils.transferProject(project)
+        var project = projectRepository.findOneByName(name)
+        // 加锁
+        if (project == null && (name == "pipeline" || name == "custom" || name == "report")) {
+            logger.info("project($name) not exist, create it")
+            val insertProject = TProject(
+                id = null,
+                name = name,
+                displayName = name,
+                description = ""
+            )
+            val tProject = projectRepository.insert(TProject(
+                id = null,
+                name = name,
+                displayName = name,
+                description = ""
+            ))
+            return TransferUtils.transferProject(tProject)
+        } else {
+            return null
+        }
     }
 
     override fun listProject(): List<Project> {

@@ -2,6 +2,7 @@ package com.tencent.bkrepo.docker.repomd
 
 import java.io.InputStream
 import javax.ws.rs.core.Response
+import org.springframework.http.ResponseEntity
 
 interface Repo<C : WorkContext> {
     fun getRepoId(): String
@@ -15,12 +16,6 @@ interface Repo<C : WorkContext> {
 //
 //    fun children(var1: String): Iterable<DirectoryItem>?
 //
-    fun findArtifacts(var1: String, var2: String): Iterable<Artifact>
-//
-//    fun findArtifacts(var1: Map<String, String>): Iterable<Artifact>
-//
-//    @Deprecated("")
-    fun findArtifacts(var1: String): Iterable<Artifact>
 
 //    fun read(var1: String): InputStream
 
@@ -30,7 +25,7 @@ interface Repo<C : WorkContext> {
 
     fun download(var1: DownloadContext): Response
 
-    fun upload(var1: UploadContext): Response
+    fun upload(context: UploadContext): ResponseEntity<Any>
 
     fun copy(var1: String, var2: String): Boolean
 
@@ -50,9 +45,9 @@ interface Repo<C : WorkContext> {
 //
     fun setAttributes(var1: String, var2: Map<String, String>)
 
-    fun exists(var1: String): Boolean
+    fun exists(path: String): Boolean
 
-    fun canRead(var1: String): Boolean
+    fun canRead(path: String): Boolean
 
-    fun canWrite(var1: String): Boolean
+    fun canWrite(path: String): Boolean
 }

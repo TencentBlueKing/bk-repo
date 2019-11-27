@@ -1,27 +1,30 @@
 package com.tencent.bkrepo.docker.v2.rest.handler
 
 import com.tencent.bkrepo.docker.v2.model.DockerDigest
+import java.io.InputStream
+import javax.servlet.http.HttpServletRequest
 import javax.ws.rs.core.Response
+import org.springframework.http.ResponseEntity
 
 interface DockerV2RepoHandler {
-    fun ping(): Response
+    fun ping(): ResponseEntity<Any>
 
-    fun isBlobExists(var1: String, var2: DockerDigest): Response
+    fun isBlobExists(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest): ResponseEntity<Any>
 
-    fun getBlob(var1: String, var2: DockerDigest): Response
+    fun getBlob(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest): ResponseEntity<Any>
 
-    fun startBlobUpload(projectId :String,repoName:String, name: String, digest: String?): Response
-//
-//    fun patchUpload(var1: String, var2: String, var3: InputStream): Response
-//
-//    fun uploadBlob(var1: String, var2: DockerDigest, var3: String, var4: InputStream): Response
-//
-    fun uploadManifest(var1: String, var2: String, mediaType: String, var3: ByteArray): Response
-//
-//    fun getManifest(var1: String, var2: String): Response
-//
-    fun deleteManifest(var1: String, var2: String): Response
-//
+    fun startBlobUpload(projectId: String, repoName: String, dockerRepo: String, mount: String?): ResponseEntity<Any>
+
+    fun patchUpload(projectId: String, repoName: String, dockerRepo: String, uuid: String, request: HttpServletRequest): ResponseEntity<Any>
+
+    fun uploadBlob(projectId: String, repoName: String, dockerRepo: String, digest: DockerDigest, uuid: String, stream: InputStream): ResponseEntity<Any>
+
+    fun uploadManifest(projectId: String, repoName: String, dockerRepo: String, tag: String, mediaType: String, stream: InputStream): ResponseEntity<Any>
+
+    fun getManifest(projectId: String, repoName: String,dockerRepo: String, reference: String): ResponseEntity<Any>
+
+    fun deleteManifest(projectId: String, repoName: String,dockerRepo: String, reference: String): ResponseEntity<Any>
+
 //    fun getTags(var1: String, var2: Int, var3: String): Response
 //
 //    fun catalog(var1: Int, var2: String): Response
