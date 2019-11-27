@@ -33,68 +33,56 @@ interface UserNodeResource {
     @ApiOperation("根据路径查看节点详情")
     @GetMapping(ARTIFACT_COORDINATE_URI)
     fun detail(
-        @RequestAttribute
-        userId: String,
-        @ArtifactPathVariable
-        artifactInfo: ArtifactInfo
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<NodeDetail?>
 
     @ApiOperation("创建文件夹")
     @PostMapping(ARTIFACT_COORDINATE_URI)
     fun mkdir(
-        @RequestAttribute
-        userId: String,
-        @ArtifactPathVariable
-        artifactInfo: ArtifactInfo
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<Void>
 
     @ApiOperation("删除节点")
     @DeleteMapping(ARTIFACT_COORDINATE_URI)
     fun delete(
-        @RequestAttribute
-        userId: String,
-        @ArtifactPathVariable
-        artifactInfo: ArtifactInfo
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<Void>
 
     @ApiOperation("重命名节点")
     @PostMapping("/rename")
     fun rename(
-        @RequestAttribute
-        userId: String,
+        @RequestAttribute userId: String,
         @RequestBody request: UserNodeRenameRequest
     ): Response<Void>
 
     @ApiOperation("移动节点")
     @PostMapping("/move")
     fun move(
-        @RequestAttribute
-        userId: String,
+        @RequestAttribute userId: String,
         @RequestBody request: UserNodeMoveRequest
     ): Response<Void>
 
     @ApiOperation("复制节点")
     @PostMapping("/copy")
     fun copy(
-        @RequestAttribute
-        userId: String,
+        @RequestAttribute userId: String,
         @RequestBody request: UserNodeCopyRequest
     ): Response<Void>
 
     @ApiOperation("查询节点大小信息")
     @GetMapping("/size/$ARTIFACT_COORDINATE_URI")
     fun computeSize(
-        @RequestAttribute
-        userId: String,
-        @ArtifactPathVariable
-        artifactInfo: ArtifactInfo
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<NodeSizeInfo>
 
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
     fun query(
-        @RequestAttribute
-        userId: String,
+        @RequestAttribute userId: String,
         @RequestBody queryModel: QueryModel
     ): Response<Page<Map<String, Any>>>
 }

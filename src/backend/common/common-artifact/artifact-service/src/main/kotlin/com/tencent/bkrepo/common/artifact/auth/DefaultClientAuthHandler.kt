@@ -10,7 +10,6 @@ import com.tencent.bkrepo.common.artifact.config.REPO_KEY
 import com.tencent.bkrepo.common.artifact.config.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.repository.api.RepositoryResource
-import org.omg.PortableServer.IdAssignmentPolicyValue.USER_ID
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.request.RequestContextHolder
@@ -36,9 +35,10 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
 
     override fun needAuthenticate(uri: String, projectId: String?, repoName: String?): Boolean {
         if(projectId.isNullOrEmpty() || repoName.isNullOrEmpty()) {
-            return false
+            logger.debug("Can not extract projectId or repoName")
+            return true
         }
-        val typeName = artifactConfiguration.repositoryType.name
+        val typeName = artifactConfiguration.getRepositoryType()?.name ?: ""
         val response = repositoryResource.queryDetail(projectId, repoName, typeName)
         if(response.isNotOk()) {
             logger.warn("Query repository detail failed: [$response]")

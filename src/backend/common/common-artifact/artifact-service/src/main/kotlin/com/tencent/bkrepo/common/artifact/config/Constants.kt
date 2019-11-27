@@ -6,6 +6,11 @@ package com.tencent.bkrepo.common.artifact.config
 const val USER_KEY = "userId"
 
 /**
+ *  匿名用户
+ */
+const val ANONYMOUS_USER = "anonymous"
+
+/**
  * 查询仓库后将仓库写入request attributes的key
  */
 const val REPO_KEY = "repo"

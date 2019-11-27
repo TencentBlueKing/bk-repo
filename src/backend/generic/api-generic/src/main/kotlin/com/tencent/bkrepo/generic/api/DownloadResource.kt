@@ -1,7 +1,5 @@
 package com.tencent.bkrepo.generic.api
 
-import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
-import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID_DEFAULT_VALUE
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
@@ -12,8 +10,6 @@ import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestAttribute
-import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 /**
@@ -23,11 +19,10 @@ import org.springframework.web.bind.annotation.RequestParam
  * @date: 2019-09-28
  */
 @Api("下载接口")
-@RequestMapping("/download")
 interface DownloadResource {
 
     @ApiOperation("简单下载")
-    @GetMapping("/simple/$ARTIFACT_COORDINATE_URI")
+    @GetMapping(ARTIFACT_COORDINATE_URI)
     fun simpleDownload(
         @RequestAttribute
         userId: String,
@@ -48,8 +43,8 @@ interface DownloadResource {
     )
 
     @ApiOperation("查询分块信息")
-    @GetMapping("/info/$ARTIFACT_COORDINATE_URI")
-    fun queryBlockInfo(
+    @GetMapping("/block/list/$ARTIFACT_COORDINATE_URI")
+    fun getBlockList(
         @RequestAttribute
         userId: String,
         @ArtifactPathVariable

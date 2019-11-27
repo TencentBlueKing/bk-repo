@@ -45,7 +45,7 @@ class UploadResourceImpl @Autowired constructor(
         return Response.success()
     }
 
-    override fun queryBlockInfo(userId: String, uploadId: String): Response<List<BlockInfo>> {
-        return Response.success(uploadService.queryBlockInfo(userId, uploadId))
+    override fun getUploadedBlockList(userId: String, uploadId: String): Response<List<BlockInfo>> {
+        return Response.success(uploadService.getUploadedBlockList(userId, uploadId))
     }
 }

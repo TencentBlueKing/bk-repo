@@ -12,6 +12,5 @@ import org.springframework.stereotype.Component
  */
 @Component
 class RepositoryArtifactConfiguration: ArtifactConfiguration {
-    override val repositoryType: RepositoryType = RepositoryType.GENERIC
-    override val clientAuthConfig: ClientAuthConfig = ClientAuthConfig(pathPatterns = listOf("/api/**"))
+    override fun getClientAuthConfig() = ClientAuthConfig(pathPatterns = listOf("/api/**"))
 }
