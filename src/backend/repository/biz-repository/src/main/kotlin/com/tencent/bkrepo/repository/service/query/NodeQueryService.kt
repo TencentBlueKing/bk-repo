@@ -4,6 +4,8 @@ import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.config.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.config.REPO_NAME
 import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -49,13 +51,13 @@ class NodeQueryService @Autowired constructor(
         var projectId: String? = null
         val repoNameList = mutableListOf<String>()
         for (rule in (queryModel.rule as Rule.NestedRule).rules) {
-            if (rule is Rule.QueryRule && rule.field == "repoName") {
+            if (rule is Rule.QueryRule && rule.field == REPO_NAME) {
                 when (rule.operation) {
                     OperationType.IN -> (rule.value as List<String>).forEach { repoNameList.add(it) }
                     else -> repoNameList.add(rule.value.toString())
                 }
             }
-            if (rule is Rule.QueryRule && rule.field == "projectId") {
+            if (rule is Rule.QueryRule && rule.field == PROJECT_ID) {
                 projectId = rule.value.toString()
             }
         }
