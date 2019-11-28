@@ -28,15 +28,15 @@ class UserRepositoryResourceImpl @Autowired constructor(
 
         val createRequest = with(userRepoCreateRequest) {
             RepoCreateRequest(
-                    projectId = projectId,
-                    name = name,
-                    type = type,
-                    category = category,
-                    public = public,
-                    description = description,
-                    extension = extension,
-                    storageCredentials = storageCredentials,
-                    operator = userId
+                projectId = projectId,
+                name = name,
+                type = type,
+                category = category,
+                public = public,
+                description = description,
+                configuration = configuration,
+                storageCredentials = storageCredentials,
+                operator = userId
             )
         }
         repositoryService.create(createRequest)

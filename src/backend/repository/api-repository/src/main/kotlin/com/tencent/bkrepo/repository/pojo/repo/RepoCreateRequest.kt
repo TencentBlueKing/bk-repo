@@ -24,8 +24,8 @@ data class RepoCreateRequest(
     val public: Boolean,
     @ApiModelProperty("简要描述", required = false)
     val description: String? = null,
-    @ApiModelProperty("扩展信息", required = false)
-    val extension: Any? = null,
+    @ApiModelProperty("仓库配置", required = true)
+    val configuration: RepositoryConfiguration,
     @ApiModelProperty("存储身份信息", required = false)
     var storageCredentials: StorageCredentials? = null,
 

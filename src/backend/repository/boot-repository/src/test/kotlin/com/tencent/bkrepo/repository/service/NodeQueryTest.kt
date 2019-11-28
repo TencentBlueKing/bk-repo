@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.artifact.repository.configuration.LocalConfiguration
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -49,6 +50,7 @@ internal class NodeQueryTest @Autowired constructor(
                 category = RepositoryCategory.LOCAL,
                 public = true,
                 description = "简单描述",
+                configuration = LocalConfiguration(),
                 operator = operator
             )
         )
@@ -102,7 +104,6 @@ internal class NodeQueryTest @Autowired constructor(
         )
 
         val result = nodeQueryService.query(queryModel)
-        println(result)
         Assertions.assertEquals(1, result.count)
         Assertions.assertEquals(1, result.records.size)
         val node = result.records[0]

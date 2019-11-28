@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.artifact.permission
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.config.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.config.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
 import org.aspectj.lang.ProceedingJoinPoint
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import org.aspectj.lang.reflect.MethodSignature
+import org.springframework.stereotype.Component
 
 /**
  *
@@ -18,6 +20,7 @@ import org.aspectj.lang.reflect.MethodSignature
  * @date: 2019/11/22
  */
 @Aspect
+@Component
 class PermissionAspect {
 
     @Autowired
@@ -40,6 +43,7 @@ class PermissionAspect {
             artifactInfo = findArtifactInfo(point.args) ?: throw PermissionCheckException("Can not find ArtifactInfo argument.")
             permissionCheckHandler.onPermissionCheck(userId, permission, artifactInfo)
             logger.debug("User[$userId] check permission [$permission] on [$artifactInfo] success.")
+            request.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
             permissionCheckHandler.onPermissionCheckSuccess(request, response)
         } catch (exception: PermissionCheckException) {
             logger.debug("User[$userId] check permission [$permission] on [$artifactInfo] failed: $exception")

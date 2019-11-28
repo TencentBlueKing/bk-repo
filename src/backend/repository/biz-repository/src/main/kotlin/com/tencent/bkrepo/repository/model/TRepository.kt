@@ -28,7 +28,7 @@ data class TRepository(
     var category: RepositoryCategory,
     var public: Boolean,
     var description: String? = null,
-    var extension: Any? = null,
+    var configuration: String,
     var storageCredentials: TStorageCredentials? = null,
 
     var projectId: String

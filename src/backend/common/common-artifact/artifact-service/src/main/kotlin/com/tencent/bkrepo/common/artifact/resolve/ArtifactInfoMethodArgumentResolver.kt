@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.config.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.config.REPO_NAME
+import com.tencent.bkrepo.repository.util.NodeUtils
 import javax.servlet.http.HttpServletRequest
 import org.springframework.core.MethodParameter
 import org.springframework.util.AntPathMatcher
@@ -37,7 +38,8 @@ class ArtifactInfoMethodArgumentResolver(private val artifactCoordinateResolver:
             )
         } ?: AntPathMatcher.DEFAULT_PATH_SEPARATOR
 
-        val artifactCoordinate = artifactCoordinateResolver.resolve(fullPath)
+        val formattedFullPath = NodeUtils.formatFullPath(fullPath)
+        val artifactCoordinate = artifactCoordinateResolver.resolve(formattedFullPath)
 
         return ArtifactInfo(projectId, repoName, artifactCoordinate)
     }

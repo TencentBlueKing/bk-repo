@@ -64,9 +64,6 @@ class ArtifactAutoConfiguration {
     fun clientAuthInterceptor() = ClientAuthInterceptor()
 
     @Bean
-    fun permissionAspect() = PermissionAspect()
-
-    @Bean
     @ConditionalOnMissingBean(ClientAuthHandler::class)
     fun clientAuthHandler() : ClientAuthHandler = DefaultClientAuthHandler()
 

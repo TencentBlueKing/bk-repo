@@ -4,17 +4,20 @@ import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.config.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.config.REPO_NAME
 import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TMetadata
-import com.tencent.bkrepo.repository.service.MetadataService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.Date
 
 /**
  * 节点自定义查询service
@@ -49,13 +52,13 @@ class NodeQueryService @Autowired constructor(
         var projectId: String? = null
         val repoNameList = mutableListOf<String>()
         for (rule in (queryModel.rule as Rule.NestedRule).rules) {
-            if (rule is Rule.QueryRule && rule.field == "repoName") {
+            if (rule is Rule.QueryRule && rule.field == REPO_NAME) {
                 when (rule.operation) {
                     OperationType.IN -> (rule.value as List<String>).forEach { repoNameList.add(it) }
                     else -> repoNameList.add(rule.value.toString())
                 }
             }
-            if (rule is Rule.QueryRule && rule.field == "projectId") {
+            if (rule is Rule.QueryRule && rule.field == PROJECT_ID) {
                 projectId = rule.value.toString()
             }
         }
@@ -71,7 +74,9 @@ class NodeQueryService @Autowired constructor(
         val nodeList = nodeDao.find(query, MutableMap::class.java) as List<MutableMap<String, Any>>
         // metadata格式转换，并排除id字段
         nodeList.forEach {
-            it["metadata"]?.let { metadata -> it["metadata"] = MetadataService.convert(metadata as List<TMetadata>) }
+            it["metadata"]?.let { metadata -> it["metadata"] = convert(metadata as List<Map<String, String>>) }
+            it["createdDate"]?.let { createDate -> it["createdDate"] = LocalDateTime.ofInstant((createDate as Date).toInstant(), ZoneId.systemDefault()) }
+            it["lastModifiedDate"]?.let { lastModifiedDate -> it["lastModifiedDate"] = LocalDateTime.ofInstant((lastModifiedDate as Date).toInstant(), ZoneId.systemDefault()) }
             it.remove("_id")
         }
         val total = nodeDao.count(query)
@@ -80,5 +85,9 @@ class NodeQueryService @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeQueryService::class.java)
+
+        fun convert(metadataList: List<Map<String, String>>): Map<String, String> {
+            return metadataList.filter { it.containsKey("key") && it.containsKey("value") }.map { it.getValue("key") to it.getValue("value") }.toMap()
+        }
     }
 }
