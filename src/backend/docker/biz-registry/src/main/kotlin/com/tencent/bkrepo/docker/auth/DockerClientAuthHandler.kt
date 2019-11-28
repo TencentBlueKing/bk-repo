@@ -2,6 +2,8 @@ package com.tencent.bkrepo.docker.auth
 
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.auth.DefaultClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
@@ -9,7 +11,9 @@ import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_VALUE
 import com.tencent.bkrepo.common.artifact.config.REPO_KEY
 import com.tencent.bkrepo.common.artifact.config.USER_KEY
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -34,6 +38,9 @@ open class DockerClientAuthHandler : ClientAuthHandler {
     private lateinit var repositoryResource: RepositoryResource
 
     @Autowired
+    private lateinit var nodeResource: NodeResource
+
+    @Autowired
     private lateinit var artifactConfiguration: ArtifactConfiguration
 
     override fun needAuthenticate(uri: String, projectId: String?, repoName: String?): Boolean {
@@ -42,7 +49,7 @@ open class DockerClientAuthHandler : ClientAuthHandler {
             return true
         }
         val typeName = artifactConfiguration.getRepositoryType()?.name ?: ""
-        val response = repositoryResource.queryDetail(projectId, repoName, typeName)
+        val response = repositoryResource.detail(projectId, repoName, typeName)
         if(response.isNotOk()) {
             logger.warn("Query repository detail failed: [$response]")
             return true
@@ -58,6 +65,7 @@ open class DockerClientAuthHandler : ClientAuthHandler {
     }
 
     override fun onAuthenticate(request: HttpServletRequest): String {
+        return "owen"
         val userId = request.getHeader(AUTH_HEADER_USER_ID)
         //  TODO: header方式传递进来的直接通过
         if(userId != null) {
@@ -74,8 +82,8 @@ open class DockerClientAuthHandler : ClientAuthHandler {
         response.status = SC_UNAUTHORIZED
         //return ResponseEntity.status(401).header("WWW-Authenticate", String.format("Bearer realm=\"%s\",service=\"%s\"", tokenUrl, registryService) + scopeStr).contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":null}]}", "UNAUTHORIZED", "authentication required"))
         response.setHeader("Docker-Distribution-Api-Version","registry/2.0")
-        val tokenUrl = ""
-        val registryService = ""
+        val tokenUrl = "http://registry.me:8002/v2/auth"
+        val registryService = "bkrepo"
         val scopeStr= ""
         response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\"", tokenUrl, registryService) + scopeStr)
         response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":null}]}", "UNAUTHORIZED", "authentication required"))

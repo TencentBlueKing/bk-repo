@@ -79,7 +79,7 @@ class DockerArtifactoryService @Autowired constructor(
 
     fun readGlobal(context: DownloadContext): InputStream {
         // query repository
-        val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$context.userId] read global file  [$context.path] failed: $context.repoName not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
         }
@@ -97,7 +97,7 @@ class DockerArtifactoryService @Autowired constructor(
     fun write(context: WriteContext) {
         try {
             // check the repo
-            val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data
+            val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data
                     ?: run {
                         logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
                         throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
@@ -137,7 +137,7 @@ class DockerArtifactoryService @Autowired constructor(
 
     fun download(context: DownloadContext): File {
         // query repository
-        val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$context.userId] simply download file  [$context.path] failed: $context.repoName not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
         }
@@ -152,7 +152,7 @@ class DockerArtifactoryService @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     fun upload(context: UploadContext): ResponseEntity<Any> {
         // 判断仓库是否存在
-        val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
         }
@@ -184,7 +184,7 @@ class DockerArtifactoryService @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     fun uploadFromLocal(path: String, context: UploadContext): ResponseEntity<Any> {
         // 判断仓库是否存在
-        val repository = repositoryResource.queryDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$context.userId]  upload file  [$context.path] failed: ${context.repoName} not found")
             throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
         }
