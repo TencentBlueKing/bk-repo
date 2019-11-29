@@ -8,6 +8,7 @@ dependencies {
     api project(":repository:api-repository")
     api project(":repository:api-repository")
     api project(":common:common-artifact:artifact-service")
+    compile group: 'com.auth0', name: 'java-jwt', version: '3.8.3'
     compile group: 'javax.ws.rs', name: 'jsr311-api', version: '1.1.1'
     compile group: 'org.projectlombok', name: 'lombok', version: '1.18.10'
     compile "com.squareup.okhttp3:okhttp"

@@ -4,6 +4,8 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 
 /**
@@ -16,8 +18,10 @@ import org.springframework.web.bind.annotation.GetMapping
 interface Auth {
 
     @ApiOperation("校验仓库版本")
-    @GetMapping("/auth")
+    @GetMapping("/v2/auth")
     fun auth (
-    ): ResponseEntity<Any>
+            request: HttpServletRequest,
+            response : HttpServletResponse
+    ):ResponseEntity<Any>
 }
 
