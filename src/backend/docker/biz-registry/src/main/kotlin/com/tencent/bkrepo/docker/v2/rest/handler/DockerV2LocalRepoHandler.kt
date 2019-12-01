@@ -1,8 +1,6 @@
 package com.tencent.bkrepo.docker.v2.rest.handler
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.google.common.base.Joiner
-import com.tencent.bkrepo.docker.DockerWorkContext
 import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
 import com.tencent.bkrepo.docker.exception.DockerLockManifestException
 import com.tencent.bkrepo.docker.exception.DockerNotFoundException
@@ -19,12 +17,15 @@ import com.tencent.bkrepo.docker.util.DockerUtils
 import com.tencent.bkrepo.docker.util.JsonUtil
 import com.tencent.bkrepo.docker.v2.helpers.DockerManifestDigester
 import com.tencent.bkrepo.docker.v2.helpers.DockerManifestSyncer
+import com.tencent.bkrepo.docker.v2.helpers.DockerPaginationElementsHolder
+import com.tencent.bkrepo.docker.v2.helpers.DockerCatalogTagsSlicer
 import com.tencent.bkrepo.docker.v2.helpers.DockerSearchBlobPolicy
 import com.tencent.bkrepo.docker.v2.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.v2.model.DockerDigest
 import com.tencent.bkrepo.docker.v2.model.ManifestMetadata
 import com.tencent.bkrepo.docker.v2.rest.errors.DockerV2Errors
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.docker.v2.rest.response.CatalogResponse
+import com.tencent.bkrepo.docker.v2.rest.response.TagsResponse
 import org.apache.commons.lang.StringUtils
 import java.io.ByteArrayInputStream
 import java.io.IOException
@@ -46,9 +47,6 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import java.util.stream.Collectors
-import java.util.stream.Stream
-import java.util.stream.StreamSupport
 import org.springframework.http.MediaType
 import kotlin.streams.toList
 
@@ -76,6 +74,58 @@ class DockerV2LocalRepoHandler @Autowired constructor(
 
     override fun ping(): ResponseEntity<Any> {
         return ResponseEntity.ok().header("Content-Type", "application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body("{}")
+    }
+
+
+    fun getTags(projectId: String, repoName: String, dockerRepo: String, maxEntries: Int, lastEntry: String): ResponseEntity<Any> {
+        val elementsHolder = DockerPaginationElementsHolder()
+        val manifests = this.repo.findArtifacts(projectId, repoName, "manifest.json")
+
+        if (manifests.size != 0 ) {
+            manifests.forEach{
+                var path = it["path"] as String
+                val tagName = path.replaceAfterLast("/", "").removeSuffix("/").removePrefix("/"+dockerRepo+"/")
+                elementsHolder.elements.add(tagName)
+            }
+
+            if (elementsHolder.elements.isEmpty()) {
+                return DockerV2Errors.nameUnknown(dockerRepo)
+            } else {
+                DockerCatalogTagsSlicer.sliceCatalog(elementsHolder, maxEntries, lastEntry)
+                val shouldAddLinkHeader = elementsHolder.hasMoreElements
+                val tagsResponse = TagsResponse(elementsHolder, dockerRepo)
+                httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
+                if (shouldAddLinkHeader) {
+                    httpHeaders.set("Link", "</v2/" + dockerRepo + "/tags/list?last=" + tagsResponse.tags.last() as String + "&n=" + maxEntries + ">; rel=\"next\"")
+                }
+
+                return ResponseEntity(tagsResponse, httpHeaders, HttpStatus.OK)
+            }
+        } else {
+            return DockerV2Errors.nameUnknown(dockerRepo)
+        }
+    }
+
+    fun catalog(maxEntries: Int, lastEntry: String): ResponseEntity<Any> {
+        val manifests = this.repo.findArtifacts("manifest.json")
+        val elementsHolder = DockerPaginationElementsHolder()
+
+        manifests.forEach {
+            val path = it["path"] as String
+            val repoName = path.replaceAfterLast("/", "").replaceAfterLast("/", "").removeSuffix("/")
+
+            if (StringUtils.isNotBlank(repoName)) {
+                elementsHolder.addElement(repoName)
+            }
+            DockerCatalogTagsSlicer.sliceCatalog(elementsHolder, maxEntries, lastEntry)
+        }
+        val shouldAddLinkHeader = elementsHolder.hasMoreElements
+        val catalogResponse = CatalogResponse(elementsHolder)
+        httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
+        if (shouldAddLinkHeader) {
+            httpHeaders.set("Link", "</v2/_catalog?last=" + catalogResponse.repositories.last() as String + "&n=" + maxEntries + ">; rel=\"next\"")
+        }
+        return ResponseEntity(catalogResponse, httpHeaders, HttpStatus.OK)
     }
 
     override fun getManifest(projectId: String, repoName: String, dockerRepo: String, reference: String): ResponseEntity<Any> {

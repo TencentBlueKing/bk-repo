@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServletResponse
 
 
 /**
- *  docker image base api
+ *  docker image auth api
  *
  * @author: owenlxu
  * @date: 2019-11-27

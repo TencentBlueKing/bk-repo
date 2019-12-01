@@ -370,6 +370,25 @@ class DockerArtifactoryService @Autowired constructor(
         return result.records
     }
 
+    fun findArtifacts(fileName:String): List<Map<String,Any>> {
+        //find artifacts by name
+        val projectId = Rule.QueryRule("projectId", "ops")
+        val repoName = Rule.QueryRule("repoName", "dockerlocal")
+        val name = Rule.QueryRule("name", fileName)
+        val rule = Rule.NestedRule(mutableListOf( projectId, repoName,name))
+        val queryModel = QueryModel(
+                page = PageLimit(0, 9999999),
+                sort = Sort(listOf("path"), Sort.Direction.ASC),
+                select = mutableListOf("path"),
+                rule = rule
+        )
+        val result =  nodeResource.query(queryModel).data?: run {
+            logger.warn("find artifacts failed:  $fileName found no node")
+            return  emptyList()
+        }
+        return result.records
+    }
+
     fun findManifest(projectId: String, repoName: String, manifestPath:String): NodeDetail? {
         // query node info
         val nodes = nodeResource.queryDetail(projectId, repoName, manifestPath).data ?: run {
