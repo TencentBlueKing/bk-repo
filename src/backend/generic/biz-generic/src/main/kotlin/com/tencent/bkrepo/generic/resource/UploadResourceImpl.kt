@@ -43,5 +43,4 @@ class UploadResourceImpl @Autowired constructor(
     override fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): Response<List<BlockInfo>> {
         return Response.success(uploadService.listBlock(userId, uploadId, artifactInfo))
     }
-
 }

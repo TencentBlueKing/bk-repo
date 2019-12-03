@@ -211,7 +211,6 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
     protected abstract fun combineBlock(path: String, client: Client): File
     protected abstract fun listBlockInfo(path: String, client: Client): List<Pair<Long, String>>
 
-
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractFileStorage::class.java)
     }

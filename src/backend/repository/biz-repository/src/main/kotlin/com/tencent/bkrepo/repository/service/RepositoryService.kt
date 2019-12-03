@@ -178,6 +178,5 @@ class RepositoryService @Autowired constructor(
                 StorageCredentials(type = it.type, credentials = it.credentials)
             }
         }
-
     }
 }

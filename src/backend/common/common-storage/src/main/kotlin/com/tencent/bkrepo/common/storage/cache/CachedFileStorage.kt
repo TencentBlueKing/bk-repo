@@ -76,5 +76,4 @@ abstract class CachedFileStorage<Credentials : ClientCredentials, Client>(
     abstract fun doDelete(path: String, filename: String, client: Client)
     abstract fun doLoad(path: String, filename: String, file: File, client: Client): File?
     abstract fun checkExist(path: String, filename: String, client: Client): Boolean
-
 }

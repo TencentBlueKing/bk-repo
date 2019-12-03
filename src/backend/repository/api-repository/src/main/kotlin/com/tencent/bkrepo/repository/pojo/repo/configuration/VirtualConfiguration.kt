@@ -9,7 +9,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryIdentify
  */
 open class VirtualConfiguration(
     val repositoryList: List<RepositoryIdentify>
-): RepositoryConfiguration() {
+) : RepositoryConfiguration() {
     companion object {
         const val type = "virtual"
     }

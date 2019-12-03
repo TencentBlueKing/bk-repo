@@ -10,7 +10,7 @@ open class RemoteConfiguration(
     val credentialsConfiguration: RemoteCredentialsConfiguration? = null,
     val networkConfiguration: RemoteNetworkConfiguration,
     val cacheConfiguration: RemoteCacheConfiguration
-): RepositoryConfiguration() {
+) : RepositoryConfiguration() {
     companion object {
         const val type = "remote"
     }

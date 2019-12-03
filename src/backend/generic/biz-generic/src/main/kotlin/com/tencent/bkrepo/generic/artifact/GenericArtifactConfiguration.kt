@@ -10,6 +10,6 @@ import org.springframework.stereotype.Component
  * @date: 2019/11/26
  */
 @Component
-class GenericArtifactConfiguration: ArtifactConfiguration {
+class GenericArtifactConfiguration : ArtifactConfiguration {
     override fun getRepositoryType() = RepositoryType.GENERIC
 }

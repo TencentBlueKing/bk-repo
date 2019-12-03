@@ -9,15 +9,12 @@ import com.tencent.bkrepo.common.artifact.permission.PermissionAspect
 import com.tencent.bkrepo.common.artifact.permission.PermissionCheckHandler
 import com.tencent.bkrepo.common.artifact.resolve.ArtifactFileMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.ArtifactInfoMethodArgumentResolver
-import com.tencent.bkrepo.common.artifact.resolve.ResolverMap
-import com.tencent.bkrepo.common.artifact.resolve.ResolverScannerRegistrar
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
 import org.springframework.core.Ordered
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
@@ -30,7 +27,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
  */
 @Configuration
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
-//@Import(ResolverScannerRegistrar::class)
+// @Import(ResolverScannerRegistrar::class)
 @ConditionalOnWebApplication
 class ArtifactAutoConfiguration {
 
@@ -66,9 +63,9 @@ class ArtifactAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ClientAuthHandler::class)
-    fun clientAuthHandler() : ClientAuthHandler = DefaultClientAuthHandler()
+    fun clientAuthHandler(): ClientAuthHandler = DefaultClientAuthHandler()
 
     @Bean
     @ConditionalOnMissingBean(PermissionCheckHandler::class)
-    fun permissionCheckHandler() : PermissionCheckHandler = DefaultPermissionCheckHandler()
+    fun permissionCheckHandler(): PermissionCheckHandler = DefaultPermissionCheckHandler()
 }

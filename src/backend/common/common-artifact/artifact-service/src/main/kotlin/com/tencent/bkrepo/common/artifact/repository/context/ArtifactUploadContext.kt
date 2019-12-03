@@ -7,4 +7,4 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
  * @author: carrypan
  * @date: 2019/11/26
  */
-class ArtifactUploadContext(val artifactFile: ArtifactFile): ArtifactTransferContext()
+class ArtifactUploadContext(val artifactFile: ArtifactFile) : ArtifactTransferContext()

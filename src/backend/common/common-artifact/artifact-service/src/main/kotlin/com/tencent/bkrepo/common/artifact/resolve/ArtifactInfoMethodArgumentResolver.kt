@@ -5,6 +5,10 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.config.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.config.REPO_NAME
 import com.tencent.bkrepo.repository.util.NodeUtils
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
+import javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST
+import kotlin.reflect.KClass
 import org.slf4j.LoggerFactory
 import org.springframework.core.MethodParameter
 import org.springframework.util.AntPathMatcher
@@ -13,10 +17,6 @@ import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
-import javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST
-import kotlin.reflect.KClass
 
 /**
  * 构件位置信息参数解析器
@@ -54,7 +54,6 @@ class ArtifactInfoMethodArgumentResolver : HandlerMethodArgumentResolver {
             response.status = SC_BAD_REQUEST
             null
         }
-
     }
 
     companion object {

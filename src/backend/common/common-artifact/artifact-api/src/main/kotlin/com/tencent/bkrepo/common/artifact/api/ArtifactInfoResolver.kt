@@ -11,4 +11,3 @@ import javax.servlet.http.HttpServletRequest
 interface ArtifactInfoResolver {
     fun resolve(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest): ArtifactInfo
 }
-

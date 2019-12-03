@@ -5,7 +5,7 @@ package com.tencent.bkrepo.repository.pojo.repo.configuration
  * @author: carrypan
  * @date: 2019/11/26
  */
-open class LocalConfiguration: RepositoryConfiguration() {
+open class LocalConfiguration : RepositoryConfiguration() {
     companion object {
         const val type = "local"
     }

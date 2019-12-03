@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
  * @author: carrypan
  * @date: 2019/11/27
  */
-interface AbstractArtifactRepository: ArtifactRepository {
+interface AbstractArtifactRepository : ArtifactRepository {
 
     override fun upload(context: ArtifactUploadContext) {
         val artifactUri = context.artifactInfo.getFullUri()
@@ -36,7 +36,6 @@ interface AbstractArtifactRepository: ArtifactRepository {
             this.onUploadFailed(context, exception)
         }
     }
-
 
     override fun download(context: ArtifactDownloadContext) {
         val artifactUri = context.artifactInfo.getFullUri()

@@ -3,9 +3,8 @@ package com.tencent.bkrepo.common.service.util
 import org.springframework.beans.BeansException
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
-import org.springframework.stereotype.Component
 
-class SpringContextUtils: ApplicationContextAware {
+class SpringContextUtils : ApplicationContextAware {
     /**
      * 实现ApplicationContextAware接口的回调方法，设置上下文环境
      */

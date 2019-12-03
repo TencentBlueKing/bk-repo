@@ -12,15 +12,15 @@ import com.tencent.bkrepo.common.artifact.config.USER_KEY
 import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.repository.api.RepositoryResource
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
 import java.lang.Exception
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.context.request.ServletRequestAttributes
 
 /**
  *
@@ -36,13 +36,13 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
     private lateinit var artifactConfiguration: ArtifactConfiguration
 
     override fun needAuthenticate(uri: String, projectId: String?, repoName: String?): Boolean {
-        if(projectId.isNullOrEmpty() || repoName.isNullOrEmpty()) {
+        if (projectId.isNullOrEmpty() || repoName.isNullOrEmpty()) {
             logger.debug("Can not extract projectId or repoName.")
             return true
         }
         val typeName = artifactConfiguration.getRepositoryType()?.name ?: ""
         val response = repositoryResource.detail(projectId, repoName, typeName)
-        if(response.isNotOk()) {
+        if (response.isNotOk()) {
             logger.warn("Query repository detail failed: [$response].")
             return true
         }
@@ -55,7 +55,7 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
     override fun onAuthenticate(request: HttpServletRequest): String {
         val userId = request.getHeader(AUTH_HEADER_USER_ID)
         //  TODO: header方式传递进来的直接通过
-        if(userId != null) {
+        if (userId != null) {
             logger.debug("Extract userId from header: $userId.")
             return userId
         }
@@ -76,10 +76,10 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
 
     private fun extractBasicAuth(request: HttpServletRequest): BasicAuthCredentials {
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
-        if(basicAuthHeader.isNullOrBlank()) throw ClientAuthException("Authorization value is null.")
-        if(!basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme.")
+        if (basicAuthHeader.isNullOrBlank()) throw ClientAuthException("Authorization value is null.")
+        if (!basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme.")
 
-        try{
+        try {
             val encodedCredentials = basicAuthHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
             val parts = decodedHeader.split(":")
@@ -92,7 +92,6 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
 
     companion object {
         private val logger = LoggerFactory.getLogger(DefaultClientAuthHandler::class.java)
-
     }
 
     data class BasicAuthCredentials(val username: String, val password: String)

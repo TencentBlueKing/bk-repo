@@ -5,12 +5,12 @@ import com.tencent.bkrepo.common.artifact.config.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.config.REPO_NAME
 import com.tencent.bkrepo.common.artifact.config.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerMapping
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * 依赖源客户端认证拦截器
@@ -18,7 +18,7 @@ import javax.servlet.http.HttpServletResponse
  * @author: carrypan
  * @date: 2019/11/22
  */
-class ClientAuthInterceptor: HandlerInterceptorAdapter() {
+class ClientAuthInterceptor : HandlerInterceptorAdapter() {
 
     @Autowired
     private lateinit var clientAuthHandler: ClientAuthHandler
@@ -29,7 +29,7 @@ class ClientAuthInterceptor: HandlerInterceptorAdapter() {
         val projectId = nameValueMap[PROJECT_ID]?.toString()
         val repoName = nameValueMap[REPO_NAME]?.toString()
         logger.debug("Prepare to authenticate, uri: [$uri]")
-        return if(clientAuthHandler.needAuthenticate(uri, projectId, repoName)) {
+        return if (clientAuthHandler.needAuthenticate(uri, projectId, repoName)) {
             var userId: String? = null
             try {
                 userId = clientAuthHandler.onAuthenticate(request)

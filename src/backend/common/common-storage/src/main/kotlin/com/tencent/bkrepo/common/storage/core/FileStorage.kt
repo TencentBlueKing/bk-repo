@@ -53,7 +53,6 @@ interface FileStorage {
      */
     fun deleteBlockPath(path: String, clientCredentials: ClientCredentials? = null)
 
-
     /**
      * 列出分块文件
      */

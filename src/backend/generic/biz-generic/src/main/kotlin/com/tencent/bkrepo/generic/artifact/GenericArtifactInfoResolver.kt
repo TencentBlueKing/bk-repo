@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletRequest
  * @date: 2019/11/28
  */
 @Resolver(GenericArtifactInfo::class)
-class GenericArtifactInfoResolver: ArtifactInfoResolver {
+class GenericArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest): GenericArtifactInfo {
         return GenericArtifactInfo(projectId, repoName, artifactUri, artifactUri)
     }

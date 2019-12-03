@@ -15,8 +15,8 @@ import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
+import org.springframework.stereotype.Component
 
 /**
  *
@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletRequest
  * @date: 2019/11/28
  */
 @Component
-class GenericLocalRepository: LocalRepository() {
+class GenericLocalRepository : LocalRepository() {
 
     override fun onUploadValidate(context: ArtifactUploadContext) {
         super.onUploadValidate(context)
@@ -39,7 +39,7 @@ class GenericLocalRepository: LocalRepository() {
     override fun onUpload(context: ArtifactUploadContext) {
         val uploadId = context.request.getHeader(HEADER_UPLOAD_ID)
         val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
-        if(isBlockUpload(uploadId, sequence)) {
+        if (isBlockUpload(uploadId, sequence)) {
             this.blockUpload(uploadId, sequence!!, context)
         } else {
             super.onUpload(context)
@@ -56,7 +56,7 @@ class GenericLocalRepository: LocalRepository() {
     private fun blockUpload(uploadId: String, sequence: Int, context: ArtifactUploadContext) {
         val repositoryInfo = context.repositoryInfo
         val storageCredentials = CredentialsUtils.readString(repositoryInfo.storageCredentials?.type, repositoryInfo.storageCredentials?.credentials)
-        if(!fileStorage.checkBlockPath(uploadId, storageCredentials)) {
+        if (!fileStorage.checkBlockPath(uploadId, storageCredentials)) {
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         }
         val calculatedSha256 = context.contextAttributes[ATTRIBUTE_SHA256] as String
@@ -64,7 +64,7 @@ class GenericLocalRepository: LocalRepository() {
     }
 
     override fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val request= super.getNodeCreateRequest(context)
+        val request = super.getNodeCreateRequest(context)
         return request.copy(
             expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
             overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),

@@ -1,13 +1,9 @@
 package com.tencent.bkrepo.common.artifact.resolve
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.BeanClassLoaderAware
 import org.springframework.beans.factory.support.BeanDefinitionRegistry
-import org.springframework.beans.factory.support.GenericBeanDefinition
-import org.springframework.context.ApplicationContext
-import org.springframework.context.ApplicationContextAware
 import org.springframework.context.EnvironmentAware
 import org.springframework.context.ResourceLoaderAware
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider
@@ -23,7 +19,7 @@ import org.springframework.util.ClassUtils
  * @author: carrypan
  * @date: 2019/11/28
  */
-class ResolverScannerRegistrar: ImportBeanDefinitionRegistrar, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
+class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
 
     private lateinit var resourceLoader: ResourceLoader
     private lateinit var environment: Environment
@@ -37,10 +33,10 @@ class ResolverScannerRegistrar: ImportBeanDefinitionRegistrar, ResourceLoaderAwa
         basePackages.forEach {
             for (beanDefinition in provider.findCandidateComponents(it)) {
                 val clazz = Class.forName(beanDefinition.beanClassName)
-                if(ArtifactInfoResolver::class.java.isAssignableFrom(clazz)) {
+                if (ArtifactInfoResolver::class.java.isAssignableFrom(clazz)) {
                     val annotation = clazz.getAnnotation(Resolver::class.java)
                     val instance = clazz.newInstance() as ArtifactInfoResolver
-                    if(!resolverMap.containsKey(annotation.value)) {
+                    if (!resolverMap.containsKey(annotation.value)) {
                         resolverMap.register(annotation.value, instance, annotation.default)
                         logger.debug("Registering ArtifactInfo resolver: [${annotation.value} -> ${beanDefinition.beanClassName} (default: ${annotation.default})].")
                     }

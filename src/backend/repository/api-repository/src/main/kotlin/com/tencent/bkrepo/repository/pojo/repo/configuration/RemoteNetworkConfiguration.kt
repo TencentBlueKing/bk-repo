@@ -13,7 +13,7 @@ data class RemoteNetworkConfiguration(
     /**
      * 远程请求请求超时时间，单位ms
      */
-    val timeout: Long = 10*1000
+    val timeout: Long = 10 * 1000
 )
 
 data class ProxyConfiguration(

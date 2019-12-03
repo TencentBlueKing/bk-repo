@@ -4,11 +4,11 @@ import com.google.common.io.ByteStreams
 import com.tencent.bkrepo.common.storage.exception.StorageException
 import com.tencent.bkrepo.common.storage.schedule.CleanupResult
 import com.tencent.bkrepo.common.storage.util.FileMergeUtils
-import org.apache.commons.io.FileUtils
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.nio.charset.Charset
+import org.apache.commons.io.FileUtils
 
 /**
  * 本地文件存储客户端
@@ -85,8 +85,7 @@ class LocalStorageClient(private val directory: String) {
     fun deleteBlockPath(path: String) {
         val subDirectory = File(tempDirectory, path)
         FileUtils.deleteDirectory(subDirectory)
-        if(!subDirectory.exists()) return
-
+        if (!subDirectory.exists()) return
     }
 
     fun storeBlock(path: String, sequence: Int, sha256: String, inputStream: InputStream) {
@@ -99,7 +98,7 @@ class LocalStorageClient(private val directory: String) {
         val subDirectory = File(tempDirectory, path)
         val blockFileList = FileUtils.listFiles(subDirectory, arrayOf(BLOCK_EXTENSION), false).sortedBy { it.name.removeSuffix(BLOCK_SUFFIX).toInt() }
         // 校验
-        if(blockFileList.isNullOrEmpty()) {
+        if (blockFileList.isNullOrEmpty()) {
             throw StorageException("No file block was found.")
         }
         for (index in blockFileList.indices) {
@@ -115,7 +114,7 @@ class LocalStorageClient(private val directory: String) {
 
     fun listBlockInfo(path: String): List<Pair<Long, String>> {
         val subDirectory = File(tempDirectory, path)
-        if(!subDirectory.exists()) return emptyList()
+        if (!subDirectory.exists()) return emptyList()
         val blockFileList = FileUtils.listFiles(subDirectory, arrayOf(BLOCK_EXTENSION), false).sortedBy { it.name.removeSuffix(BLOCK_SUFFIX).toInt() }
         return blockFileList.map {
             val size = it.length()
@@ -130,7 +129,7 @@ class LocalStorageClient(private val directory: String) {
 
     private fun doClean(path: String, expireSeconds: Long): CleanupResult {
         val result = CleanupResult(0, 0)
-        if(expireSeconds <= 0) return result
+        if (expireSeconds <= 0) return result
 
         val directory = File(path)
         val files = directory.listFiles() ?: arrayOf()
@@ -141,7 +140,7 @@ class LocalStorageClient(private val directory: String) {
                     result.count += 1
                     result.size += fileSize
                 }
-            } else if(it.isDirectory) {
+            } else if (it.isDirectory) {
                 val subResult = doClean(it.absolutePath, expireSeconds)
                 result.count += subResult.count
                 result.size += subResult.size

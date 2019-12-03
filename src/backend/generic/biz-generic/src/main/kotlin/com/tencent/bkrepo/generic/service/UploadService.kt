@@ -27,12 +27,12 @@ import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.UUID
 
 /**
  * 通用文件上传服务类
@@ -91,7 +91,7 @@ class UploadService @Autowired constructor(
     fun completeBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
         val storageCredentials = getStorageCredentials()
         // 判断uploadId是否存在
-        if(!fileStorage.checkBlockPath(uploadId, storageCredentials)) {
+        if (!fileStorage.checkBlockPath(uploadId, storageCredentials)) {
             logger.warn("User[$userId] abort block upload [${artifactInfo.getFullUri()}] failed: uploadId not found.")
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         }
@@ -124,9 +124,9 @@ class UploadService @Autowired constructor(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): List<BlockInfo> {
         val storageCredentials = getStorageCredentials()
-        if(!fileStorage.checkBlockPath(uploadId, storageCredentials)) throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
+        if (!fileStorage.checkBlockPath(uploadId, storageCredentials)) throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         val blockInfoList = fileStorage.listBlockInfo(uploadId, storageCredentials)
-        return blockInfoList.mapIndexed { index, it -> BlockInfo(size = it.first, sequence = index + 1, sha256 = it.second ) }
+        return blockInfoList.mapIndexed { index, it -> BlockInfo(size = it.first, sequence = index + 1, sha256 = it.second) }
     }
 
     private fun genericTransactionId(): String {

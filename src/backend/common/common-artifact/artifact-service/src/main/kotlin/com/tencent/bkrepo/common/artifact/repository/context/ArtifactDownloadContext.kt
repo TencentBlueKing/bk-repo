@@ -5,4 +5,4 @@ package com.tencent.bkrepo.common.artifact.repository.context
  * @author: carrypan
  * @date: 2019/11/26
  */
-class ArtifactDownloadContext: ArtifactTransferContext()
+class ArtifactDownloadContext : ArtifactTransferContext()

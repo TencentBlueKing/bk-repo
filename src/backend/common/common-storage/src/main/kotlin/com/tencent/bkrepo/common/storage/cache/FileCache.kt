@@ -75,5 +75,4 @@ interface FileCache {
      * 清理缓存文件
      */
     fun onClean(): CleanupResult
-
 }

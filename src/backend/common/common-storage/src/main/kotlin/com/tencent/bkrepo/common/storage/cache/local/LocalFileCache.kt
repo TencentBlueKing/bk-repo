@@ -17,7 +17,6 @@ class LocalFileCache(properties: LocalFileCacheProperties) : AbstractFileCache()
     private val cachedExpires = properties.expires
     private val client = LocalStorageClient(properties.path)
 
-
     override fun doCache(path: String, filename: String, inputStream: InputStream): File {
         return client.store(path, filename, inputStream)
     }

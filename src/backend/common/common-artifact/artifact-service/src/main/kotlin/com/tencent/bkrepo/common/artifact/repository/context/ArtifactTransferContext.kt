@@ -9,10 +9,10 @@ import com.tencent.bkrepo.common.storage.core.ClientCredentials
 import com.tencent.bkrepo.common.storage.util.CredentialsUtils
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.configuration.RepositoryConfiguration
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.context.request.ServletRequestAttributes
 
 /**
  * 构件传输context
@@ -40,6 +40,4 @@ open class ArtifactTransferContext {
         repositoryConfiguration = JsonUtils.objectMapper.readValue(repositoryInfo.configuration, RepositoryConfiguration::class.java)
         contextAttributes = mutableMapOf()
     }
-
-
 }

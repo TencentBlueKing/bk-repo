@@ -11,12 +11,12 @@ import org.springframework.stereotype.Component
  * @date: 2019/11/28
  */
 @Component
-class GenericRemoteRepository: RemoteRepository() {
+class GenericRemoteRepository : RemoteRepository() {
     override fun onUpload(context: ArtifactUploadContext) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
     }
 
     override fun onDownload(context: ArtifactDownloadContext) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
     }
 }

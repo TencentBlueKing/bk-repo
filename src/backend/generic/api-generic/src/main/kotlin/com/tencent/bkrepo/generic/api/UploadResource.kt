@@ -38,7 +38,6 @@ interface UploadResource {
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo
     ): Response<UploadTransactionInfo>
 
-
     @ApiOperation("取消分块上传")
     @DeleteMapping(BLOCK_MAPPING_URI)
     fun abortBlockUpload(
@@ -62,5 +61,4 @@ interface UploadResource {
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo
     ): Response<List<BlockInfo>>
-
 }

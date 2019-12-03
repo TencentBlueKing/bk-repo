@@ -9,7 +9,7 @@ class DefaultArtifactInfo(
     projectId: String,
     repoName: String,
     fullPath: String
-): ArtifactInfo(projectId, repoName, fullPath) {
+) : ArtifactInfo(projectId, repoName, fullPath) {
     companion object {
         const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
     }
