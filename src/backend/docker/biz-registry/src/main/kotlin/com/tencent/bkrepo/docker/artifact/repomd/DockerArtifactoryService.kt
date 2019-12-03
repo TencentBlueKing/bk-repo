@@ -24,11 +24,11 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.api.pojo.Page
 import java.io.File
 import java.io.InputStream
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -46,8 +46,12 @@ class DockerArtifactoryService @Autowired constructor(
     // protected var propertiesService: PropertiesService ？
     protected lateinit var context: DockerWorkContext
 
-    //@ConfigurationProperties("local.path")
-    private val localPath: String = "/Users/owen/data"
+    private var localPath: String = ""
+
+    @Value("\${storage.localTempPath}")
+    fun setAuthUsername(path: String) {
+        localPath = path
+    }
 
     init {
         this.context = DockerPackageWorkContext()
