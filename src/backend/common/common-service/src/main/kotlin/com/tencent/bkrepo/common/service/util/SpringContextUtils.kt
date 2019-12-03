@@ -3,11 +3,8 @@ package com.tencent.bkrepo.common.service.util
 import org.springframework.beans.BeansException
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
-import org.springframework.stereotype.Component
 
-@Component
 class SpringContextUtils : ApplicationContextAware {
-
     /**
      * 实现ApplicationContextAware接口的回调方法，设置上下文环境
      */
@@ -18,8 +15,7 @@ class SpringContextUtils : ApplicationContextAware {
 
     companion object {
 
-        // Spring应用上下文环境
-        private var applicationContext: ApplicationContext? = null
+        private lateinit var applicationContext: ApplicationContext
 
         /**
          * 获取对象 这里重写了bean方法，起主要作用
@@ -30,7 +26,7 @@ class SpringContextUtils : ApplicationContextAware {
         </T> */
         @Throws(BeansException::class)
         fun <T> getBean(clazz: Class<T>): T {
-            return applicationContext!!.getBean(clazz)
+            return applicationContext.getBean(clazz)
         }
 
         /**
@@ -43,7 +39,7 @@ class SpringContextUtils : ApplicationContextAware {
          */
         @Throws(BeansException::class)
         fun <T> getBean(clazz: Class<T>, beanName: String): T {
-            return applicationContext!!.getBean(beanName, clazz)
+            return applicationContext.getBean(beanName, clazz)
         }
 
         /**
@@ -55,7 +51,7 @@ class SpringContextUtils : ApplicationContextAware {
          */
         @Throws(BeansException::class)
         fun <T : Annotation> getBeansWithAnnotation(clazz: Class<T>): List<Any> {
-            return applicationContext!!.getBeansWithAnnotation(clazz).values.toList()
+            return applicationContext.getBeansWithAnnotation(clazz).values.toList()
         }
     }
 }

@@ -7,12 +7,11 @@ import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
+import org.aspectj.lang.reflect.MethodSignature
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
-import org.aspectj.lang.reflect.MethodSignature
-import org.springframework.stereotype.Component
 
 /**
  *
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Component
  * @date: 2019/11/22
  */
 @Aspect
-@Component
 class PermissionAspect {
 
     @Autowired
@@ -38,7 +36,7 @@ class PermissionAspect {
         val response = requestAttributes.response!!
         val userId = request.getAttribute(USER_KEY) as? String ?: ""
 
-        var artifactInfo : ArtifactInfo? = null
+        var artifactInfo: ArtifactInfo? = null
         try {
             artifactInfo = findArtifactInfo(point.args) ?: throw PermissionCheckException("Can not find ArtifactInfo argument.")
             permissionCheckHandler.onPermissionCheck(userId, permission, artifactInfo)
@@ -46,7 +44,7 @@ class PermissionAspect {
             request.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
             permissionCheckHandler.onPermissionCheckSuccess(request, response)
         } catch (exception: PermissionCheckException) {
-            logger.debug("User[$userId] check permission [$permission] on [$artifactInfo] failed: $exception")
+            logger.warn("User[$userId] check permission [$permission] on [$artifactInfo] failed: $exception")
             permissionCheckHandler.onPermissionCheckFailed(request, response)
             return null
         }
@@ -55,7 +53,7 @@ class PermissionAspect {
 
     private fun findArtifactInfo(args: Array<Any>): ArtifactInfo? {
         for (argument in args) {
-            if(argument is ArtifactInfo) return argument
+            if (argument is ArtifactInfo) return argument
         }
         return null
     }

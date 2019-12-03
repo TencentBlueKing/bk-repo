@@ -8,5 +8,4 @@ dependencies {
     api project(":common:common-artifact:artifact-service")
     api project(":generic:api-generic")
     api project(":repository:api-repository")
-
 }

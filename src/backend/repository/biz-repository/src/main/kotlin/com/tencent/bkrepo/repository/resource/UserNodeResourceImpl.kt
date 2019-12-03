@@ -42,8 +42,8 @@ class UserNodeResourceImpl @Autowired constructor(
     override fun detail(userId: String, artifactInfo: ArtifactInfo): Response<NodeDetail?> {
         artifactInfo.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-            val nodeDetail = nodeService.detail(projectId, repoName, this.coordinate.fullPath) ?: throw ErrorCodeException(
-                CommonMessageCode.ELEMENT_NOT_FOUND, this.coordinate.fullPath)
+            val nodeDetail = nodeService.detail(projectId, repoName, this.artifactUri) ?: throw ErrorCodeException(
+                CommonMessageCode.ELEMENT_NOT_FOUND, this.artifactUri)
             return Response.success(nodeDetail)
         }
     }
@@ -55,7 +55,7 @@ class UserNodeResourceImpl @Autowired constructor(
                 projectId = projectId,
                 repoName = repoName,
                 folder = true,
-                fullPath = this.coordinate.fullPath,
+                fullPath = this.artifactUri,
                 overwrite = false,
                 operator = userId
             )
@@ -70,7 +70,7 @@ class UserNodeResourceImpl @Autowired constructor(
             val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = this.coordinate.fullPath,
+                fullPath = this.artifactUri,
                 operator = userId
             )
             nodeService.delete(deleteRequest)
@@ -134,7 +134,7 @@ class UserNodeResourceImpl @Autowired constructor(
     override fun computeSize(userId: String, artifactInfo: ArtifactInfo): Response<NodeSizeInfo> {
         artifactInfo.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-            val nodeSizeInfo = nodeService.computeSize(projectId, repoName, this.coordinate.fullPath)
+            val nodeSizeInfo = nodeService.computeSize(projectId, repoName, this.artifactUri)
             return Response.success(nodeSizeInfo)
         }
     }

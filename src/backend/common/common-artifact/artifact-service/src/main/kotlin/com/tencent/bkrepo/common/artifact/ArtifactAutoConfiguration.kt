@@ -2,15 +2,13 @@ package com.tencent.bkrepo.common.artifact
 
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthInterceptor
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.auth.DefaultClientAuthHandler
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.permission.DefaultPermissionCheckHandler
 import com.tencent.bkrepo.common.artifact.permission.PermissionAspect
 import com.tencent.bkrepo.common.artifact.permission.PermissionCheckHandler
-import com.tencent.bkrepo.common.artifact.resolve.ArtifactInfoMethodArgumentResolver
-import com.tencent.bkrepo.common.artifact.resolve.ArtifactCoordinateResolver
-import com.tencent.bkrepo.common.artifact.resolve.DefaultArtifactCoordinateResolver
 import com.tencent.bkrepo.common.artifact.resolve.ArtifactFileMethodArgumentResolver
+import com.tencent.bkrepo.common.artifact.resolve.ArtifactInfoMethodArgumentResolver
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -29,11 +27,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
  */
 @Configuration
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
+// @Import(ResolverScannerRegistrar::class)
 @ConditionalOnWebApplication
 class ArtifactAutoConfiguration {
-
-    @Autowired
-    private lateinit var artifactCoordinateResolver: ArtifactCoordinateResolver
 
     @Autowired
     private lateinit var artifactConfiguration: ArtifactConfiguration
@@ -42,7 +38,7 @@ class ArtifactAutoConfiguration {
     fun webMvcConfigurer(): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
-                resolvers.add(ArtifactInfoMethodArgumentResolver(artifactCoordinateResolver))
+                resolvers.add(artifactInfoMethodArgumentResolver())
                 resolvers.add(ArtifactFileMethodArgumentResolver())
             }
 
@@ -57,17 +53,19 @@ class ArtifactAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(ArtifactCoordinateResolver::class)
-    fun artifactPathResolver() : ArtifactCoordinateResolver = DefaultArtifactCoordinateResolver()
+    fun artifactInfoMethodArgumentResolver() = ArtifactInfoMethodArgumentResolver()
+
+    @Bean
+    fun permissionAspect() = PermissionAspect()
 
     @Bean
     fun clientAuthInterceptor() = ClientAuthInterceptor()
 
     @Bean
     @ConditionalOnMissingBean(ClientAuthHandler::class)
-    fun clientAuthHandler() : ClientAuthHandler = DefaultClientAuthHandler()
+    fun clientAuthHandler(): ClientAuthHandler = DefaultClientAuthHandler()
 
     @Bean
     @ConditionalOnMissingBean(PermissionCheckHandler::class)
-    fun permissionCheckHandler() : PermissionCheckHandler = DefaultPermissionCheckHandler()
+    fun permissionCheckHandler(): PermissionCheckHandler = DefaultPermissionCheckHandler()
 }

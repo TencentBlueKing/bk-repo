@@ -5,18 +5,12 @@ import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXI
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.REPOSITORY_NOT_FOUND
-import com.tencent.bkrepo.common.artifact.repository.configuration.LocalConfiguration
-import com.tencent.bkrepo.common.artifact.repository.configuration.RemoteConfiguration
-import com.tencent.bkrepo.common.artifact.repository.configuration.VirtualConfiguration
-import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryConfiguration
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.StorageCredentials
 import com.tencent.bkrepo.repository.repository.RepoRepository
@@ -184,6 +178,5 @@ class RepositoryService @Autowired constructor(
                 StorageCredentials(type = it.type, credentials = it.credentials)
             }
         }
-
     }
 }

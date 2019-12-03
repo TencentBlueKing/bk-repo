@@ -1,6 +1,4 @@
-package com.tencent.bkrepo.common.artifact.repository.configuration
-
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryConfiguration
+package com.tencent.bkrepo.repository.pojo.repo.configuration
 
 /**
  * 远程仓库配置
@@ -12,4 +10,8 @@ open class RemoteConfiguration(
     val credentialsConfiguration: RemoteCredentialsConfiguration? = null,
     val networkConfiguration: RemoteNetworkConfiguration,
     val cacheConfiguration: RemoteCacheConfiguration
-): RepositoryConfiguration
+) : RepositoryConfiguration() {
+    companion object {
+        const val type = "remote"
+    }
+}

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 class GlobalExceptionHandlerResolver {
 
     @ExceptionHandler(ExternalErrorCodeException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleExternalErrorCodeException(exception: ExternalErrorCodeException): Response<Void> {
         logger.warn("Failed with external error code exception:[${exception.errorCode}-${exception.errorMessage}]")
 
@@ -26,6 +27,7 @@ class GlobalExceptionHandlerResolver {
     }
 
     @ExceptionHandler(ErrorCodeException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleErrorCodeException(exception: ErrorCodeException): Response<Void> {
         val errorMsg = MessageCodeUtils.generateResponseDataObject<String>(exception.errorCode, exception.defaultMessage, exception.params)
 
