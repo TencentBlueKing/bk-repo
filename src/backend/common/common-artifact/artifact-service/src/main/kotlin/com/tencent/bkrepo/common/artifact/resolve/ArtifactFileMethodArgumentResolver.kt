@@ -18,6 +18,11 @@ import org.springframework.web.method.support.ModelAndViewContainer
  * @date: 2019-10-30
  */
 class ArtifactFileMethodArgumentResolver : HandlerMethodArgumentResolver {
+
+    override fun supportsParameter(parameter: MethodParameter): Boolean {
+        return parameter.parameterType.isAssignableFrom(ArtifactFile::class.java)
+    }
+
     override fun resolveArgument(parameter: MethodParameter, container: ModelAndViewContainer?, nativeWebRequest: NativeWebRequest, factory: WebDataBinderFactory?): Any? {
         val request = nativeWebRequest.getNativeRequest(HttpServletRequest::class.java)
         return request?.let {
@@ -41,7 +46,4 @@ class ArtifactFileMethodArgumentResolver : HandlerMethodArgumentResolver {
         }
     }
 
-    override fun supportsParameter(parameter: MethodParameter): Boolean {
-        return parameter.parameterType.isAssignableFrom(ArtifactFile::class.java)
-    }
 }

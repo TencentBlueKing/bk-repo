@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.common.artifact.repository.configuration.LocalConfiguration
+import com.tencent.bkrepo.repository.pojo.repo.configuration.LocalConfiguration
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel

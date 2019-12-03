@@ -6,12 +6,10 @@ package com.tencent.bkrepo.common.artifact.api
  * @author: carrypan
  * @date: 2019/11/19
  */
-data class ArtifactInfo(
-    val projectId: String,
-    val repoName: String,
-    val coordinate: ArtifactCoordinate
+abstract class ArtifactInfo(
+    open val projectId: String,
+    open val repoName: String,
+    open val artifactUri: String
 ) {
-    fun getUri(): String {
-        return "$projectId/$repoName${coordinate.fullPath}"
-    }
+    fun getFullUri() = "$projectId/$repoName$artifactUri"
 }

@@ -7,7 +7,7 @@ import java.lang.RuntimeException
  * @author: carrypan
  * @date: 2019/11/25
  */
-open class ArtifactException : RuntimeException {
+open class ArtifactException: RuntimeException {
 
     constructor(message: String) : super(message)
 

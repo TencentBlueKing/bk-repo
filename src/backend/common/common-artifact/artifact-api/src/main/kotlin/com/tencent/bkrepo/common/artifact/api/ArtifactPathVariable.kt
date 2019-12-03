@@ -9,8 +9,4 @@ package com.tencent.bkrepo.common.artifact.api
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
 @MustBeDocumented
-annotation class ArtifactPathVariable {
-    companion object {
-        const val ARTIFACT_COORDINATE_URI = "/{projectId}/{repoName}/**"
-    }
-}
+annotation class ArtifactPathVariable

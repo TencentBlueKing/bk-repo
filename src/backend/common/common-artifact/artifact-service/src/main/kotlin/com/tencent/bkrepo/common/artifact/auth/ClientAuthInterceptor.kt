@@ -5,7 +5,6 @@ import com.tencent.bkrepo.common.artifact.config.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.config.REPO_NAME
 import com.tencent.bkrepo.common.artifact.config.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
-import com.tencent.bkrepo.common.artifact.resolve.ArtifactInfoMethodArgumentResolver
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerMapping
@@ -29,15 +28,16 @@ class ClientAuthInterceptor: HandlerInterceptorAdapter() {
         val nameValueMap = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
         val projectId = nameValueMap[PROJECT_ID]?.toString()
         val repoName = nameValueMap[REPO_NAME]?.toString()
-
+        logger.debug("Prepare to authenticate, uri: [$uri]")
         return if(clientAuthHandler.needAuthenticate(uri, projectId, repoName)) {
+            var userId: String? = null
             try {
-                val userId = clientAuthHandler.onAuthenticate(request)
+                userId = clientAuthHandler.onAuthenticate(request)
                 logger.debug("User[$userId] authenticate success.")
                 clientAuthHandler.onAuthenticateSuccess(userId, request, response)
                 true
             } catch (authException: ClientAuthException) {
-                logger.warn("Authenticate failed: $authException")
+                logger.warn("User[$userId] authenticate failed: $authException")
                 clientAuthHandler.onAuthenticateFailed(request, response)
                 false
             }

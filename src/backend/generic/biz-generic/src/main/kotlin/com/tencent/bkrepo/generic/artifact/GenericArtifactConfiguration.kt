@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.generic.artifact
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.RepositoryType

@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable.Companion.ARTIFACT_COORDINATE_URI
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.generic.pojo.FileDetail
 import com.tencent.bkrepo.generic.pojo.FileInfo
 import com.tencent.bkrepo.generic.pojo.FileSizeInfo
@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestParam
 interface OperateResource {
 
     @ApiOperation("列出目录下的文件")
-    @GetMapping("/list/$ARTIFACT_COORDINATE_URI")
+    @GetMapping("/list/$DEFAULT_MAPPING_URI")
     fun listFile(
         @RequestAttribute
         userId: String,
@@ -59,7 +59,7 @@ interface OperateResource {
     ): Response<Page<FileInfo>>
 
     @ApiOperation("查询文件详情")
-    @GetMapping("/detail/$ARTIFACT_COORDINATE_URI")
+    @GetMapping("/detail/$DEFAULT_MAPPING_URI")
     fun getFileDetail(
         @RequestAttribute
         userId: String,
@@ -68,7 +68,7 @@ interface OperateResource {
     ): Response<FileDetail>
 
     @ApiOperation("查询文件(夹)大小")
-    @GetMapping("/size/$ARTIFACT_COORDINATE_URI")
+    @GetMapping("/size/$DEFAULT_MAPPING_URI")
     fun getFileSize(
         @RequestAttribute
         userId: String,
@@ -77,7 +77,7 @@ interface OperateResource {
     ): Response<FileSizeInfo>
 
     @ApiOperation("创建文件夹")
-    @PostMapping("/create/$ARTIFACT_COORDINATE_URI")
+    @PostMapping("/create/$DEFAULT_MAPPING_URI")
     fun mkdir(
         @RequestAttribute
         userId: String,
@@ -86,7 +86,7 @@ interface OperateResource {
     ): Response<Void>
 
     @ApiOperation("删除文件(夹)")
-    @DeleteMapping("/delete/$ARTIFACT_COORDINATE_URI")
+    @DeleteMapping("/delete/$DEFAULT_MAPPING_URI")
     fun delete(
         @RequestAttribute
         userId: String,

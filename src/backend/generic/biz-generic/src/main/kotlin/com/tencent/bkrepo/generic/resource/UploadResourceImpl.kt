@@ -1,11 +1,10 @@
 package com.tencent.bkrepo.generic.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.generic.api.UploadResource
+import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.pojo.BlockInfo
-import com.tencent.bkrepo.generic.pojo.upload.UploadCompleteRequest
 import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.UploadService
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,31 +20,28 @@ import org.springframework.web.bind.annotation.RestController
 class UploadResourceImpl @Autowired constructor(
     private val uploadService: UploadService
 ) : UploadResource {
-    override fun simpleUpload(userId: String, artifactInfo: ArtifactInfo, file: ArtifactFile): Response<Void> {
-        uploadService.simpleUpload(userId, artifactInfo, file)
+
+    override fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile): Response<Void> {
+        uploadService.upload(artifactInfo, file)
         return Response.success()
     }
 
-    override fun preCheck(userId: String, artifactInfo: ArtifactInfo): Response<UploadTransactionInfo> {
-        return Response.success(uploadService.preCheck(userId, artifactInfo))
+    override fun startBlockUpload(userId: String, artifactInfo: GenericArtifactInfo): Response<UploadTransactionInfo> {
+        return Response.success(uploadService.startBlockUpload(userId, artifactInfo))
     }
 
-    override fun blockUpload(userId: String, uploadId: String, sequence: Int, file: ArtifactFile): Response<Void> {
-        uploadService.blockUpload(userId, uploadId, sequence, file)
+    override fun abortBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): Response<Void> {
+        uploadService.abortBlockUpload(userId, uploadId, artifactInfo)
         return Response.success()
     }
 
-    override fun abortUpload(userId: String, uploadId: String): Response<Void> {
-        uploadService.abortUpload(userId, uploadId)
+    override fun completeBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): Response<Void> {
+        uploadService.completeBlockUpload(userId, uploadId, artifactInfo)
         return Response.success()
     }
 
-    override fun completeUpload(userId: String, uploadId: String, request: UploadCompleteRequest): Response<Void> {
-        uploadService.completeUpload(userId, uploadId, request.blockSha256ListStr)
-        return Response.success()
+    override fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): Response<List<BlockInfo>> {
+        return Response.success(uploadService.listBlock(userId, uploadId, artifactInfo))
     }
 
-    override fun getUploadedBlockList(userId: String, uploadId: String): Response<List<BlockInfo>> {
-        return Response.success(uploadService.getUploadedBlockList(userId, uploadId))
-    }
 }

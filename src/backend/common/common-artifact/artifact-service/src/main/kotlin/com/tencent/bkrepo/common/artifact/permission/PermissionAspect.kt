@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component
  * @date: 2019/11/22
  */
 @Aspect
-@Component
 class PermissionAspect {
 
     @Autowired
@@ -46,7 +45,7 @@ class PermissionAspect {
             request.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
             permissionCheckHandler.onPermissionCheckSuccess(request, response)
         } catch (exception: PermissionCheckException) {
-            logger.debug("User[$userId] check permission [$permission] on [$artifactInfo] failed: $exception")
+            logger.warn("User[$userId] check permission [$permission] on [$artifactInfo] failed: $exception")
             permissionCheckHandler.onPermissionCheckFailed(request, response)
             return null
         }

@@ -61,10 +61,7 @@ internal class MessageCodeDetailServiceTest @Autowired constructor(
         messageCodeDetailService.create(MessageCodeCreateRequest( SHA256_CHECK_FAILED.toString(), SystemModuleEnum.REPOSITORY, "文件sha256校验失败", "文件sha256校驗失敗", "Failed to check sha256"))
 
 
-        messageCodeDetailService.create(MessageCodeCreateRequest( "2511001", SystemModuleEnum.GENERIC, "文件数据未找到", "文件數據未找到", "File data not found"))
-        messageCodeDetailService.create(MessageCodeCreateRequest("2511002", SystemModuleEnum.GENERIC, "不能下载文件夹", "不能下載文件夾", "Folder cannot be downloaded"))
-        messageCodeDetailService.create(MessageCodeCreateRequest("2511003", SystemModuleEnum.GENERIC, "分块文件需分块下载", "分塊文件需分塊下載", "Block file need to be downloaded by block"))
-        messageCodeDetailService.create(MessageCodeCreateRequest("2511004", SystemModuleEnum.GENERIC, "单文件不能分块下载", "單文件不能分塊下載", "Simple file cannot be downloaded by block"))
+        messageCodeDetailService.create(MessageCodeCreateRequest( "2511001", SystemModuleEnum.GENERIC, "uploadId{0}不存在", "uploadId{0}不存在", "uploadId {0} not does not exist"))
 
     }
 }

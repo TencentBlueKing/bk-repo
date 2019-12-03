@@ -4,7 +4,8 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable.Companion.ARTIFACT_COORDINATE_URI
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
@@ -31,21 +32,21 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface UserNodeResource {
 
     @ApiOperation("根据路径查看节点详情")
-    @GetMapping(ARTIFACT_COORDINATE_URI)
+    @GetMapping(DEFAULT_MAPPING_URI)
     fun detail(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<NodeDetail?>
 
     @ApiOperation("创建文件夹")
-    @PostMapping(ARTIFACT_COORDINATE_URI)
+    @PostMapping(DEFAULT_MAPPING_URI)
     fun mkdir(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<Void>
 
     @ApiOperation("删除节点")
-    @DeleteMapping(ARTIFACT_COORDINATE_URI)
+    @DeleteMapping(DEFAULT_MAPPING_URI)
     fun delete(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
@@ -73,7 +74,7 @@ interface UserNodeResource {
     ): Response<Void>
 
     @ApiOperation("查询节点大小信息")
-    @GetMapping("/size/$ARTIFACT_COORDINATE_URI")
+    @GetMapping("/size/$DEFAULT_MAPPING_URI")
     fun computeSize(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo

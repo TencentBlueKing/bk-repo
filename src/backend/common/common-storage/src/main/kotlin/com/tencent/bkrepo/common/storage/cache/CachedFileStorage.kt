@@ -6,7 +6,6 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
 import java.io.File
 import java.io.InputStream
-import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 
 /**
@@ -43,6 +42,34 @@ abstract class CachedFileStorage<Credentials : ClientCredentials, Client>(
         return fileCache.exist(path, filename) || checkExist(path, filename, client)
     }
 
+    override fun append(path: String, filename: String, inputStream: InputStream, client: Client) {
+        fileCache.append(path, filename, inputStream)
+    }
+
+    override fun storeBlock(path: String, sequence: Int, sha256: String, inputStream: InputStream, client: Client) {
+        fileCache.storeBlock(path, sequence, sha256, inputStream)
+    }
+
+    override fun combineBlock(path: String, client: Client): File {
+        return fileCache.combineBlock(path)
+    }
+
+    override fun listBlockInfo(path: String, client: Client): List<Pair<Long, String>> {
+        return fileCache.listBlockInfo(path)
+    }
+
+    override fun makeBlockPath(path: String, client: Client) {
+        return fileCache.makeBlockPath(path)
+    }
+
+    override fun checkBlockPath(path: String, client: Client): Boolean {
+        return fileCache.checkBlockPath(path)
+    }
+
+    override fun deleteBlockPath(path: String, client: Client) {
+        return fileCache.deleteBlockPath(path)
+    }
+
     @Async
     abstract fun doStore(path: String, filename: String, cachedFile: File, client: Client)
     @Async
@@ -50,7 +77,4 @@ abstract class CachedFileStorage<Credentials : ClientCredentials, Client>(
     abstract fun doLoad(path: String, filename: String, file: File, client: Client): File?
     abstract fun checkExist(path: String, filename: String, client: Client): Boolean
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(CachedFileStorage::class.java)
-    }
 }

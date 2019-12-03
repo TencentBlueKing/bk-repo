@@ -19,6 +19,11 @@ interface FileStorage {
     fun store(hash: String, inputStream: InputStream, clientCredentials: ClientCredentials? = null)
 
     /**
+     * 追加文件
+     */
+    fun append(path: String, filename: String, inputStream: InputStream, clientCredentials: ClientCredentials? = null)
+
+    /**
      * 加载文件
      */
     fun load(hash: String, clientCredentials: ClientCredentials? = null): File?
@@ -32,4 +37,35 @@ interface FileStorage {
      * 判断是否存在
      */
     fun exist(hash: String, clientCredentials: ClientCredentials? = null): Boolean
+
+    /**
+     * 创建分块文件夹
+     */
+    fun makeBlockPath(path: String, clientCredentials: ClientCredentials? = null)
+
+    /**
+     * 检查分块目录是否存在
+     */
+    fun checkBlockPath(path: String, clientCredentials: ClientCredentials? = null): Boolean
+
+    /**
+     * 删除分块文件
+     */
+    fun deleteBlockPath(path: String, clientCredentials: ClientCredentials? = null)
+
+
+    /**
+     * 列出分块文件
+     */
+    fun listBlockInfo(path: String, clientCredentials: ClientCredentials? = null): List<Pair<Long, String>>
+
+    /**
+     * 存储分块文件
+     */
+    fun storeBlock(path: String, sequence: Int, sha256: String, inputStream: InputStream, clientCredentials: ClientCredentials? = null)
+
+    /**
+     * 组合分块文件
+     */
+    fun combineBlock(path: String, clientCredentials: ClientCredentials? = null): File
 }

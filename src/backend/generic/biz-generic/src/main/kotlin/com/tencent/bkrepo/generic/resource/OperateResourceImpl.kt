@@ -27,7 +27,7 @@ class OperateResourceImpl @Autowired constructor(
 ) : OperateResource {
     override fun listFile(userId: String, artifactInfo: ArtifactInfo, includeFolder: Boolean, deep: Boolean): Response<List<FileInfo>> {
         return artifactInfo.run {
-            Response.success(operateService.listFile(userId, projectId, repoName, this.coordinate.fullPath, includeFolder, deep))
+            Response.success(operateService.listFile(userId, projectId, repoName, this.artifactUri, includeFolder, deep))
         }
     }
 
@@ -37,26 +37,26 @@ class OperateResourceImpl @Autowired constructor(
 
     override fun getFileDetail(userId: String, artifactInfo: ArtifactInfo): Response<FileDetail> {
         return artifactInfo.run {
-            Response.success(operateService.getFileDetail(userId, projectId, repoName, this.coordinate.fullPath))
+            Response.success(operateService.getFileDetail(userId, projectId, repoName, this.artifactUri))
         }
     }
 
     override fun getFileSize(userId: String, artifactInfo: ArtifactInfo): Response<FileSizeInfo> {
         return artifactInfo.run {
-            Response.success(operateService.getFileSize(userId, projectId, repoName, this.coordinate.fullPath))
+            Response.success(operateService.getFileSize(userId, projectId, repoName, this.artifactUri))
         }
     }
 
     override fun mkdir(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
         return artifactInfo.run {
-            operateService.mkdir(userId, projectId, repoName, this.coordinate.fullPath)
+            operateService.mkdir(userId, projectId, repoName, this.artifactUri)
             Response.success()
         }
     }
 
     override fun delete(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
         return artifactInfo.run {
-            operateService.delete(userId, projectId, repoName, this.coordinate.fullPath)
+            operateService.delete(userId, projectId, repoName, this.artifactUri)
             Response.success()
         }
     }

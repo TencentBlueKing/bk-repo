@@ -37,13 +37,13 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
 
     override fun needAuthenticate(uri: String, projectId: String?, repoName: String?): Boolean {
         if(projectId.isNullOrEmpty() || repoName.isNullOrEmpty()) {
-            logger.debug("Can not extract projectId or repoName")
+            logger.debug("Can not extract projectId or repoName.")
             return true
         }
         val typeName = artifactConfiguration.getRepositoryType()?.name ?: ""
         val response = repositoryResource.detail(projectId, repoName, typeName)
         if(response.isNotOk()) {
-            logger.warn("Query repository detail failed: [$response]")
+            logger.warn("Query repository detail failed: [$response].")
             return true
         }
         val repo = response.data ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
@@ -56,11 +56,11 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
         val userId = request.getHeader(AUTH_HEADER_USER_ID)
         //  TODO: header方式传递进来的直接通过
         if(userId != null) {
-            logger.debug("Extract userId from header: $userId")
+            logger.debug("Extract userId from header: $userId.")
             return userId
         }
         val credentials = extractBasicAuth(request)
-        logger.debug("Extract userId from header: [${credentials.username}]")
+        logger.debug("Extract userId from BasicAuth header: [${credentials.username}].")
         // TODO: auth 进行认证
         return credentials.username
     }
@@ -76,20 +76,17 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
 
     private fun extractBasicAuth(request: HttpServletRequest): BasicAuthCredentials {
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
-        if(basicAuthHeader.isNullOrBlank()) throw ClientAuthException("Authorization value is null")
-        if(!basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
+        if(basicAuthHeader.isNullOrBlank()) throw ClientAuthException("Authorization value is null.")
+        if(!basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme.")
 
         try{
             val encodedCredentials = basicAuthHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
             val parts = decodedHeader.split(":")
             require(parts.size >= 2)
-            return BasicAuthCredentials(
-                parts[0],
-                parts[1]
-            )
+            return BasicAuthCredentials(parts[0], parts[1])
         } catch (exception: Exception) {
-            throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
+            throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme.")
         }
     }
 

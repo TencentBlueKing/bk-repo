@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.storage.cache.local
 
-import com.google.common.io.ByteStreams
 import com.tencent.bkrepo.common.storage.cache.AbstractFileCache
-import com.tencent.bkrepo.common.storage.cache.FileCache
+import com.tencent.bkrepo.common.storage.local.LocalStorageClient
+import com.tencent.bkrepo.common.storage.schedule.CleanupResult
 import java.io.File
 import java.io.InputStream
 
@@ -14,58 +14,59 @@ import java.io.InputStream
  */
 class LocalFileCache(properties: LocalFileCacheProperties) : AbstractFileCache() {
 
-    private val cachedPath = properties.path
     private val cachedExpires = properties.expires
+    private val client = LocalStorageClient(properties.path)
 
-    init {
-        val directory = File(cachedPath)
-        directory.mkdirs()
-    }
 
     override fun doCache(path: String, filename: String, inputStream: InputStream): File {
-        val file = File(cachedPath, filename)
-        if (!file.exists()) {
-            file.outputStream().use {
-                ByteStreams.copy(inputStream, it)
-            }
-        }
-        return file
+        return client.store(path, filename, inputStream)
     }
 
     override fun doGet(path: String, filename: String): File? {
-        val file = File(cachedPath, filename)
-        return if (file.exists() && file.isFile) file else null
+        return client.load(path, filename)
     }
 
     override fun doRemove(path: String, filename: String) {
-        val file = File(cachedPath, filename)
-        file.takeIf { it.exists() && it.isAbsolute }?.run { this.delete() }
+        return client.delete(path, filename)
     }
 
     override fun doTouch(path: String, filename: String): File {
-        return File(cachedPath, filename)
+        return client.touch(path, filename)
     }
 
     override fun checkExist(path: String, filename: String): Boolean {
-        val file = File(cachedPath, filename)
-        return file.exists() && file.isFile
+        return client.exist(path, filename)
     }
 
-    override fun onClean(): FileCache.CleanResult {
-        val directory = File(cachedPath)
-        val files = directory.listFiles() ?: arrayOf()
-        var count = 0L
-        var size = 0L
-        files.forEach {
-            if (it.isFile && isExpired(it, cachedExpires)) {
-                val fileSize = it.length()
-                if (it.delete()) {
-                    count += 1
-                    size += fileSize
-                }
-            }
-        }
+    override fun doAppend(path: String, filename: String, inputStream: InputStream) {
+        return client.append(path, filename, inputStream)
+    }
 
-        return FileCache.CleanResult(count, size)
+    override fun doMakeBlockPath(path: String) {
+        return client.makeBlockPath(path)
+    }
+
+    override fun doCheckBlockPath(path: String): Boolean {
+        return client.checkBlockPath(path)
+    }
+
+    override fun doDeleteBlockPath(path: String) {
+        return client.deleteBlockPath(path)
+    }
+
+    override fun listBlockInfo(path: String): List<Pair<Long, String>> {
+        return client.listBlockInfo(path)
+    }
+
+    override fun doStoreBlock(path: String, sequence: Int, sha256: String, inputStream: InputStream) {
+        return client.storeBlock(path, sequence, sha256, inputStream)
+    }
+
+    override fun doCombineBlock(path: String): File {
+        return client.combineBlock(path)
+    }
+
+    override fun onClean(): CleanupResult {
+        return client.cleanup(cachedExpires)
     }
 }

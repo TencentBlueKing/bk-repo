@@ -1,6 +1,5 @@
-package com.tencent.bkrepo.common.artifact.repository.configuration
+package com.tencent.bkrepo.repository.pojo.repo.configuration
 
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryConfiguration
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryIdentify
 
 /**
@@ -10,4 +9,8 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryIdentify
  */
 open class VirtualConfiguration(
     val repositoryList: List<RepositoryIdentify>
-): RepositoryConfiguration
+): RepositoryConfiguration() {
+    companion object {
+        const val type = "virtual"
+    }
+}
