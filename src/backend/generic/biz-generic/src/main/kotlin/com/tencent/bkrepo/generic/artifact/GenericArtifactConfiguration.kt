@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.generic.artifact
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.RepositoryType
@@ -10,6 +10,6 @@ import org.springframework.stereotype.Component
  * @date: 2019/11/26
  */
 @Component
-class GenericArtifactConfiguration: ArtifactConfiguration {
+class GenericArtifactConfiguration : ArtifactConfiguration {
     override fun getRepositoryType() = RepositoryType.GENERIC
 }

@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.repository.configuration
+package com.tencent.bkrepo.repository.pojo.repo.configuration
 
 /**
  * 远程仓库 身份认证配置
@@ -6,6 +6,6 @@ package com.tencent.bkrepo.common.artifact.repository.configuration
  * @date: 2019/11/26
  */
 data class RemoteCredentialsConfiguration(
-    var username: String,
-    var password: String
+    val username: String,
+    val password: String
 )

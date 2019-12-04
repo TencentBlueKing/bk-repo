@@ -24,7 +24,7 @@ class PermissionService @Autowired constructor(
     private val authEnabled: Boolean = true
 
     fun checkPermission(request: CheckPermissionRequest) {
-        if(!hasPermission(request)) {
+        if (!hasPermission(request)) {
             throw ErrorCodeException(PERMISSION_DENIED)
         }
     }

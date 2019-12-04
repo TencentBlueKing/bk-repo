@@ -14,7 +14,7 @@ import java.lang.annotation.Inherited
 @Retention(AnnotationRetention.RUNTIME)
 @Inherited
 @MustBeDocumented
-annotation class Permission (
-    val type : ResourceType,
-    val action : PermissionAction
+annotation class Permission(
+    val type: ResourceType,
+    val action: PermissionAction
 )

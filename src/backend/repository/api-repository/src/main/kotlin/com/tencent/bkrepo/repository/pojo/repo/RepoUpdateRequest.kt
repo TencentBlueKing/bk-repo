@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.pojo.repo
 
 import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
+import com.tencent.bkrepo.repository.pojo.repo.configuration.RepositoryConfiguration
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
