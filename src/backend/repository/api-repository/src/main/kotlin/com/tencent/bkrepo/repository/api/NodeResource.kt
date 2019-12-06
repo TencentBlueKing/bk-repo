@@ -40,7 +40,7 @@ interface NodeResource {
 
     @ApiOperation("根据路径查看节点详情")
     @GetMapping("/query/{projectId}/{repoName}/{repoType}")
-    fun queryDetail(
+    fun detail(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -53,7 +53,7 @@ interface NodeResource {
 
     @ApiOperation("根据路径查看节点详情")
     @GetMapping("/query/{projectId}/{repoName}")
-    fun queryDetail(
+    fun detail(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -145,7 +145,7 @@ interface NodeResource {
 
     @ApiOperation("查询节点大小信息")
     @GetMapping("/size/{projectId}/{repoName}")
-    fun getSize(
+    fun computeSize(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)

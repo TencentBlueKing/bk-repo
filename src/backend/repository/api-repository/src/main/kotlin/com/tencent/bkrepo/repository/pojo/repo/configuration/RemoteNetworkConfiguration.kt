@@ -13,11 +13,13 @@ data class RemoteNetworkConfiguration(
     /**
      * 远程请求请求超时时间，单位ms
      */
-    val timeout: Long = 10 * 1000
+    val readTimeout: Long = 10 * 1000,
+    val connectTimeout: Long = 10 * 1000
 )
 
 data class ProxyConfiguration(
-    val username: String,
-    val password: String,
-    val port: Int
+    val host: String,
+    val port: Int,
+    val username: String? = null,
+    val password: String? = null
 )

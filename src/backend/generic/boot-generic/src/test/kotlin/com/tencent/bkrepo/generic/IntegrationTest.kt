@@ -36,8 +36,8 @@ import java.util.concurrent.TimeUnit
 class IntegrationTest {
 
     private val client = OkHttpClient.Builder()
-        .writeTimeout(1000, TimeUnit.SECONDS)
-        .readTimeout(1000, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
         .authenticator { _, response ->
             val credential = Credentials.basic("username", "password")
             response.request().newBuilder().header("Authorization", credential).build()

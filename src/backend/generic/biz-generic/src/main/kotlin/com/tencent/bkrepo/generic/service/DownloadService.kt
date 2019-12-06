@@ -3,7 +3,7 @@ package com.tencent.bkrepo.generic.service
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.permission.Permission
-import com.tencent.bkrepo.common.artifact.repository.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import org.springframework.stereotype.Service

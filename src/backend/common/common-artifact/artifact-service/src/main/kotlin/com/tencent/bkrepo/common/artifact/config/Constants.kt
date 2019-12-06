@@ -35,7 +35,11 @@ const val BASIC_AUTH_RESPONSE_VALUE = "Basic realm=\"Login Required\""
 /**
  * 构件传输相关
  */
-const val ATTRIBUTE_SHA256 = "artifact.sha256"
+const val OCTET_STREAM = "octet-stream"
+
+const val ATTRIBUTE_SHA256MAP = "artifact.sha256"
+
+const val ATTRIBUTE_OCTET_STREAM_SHA256 = "artifact.sha256.octet-stream"
 
 const val DEFAULT_MIME_TYPE = "application/octet-stream"
 

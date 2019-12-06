@@ -70,7 +70,7 @@ class OperateService(
         logger.info("getFileDetail, userId: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
-        val nodeDetail = nodeResource.queryDetail(projectId, repoName, fullPath).data
+        val nodeDetail = nodeResource.detail(projectId, repoName, fullPath).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileDetail(toFileInfo(nodeDetail.nodeInfo), nodeDetail.metadata)
     }
@@ -79,7 +79,7 @@ class OperateService(
         logger.info("getFileSize, userId: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
-        val nodeSizeInfo = nodeResource.getSize(projectId, repoName, fullPath).data
+        val nodeSizeInfo = nodeResource.computeSize(projectId, repoName, fullPath).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileSizeInfo(subFileCount = nodeSizeInfo.subNodeCount, size = nodeSizeInfo.size)
     }

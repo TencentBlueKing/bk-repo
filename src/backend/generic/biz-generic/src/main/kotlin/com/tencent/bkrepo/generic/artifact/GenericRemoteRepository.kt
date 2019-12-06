@@ -1,8 +1,7 @@
 package com.tencent.bkrepo.generic.artifact
 
-import com.tencent.bkrepo.common.artifact.repository.RemoteRepository
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import org.springframework.stereotype.Component
 
 /**
@@ -13,10 +12,7 @@ import org.springframework.stereotype.Component
 @Component
 class GenericRemoteRepository : RemoteRepository() {
     override fun onUpload(context: ArtifactUploadContext) {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+        throw UnsupportedOperationException()
     }
 
-    override fun onDownload(context: ArtifactDownloadContext) {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
-    }
 }
