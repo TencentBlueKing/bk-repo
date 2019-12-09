@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.auth.service.inner
+package com.tencent.bkrepo.auth.service.local
 
 import com.tencent.bkrepo.auth.model.TProject
 import com.tencent.bkrepo.auth.pojo.CreateProjectRequest
@@ -13,7 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "inner")
+@ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
 class ProjectServiceImpl @Autowired constructor(
     private val projectRepository: ProjectRepository
 ) : ProjectService {

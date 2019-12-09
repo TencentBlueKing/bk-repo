@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*
 
 @Api(tags = ["SERVICE_ROLE"], description = "服务-角色接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceRoleResource")
-@RequestMapping("/service/auth/role")
+@RequestMapping("/role")
 interface ServiceRoleResource {
     @ApiOperation("创建角色")
     @PostMapping("/create")
@@ -21,29 +21,34 @@ interface ServiceRoleResource {
     ): Response<Boolean>
 
     @ApiOperation("删除角色")
-    @DeleteMapping("/delete/{name}")
+    @DeleteMapping("/delete")
     fun deleteRole(
-        @ApiParam(value = "角色名")
-        @PathVariable name: String
+        @ApiParam(value = "角色类型")
+        @RequestParam roleType: RoleType,
+        @ApiParam(value = "项目id")
+        @RequestParam projectId: String,
+        @ApiParam(value = "角色id")
+        @RequestParam rid: String
     ): Response<Boolean>
 
-    @ApiOperation("list项目角色")
-    @GetMapping("/listProjectRole")
-    fun listProjectRole(): Response<List<Role>>
+    @ApiOperation("查询所有角色")
+    @GetMapping("/list")
+    fun listAll(): Response<List<Role>>
 
-    @ApiOperation("list仓库角色")
-    @GetMapping("/listRepoRole")
-    fun listRepoRole(): Response<List<Role>>
+    @ApiOperation("根据类型查询角色")
+    @GetMapping("/listByType/{type}")
+    fun listRoleByType(
+        @ApiParam(value = "角色类型")
+        @PathVariable type: String
+    ): Response<List<Role>>
 
-    @ApiOperation("添加用户角色")
-    @PostMapping("/addUserRole")
-    fun addUserRole(
-        @RequestBody request: AddUserRoleRequest
-    ): Response<Boolean>
+    @ApiOperation("根据类型和项目id查询角色")
+    @GetMapping("/list/{type}/{projectId}")
+    fun listRoleByTypeAndProjectId(
+        @ApiParam(value = "角色类型")
+        @PathVariable type: RoleType,
+        @ApiParam(value = "项目ID")
+        @PathVariable projectId: String
+    ): Response<List<Role>>
 
-    @ApiOperation("添加角色权限")
-    @PostMapping("/addRolePermission")
-    fun addRolePermission(
-        @RequestBody request: AddRolePermissionRequest
-    ): Response<Boolean>
 }

@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.auth.service.bk
+package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
@@ -13,23 +13,23 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 
 @Service
-@ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "bk")
+@ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "bkauth")
 class BkPermissionServiceImpl @Autowired constructor(
 
-) : PermissionService {
-    override fun deletePermission(id: String) {
+) {
+    fun deletePermission(id: String) {
         throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
     }
 
-    override fun listPermission(resourceType: ResourceType?): List<Permission> {
+    fun listPermission(resourceType: ResourceType?): List<Permission> {
         return listOf()
     }
 
-    override fun createPermission(request: CreatePermissionRequest) {
+    fun createPermission(request: CreatePermissionRequest) {
         throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
     }
 
-    override fun checkPermission(request: CheckPermissionRequest): Boolean {
+    fun checkPermission(request: CheckPermissionRequest): Boolean {
         // todo 对接权限中心
         return true
     }

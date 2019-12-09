@@ -1,14 +1,30 @@
 package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 
 interface UserService {
-    fun getByName(name: String): User?
+    fun getUserById(uId: String): User?
 
-    fun checkAdmin(name: String): Boolean
 
-    fun createUser(request: CreateUserRequest)
+    fun createUser(request: CreateUserRequest) :Boolean
 
-    fun deleteByName(name: String)
+    fun deleteById(uId: String) :Boolean
+
+    fun  updateUserById(uId: String, request: UpdateUserRequest) :Boolean
+
+    fun  addUserToRole(uId: String, rId: String) :Boolean
+
+    fun  addUserToRoleBatch(IdList: List<String>, rId: String) :Boolean
+
+    fun  removeUserFromRole(uId: String, rId: String) :Boolean
+
+    fun  removeUserFromRoleBatch(IdList: List<String>, rId: String) :Boolean
+
+    fun  createToken(uId: String) :Boolean
+
+    fun removeToken(uId: String, token:String) :Boolean
+
+    fun findUserByUserToken(uId :String, pwd:String):User?
 }
