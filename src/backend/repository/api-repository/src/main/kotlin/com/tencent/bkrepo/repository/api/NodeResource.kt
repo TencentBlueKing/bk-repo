@@ -157,4 +157,13 @@ interface NodeResource {
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
     fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any>>>
+
+    @GetMapping("/error")
+    fun error(): Response<String>
+
+    @GetMapping("/error1")
+    fun error1(): Response<String>
+
+    @GetMapping("/success")
+    fun success(): Response<String>
 }
