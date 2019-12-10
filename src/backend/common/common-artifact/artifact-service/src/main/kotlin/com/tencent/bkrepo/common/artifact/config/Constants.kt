@@ -21,7 +21,7 @@ const val PROJECT_ID = "projectId"
  */
 const val REPO_NAME = "repoName"
 /**
- *  匿名用户
+ * 匿名用户
  */
 const val ANONYMOUS_USER = "anonymous"
 /**
@@ -35,10 +35,14 @@ const val BASIC_AUTH_RESPONSE_VALUE = "Basic realm=\"Login Required\""
 /**
  * 构件传输相关
  */
-const val ATTRIBUTE_SHA256 = "artifact.sha256"
-
+const val OCTET_STREAM = "octet-stream"
+const val ATTRIBUTE_SHA256MAP = "artifact.sha256"
+const val ATTRIBUTE_OCTET_STREAM_SHA256 = "artifact.sha256.octet-stream"
 const val DEFAULT_MIME_TYPE = "application/octet-stream"
-
 const val CONTENT_DISPOSITION_TEMPLATE = "attachment; filename=\"%s\""
-
 const val BYTES = "bytes="
+
+/**
+ * 虚拟仓库相关
+ */
+const val TRAVERSED_LIST = "traversed"

@@ -7,8 +7,8 @@ dependencies {
     implementation project(":auth:api-auth")
     api project(":common:common-artifact:artifact-api")
 
-    implementation "javax.servlet:javax.servlet-api"
-    implementation "commons-fileupload:commons-fileupload"
     implementation "org.springframework.boot:spring-boot-starter-web"
+    api "commons-fileupload:commons-fileupload"
     api "org.springframework.boot:spring-boot-starter-aop"
+    api "io.github.openfeign:feign-okhttp"
 }
