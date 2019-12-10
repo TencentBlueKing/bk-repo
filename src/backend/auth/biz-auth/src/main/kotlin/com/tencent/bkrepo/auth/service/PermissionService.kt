@@ -21,15 +21,12 @@ interface PermissionService {
 
     fun updateRepoPermission(id :String, repos: List<String>):Boolean
 
-    fun addUserPermission(id :String, uid:String ,actions :List<PermissionAction>):Boolean
+    fun updateUserPermission(id :String, uid:String ,actions :List<PermissionAction>):Boolean
 
     fun removeUserPermission(id :String, uid:String ):Boolean
 
-    fun updateUserPermission(id :String, uid:String,actions :List<PermissionAction> ):Boolean
-
-    fun addRolePermission(id :String, rid:String ,actions :List<PermissionAction>):Boolean
+    fun updateRolePermission(id :String, rid:String ,actions :List<PermissionAction>):Boolean
 
     fun removeRolePermission(id :String, rid:String ):Boolean
 
-    fun updateRolePermission(id :String, rid:String,actions :List<PermissionAction> ):Boolean
 }

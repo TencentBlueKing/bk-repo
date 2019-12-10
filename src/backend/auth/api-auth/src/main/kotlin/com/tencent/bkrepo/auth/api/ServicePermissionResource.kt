@@ -77,18 +77,8 @@ interface ServicePermissionResource {
         @RequestBody repoList: List<String>
     ): Response<Boolean>
 
-    @ApiOperation("新增权限绑定用户")
-    @PostMapping("/user/{id}/{uid}")
-    fun addPermissionUser(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @ApiParam(value = "用户ID")
-        @PathVariable uid: String,
-        @RequestBody actionList: List<PermissionAction>
-    ): Response<Boolean>
-
     @ApiOperation("更新权限绑定用户")
-    @PutMapping("/user/{id}/{uid}")
+    @PostMapping("/user/{id}/{uid}")
     fun updatePermissionUser(
         @ApiParam(value = "权限主键ID")
         @PathVariable id: String,
@@ -96,6 +86,7 @@ interface ServicePermissionResource {
         @PathVariable uid: String,
         @RequestBody actionList: List<PermissionAction>
     ): Response<Boolean>
+
 
     @ApiOperation("删除权限绑定用户")
     @DeleteMapping("/user/{id}/{uid}")
@@ -106,18 +97,8 @@ interface ServicePermissionResource {
         @PathVariable uid: String
     ): Response<Boolean>
 
-    @ApiOperation("新增权限绑定角色")
-    @PostMapping("/role/{id}/{rid}")
-    fun addPermissionRole(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @ApiParam(value = "用户ID")
-        @PathVariable rid: String,
-        @RequestBody actionList: List<PermissionAction>
-    ): Response<Boolean>
-
     @ApiOperation("更新权限绑定角色")
-    @PutMapping("/role/{id}/{rid}")
+    @PostMapping("/role/{id}/{rid}")
     fun updatePermissionRole(
         @ApiParam(value = "权限主键ID")
         @PathVariable id: String,

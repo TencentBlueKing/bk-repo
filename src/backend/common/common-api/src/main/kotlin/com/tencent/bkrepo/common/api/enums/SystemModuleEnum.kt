@@ -10,6 +10,7 @@ package com.tencent.bkrepo.common.api.enums
 enum class SystemModuleEnum(val code: String) {
     COMMON("00"), // 公共模块
     REPOSITORY("01"), // 仓库
+    AUTH("02"), // 鉴权模块
     GENERIC("11"); // 通用文件
 
     companion object {

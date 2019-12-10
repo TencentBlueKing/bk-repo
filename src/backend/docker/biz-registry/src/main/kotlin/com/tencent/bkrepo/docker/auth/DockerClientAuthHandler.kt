@@ -1,21 +1,18 @@
 package com.tencent.bkrepo.docker.auth
 
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
-import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.auth.DefaultClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_VALUE
 import com.tencent.bkrepo.common.artifact.config.REPO_KEY
 import com.tencent.bkrepo.common.artifact.config.USER_KEY
-import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.docker.util.JwtUtil
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
+import com.tencent.bkrepo.auth.api.ServiceUserResource
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -29,7 +26,7 @@ import javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
 
 
 @Component
-open class DockerClientAuthHandler : ClientAuthHandler {
+open class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAuthHandler {
 
     @Autowired
     private lateinit var repositoryResource: RepositoryResource
@@ -65,10 +62,14 @@ open class DockerClientAuthHandler : ClientAuthHandler {
         val token = extractBasicAuth(request)
         val userName = JwtUtil.getUserName(token)
         val password = JwtUtil.getPassword(token)
-        return token
+        val result = userResource.checkUserToken(userName, password)
+        if (result.data ==false) {
+            throw  Exception("auth failed")
+        }
+        return password
     }
 
-    override fun onAuthenticateFailed(request: HttpServletRequest, response: HttpServletResponse) {
+    override fun onAuthenticateFailed(response: HttpServletResponse, clientAuthException: ClientAuthException) {
         response.status = SC_UNAUTHORIZED
         response.setHeader("Docker-Distribution-Api-Version", "registry/2.0")
         val tokenUrl = "http://registry.me:8002/v2/auth"
@@ -79,7 +80,7 @@ open class DockerClientAuthHandler : ClientAuthHandler {
         response.getWriter().flush()
     }
 
-    override fun onAuthenticateSuccess(userId: String, request: HttpServletRequest, response: HttpServletResponse) {
+    override fun onAuthenticateSuccess(userId: String, request: HttpServletRequest) {
         request.setAttribute(USER_KEY, userId)
     }
 

@@ -60,29 +60,23 @@ class ServicePermissionResourceImpl @Autowired constructor(
         return Response(permissionService.updateRepoPermission(id, repoList))
     }
 
-    override fun addPermissionUser(id: String, uid: String, actionList: List<PermissionAction>): Response<Boolean> {
-        return  Response(permissionService.addUserPermission(id,uid, actionList))
+    override fun updatePermissionUser(id: String, uid: String, actionList: List<PermissionAction>): Response<Boolean> {
+        return  Response(permissionService.updateUserPermission(id,uid, actionList))
     }
 
     override fun removePermissionUser(id: String, uid: String): Response<Boolean> {
         return  Response(permissionService.removeUserPermission(id,uid))
     }
 
-    override fun updatePermissionUser(id: String, uid: String, actionList: List<PermissionAction>): Response<Boolean> {
-        return  Response(permissionService.updateUserPermission(id,uid,actionList))
-    }
 
-    override fun addPermissionRole(id: String, rid: String, actionList: List<PermissionAction>): Response<Boolean> {
-        return  Response(permissionService.addRolePermission(id,rid, actionList))
+    override fun updatePermissionRole(id: String, rid: String, actionList: List<PermissionAction>): Response<Boolean> {
+        return  Response(permissionService.updateRolePermission(id,rid, actionList))
     }
 
     override fun removePermissionRole(id: String, rid: String): Response<Boolean> {
         return  Response(permissionService.removeRolePermission(id,rid))
     }
 
-    override fun updatePermissionRole(id: String, rid: String, actionList: List<PermissionAction>): Response<Boolean> {
-        return  Response(permissionService.updateRolePermission(id,rid,actionList))
-    }
 
 
     private fun checkRequest(request: CheckPermissionRequest) {

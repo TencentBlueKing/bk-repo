@@ -4,10 +4,9 @@ import com.tencent.bkrepo.auth.model.TRole
 import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.Role
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
-import com.tencent.bkrepo.auth.repository.ProjectRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.service.RoleService
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_INVALID
+import com.tencent.bkrepo.common.api.constant.AuthMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -25,10 +24,16 @@ class RoleServiceImpl @Autowired constructor(
     }
 
     override fun listRoleByType(type: String): List<Role> {
-        return roleRepository.findByType("PROJECT").map { transfer(it) }
+        return roleRepository.findByType(type).map { transfer(it) }
     }
 
     override fun createRole(request: CreateRoleRequest) :Boolean{
+        val role = roleRepository.findOneByRIdAndProjectId(request.rid, request.projectId)
+        if (role == null){
+            logger.warn("create role [${request.rid} , ${request.projectId} ]  is exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_DUP_RID)
+        }
+
         roleRepository.insert(
             TRole(
                 rId = request.rid,
@@ -46,6 +51,12 @@ class RoleServiceImpl @Autowired constructor(
     }
 
     override fun deleteRoleByRid(type: RoleType, projectId:String,rid:String):Boolean {
+        val role = roleRepository.deleteByTypeAndRIdAndProjectId(type , rid, projectId)
+        if (role == null){
+            logger.warn("create role [$type ,$rid , $projectId  ]  is exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
+        }
+
         roleRepository.deleteByTypeAndRIdAndProjectId(type, rid, projectId)
         return true
     }

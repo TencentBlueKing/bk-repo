@@ -338,7 +338,7 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
     fun artifact(projectId: String, repoName: String, fullPath: String): Artifact? {
-        val nodes = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
+        val nodes = nodeResource.detail(projectId, repoName, fullPath).data ?: run {
             logger.warn("find artifact failed: $projectId, $repoName, $fullPath found no artifacts")
             return  null
         }
@@ -348,7 +348,7 @@ class DockerArtifactoryService @Autowired constructor(
     fun findArtifact(projectId: String, repoName: String, dockerRepo: String, fileName: String): NodeDetail? {
         // query node info
         var fullPath = "/$dockerRepo/$fileName"
-        val nodes = nodeResource.queryDetail(projectId, repoName, fullPath).data ?: run {
+        val nodes = nodeResource.detail(projectId, repoName, fullPath).data ?: run {
             logger.warn("find artifacts failed: $projectId, $repoName, $fullPath found no node")
             return  null
         }
@@ -395,7 +395,7 @@ class DockerArtifactoryService @Autowired constructor(
 
     fun findManifest(projectId: String, repoName: String, manifestPath:String): NodeDetail? {
         // query node info
-        val nodes = nodeResource.queryDetail(projectId, repoName, manifestPath).data ?: run {
+        val nodes = nodeResource.detail(projectId, repoName, manifestPath).data ?: run {
             logger.warn("find manifest failed: $projectId, $repoName, $manifestPath found no node")
             return  null
         }

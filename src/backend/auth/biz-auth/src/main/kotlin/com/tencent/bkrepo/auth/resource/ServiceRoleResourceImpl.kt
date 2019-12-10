@@ -32,8 +32,8 @@ class ServiceRoleResourceImpl @Autowired constructor(
         return Response(roleService.listAllRole())
     }
 
-    override fun listRoleByType(roleType: String): Response<List<Role>> {
-        return Response(roleService.listRoleByType("PROJECT"))
+    override fun listRoleByType(roleType: RoleType): Response<List<Role>> {
+        return Response(roleService.listRoleByType(roleType.toString()))
     }
 
     override fun listRoleByTypeAndProjectId(type: RoleType, projectId: String): Response<List<Role>> {

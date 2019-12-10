@@ -10,7 +10,7 @@ import java.time.LocalDateTime
  */
 @Document("permission")
 data class TPermission(
-        val id:String? = null,
+        val id:String ? = null,
         var resourceType: ResourceType,
         var projectId:String,
         var permName:String,

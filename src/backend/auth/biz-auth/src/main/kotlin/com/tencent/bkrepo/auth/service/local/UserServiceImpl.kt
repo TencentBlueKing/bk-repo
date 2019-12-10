@@ -18,18 +18,26 @@ import org.springframework.data.mongodb.core.query.Update
 import java.time.LocalDateTime
 import java.util.*
 import com.mongodb.BasicDBObject
-
-
+import com.tencent.bkrepo.auth.repository.RoleRepository
+import com.tencent.bkrepo.common.api.constant.AuthMessageCode
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import org.slf4j.LoggerFactory
 
 
 @Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
 class UserServiceImpl @Autowired constructor(
     private val userRepository: UserRepository,
+    private val roleRepository: RoleRepository,
     private val mongoTemplate: MongoTemplate
 ) : UserService {
     override fun createUser(request: CreateUserRequest): Boolean {
         // todo 校验
+        val user = userRepository.findOneByUId(request.uid)
+        if (user != null) {
+            logger.warn("create user [${request.uid}]  is exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
+        }
         val pwd = DataDigestUtils.md5FromStr(request.pwd)
         userRepository.insert(
             TUser(
@@ -46,11 +54,30 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun deleteById(uId: String): Boolean {
+        val user = userRepository.findOneByUId(uId)
+        if (user == null) {
+            logger.warn("user [$uId]  not exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
         userRepository.deleteByUId(uId)
         return true
     }
 
     override fun addUserToRole(uId: String, rId: String): Boolean {
+        //check user
+        val user = userRepository.findOneByUId(uId)
+        if (user == null) {
+            logger.warn(" user not  exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+
+        //check role
+        val role = roleRepository.findOneById(rId)
+        if (role == null) {
+            logger.warn(" role not  exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
+        }
+
         val query = Query()
         val update = Update()
         query.addCriteria(Criteria.where("uId").`is`(uId))
@@ -63,6 +90,22 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun addUserToRoleBatch(IdList: List<String>, rId: String): Boolean {
+        IdList.forEach{
+            //check user
+            val user = userRepository.findOneByUId(it)
+            if (user == null) {
+                logger.warn(" user not  exist.")
+                throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+            }
+        }
+
+        //check role
+        val role = roleRepository.findOneById(rId)
+        if (role == null) {
+            logger.warn(" role not  exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
+        }
+
         val query = Query()
         val update = Update()
         query.addCriteria(Criteria.where("uId").`in`(IdList))
@@ -76,6 +119,20 @@ class UserServiceImpl @Autowired constructor(
 
 
     override fun removeUserFromRole(uId: String, rId: String): Boolean {
+        //check user
+        val user = userRepository.findOneByUId(uId)
+        if (user == null) {
+            logger.warn(" user not  exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+
+        //check role
+        val role = roleRepository.findOneById(rId)
+        if (role == null) {
+            logger.warn(" role not  exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
+        }
+
         val query = Query()
         val update = Update()
         query.addCriteria(Criteria.where("uId").`is`(uId).and("roles").`is`(rId))
@@ -88,6 +145,21 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun removeUserFromRoleBatch(IdList: List<String>, rId: String): Boolean {
+        IdList.forEach{
+            val user = userRepository.findOneByUId(it)
+            if (user == null) {
+                logger.warn(" user not  exist.")
+                throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+            }
+        }
+
+        //check role
+        val role = roleRepository.findOneById(rId)
+        if (role == null) {
+            logger.warn(" role not  exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
+        }
+
         val query = Query()
         val update = Update()
         query.addCriteria(Criteria.where("uId").`in`(IdList).and("roles").`is`(rId))
@@ -100,6 +172,12 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun updateUserById(uId: String, request: UpdateUserRequest): Boolean {
+        val user = userRepository.findOneByUId(uId)
+        if (user == null) {
+            logger.warn("user [$uId]  not exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+
         val query = Query()
         query.addCriteria(Criteria.where("uId").`is`(uId))
         val update = Update()
@@ -121,6 +199,12 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun createToken(uId: String): Boolean {
+        val user = userRepository.findOneByUId(uId)
+        if (user == null) {
+            logger.warn("user [$uId]  not exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+
         val query = Query.query(Criteria.where("uId").`is`(uId))
         val update = Update()
         val uuid = UUID.randomUUID().toString()
@@ -134,6 +218,12 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun removeToken(uId: String, token: String): Boolean {
+        val user = userRepository.findOneByUId(uId)
+        if (user == null) {
+            logger.warn("user [$uId]  not exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+
         val query = Query.query(Criteria.where("uId").`is`(uId))
         val s = BasicDBObject()
         s["id"] = token
@@ -148,7 +238,6 @@ class UserServiceImpl @Autowired constructor(
 
     override fun getUserById(uId: String): User? {
         val user = userRepository.findOneByUId(uId) ?: return null
-
         return User(
             uId = user.uId!!,
             name = user.name,
@@ -165,8 +254,7 @@ class UserServiceImpl @Autowired constructor(
         val criteria = Criteria()
         criteria.orOperator(Criteria.where("pwd").`is`(hashPwd), Criteria.where("tokens.id").`is`(pwd)).and("uId").`is`(uId)
         val query = Query.query(criteria)
-        println(query.toString())
-        val result = mongoTemplate.findOne(query, TUser::class.java) ?: return null
+        val result = mongoTemplate.findOne(query, TUser::class.java) ?: return  throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_ERROR)
         return User(
             uId = result.uId!!,
             name = result.name,
@@ -176,5 +264,9 @@ class UserServiceImpl @Autowired constructor(
             tokens = result.tokens,
             roles = result.roles
         )
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(UserServiceImpl::class.java)
     }
 }

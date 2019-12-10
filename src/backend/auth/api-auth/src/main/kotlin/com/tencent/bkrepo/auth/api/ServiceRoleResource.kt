@@ -39,7 +39,7 @@ interface ServiceRoleResource {
     @GetMapping("/listByType/{type}")
     fun listRoleByType(
         @ApiParam(value = "角色类型")
-        @PathVariable type: String
+        @PathVariable type: RoleType
     ): Response<List<Role>>
 
     @ApiOperation("根据类型和项目id查询角色")
