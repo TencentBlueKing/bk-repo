@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.remote
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.http.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.repository.http.HttpClientBuilderFactory
@@ -42,12 +41,9 @@ abstract class RemoteRepository : AbstractArtifactRepository {
 
     @Autowired
     lateinit var nodeResource: NodeResource
+
     @Autowired
     lateinit var fileStorage: FileStorage
-
-    override fun onUpload(context: ArtifactUploadContext) {
-        throw UnsupportedOperationException()
-    }
 
     override fun onDownload(context: ArtifactDownloadContext): File? {
         getArtifactCache(context)?.let {
@@ -74,7 +70,8 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         if (!cacheConfiguration.cacheEnabled) return null
 
         val artifactInfo = context.artifactInfo
-        val node = nodeResource.detail(artifactInfo.projectId, artifactInfo.repoName, artifactInfo.artifactUri).data ?: return null
+        val repositoryInfo = context.repositoryInfo
+        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, artifactInfo.artifactUri).data ?: return null
         if (node.nodeInfo.folder) return null
         val createdDate = LocalDateTime.parse(node.nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
@@ -108,10 +105,11 @@ abstract class RemoteRepository : AbstractArtifactRepository {
      */
     open fun getCacheNodeCreateRequest(context: ArtifactDownloadContext, file: File): NodeCreateRequest {
         val artifactInfo = context.artifactInfo
+        val repositoryInfo = context.repositoryInfo
         val sha256 = FileDigestUtils.fileSha256(listOf(file.inputStream()))
         return NodeCreateRequest(
-            projectId = artifactInfo.projectId,
-            repoName = artifactInfo.repoName,
+            projectId = repositoryInfo.projectId,
+            repoName = repositoryInfo.name,
             folder = false,
             fullPath = artifactInfo.artifactUri,
             size = file.length(),

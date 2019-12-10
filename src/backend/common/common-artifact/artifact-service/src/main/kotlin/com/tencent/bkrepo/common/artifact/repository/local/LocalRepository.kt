@@ -21,6 +21,7 @@ abstract class LocalRepository :
 
     @Autowired
     lateinit var nodeResource: NodeResource
+
     @Autowired
     lateinit var fileStorage: FileStorage
 
@@ -55,12 +56,13 @@ abstract class LocalRepository :
      */
     open fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val artifactInfo = context.artifactInfo
+        val repositoryInfo = context.repositoryInfo
         val artifactFile = context.getArtifactFile()
         val sha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
 
         return NodeCreateRequest(
-            projectId = artifactInfo.projectId,
-            repoName = artifactInfo.repoName,
+            projectId = repositoryInfo.projectId,
+            repoName = repositoryInfo.name,
             folder = false,
             fullPath = artifactInfo.artifactUri,
             size = artifactFile.getSize(),

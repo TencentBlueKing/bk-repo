@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactUploadException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
+import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -63,15 +64,15 @@ interface AbstractArtifactRepository : ArtifactRepository {
     }
 
     override fun search(context: ArtifactSearchContext) {
-        throw UnsupportedOperationException()
+        throw UnsupportedMethodException()
     }
 
     override fun list(context: ArtifactListContext) {
-        throw UnsupportedOperationException()
+        throw UnsupportedMethodException()
     }
 
     override fun remove(context: ArtifactListContext) {
-        throw UnsupportedOperationException()
+        throw UnsupportedMethodException()
     }
 
     /**
@@ -103,7 +104,9 @@ interface AbstractArtifactRepository : ArtifactRepository {
     /**
      * 上传构件
      */
-    fun onUpload(context: ArtifactUploadContext)
+    fun onUpload(context: ArtifactUploadContext) {
+        throw UnsupportedMethodException()
+    }
 
     /**
      * 上传成功回调
@@ -132,7 +135,9 @@ interface AbstractArtifactRepository : ArtifactRepository {
     /**
      * 下载构件
      */
-    fun onDownload(context: ArtifactDownloadContext): File?
+    fun onDownload(context: ArtifactDownloadContext): File? {
+        throw UnsupportedMethodException()
+    }
 
     /**
      * 下载成功回调

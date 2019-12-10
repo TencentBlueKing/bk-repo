@@ -37,9 +37,9 @@ class PermissionAspect {
 
         return try {
             val artifactInfo = findArtifactInfo(point.args) ?: throw PermissionCheckException("Missing ArtifactInfo argument.")
+            request.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
             permissionCheckHandler.onPermissionCheck(userId, permission, artifactInfo)
             logger.trace("User[$userId] check permission [$permission] on [$artifactInfo] success.")
-            request.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
             permissionCheckHandler.onPermissionCheckSuccess()
             point.proceed()
         } catch (exception: PermissionCheckException) {

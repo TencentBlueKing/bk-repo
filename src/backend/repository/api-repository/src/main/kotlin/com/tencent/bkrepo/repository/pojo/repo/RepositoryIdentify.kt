@@ -8,4 +8,6 @@ package com.tencent.bkrepo.repository.pojo.repo
 data class RepositoryIdentify(
     val projectId: String,
     val name: String
-)
+) {
+    constructor(repositoryInfo: RepositoryInfo) : this(repositoryInfo.projectId, repositoryInfo.name)
+}

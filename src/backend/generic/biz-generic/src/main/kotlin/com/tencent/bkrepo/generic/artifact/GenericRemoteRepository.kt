@@ -10,9 +10,4 @@ import org.springframework.stereotype.Component
  * @date: 2019/11/28
  */
 @Component
-class GenericRemoteRepository : RemoteRepository() {
-    override fun onUpload(context: ArtifactUploadContext) {
-        throw UnsupportedOperationException()
-    }
-
-}
+class GenericRemoteRepository : RemoteRepository()

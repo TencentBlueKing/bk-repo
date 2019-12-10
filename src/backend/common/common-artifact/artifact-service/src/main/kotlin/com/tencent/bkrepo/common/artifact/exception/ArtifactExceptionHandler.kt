@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.artifact.exception
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.config.ANONYMOUS_USER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_VALUE
@@ -22,73 +23,70 @@ class ArtifactExceptionHandler {
 
     @ExceptionHandler(ArtifactResolveException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleException(exception: ArtifactResolveException): Response<Void> {
-        logException(exception)
-        return Response.fail(HttpStatus.BAD_REQUEST.value(), exception.message)
+    fun handleException(exception: ArtifactResolveException) {
+        response(HttpStatus.BAD_REQUEST, exception)
     }
 
     @ExceptionHandler(ArtifactNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun handleException(exception: ArtifactNotFoundException): Response<Void> {
-        logException(exception)
-        return Response.fail(HttpStatus.NOT_FOUND.value(), exception.message)
+    fun handleException(exception: ArtifactNotFoundException) {
+        response(HttpStatus.NOT_FOUND, exception)
     }
 
     @ExceptionHandler(ClientAuthException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handleException(exception: ClientAuthException): Response<Void> {
-        logException(exception)
-        val response = HttpContextHolder.getResponse()
-        response.setHeader(BASIC_AUTH_RESPONSE_HEADER, BASIC_AUTH_RESPONSE_VALUE)
-        return Response.fail(HttpStatus.UNAUTHORIZED.value(), exception.message)
+    fun handleException(exception: ClientAuthException) {
+        HttpContextHolder.getResponse().setHeader(BASIC_AUTH_RESPONSE_HEADER, BASIC_AUTH_RESPONSE_VALUE)
+        response(HttpStatus.UNAUTHORIZED, exception)
     }
 
     @ExceptionHandler(PermissionCheckException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    fun handleException(exception: PermissionCheckException): Response<Void> {
-        logException(exception)
-        return Response.fail(HttpStatus.FORBIDDEN.value(), exception.message)
+    fun handleException(exception: PermissionCheckException) {
+        response(HttpStatus.FORBIDDEN, exception)
     }
 
     @ExceptionHandler(ArtifactValidateException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleException(exception: ArtifactValidateException): Response<Void> {
-        logException(exception)
-        return Response.fail(HttpStatus.BAD_REQUEST.value(), exception.message)
+    fun handleException(exception: ArtifactValidateException) {
+        response(HttpStatus.BAD_REQUEST, exception)
     }
 
     @ExceptionHandler(ArtifactUploadException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleException(exception: ArtifactUploadException): Response<Void> {
-        logException(exception)
-        return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), exception.message)
+    fun handleException(exception: ArtifactUploadException) {
+        response(HttpStatus.INTERNAL_SERVER_ERROR, exception)
     }
 
     @ExceptionHandler(ArtifactDownloadException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleException(exception: ArtifactDownloadException): Response<Void> {
-        logException(exception)
-        return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), exception.message)
+    fun handleException(exception: ArtifactDownloadException) {
+        response(HttpStatus.INTERNAL_SERVER_ERROR, exception)
     }
 
     @ExceptionHandler(UnsupportedMethodException::class)
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
-    fun handleException(exception: UnsupportedMethodException): Response<Void> {
-        logException(exception)
-        return Response.fail(HttpStatus.METHOD_NOT_ALLOWED.value(), exception.message)
+    fun handleException(exception: UnsupportedMethodException) {
+        response(HttpStatus.METHOD_NOT_ALLOWED, exception)
     }
 
     @ExceptionHandler(ArtifactException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleException(exception: ArtifactException): Response<Void> {
-        logException(exception)
-        return Response.fail(HttpStatus.BAD_REQUEST.value(), exception.message)
+    fun handleException(exception: ArtifactException) {
+        response(HttpStatus.BAD_REQUEST, exception)
     }
 
     private fun logException(exception: ArtifactException) {
         val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val uri = HttpContextHolder.getRequest().requestURI
-        logger.warn("User[$userId] access resource[$uri] failed[${exception.javaClass.name}]: ${exception.message}")
+        logger.warn("User[$userId] access resource[$uri] failed[${exception.javaClass.simpleName}]: ${exception.message}")
+    }
+
+    private fun response(status: HttpStatus, exception: ArtifactException) {
+        logException(exception)
+        val responseObject = Response.fail(status.value(), exception.message)
+        val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
+        HttpContextHolder.getResponse().writer.println(responseString)
     }
 
     companion object {

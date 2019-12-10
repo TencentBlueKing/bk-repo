@@ -17,11 +17,9 @@ open class DefaultPermissionCheckHandler : PermissionCheckHandler {
     private lateinit var permissionService: PermissionService
 
     override fun onPermissionCheck(userId: String, permission: Permission, artifactInfo: ArtifactInfo) {
-        artifactInfo.run {
-            val checkRequest = CheckPermissionRequest(userId, permission.type, permission.action, projectId, repoName)
-            if (!permissionService.hasPermission(checkRequest)) {
-                throw PermissionCheckException("Access Forbidden")
-            }
+        val checkRequest = CheckPermissionRequest(userId, permission.type, permission.action, artifactInfo.projectId, artifactInfo.repoName)
+        if (!permissionService.hasPermission(checkRequest)) {
+            throw PermissionCheckException("Access Forbidden")
         }
     }
 

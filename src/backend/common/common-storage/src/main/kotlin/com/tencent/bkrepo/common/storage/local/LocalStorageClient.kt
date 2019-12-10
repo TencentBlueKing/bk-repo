@@ -155,10 +155,17 @@ class LocalStorageClient(private val directory: String) {
         val isExpired = (System.currentTimeMillis() - file.lastModified()) >= expireSeconds * 1000
         return isFile && isExpired
     }
+
     companion object {
         const val BLOCK_SUFFIX = ".block"
         const val BLOCK_EXTENSION = "block"
         const val SHA256_SUFFIX = ".sha256"
         const val COMBINED_FILENAME = "combined.data"
     }
+
+}
+
+fun main() {
+    val client = LocalStorageClient("/Users/carrypan/.m2/repository-temp")
+    println(client.load("12/34", "1"))
 }
