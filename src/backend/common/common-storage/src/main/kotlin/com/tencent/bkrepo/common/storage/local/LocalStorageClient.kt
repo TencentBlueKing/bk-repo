@@ -28,9 +28,8 @@ class LocalStorageClient(private val directory: String) {
 
     fun touch(path: String, filename: String): File {
         val subDirectory = File(directory, path)
-        val file = File(subDirectory, filename)
-        file.createNewFile()
-        return file
+        subDirectory.mkdirs()
+        return File(subDirectory, filename)
     }
 
     fun store(path: String, filename: String, inputStream: InputStream, overwrite: Boolean = true): File {
@@ -155,7 +154,6 @@ class LocalStorageClient(private val directory: String) {
         val isExpired = (System.currentTimeMillis() - file.lastModified()) >= expireSeconds * 1000
         return isFile && isExpired
     }
-
     companion object {
         const val BLOCK_SUFFIX = ".block"
         const val BLOCK_EXTENSION = "block"
@@ -163,4 +161,3 @@ class LocalStorageClient(private val directory: String) {
         const val COMBINED_FILENAME = "combined.data"
     }
 }
-
