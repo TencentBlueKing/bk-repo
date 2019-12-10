@@ -28,9 +28,8 @@ class LocalStorageClient(private val directory: String) {
 
     fun touch(path: String, filename: String): File {
         val subDirectory = File(directory, path)
-        val file = File(subDirectory, filename)
-        file.createNewFile()
-        return file
+        subDirectory.mkdirs()
+        return File(subDirectory, filename)
     }
 
     fun store(path: String, filename: String, inputStream: InputStream, overwrite: Boolean = true): File {
