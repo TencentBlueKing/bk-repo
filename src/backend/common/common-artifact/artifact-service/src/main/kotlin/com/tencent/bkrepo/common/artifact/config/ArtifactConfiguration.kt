@@ -11,6 +11,6 @@ interface ArtifactConfiguration {
 }
 
 data class ClientAuthConfig(
-    val pathPatterns: List<String> = listOf("/**"),
+    val includePatterns: List<String> = listOf("/**"),
     val excludePatterns: List<String> = emptyList()
 )
