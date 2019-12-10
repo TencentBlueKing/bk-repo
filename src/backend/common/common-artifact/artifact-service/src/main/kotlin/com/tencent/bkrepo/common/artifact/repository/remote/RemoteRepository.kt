@@ -13,6 +13,13 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.configuration.ProxyConfiguration
 import com.tencent.bkrepo.repository.pojo.repo.configuration.RemoteConfiguration
 import com.tencent.bkrepo.repository.pojo.repo.configuration.RemoteCredentialsConfiguration
+import java.io.File
+import java.net.InetSocketAddress
+import java.net.Proxy
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 import okhttp3.Authenticator
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
@@ -24,13 +31,6 @@ import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.io.FileCleaningTracker
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import java.io.File
-import java.net.InetSocketAddress
-import java.net.Proxy
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
 
 /**
  *

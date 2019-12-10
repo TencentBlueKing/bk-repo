@@ -1,13 +1,11 @@
 package com.tencent.bkrepo.common.artifact.auth
 
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.config.REPO_KEY
 import com.tencent.bkrepo.common.artifact.config.USER_KEY
-import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.repository.api.RepositoryResource

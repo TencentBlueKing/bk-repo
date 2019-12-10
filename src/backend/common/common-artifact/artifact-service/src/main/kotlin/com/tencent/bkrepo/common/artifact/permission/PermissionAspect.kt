@@ -46,7 +46,6 @@ class PermissionAspect {
             permissionCheckHandler.onPermissionCheckFailed(exception)
             null
         }
-
     }
 
     private fun findArtifactInfo(args: Array<Any>): ArtifactInfo? {

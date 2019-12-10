@@ -36,5 +36,4 @@ open class ArtifactTransferContext {
         this.repositoryConfiguration = JsonUtils.objectMapper.readValue(repositoryInfo.configuration, RepositoryConfiguration::class.java)
         this.contextAttributes = mutableMapOf()
     }
-
 }

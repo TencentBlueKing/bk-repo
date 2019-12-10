@@ -7,9 +7,9 @@ import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactReposi
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryIdentify
 import com.tencent.bkrepo.repository.pojo.repo.configuration.VirtualConfiguration
+import java.io.File
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import java.io.File
 
 /**
  *
@@ -27,7 +27,7 @@ abstract class VirtualRepository : AbstractArtifactRepository {
         val repoList = virtualConfiguration.repositoryList
         val traversedList = getTraversedList(context)
         for (repoIdentify in repoList) {
-            if(repoIdentify in traversedList) {
+            if (repoIdentify in traversedList) {
                 logger.debug("Repository[$repoIdentify] has been traversed, skip it.")
                 continue
             }
@@ -48,15 +48,14 @@ abstract class VirtualRepository : AbstractArtifactRepository {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun getTraversedList(context: ArtifactDownloadContext): MutableList<RepositoryIdentify>  {
-        return context.contextAttributes[TRAVERSED_LIST] as? MutableList<RepositoryIdentify> ?: let{
+    private fun getTraversedList(context: ArtifactDownloadContext): MutableList<RepositoryIdentify> {
+        return context.contextAttributes[TRAVERSED_LIST] as? MutableList<RepositoryIdentify> ?: let {
             val selfRepoInfo = context.repositoryInfo
             val traversedList = mutableListOf(RepositoryIdentify(selfRepoInfo))
             context.contextAttributes[TRAVERSED_LIST] = traversedList
             return traversedList
         }
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(VirtualRepository::class.java)

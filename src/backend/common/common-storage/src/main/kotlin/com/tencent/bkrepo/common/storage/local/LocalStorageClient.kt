@@ -162,10 +162,5 @@ class LocalStorageClient(private val directory: String) {
         const val SHA256_SUFFIX = ".sha256"
         const val COMBINED_FILENAME = "combined.data"
     }
-
 }
 
-fun main() {
-    val client = LocalStorageClient("/Users/carrypan/.m2/repository-temp")
-    println(client.load("12/34", "1"))
-}

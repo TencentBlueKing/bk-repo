@@ -89,7 +89,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
         context.artifactFileMap.entries.forEach { (name, file) ->
             val sha256 = FileDigestUtils.fileSha256(listOf(file.getInputStream()))
             sha256Map[name] = sha256
-            if(name == OCTET_STREAM) {
+            if (name == OCTET_STREAM) {
                 context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] = sha256
             }
         }
