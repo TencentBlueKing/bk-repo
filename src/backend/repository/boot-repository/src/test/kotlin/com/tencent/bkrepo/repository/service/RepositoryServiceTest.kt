@@ -1,7 +1,8 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
+import com.tencent.bkrepo.repository.pojo.repo.configuration.LocalConfiguration
+import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import org.junit.jupiter.api.AfterEach
@@ -42,7 +43,6 @@ internal class RepositoryServiceTest @Autowired constructor(
     fun tearDown() {
         repositoryService.list(projectId).forEach { repositoryService.delete(projectId, it.name) }
     }
-
 
     @Test
     fun list() {
@@ -93,14 +93,13 @@ internal class RepositoryServiceTest @Autowired constructor(
     @Test
     fun create() {
         repositoryService.create(createRequest())
-        val repository = repositoryService.queryDetail(projectId, repoName, "GENERIC")!!
+        val repository = repositoryService.detail(projectId, repoName, "GENERIC")!!
         assertEquals(repoName, repository.name)
         assertEquals("GENERIC", repository.type)
-        assertEquals(RepositoryCategoryEnum.LOCAL, repository.category)
+        assertEquals(RepositoryCategory.LOCAL, repository.category)
         assertEquals(true, repository.public)
         assertEquals(projectId, repository.projectId)
         assertEquals("简单描述", repository.description)
-        assertEquals(null, repository.extension)
         assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
     }
 
@@ -110,12 +109,10 @@ internal class RepositoryServiceTest @Autowired constructor(
         repositoryService.update(RepoUpdateRequest(
                 projectId = projectId,
                 name = repoName,
-                category = RepositoryCategoryEnum.REMOTE,
                 public = false,
                 description = "新的描述",
                 operator = operator))
-        val repository = repositoryService.queryDetail(projectId, repoName)!!
-        assertEquals(RepositoryCategoryEnum.REMOTE, repository.category)
+        val repository = repositoryService.detail(projectId, repoName)!!
         assertEquals(false, repository.public)
         assertEquals("新的描述", repository.description)
     }
@@ -125,12 +122,12 @@ internal class RepositoryServiceTest @Autowired constructor(
         repositoryService.create(createRequest("test1"))
         repositoryService.create(createRequest("test2"))
         repositoryService.delete(projectId, "test1")
-        assertNull(repositoryService.queryDetail(projectId, "test1"))
+        assertNull(repositoryService.detail(projectId, "test1"))
 
         assertThrows<ErrorCodeException> { repositoryService.delete(projectId, "") }
         assertThrows<ErrorCodeException> { repositoryService.delete(projectId, "test1") }
 
-        assertNotNull(repositoryService.queryDetail(projectId, "test2"))
+        assertNotNull(repositoryService.detail(projectId, "test2"))
     }
 
     private fun createRequest(name: String = repoName): RepoCreateRequest {
@@ -138,9 +135,10 @@ internal class RepositoryServiceTest @Autowired constructor(
                 projectId = projectId,
                 name = name,
                 type = "GENERIC",
-                category = RepositoryCategoryEnum.LOCAL,
+                category = RepositoryCategory.LOCAL,
                 public = true,
                 description = "简单描述",
+                configuration = LocalConfiguration(),
                 operator = operator
         )
     }

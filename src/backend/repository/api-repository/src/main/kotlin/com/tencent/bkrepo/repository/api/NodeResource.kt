@@ -3,16 +3,17 @@ package com.tencent.bkrepo.repository.api
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
-import com.tencent.bkrepo.repository.pojo.node.NodeCopyRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -39,7 +40,7 @@ interface NodeResource {
 
     @ApiOperation("根据路径查看节点详情")
     @GetMapping("/query/{projectId}/{repoName}/{repoType}")
-    fun queryDetail(
+    fun detail(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -52,7 +53,7 @@ interface NodeResource {
 
     @ApiOperation("根据路径查看节点详情")
     @GetMapping("/query/{projectId}/{repoName}")
-    fun queryDetail(
+    fun detail(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -106,7 +107,7 @@ interface NodeResource {
         @RequestParam deep: Boolean = false
     ): Response<Page<NodeInfo>>
 
-    @ApiOperation("搜索文件")
+    @ApiOperation("搜索节点")
     @PostMapping("/search")
     fun search(
         @RequestBody nodeSearchRequest: NodeSearchRequest
@@ -144,7 +145,7 @@ interface NodeResource {
 
     @ApiOperation("查询节点大小信息")
     @GetMapping("/size/{projectId}/{repoName}")
-    fun getSize(
+    fun computeSize(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -152,4 +153,8 @@ interface NodeResource {
         @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
     ): Response<NodeSizeInfo>
+
+    @ApiOperation("自定义查询节点")
+    @PostMapping("/query")
+    fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any>>>
 }

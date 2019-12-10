@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.repository.constant.enum.RepositoryCategoryEnum
+import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
 import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
@@ -25,10 +25,10 @@ data class TRepository(
 
     var name: String,
     var type: String,
-    var category: RepositoryCategoryEnum,
+    var category: RepositoryCategory,
     var public: Boolean,
     var description: String? = null,
-    var extension: Any? = null,
+    var configuration: String,
     var storageCredentials: TStorageCredentials? = null,
 
     var projectId: String

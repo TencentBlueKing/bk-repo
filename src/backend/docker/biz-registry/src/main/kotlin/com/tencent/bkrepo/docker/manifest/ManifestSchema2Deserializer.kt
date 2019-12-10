@@ -12,6 +12,7 @@ import java.util.Collections
 import kotlin.collections.Map.Entry
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
+import java.util.stream.StreamSupport
 
 class ManifestSchema2Deserializer {
     companion object {
@@ -24,9 +25,9 @@ class ManifestSchema2Deserializer {
                 manifestMetadata.tagInfo.title = "$dockerRepo:$tag"
                 manifestMetadata.tagInfo.digest = digest
                 return applyAttributesFromContent(manifestBytes, jsonBytes, manifestMetadata)
-            } catch (var6: IOException) {
-                log.error("Unable to deserialize the manifest.json file: {}", var6.message, var6)
-                throw RuntimeException(var6)
+            } catch (exception: IOException) {
+                log.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
+                throw RuntimeException(exception)
             }
         }
 
@@ -40,12 +41,12 @@ class ManifestSchema2Deserializer {
             val historySize = if (history == null) 0 else history!!.size()
             var historyCounter = 0L
             if (history != null) {
-                val iterable = Iterable<JsonNode> { history.elements() }
                 // TODO: resolve params pass
-                // historyCounter = StreamSupport.stream(iterable.spliterator(), false).filter(Predicate<T> { notEmptyHistoryLayer(it) }).count()
-            }
+                val iterable = Iterable<JsonNode> { history.elements() }
+                historyCounter = StreamSupport.stream(iterable.spliterator(), false).filter { notEmptyHistoryLayer(it) }.count()
 
-            val foreignHasHistory = layers.size() as Long == historyCounter
+            }
+            val foreignHasHistory = layers.size().toLong()  == historyCounter
             var iterationsCounter = 0
             var historyIndex = 0
 
@@ -78,17 +79,15 @@ class ManifestSchema2Deserializer {
 
                 populateWithMediaType(layer, blobInfo)
                 manifestMetadata.blobsInfo.add(blobInfo)
-                if (historyIndex == historyIndex && layersIndex == layersIndex) {
-                    breakeCircuit(manifestBytes, jsonBytes, "Loop Indexes not Incing")
-                }
-
+//                if (historyIndex == historySize && layersIndex == layers.size()) {
+//                    breakeCircuit(manifestBytes, jsonBytes, "Loop Indexes not Incing")
+//                }
                 checkCircuitBreaker(manifestBytes, jsonBytes, iterationsCounter)
                 ++iterationsCounter
             }
-
             Collections.reverse(manifestMetadata.blobsInfo)
             manifestMetadata.tagInfo.totalSize = totalSize
-            val dockerMetadata = JsonUtil.readValue(config, DockerImageMetadata::class.java) as DockerImageMetadata
+            val dockerMetadata = JsonUtil.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
             populatePorts(manifestMetadata, dockerMetadata)
             populateVolumes(manifestMetadata, dockerMetadata)
             populateLabels(manifestMetadata, dockerMetadata)
@@ -196,10 +195,10 @@ class ManifestSchema2Deserializer {
 
         private fun addLabels(manifestMetadata: ManifestMetadata, labels: Map<String, String>?) {
             if (labels != null) {
-                val var2 = labels.entries.iterator()
+                val iter = labels.entries.iterator()
 
-                while (var2.hasNext()) {
-                    val label = var2.next() as Entry<String, String>
+                while (iter.hasNext()) {
+                    val label = iter.next()
                     manifestMetadata.tagInfo.labels.put(label.key, label.value)
                 }
             }

@@ -14,8 +14,9 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
  */
 @ShardingDocument("node")
 @CompoundIndexes(
-        CompoundIndex(name = "projectId_repoName_fullPath_idx", def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'deleted': 1}", unique = true, background = true),
-        CompoundIndex(name = "projectId_repoName_path_idx", def = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}", background = true)
+    CompoundIndex(name = "projectId_repoName_fullPath_idx", def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'deleted': 1}", unique = true, background = true),
+    CompoundIndex(name = "projectId_repoName_path_idx", def = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}", background = true),
+    CompoundIndex(name = "metadata_idx", def = "{'metadata.key': 1, 'metadata.value': 1}", background = true)
 )
 data class TNode(
     var id: String? = null,
@@ -32,7 +33,7 @@ data class TNode(
     var expireDate: LocalDateTime? = null,
     var sha256: String? = null,
     var deleted: LocalDateTime? = null,
-    var metadata: Map<String, String>? = null,
+    var metadata: List<TMetadata>? = null,
     var blockList: List<TFileBlock>? = null,
 
     @ShardingKey(count = 256)

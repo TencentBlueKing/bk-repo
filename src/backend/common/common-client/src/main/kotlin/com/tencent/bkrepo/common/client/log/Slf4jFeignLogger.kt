@@ -2,8 +2,8 @@ package com.tencent.bkrepo.common.client.log
 
 import feign.Request
 import feign.Response
-import org.slf4j.LoggerFactory
 import java.io.IOException
+import org.slf4j.LoggerFactory
 
 /**
  * feign 统一Slf4j日志记录器
@@ -11,7 +11,7 @@ import java.io.IOException
  * @author: carrypan
  * @date: 2019/11/1
  */
-class Slf4jFeignLogger: feign.Logger() {
+class Slf4jFeignLogger : feign.Logger() {
 
     private val logger = LoggerFactory.getLogger(API_LOGGER_NAME)
 
@@ -30,7 +30,6 @@ class Slf4jFeignLogger: feign.Logger() {
         if (this.logger.isInfoEnabled) {
             this.logger.info(String.format(methodTag(configKey) + format, *args))
         }
-
     }
     companion object {
         private const val API_LOGGER_NAME = "ServiceResourceApi"

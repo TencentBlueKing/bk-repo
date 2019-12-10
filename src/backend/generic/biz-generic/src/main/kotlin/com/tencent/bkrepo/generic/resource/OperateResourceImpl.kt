@@ -2,6 +2,7 @@ package com.tencent.bkrepo.generic.resource
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.generic.api.OperateResource
 import com.tencent.bkrepo.generic.pojo.FileDetail
 import com.tencent.bkrepo.generic.pojo.FileInfo
@@ -24,31 +25,40 @@ import org.springframework.web.bind.annotation.RestController
 class OperateResourceImpl @Autowired constructor(
     private val operateService: OperateService
 ) : OperateResource {
-
-    override fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Response<List<FileInfo>> {
-        return Response.success(operateService.listFile(userId, projectId, repoName, path, includeFolder, deep))
+    override fun listFile(userId: String, artifactInfo: ArtifactInfo, includeFolder: Boolean, deep: Boolean): Response<List<FileInfo>> {
+        return artifactInfo.run {
+            Response.success(operateService.listFile(userId, projectId, repoName, this.artifactUri, includeFolder, deep))
+        }
     }
 
     override fun searchFile(userId: String, searchRequest: FileSearchRequest): Response<Page<FileInfo>> {
         return Response.success(operateService.searchFile(userId, searchRequest))
     }
 
-    override fun getFileDetail(userId: String, projectId: String, repoName: String, fullPath: String): Response<FileDetail> {
-        return Response.success(operateService.getFileDetail(userId, projectId, repoName, fullPath))
+    override fun getFileDetail(userId: String, artifactInfo: ArtifactInfo): Response<FileDetail> {
+        return artifactInfo.run {
+            Response.success(operateService.getFileDetail(userId, projectId, repoName, this.artifactUri))
+        }
     }
 
-    override fun getFileSize(userId: String, projectId: String, repoName: String, fullPath: String): Response<FileSizeInfo> {
-        return Response.success(operateService.getFileSize(userId, projectId, repoName, fullPath))
+    override fun getFileSize(userId: String, artifactInfo: ArtifactInfo): Response<FileSizeInfo> {
+        return artifactInfo.run {
+            Response.success(operateService.getFileSize(userId, projectId, repoName, this.artifactUri))
+        }
     }
 
-    override fun mkdir(userId: String, projectId: String, repoName: String, fullPath: String): Response<Void> {
-        operateService.mkdir(userId, projectId, repoName, fullPath)
-        return Response.success()
+    override fun mkdir(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
+        return artifactInfo.run {
+            operateService.mkdir(userId, projectId, repoName, this.artifactUri)
+            Response.success()
+        }
     }
 
-    override fun delete(userId: String, projectId: String, repoName: String, fullPath: String): Response<Void> {
-        operateService.delete(userId, projectId, repoName, fullPath)
-        return Response.success()
+    override fun delete(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
+        return artifactInfo.run {
+            operateService.delete(userId, projectId, repoName, this.artifactUri)
+            Response.success()
+        }
     }
 
     override fun rename(userId: String, renameRequest: FileRenameRequest): Response<Void> {

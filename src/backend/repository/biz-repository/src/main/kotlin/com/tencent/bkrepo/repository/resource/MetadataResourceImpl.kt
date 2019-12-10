@@ -3,7 +3,7 @@ package com.tencent.bkrepo.repository.resource
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataUpsertRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.service.MetadataService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -22,8 +22,8 @@ class MetadataResourceImpl @Autowired constructor(
         return Response.success(metadataService.query(projectId, repoName, fullPath))
     }
 
-    override fun upsert(metadataUpsertRequest: MetadataUpsertRequest): Response<Void> {
-        metadataService.upsert(metadataUpsertRequest)
+    override fun save(metadataSaveRequest: MetadataSaveRequest): Response<Void> {
+        metadataService.save(metadataSaveRequest)
         return Response.success()
     }
 

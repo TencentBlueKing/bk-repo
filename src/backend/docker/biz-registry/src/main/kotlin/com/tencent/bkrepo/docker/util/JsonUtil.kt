@@ -22,10 +22,10 @@ class JsonUtil {
             return mapper.readValue(json, valueType)
         }
 
-        @Throws(IOException::class)
-        fun <T> readValue(root: JsonNode, valueType: Class<T>): T {
-            return mapper.readValue(root.binaryValue(), valueType)
-        }
+//        @Throws(IOException::class)
+//        fun <T> readValue(root: JsonNode, valueType: Class<T>): T {
+//            return mapper.readValue(root., valueType)
+//        }
 
         @Throws(IOException::class)
         fun readMap(json: ByteArray): Map<String, Any> {

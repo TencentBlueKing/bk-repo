@@ -11,14 +11,15 @@ import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_NUL
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PERMISSION_DENIED
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode.SYSTEM_ERROR
 import com.tencent.bkrepo.common.api.enums.SystemModuleEnum
-import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.FOLDER_CANNOT_BE_MODIFIED
-import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.NODE_NOT_FOUND
-import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.NODE_PATH_INVALID
-import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.REPOSITORY_NOT_FOUND
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.FOLDER_CANNOT_BE_MODIFIED
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.NODE_IS_EXIST
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.NODE_NOT_FOUND
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.NODE_PATH_INVALID
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.REPOSITORY_NOT_FOUND
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.SHA256_CHECK_FAILED
 import com.tencent.bkrepo.repository.pojo.MessageCodeCreateRequest
 import org.junit.jupiter.api.Test
 
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.springframework.beans.factory.annotation.Autowired
@@ -56,12 +57,11 @@ internal class MessageCodeDetailServiceTest @Autowired constructor(
         messageCodeDetailService.create(MessageCodeCreateRequest( NODE_NOT_FOUND.toString(), SystemModuleEnum.REPOSITORY, "节点{0}不存在", "節點{0}不存在", "Node {0} does not exist"))
         messageCodeDetailService.create(MessageCodeCreateRequest( NODE_PATH_INVALID.toString(), SystemModuleEnum.REPOSITORY, "节点路径{0}非法", "節點路徑{0}非法", "Node path {0} is invalid"))
         messageCodeDetailService.create(MessageCodeCreateRequest( FOLDER_CANNOT_BE_MODIFIED.toString(), SystemModuleEnum.REPOSITORY, "文件夹不能被覆盖", "文件夾不能被覆蓋", "Folder cannot be overwritten"))
+        messageCodeDetailService.create(MessageCodeCreateRequest( NODE_IS_EXIST.toString(), SystemModuleEnum.REPOSITORY, "节点{0}已存在", "節點{0}已存在", "Node {0} has existed"))
+        messageCodeDetailService.create(MessageCodeCreateRequest( SHA256_CHECK_FAILED.toString(), SystemModuleEnum.REPOSITORY, "文件sha256校验失败", "文件sha256校驗失敗", "Failed to check sha256"))
 
 
-        messageCodeDetailService.create(MessageCodeCreateRequest( "2511001", SystemModuleEnum.GENERIC, "文件数据未找到", "文件數據未找到", "File data not found"))
-        messageCodeDetailService.create(MessageCodeCreateRequest("2511002", SystemModuleEnum.GENERIC, "不能下载文件夹", "不能下載文件夾", "Folder cannot be downloaded"))
-        messageCodeDetailService.create(MessageCodeCreateRequest("2511003", SystemModuleEnum.GENERIC, "分块文件需分块下载", "分塊文件需分塊下載", "Block file need to be downloaded by block"))
-        messageCodeDetailService.create(MessageCodeCreateRequest("2511004", SystemModuleEnum.GENERIC, "单文件不能分块下载", "單文件不能分塊下載", "Simple file cannot be downloaded by block"))
+        messageCodeDetailService.create(MessageCodeCreateRequest( "2511001", SystemModuleEnum.GENERIC, "uploadId{0}不存在", "uploadId{0}不存在", "uploadId {0} not does not exist"))
 
     }
 }

@@ -16,13 +16,13 @@ import com.tencent.bkrepo.generic.pojo.operate.FileMoveRequest
 import com.tencent.bkrepo.generic.pojo.operate.FileRenameRequest
 import com.tencent.bkrepo.generic.pojo.operate.FileSearchRequest
 import com.tencent.bkrepo.repository.api.NodeResource
-import com.tencent.bkrepo.repository.pojo.node.NodeCopyRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeMoveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -70,7 +70,7 @@ class OperateService(
         logger.info("getFileDetail, userId: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
-        val nodeDetail = nodeResource.queryDetail(projectId, repoName, fullPath).data
+        val nodeDetail = nodeResource.detail(projectId, repoName, fullPath).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileDetail(toFileInfo(nodeDetail.nodeInfo), nodeDetail.metadata)
     }
@@ -79,7 +79,7 @@ class OperateService(
         logger.info("getFileSize, userId: $userId, projectId: $projectId, repoName: $repoName, fullPath: $fullPath")
         permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
 
-        val nodeSizeInfo = nodeResource.getSize(projectId, repoName, fullPath).data
+        val nodeSizeInfo = nodeResource.computeSize(projectId, repoName, fullPath).data
             ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, fullPath)
         return FileSizeInfo(subFileCount = nodeSizeInfo.subNodeCount, size = nodeSizeInfo.size)
     }

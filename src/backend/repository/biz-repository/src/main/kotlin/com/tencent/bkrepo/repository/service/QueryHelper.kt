@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.repository.pojo.node.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
 import java.time.LocalDateTime
 import org.springframework.data.domain.PageRequest
@@ -38,15 +38,21 @@ object QueryHelper {
                     .and("name").ne("")
 
             // 路径匹配
-            val criteriaList = pathPattern.map {
+            val fullPathCriteriaList = pathPattern.map {
                 val escapedPath = NodeUtils.escapeRegex(NodeUtils.formatPath(it))
                 Criteria.where("fullPath").regex("^$escapedPath")
             }
-            if (criteriaList.isNotEmpty()) {
-                criteria.orOperator(*criteriaList.toTypedArray())
+            if (fullPathCriteriaList.isNotEmpty()) {
+                criteria.orOperator(*fullPathCriteriaList.toTypedArray())
             }
             // 元数据匹配
-            metadataCondition.filterKeys { it.isNotBlank() }.forEach { (key, value) -> criteria.and("metadata.$key").`is`(value) }
+            val metadataCriteriaList = metadataCondition.filter { it.key.isNotBlank() }.map { (key, value) ->
+                Criteria.where("metadata.key").`is`(key)
+                .and("metadata.value").`is`(value)
+            }
+            if (metadataCriteriaList.isNotEmpty()) {
+                criteria.andOperator(*metadataCriteriaList.toTypedArray())
+            }
 
             Query(criteria).with(PageRequest.of(page, size)).with(Sort.by("fullPath"))
         }
@@ -94,6 +100,15 @@ object QueryHelper {
 
     fun nodeDeleteUpdate(operator: String): Update {
         return update(operator).set("deleted", LocalDateTime.now())
+    }
+
+    fun nodeMetadataQuery(projectId: String, repoName: String, fullPath: String, key: String): Query {
+        return Query(Criteria.where("projectId").`is`(projectId)
+            .and("repoName").`is`(repoName)
+            .and("fullPath").`is`(fullPath)
+            .and("deleted").`is`(null)
+            .and("metadata.key").`is`(key)
+        )
     }
 
     private fun update(operator: String): Update {

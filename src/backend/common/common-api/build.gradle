@@ -4,5 +4,5 @@ dependencies {
     api "org.springframework.cloud:spring-cloud-starter-openfeign"
     api "io.swagger:swagger-annotations"
     api "io.swagger:swagger-models"
-    api "javax.servlet:javax.servlet-api"
+    implementation 'org.apache.skywalking:apm-toolkit-trace'
 }

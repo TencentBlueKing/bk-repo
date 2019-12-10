@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.repository.constant.RepositoryMessageCode.NODE_PATH_INVALID
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.NODE_PATH_INVALID
 
 /**
  * 节点相关工具类
@@ -52,7 +52,7 @@ object NodeUtils {
      */
     fun formatPath(input: String): String {
         val path = formatFullPath(input)
-        return if (isRootPath(path)) path else path + FILE_SEPARATOR
+        return if (isRootPath(path)) ROOT_PATH else path + FILE_SEPARATOR
     }
 
     /**

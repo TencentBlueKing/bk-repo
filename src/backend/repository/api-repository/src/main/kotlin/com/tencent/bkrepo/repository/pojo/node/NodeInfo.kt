@@ -2,7 +2,6 @@ package com.tencent.bkrepo.repository.pojo.node
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
 
 /**
  * 节点信息
@@ -11,16 +10,14 @@ import java.time.LocalDateTime
  */
 @ApiModel("节点信息")
 data class NodeInfo(
-    @ApiModelProperty("节点id")
-    val id: String,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建时间")
-    val createdDate: LocalDateTime,
+    val createdDate: String,
     @ApiModelProperty("修改者")
     val lastModifiedBy: String,
     @ApiModelProperty("修改时间")
-    val lastModifiedDate: LocalDateTime,
+    val lastModifiedDate: String,
 
     @ApiModelProperty("是否为文件夹")
     val folder: Boolean,
