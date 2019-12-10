@@ -47,7 +47,7 @@ class ArtifactAutoConfiguration {
             override fun addInterceptors(registry: InterceptorRegistry) {
                 val clientAuthConfig = artifactConfiguration.getClientAuthConfig()
                 registry.addInterceptor(clientAuthInterceptor())
-                    .addPathPatterns(clientAuthConfig.pathPatterns)
+                    .addPathPatterns(clientAuthConfig.includePatterns)
                     .excludePathPatterns(clientAuthConfig.excludePatterns)
                 super.addInterceptors(registry)
             }
