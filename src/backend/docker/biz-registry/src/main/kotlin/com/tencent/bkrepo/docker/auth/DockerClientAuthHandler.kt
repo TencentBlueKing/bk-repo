@@ -23,6 +23,7 @@ import java.util.Base64
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
+import javax.ws.rs.core.MediaType
 
 
 @Component
@@ -64,7 +65,7 @@ open class DockerClientAuthHandler(val userResource: ServiceUserResource) : Clie
         val password = JwtUtil.getPassword(token)
         val result = userResource.checkUserToken(userName, password)
         if (result.data ==false) {
-            throw  Exception("auth failed")
+            throw  ClientAuthException("auth failed")
         }
         return password
     }
@@ -76,7 +77,9 @@ open class DockerClientAuthHandler(val userResource: ServiceUserResource) : Clie
         val registryService = "bkrepo"
         val scopeStr = ""
         response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\"", tokenUrl, registryService) + scopeStr)
-        response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":null}]}", "UNAUTHORIZED", "authentication required"))
+        response.contentType = MediaType.APPLICATION_JSON
+        response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":}]}", "UNAUTHORIZED", "authentication required"))
+        println(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":null}]}", "UNAUTHORIZED", "authentication required"))
         response.getWriter().flush()
     }
 
