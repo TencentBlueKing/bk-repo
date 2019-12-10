@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component
 class DockerArtifactConfiguration : ArtifactConfiguration {
     override fun getRepositoryType() = RepositoryType.DOCKER
 
-    override fun getClientAuthConfig() = ClientAuthConfig(pathPatterns = listOf("/**"),
+    override fun getClientAuthConfig() = ClientAuthConfig(includePatterns = listOf("/**"),
             excludePatterns = listOf("/v2/auth","/v2/_catalog","/v2/*/*/*/tags/list"))
 }
 
