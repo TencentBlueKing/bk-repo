@@ -9,5 +9,6 @@ package com.tencent.bkrepo.common.artifact.config
 enum class RepositoryType {
     GENERIC,
     DOCKER,
-    MAVEN
+    MAVEN,
+    PYPI
 }

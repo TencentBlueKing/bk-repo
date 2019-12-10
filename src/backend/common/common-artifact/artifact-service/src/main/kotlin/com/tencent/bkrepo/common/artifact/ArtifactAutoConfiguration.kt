@@ -7,8 +7,9 @@ import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.permission.DefaultPermissionCheckHandler
 import com.tencent.bkrepo.common.artifact.permission.PermissionAspect
 import com.tencent.bkrepo.common.artifact.permission.PermissionCheckHandler
-import com.tencent.bkrepo.common.artifact.resolve.ArtifactFileMethodArgumentResolver
-import com.tencent.bkrepo.common.artifact.resolve.ArtifactInfoMethodArgumentResolver
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMapMethodArgumentResolver
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMethodArgumentResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoMethodArgumentResolver
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
+import org.springframework.web.multipart.commons.CommonsMultipartResolver
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
@@ -27,7 +29,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
  */
 @Configuration
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
-// @Import(ResolverScannerRegistrar::class)
 @ConditionalOnWebApplication
 class ArtifactAutoConfiguration {
 
@@ -40,6 +41,7 @@ class ArtifactAutoConfiguration {
             override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
                 resolvers.add(artifactInfoMethodArgumentResolver())
                 resolvers.add(ArtifactFileMethodArgumentResolver())
+                resolvers.add(ArtifactFileMapMethodArgumentResolver())
             }
 
             override fun addInterceptors(registry: InterceptorRegistry) {
@@ -50,6 +52,19 @@ class ArtifactAutoConfiguration {
                 super.addInterceptors(registry)
             }
         }
+    }
+
+    /**
+     * 使用commons-fileupload, 以实现ArtifactFile接口对MultipartFile的适配
+     * springboot默认使用的是Servlet3+ StandardMultipartFile
+     */
+    @Bean(name = ["multipartResolver"])
+    fun commonsMultipartResolver(): CommonsMultipartResolver {
+        val multipartResolver = CommonsMultipartResolver()
+        // 通用制品库文件大小范围不固定，因此不做大小限制
+        multipartResolver.setMaxUploadSize(-1)
+        multipartResolver.setMaxUploadSizePerFile(-1)
+        return multipartResolver
     }
 
     @Bean

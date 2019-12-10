@@ -8,8 +8,8 @@ package com.tencent.bkrepo.repository.pojo.repo.configuration
 open class RemoteConfiguration(
     val url: String,
     val credentialsConfiguration: RemoteCredentialsConfiguration? = null,
-    val networkConfiguration: RemoteNetworkConfiguration,
-    val cacheConfiguration: RemoteCacheConfiguration
+    val networkConfiguration: RemoteNetworkConfiguration = RemoteNetworkConfiguration(),
+    val cacheConfiguration: RemoteCacheConfiguration = RemoteCacheConfiguration()
 ) : RepositoryConfiguration() {
     companion object {
         const val type = "remote"

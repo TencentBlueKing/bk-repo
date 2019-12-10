@@ -155,6 +155,7 @@ class LocalStorageClient(private val directory: String) {
         val isExpired = (System.currentTimeMillis() - file.lastModified()) >= expireSeconds * 1000
         return isFile && isExpired
     }
+
     companion object {
         const val BLOCK_SUFFIX = ".block"
         const val BLOCK_EXTENSION = "block"
@@ -162,3 +163,4 @@ class LocalStorageClient(private val directory: String) {
         const val COMBINED_FILENAME = "combined.data"
     }
 }
+

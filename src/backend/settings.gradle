@@ -37,4 +37,10 @@ include ":auth:api-auth"
 include ":auth:biz-auth"
 include ":auth:boot-auth"
 
+include ":pypi"
+include ":pypi:api-pypi"
+include ":pypi:biz-pypi"
+include ":pypi:boot-pypi"
+
 include ":boot-assembly"
+

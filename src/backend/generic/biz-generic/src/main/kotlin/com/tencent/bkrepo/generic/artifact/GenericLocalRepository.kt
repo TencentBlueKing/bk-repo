@@ -1,12 +1,11 @@
 package com.tencent.bkrepo.generic.artifact
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256
+import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
-import com.tencent.bkrepo.common.artifact.repository.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.service.util.HeaderUtils
-import com.tencent.bkrepo.common.storage.util.CredentialsUtils
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
@@ -29,7 +28,7 @@ class GenericLocalRepository : LocalRepository() {
     override fun onUploadValidate(context: ArtifactUploadContext) {
         super.onUploadValidate(context)
         // 校验sha256
-        val calculatedSha256 = context.contextAttributes[ATTRIBUTE_SHA256] as String
+        val calculatedSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
         val uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256)
         if (uploadSha256 != null && calculatedSha256 != uploadSha256) {
             throw ArtifactValidateException("File sha256 validate failed.")
@@ -54,13 +53,12 @@ class GenericLocalRepository : LocalRepository() {
     }
 
     private fun blockUpload(uploadId: String, sequence: Int, context: ArtifactUploadContext) {
-        val repositoryInfo = context.repositoryInfo
-        val storageCredentials = CredentialsUtils.readString(repositoryInfo.storageCredentials?.type, repositoryInfo.storageCredentials?.credentials)
+        val storageCredentials = context.storageCredentials
         if (!fileStorage.checkBlockPath(uploadId, storageCredentials)) {
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         }
-        val calculatedSha256 = context.contextAttributes[ATTRIBUTE_SHA256] as String
-        fileStorage.storeBlock(uploadId, sequence, calculatedSha256, context.artifactFile.getInputStream(), storageCredentials)
+        val calculatedSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
+        fileStorage.storeBlock(uploadId, sequence, calculatedSha256, context.getArtifactFile().getInputStream(), storageCredentials)
     }
 
     override fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
