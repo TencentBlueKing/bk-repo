@@ -1,7 +1,5 @@
 package com.tencent.bkrepo.repository.resource
 
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -20,7 +18,6 @@ import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.query.NodeQueryService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
-import java.lang.RuntimeException
 
 /**
  * 资源节点服务接口 实现类
@@ -88,17 +85,5 @@ class NodeResourceImpl @Autowired constructor(
 
     override fun query(queryModel: QueryModel): Response<Page<Map<String, Any>>> {
         return Response.success(nodeQueryService.query(queryModel))
-    }
-
-    override fun error(): Response<String> {
-        throw ErrorCodeException(CommonMessageCode.SYSTEM_ERROR)
-    }
-
-    override fun error1(): Response<String> {
-        throw RuntimeException("")
-    }
-
-    override fun success(): Response<String> {
-        return Response.success("success")
     }
 }
