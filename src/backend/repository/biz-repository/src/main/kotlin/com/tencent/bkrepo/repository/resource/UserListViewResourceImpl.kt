@@ -77,7 +77,7 @@ class UserListViewResourceImpl @Autowired constructor(
             builder.append("\n")
         }
         if(itemList.isEmpty()) {
-            builder.append("""The directory is empty.""")
+            builder.append("The directory is empty.")
         }
         for (item in itemList) {
             builder.append("""<a href="${item.name}">${StringEscapeUtils.escapeXml(item.name)}</a>""")
