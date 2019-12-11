@@ -30,7 +30,7 @@ object NodeUtils {
     /**
      * 文件分隔符
      */
-    private const val FILE_SEPARATOR = "/"
+    const val FILE_SEPARATOR = "/"
 
     /**
      * 文件分隔符

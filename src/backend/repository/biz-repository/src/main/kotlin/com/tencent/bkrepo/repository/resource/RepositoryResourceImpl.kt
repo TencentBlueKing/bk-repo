@@ -50,4 +50,11 @@ class RepositoryResourceImpl @Autowired constructor(
         repositoryService.delete(projectId, name)
         return Response.success()
     }
+
+    /**
+     * 开发使用，查询项目分表位置
+     */
+    override fun sharding(projectId: String): Response<Int> {
+        return Response.success(projectId.hashCode() and 255)
+    }
 }

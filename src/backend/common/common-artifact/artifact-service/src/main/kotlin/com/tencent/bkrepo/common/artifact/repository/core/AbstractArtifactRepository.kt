@@ -53,6 +53,8 @@ interface AbstractArtifactRepository : ArtifactRepository {
             this.onDownloadValidate(context)
             this.onBeforeDownload(context)
             val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] does not exist")
+            val name = NodeUtils.getName(context.artifactInfo.artifactUri)
+            HttpResponseUtils.response(name, file)
             logger.info("User[$userId] download artifact[$artifactUri] success")
             this.onDownloadSuccess(context, file)
         } catch (validateException: ArtifactValidateException) {
@@ -142,10 +144,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
     /**
      * 下载成功回调
      */
-    fun onDownloadSuccess(context: ArtifactDownloadContext, file: File) {
-        val name = NodeUtils.getName(context.artifactInfo.artifactUri)
-        HttpResponseUtils.response(name, file)
-    }
+    fun onDownloadSuccess(context: ArtifactDownloadContext, file: File) {}
 
     /**
      * 下载失败回调
