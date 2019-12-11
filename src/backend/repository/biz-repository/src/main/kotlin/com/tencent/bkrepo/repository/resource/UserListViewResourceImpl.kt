@@ -30,17 +30,17 @@ class UserListViewResourceImpl @Autowired constructor(
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     override fun listView(artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
+            val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
+            checkTrailingSlash()
             val response = HttpContextHolder.getResponse()
             response.contentType = "text/html; charset=UTF-8"
-            val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
             if(nodeDetail.nodeInfo.folder) {
-                // list nodes
                 val nodeList = nodeService.list(artifactInfo.projectId, artifactInfo.repoName, artifactUri, includeFolder = true, deep = false)
                 val pageContent = buildPageContent(nodeList, nodeDetail.nodeInfo)
-                HttpContextHolder.getResponse().writer.print(pageContent)
+                response.writer.print(pageContent)
             } else {
                 // download file
-                HttpContextHolder.getResponse().writer.print("暂不支持下载")
+                response.writer.print("暂不支持下载")
             }
         }
     }
@@ -70,6 +70,16 @@ class UserListViewResourceImpl @Autowired constructor(
         """.trimIndent()
     }
 
+    /**
+     * 路径不以"/"结尾，则重定向url
+     */
+    private fun checkTrailingSlash() {
+        val uri = HttpContextHolder.getRequest().requestURI
+        if(!uri.endsWith(FILE_SEPARATOR)) {
+            HttpContextHolder.getResponse().sendRedirect(uri + FILE_SEPARATOR)
+        }
+    }
+
     private fun buildListContent(itemList: List<NodeListViewItem>, currentNode: NodeInfo, nameColumnWidth: Int): String {
         val builder = StringBuilder()
         if(!NodeUtils.isRootPath(currentNode.fullPath)) {
@@ -77,7 +87,7 @@ class UserListViewResourceImpl @Autowired constructor(
             builder.append("\n")
         }
         if(itemList.isEmpty()) {
-            builder.append("""The directory is empty.""")
+            builder.append("The directory is empty.")
         }
         for (item in itemList) {
             builder.append("""<a href="${item.name}">${StringEscapeUtils.escapeXml(item.name)}</a>""")
