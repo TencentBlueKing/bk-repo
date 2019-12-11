@@ -60,8 +60,7 @@ class UserListViewResourceImpl @Autowired constructor(
                 <h1>Index of $currentPath</h1>
                 <pre>${"Name".padEnd(nameColumnWidth)}Last modified       Size</pre>
                 <hr/>
-                <pre>$listContent
-                </pre>
+                <pre>$listContent</pre>
                 <hr/>
                 <address style="font-size:small;">BlueKing Repository</address>
             </body>
@@ -85,7 +84,6 @@ class UserListViewResourceImpl @Autowired constructor(
             builder.append("    ")
             builder.append(item.size)
             builder.append("\n")
-
         }
         return builder.toString()
     }
