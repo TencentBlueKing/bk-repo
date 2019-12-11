@@ -31,7 +31,6 @@ class UserListViewResourceImpl @Autowired constructor(
     override fun listView(artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
             val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
-            checkTrailingSlash()
             val response = HttpContextHolder.getResponse()
             response.contentType = "text/html; charset=UTF-8"
             if(nodeDetail.nodeInfo.folder) {
@@ -68,16 +67,6 @@ class UserListViewResourceImpl @Autowired constructor(
             </body>
             </html>
         """.trimIndent()
-    }
-
-    /**
-     * 路径不以"/"结尾，则重定向url
-     */
-    private fun checkTrailingSlash() {
-        val uri = HttpContextHolder.getRequest().requestURI
-        if(!uri.endsWith(FILE_SEPARATOR)) {
-            HttpContextHolder.getResponse().sendRedirect(uri + FILE_SEPARATOR)
-        }
     }
 
     private fun buildListContent(itemList: List<NodeListViewItem>, currentNode: NodeInfo, nameColumnWidth: Int): String {
