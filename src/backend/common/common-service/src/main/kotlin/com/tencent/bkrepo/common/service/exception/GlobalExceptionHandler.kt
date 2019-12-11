@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.service.exception
 
 import com.netflix.client.ClientException
 import com.netflix.hystrix.exception.HystrixRuntimeException
+import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -20,47 +21,44 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(ExternalErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleExternalErrorCodeException(exception: ExternalErrorCodeException): Response<Void> {
-        logger.warn("Failed with external error code exception:[${exception.errorCode}-${exception.errorMessage}]")
+    fun handleException(exception: ExternalErrorCodeException): Response<Void> {
+        logger.warn("ExternalErrorCodeException[${exception.methodKey}]: [${exception.errorCode}]${exception.errorMessage}")
 
         return Response.fail(exception.errorCode, exception.errorMessage ?: "")
     }
 
     @ExceptionHandler(ErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleErrorCodeException(exception: ErrorCodeException): Response<Void> {
+    fun handleException(exception: ErrorCodeException): Response<Void> {
         val errorMsg = MessageCodeUtils.generateResponseDataObject<String>(exception.errorCode, exception.defaultMessage, exception.params)
 
-        logger.warn("Failed with error code exception:[${exception.errorCode}-$errorMsg]")
+        logger.warn("ErrorCodeException: [${exception.errorCode}]$errorMsg")
 
         return Response.fail(exception.errorCode, errorMsg.message ?: exception.message ?: "Unknown Error: ${exception.errorCode}")
     }
 
-    @ExceptionHandler(ClientException::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleClientException(exception: ClientException): Response<Void> {
-        logger.error("Failed with client exception:[$exception]", exception)
-
-        return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "内部依赖服务异常")
-    }
-
     @ExceptionHandler(HystrixRuntimeException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleHystrixRuntimeException(exception: HystrixRuntimeException): Response<Void> {
-        logger.error("Failed with hystrix exception:[${exception.failureType}-${exception.message}]", exception)
-
-        return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "内部依赖服务调用异常")
+    fun handleException(exception: HystrixRuntimeException): Response<Void> {
+        var causeMessage = exception.cause?.message
+        var responseMessage = "内部依赖服务调用异常"
+        if (exception.failureType == FailureType.COMMAND_EXCEPTION) {
+            if(exception.cause?.cause is ClientException) {
+                causeMessage = (exception.cause?.cause as ClientException).errorMessage
+            }
+        }
+        else if (exception.failureType == FailureType.SHORTCIRCUIT) {
+            responseMessage = "内部依赖服务被熔断"
+        }
+        logger.error("HystrixRuntimeException[${exception.failureType}]: ${exception.message} Cause: $causeMessage")
+        return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), responseMessage)
     }
+
 
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: Exception): Response<Void> {
-        // ribbon 会将ClientException 包装为RuntimeException
-        if (exception.cause is ClientException) {
-            logger.error("Failed with client exception:[${exception.cause}]")
-            return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "内部依赖服务异常")
-        }
-        logger.error("Failed with other exception:[${exception.message}]", exception)
+        logger.error("Exception: ${exception.message}", exception)
         return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "访问后台数据失败，已通知产品、开发，请稍后重试")
     }
 
