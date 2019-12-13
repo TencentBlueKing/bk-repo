@@ -27,7 +27,7 @@ import javax.ws.rs.core.MediaType
 
 
 @Component
-open class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAuthHandler {
+class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAuthHandler {
 
     @Autowired
     private lateinit var repositoryResource: RepositoryResource
@@ -64,10 +64,14 @@ open class DockerClientAuthHandler(val userResource: ServiceUserResource) : Clie
         val userName = JwtUtil.getUserName(token)
         val password = JwtUtil.getPassword(token)
         val result = userResource.checkUserToken(userName, password)
-        if (result.data ==false) {
+        if (result.data == false) {
             throw  ClientAuthException("auth failed")
         }
-        return password
+        return userName
+    }
+
+    override fun onAuthenticateSuccess(userId: String, request: HttpServletRequest) {
+        request.setAttribute(USER_KEY, userId)
     }
 
     override fun onAuthenticateFailed(response: HttpServletResponse, clientAuthException: ClientAuthException) {
@@ -78,13 +82,8 @@ open class DockerClientAuthHandler(val userResource: ServiceUserResource) : Clie
         val scopeStr = ""
         response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\"", tokenUrl, registryService) + scopeStr)
         response.contentType = MediaType.APPLICATION_JSON
-        response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":}]}", "UNAUTHORIZED", "authentication required"))
-        println(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":null}]}", "UNAUTHORIZED", "authentication required"))
+        response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}", "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.getWriter().flush()
-    }
-
-    override fun onAuthenticateSuccess(userId: String, request: HttpServletRequest) {
-        request.setAttribute(USER_KEY, userId)
     }
 
     private fun extractBasicAuth(request: HttpServletRequest): String {
@@ -114,8 +113,8 @@ open class DockerClientAuthHandler(val userResource: ServiceUserResource) : Clie
                 val parts = decodedHeader.split(":")
                 require(parts.size >= 2)
                 return DefaultClientAuthHandler.BasicAuthCredentials(
-                        parts[0],
-                        parts[1]
+                    parts[0],
+                    parts[1]
                 )
             } catch (exception: Exception) {
                 throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")

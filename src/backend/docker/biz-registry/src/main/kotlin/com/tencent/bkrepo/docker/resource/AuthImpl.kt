@@ -12,10 +12,10 @@ import javax.servlet.http.HttpServletResponse
 
 @RestController
 class AuthImpl @Autowired constructor(val authUtil: AuthUtil) : Auth {
-    override  fun auth(
-            request: HttpServletRequest,
-            response : HttpServletResponse
-    ) :ResponseEntity<Any>{
+    override fun auth(
+        request: HttpServletRequest,
+        response: HttpServletResponse
+    ): ResponseEntity<Any> {
         return authUtil.authUser(request, response)
     }
 }

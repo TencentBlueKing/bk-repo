@@ -4,10 +4,7 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.*
 
 
 /**
@@ -23,12 +20,21 @@ interface Catalog {
 
     @ApiOperation("获取catalog列表")
     @RequestMapping(method = [RequestMethod.GET], value = ["_catalog"])
-    fun list (
-            @RequestParam(required=false)
-            @ApiParam(value = "n", required = false)
-            n: Int?,
-            @RequestParam(required=false)
-            @ApiParam(value = "last", required = false)
-            last: String?
+    fun list(
+        @RequestAttribute
+        userId: String,
+        @RequestParam(required = false)
+        @ApiParam(value = "projectId", required = false)
+        projectId: String,
+        @RequestParam(required = false)
+        @ApiParam(value = "repoName", required = false)
+        repoName: String,
+        @RequestParam(required = false)
+        @ApiParam(value = "n", required = false)
+        n: Int?,
+        @RequestParam(required = false)
+        @ApiParam(value = "last", required = false)
+        last: String?
+
     ): ResponseEntity<Any>
 }
