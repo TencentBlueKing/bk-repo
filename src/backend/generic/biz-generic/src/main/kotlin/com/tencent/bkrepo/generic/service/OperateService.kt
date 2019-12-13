@@ -5,7 +5,6 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.generic.pojo.FileDetail
@@ -97,13 +96,7 @@ class OperateService(
             overwrite = false,
             operator = userId
         )
-        val result = nodeResource.create(createRequest)
-
-        if (result.isNotOk()) {
-            logger.warn("user[$userId] mkdirs [$fullUri] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
-        }
-
+        nodeResource.create(createRequest)
         logger.info("user[$userId] mkdirs [$fullUri] success")
     }
 
@@ -118,13 +111,7 @@ class OperateService(
             fullPath = fullPath,
             operator = userId
         )
-        val result = nodeResource.delete(deleteRequest)
-
-        if (result.isNotOk()) {
-            logger.warn("user[$userId] delete [$fullUri] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
-        }
-
+        nodeResource.delete(deleteRequest)
         logger.info("user[$userId] delete [$fullUri] success")
     }
 
@@ -142,11 +129,7 @@ class OperateService(
                 operator = userId
             )
         }
-        val result = nodeResource.rename(renameRequest)
-        if (result.isNotOk()) {
-            logger.warn("user[$userId] rename [$fullUri] to [${request.newFullPath}] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
-        }
+        nodeResource.rename(renameRequest)
         logger.info("user[$userId] rename [$fullUri] to [${request.newFullPath}] success")
     }
 
@@ -170,11 +153,7 @@ class OperateService(
             )
         }
 
-        val result = nodeResource.move(moveRequest)
-        if (result.isNotOk()) {
-            logger.warn("user[$userId] move [$srcUri] to [$destUri] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
-        }
+        nodeResource.move(moveRequest)
         logger.info("user[$userId] move [$srcUri] to [$destUri] success")
     }
 
@@ -198,11 +177,7 @@ class OperateService(
             )
         }
 
-        val result = nodeResource.copy(copyRequest)
-        if (result.isNotOk()) {
-            logger.warn("user[$userId] copy [$srcUri] to [$destUri] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
-        }
+        nodeResource.copy(copyRequest)
         logger.info("user[$userId] copy [$srcUri] to [$destUri] success")
     }
 

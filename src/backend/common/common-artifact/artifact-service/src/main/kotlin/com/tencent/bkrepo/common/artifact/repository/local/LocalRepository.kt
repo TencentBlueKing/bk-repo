@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.artifact.repository.local
 
-import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -27,10 +26,8 @@ abstract class LocalRepository :
 
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
-        val result = nodeResource.create(nodeCreateRequest)
-        if (result.isOk()) {
-            fileStorage.store(nodeCreateRequest.sha256!!, context.getArtifactFile().getInputStream(), context.storageCredentials)
-        } else throw ExternalErrorCodeException(result.code, result.message)
+        nodeResource.create(nodeCreateRequest)
+        fileStorage.store(nodeCreateRequest.sha256!!, context.getArtifactFile().getInputStream(), context.storageCredentials)
     }
 
     override fun onDownload(context: ArtifactDownloadContext): File? {
