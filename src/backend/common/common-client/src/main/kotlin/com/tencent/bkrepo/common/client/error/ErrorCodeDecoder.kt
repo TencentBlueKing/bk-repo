@@ -12,12 +12,12 @@ import feign.codec.ErrorDecoder
  * @author: carrypan
  * @date: 2019/12/10
  */
-class ErrorCodeDecoder: ErrorDecoder {
+class ErrorCodeDecoder : ErrorDecoder {
 
     private val delegate: ErrorDecoder = ErrorDecoder.Default()
 
     override fun decode(methodKey: String, feignResponse: Response): Exception {
-        if(feignResponse.status() == BAD_REQUEST) {
+        if (feignResponse.status() == BAD_REQUEST) {
             return try {
                 val response = JsonUtils.objectMapper.readValue<com.tencent.bkrepo.common.api.pojo.Response<Any>>(feignResponse.body().asReader())
                 ExternalErrorCodeException(methodKey, response.code, response.message)

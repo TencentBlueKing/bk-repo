@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.common.artifact.constant
 
+import com.tencent.bkrepo.common.api.message.MessageCode
+
 /**
  * 构件相关错误码
  *
@@ -7,11 +9,15 @@ package com.tencent.bkrepo.common.artifact.constant
  * @date: 2019-10-11
  */
 
-object ArtifactMessageCode {
-    const val REPOSITORY_NOT_FOUND = 2501001 // 仓库{0}不存在
-    const val NODE_NOT_FOUND = 2501002 // 节点{0}不存在
-    const val NODE_PATH_INVALID = 2501003 // 节点路径{0}非法
-    const val FOLDER_CANNOT_BE_MODIFIED = 2501004 // 文件夹不能被覆盖
-    const val NODE_IS_EXIST = 2501005 // 节点{0}已经存在
-    const val SHA256_CHECK_FAILED = 2501005 // sha256校验失败失
+enum class ArtifactMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
+    REPOSITORY_NOT_FOUND(1, "artifact.repository.notfound"),
+    REPOSITORY_EXIST(2, "artifact.repository.exist"),
+    NODE_NOT_FOUND(3, "artifact.node.notfound"),
+    NODE_PATH_INVALID(4, "artifact.node.path.invalid"),
+    NODE_EXIST(5, "artifact.node.existed"),
+    NODE_CONFLICT(6, "artifact.node.conflict");
+
+    override fun getBusinessCode() = businessCode
+    override fun getKey() = key
+    override fun getModuleCode() = 10
 }

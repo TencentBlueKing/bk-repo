@@ -1,13 +1,10 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.NOT_SUPPORTED
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_INVALID
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXIST
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.FOLDER_CANNOT_BE_MODIFIED
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
@@ -116,8 +113,8 @@ class NodeService @Autowired constructor(
      * 分页查询节点
      */
     fun page(projectId: String, repoName: String, path: String, page: Int, size: Int, includeFolder: Boolean, deep: Boolean): Page<NodeInfo> {
-        page.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "page")
-        size.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "size")
+        page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
+        size.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
         repositoryService.checkRepository(projectId, repoName)
 
         val query = nodePageQuery(projectId, repoName, path, includeFolder, deep, page, size)
@@ -131,9 +128,9 @@ class NodeService @Autowired constructor(
      * 搜索节点
      */
     fun search(searchRequest: NodeSearchRequest): Page<NodeInfo> {
-        searchRequest.page.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "page")
-        searchRequest.size.takeIf { it >= 0 } ?: throw ErrorCodeException(PARAMETER_INVALID, "size")
-        searchRequest.repoNameList.takeIf { it.isNotEmpty() } ?: throw ErrorCodeException(PARAMETER_INVALID, "repoNameList")
+        searchRequest.page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
+        searchRequest.size.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
+        searchRequest.repoNameList.takeIf { it.isNotEmpty() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoNameList")
         searchRequest.repoNameList.forEach { repositoryService.checkRepository(searchRequest.projectId, it) }
 
         val query = nodeSearchQuery(searchRequest)
@@ -169,8 +166,8 @@ class NodeService @Autowired constructor(
         // 路径唯一性校验
         val existNode = queryNode(projectId, repoName, fullPath)
         if (existNode != null) {
-            if (!createRequest.overwrite) throw ErrorCodeException(PARAMETER_IS_EXIST, fullPath)
-            else if (existNode.folder || createRequest.folder) throw ErrorCodeException(FOLDER_CANNOT_BE_MODIFIED)
+            if (!createRequest.overwrite) throw ErrorCodeException(ArtifactMessageCode.NODE_EXIST, fullPath)
+            else if (existNode.folder || createRequest.folder) throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
             else {
                 // 存在相同路径文件节点且允许覆盖，删除之前的节点
                 deleteByPath(projectId, repoName, fullPath, createRequest.operator)
@@ -281,7 +278,7 @@ class NodeService @Autowired constructor(
         // 检查新路径是否被占用
         if (exist(projectId, repoName, newFullPath)) {
             logger.warn("Rename node [${node.fullPath}] failed: $newFullPath is exist.")
-            throw ErrorCodeException(PARAMETER_IS_EXIST, newFullPath)
+            throw ErrorCodeException(ArtifactMessageCode.NODE_EXIST, newFullPath)
         }
 
         // 如果为文件夹，查询子节点并修改
@@ -307,10 +304,10 @@ class NodeService @Autowired constructor(
     private fun checkConflict(node: TNode, existNode: TNode?, overwrite: Boolean) {
         if (existNode == null) return
         if (node.folder && existNode.folder) return
-        if (!node.folder && !node.folder && overwrite) return
+        if (!node.folder && !existNode.folder && overwrite) return
 
         logger.warn("Check conflict: [${existNode.fullPath}] is exist and can not be modified")
-        throw ErrorCodeException(NOT_SUPPORTED)
+        throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, existNode.fullPath)
     }
 
     /**
@@ -395,7 +392,7 @@ class NodeService @Autowired constructor(
             // 目的节点存在且为文件，出错
             if (!destPathNode.folder) {
                 logger.warn("[${request.getOperateName()}] node [${node.fullPath}] failed: Destination path[$destPath] is exist and is a file.")
-                throw ErrorCodeException(NOT_SUPPORTED)
+                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, destPath)
             }
         } else {
             // 创建新路径

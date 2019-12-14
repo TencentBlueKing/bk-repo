@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.repository.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_IS_EXIST
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TRepository
@@ -80,7 +80,7 @@ class RepositoryService @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     fun create(repoCreateRequest: RepoCreateRequest): IdValue {
-        repoCreateRequest.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(PARAMETER_IS_EXIST)
+        repoCreateRequest.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXIST, repoCreateRequest.name)
 
         val tRepository = repoCreateRequest.let { TRepository(
                 name = it.name,

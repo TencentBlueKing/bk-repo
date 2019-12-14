@@ -11,8 +11,8 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.repository.UserRoleRepository
 import com.tencent.bkrepo.auth.service.RoleService
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -28,14 +28,14 @@ class RoleServiceImpl @Autowired constructor(
 ): RoleService {
     override fun addUserRole(request: AddUserRoleRequest) {
         userRepository.findOneByName(request.userName)
-            ?: throw ErrorCodeException(PARAMETER_INVALID, "invalid user name")
+            ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "username")
         val roleOp = roleRepository.findById(request.roleId)
         if(!roleOp.isPresent){
-            throw ErrorCodeException(PARAMETER_INVALID, "role not found")
+            throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, "role")
         }
         val projectOp = projectRepository.findById(request.projectId)
         if(!projectOp.isPresent){
-            throw ErrorCodeException(PARAMETER_INVALID, "project not found")
+            throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, "project")
         }
         // todo 校验 repo
         userRoleRepository.insert(

@@ -33,7 +33,7 @@ class UserListViewResourceImpl @Autowired constructor(
             val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
             val response = HttpContextHolder.getResponse()
             response.contentType = "text/html; charset=UTF-8"
-            if(nodeDetail.nodeInfo.folder) {
+            if (nodeDetail.nodeInfo.folder) {
                 val nodeList = nodeService.list(artifactInfo.projectId, artifactInfo.repoName, artifactUri, includeFolder = true, deep = false)
                 val pageContent = buildPageContent(nodeList, nodeDetail.nodeInfo)
                 response.writer.print(pageContent)
@@ -70,11 +70,11 @@ class UserListViewResourceImpl @Autowired constructor(
 
     private fun buildListContent(itemList: List<NodeListViewItem>, currentNode: NodeInfo, nameColumnWidth: Int): String {
         val builder = StringBuilder()
-        if(!NodeUtils.isRootPath(currentNode.fullPath)) {
+        if (!NodeUtils.isRootPath(currentNode.fullPath)) {
             builder.append("""<a href="../">../</a>""")
             builder.append("\n")
         }
-        if(itemList.isEmpty()) {
+        if (itemList.isEmpty()) {
             builder.append("The directory is empty.")
         }
         for (item in itemList) {
@@ -95,7 +95,7 @@ class UserListViewResourceImpl @Autowired constructor(
             .append(FILE_SEPARATOR)
             .append(currentNode.repoName)
             .append(currentNode.fullPath)
-        if(!NodeUtils.isRootPath(currentNode.fullPath)) {
+        if (!NodeUtils.isRootPath(currentNode.fullPath)) {
             builder.append(FILE_SEPARATOR)
         }
         return builder.toString()

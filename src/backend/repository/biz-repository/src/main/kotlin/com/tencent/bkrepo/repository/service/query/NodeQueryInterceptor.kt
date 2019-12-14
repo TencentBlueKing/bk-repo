@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.service.query
 
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryModelInterceptor
 import com.tencent.bkrepo.common.query.model.QueryModel
