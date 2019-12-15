@@ -82,7 +82,7 @@ class InnerCosFileStorage(
         } catch (cosServiceException: CosServiceException) {
             exists = cosServiceException.statusCode != HttpStatus.SC_NOT_FOUND
         } catch(ignored: Exception) {
-            exists= false
+            exists = false
         }
         return exists
     }
