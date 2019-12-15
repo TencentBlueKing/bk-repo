@@ -5,7 +5,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.generic.pojo.FileDetail
 import com.tencent.bkrepo.generic.pojo.FileInfo
