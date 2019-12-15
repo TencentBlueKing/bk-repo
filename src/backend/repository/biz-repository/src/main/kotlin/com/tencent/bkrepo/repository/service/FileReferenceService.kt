@@ -58,8 +58,8 @@ class FileReferenceService @Autowired constructor(
     }
 
     private fun validateParameter(sha256: String, count: Int) {
-        sha256.takeIf { it.isNotBlank() } ?: throw IllegalArgumentException("The sha256 of reference file can not be blank")
-        count.takeIf { it >= 0 } ?: throw IllegalArgumentException("Reference increment should be greater than 0")
+        require(sha256.isNotBlank()) { "The sha256 of reference file can not be blank" }
+        require(count >= 0) { "Reference increment should be greater than 0" }
     }
 
     companion object {
