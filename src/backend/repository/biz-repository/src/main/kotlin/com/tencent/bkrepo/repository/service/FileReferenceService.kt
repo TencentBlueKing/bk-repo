@@ -49,7 +49,7 @@ class FileReferenceService @Autowired constructor(
     }
 
     fun queryBySha256(sha256: String): TFileReference? {
-        val query = Query.query(Criteria.where("sha256").`is`(sha256))
+        val query = Query.query(Criteria.where(TFileReference::sha256.name).`is`(sha256))
         return fileReferenceDao.findOne(query)
     }
 

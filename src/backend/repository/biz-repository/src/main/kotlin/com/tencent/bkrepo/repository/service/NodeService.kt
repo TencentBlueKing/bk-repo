@@ -320,8 +320,8 @@ class NodeService @Autowired constructor(
         val escapedPath = escapeRegex(formattedPath)
         val query = nodeQuery(projectId, repoName)
         query.addCriteria(Criteria().orOperator(
-                Criteria.where("fullPath").regex("^$escapedPath"),
-                Criteria.where("fullPath").`is`(formattedFullPath)
+                Criteria.where(TNode::fullPath.name).regex("^$escapedPath"),
+                Criteria.where(TNode::fullPath.name).`is`(formattedFullPath)
         ))
         if (soft) {
             // 软删除

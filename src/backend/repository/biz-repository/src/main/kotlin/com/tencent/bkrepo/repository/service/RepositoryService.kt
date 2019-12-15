@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
@@ -41,10 +42,10 @@ class RepositoryService @Autowired constructor(
     private fun queryRepository(projectId: String, name: String, type: String? = null): TRepository? {
         if (projectId.isBlank() || name.isBlank()) return null
 
-        val criteria = Criteria.where("projectId").`is`(projectId).and("name").`is`(name)
+        val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId).and(TRepository::name.name).`is`(name)
 
         if (!type.isNullOrBlank()) {
-            criteria.and("type").`is`(type)
+            criteria.and(TRepository::type.name).`is`(type)
         }
         return mongoTemplate.findOne(Query(criteria), TRepository::class.java)
     }
@@ -69,10 +70,10 @@ class RepositoryService @Autowired constructor(
 
     fun exist(projectId: String, name: String, type: String? = null): Boolean {
         if (projectId.isBlank() || name.isBlank()) return false
-        val criteria = Criteria.where("projectId").`is`(projectId).and("name").`is`(name)
+        val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId).and(TRepository::name.name).`is`(name)
 
         if (!type.isNullOrBlank()) {
-            criteria.and("type").`is`(type)
+            criteria.and(TRepository::type.name).`is`(type)
         }
 
         return mongoTemplate.exists(Query(criteria), TRepository::class.java)
@@ -131,17 +132,17 @@ class RepositoryService @Autowired constructor(
 
         repoRepository.deleteById(repository.id!!)
         nodeDao.remove(Query(Criteria
-                .where("projectId")
+                .where(TNode::projectId.name)
                 .`is`(repository.projectId)
-                .and("repoName").`is`(repository.name)
+                .and(TNode::repoName.name).`is`(repository.name)
         ))
 
         logger.info("Delete repository [$projectId/$name] success.")
     }
 
     private fun createListQuery(projectId: String): Query {
-        val query = Query(Criteria.where("projectId").`is`(projectId)).with(Sort.by("name"))
-        query.fields().exclude("storageCredentials")
+        val query = Query(Criteria.where(TRepository::projectId.name).`is`(projectId)).with(Sort.by(TRepository::name.name))
+        query.fields().exclude(TRepository::storageCredentials.name)
 
         return query
     }
