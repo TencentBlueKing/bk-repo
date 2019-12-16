@@ -65,7 +65,7 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
             delete(path, hash, getClient(credentials))
             logger.info("Success to remove file [$hash] on [$credentials].")
         } catch (exception: Exception) {
-            logger.error("Failed to store file [$hash] on [$credentials].", exception)
+            logger.error("Failed to remove file [$hash] on [$credentials].", exception)
             throw StorageException("文件删除失败: ${exception.message}")
         }
     }

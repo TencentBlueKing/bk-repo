@@ -19,7 +19,7 @@ import java.time.LocalDateTime
 import java.util.*
 import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.repository.RoleRepository
-import com.tencent.bkrepo.common.api.constant.AuthMessageCode
+import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
 

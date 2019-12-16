@@ -3,11 +3,11 @@ package com.tencent.bkrepo.repository.resource
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.api.UserNodeResource
@@ -43,7 +43,7 @@ class UserNodeResourceImpl @Autowired constructor(
         artifactInfo.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             val nodeDetail = nodeService.detail(projectId, repoName, this.artifactUri) ?: throw ErrorCodeException(
-                CommonMessageCode.ELEMENT_NOT_FOUND, this.artifactUri)
+                ArtifactMessageCode.NODE_NOT_FOUND, this.artifactUri)
             return Response.success(nodeDetail)
         }
     }

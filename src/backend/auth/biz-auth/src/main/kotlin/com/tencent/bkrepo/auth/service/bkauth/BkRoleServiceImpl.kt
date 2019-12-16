@@ -9,8 +9,9 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.repository.UserRoleRepository
 import com.tencent.bkrepo.auth.service.RoleService
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
+
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -25,23 +26,23 @@ class BkRoleServiceImpl @Autowired constructor(
         private val userRoleRepository: UserRoleRepository
 ) {
     fun addUserRole(request: AddUserRoleRequest) {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
     }
 
     fun listAll(): List<Role> {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
     }
 
     fun listByType(roleType: RoleType): List<Role> {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
     }
 
     fun addRole(request: CreateRoleRequest) {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
     }
 
     fun deleteByName(name: String) {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
     }
 
     companion object {

@@ -8,8 +8,8 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -87,26 +87,26 @@ class ServicePermissionResourceImpl @Autowired constructor(
                 }
                 ResourceType.PROJECT -> {
                     if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_INVALID, "projectId required")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
                     }
                 }
                 ResourceType.REPO -> {
                     if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_INVALID, "projectId required")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
                     }
                     if (repoName.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_INVALID, "repoId required")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoId")
                     }
                 }
                 ResourceType.NODE -> {
                     if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_INVALID, "node required")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "node")
                     }
                     if (repoName.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_INVALID, "repoId required")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoId")
                     }
                     if (path.isNullOrBlank()) {
-                        throw ErrorCodeException(PARAMETER_INVALID, "node required")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "node")
                     }
                 }
             }

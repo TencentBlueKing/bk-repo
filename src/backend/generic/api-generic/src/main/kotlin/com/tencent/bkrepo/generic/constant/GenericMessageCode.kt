@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.generic.constant
 
+import com.tencent.bkrepo.common.api.message.MessageCode
+
 /**
  * 通用文件错误码
  *
@@ -7,6 +9,10 @@ package com.tencent.bkrepo.generic.constant
  * @date: 2019-10-11
  */
 
-object GenericMessageCode {
-    const val UPLOAD_ID_NOT_FOUND = 2511001 // 上传出错，uploadId不存在
+enum class GenericMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
+    UPLOAD_ID_NOT_FOUND(1, "generic.uploadId.notfound");
+
+    override fun getBusinessCode() = businessCode
+    override fun getKey() = key
+    override fun getModuleCode() = 11
 }

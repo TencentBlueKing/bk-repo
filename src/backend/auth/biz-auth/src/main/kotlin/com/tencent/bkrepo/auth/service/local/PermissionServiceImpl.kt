@@ -9,7 +9,7 @@ import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.PermissionService
-import com.tencent.bkrepo.common.api.constant.AuthMessageCode
+import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

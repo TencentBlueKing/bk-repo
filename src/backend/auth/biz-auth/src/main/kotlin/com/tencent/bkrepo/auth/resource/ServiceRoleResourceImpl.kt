@@ -22,9 +22,9 @@ class ServiceRoleResourceImpl @Autowired constructor(
         return Response(true)
     }
 
-    override fun deleteRole(roleType: RoleType,projectId:String, rId: String ): Response<Boolean> {
+    override fun deleteRole(roleType: RoleType,projectId:String, rid: String ): Response<Boolean> {
         // todo check request
-        roleService.deleteRoleByRid(roleType, projectId, rId)
+        roleService.deleteRoleByRid(roleType, projectId, rid)
         return Response(true)
     }
 
@@ -32,8 +32,8 @@ class ServiceRoleResourceImpl @Autowired constructor(
         return Response(roleService.listAllRole())
     }
 
-    override fun listRoleByType(roleType: RoleType): Response<List<Role>> {
-        return Response(roleService.listRoleByType(roleType.toString()))
+    override fun listRoleByType(type: RoleType): Response<List<Role>> {
+        return Response(roleService.listRoleByType(type.toString()))
     }
 
     override fun listRoleByTypeAndProjectId(type: RoleType, projectId: String): Response<List<Role>> {

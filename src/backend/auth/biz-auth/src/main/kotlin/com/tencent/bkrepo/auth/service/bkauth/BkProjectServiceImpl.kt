@@ -4,10 +4,9 @@ import com.tencent.bkrepo.auth.model.TProject
 import com.tencent.bkrepo.auth.pojo.CreateProjectRequest
 import com.tencent.bkrepo.auth.pojo.Project
 import com.tencent.bkrepo.auth.repository.ProjectRepository
-import com.tencent.bkrepo.auth.service.ProjectService
 import com.tencent.bkrepo.auth.util.TransferUtils
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -42,7 +41,7 @@ class BkProjectServiceImpl @Autowired constructor(
     }
 
     fun listProject(): List<Project> {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
     }
 
     fun createProject(request: CreateProjectRequest) {
@@ -57,7 +56,7 @@ class BkProjectServiceImpl @Autowired constructor(
     }
 
     fun deleteByName(name: String) {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
     }
 
     companion object {

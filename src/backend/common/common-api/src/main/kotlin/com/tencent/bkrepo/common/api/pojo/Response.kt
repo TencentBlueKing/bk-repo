@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.api.pojo
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import org.apache.skywalking.apm.toolkit.trace.TraceContext
@@ -17,24 +17,23 @@ data class Response<out T>(
     @ApiModelProperty("链路追踪id")
     val traceId: String
 ) {
-    constructor(data: T) : this(CommonMessageCode.SUCCESS, null, data)
+    constructor(data: T) : this(CommonMessageCode.SUCCESS.getCode(), null, data)
     constructor(code: Int, message: String?, data: T?) : this(code, message, data, TraceContext.traceId())
 
     @JsonIgnore
     fun isOk(): Boolean {
-        return code == CommonMessageCode.SUCCESS
+        return code == CommonMessageCode.SUCCESS.getCode()
     }
 
     @JsonIgnore
     fun isNotOk(): Boolean {
-        return code != CommonMessageCode.SUCCESS
+        return code != CommonMessageCode.SUCCESS.getCode()
     }
 
     companion object {
+        fun success() = Response(CommonMessageCode.SUCCESS.getCode(), null, null)
 
-        fun success() = Response(CommonMessageCode.SUCCESS, null, null)
-
-        fun <T> success(data: T) = Response(CommonMessageCode.SUCCESS, null, data)
+        fun <T> success(data: T) = Response(CommonMessageCode.SUCCESS.getCode(), null, data)
 
         fun fail(code: Int, message: String) = Response<Void>(code, message, null)
     }
