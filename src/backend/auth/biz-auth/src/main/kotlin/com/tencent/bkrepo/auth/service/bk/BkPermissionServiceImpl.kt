@@ -5,7 +5,7 @@ import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.service.PermissionService
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -18,7 +18,7 @@ class BkPermissionServiceImpl @Autowired constructor(
 
 ) : PermissionService {
     override fun deletePermission(id: String) {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED, "not supported")
     }
 
     override fun listPermission(resourceType: ResourceType?): List<Permission> {
@@ -26,7 +26,7 @@ class BkPermissionServiceImpl @Autowired constructor(
     }
 
     override fun createPermission(request: CreatePermissionRequest) {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED, "not supported")
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {

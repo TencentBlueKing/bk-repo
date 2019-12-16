@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.model.TNode
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
@@ -74,9 +75,9 @@ class NodeQueryService @Autowired constructor(
         val nodeList = nodeDao.find(query, MutableMap::class.java) as List<MutableMap<String, Any>>
         // metadata格式转换，并排除id字段
         nodeList.forEach {
-            it["metadata"]?.let { metadata -> it["metadata"] = convert(metadata as List<Map<String, String>>) }
-            it["createdDate"]?.let { createDate -> it["createdDate"] = LocalDateTime.ofInstant((createDate as Date).toInstant(), ZoneId.systemDefault()) }
-            it["lastModifiedDate"]?.let { lastModifiedDate -> it["lastModifiedDate"] = LocalDateTime.ofInstant((lastModifiedDate as Date).toInstant(), ZoneId.systemDefault()) }
+            it[TNode::metadata.name]?.let { metadata -> it[TNode::metadata.name] = convert(metadata as List<Map<String, String>>) }
+            it[TNode::createdDate.name]?.let { createDate -> it[TNode::createdDate.name] = LocalDateTime.ofInstant((createDate as Date).toInstant(), ZoneId.systemDefault()) }
+            it[TNode::lastModifiedDate.name]?.let { lastModifiedDate -> it[TNode::lastModifiedDate.name] = LocalDateTime.ofInstant((lastModifiedDate as Date).toInstant(), ZoneId.systemDefault()) }
             it.remove("_id")
         }
         val total = nodeDao.count(query)

@@ -2,10 +2,13 @@ package com.tencent.bkrepo.common.service.exception
 
 import com.netflix.client.ClientException
 import com.netflix.hystrix.exception.HystrixRuntimeException
+import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.MessageCodeUtils
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -20,48 +23,47 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(ExternalErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleExternalErrorCodeException(exception: ExternalErrorCodeException): Response<Void> {
-        logger.warn("Failed with external error code exception:[${exception.errorCode}-${exception.errorMessage}]")
+    fun handleException(exception: ExternalErrorCodeException): Response<Void> {
+        logger.warn("${exception.javaClass.simpleName}: [${exception.methodKey}][${exception.errorCode}]${exception.errorMessage}")
 
         return Response.fail(exception.errorCode, exception.errorMessage ?: "")
     }
 
     @ExceptionHandler(ErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleErrorCodeException(exception: ErrorCodeException): Response<Void> {
-        val errorMsg = MessageCodeUtils.generateResponseDataObject<String>(exception.errorCode, exception.defaultMessage, exception.params)
+    fun handleException(exception: ErrorCodeException): Response<Void> {
+        val errorMsg = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
+        logger.warn("${exception.javaClass.simpleName}: [${exception.messageCode.getCode()}]$errorMsg")
 
-        logger.warn("Failed with error code exception:[${exception.errorCode}-$errorMsg]")
-
-        return Response.fail(exception.errorCode, errorMsg.message ?: exception.message ?: "Unknown Error: ${exception.errorCode}")
-    }
-
-    @ExceptionHandler(ClientException::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleClientException(exception: ClientException): Response<Void> {
-        logger.error("Failed with client exception:[$exception]", exception)
-
-        return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "内部依赖服务异常")
+        return Response.fail(exception.messageCode.getCode(), errorMsg)
     }
 
     @ExceptionHandler(HystrixRuntimeException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleHystrixRuntimeException(exception: HystrixRuntimeException): Response<Void> {
-        logger.error("Failed with hystrix exception:[${exception.failureType}-${exception.message}]", exception)
-
-        return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "内部依赖服务调用异常")
+    fun handleException(exception: HystrixRuntimeException): Response<Void> {
+        var causeMessage = exception.cause?.message
+        var messageCode = CommonMessageCode.SERVICE_CALL_ERROR
+        if (exception.failureType == FailureType.COMMAND_EXCEPTION) {
+            if (exception.cause?.cause is ClientException) {
+                causeMessage = (exception.cause?.cause as ClientException).errorMessage
+            }
+        } else if (exception.failureType == FailureType.SHORTCIRCUIT) {
+            messageCode = CommonMessageCode.SERVICE_CIRCUIT_BREAKER
+        }
+        logger.error("${exception.javaClass.simpleName}: [${exception.failureType}]${exception.message} Cause: $causeMessage")
+        return response(messageCode)
     }
 
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: Exception): Response<Void> {
-        // ribbon 会将ClientException 包装为RuntimeException
-        if (exception.cause is ClientException) {
-            logger.error("Failed with client exception:[${exception.cause}]")
-            return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "内部依赖服务异常")
-        }
-        logger.error("Failed with other exception:[${exception.message}]", exception)
-        return Response.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "访问后台数据失败，已通知产品、开发，请稍后重试")
+        logger.error("${exception.javaClass.simpleName}: ${exception.message}", exception)
+        return response(CommonMessageCode.SYSTEM_ERROR)
+    }
+
+    private fun response(messageCode: MessageCode): Response<Void> {
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
+        return Response.fail(messageCode.getCode(), errorMessage)
     }
 
     companion object {

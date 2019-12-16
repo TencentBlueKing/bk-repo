@@ -32,15 +32,11 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
 
     override fun needAuthenticate(uri: String, projectId: String?, repoName: String?): Boolean {
         if (projectId.isNullOrEmpty() || repoName.isNullOrEmpty()) {
-            logger.debug("Can not extract projectId or repoName.")
+            logger.debug("ProjectId or repoName is missing, default to authenticate.")
             return true
         }
         val typeName = artifactConfiguration.getRepositoryType()?.name ?: ""
         val response = repositoryResource.detail(projectId, repoName, typeName)
-        if (response.isNotOk()) {
-            logger.warn("Query repository detail failed: [$response].")
-            return true
-        }
         val repo = response.data ?: throw ArtifactNotFoundException("Repository[$repoName] does not exist")
         val requestAttributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
         requestAttributes.request.setAttribute(REPO_KEY, repo)

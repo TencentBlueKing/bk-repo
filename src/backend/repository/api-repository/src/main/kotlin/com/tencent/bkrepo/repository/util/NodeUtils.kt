@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode.NODE_PATH_INVALID
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_PATH_INVALID
 
 /**
  * 节点相关工具类
@@ -30,7 +30,7 @@ object NodeUtils {
     /**
      * 文件分隔符
      */
-    private const val FILE_SEPARATOR = "/"
+    const val FILE_SEPARATOR = "/"
 
     /**
      * 文件分隔符

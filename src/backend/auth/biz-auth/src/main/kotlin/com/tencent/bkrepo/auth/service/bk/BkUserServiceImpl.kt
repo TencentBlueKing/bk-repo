@@ -1,11 +1,10 @@
 package com.tencent.bkrepo.auth.service.bk
 
-import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -17,15 +16,15 @@ class BkUserServiceImpl @Autowired constructor(
     private val userRepository: UserRepository
 ) : UserService {
     override fun createUser(request: CreateUserRequest) {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
     }
 
     override fun deleteByName(name: String) {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
     }
 
     override fun getByName(name: String): User? {
-        throw ErrorCodeException(CommonMessageCode.NOT_SUPPORTED, "not supported")
+        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
     }
 
     override fun checkAdmin(name: String): Boolean {

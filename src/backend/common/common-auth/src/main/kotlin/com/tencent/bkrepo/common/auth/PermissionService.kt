@@ -2,9 +2,8 @@ package com.tencent.bkrepo.common.auth
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode.PERMISSION_DENIED
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -25,18 +24,13 @@ class PermissionService @Autowired constructor(
 
     fun checkPermission(request: CheckPermissionRequest) {
         if (!hasPermission(request)) {
-            throw ErrorCodeException(PERMISSION_DENIED)
+            throw ErrorCodeException(CommonMessageCode.PERMISSION_DENIED)
         }
     }
 
     fun hasPermission(request: CheckPermissionRequest): Boolean {
         return if (authEnabled) {
-            val response = servicePermissionResource.checkPermission(request)
-            if (response.isNotOk()) {
-                logger.error("Check permission [$request] error: [${response.code}, ${response.message}]")
-                throw ExternalErrorCodeException(response.code, response.message)
-            }
-            response.data ?: false
+            servicePermissionResource.checkPermission(request).data ?: false
         } else true
     }
 

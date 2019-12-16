@@ -2,12 +2,11 @@ package com.tencent.bkrepo.generic.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.config.REPO_KEY
-import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
@@ -32,7 +31,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 /**
  * 通用文件上传服务类
@@ -49,7 +47,6 @@ class UploadService @Autowired constructor(
     private val uploadTransactionExpires: Long = 3600 * 12
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    @Transactional(rollbackFor = [Throwable::class])
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
@@ -57,7 +54,6 @@ class UploadService @Autowired constructor(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    @Transactional(rollbackFor = [Throwable::class])
     fun startBlockUpload(userId: String, artifactInfo: GenericArtifactInfo): UploadTransactionInfo {
         with(artifactInfo) {
             val expires = getLongHeader(HEADER_EXPIRES)
@@ -68,7 +64,7 @@ class UploadService @Autowired constructor(
             // 判断文件是否存在
             if (!overwrite && nodeResource.exist(projectId, repoName, fullPath).data == true) {
                 logger.warn("User[$userId] start block upload [${artifactInfo.getFullUri()}] failed: artifact already exists.")
-                throw ErrorCodeException(ArtifactMessageCode.NODE_IS_EXIST, fullPath)
+                throw ErrorCodeException(ArtifactMessageCode.NODE_EXIST, fullPath)
             }
             val uploadTransaction = UploadTransactionInfo(uploadId = genericTransactionId(), expires = uploadTransactionExpires)
             fileStorage.makeBlockPath(uploadTransaction.uploadId, storageCredentials)
@@ -79,7 +75,6 @@ class UploadService @Autowired constructor(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    @Transactional(rollbackFor = [Throwable::class])
     fun abortBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
         val storageCredentials = getStorageCredentials()
         fileStorage.deleteBlockPath(uploadId, storageCredentials)
@@ -87,7 +82,6 @@ class UploadService @Autowired constructor(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    @Transactional(rollbackFor = [Throwable::class])
     fun completeBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
         val storageCredentials = getStorageCredentials()
         // 判断uploadId是否存在
@@ -99,7 +93,7 @@ class UploadService @Autowired constructor(
         val combinedFile = fileStorage.combineBlock(uploadId, storageCredentials)
         val sha256 = fileSha256(listOf(combinedFile.inputStream()))
         // 保存节点
-        val result = nodeResource.create(
+        nodeResource.create(
             NodeCreateRequest(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
@@ -111,14 +105,9 @@ class UploadService @Autowired constructor(
                 operator = userId
             )
         )
-        if (result.isOk()) {
-            fileStorage.store(sha256, combinedFile.inputStream(), storageCredentials)
-            fileStorage.deleteBlockPath(uploadId, storageCredentials)
-            logger.info("User[$userId] complete upload [${artifactInfo.getFullUri()}] success")
-        } else {
-            logger.warn("User[$userId] complete upload [${artifactInfo.getFullUri()}] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
-        }
+        fileStorage.store(sha256, combinedFile.inputStream(), storageCredentials)
+        fileStorage.deleteBlockPath(uploadId, storageCredentials)
+        logger.info("User[$userId] complete upload [${artifactInfo.getFullUri()}] success")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)

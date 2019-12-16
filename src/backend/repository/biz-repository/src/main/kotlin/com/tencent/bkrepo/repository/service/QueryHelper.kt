@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
 import java.time.LocalDateTime
@@ -18,29 +19,29 @@ import org.springframework.data.mongodb.core.query.Update
 object QueryHelper {
 
     fun nodeQuery(projectId: String, repoName: String, fullPath: String? = null, withDetail: Boolean = false): Query {
-        val criteria = Criteria.where("projectId").`is`(projectId)
-                .and("repoName").`is`(repoName)
-                .and("deleted").`is`(null)
+        val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
+                .and(TNode::repoName.name).`is`(repoName)
+                .and(TNode::deleted.name).`is`(null)
 
         val query = Query(criteria)
 
-        fullPath?.run { criteria.and("fullPath").`is`(fullPath) }
-        if (!withDetail) { query.fields().exclude("metadata").exclude("blockList") }
+        fullPath?.run { criteria.and(TNode::fullPath.name).`is`(fullPath) }
+        if (!withDetail) { query.fields().exclude(TNode::metadata.name).exclude(TNode::blockList.name) }
 
         return query
     }
 
     fun nodeSearchQuery(searchRequest: NodeSearchRequest): Query {
         return with(searchRequest) {
-            val criteria = Criteria.where("projectId").`is`(projectId)
-                    .and("repoName").`in`(repoNameList)
-                    .and("deleted").`is`(null)
-                    .and("name").ne("")
+            val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
+                    .and(TNode::repoName.name).`in`(repoNameList)
+                    .and(TNode::deleted.name).`is`(null)
+                    .and(TNode::name.name).ne("")
 
             // 路径匹配
             val fullPathCriteriaList = pathPattern.map {
                 val escapedPath = NodeUtils.escapeRegex(NodeUtils.formatPath(it))
-                Criteria.where("fullPath").regex("^$escapedPath")
+                Criteria.where(TNode::fullPath.name).regex("^$escapedPath")
             }
             if (fullPathCriteriaList.isNotEmpty()) {
                 criteria.orOperator(*fullPathCriteriaList.toTypedArray())
@@ -54,28 +55,28 @@ object QueryHelper {
                 criteria.andOperator(*metadataCriteriaList.toTypedArray())
             }
 
-            Query(criteria).with(PageRequest.of(page, size)).with(Sort.by("fullPath"))
+            Query(criteria).with(PageRequest.of(page, size)).with(Sort.by(TNode::fullPath.name))
         }
     }
 
     fun nodeListCriteria(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Criteria {
         val formattedPath = NodeUtils.formatPath(path)
         val escapedPath = NodeUtils.escapeRegex(formattedPath)
-        val criteria = Criteria.where("projectId").`is`(projectId)
-                .and("repoName").`is`(repoName)
-                .and("deleted").`is`(null)
-                .and("name").ne("")
+        val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
+                .and(TNode::repoName.name).`is`(repoName)
+                .and(TNode::deleted.name).`is`(null)
+                .and(TNode::name.name).ne("")
 
-        if (deep) criteria.and("fullPath").regex("^$escapedPath")
-        else criteria.and("path").`is`(formattedPath)
+        if (deep) criteria.and(TNode::fullPath.name).regex("^$escapedPath")
+        else criteria.and(TNode::path.name).`is`(formattedPath)
 
-        if (!includeFolder) { criteria.and("folder").`is`(false) }
+        if (!includeFolder) { criteria.and(TNode::folder.name).`is`(false) }
 
         return criteria
     }
 
     fun nodeListQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Query {
-        return Query.query(nodeListCriteria(projectId, repoName, path, includeFolder, deep)).with(Sort.by("fullPath"))
+        return Query.query(nodeListCriteria(projectId, repoName, path, includeFolder, deep)).with(Sort.by(TNode::fullPath.name))
     }
 
     fun nodePageQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean, page: Int, size: Int): Query {
@@ -84,36 +85,36 @@ object QueryHelper {
 
     fun nodePathUpdate(path: String, name: String, operator: String): Update {
         return update(operator)
-                .set("path", path)
-                .set("name", name)
-                .set("fullPath", path + name)
+                .set(TNode::path.name, path)
+                .set(TNode::name.name, name)
+                .set(TNode::fullPath.name, path + name)
     }
 
     fun nodeRepoUpdate(projectId: String, repoName: String, path: String, name: String, operator: String): Update {
         return update(operator)
-                .set("projectId", projectId)
-                .set("repoName", repoName)
-                .set("path", path)
-                .set("name", name)
-                .set("fullPath", path + name)
+                .set(TNode::projectId.name, projectId)
+                .set(TNode::repoName.name, repoName)
+                .set(TNode::path.name, path)
+                .set(TNode::name.name, name)
+                .set(TNode::fullPath.name, path + name)
     }
 
     fun nodeDeleteUpdate(operator: String): Update {
-        return update(operator).set("deleted", LocalDateTime.now())
+        return update(operator).set(TNode::deleted.name, LocalDateTime.now())
     }
 
     fun nodeMetadataQuery(projectId: String, repoName: String, fullPath: String, key: String): Query {
-        return Query(Criteria.where("projectId").`is`(projectId)
-            .and("repoName").`is`(repoName)
-            .and("fullPath").`is`(fullPath)
-            .and("deleted").`is`(null)
+        return Query(Criteria.where(TNode::projectId.name).`is`(projectId)
+            .and(TNode::repoName.name).`is`(repoName)
+            .and(TNode::fullPath.name).`is`(fullPath)
+            .and(TNode::deleted.name).`is`(null)
             .and("metadata.key").`is`(key)
         )
     }
 
     private fun update(operator: String): Update {
         return Update()
-                .set("lastModifiedDate", LocalDateTime.now())
-                .set("lastModifiedBy", operator)
+                .set(TNode::lastModifiedDate.name, LocalDateTime.now())
+                .set(TNode::lastModifiedBy.name, operator)
     }
 }

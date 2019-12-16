@@ -2,6 +2,7 @@ package com.tencent.bkrepo.repository.service.query
 
 import com.tencent.bkrepo.common.query.interceptor.QueryModelInterceptor
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.repository.model.TNode
 
 /**
  * 排除指定字段
@@ -11,7 +12,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
  */
 class NodeSelectInterceptor : QueryModelInterceptor {
 
-    private val constraintProperties = listOf("_id", "_class", "deleted")
+    private val constraintProperties = listOf("_id", "_class", TNode::deleted.name)
 
     override fun intercept(queryModel: QueryModel): QueryModel {
         queryModel.select?.let {

@@ -89,14 +89,9 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
         if (cacheConfiguration.cacheEnabled) {
-            val repo = context.repositoryInfo
             val nodeCreateRequest = getCacheNodeCreateRequest(context, file)
-            val result = nodeResource.create(nodeCreateRequest)
-            if (result.isOk()) {
-                fileStorage.store(nodeCreateRequest.sha256!!, file.inputStream(), context.storageCredentials)
-            } else {
-                logger.warn("Cache artifact on [${repo.projectId}/${repo.name}] failed: $result")
-            }
+            nodeResource.create(nodeCreateRequest)
+            fileStorage.store(nodeCreateRequest.sha256!!, file.inputStream(), context.storageCredentials)
         }
     }
 
