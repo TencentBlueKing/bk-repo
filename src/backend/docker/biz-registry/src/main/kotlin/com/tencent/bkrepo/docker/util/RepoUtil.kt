@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.docker.util
 
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
 import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import com.tencent.bkrepo.docker.exception.DockerRepoNotFoundException
