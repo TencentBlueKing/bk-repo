@@ -5,12 +5,12 @@ import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("创建用户请求")
 data class CreateUserRequest(
+    @ApiModelProperty("用户id")
+    val uid: String,
     @ApiModelProperty("用户名")
     val name: String,
-    @ApiModelProperty("显示名")
-    val displayName: String,
     @ApiModelProperty("密码")
     val pwd: String,
     @ApiModelProperty("管理员")
-    val admin: Boolean
+    val admin: Boolean? = false
 )

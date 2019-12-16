@@ -1,14 +1,9 @@
 package com.tencent.bkrepo.docker.util
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.tencent.bkrepo.docker.DockerWorkContext
-import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
-import com.tencent.bkrepo.docker.manifest.ManifestType
-import com.tencent.bkrepo.docker.repomd.Artifact
-import com.tencent.bkrepo.docker.repomd.DownloadContext
-import com.tencent.bkrepo.docker.repomd.Repo
-import com.tencent.bkrepo.docker.v2.helpers.DockerSearchBlobPolicy
-import com.tencent.bkrepo.docker.v2.model.DockerDigest
+import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
+import com.tencent.bkrepo.docker.context.DownloadContext
+import com.tencent.bkrepo.docker.model.DockerDigest
 import java.io.IOException
 import javax.xml.bind.DatatypeConverter
 import org.apache.commons.io.IOUtils
@@ -22,8 +17,8 @@ class DockerSchemaUtils {
         val EMPTY_BLOB_CONTENT = DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")
         private val EMPTY_BLOB_SIZE = 32
 
-        fun getManifestType(projectId: String, repoName:String,manifestPath: String, repo: DockerArtifactoryService): String? {
-            return  repo.getAttribute(projectId,repoName,manifestPath, "docker.manifest.type")
+        fun getManifestType(projectId: String, repoName: String, manifestPath: String, repo: DockerArtifactoryService): String? {
+            return repo.getAttribute(projectId, repoName, manifestPath, "docker.manifest.type")
         }
 
         fun isEmptyBlob(digest: DockerDigest): Boolean {
@@ -89,7 +84,7 @@ class DockerSchemaUtils {
                         val manifestFilename = DockerDigest(digest).filename()
                         if (searchGlobally) {
                             val manifestFile = DockerUtils.findBlobGlobally(repo, projectId, repoName, manifestFilename, manifestFilename)
-                            return if (manifestFile == null) "" else DockerUtils.getFullPath(manifestFile, repo.getWorkContextC() as DockerWorkContext)
+                            return if (manifestFile == null) "" else DockerUtils.getFullPath(manifestFile, repo.getWorkContextC())
                         }
 
                         val artifact = repo.artifact(projectId, repoName, dockerRepo)

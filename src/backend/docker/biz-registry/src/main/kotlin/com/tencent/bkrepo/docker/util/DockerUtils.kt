@@ -1,11 +1,10 @@
 package com.tencent.bkrepo.docker.util
 
 import com.google.common.base.Joiner
-import com.tencent.bkrepo.docker.DockerWorkContext
-import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
-import com.tencent.bkrepo.docker.repomd.Artifact
-import com.tencent.bkrepo.docker.v2.helpers.DockerSearchBlobPolicy
-import com.tencent.bkrepo.docker.v2.model.DockerDigest
+import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.DockerWorkContext
+import com.tencent.bkrepo.docker.artifact.Artifact
+import com.tencent.bkrepo.docker.helpers.DockerSearchBlobPolicy
 import org.slf4j.LoggerFactory
 
 abstract class DockerUtils {
@@ -80,27 +79,6 @@ abstract class DockerUtils {
         }
 
         fun getBlobGlobally(repo: DockerArtifactoryService, blobFilename: String, searchPolicy: DockerSearchBlobPolicy): Artifact? {
-//                var repoBlobs = (repo.getWorkContextC() as DockerWorkContext).findBlobsGlobally(blobFilename, searchPolicy)
-//                if (repoBlobs != null && !Iterables.isEmpty(repoBlobs!!)) {
-//                    // TODO : iter
-//                val var10001 = DockerV2LocalRepoHandler.nonTempUploads
-//                var10001.javaClass
-//                repoBlobs = Iterables.filter(repoBlobs!!, Predicate<var10001.javaClass> { var10001.test(it) })
-//                    if (!Iterables.isEmpty(repoBlobs!!)) {
-//                        var foundBlob = repoBlobs!!.iterator().next() as Artifact
-//                        val var5 = repoBlobs!!.iterator()
-//
-//                        while (var5.hasNext()) {
-//                            val blob = var5.next() as Artifact
-//                            if (repo.getRepoId().equals(blob.getRepoId())) {
-//                                foundBlob = blob
-//                                break
-//                            }
-//                        }
-//
-//                        return foundBlob
-//                    }
-//                }
 
             return null
         }
@@ -111,12 +89,12 @@ abstract class DockerUtils {
                 return null
             }
             val blob = result.get(0)
-            val length = blob.get("size") as Integer
+            val length = blob.get("size") as Int
             val fullPath = blob.get("fullPath") as String
-            return Artifact(projectId,repoName,dockerRepo).sha256(fileName.replace("sha256__","")).contentLength(length.toLong()).path(fullPath)
+            return Artifact(projectId, repoName, dockerRepo).sha256(fileName.replace("sha256__","")).contentLength(length.toLong()).path(fullPath)
         }
 
-        fun getManifestConfigBlob(repo: DockerArtifactoryService,blobFilename: String,  projectId: String, repoName: String,dockerRepo: String, tag: String): Artifact? {
+        fun getManifestConfigBlob(repo: DockerArtifactoryService, blobFilename: String, projectId: String, repoName: String, dockerRepo: String, tag: String): Artifact? {
             val configPath = Joiner.on("/").join(dockerRepo, tag, blobFilename)
             //search blob in the repo first
             log.info("Searching manifest config blob in: '{}'", configPath)

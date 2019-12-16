@@ -2,10 +2,10 @@ package com.tencent.bkrepo.docker.manifest
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.docker.util.JsonUtil
-import com.tencent.bkrepo.docker.v2.model.DockerBlobInfo
-import com.tencent.bkrepo.docker.v2.model.DockerDigest
-import com.tencent.bkrepo.docker.v2.model.DockerImageMetadata
-import com.tencent.bkrepo.docker.v2.model.ManifestMetadata
+import com.tencent.bkrepo.docker.model.DockerBlobInfo
+import com.tencent.bkrepo.docker.model.DockerDigest
+import com.tencent.bkrepo.docker.model.DockerImageMetadata
+import com.tencent.bkrepo.docker.model.ManifestMetadata
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.Collections

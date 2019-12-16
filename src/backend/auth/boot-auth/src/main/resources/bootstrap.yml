@@ -15,4 +15,4 @@ spring:
         profileSeparator: '::'
 
 auth:
-  realm: bk
+  realm: local

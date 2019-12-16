@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.docker.resource
 
-import com.fasterxml.jackson.databind.ObjectMapper
+
 import com.tencent.bkrepo.docker.api.Manifest
-import com.tencent.bkrepo.docker.v2.model.DockerDigest
-import com.tencent.bkrepo.docker.v2.rest.handler.DockerV2LocalRepoHandler
+import com.tencent.bkrepo.docker.constant.MANIFEST_PATTERN
+import com.tencent.bkrepo.docker.util.PathUtil
+import com.tencent.bkrepo.docker.util.UserUtil
+import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import javax.servlet.http.HttpServletRequest
-import javax.ws.rs.core.Response
-import okhttp3.MediaType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
@@ -20,34 +20,42 @@ import org.springframework.web.bind.annotation.RestController
 
 // ManifestImpl validates and impl the manifest interface
 @RestController
-class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoHandler) : Manifest {
+class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) : Manifest {
 
     override fun putManifest(
+        request: HttpServletRequest,
+        userId: String?,
         projectId: String,
         repoName: String,
-        name: String,
         tag: String,
-        contentType: String,
-        request: HttpServletRequest
+        contentType: String
     ): ResponseEntity<Any> {
-        return dockerRepo.uploadManifest(projectId, repoName, name, tag,contentType, request.inputStream)
+        dockerRepo.userId = UserUtil.getContextUserId(userId)
+        val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
+        return dockerRepo.uploadManifest(projectId, repoName, name, tag, contentType, request.inputStream)
     }
 
     override fun getManifest(
-            projectId: String,
-            repoName: String,
-            name: String,
-            reference: String
+        request: HttpServletRequest,
+        userId: String?,
+        projectId: String,
+        repoName: String,
+        reference: String
     ): ResponseEntity<Any> {
+        dockerRepo.userId = UserUtil.getContextUserId(userId)
+        val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
         return dockerRepo.getManifest(projectId, repoName, name, reference)
     }
 
     override fun existManifest(
-            projectId: String,
-            repoName: String,
-            name: String,
-            reference: String
+        request: HttpServletRequest,
+        userId: String?,
+        projectId: String,
+        repoName: String,
+        reference: String
     ): ResponseEntity<Any> {
+        dockerRepo.userId = UserUtil.getContextUserId(userId)
+        val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
         return dockerRepo.getManifest(projectId, repoName, name, reference)
     }
 }
