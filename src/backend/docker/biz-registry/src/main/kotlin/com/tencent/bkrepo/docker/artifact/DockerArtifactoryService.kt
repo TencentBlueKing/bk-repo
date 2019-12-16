@@ -1,7 +1,5 @@
 package com.tencent.bkrepo.docker.artifact
 
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.docker.exception.DockerRepoNotFoundException
 import com.tencent.bkrepo.common.storage.core.FileStorage
@@ -23,6 +21,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.docker.exception.*
 import java.io.File
 import java.io.InputStream
 import org.slf4j.LoggerFactory
@@ -93,7 +92,7 @@ class DockerArtifactoryService @Autowired constructor(
         // get content from storage
         val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
         val file = fileStorage.load(context.sha256, storageCredentials) ?: kotlin.run {
-            throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, context.repoName)
+            throw DockerFileReadFailedException(context.repoName)
         }
         return file.inputStream()
     }
@@ -127,7 +126,7 @@ class DockerArtifactoryService @Autowired constructor(
             logger.info("user[$context.userId] write file [$context.path] success")
         } else {
             logger.warn("user[$context.userId] write file [$context.path] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
+            throw DockerFileSaveFailedException(context.path)
         }
 
     }
@@ -184,7 +183,7 @@ class DockerArtifactoryService @Autowired constructor(
             logger.info("user[$userId]  upload file [$context.path] success")
         } else {
             logger.warn("user[$userId]  upload file [$context.path] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
+            throw DockerFileSaveFailedException(context.path)
         }
         return ResponseEntity.ok().body("ok")
     }
@@ -220,7 +219,7 @@ class DockerArtifactoryService @Autowired constructor(
             logger.info("user[$userId] upload file from local [$context.path] success")
         } else {
             logger.warn("user[$userId] upload file from local  [$context.path] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
+            throw DockerFileSaveFailedException(context.path)
         }
         return ResponseEntity.ok().body("ok")
     }
@@ -246,7 +245,7 @@ class DockerArtifactoryService @Autowired constructor(
         val result = nodeResource.rename(renameRequest)
         if (result.isNotOk()) {
             logger.warn("user[$userId] rename  [$from] to [$to] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
+            throw DockerMoveFileFailedException(from+"->"+to)
         }
         return true
     }

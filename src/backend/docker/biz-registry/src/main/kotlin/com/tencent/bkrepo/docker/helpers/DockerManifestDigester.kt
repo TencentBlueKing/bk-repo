@@ -23,7 +23,7 @@ object DockerManifestDigester {
             log.error("Unable to determine the schema version of the manifest")
             return null
         } else {
-            val schema = schemaVersion!!.asInt()
+            val schema = schemaVersion.asInt()
             val digest: String
             if (schema == 1) {
                 digest = schema1Digest(jsonBytes, manifest)
@@ -52,16 +52,16 @@ object DockerManifestDigester {
         var formatTail = ""
         val signatures = manifest.get("signatures")
         if (signatures != null) {
-            val var5 = signatures!!.iterator()
+            val var5 = signatures.iterator()
 
             while (var5.hasNext()) {
                 val signature = var5.next() as JsonNode
                 var protectedJson = signature.get("protected")
                 if (protectedJson != null) {
-                    val protectedBytes = Base64.decodeBase64(protectedJson!!.asText())
+                    val protectedBytes = Base64.decodeBase64(protectedJson.asText())
                     protectedJson = mapper().readTree(protectedBytes)
-                    formatLength = protectedJson!!.get("formatLength").asInt()
-                    formatTail = protectedJson!!.get("formatTail").asText()
+                    formatLength = protectedJson.get("formatLength").asInt()
+                    formatTail = protectedJson.get("formatTail").asText()
                     formatTail = String(Base64.decodeBase64(formatTail), Charsets.UTF_8)
                 }
             }

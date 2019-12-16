@@ -5,7 +5,6 @@ import com.netflix.hystrix.exception.HystrixRuntimeException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.docker.errors.*
-import com.tencent.bkrepo.common.service.util.MessageCodeUtils
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -29,10 +28,8 @@ class ExceptionHandler {
     @ExceptionHandler(ErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleErrorCodeException(exception: ErrorCodeException): ResponseEntity<Any> {
-        val errorMsg = MessageCodeUtils.generateResponseDataObject<String>(exception.errorCode, exception.defaultMessage, exception.params)
-
-        logger.warn("Failed with error code exception:[${exception.errorCode}-$errorMsg]")
-        return  DockerV2Errors.internalError(exception.defaultMessage)
+        logger.warn("Failed with error code exception:[${exception.message}]")
+        return  DockerV2Errors.internalError(exception.message)
     }
 
     @ExceptionHandler(ClientException::class)
