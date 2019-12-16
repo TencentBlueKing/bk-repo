@@ -6,12 +6,13 @@ import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("角色")
 data class Role(
-    @ApiModelProperty("ID")
-    val id: String? = null,
-    @ApiModelProperty("角色类型")
-    val roleType: RoleType,
-    @ApiModelProperty("角色名")
-    val name: String,
-    @ApiModelProperty("显示名")
-    val displayName: String
+        val id: String? = null,
+        @ApiModelProperty("角色ID")
+        val rId: String? = null,
+        @ApiModelProperty("角色类型")
+        val type: RoleType,
+        @ApiModelProperty("角色名")
+        val name: String,
+        @ApiModelProperty("项目ID")
+        val projectId: String
 )

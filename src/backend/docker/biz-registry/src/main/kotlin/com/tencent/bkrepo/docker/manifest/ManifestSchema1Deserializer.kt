@@ -2,10 +2,10 @@ package com.tencent.bkrepo.docker.manifest
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.docker.util.JsonUtil
-import com.tencent.bkrepo.docker.v2.model.DockerBlobInfo
-import com.tencent.bkrepo.docker.v2.model.DockerDigest
-import com.tencent.bkrepo.docker.v2.model.DockerImageMetadata
-import com.tencent.bkrepo.docker.v2.model.ManifestMetadata
+import com.tencent.bkrepo.docker.model.DockerBlobInfo
+import com.tencent.bkrepo.docker.model.DockerDigest
+import com.tencent.bkrepo.docker.model.DockerImageMetadata
+import com.tencent.bkrepo.docker.model.ManifestMetadata
 import java.io.IOException
 import kotlin.collections.Map.Entry
 import org.apache.commons.lang.StringUtils
@@ -17,7 +17,6 @@ class ManifestSchema1Deserializer {
 
         fun deserialize(manifestBytes: ByteArray, digest: DockerDigest): ManifestMetadata {
             try {
-                log.info("gggggggggggggggggg")
                 return applyAttributesFromContent(manifestBytes, digest)
             } catch (exception: IOException) {
                 log.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
@@ -38,7 +37,7 @@ class ManifestSchema1Deserializer {
                 for (i in 0 until history.size()) {
                     val fsLayer = history.get(i)
                     val v1Compatibility = fsLayer.get("v1Compatibility").asText()
-                    val dockerMetadata = JsonUtil.readValue(v1Compatibility.toByteArray(), DockerImageMetadata::class.java) as DockerImageMetadata
+                    val dockerMetadata = JsonUtil.readValue(v1Compatibility.toByteArray(), DockerImageMetadata::class.java)
                     val blobDigest = manifest.get("fsLayers").get(i).get("blobSum").asText()
                     val size = dockerMetadata.size
                     totalSize += dockerMetadata.size
@@ -103,7 +102,7 @@ class ManifestSchema1Deserializer {
 
         private fun addPorts(manifestMetadata: ManifestMetadata, exposedPorts: JsonNode?) {
             if (exposedPorts != null) {
-                val iterPorts = exposedPorts!!.fieldNames()
+                val iterPorts = exposedPorts.fieldNames()
 
                 while (iterPorts.hasNext()) {
                     manifestMetadata.tagInfo.ports.add(iterPorts.next())
@@ -123,7 +122,7 @@ class ManifestSchema1Deserializer {
 
         private fun addVolumes(manifestMetadata: ManifestMetadata, volumes: JsonNode?) {
             if (volumes != null) {
-                val iterVolume = volumes!!.fieldNames()
+                val iterVolume = volumes.fieldNames()
 
                 while (iterVolume.hasNext()) {
                     manifestMetadata.tagInfo.volumes.add(iterVolume.next())
@@ -143,10 +142,10 @@ class ManifestSchema1Deserializer {
 
         private fun addLabels(manifestMetadata: ManifestMetadata, labels: Map<String, String>?) {
             if (labels != null) {
-                val var2 = labels.entries.iterator()
+                val iter = labels.entries.iterator()
 
-                while (var2.hasNext()) {
-                    val label = var2.next() as Entry<String, String>
+                while (iter.hasNext()) {
+                    val label = iter.next()
                     manifestMetadata.tagInfo.labels.put(label.key, label.value)
                 }
             }

@@ -1,16 +1,16 @@
 package com.tencent.bkrepo.docker.manifest
 
-import com.tencent.bkrepo.docker.artifact.repomd.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
 // import com.tencent.bkrepo.docker.repomd.Repo
 import com.tencent.bkrepo.docker.util.DockerSchemaUtils
-import com.tencent.bkrepo.docker.v2.model.DockerDigest
-import com.tencent.bkrepo.docker.v2.model.ManifestMetadata
+import com.tencent.bkrepo.docker.model.DockerDigest
+import com.tencent.bkrepo.docker.model.ManifestMetadata
 
 class ManifestDeserializer {
     companion object {
 
-        fun deserialize(repo: DockerArtifactoryService, projectId: String, repoName: String, dockerRepo: String, tag: String, manifestType: ManifestType, manifestBytes: ByteArray, digest: DockerDigest): ManifestMetadata {
-            var manifestBytes = manifestBytes
+        fun deserialize(repo: DockerArtifactoryService, projectId: String, repoName: String, dockerRepo: String, tag: String, manifestType: ManifestType, bytes: ByteArray, digest: DockerDigest): ManifestMetadata {
+            var manifestBytes = bytes
             when (manifestType) {
                 ManifestType.Schema1 -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 ManifestType.Schema1Signed -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
