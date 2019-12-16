@@ -18,8 +18,11 @@ import javax.servlet.http.HttpServletRequest
 interface Manifest {
 
     @ApiOperation("上传manifetst文件")
-    @PutMapping("/{projectId}/{repoName}/{name}/manifests/{tag}")
+    @PutMapping("/{projectId}/{repoName}/**/manifests/{tag}")
     fun putManifest(
+        request: HttpServletRequest,
+        @RequestAttribute
+        userId: String?,
         @PathVariable
         @ApiParam(value = "projectId", required = true)
         projectId: String,
@@ -27,48 +30,44 @@ interface Manifest {
         @ApiParam(value = "repoName", required = true)
         repoName: String,
         @PathVariable
-        @ApiParam(value = "name", required = true)
-        name: String,
-        @PathVariable
         @ApiParam(value = "tag", required = true)
         tag: String,
         @ApiParam
         @RequestHeader(value = "Content-Type", required = true)
-        contentType: String,
-        request: HttpServletRequest
+        contentType: String
     ): ResponseEntity<Any>
 
     @ApiOperation("获取manifest文件")
-    @GetMapping("/{projectId}/{repoName}/{name}/manifests/{reference}")
+    @GetMapping("/{projectId}/{repoName}/**/manifests/{reference}")
     fun getManifest(
-            @PathVariable
-            @ApiParam(value = "projectId", required = true)
-            projectId: String,
-            @PathVariable
-            @ApiParam(value = "repoName", required = true)
-            repoName: String,
-            @PathVariable
-            @ApiParam(value = "name", required = true)
-            name: String,
-            @PathVariable
-            @ApiParam(value = "reference", required = true)
-            reference: String
+        request: HttpServletRequest,
+        @RequestAttribute
+        userId: String?,
+        @PathVariable
+        @ApiParam(value = "projectId", required = true)
+        projectId: String,
+        @PathVariable
+        @ApiParam(value = "repoName", required = true)
+        repoName: String,
+        @PathVariable
+        @ApiParam(value = "reference", required = true)
+        reference: String
     ): ResponseEntity<Any>
 
     @ApiOperation("检查manifest文件存在")
-    @RequestMapping(method = [RequestMethod.HEAD], value = ["{projectId}/{repoName}/{name}/manifests/{reference}"])
+    @RequestMapping(method = [RequestMethod.HEAD], value = ["{projectId}/{repoName}/**/manifests/{reference}"])
     fun existManifest(
-            @PathVariable
-            @ApiParam(value = "projectId", required = true)
-            projectId: String,
-            @PathVariable
-            @ApiParam(value = "repoName", required = true)
-            repoName: String,
-            @PathVariable
-            @ApiParam(value = "name", required = true)
-            name: String,
-            @PathVariable
-            @ApiParam(value = "reference", required = true)
-            reference: String
+        request: HttpServletRequest,
+        @RequestAttribute
+        userId: String?,
+        @PathVariable
+        @ApiParam(value = "projectId", required = true)
+        projectId: String,
+        @PathVariable
+        @ApiParam(value = "repoName", required = true)
+        repoName: String,
+        @PathVariable
+        @ApiParam(value = "reference", required = true)
+        reference: String
     ): ResponseEntity<Any>
 }

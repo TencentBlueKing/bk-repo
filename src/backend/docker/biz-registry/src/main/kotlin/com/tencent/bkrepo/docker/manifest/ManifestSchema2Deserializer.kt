@@ -2,10 +2,10 @@ package com.tencent.bkrepo.docker.manifest
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.docker.util.JsonUtil
-import com.tencent.bkrepo.docker.v2.model.DockerBlobInfo
-import com.tencent.bkrepo.docker.v2.model.DockerDigest
-import com.tencent.bkrepo.docker.v2.model.DockerImageMetadata
-import com.tencent.bkrepo.docker.v2.model.ManifestMetadata
+import com.tencent.bkrepo.docker.model.DockerBlobInfo
+import com.tencent.bkrepo.docker.model.DockerDigest
+import com.tencent.bkrepo.docker.model.DockerImageMetadata
+import com.tencent.bkrepo.docker.model.ManifestMetadata
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.Collections
@@ -38,7 +38,7 @@ class ManifestSchema2Deserializer {
             var totalSize = 0L
             val history = config.get("history")
             val layers = manifest.get("layers")
-            val historySize = if (history == null) 0 else history!!.size()
+            val historySize = if (history == null) 0 else history.size()
             var historyCounter = 0L
             if (history != null) {
                 // TODO: resolve params pass
@@ -52,7 +52,7 @@ class ManifestSchema2Deserializer {
 
             var layersIndex = 0
             while (historyIndex < historySize || layersIndex < layers.size()) {
-                val historyLayer = if (history == null) null else history!!.get(historyIndex)
+                val historyLayer = if (history == null) null else history.get(historyIndex)
                 val layer = layers.get(layersIndex)
                 var size = 0L
                 var digest: String? = null
@@ -69,7 +69,7 @@ class ManifestSchema2Deserializer {
 
                 var created = config.get("created").asText()
                 if (historyLayer != null && !isForeignLayer(layer)) {
-                    created = historyLayer!!["created"].asText()
+                    created = historyLayer["created"].asText()
                 }
 
                 val blobInfo = DockerBlobInfo("", digest, size, created)
@@ -107,16 +107,16 @@ class ManifestSchema2Deserializer {
         }
 
         private fun isForeignLayer(layer: JsonNode?): Boolean {
-            return layer != null && layer!!.has("mediaType") && "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == layer!!.get("mediaType").asText()
+            return layer != null && layer.has("mediaType") && "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == layer.get("mediaType").asText()
         }
 
         private fun notEmptyHistoryLayer(historyLayer: JsonNode?): Boolean {
-            return historyLayer != null && historyLayer!!.get("empty_layer") == null
+            return historyLayer != null && historyLayer.get("empty_layer") == null
         }
 
         private fun populateWithCommand(layerHistory: JsonNode?, blobInfo: DockerBlobInfo) {
-            if (layerHistory != null && layerHistory!!.has("created_by")) {
-                var command = layerHistory!!.get("created_by").asText()
+            if (layerHistory != null && layerHistory.has("created_by")) {
+                var command = layerHistory.get("created_by").asText()
                 if (StringUtils.contains(command, "(nop)")) {
                     command = StringUtils.substringAfter(command, "(nop) ")
                     val dockerCmd = StringUtils.substringBefore(command.trim({ it <= ' ' }), " ")
@@ -132,13 +132,13 @@ class ManifestSchema2Deserializer {
 
         private fun populateWithMediaType(layerNode: JsonNode?, blobInfo: DockerBlobInfo) {
             if (layerNode != null) {
-                if (layerNode!!.has("mediaType")) {
-                    blobInfo.mediaType = layerNode!!.get("mediaType").asText()
+                if (layerNode.has("mediaType")) {
+                    blobInfo.mediaType = layerNode.get("mediaType").asText()
                 }
 
-                if (layerNode!!.has("urls")) {
+                if (layerNode.has("urls")) {
                     blobInfo.urls = mutableListOf<String>()
-                    layerNode!!.get("urls").forEach { jsonNode -> blobInfo.urls!!.add(jsonNode.asText()) }
+                    layerNode.get("urls").forEach { jsonNode -> blobInfo.urls!!.add(jsonNode.asText()) }
                 }
             }
         }

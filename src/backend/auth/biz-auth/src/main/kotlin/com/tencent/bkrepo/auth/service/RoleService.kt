@@ -1,18 +1,20 @@
 package com.tencent.bkrepo.auth.service
 
-import com.tencent.bkrepo.auth.pojo.AddUserRoleRequest
 import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.Role
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 
 interface RoleService {
-    fun listAll(): List<Role>
 
-    fun listByType(roleType: RoleType): List<Role>
+    fun createRole(request: CreateRoleRequest):Boolean
 
-    fun addRole(request: CreateRoleRequest)
+    fun deleteRoleByRid(type: RoleType,projectId:String, rid:String):Boolean
 
-    fun deleteByName(name: String)
+    fun listAllRole(): List<Role>
 
-    fun addUserRole(request: AddUserRoleRequest)
+    fun listRoleByType(type: String): List<Role>
+
+    fun listRoleByProject(type: RoleType, projectId:String) :List<Role>
+
+
 }
