@@ -1,11 +1,12 @@
 package com.tencent.bkrepo.repository.service.query
 
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryModelInterceptor
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.repository.model.TNode
 
 /**
  * - 校验node query model的格式
@@ -56,7 +57,7 @@ class NodeQueryInterceptor : QueryModelInterceptor {
      * rule嵌套查询规则列表中，必须指定projectId条件，且为EQ操作
      */
     private fun checkRepoName(rule: Rule): Boolean {
-        if (rule is Rule.QueryRule && rule.field == "repoName") {
+        if (rule is Rule.QueryRule && rule.field == TNode::repoName.name) {
             if (rule.operation == OperationType.EQ || rule.operation == OperationType.IN) {
                 return true
             }
@@ -68,7 +69,7 @@ class NodeQueryInterceptor : QueryModelInterceptor {
      * rule嵌套查询规则列表中，必须指定repoName条件，且为EQ 或者 IN操作
      */
     private fun checkProjectId(rule: Rule): Boolean {
-        if (rule is Rule.QueryRule && rule.field == "projectId") {
+        if (rule is Rule.QueryRule && rule.field == TNode::projectId.name) {
             if (rule.operation == OperationType.EQ && rule.value.toString().isNotBlank()) {
                 return true
             }
@@ -80,6 +81,6 @@ class NodeQueryInterceptor : QueryModelInterceptor {
      * 添加deleted属性为null的查询条件
      */
     private fun setDeletedNull(queryModel: QueryModel) {
-        queryModel.addQueryRule(Rule.QueryRule("deleted", "", OperationType.NULL))
+        queryModel.addQueryRule(Rule.QueryRule(TNode::deleted.name, "", OperationType.NULL))
     }
 }

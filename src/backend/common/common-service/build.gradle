@@ -1,6 +1,5 @@
 dependencies {
     api project(":common:common-api")
-    api project(":common:common-redis")
 
     api "io.springfox:springfox-swagger2"
     api "org.springframework.boot:spring-boot-starter-actuator"

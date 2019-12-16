@@ -2,6 +2,7 @@ package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TMetadata
+import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.util.NodeUtils.formatFullPath
@@ -46,7 +47,7 @@ class MetadataService @Autowired constructor(
         repositoryService.checkRepository(projectId, repoName)
 
         val query = QueryHelper.nodeQuery(projectId, repoName, fullPath)
-        val update = Update().pull("metadata", Query.query(Criteria.where("key").`in`(request.keyList)))
+        val update = Update().pull(TNode::metadata.name, Query.query(Criteria.where("key").`in`(request.keyList)))
 
         nodeDao.updateMulti(query, update)
         logger.info("Delete metadata [$request] success.")
@@ -58,7 +59,7 @@ class MetadataService @Autowired constructor(
             Update().set("metadata.$.value", metadata.value)
         } else {
             query = QueryHelper.nodeQuery(projectId, repoName, fullPath)
-            Update().addToSet("metadata", metadata)
+            Update().addToSet(TNode::metadata.name, metadata)
         }
 
         nodeDao.updateFirst(query, update)

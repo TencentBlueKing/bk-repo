@@ -6,7 +6,7 @@ import com.tencent.bkrepo.auth.pojo.Project
 import com.tencent.bkrepo.auth.repository.ProjectRepository
 import com.tencent.bkrepo.auth.service.ProjectService
 import com.tencent.bkrepo.auth.util.TransferUtils
-import com.tencent.bkrepo.common.api.constant.CommonMessageCode
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -18,7 +18,7 @@ class ProjectServiceImpl @Autowired constructor(
     private val projectRepository: ProjectRepository
 ) : ProjectService {
     override fun getByName(name: String): Project {
-        val project = projectRepository.findOneByName(name) ?: throw ErrorCodeException(CommonMessageCode.ELEMENT_NOT_FOUND, name)
+        val project = projectRepository.findOneByName(name) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, name)
         return TransferUtils.transferProject(project)
     }
 
