@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.client
 
+import com.tencent.bkrepo.common.client.error.ErrorCodeDecoder
 import com.tencent.bkrepo.common.client.log.Slf4jFeignLogger
 import feign.RequestInterceptor
 import org.springframework.cloud.openfeign.EnableFeignClients
@@ -40,4 +41,7 @@ class ClientAutoConfiguration {
         val feignLogger = Slf4jFeignLogger()
         return FeignLoggerFactory { feignLogger }
     }
+
+    @Bean
+    fun errorCodeDecoder() = ErrorCodeDecoder()
 }

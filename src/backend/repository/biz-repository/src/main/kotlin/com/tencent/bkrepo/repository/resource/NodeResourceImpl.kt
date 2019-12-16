@@ -31,11 +31,11 @@ class NodeResourceImpl @Autowired constructor(
     private val nodeQueryService: NodeQueryService
 ) : NodeResource {
 
-    override fun queryDetail(projectId: String, repoName: String, repoType: String, fullPath: String): Response<NodeDetail?> {
+    override fun detail(projectId: String, repoName: String, repoType: String, fullPath: String): Response<NodeDetail?> {
         return Response.success(nodeService.detail(projectId, repoName, fullPath, repoType))
     }
 
-    override fun queryDetail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
+    override fun detail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
         return Response.success(nodeService.detail(projectId, repoName, fullPath))
     }
 
@@ -79,7 +79,7 @@ class NodeResourceImpl @Autowired constructor(
         return Response.success()
     }
 
-    override fun getSize(projectId: String, repoName: String, fullPath: String): Response<NodeSizeInfo> {
+    override fun computeSize(projectId: String, repoName: String, fullPath: String): Response<NodeSizeInfo> {
         return Response.success(nodeService.computeSize(projectId, repoName, fullPath))
     }
 

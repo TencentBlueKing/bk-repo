@@ -28,17 +28,14 @@ class ClientAuthInterceptor : HandlerInterceptorAdapter() {
         val nameValueMap = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
         val projectId = nameValueMap[PROJECT_ID]?.toString()
         val repoName = nameValueMap[REPO_NAME]?.toString()
-        logger.debug("Prepare to authenticate, uri: [$uri]")
         return if (clientAuthHandler.needAuthenticate(uri, projectId, repoName)) {
-            var userId: String? = null
             try {
-                userId = clientAuthHandler.onAuthenticate(request)
+                val userId = clientAuthHandler.onAuthenticate(request)
                 logger.debug("User[$userId] authenticate success.")
-                clientAuthHandler.onAuthenticateSuccess(userId, request, response)
+                clientAuthHandler.onAuthenticateSuccess(userId, request)
                 true
             } catch (authException: ClientAuthException) {
-                logger.warn("User[$userId] authenticate failed: $authException")
-                clientAuthHandler.onAuthenticateFailed(request, response)
+                clientAuthHandler.onAuthenticateFailed(response, authException)
                 false
             }
         } else {

@@ -33,22 +33,19 @@ class PermissionAspect {
 
         val requestAttributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
         val request = requestAttributes.request
-        val response = requestAttributes.response!!
         val userId = request.getAttribute(USER_KEY) as? String ?: ""
 
-        var artifactInfo: ArtifactInfo? = null
-        try {
-            artifactInfo = findArtifactInfo(point.args) ?: throw PermissionCheckException("Can not find ArtifactInfo argument.")
-            permissionCheckHandler.onPermissionCheck(userId, permission, artifactInfo)
-            logger.debug("User[$userId] check permission [$permission] on [$artifactInfo] success.")
+        return try {
+            val artifactInfo = findArtifactInfo(point.args) ?: throw PermissionCheckException("Missing ArtifactInfo argument.")
             request.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
-            permissionCheckHandler.onPermissionCheckSuccess(request, response)
+            permissionCheckHandler.onPermissionCheck(userId, permission, artifactInfo)
+            logger.trace("User[$userId] check permission [$permission] on [$artifactInfo] success.")
+            permissionCheckHandler.onPermissionCheckSuccess()
+            point.proceed()
         } catch (exception: PermissionCheckException) {
-            logger.warn("User[$userId] check permission [$permission] on [$artifactInfo] failed: $exception")
-            permissionCheckHandler.onPermissionCheckFailed(request, response)
-            return null
+            permissionCheckHandler.onPermissionCheckFailed(exception)
+            null
         }
-        return point.proceed()
     }
 
     private fun findArtifactInfo(args: Array<Any>): ArtifactInfo? {

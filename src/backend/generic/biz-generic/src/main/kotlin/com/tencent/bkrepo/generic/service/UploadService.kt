@@ -4,13 +4,12 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.CommonMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.config.REPO_KEY
 import com.tencent.bkrepo.common.artifact.constant.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.permission.Permission
-import com.tencent.bkrepo.common.artifact.repository.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -99,7 +98,7 @@ class UploadService @Autowired constructor(
         val combinedFile = fileStorage.combineBlock(uploadId, storageCredentials)
         val sha256 = fileSha256(listOf(combinedFile.inputStream()))
         // 保存节点
-        val result = nodeResource.create(
+        nodeResource.create(
             NodeCreateRequest(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
@@ -111,14 +110,9 @@ class UploadService @Autowired constructor(
                 operator = userId
             )
         )
-        if (result.isOk()) {
-            fileStorage.store(sha256, combinedFile.inputStream(), storageCredentials)
-            fileStorage.deleteBlockPath(uploadId, storageCredentials)
-            logger.info("User[$userId] complete upload [${artifactInfo.getFullUri()}] success")
-        } else {
-            logger.warn("User[$userId] complete upload [${artifactInfo.getFullUri()}] failed: [${result.code}, ${result.message}]")
-            throw ExternalErrorCodeException(result.code, result.message)
-        }
+        fileStorage.store(sha256, combinedFile.inputStream(), storageCredentials)
+        fileStorage.deleteBlockPath(uploadId, storageCredentials)
+        logger.info("User[$userId] complete upload [${artifactInfo.getFullUri()}] success")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)

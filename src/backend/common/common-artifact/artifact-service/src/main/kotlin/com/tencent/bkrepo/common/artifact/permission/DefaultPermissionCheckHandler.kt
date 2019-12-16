@@ -1,13 +1,9 @@
 package com.tencent.bkrepo.common.artifact.permission
 
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
 import com.tencent.bkrepo.common.auth.PermissionService
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
-import javax.servlet.http.HttpServletResponse.SC_FORBIDDEN
 import org.springframework.beans.factory.annotation.Autowired
 
 /**
@@ -21,20 +17,18 @@ open class DefaultPermissionCheckHandler : PermissionCheckHandler {
     private lateinit var permissionService: PermissionService
 
     override fun onPermissionCheck(userId: String, permission: Permission, artifactInfo: ArtifactInfo) {
-        artifactInfo.run {
-            try {
-                permissionService.checkPermission(CheckPermissionRequest(userId, permission.type, permission.action, projectId, repoName))
-            } catch (exception: ErrorCodeException) {
-                throw PermissionCheckException(exception)
-            }
+        val checkRequest = CheckPermissionRequest(userId, permission.type, permission.action, artifactInfo.projectId, artifactInfo.repoName)
+        if (!permissionService.hasPermission(checkRequest)) {
+            throw PermissionCheckException("Access Forbidden")
         }
     }
 
-    override fun onPermissionCheckFailed(request: HttpServletRequest, response: HttpServletResponse) {
-        response.status = SC_FORBIDDEN
+    override fun onPermissionCheckFailed(exception: PermissionCheckException) {
+        // 默认向上抛异常，由ArtifactExceptionHandler统一处理
+        throw exception
     }
 
-    override fun onPermissionCheckSuccess(request: HttpServletRequest, response: HttpServletResponse) {
+    override fun onPermissionCheckSuccess() {
         // do nothing
     }
 }
