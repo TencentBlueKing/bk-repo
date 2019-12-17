@@ -38,16 +38,6 @@ class RepositoryService @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
     private val objectMapper: ObjectMapper
 ) {
-    private fun queryRepository(projectId: String, name: String, type: String? = null): TRepository? {
-        if (projectId.isBlank() || name.isBlank()) return null
-
-        val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId).and(TRepository::name.name).`is`(name)
-
-        if (!type.isNullOrBlank()) {
-            criteria.and(TRepository::type.name).`is`(type)
-        }
-        return mongoTemplate.findOne(Query(criteria), TRepository::class.java)
-    }
 
     fun detail(projectId: String, name: String, type: String? = null): RepositoryInfo? {
         return convert(queryRepository(projectId, name, type))
@@ -121,6 +111,14 @@ class RepositoryService @Autowired constructor(
         repoRepository.save(repository)
     }
 
+
+    /**
+     * 检查仓库是否存在，不存在则抛异常
+     */
+    fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
+        return queryRepository(projectId, repoName, repoType)?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
+    }
+
     /**
      * 用于测试的函数，不对外提供
      */
@@ -144,11 +142,14 @@ class RepositoryService @Autowired constructor(
         return query
     }
 
-    /**
-     * 检查仓库是否存在，不存在则抛异常
-     */
-    fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
-        return queryRepository(projectId, repoName, repoType)?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
+    private fun queryRepository(projectId: String, name: String, type: String? = null): TRepository? {
+        if (projectId.isBlank() || name.isBlank()) return null
+
+        val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId).and(TRepository::name.name).`is`(name)
+        if (!type.isNullOrBlank()) {
+            criteria.and(TRepository::type.name).`is`(type)
+        }
+        return mongoTemplate.findOne(Query(criteria), TRepository::class.java)
     }
 
     companion object {
