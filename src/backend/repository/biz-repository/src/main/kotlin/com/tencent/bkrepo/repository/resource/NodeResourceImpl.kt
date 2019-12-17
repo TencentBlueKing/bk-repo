@@ -55,8 +55,9 @@ class NodeResourceImpl @Autowired constructor(
         return Response.success(nodeService.search(nodeSearchRequest))
     }
 
-    override fun create(nodeCreateRequest: NodeCreateRequest): Response<IdValue> {
-        return Response.success(nodeService.create(nodeCreateRequest))
+    override fun create(nodeCreateRequest: NodeCreateRequest): Response<Void> {
+        nodeService.create(nodeCreateRequest)
+        return Response.success()
     }
 
     override fun rename(nodeRenameRequest: NodeRenameRequest): Response<Void> {

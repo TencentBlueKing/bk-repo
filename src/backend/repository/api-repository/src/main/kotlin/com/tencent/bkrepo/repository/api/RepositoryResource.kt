@@ -72,7 +72,7 @@ interface RepositoryResource {
     @PostMapping
     fun create(
         @RequestBody repoCreateRequest: RepoCreateRequest
-    ): Response<IdValue>
+    ): Response<Void>
 
     @ApiOperation("修改仓库")
     @PutMapping
@@ -88,8 +88,4 @@ interface RepositoryResource {
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable name: String
     ): Response<Void>
-
-    @ApiOperation("查询分表位置")
-    @GetMapping("/sharding/{projectId}")
-    fun sharding(@PathVariable projectId: String): Response<Int>
 }

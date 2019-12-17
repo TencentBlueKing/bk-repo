@@ -2,7 +2,6 @@ package com.tencent.bkrepo.repository.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
@@ -15,7 +14,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.StorageCredentials
 import com.tencent.bkrepo.repository.repository.RepoRepository
-import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
@@ -25,6 +23,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 仓库service
@@ -80,7 +79,7 @@ class RepositoryService @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun create(repoCreateRequest: RepoCreateRequest): IdValue {
+    fun create(repoCreateRequest: RepoCreateRequest) {
         repoCreateRequest.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXIST, repoCreateRequest.name)
 
         val tRepository = repoCreateRequest.let { TRepository(
@@ -99,10 +98,8 @@ class RepositoryService @Autowired constructor(
                 lastModifiedDate = LocalDateTime.now()
             )
         }
-        val idValue = IdValue(repoRepository.insert(tRepository).id!!)
-
+        repoRepository.insert(tRepository)
         logger.info("Create repository [$repoCreateRequest] success.")
-        return idValue
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -150,10 +147,8 @@ class RepositoryService @Autowired constructor(
     /**
      * 检查仓库是否存在，不存在则抛异常
      */
-    fun checkRepository(projectId: String, repoName: String, repoType: String? = null) {
-        if (!exist(projectId, repoName, repoType)) {
-            throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
-        }
+    fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
+        return queryRepository(projectId, repoName, repoType)?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
     }
 
     companion object {
