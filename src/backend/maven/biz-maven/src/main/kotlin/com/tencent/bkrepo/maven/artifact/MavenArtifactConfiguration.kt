@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.maven.config
+package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.RepositoryType
