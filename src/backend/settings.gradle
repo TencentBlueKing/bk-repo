@@ -32,6 +32,11 @@ include ":generic:api-generic"
 include ":generic:biz-generic"
 include ":generic:boot-generic"
 
+include ":maven"
+include ":maven:api-maven"
+include ":maven:biz-maven"
+include ":maven:boot-maven"
+
 include ":auth"
 include ":auth:api-auth"
 include ":auth:biz-auth"
