@@ -34,6 +34,7 @@ import java.time.LocalDateTime
 @Service
 class RepositoryService @Autowired constructor(
     private val repoRepository: RepoRepository,
+    private val projectService: ProjectService,
     private val nodeDao: NodeDao,
     private val mongoTemplate: MongoTemplate,
     private val objectMapper: ObjectMapper
@@ -70,9 +71,11 @@ class RepositoryService @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     fun create(repoCreateRequest: RepoCreateRequest) {
-        repoCreateRequest.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXIST, repoCreateRequest.name)
+        repoCreateRequest.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, repoCreateRequest.name)
+        projectService.checkProject(repoCreateRequest.projectId)
 
-        val tRepository = repoCreateRequest.let { TRepository(
+        val tRepository = repoCreateRequest.let {
+            TRepository(
                 name = it.name,
                 type = it.type,
                 category = it.category,
@@ -114,6 +117,7 @@ class RepositoryService @Autowired constructor(
 
     /**
      * 检查仓库是否存在，不存在则抛异常
+     * 首先检查项目是否存在，再检查仓库
      */
     fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
         return queryRepository(projectId, repoName, repoType)?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)

@@ -166,7 +166,7 @@ class NodeService @Autowired constructor(
         // 路径唯一性校验
         val existNode = queryNode(projectId, repoName, fullPath)
         if (existNode != null) {
-            if (!createRequest.overwrite) throw ErrorCodeException(ArtifactMessageCode.NODE_EXIST, fullPath)
+            if (!createRequest.overwrite) throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
             else if (existNode.folder || createRequest.folder) throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
             else {
                 // 存在相同路径文件节点且允许覆盖，删除之前的节点
@@ -276,7 +276,7 @@ class NodeService @Autowired constructor(
         // 检查新路径是否被占用
         if (exist(projectId, repoName, newFullPath)) {
             logger.warn("Rename node [${node.fullPath}] failed: $newFullPath is exist.")
-            throw ErrorCodeException(ArtifactMessageCode.NODE_EXIST, newFullPath)
+            throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, newFullPath)
         }
 
         // 如果为文件夹，查询子节点并修改

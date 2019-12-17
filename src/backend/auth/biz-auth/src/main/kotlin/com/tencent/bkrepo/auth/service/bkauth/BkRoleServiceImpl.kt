@@ -1,14 +1,12 @@
-package com.tencent.bkrepo.auth.service.local
+package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.pojo.AddUserRoleRequest
 import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.Role
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
-import com.tencent.bkrepo.auth.repository.ProjectRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.repository.UserRoleRepository
-import com.tencent.bkrepo.auth.service.RoleService
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -22,7 +20,6 @@ import org.springframework.stereotype.Service
 class BkRoleServiceImpl @Autowired constructor(
         private val userRepository: UserRepository,
         private val roleRepository: RoleRepository,
-        private val projectRepository: ProjectRepository,
         private val userRoleRepository: UserRoleRepository
 ) {
     fun addUserRole(request: AddUserRoleRequest) {
