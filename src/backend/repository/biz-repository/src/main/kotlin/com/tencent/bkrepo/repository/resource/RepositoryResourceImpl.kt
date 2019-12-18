@@ -37,8 +37,9 @@ class RepositoryResourceImpl @Autowired constructor(
         return Response.success(repositoryService.page(projectId, page, size))
     }
 
-    override fun create(repoCreateRequest: RepoCreateRequest): Response<IdValue> {
-        return Response.success(repositoryService.create(repoCreateRequest))
+    override fun create(repoCreateRequest: RepoCreateRequest): Response<Void> {
+        repositoryService.create(repoCreateRequest)
+        return Response.success()
     }
 
     override fun update(repoUpdateRequest: RepoUpdateRequest): Response<Void> {
@@ -49,12 +50,5 @@ class RepositoryResourceImpl @Autowired constructor(
     override fun delete(projectId: String, name: String): Response<Void> {
         repositoryService.delete(projectId, name)
         return Response.success()
-    }
-
-    /**
-     * 开发使用，查询项目分表位置
-     */
-    override fun sharding(projectId: String): Response<Int> {
-        return Response.success(projectId.hashCode() and 255)
     }
 }

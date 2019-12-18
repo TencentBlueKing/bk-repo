@@ -117,7 +117,7 @@ interface NodeResource {
     @PostMapping
     fun create(
         @RequestBody nodeCreateRequest: NodeCreateRequest
-    ): Response<IdValue>
+    ): Response<Void>
 
     @ApiOperation("重命名节点")
     @PutMapping("/rename")

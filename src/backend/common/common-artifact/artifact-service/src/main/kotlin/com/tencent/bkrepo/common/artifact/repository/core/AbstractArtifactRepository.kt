@@ -3,9 +3,7 @@ package com.tencent.bkrepo.common.artifact.repository.core
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
-import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.artifact.exception.ArtifactUploadException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -16,8 +14,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.util.HttpResponseUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.util.NodeUtils
-import java.io.File
 import org.slf4j.LoggerFactory
+import java.io.File
 
 /**
  * 构件仓库抽象类
@@ -40,8 +38,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
         } catch (validateException: ArtifactValidateException) {
             this.onValidateFailed(context, validateException)
         } catch (exception: Exception) {
-            val uploadException = ArtifactUploadException(exception.message ?: "Upload error")
-            this.onUploadFailed(context, uploadException)
+            this.onUploadFailed(context, exception)
         }
     }
 
@@ -60,8 +57,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
         } catch (validateException: ArtifactValidateException) {
             this.onValidateFailed(context, validateException)
         } catch (exception: Exception) {
-            val downloadException = ArtifactDownloadException(exception.message ?: "Download error")
-            this.onDownloadFailed(context, downloadException)
+            this.onDownloadFailed(context, exception)
         }
     }
 
@@ -118,9 +114,9 @@ interface AbstractArtifactRepository : ArtifactRepository {
     /**
      * 上传失败回调
      */
-    fun onUploadFailed(context: ArtifactUploadContext, uploadException: ArtifactUploadException) {
+    fun onUploadFailed(context: ArtifactUploadContext, exception: Exception) {
         // 默认向上抛异常，由全局异常处理器处理
-        throw uploadException
+        throw exception
     }
 
     /**
@@ -149,9 +145,9 @@ interface AbstractArtifactRepository : ArtifactRepository {
     /**
      * 下载失败回调
      */
-    fun onDownloadFailed(context: ArtifactDownloadContext, downloadException: ArtifactDownloadException) {
+    fun onDownloadFailed(context: ArtifactDownloadContext, exception: Exception) {
         // 默认向上抛异常，由全局异常处理器处理
-        throw downloadException
+        throw exception
     }
 
     /**

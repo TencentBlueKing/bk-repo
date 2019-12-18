@@ -2,12 +2,12 @@ package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
 import com.tencent.bkrepo.repository.pojo.node.FileBlock
@@ -36,8 +36,6 @@ import com.tencent.bkrepo.repository.util.NodeUtils.getName
 import com.tencent.bkrepo.repository.util.NodeUtils.getParentPath
 import com.tencent.bkrepo.repository.util.NodeUtils.isRootPath
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -46,6 +44,8 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * 节点service
@@ -155,18 +155,18 @@ class NodeService @Autowired constructor(
      * 创建节点，返回id
      */
     @Transactional(rollbackFor = [Throwable::class])
-    fun create(createRequest: NodeCreateRequest): IdValue {
+    fun create(createRequest: NodeCreateRequest) {
         logger.info("create, createRequest: $createRequest")
 
         val projectId = createRequest.projectId
         val repoName = createRequest.repoName
         val fullPath = parseFullPath(createRequest.fullPath)
 
-        repositoryService.checkRepository(projectId, repoName)
+        val repo = repositoryService.checkRepository(projectId, repoName)
         // 路径唯一性校验
         val existNode = queryNode(projectId, repoName, fullPath)
         if (existNode != null) {
-            if (!createRequest.overwrite) throw ErrorCodeException(ArtifactMessageCode.NODE_EXIST, fullPath)
+            if (!createRequest.overwrite) throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
             else if (existNode.folder || createRequest.folder) throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
             else {
                 // 存在相同路径文件节点且允许覆盖，删除之前的节点
@@ -196,14 +196,12 @@ class NodeService @Autowired constructor(
         }
         node.blockList = createRequest.blockList?.map { TFileBlock(sequence = it.sequence, sha256 = it.sha256, size = it.size) }
         // 保存节点
-        val idValue = IdValue(doCreate(node).id!!)
+        doCreate(node, repo)
         // 保存元数据
         createRequest.metadata?.let {
             metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it))
         }
         logger.info("Create node [$createRequest] success.")
-
-        return idValue
     }
 
     /**
@@ -278,7 +276,7 @@ class NodeService @Autowired constructor(
         // 检查新路径是否被占用
         if (exist(projectId, repoName, newFullPath)) {
             logger.warn("Rename node [${node.fullPath}] failed: $newFullPath is exist.")
-            throw ErrorCodeException(ArtifactMessageCode.NODE_EXIST, newFullPath)
+            throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, newFullPath)
         }
 
         // 如果为文件夹，查询子节点并修改
@@ -365,7 +363,7 @@ class NodeService @Autowired constructor(
                     lastModifiedBy = createdBy,
                     lastModifiedDate = LocalDateTime.now()
             )
-            doCreate(node)
+            doCreate(node, null)
         }
     }
 
@@ -382,7 +380,7 @@ class NodeService @Autowired constructor(
         val destPath = formatPath(request.destPath)
 
         repositoryService.checkRepository(srcProjectId, srcRepoName)
-        repositoryService.checkRepository(destProjectId, destRepoName)
+        val destRepository = repositoryService.checkRepository(destProjectId, destRepoName)
 
         val node = queryNode(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, srcFullPath)
 
@@ -399,7 +397,7 @@ class NodeService @Autowired constructor(
             mkdirs(destProjectId, destRepoName, destPath, operator)
         }
         // 递归操作
-        operateNode(node, destPath, request, operator)
+        operateNode(node, destPath, request, destRepository, operator)
 
         logger.info("[${request.getOperateName()}] node success: [$request]")
     }
@@ -407,7 +405,7 @@ class NodeService @Autowired constructor(
     /**
      * 操作节点
      */
-    private fun operateNode(node: TNode, destPath: String, request: CrossRepoNodeRequest, operator: String) {
+    private fun operateNode(node: TNode, destPath: String, request: CrossRepoNodeRequest, destRepository: TRepository, operator: String) {
         val projectId = node.projectId
         val repoName = node.repoName
         val overwrite = request.overwrite
@@ -428,7 +426,7 @@ class NodeService @Autowired constructor(
             val destSubPath = formatPath(destPath + node.name)
             val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = true, deep = false)
             val subNodes = nodeDao.find(query)
-            subNodes.forEach { operateNode(it, destSubPath, request, operator) }
+            subNodes.forEach { operateNode(it, destSubPath, request, destRepository, operator) }
 
             // 文件移动时，目的路径的目录已经自动创建，因此删除源目录
             if (request is NodeMoveRequest) {
@@ -461,18 +459,18 @@ class NodeService @Autowired constructor(
                         lastModifiedBy = operator,
                         lastModifiedDate = LocalDateTime.now()
                     )
-                    doCreate(newNode)
+                    doCreate(newNode, destRepository)
                 }
             }
         }
     }
 
-    private fun doCreate(node: TNode): TNode {
+    private fun doCreate(node: TNode, repository: TRepository? = null): TNode {
         try {
             nodeDao.insert(node)
-            node.takeUnless { it.folder }?.run { fileReferenceService.increment(this) }
+            node.takeUnless { it.folder }?.run { fileReferenceService.increment(this, repository) }
         } catch (exception: DuplicateKeyException) {
-            logger.warn("add node[$node] error: [${exception.message}]")
+            logger.warn("Insert node[$node] error: [${exception.message}]")
         }
 
         return node

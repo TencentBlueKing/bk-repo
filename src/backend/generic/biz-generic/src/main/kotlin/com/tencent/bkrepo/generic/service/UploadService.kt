@@ -64,7 +64,7 @@ class UploadService @Autowired constructor(
             // 判断文件是否存在
             if (!overwrite && nodeResource.exist(projectId, repoName, fullPath).data == true) {
                 logger.warn("User[$userId] start block upload [${artifactInfo.getFullUri()}] failed: artifact already exists.")
-                throw ErrorCodeException(ArtifactMessageCode.NODE_EXIST, fullPath)
+                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
             }
             val uploadTransaction = UploadTransactionInfo(uploadId = genericTransactionId(), expires = uploadTransactionExpires)
             fileStorage.makeBlockPath(uploadTransaction.uploadId, storageCredentials)
