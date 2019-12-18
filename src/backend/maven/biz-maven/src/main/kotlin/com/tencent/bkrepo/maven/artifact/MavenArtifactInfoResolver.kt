@@ -1,0 +1,49 @@
+package com.tencent.bkrepo.maven.artifact
+
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import org.slf4j.LoggerFactory
+import java.util.*
+import javax.servlet.http.HttpServletRequest
+
+/**
+ *
+ * @author: carrypan
+ * @date: 2019/12/4
+ */
+@Resolver(MavenArtifactInfo::class)
+class MavenArtifactInfoResolver : ArtifactInfoResolver {
+    override fun resolve(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest): MavenArtifactInfo {
+        val uri= request.requestURI
+        val pathElements = LinkedList<String>()
+        val tokenizer = StringTokenizer(uri, "/")
+        while (tokenizer.hasMoreTokens()) {
+            pathElements.add(tokenizer.nextToken())
+        }
+        if (pathElements.size < 3) {
+            logger.debug("Cannot build MavenArtifactInfo from '{}'. The groupId, artifactId and version are unreadable.",
+                    uri)
+            return MavenArtifactInfo("","","","","","")
+        }
+        var pos = pathElements.size - 2
+
+        val version = pathElements[pos--]
+        val artifactId = pathElements[pos--]
+        val groupIdBuff = StringBuilder()
+        while (pos >= 2) {
+            if (groupIdBuff.length != 0) {
+                groupIdBuff.insert(0, '.')
+            }
+            groupIdBuff.insert(0, pathElements[pos])
+            pos--
+        }
+        val groupId = groupIdBuff.toString()
+        //Extract the type and classifier except for metadata files
+
+        return MavenArtifactInfo(projectId, repoName, artifactUri, groupId, artifactId, version)
+    }
+
+    companion object{
+        private val logger = LoggerFactory.getLogger(MavenArtifactInfoResolver::class.java)
+    }
+}
