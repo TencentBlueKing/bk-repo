@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.common.artifact.auth
 
-import com.tencent.bkrepo.common.artifact.config.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.artifact.config.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.config.REPO_NAME
-import com.tencent.bkrepo.common.artifact.config.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse

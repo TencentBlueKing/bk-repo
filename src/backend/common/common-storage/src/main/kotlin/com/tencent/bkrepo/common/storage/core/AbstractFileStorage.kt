@@ -78,7 +78,7 @@ abstract class AbstractFileStorage<Credentials : ClientCredentials, Client>(
             val file = load(path, hash, getClient(credentials))
             file?.let {
                 logger.debug("Success to load file [$hash] on [$credentials].")
-            } ?: logger.debug("Failed to load file [$hash] on [$credentials]: file does not exist.")
+            } ?: logger.debug("Failed to load file [$hash] on [$credentials]: file data not found.")
             file
         } catch (exception: Exception) {
             logger.error("Failed to load file [$hash] on [$credentials].", exception)

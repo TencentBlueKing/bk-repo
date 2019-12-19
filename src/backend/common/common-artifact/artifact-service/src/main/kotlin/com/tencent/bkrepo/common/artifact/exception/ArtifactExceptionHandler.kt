@@ -2,23 +2,26 @@ package com.tencent.bkrepo.common.artifact.exception
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.config.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_VALUE
-import com.tencent.bkrepo.common.artifact.config.USER_KEY
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.slf4j.LoggerFactory
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestControllerAdvice
 
 /**
  *
  * @author: carrypan
  * @date: 2019/12/5
  */
-@ControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
+@RestControllerAdvice
 class ArtifactExceptionHandler {
 
     @ExceptionHandler(ArtifactResolveException::class)
@@ -52,18 +55,6 @@ class ArtifactExceptionHandler {
         response(HttpStatus.BAD_REQUEST, exception)
     }
 
-    @ExceptionHandler(ArtifactUploadException::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleException(exception: ArtifactUploadException) {
-        response(HttpStatus.INTERNAL_SERVER_ERROR, exception)
-    }
-
-    @ExceptionHandler(ArtifactDownloadException::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleException(exception: ArtifactDownloadException) {
-        response(HttpStatus.INTERNAL_SERVER_ERROR, exception)
-    }
-
     @ExceptionHandler(UnsupportedMethodException::class)
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     fun handleException(exception: UnsupportedMethodException) {
@@ -86,7 +77,9 @@ class ArtifactExceptionHandler {
         logException(exception)
         val responseObject = Response.fail(status.value(), exception.message)
         val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
-        HttpContextHolder.getResponse().writer.println(responseString)
+        val response = HttpContextHolder.getResponse()
+        response.contentType="application/json; charset=utf-8"
+        response.writer.println(responseString)
     }
 
     companion object {

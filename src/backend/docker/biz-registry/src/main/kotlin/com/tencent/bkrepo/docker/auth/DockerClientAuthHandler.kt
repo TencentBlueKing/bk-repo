@@ -7,7 +7,7 @@ import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.config.REPO_KEY
-import com.tencent.bkrepo.common.artifact.config.USER_KEY
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.docker.util.JwtUtil
 import com.tencent.bkrepo.repository.api.NodeResource

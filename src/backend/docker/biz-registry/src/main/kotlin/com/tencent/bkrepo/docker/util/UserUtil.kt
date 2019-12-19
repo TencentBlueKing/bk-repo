@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.docker.util
 
-import com.tencent.bkrepo.common.artifact.config.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 
 class UserUtil {
     companion object {

@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.common.artifact.auth
 
-import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_USER_ID
+import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.artifact.config.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.config.REPO_KEY
-import com.tencent.bkrepo.common.artifact.config.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.repository.api.RepositoryResource
@@ -37,7 +37,7 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
         }
         val typeName = artifactConfiguration.getRepositoryType()?.name ?: ""
         val response = repositoryResource.detail(projectId, repoName, typeName)
-        val repo = response.data ?: throw ArtifactNotFoundException("Repository[$repoName] does not exist")
+        val repo = response.data ?: throw ArtifactNotFoundException("Repository[$repoName] not found")
         val requestAttributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
         requestAttributes.request.setAttribute(REPO_KEY, repo)
         return !repo.public

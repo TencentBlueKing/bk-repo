@@ -2,7 +2,7 @@ package com.tencent.bkrepo.common.artifact.permission
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.config.ARTIFACT_INFO_KEY
-import com.tencent.bkrepo.common.artifact.config.USER_KEY
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around

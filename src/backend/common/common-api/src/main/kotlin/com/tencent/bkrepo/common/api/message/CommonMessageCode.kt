@@ -4,8 +4,8 @@ enum class CommonMessageCode(private val businessCode: Int, private val key: Str
 
     SYSTEM_ERROR(1, "system.error"),
     PARAMETER_MISSING(2, "system.parameter.missing"),
-    PARAMETER_EXIST(3, "system.parameter.existed"),
-    PARAMETER_INVALID(4, "system.parameter.invalid"),
+    PARAMETER_INVALID(3, "system.parameter.invalid"),
+    RESOURCE_EXISTED(4, "system.resource.existed"),
     RESOURCE_NOT_FOUND(5, "system.resource.notfound"),
     OPERATION_UNSUPPORTED(6, "system.operation.unsupported"),
     PERMISSION_DENIED(7, "system.permission.denied"),
