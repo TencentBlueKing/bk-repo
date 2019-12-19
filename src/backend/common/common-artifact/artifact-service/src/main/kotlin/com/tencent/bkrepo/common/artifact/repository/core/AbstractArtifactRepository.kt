@@ -49,7 +49,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
         try {
             this.onDownloadValidate(context)
             this.onBeforeDownload(context)
-            val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] does not exist")
+            val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] not found")
             val name = NodeUtils.getName(context.artifactInfo.artifactUri)
             HttpResponseUtils.response(name, file)
             logger.info("User[$userId] download artifact[$artifactUri] success")

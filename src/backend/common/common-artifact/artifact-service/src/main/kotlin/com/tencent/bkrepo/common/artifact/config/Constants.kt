@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.common.artifact.config
 
 /**
- * 认证成功后username写入request attributes的key
+ * header user id key
  */
-const val USER_KEY = "userId"
+const val AUTH_HEADER_USER_ID: String = "X-BKREPO-UID"
 /**
  * 查询仓库后将仓库写入request attributes的key
  */
@@ -20,10 +20,6 @@ const val PROJECT_ID = "projectId"
  * 仓库名称字段
  */
 const val REPO_NAME = "repoName"
-/**
- * 匿名用户
- */
-const val ANONYMOUS_USER = "anonymous"
 /**
  * 认证相关
  */
