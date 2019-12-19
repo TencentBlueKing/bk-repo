@@ -1,7 +1,5 @@
 package com.tencent.bkrepo.auth.pojo
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

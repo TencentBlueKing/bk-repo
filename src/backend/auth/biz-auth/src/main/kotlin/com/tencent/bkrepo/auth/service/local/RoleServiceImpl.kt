@@ -29,7 +29,7 @@ class RoleServiceImpl @Autowired constructor(
 
     override fun createRole(request: CreateRoleRequest) :Boolean{
         val role = roleRepository.findOneByRIdAndProjectId(request.rid, request.projectId)
-        if (role == null){
+        if (role != null){
             logger.warn("create role [${request.rid} , ${request.projectId} ]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_RID)
         }
@@ -52,8 +52,8 @@ class RoleServiceImpl @Autowired constructor(
 
     override fun deleteRoleByRid(type: RoleType, projectId:String,rid:String):Boolean {
         val role = roleRepository.deleteByTypeAndRIdAndProjectId(type , rid, projectId)
-        if (role == null){
-            logger.warn("create role [$type ,$rid , $projectId  ]  is exist.")
+        if (role == 0L){
+            logger.warn("delete role [$type ,$rid , $projectId  ]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
         }
 
