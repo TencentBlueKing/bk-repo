@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import org.apache.commons.lang.StringUtils
 
 /**
  *
@@ -20,16 +19,16 @@ class MavenArtifactInfo(
         const val MAVEN_MAPPING_URI = "/{projectId}/{repoName}/**"
     }
 
-    private fun hasGroupId(): Boolean{
-        return StringUtils.isNotBlank(groupId) && "NA" != groupId
+    private fun hasGroupId(): Boolean {
+        return groupId.isNotBlank() && "NA" != groupId
     }
 
-    private fun hasArtifactId(): Boolean{
-        return StringUtils.isNotBlank(artifactId) && "NA" != artifactId
+    private fun hasArtifactId(): Boolean {
+        return artifactId.isNotBlank() && "NA" != artifactId
     }
 
-    private fun hasVersion(): Boolean{
-        return StringUtils.isNotBlank(version) && "NA" != version
+    private fun hasVersion(): Boolean {
+        return version.isNotBlank() && "NA" != version
     }
 
     fun isValid(): Boolean {
