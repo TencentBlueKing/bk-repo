@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface RoleRepository : MongoRepository<TRole, String> {
-    fun deleteByTypeAndRIdAndProjectId(type:RoleType,rId: String,projectId: String)
+    fun deleteByTypeAndRIdAndProjectId(type:RoleType,rId: String,projectId: String):Long
     fun findByType(type: String): List<TRole>
     fun findByTypeAndProjectId(type: RoleType, rId:String): List<TRole>?
     fun findOneByRIdAndProjectId(rid: String,projectId: String): TRole?

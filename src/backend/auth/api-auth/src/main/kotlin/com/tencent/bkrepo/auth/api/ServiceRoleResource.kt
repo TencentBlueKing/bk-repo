@@ -50,5 +50,4 @@ interface ServiceRoleResource {
         @ApiParam(value = "项目ID")
         @PathVariable projectId: String
     ): Response<List<Role>>
-
 }
