@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.common.artifact.repository.remote
 
+import com.tencent.bkrepo.common.artifact.pojo.configuration.ProxyConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteCredentialsConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.http.AUTHORIZATION
@@ -10,9 +13,6 @@ import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.configuration.ProxyConfiguration
-import com.tencent.bkrepo.repository.pojo.repo.configuration.RemoteConfiguration
-import com.tencent.bkrepo.repository.pojo.repo.configuration.RemoteCredentialsConfiguration
 import java.io.File
 import java.net.InetSocketAddress
 import java.net.Proxy

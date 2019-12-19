@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 
 /**
  *

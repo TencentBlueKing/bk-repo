@@ -27,14 +27,14 @@ class FileReferenceService @Autowired constructor(
     fun increment(node: TNode, repository: TRepository? = null) {
         if (node.folder) return
         val repo = repository ?: repositoryService.checkRepository(node.projectId, node.repoName)
-        val storageKey = generateStorageKey(repo.storageCredentials)
+        val storageKey = "generateStorageKey(repo.storageCredentials)"
         increment(node.sha256!!, storageKey)
     }
 
     fun decrement(node: TNode, repository: TRepository? = null) {
         if (node.folder) return
         val repo = repository ?: repositoryService.checkRepository(node.projectId, node.repoName)
-        val storageKey = generateStorageKey(repo.storageCredentials)
+        val storageKey = "generateStorageKey(repo.storageCredentials)"
         decrement(node.sha256!!, storageKey)
     }
 

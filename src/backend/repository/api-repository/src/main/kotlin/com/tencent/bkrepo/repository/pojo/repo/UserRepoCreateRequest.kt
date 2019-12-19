@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.repository.pojo.repo
 
-import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
-import com.tencent.bkrepo.repository.pojo.repo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.storage.pojo.StorageCredentials
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -18,7 +20,7 @@ data class UserRepoCreateRequest(
     @ApiModelProperty("仓库名称", required = true)
     val name: String,
     @ApiModelProperty("仓库类型", required = true)
-    val type: String,
+    val type: RepositoryType,
     @ApiModelProperty("仓库类别", required = true)
     val category: RepositoryCategory,
     @ApiModelProperty("是否公开", required = true)

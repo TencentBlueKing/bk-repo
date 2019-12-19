@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
@@ -24,12 +25,12 @@ data class TRepository(
     var lastModifiedDate: LocalDateTime,
 
     var name: String,
-    var type: String,
+    var type: RepositoryType,
     var category: RepositoryCategory,
     var public: Boolean,
     var description: String? = null,
     var configuration: String,
-    var storageCredentials: TStorageCredentials? = null,
+    var storageCredentials: String? = null,
 
     var projectId: String
 )

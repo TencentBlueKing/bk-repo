@@ -7,7 +7,10 @@ include ":common:common-client"
 include ":common:common-redis"
 include ":common:common-mongo"
 include ":common:common-service"
+
 include ":common:common-storage"
+include ":common:common-storage:storage-api"
+include ":common:common-storage:storage-service"
 
 include ":common:common-query"
 include ":common:common-query:query-api"
@@ -17,30 +20,30 @@ include ":common:common-artifact"
 include ":common:common-artifact:artifact-api"
 include ":common:common-artifact:artifact-service"
 
-include ":docker"
-include ":docker:api-registry"
-include ":docker:biz-registry"
-include ":docker:boot-registry"
-
 include ":repository"
 include ":repository:api-repository"
 include ":repository:biz-repository"
 include ":repository:boot-repository"
+
+include ":auth"
+include ":auth:api-auth"
+include ":auth:biz-auth"
+include ":auth:boot-auth"
 
 include ":generic"
 include ":generic:api-generic"
 include ":generic:biz-generic"
 include ":generic:boot-generic"
 
+include ":docker"
+include ":docker:api-registry"
+include ":docker:biz-registry"
+include ":docker:boot-registry"
+
 include ":maven"
 include ":maven:api-maven"
 include ":maven:biz-maven"
 include ":maven:boot-maven"
-
-include ":auth"
-include ":auth:api-auth"
-include ":auth:biz-auth"
-include ":auth:boot-auth"
 
 include ":pypi"
 include ":pypi:api-pypi"

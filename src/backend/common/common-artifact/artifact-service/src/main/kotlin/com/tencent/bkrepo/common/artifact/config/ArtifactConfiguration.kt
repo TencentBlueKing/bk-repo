@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.common.artifact.config
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+
 /**
  *
  * @author: carrypan

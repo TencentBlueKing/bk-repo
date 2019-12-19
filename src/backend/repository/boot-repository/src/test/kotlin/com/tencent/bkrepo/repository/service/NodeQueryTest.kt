@@ -1,12 +1,13 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.repository.pojo.repo.configuration.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.LocalConfiguration
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.service.query.NodeQueryService
@@ -33,7 +34,7 @@ internal class NodeQueryTest @Autowired constructor(
     private val repositoryService: RepositoryService
 ) {
 
-    private val projectId = "1"
+    private val projectId = "unit-test"
     private val operator = "system"
 
     private var repoName = ""
@@ -46,7 +47,7 @@ internal class NodeQueryTest @Autowired constructor(
             RepoCreateRequest(
                 projectId = projectId,
                 name = repoName,
-                type = "GENERIC",
+                type = RepositoryType.GENERIC,
                 category = RepositoryCategory.LOCAL,
                 public = true,
                 description = "简单描述",

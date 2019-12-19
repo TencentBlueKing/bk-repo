@@ -75,8 +75,8 @@ class IntegrationTest {
     @DisplayName("简单上传/下载测试")
     fun simpleFileTest() {
         val start = System.currentTimeMillis()
-        val file = File("/Users/carrypan/Downloads/opencv-master.zip")
-        val url = "http://127.0.0.1:8001/test/test/root/opencv.zip"
+        val file = File("/Users/carrypan/Downloads/consul_1.6.0_linux_amd64.zip")
+        val url = "http://127.0.0.1:8001/test/test/root/consul_1.6.0_linux_amd64.zip"
 
         val uploadSha256 = FileDigestUtils.fileSha256(listOf(file.inputStream()))
 
