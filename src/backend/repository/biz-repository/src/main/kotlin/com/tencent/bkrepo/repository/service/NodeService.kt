@@ -5,12 +5,10 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TFileBlock
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
-import com.tencent.bkrepo.repository.pojo.node.FileBlock
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
@@ -194,7 +192,6 @@ class NodeService @Autowired constructor(
                 lastModifiedDate = LocalDateTime.now()
             )
         }
-        node.blockList = createRequest.blockList?.map { TFileBlock(sequence = it.sequence, sha256 = it.sha256, size = it.size) }
         // 保存节点
         doCreate(node, repo)
         // 保存元数据
@@ -511,14 +508,10 @@ class NodeService @Autowired constructor(
             return tNode?.let {
                 NodeDetail(
                     nodeInfo = convert(it)!!,
-                    metadata = MetadataService.convert(it.metadata),
-                    blockList = it.blockList?.map { item -> convert(item) }
+                    metadata = MetadataService.convert(it.metadata)
                 )
             }
         }
 
-        private fun convert(tFileBlock: TFileBlock): FileBlock {
-            return tFileBlock.let { FileBlock(sequence = it.sequence, sha256 = it.sha256, size = it.size) }
-        }
     }
 }
