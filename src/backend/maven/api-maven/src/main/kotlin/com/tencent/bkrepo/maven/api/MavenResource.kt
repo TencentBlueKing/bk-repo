@@ -10,19 +10,20 @@ import org.springframework.web.bind.annotation.*
 
 @Api("maven http协议接口")
 @RequestMapping
-interface MavenHttp {
+interface MavenResource {
 
     @ApiOperation("deploy and checksum")
     @PutMapping(MAVEN_MAPPING_URI)
-    fun deploy(@ArtifactPathVariable
-               mavenArtifactInfo: MavenArtifactInfo,
-               file: ArtifactFile
+    fun deploy(
+        @ArtifactPathVariable
+        mavenArtifactInfo: MavenArtifactInfo,
+        file: ArtifactFile
     )
 
     @ApiOperation("dependency")
     @GetMapping(MAVEN_MAPPING_URI)
-    fun dependency(@ArtifactPathVariable
-                   mavenArtifactInfo: MavenArtifactInfo
+    fun dependency(
+        @ArtifactPathVariable
+        mavenArtifactInfo: MavenArtifactInfo
     )
-
 }
