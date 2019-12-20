@@ -34,11 +34,15 @@ class AccountServiceImpl @Autowired constructor(
             logger.warn("create account [${request.appId}]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_APPID)
         }
+
+        val accessKey = "AK:" + UUID.randomUUID().toString()
+        val secretKey = "SK:" + StrUtil.generateNonce(30)
+        val credentials = CredentialSet(accessKey = accessKey, secretKey = secretKey, createdAt = LocalDateTime.now(), status = CredentialStatus.ENABLE)
         accountRepository.insert(
             TAccount(
                 appId = request.appId,
                 locked = request.locked,
-                credentials = emptyList()
+                credentials = listOf(credentials)
             )
         )
         return true
