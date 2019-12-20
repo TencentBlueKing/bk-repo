@@ -39,7 +39,8 @@ class RoleServiceImpl @Autowired constructor(
                 rId = request.rid,
                 type = request.type,
                 name = request.name,
-                projectId = request.projectId
+                projectId = request.projectId,
+                admin = request.admin
             )
         )
         return  false
@@ -67,7 +68,8 @@ class RoleServiceImpl @Autowired constructor(
             rId = tRole.rId,
             type = tRole.type,
             name = tRole.name,
-            projectId = tRole.projectId
+            projectId = tRole.projectId,
+            admin = tRole.admin
         )
     }
 

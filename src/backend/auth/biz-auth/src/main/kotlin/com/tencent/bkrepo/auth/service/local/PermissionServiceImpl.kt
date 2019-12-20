@@ -263,6 +263,17 @@ class PermissionServiceImpl @Autowired constructor(
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         if (user.admin!!) return true
         val roles = user.roles
+
+        if (roles != null && request.projectId != null) {
+            roles.forEach{
+                val role = roleRepository.findOneByIdAndProjectId(it,request.projectId!!)
+                if (role!= null) {
+                    if (role.admin!! == true){
+                        return true
+                    }
+                }
+            }
+        }
         val criteria = Criteria()
         var criteriac = criteria.orOperator(Criteria.where("users._id").`is`(request.uid).and("users.action").`is`(request.action.toString()),
             Criteria.where("roles._id").`in`(roles).and("users.action").`is`(request.action.toString()))

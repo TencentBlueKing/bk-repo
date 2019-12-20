@@ -12,4 +12,5 @@ interface RoleRepository : MongoRepository<TRole, String> {
     fun findByTypeAndProjectId(type: RoleType, rId:String): List<TRole>?
     fun findOneByRIdAndProjectId(rid: String,projectId: String): TRole?
     fun findOneById(Id:String): TRole?
+    fun findOneByIdAndProjectId(Id:String ,projectId: String): TRole?
 }
