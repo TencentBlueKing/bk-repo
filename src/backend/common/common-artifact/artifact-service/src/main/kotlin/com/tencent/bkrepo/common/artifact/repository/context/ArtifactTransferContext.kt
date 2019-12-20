@@ -5,11 +5,10 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.config.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.config.REPO_KEY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.ClientCredentials
-import com.tencent.bkrepo.common.storage.util.CredentialsUtils
+import com.tencent.bkrepo.common.storage.pojo.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.repository.pojo.repo.configuration.RepositoryConfiguration
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -24,7 +23,7 @@ open class ArtifactTransferContext {
     val userId: String
     val artifactInfo: ArtifactInfo
     var repositoryInfo: RepositoryInfo
-    var storageCredentials: ClientCredentials?
+    var storageCredentials: StorageCredentials? = null
     var repositoryConfiguration: RepositoryConfiguration
     var contextAttributes: MutableMap<String, Any>
 
@@ -32,8 +31,8 @@ open class ArtifactTransferContext {
         this.userId = request.getAttribute(USER_KEY) as String
         this.artifactInfo = request.getAttribute(ARTIFACT_INFO_KEY) as ArtifactInfo
         this.repositoryInfo = request.getAttribute(REPO_KEY) as RepositoryInfo
-        this.storageCredentials = CredentialsUtils.readString(repositoryInfo.storageCredentials?.type, repositoryInfo.storageCredentials?.credentials)
-        this.repositoryConfiguration = JsonUtils.objectMapper.readValue(repositoryInfo.configuration, RepositoryConfiguration::class.java)
+        this.storageCredentials = repositoryInfo.storageCredentials
+        this.repositoryConfiguration = repositoryInfo.configuration
         this.contextAttributes = mutableMapOf()
     }
 }

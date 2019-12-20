@@ -1,10 +1,5 @@
 dependencies {
-    api project(":common:common-service")
-    api project(":common:common-client")
-    api project(":common:common-storage")
-    api project(":common:common-auth")
+    api project(":generic:api-generic")
     api project(":common:common-query:query-api")
     api project(":common:common-artifact:artifact-service")
-    api project(":generic:api-generic")
-    api project(":repository:api-repository")
 }

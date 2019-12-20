@@ -26,7 +26,7 @@ object QueryHelper {
         val query = Query(criteria)
 
         fullPath?.run { criteria.and(TNode::fullPath.name).`is`(fullPath) }
-        if (!withDetail) { query.fields().exclude(TNode::metadata.name).exclude(TNode::blockList.name) }
+        if (!withDetail) { query.fields().exclude(TNode::metadata.name) }
 
         return query
     }

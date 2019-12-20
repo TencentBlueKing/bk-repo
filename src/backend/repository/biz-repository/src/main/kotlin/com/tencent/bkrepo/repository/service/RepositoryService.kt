@@ -1,18 +1,18 @@
 package com.tencent.bkrepo.repository.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
+import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
-import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.repository.pojo.repo.StorageCredentials
+import com.tencent.bkrepo.common.storage.pojo.StorageCredentials
 import com.tencent.bkrepo.repository.repository.RepoRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -36,8 +36,7 @@ class RepositoryService @Autowired constructor(
     private val repoRepository: RepoRepository,
     private val projectService: ProjectService,
     private val nodeDao: NodeDao,
-    private val mongoTemplate: MongoTemplate,
-    private val objectMapper: ObjectMapper
+    private val mongoTemplate: MongoTemplate
 ) {
 
     fun detail(projectId: String, name: String, type: String? = null): RepositoryInfo? {
@@ -82,7 +81,7 @@ class RepositoryService @Autowired constructor(
                 public = it.public,
                 description = it.description,
                 configuration = objectMapper.writeValueAsString(it.configuration),
-                storageCredentials = it.storageCredentials?.let { item -> TStorageCredentials(item.type, item.credentials) },
+                storageCredentials = it.storageCredentials?.let { property -> objectMapper.writeValueAsString(property) },
                 projectId = it.projectId,
 
                 createdBy = it.operator,
@@ -158,6 +157,7 @@ class RepositoryService @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(RepositoryService::class.java)
+        private val objectMapper = JsonUtils.objectMapper
 
         private fun convert(tRepository: TRepository?): RepositoryInfo? {
             return tRepository?.let {
@@ -167,16 +167,10 @@ class RepositoryService @Autowired constructor(
                     category = it.category,
                     public = it.public,
                     description = it.description,
-                    configuration = it.configuration,
-                    storageCredentials = convert(it.storageCredentials),
+                    configuration = objectMapper.readValue(it.configuration, RepositoryConfiguration::class.java),
+                    storageCredentials = it.storageCredentials?.let { property -> objectMapper.readValue(property, StorageCredentials::class.java) },
                     projectId = it.projectId
                 )
-            }
-        }
-
-        private fun convert(tStorageCredentials: TStorageCredentials?): StorageCredentials? {
-            return tStorageCredentials?.let {
-                StorageCredentials(type = it.type, credentials = it.credentials)
             }
         }
     }
