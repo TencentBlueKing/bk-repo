@@ -6,7 +6,7 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 
 interface RoleService {
 
-    fun createRole(request: CreateRoleRequest): Boolean
+    fun createRole(request: CreateRoleRequest): String?
 
     fun deleteRoleByRid(type: RoleType, projectId: String, rid: String): Boolean
 

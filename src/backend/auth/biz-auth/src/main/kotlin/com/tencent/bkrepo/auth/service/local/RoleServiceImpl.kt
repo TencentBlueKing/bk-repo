@@ -27,14 +27,14 @@ class RoleServiceImpl @Autowired constructor(
         return roleRepository.findByType(type).map { transfer(it) }
     }
 
-    override fun createRole(request: CreateRoleRequest) :Boolean{
+    override fun createRole(request: CreateRoleRequest) :String? {
         val role = roleRepository.findOneByRIdAndProjectId(request.rid, request.projectId)
         if (role != null){
             logger.warn("create role [${request.rid} , ${request.projectId} ]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_RID)
         }
 
-        roleRepository.insert(
+        val result = roleRepository.insert(
             TRole(
                 rId = request.rid,
                 type = request.type,
@@ -43,7 +43,7 @@ class RoleServiceImpl @Autowired constructor(
                 admin = request.admin
             )
         )
-        return  false
+        return result.id
     }
 
     override fun listRoleByProject(type: RoleType, projectId:String) :List<Role> {

@@ -15,10 +15,10 @@ class ServiceRoleResourceImpl @Autowired constructor(
     private val roleService: RoleService
 ) : ServiceRoleResource {
 
-    override fun createRole(request: CreateRoleRequest): Response<Boolean> {
+    override fun createRole(request: CreateRoleRequest): Response<String?> {
         // todo check request
-        roleService.createRole(request)
-        return Response(true)
+        val id = roleService.createRole(request)
+        return Response(id)
     }
 
     override fun deleteRole(roleType: RoleType,projectId:String, rid: String ): Response<Boolean> {
