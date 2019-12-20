@@ -85,8 +85,8 @@ class AccountServiceImpl @Autowired constructor(
 
         val query = Query.query(Criteria.where("appId").`is`(appId))
         val update = Update()
-        val accessKey = "AK:"+UUID.randomUUID().toString()
-        val secretKey = "SK:"+ StrUtil.generateNonce(30)
+        val accessKey = "AK:" + UUID.randomUUID().toString()
+        val secretKey = "SK:" + StrUtil.generateNonce(30)
         val credentials = CredentialSet(accessKey = accessKey, secretKey = secretKey, createdAt = LocalDateTime.now(), status = CredentialStatus.ENABLE)
         update.addToSet("credentials", credentials)
         val result = mongoTemplate.upsert(query, update, TAccount::class.java)
@@ -150,7 +150,7 @@ class AccountServiceImpl @Autowired constructor(
     override fun checkCredential(accessKey: String, secretKey: String): Boolean {
         val query = Query.query(Criteria.where("credentials.secretKey").`is`(secretKey)
             .and("credentials.accessKey").`is`(accessKey))
-        mongoTemplate.findOne(query, TAccount::class.java) ?: return  false
+        mongoTemplate.findOne(query, TAccount::class.java) ?: return false
         return true
     }
 
