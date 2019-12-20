@@ -12,7 +12,7 @@ import java.time.LocalDateTime
 data class TPermission(
     val id: String? = null,
     var resourceType: ResourceType,
-    var projectId: String,
+    var projectId: String ? =null,
     var permName: String,
     var repos: List<String>? = emptyList(),
     var includePattern: List<String>? = emptyList(),

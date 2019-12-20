@@ -12,5 +12,5 @@ interface PermissionRepository : MongoRepository<TPermission, String> {
     fun findOneById(id: String): TPermission?
     fun findByResourceType(resourceType: ResourceType): List<TPermission>
     fun findByResourceTypeAndProjectId(resourceType: ResourceType, projectId:String): List<TPermission>
-    fun findOneByPermNameAndProjectIdAndResourceType(permName: String, projectId:String, resourceType: ResourceType): TPermission?
+    fun findOneByPermNameAndProjectIdAndResourceType(permName: String, projectId:String?, resourceType: ResourceType): TPermission?
 }
