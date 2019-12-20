@@ -266,11 +266,13 @@ class PermissionServiceImpl @Autowired constructor(
         val criteria = Criteria()
         var criteriac = criteria.orOperator(Criteria.where("users._id").`is`(request.uid).and("users.action").`is`(request.action.toString()),
             Criteria.where("roles._id").`in`(roles).and("users.action").`is`(request.action.toString()))
-            .and("projectId").`is`(request.projectId)
             .and("resourceType").`is`(request.resourceType.toString())
-            if (request.resourceType == ResourceType.REPO) {
-                criteriac = criteriac.and("repos").`is`(request.repoName)
-            }
+        if (request.resourceType != ResourceType.SYSTEM) {
+            criteriac = criteriac.and("projectId").`is`(request.projectId)
+        }
+        if (request.resourceType == ResourceType.REPO) {
+            criteriac = criteriac.and("repos").`is`(request.repoName)
+        }
         val query = Query.query(criteriac)
         val result = mongoTemplate.count(query, TPermission::class.java)
         if (result == 0L) {
