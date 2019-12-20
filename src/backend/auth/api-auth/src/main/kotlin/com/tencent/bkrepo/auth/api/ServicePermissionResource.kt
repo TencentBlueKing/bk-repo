@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/permission")
 interface ServicePermissionResource {
     @ApiOperation("校验系统权限")
-    @PostMapping("/list")
+    @GetMapping("/list")
     fun listPermission(
         @ApiParam(value = "权限类型")
         @RequestParam resourceType: ResourceType?,
