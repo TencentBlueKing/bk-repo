@@ -15,7 +15,7 @@ import org.springframework.data.mongodb.core.mapping.Document
  */
 @Document("repository")
 @CompoundIndexes(
-        CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true)
+    CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true)
 )
 data class TRepository(
     var id: String? = null,

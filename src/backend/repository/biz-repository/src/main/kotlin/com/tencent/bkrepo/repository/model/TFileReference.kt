@@ -13,13 +13,13 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
  */
 @ShardingDocument("file_reference")
 @CompoundIndexes(
-        CompoundIndex(name="sha256_key_idx", def = "{'sha256': 1, 'key': 1}", unique = true, background = true),
+        CompoundIndex(name="sha256_idx", def = "{'sha256': 1}", background = true),
         CompoundIndex(name="count_idx", def = "{'count': 1}", background = true)
 )
 data class TFileReference(
     var id: String? = null,
     @ShardingKey(count = 256)
     var sha256: String,
-    var key: String,
+    var storageCredentials: String? = null,
     var count: Long
 )
