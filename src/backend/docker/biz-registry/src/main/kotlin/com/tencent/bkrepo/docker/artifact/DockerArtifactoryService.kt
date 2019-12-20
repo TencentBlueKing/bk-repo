@@ -1,9 +1,7 @@
 package com.tencent.bkrepo.docker.artifact
 
-import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.docker.exception.DockerRepoNotFoundException
 import com.tencent.bkrepo.common.storage.core.FileStorage
-import com.tencent.bkrepo.common.storage.util.CredentialsUtils
 import com.tencent.bkrepo.common.storage.util.DataDigestUtils
 import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import com.tencent.bkrepo.docker.context.DownloadContext
@@ -90,8 +88,7 @@ class DockerArtifactoryService @Autowired constructor(
             throw DockerRepoNotFoundException(context.repoName)
         }
         // get content from storage
-        val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-        val file = fileStorage.load(context.sha256, storageCredentials) ?: kotlin.run {
+        val file = fileStorage.load(context.sha256, repository.storageCredentials) ?: kotlin.run {
             throw DockerFileReadFailedException(context.repoName)
         }
         return file.inputStream()
@@ -121,8 +118,7 @@ class DockerArtifactoryService @Autowired constructor(
         ))
 
         if (result.isOk()) {
-            val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-            fileStorage.store(context.sha256, context.content!!, storageCredentials)
+            fileStorage.store(context.sha256, context.content!!, repository.storageCredentials)
             logger.info("user[$context.userId] write file [$context.path] success")
         } else {
             logger.warn("user[$context.userId] write file [$context.path] failed: [${result.code}, ${result.message}]")
@@ -150,8 +146,7 @@ class DockerArtifactoryService @Autowired constructor(
         }
 
         // fileStorage
-        val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-        var file = fileStorage.load(context.sha256, storageCredentials)
+        var file = fileStorage.load(context.sha256, repository.storageCredentials)
         return file!!
     }
 
@@ -178,8 +173,7 @@ class DockerArtifactoryService @Autowired constructor(
         ))
 
         if (result.isOk()) {
-            val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-            fileStorage.store(context.sha256, context.content!!, storageCredentials)
+            fileStorage.store(context.sha256, context.content!!, repository.storageCredentials)
             logger.info("user[$userId]  upload file [$context.path] success")
         } else {
             logger.warn("user[$userId]  upload file [$context.path] failed: [${result.code}, ${result.message}]")
@@ -214,8 +208,7 @@ class DockerArtifactoryService @Autowired constructor(
         // save node
         val result = nodeResource.create(node)
         if (result.isOk()) {
-            val storageCredentials = CredentialsUtils.readString(repository.storageCredentials?.type, repository.storageCredentials?.credentials)
-            fileStorage.store(context.sha256, context.content!!, storageCredentials)
+            fileStorage.store(context.sha256, context.content!!, repository.storageCredentials)
             logger.info("user[$userId] upload file from local [$context.path] success")
         } else {
             logger.warn("user[$userId] upload file from local  [$context.path] failed: [${result.code}, ${result.message}]")

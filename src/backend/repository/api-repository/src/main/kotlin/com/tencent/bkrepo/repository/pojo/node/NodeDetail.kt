@@ -14,13 +14,5 @@ data class NodeDetail(
     @ApiModelProperty("节点基本信息")
     val nodeInfo: NodeInfo,
     @ApiModelProperty("元数据")
-    val metadata: Map<String, String>,
-    @ApiModelProperty("文件分块列表")
-    val blockList: List<FileBlock>? = null
-
-) {
-    @JsonIgnore
-    fun isBlockFile(): Boolean {
-        return !blockList.isNullOrEmpty()
-    }
-}
+    val metadata: Map<String, String>
+)

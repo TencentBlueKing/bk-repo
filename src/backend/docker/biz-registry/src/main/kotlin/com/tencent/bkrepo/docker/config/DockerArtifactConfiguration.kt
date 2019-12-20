@@ -3,7 +3,7 @@ package com.tencent.bkrepo.docker.config
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.ClientAuthConfig
-import com.tencent.bkrepo.common.artifact.config.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import org.springframework.stereotype.Component
 
 /**

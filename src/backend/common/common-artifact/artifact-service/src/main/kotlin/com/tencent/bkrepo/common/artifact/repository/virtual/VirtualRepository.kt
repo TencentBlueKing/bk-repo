@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.common.artifact.repository.virtual
 
 import com.tencent.bkrepo.common.artifact.config.TRAVERSED_LIST
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
+import com.tencent.bkrepo.common.artifact.pojo.configuration.VirtualConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.repository.api.RepositoryResource
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryIdentify
-import com.tencent.bkrepo.repository.pojo.repo.configuration.VirtualConfiguration
 import java.io.File
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -51,7 +51,7 @@ abstract class VirtualRepository : AbstractArtifactRepository {
     private fun getTraversedList(context: ArtifactDownloadContext): MutableList<RepositoryIdentify> {
         return context.contextAttributes[TRAVERSED_LIST] as? MutableList<RepositoryIdentify> ?: let {
             val selfRepoInfo = context.repositoryInfo
-            val traversedList = mutableListOf(RepositoryIdentify(selfRepoInfo))
+            val traversedList = mutableListOf(RepositoryIdentify(selfRepoInfo.projectId, selfRepoInfo.name))
             context.contextAttributes[TRAVERSED_LIST] = traversedList
             return traversedList
         }

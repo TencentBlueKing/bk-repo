@@ -1,8 +1,10 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.repository.pojo.repo.configuration.LocalConfiguration
-import com.tencent.bkrepo.repository.constant.enums.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.configuration.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.storage.pojo.LocalStorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import org.junit.jupiter.api.AfterEach
@@ -30,7 +32,7 @@ internal class RepositoryServiceTest @Autowired constructor(
     private val repositoryService: RepositoryService
 ) {
 
-    private val projectId = "1"
+    private val projectId = "unit-test"
     private val operator = "system"
     private val repoName = "test"
 
@@ -92,14 +94,35 @@ internal class RepositoryServiceTest @Autowired constructor(
 
     @Test
     fun create() {
-        repositoryService.create(createRequest())
+        val request = createRequest().apply {
+            storageCredentials = LocalStorageCredentials().apply { path = "path" }
+        }
+        repositoryService.create(request)
         val repository = repositoryService.detail(projectId, repoName, "GENERIC")!!
         assertEquals(repoName, repository.name)
-        assertEquals("GENERIC", repository.type)
+        assertEquals(RepositoryType.GENERIC, repository.type)
         assertEquals(RepositoryCategory.LOCAL, repository.category)
         assertEquals(true, repository.public)
         assertEquals(projectId, repository.projectId)
         assertEquals("简单描述", repository.description)
+        assertTrue(repository.storageCredentials is LocalStorageCredentials)
+        val storageCredentials = repository.storageCredentials as LocalStorageCredentials
+        assertEquals("path", storageCredentials.path)
+        assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
+    }
+
+    @Test
+    fun createWithNullCredentials() {
+        val request = createRequest()
+        repositoryService.create(request)
+        val repository = repositoryService.detail(projectId, repoName, "GENERIC")!!
+        assertEquals(repoName, repository.name)
+        assertEquals(RepositoryType.GENERIC, repository.type)
+        assertEquals(RepositoryCategory.LOCAL, repository.category)
+        assertEquals(true, repository.public)
+        assertEquals(projectId, repository.projectId)
+        assertEquals("简单描述", repository.description)
+        assertNull(repository.storageCredentials)
         assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
     }
 
@@ -134,7 +157,7 @@ internal class RepositoryServiceTest @Autowired constructor(
         return RepoCreateRequest(
                 projectId = projectId,
                 name = name,
-                type = "GENERIC",
+                type = RepositoryType.GENERIC,
                 category = RepositoryCategory.LOCAL,
                 public = true,
                 description = "简单描述",

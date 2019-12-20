@@ -28,11 +28,12 @@ internal class ProjectServiceTest @Autowired constructor(
 
     @AfterEach
     fun tearDown() {
+
     }
 
     @Test
     fun create() {
-        val request = ProjectCreateRequest("unit_test", "测试项目", "单元测试项目", operator)
+        val request = ProjectCreateRequest("unit-test", "测试项目", "单元测试项目", operator)
         projectService.create(request)
     }
 

@@ -78,10 +78,6 @@ interface AbstractArtifactRepository : ArtifactRepository {
      */
     @Throws(ArtifactValidateException::class)
     fun onUploadValidate(context: ArtifactUploadContext) {
-        // 校验size
-        context.artifactFileMap.values.forEach {
-            file -> file.getSize().takeIf { it > 0 } ?: throw ArtifactValidateException("Missing file content")
-        }
         val sha256Map = mutableMapOf<String, String>()
         // 计算sha256
         context.artifactFileMap.entries.forEach { (name, file) ->

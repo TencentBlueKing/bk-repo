@@ -2,10 +2,8 @@ dependencies {
     api project(":common:common-service")
     api project(":common:common-client")
     api project(":common:common-api")
-    api project(":common:common-storage")
     api project(":common:common-query:query-api")
     api project(":docker:api-registry")
-    api project(":repository:api-repository")
     api project(":repository:api-repository")
     api project(":common:common-artifact:artifact-service")
     compile group: 'com.auth0', name: 'java-jwt', version: '3.8.3'

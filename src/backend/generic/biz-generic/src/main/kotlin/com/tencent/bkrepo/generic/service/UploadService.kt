@@ -13,9 +13,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.ClientCredentials
 import com.tencent.bkrepo.common.storage.core.FileStorage
-import com.tencent.bkrepo.common.storage.util.CredentialsUtils
+import com.tencent.bkrepo.common.storage.pojo.StorageCredentials
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils.fileSha256
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
@@ -122,9 +121,9 @@ class UploadService @Autowired constructor(
         return UUID.randomUUID().toString().replace("-", "").toLowerCase()
     }
 
-    private fun getStorageCredentials(): ClientCredentials? {
+    private fun getStorageCredentials(): StorageCredentials? {
         val repoInfo = HttpContextHolder.getRequest().getAttribute(REPO_KEY) as RepositoryInfo
-        return CredentialsUtils.readString(repoInfo.storageCredentials?.type, repoInfo.storageCredentials?.credentials)
+        return repoInfo.storageCredentials
     }
 
     companion object {

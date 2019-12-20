@@ -34,7 +34,6 @@ data class TNode(
     var sha256: String? = null,
     var deleted: LocalDateTime? = null,
     var metadata: List<TMetadata>? = null,
-    var blockList: List<TFileBlock>? = null,
 
     @ShardingKey(count = 256)
     var projectId: String,
