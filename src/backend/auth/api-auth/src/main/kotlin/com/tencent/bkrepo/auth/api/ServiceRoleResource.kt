@@ -18,7 +18,7 @@ interface ServiceRoleResource {
     @PostMapping("/create")
     fun createRole(
         @RequestBody request: CreateRoleRequest
-    ): Response<Boolean>
+    ): Response<String?>
 
     @ApiOperation("删除角色")
     @DeleteMapping("/delete")

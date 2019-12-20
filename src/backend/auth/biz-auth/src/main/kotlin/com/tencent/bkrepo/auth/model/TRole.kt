@@ -12,5 +12,6 @@ data class TRole(
     val rId: String,
     val type: RoleType,
     val name: String,
-    val projectId: String
+    val projectId: String,
+    val admin:Boolean? = false
 )
