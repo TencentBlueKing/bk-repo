@@ -10,11 +10,11 @@ import com.tencent.bkrepo.auth.pojo.Token
  */
 @Document("user")
 data class TUser(
-        val uId: String? = null,
-        val name: String,
-        val pwd: String,
-        val admin: Boolean?=false,
-        val locked: Boolean? = false,
-        val tokens : List<Token>? = emptyList(),
-        val roles : List<String>?= emptyList()
+    val uId: String? = null,
+    val name: String,
+    val pwd: String,
+    val admin: Boolean? = false,
+    val locked: Boolean? = false,
+    val tokens: List<Token>? = emptyList(),
+    val roles: List<String>? = emptyList()
 )

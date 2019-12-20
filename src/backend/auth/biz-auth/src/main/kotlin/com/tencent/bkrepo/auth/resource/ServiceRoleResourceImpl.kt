@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServiceRoleResourceImpl @Autowired constructor(
-    private val rolePermissionRepository: RolePermissionRepository,
     private val roleService: RoleService
 ) : ServiceRoleResource {
 
