@@ -14,17 +14,17 @@ interface UserService {
 
     fun updateUserById(uId: String, request: UpdateUserRequest): Boolean
 
-    fun addUserToRole(uId: String, rId: String): Boolean
+    fun addUserToRole(uId: String, rId: String): User?
 
     fun addUserToRoleBatch(IdList: List<String>, rId: String): Boolean
 
-    fun removeUserFromRole(uId: String, rId: String): Boolean
+    fun removeUserFromRole(uId: String, rId: String): User?
 
     fun removeUserFromRoleBatch(IdList: List<String>, rId: String): Boolean
 
-    fun createToken(uId: String): Boolean
+    fun createToken(uId: String): User?
 
-    fun removeToken(uId: String, token: String): Boolean
+    fun removeToken(uId: String, token: String): User?
 
     fun findUserByUserToken(uId: String, pwd: String): User?
 }
