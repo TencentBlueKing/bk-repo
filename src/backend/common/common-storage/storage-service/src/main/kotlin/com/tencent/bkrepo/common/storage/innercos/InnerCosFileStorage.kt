@@ -82,7 +82,7 @@ class InnerCosFileStorage(
             client.cosClient.getObjectMetadata(client.bucketName, filename)
         } catch (cosServiceException: CosServiceException) {
             exists = cosServiceException.statusCode != HttpStatus.SC_NOT_FOUND
-        } catch(ignored: Exception) {
+        } catch (ignored: Exception) {
             exists = false
         }
         return exists

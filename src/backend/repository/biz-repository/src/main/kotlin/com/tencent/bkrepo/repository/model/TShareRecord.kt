@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.repository.model
 
+import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
 
 /**
  * 构件共享记录
@@ -15,7 +15,7 @@ import java.time.LocalDateTime
 @CompoundIndexes(
     CompoundIndex(def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1}", background = true)
 )
-data class TShareRecord (
+data class TShareRecord(
     var id: String? = null,
     var createdBy: String,
     var createdDate: LocalDateTime,
@@ -28,5 +28,5 @@ data class TShareRecord (
     var token: String,
     var authorizedUserList: List<String>,
     var authorizedIpList: List<String>,
-    var expireDate: LocalDateTime ?= null
+    var expireDate: LocalDateTime ? = null
 )

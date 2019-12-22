@@ -1,10 +1,9 @@
 package com.tencent.bkrepo.common.artifact.repository.context
 
-import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.config.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.config.REPO_KEY
-import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.pojo.StorageCredentials

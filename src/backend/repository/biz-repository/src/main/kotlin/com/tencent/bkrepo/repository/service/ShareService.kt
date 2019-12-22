@@ -9,16 +9,15 @@ import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.repository.model.TShareRecord
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
-import com.tencent.bkrepo.repository.util.NodeUtils
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.UUID
 
 /**
  * 文件分享 service
@@ -54,7 +53,6 @@ class ShareService @Autowired constructor(
             logger.info("Create share record[$shareRecordInfo] success.")
             return shareRecordInfo
         }
-
     }
 
     fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
@@ -64,10 +62,10 @@ class ShareService @Autowired constructor(
                 .and(TShareRecord::fullPath.name).`is`(artifactUri)
                 .and(TShareRecord::token.name).`is`(token))
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, token)
-            if(shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
+            if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
                 throw ErrorCodeException(CommonMessageCode.PERMISSION_DENIED, token)
             }
-            if(shareRecord.expireDate?.isBefore(LocalDateTime.now()) == true) {
+            if (shareRecord.expireDate?.isBefore(LocalDateTime.now()) == true) {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXPIRED, token)
             }
             val context = ArtifactDownloadContext()
@@ -79,7 +77,7 @@ class ShareService @Autowired constructor(
     private fun checkNode(projectId: String, repoName: String, fullPath: String) {
         repositoryService.checkRepository(projectId, repoName)
         val node = nodeService.detail(projectId, repoName, fullPath)
-        if(node == null || node.nodeInfo.folder) {
+        if (node == null || node.nodeInfo.folder) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
         }
     }
@@ -96,7 +94,7 @@ class ShareService @Autowired constructor(
         }
 
         private fun computeExpireDate(expireSeconds: Long?): LocalDateTime? {
-            return if(expireSeconds == null || expireSeconds <= 0) null
+            return if (expireSeconds == null || expireSeconds <= 0) null
             else LocalDateTime.now().plusSeconds(expireSeconds)
         }
 
@@ -113,7 +111,5 @@ class ShareService @Autowired constructor(
                 )
             }
         }
-
-
     }
 }

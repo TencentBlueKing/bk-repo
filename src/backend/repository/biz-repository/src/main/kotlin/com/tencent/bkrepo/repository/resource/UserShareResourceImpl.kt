@@ -3,30 +3,13 @@ package com.tencent.bkrepo.repository.resource
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.auth.PermissionService
-import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.api.UserNodeResource
 import com.tencent.bkrepo.repository.api.UserShareResource
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.user.UserNodeCopyRequest
-import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
-import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
-import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.ShareService
-import com.tencent.bkrepo.repository.service.query.NodeQueryService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
@@ -48,7 +31,6 @@ class UserShareResourceImpl @Autowired constructor(
             return Response.success(shareService.create(userId, this, shareRecordCreateRequest))
         }
     }
-
 
     override fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
         shareService.download(userId, token, artifactInfo)

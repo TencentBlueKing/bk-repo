@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.repository.resource
 
-import com.tencent.bkrepo.common.api.pojo.IdValue
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.api.RepositoryResource

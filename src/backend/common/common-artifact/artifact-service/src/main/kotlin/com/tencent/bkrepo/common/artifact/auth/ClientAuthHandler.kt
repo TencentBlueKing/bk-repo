@@ -12,16 +12,16 @@ import javax.servlet.http.HttpServletResponse
 interface ClientAuthHandler {
 
     /**
-     * 是否需要进行认证
+     * 提取认证身份信息
      */
-    fun needAuthenticate(uri: String, projectId: String?, repoName: String?): Boolean
+    fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials
 
     /**
      * 进行认证
      * 认证成功返回用户id，失败则抛ClientAuthException异常
      */
     @Throws(ClientAuthException::class)
-    fun onAuthenticate(request: HttpServletRequest): String
+    fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String
 
     /**
      * 认证失败回调

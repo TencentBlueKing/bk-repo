@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.repository.pojo.repo
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.storage.pojo.StorageCredentials
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty

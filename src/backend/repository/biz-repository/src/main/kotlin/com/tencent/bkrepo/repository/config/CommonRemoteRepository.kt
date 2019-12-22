@@ -9,6 +9,4 @@ import org.springframework.stereotype.Component
  * @date: 2019/12/20
  */
 @Component
-class CommonRemoteRepository : RemoteRepository() {
-
-}
+class CommonRemoteRepository : RemoteRepository()

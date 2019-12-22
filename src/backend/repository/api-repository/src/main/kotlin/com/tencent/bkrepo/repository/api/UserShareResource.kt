@@ -3,7 +3,6 @@ package com.tencent.bkrepo.repository.api
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
@@ -39,5 +38,4 @@ interface UserShareResource {
         @RequestParam token: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     )
-
 }

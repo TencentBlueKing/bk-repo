@@ -9,6 +9,4 @@ import org.springframework.stereotype.Component
  * @date: 2019/12/20
  */
 @Component
-class CommonVirtualRepository : VirtualRepository() {
-
-}
+class CommonVirtualRepository : VirtualRepository()

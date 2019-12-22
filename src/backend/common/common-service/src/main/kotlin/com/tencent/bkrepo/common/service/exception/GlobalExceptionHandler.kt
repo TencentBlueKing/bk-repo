@@ -44,8 +44,6 @@ class GlobalExceptionHandler {
         return Response.fail(exception.messageCode.getCode(), errorMessage)
     }
 
-
-
     /**
      * 参数处理异常
      */
@@ -120,8 +118,8 @@ class GlobalExceptionHandler {
         val uri = HttpContextHolder.getRequest().requestURI
         val exceptionMessage = message ?: exception.message
         val fullMessage = "User[$userId] access [$uri] failed[${exception.javaClass.simpleName}]: $exceptionMessage"
-        when(level) {
-            Level.ERROR -> message?.run { logger.error(fullMessage) } ?: run {logger.error(fullMessage, exception)}
+        when (level) {
+            Level.ERROR -> message?.run { logger.error(fullMessage) } ?: run { logger.error(fullMessage, exception) }
             else -> logger.warn(fullMessage)
         }
     }

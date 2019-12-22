@@ -1,15 +1,12 @@
 package com.tencent.bkrepo.common.artifact.auth
 
-import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.artifact.config.PROJECT_ID
-import com.tencent.bkrepo.common.artifact.config.REPO_NAME
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.servlet.HandlerMapping
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
 
 /**
@@ -24,24 +21,20 @@ class ClientAuthInterceptor : HandlerInterceptorAdapter() {
     private lateinit var clientAuthHandler: ClientAuthHandler
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        val uri = request.requestURI
-        val nameValueMap = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
-        val projectId = nameValueMap[PROJECT_ID]?.toString()
-        val repoName = nameValueMap[REPO_NAME]?.toString()
-        return if (clientAuthHandler.needAuthenticate(uri, projectId, repoName)) {
-            try {
-                val userId = clientAuthHandler.onAuthenticate(request)
-                logger.debug("User[$userId] authenticate success.")
-                clientAuthHandler.onAuthenticateSuccess(userId, request)
-                true
-            } catch (authException: ClientAuthException) {
-                clientAuthHandler.onAuthenticateFailed(response, authException)
-                false
-            }
-        } else {
-            logger.debug("Skip authentication, set userId to anonymous.")
+        val authCredentials = clientAuthHandler.extractAuthCredentials(request)
+        if (authCredentials is AnonymousCredentials) {
             request.setAttribute(USER_KEY, ANONYMOUS_USER)
+            return true
+        }
+        return try {
+            val userId = clientAuthHandler.onAuthenticate(request, authCredentials)
+            logger.debug("User[$userId] authenticate success.")
+            clientAuthHandler.onAuthenticateSuccess(userId, request)
+            request.setAttribute(USER_KEY, userId)
             true
+        } catch (authException: ClientAuthException) {
+            clientAuthHandler.onAuthenticateFailed(response, authException)
+            false
         }
     }
 
