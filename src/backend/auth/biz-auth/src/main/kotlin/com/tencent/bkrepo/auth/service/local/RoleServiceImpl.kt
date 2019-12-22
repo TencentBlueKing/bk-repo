@@ -17,11 +17,11 @@ import org.springframework.stereotype.Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
 class RoleServiceImpl @Autowired constructor(
     private val roleRepository: RoleRepository
-): RoleService {
+) : RoleService {
 
-    override fun createRole(request: CreateRoleRequest) :String? {
+    override fun createRole(request: CreateRoleRequest): String? {
         val role = roleRepository.findOneByRIdAndProjectId(request.rid, request.projectId)
-        if (role != null){
+        if (role != null) {
             logger.warn("create role [${request.rid} , ${request.projectId} ]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_RID)
         }
@@ -39,27 +39,27 @@ class RoleServiceImpl @Autowired constructor(
     }
 
 
-    override fun detail(rid:String):Role?{
-        val result =  roleRepository.findOneById(rid) ?: return null
+    override fun detail(rid: String): Role? {
+        val result = roleRepository.findOneById(rid) ?: return null
         return transfer(result)
     }
 
-    override fun listRoleByProject(type: RoleType?, projectId:String?) :List<Role> {
-        if (type == null && projectId == null){
+    override fun listRoleByProject(type: RoleType?, projectId: String?): List<Role> {
+        if (type == null && projectId == null) {
             return roleRepository.findAll().map { transfer(it) }
-        }else if(type != null && projectId == null) {
+        } else if (type != null && projectId == null) {
             return roleRepository.findByType(type).map { transfer(it) }
-        }else if (type == null && projectId != null) {
+        } else if (type == null && projectId != null) {
             return roleRepository.findByProjectId(projectId).map { transfer(it) }
-        }else if (type != null && projectId != null){
-            return roleRepository.findByTypeAndProjectId(type,projectId).map { transfer(it) }
+        } else if (type != null && projectId != null) {
+            return roleRepository.findByTypeAndProjectId(type, projectId).map { transfer(it) }
         }
-        return  emptyList()
+        return emptyList()
     }
 
-    override fun deleteRoleByid(id:String):Boolean {
+    override fun deleteRoleByid(id: String): Boolean {
         val role = roleRepository.findOneById(id)
-        if (role == null){
+        if (role == null) {
             logger.warn("delete role [$id ] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         }
@@ -70,7 +70,7 @@ class RoleServiceImpl @Autowired constructor(
 
     private fun transfer(tRole: TRole): Role {
         return Role(
-            id  = tRole.id,
+            id = tRole.id,
             rId = tRole.rId,
             type = tRole.type,
             name = tRole.name,

@@ -16,22 +16,21 @@ class ServiceAccountResourceImpl @Autowired constructor(
 ) : ServiceAccountResource {
 
     override fun listAccount(): Response<List<Account>> {
-        val accountList  = accountService.listAccount()
+        val accountList = accountService.listAccount()
         return Response(accountList)
     }
 
-    override fun createAccount(request: CreateAccountRequest): Response<Boolean> {
-        accountService.createAccount(request)
+    override fun createAccount(request: CreateAccountRequest): Response<Account?> {
+        return Response(accountService.createAccount(request))
+    }
+
+    override fun updateAccount(appid: String, locked: Boolean): Response<Boolean> {
+        accountService.updateAccountStatus(appid, locked)
         return Response(true)
     }
 
-    override fun updateAccount(account: String, locked: Boolean): Response<Boolean> {
-        accountService.updateAccountStatus(account,locked)
-        return Response(true)
-    }
-
-    override fun deleteAccount(account: String): Response<Boolean> {
-        accountService.deleteAccount(account)
+    override fun deleteAccount(appid: String): Response<Boolean> {
+        accountService.deleteAccount(appid)
         return Response(true)
     }
 
@@ -40,24 +39,24 @@ class ServiceAccountResourceImpl @Autowired constructor(
         return Response(credential)
     }
 
-    override fun createCredential(account: String): Response<Boolean> {
-        accountService.createCredential(account)
-        return Response(true)
+    override fun createCredential(appid: String): Response<List<CredentialSet>> {
+        val result = accountService.createCredential(appid)
+        return Response(result)
     }
 
 
-    override fun deleteCredential(account: String, accesskey: String): Response<Boolean> {
-        accountService.deleteCredential(account,accesskey)
-        return Response(true)
+    override fun deleteCredential(appid: String, accesskey: String): Response<List<CredentialSet>> {
+        val result = accountService.deleteCredential(appid, accesskey)
+        return Response(result)
     }
 
-    override fun updateCredential(account: String, accesskey: String, status: CredentialStatus): Response<Boolean> {
-        accountService.updateCredentialStatus(account,accesskey,status)
+    override fun updateCredential(appid: String, accesskey: String, status: CredentialStatus): Response<Boolean> {
+        accountService.updateCredentialStatus(appid, accesskey, status)
         return Response(true)
     }
 
     override fun checkCredential(accesskey: String, secretkey: String): Response<Boolean> {
-        val result = accountService.checkCredential(accesskey,secretkey)
+        val result = accountService.checkCredential(accesskey, secretkey)
         return Response(result)
     }
 }

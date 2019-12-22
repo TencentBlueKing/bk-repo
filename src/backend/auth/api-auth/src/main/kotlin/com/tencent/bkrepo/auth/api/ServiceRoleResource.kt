@@ -21,7 +21,7 @@ interface ServiceRoleResource {
     ): Response<String?>
 
     @ApiOperation("删除角色")
-    @DeleteMapping("/delete/id")
+    @DeleteMapping("/delete/{id}")
     fun deleteRole(
         @ApiParam(value = "角色主键id")
         @PathVariable id: String
@@ -39,8 +39,8 @@ interface ServiceRoleResource {
     @GetMapping("/list")
     fun listRoleByTypeAndProjectId(
         @ApiParam(value = "角色类型")
-        @RequestParam type: RoleType?=null,
+        @RequestParam type: RoleType? = null,
         @ApiParam(value = "项目ID")
-        @RequestParam projectId: String?=null
+        @RequestParam projectId: String? = null
     ): Response<List<Role>>
 }
