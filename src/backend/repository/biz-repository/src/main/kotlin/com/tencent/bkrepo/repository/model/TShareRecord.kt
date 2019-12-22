@@ -6,20 +6,27 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 
 /**
- * 项目模型
+ * 构件共享记录
+ *
+ * @author: carrypan
+ * @date: 2019/12/20
  */
-@Document("project")
+@Document("share_record")
 @CompoundIndexes(
-    CompoundIndex(name = "name_idx", def = "{'name': 1}", unique = true)
+    CompoundIndex(def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1}", background = true)
 )
-data class TProject(
+data class TShareRecord(
     var id: String? = null,
     var createdBy: String,
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime,
 
-    var name: String,
-    var displayName: String,
-    var description: String
+    var projectId: String,
+    var repoName: String,
+    var fullPath: String,
+    var token: String,
+    var authorizedUserList: List<String>,
+    var authorizedIpList: List<String>,
+    var expireDate: LocalDateTime ? = null
 )

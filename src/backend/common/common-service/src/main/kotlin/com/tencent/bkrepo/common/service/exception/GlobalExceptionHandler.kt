@@ -16,6 +16,9 @@ import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import org.springframework.http.HttpStatus
+import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.HttpRequestMethodNotSupportedException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -41,6 +44,33 @@ class GlobalExceptionHandler {
         return Response.fail(exception.messageCode.getCode(), errorMessage)
     }
 
+    /**
+     * 参数处理异常
+     */
+    @ExceptionHandler(MissingServletRequestParameterException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleException(exception: MissingServletRequestParameterException): Response<Void> {
+        val messageCode = CommonMessageCode.PARAMETER_MISSING
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, arrayOf(exception.parameterName))
+        logException(exception, "[${messageCode.getCode()}]$errorMessage")
+        return Response.fail(messageCode.getCode(), errorMessage)
+    }
+
+    /**
+     * 参数处理异常
+     */
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleException(exception: HttpMessageNotReadableException): Response<Void> {
+        val messageCode = CommonMessageCode.REQUEST_CONTENT_INVALID
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
+        logException(exception, "[${messageCode.getCode()}]$errorMessage")
+        return Response.fail(messageCode.getCode(), errorMessage)
+    }
+
+    /**
+     * 参数处理异常
+     */
     @ExceptionHandler(MissingKotlinParameterException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: MissingKotlinParameterException): Response<Void> {
@@ -66,6 +96,15 @@ class GlobalExceptionHandler {
         return response(messageCode)
     }
 
+    @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    fun handleException(exception: HttpRequestMethodNotSupportedException): Response<Void> {
+        val messageCode = CommonMessageCode.OPERATION_UNSUPPORTED
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
+        logException(exception, "[${messageCode.getCode()}]$errorMessage")
+        return Response.fail(messageCode.getCode(), errorMessage)
+    }
+
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: Exception): Response<Void> {
@@ -79,8 +118,8 @@ class GlobalExceptionHandler {
         val uri = HttpContextHolder.getRequest().requestURI
         val exceptionMessage = message ?: exception.message
         val fullMessage = "User[$userId] access [$uri] failed[${exception.javaClass.simpleName}]: $exceptionMessage"
-        when(level) {
-            Level.ERROR -> message?.run { logger.error(fullMessage) } ?: run {logger.error(fullMessage, exception)}
+        when (level) {
+            Level.ERROR -> message?.run { logger.error(fullMessage) } ?: run { logger.error(fullMessage, exception) }
             else -> logger.warn(fullMessage)
         }
     }

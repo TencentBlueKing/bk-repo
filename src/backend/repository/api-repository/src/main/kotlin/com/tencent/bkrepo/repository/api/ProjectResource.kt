@@ -8,7 +8,11 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(description = "服务-项目接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceProjectResource")
@@ -26,5 +30,4 @@ interface ProjectResource {
     @ApiOperation("创建项目")
     @PostMapping
     fun create(@RequestBody request: ProjectCreateRequest): Response<Void>
-
 }

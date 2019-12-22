@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.artifact.permission
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 
 /**
  *
@@ -15,7 +16,7 @@ interface PermissionCheckHandler {
      * 校验不通过跑PermissionCheckException异常
      */
     @Throws(PermissionCheckException::class)
-    fun onPermissionCheck(userId: String, permission: Permission, artifactInfo: ArtifactInfo)
+    fun onPermissionCheck(userId: String, permission: Permission, artifactInfo: ArtifactInfo, repositoryInfo: RepositoryInfo)
 
     /**
      * 认证成功回调

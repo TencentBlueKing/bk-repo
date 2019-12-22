@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.pypi.artifact.repository
 
+import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.repository.pojo.repo.configuration.RemoteConfiguration
 import org.springframework.stereotype.Component
 import java.lang.UnsupportedOperationException
 

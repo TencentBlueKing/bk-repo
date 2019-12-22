@@ -9,7 +9,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
  */
 interface ArtifactConfiguration {
     fun getClientAuthConfig(): ClientAuthConfig = ClientAuthConfig()
-    fun getRepositoryType(): RepositoryType? = null
+    fun getRepositoryType(): RepositoryType
 }
 
 data class ClientAuthConfig(

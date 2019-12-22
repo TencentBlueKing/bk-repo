@@ -7,6 +7,7 @@ package com.tencent.bkrepo.common.artifact.pojo
  * @date: 2019/11/25
  */
 enum class RepositoryType {
+    NONE,
     GENERIC,
     DOCKER,
     MAVEN,

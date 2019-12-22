@@ -2,6 +2,7 @@ package com.tencent.bkrepo.repository.config
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.ClientAuthConfig
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import org.springframework.stereotype.Component
 
 /**
@@ -11,5 +12,6 @@ import org.springframework.stereotype.Component
  */
 @Component
 class RepositoryArtifactConfiguration : ArtifactConfiguration {
+    override fun getRepositoryType() = RepositoryType.NONE
     override fun getClientAuthConfig() = ClientAuthConfig(includePatterns = listOf("/api/**", "/list/**"))
 }

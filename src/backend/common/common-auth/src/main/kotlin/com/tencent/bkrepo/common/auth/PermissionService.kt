@@ -4,9 +4,7 @@ import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 /**
@@ -17,10 +15,9 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PermissionService @Autowired constructor(
-    private val servicePermissionResource: ServicePermissionResource
+    private val servicePermissionResource: ServicePermissionResource,
+    private val authProperties: AuthProperties
 ) {
-    @Value("\${auth.enabled:true}")
-    private val authEnabled: Boolean = true
 
     fun checkPermission(request: CheckPermissionRequest) {
         if (!hasPermission(request)) {
@@ -29,12 +26,9 @@ class PermissionService @Autowired constructor(
     }
 
     fun hasPermission(request: CheckPermissionRequest): Boolean {
-        return if (authEnabled) {
+        println(authProperties.enabled)
+        return if (authProperties.enabled) {
             servicePermissionResource.checkPermission(request).data ?: false
         } else true
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(PermissionService::class.java)
     }
 }

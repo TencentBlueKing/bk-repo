@@ -1,11 +1,5 @@
 dependencies {
-    api project(":common:common-service")
-    api project(":common:common-client")
-    api project(":common:common-storage")
-    api project(":common:common-auth")
     api project(":common:common-artifact:artifact-service")
     api project(":pypi:api-pypi")
-    api project(":repository:api-repository")
 
-    api "org.springframework.boot:spring-boot-starter-thymeleaf"
 }
