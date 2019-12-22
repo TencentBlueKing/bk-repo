@@ -40,7 +40,7 @@ class UserNodeResourceImpl @Autowired constructor(
 ) : UserNodeResource {
 
     override fun detail(userId: String, artifactInfo: ArtifactInfo): Response<NodeDetail?> {
-        artifactInfo.run {
+        with(artifactInfo) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             val nodeDetail = nodeService.detail(projectId, repoName, this.artifactUri) ?: throw ErrorCodeException(
                 ArtifactMessageCode.NODE_NOT_FOUND, this.artifactUri)
@@ -49,7 +49,7 @@ class UserNodeResourceImpl @Autowired constructor(
     }
 
     override fun mkdir(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
-        artifactInfo.run {
+        with(artifactInfo) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             val createRequest = NodeCreateRequest(
                 projectId = projectId,
@@ -65,7 +65,7 @@ class UserNodeResourceImpl @Autowired constructor(
     }
 
     override fun delete(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
-        artifactInfo.run {
+        with(artifactInfo) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
             val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
@@ -79,7 +79,7 @@ class UserNodeResourceImpl @Autowired constructor(
     }
 
     override fun rename(userId: String, request: UserNodeRenameRequest): Response<Void> {
-        request.run {
+        with(request) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
             val renameRequest = NodeRenameRequest(
                 projectId = projectId,
@@ -94,7 +94,7 @@ class UserNodeResourceImpl @Autowired constructor(
     }
 
     override fun move(userId: String, request: UserNodeMoveRequest): Response<Void> {
-        request.run {
+        with(request) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName))
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId, destRepoName))
             val moveRequest = NodeMoveRequest(
@@ -113,7 +113,7 @@ class UserNodeResourceImpl @Autowired constructor(
     }
 
     override fun copy(userId: String, request: UserNodeCopyRequest): Response<Void> {
-        request.run {
+        with(request) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName))
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId, destRepoName))
             val copyRequest = NodeCopyRequest(
@@ -132,7 +132,7 @@ class UserNodeResourceImpl @Autowired constructor(
     }
 
     override fun computeSize(userId: String, artifactInfo: ArtifactInfo): Response<NodeSizeInfo> {
-        artifactInfo.run {
+        with(artifactInfo) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             val nodeSizeInfo = nodeService.computeSize(projectId, repoName, this.artifactUri)
             return Response.success(nodeSizeInfo)

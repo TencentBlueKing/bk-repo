@@ -12,4 +12,5 @@ abstract class ArtifactInfo(
     open val artifactUri: String
 ) {
     fun getFullUri() = "$projectId/$repoName$artifactUri"
+    override fun toString() = getFullUri()
 }

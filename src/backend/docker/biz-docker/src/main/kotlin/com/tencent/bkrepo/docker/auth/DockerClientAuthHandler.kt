@@ -13,6 +13,8 @@ import com.tencent.bkrepo.docker.util.JwtUtil
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.BasicAuthCredentials
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -38,29 +40,8 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
     @Autowired
     private lateinit var artifactConfiguration: ArtifactConfiguration
 
-    override fun needAuthenticate(uri: String, projectId: String?, repoName: String?): Boolean {
-        if (projectId.isNullOrEmpty() || repoName.isNullOrEmpty()) {
-            logger.debug("Can not extract projectId or repoName")
-            return true
-        }
-        val typeName = artifactConfiguration.getRepositoryType()?.name ?: ""
-        val response = repositoryResource.detail(projectId, repoName, typeName)
-        if (response.isNotOk()) {
-            logger.warn("Query repository detail failed: [$response]")
-            return true
-        }
-        val repo = response.data
-        if (repo == null) {
-            logger.warn("Repository $projectId/$repoName($typeName) dose not exist.")
-            return true
-        }
-        val requestAttributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
-        requestAttributes.request.setAttribute(REPO_KEY, repo)
-        return !repo.public
-    }
-
-    override fun onAuthenticate(request: HttpServletRequest): String {
-        val token = extractBasicAuth(request)
+    override fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String {
+        val token = (authCredentials as JwtAuthCredentials).token
         val userName = JwtUtil.getUserName(token)
         val password = JwtUtil.getPassword(token)
         val result = userResource.checkUserToken(userName, password)
@@ -86,14 +67,14 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         response.getWriter().flush()
     }
 
-    private fun extractBasicAuth(request: HttpServletRequest): String {
+    override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
         if (basicAuthHeader.isNullOrBlank()) throw ClientAuthException("Authorization value is null")
         if (!basicAuthHeader.startsWith("Bearer ")) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
 
         try {
             val token = basicAuthHeader.removePrefix("Bearer ")
-            return token
+            return JwtAuthCredentials(token)
         } catch (exception: Exception) {
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
@@ -102,7 +83,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
     companion object {
         private val logger = LoggerFactory.getLogger(DockerClientAuthHandler::class.java)
 
-        fun extractBasicAuth(request: HttpServletRequest): DefaultClientAuthHandler.BasicAuthCredentials {
+        fun extractBasicAuth(request: HttpServletRequest): BasicAuthCredentials {
             val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
             if (basicAuthHeader.isNullOrBlank()) throw ClientAuthException("Authorization value is null")
             if (!basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
@@ -112,7 +93,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
                 val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
                 val parts = decodedHeader.split(":")
                 require(parts.size >= 2)
-                return DefaultClientAuthHandler.BasicAuthCredentials(
+                return BasicAuthCredentials(
                     parts[0],
                     parts[1]
                 )
@@ -124,3 +105,5 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
     }
 
 }
+
+data class JwtAuthCredentials(val token: String) : AuthCredentials()
