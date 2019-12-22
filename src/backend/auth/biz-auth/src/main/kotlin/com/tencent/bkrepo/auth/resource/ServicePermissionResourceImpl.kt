@@ -28,7 +28,7 @@ class ServicePermissionResourceImpl @Autowired constructor(
 
     override fun checkAdmin(uid: String): Response<Boolean> {
         // todo check request
-        val userInfo = userService.getUserById(uid) ?:  return Response(false)
+        val userInfo = userService.getUserById(uid) ?: return Response(false)
         if (userInfo.admin == false) {
             return Response(false)
         }
@@ -40,11 +40,11 @@ class ServicePermissionResourceImpl @Autowired constructor(
         return Response(permissionService.checkPermission(request))
     }
 
-    override fun listPermission(resourceType: ResourceType?,projectId :String?): Response<List<Permission>> {
-        return Response(permissionService.listPermission(resourceType,projectId))
+    override fun listPermission(resourceType: ResourceType?, projectId: String?): Response<List<Permission>> {
+        return Response(permissionService.listPermission(resourceType, projectId))
     }
 
-    override fun deletePermission( id: String): Response<Boolean> {
+    override fun deletePermission(id: String): Response<Boolean> {
         return Response(permissionService.deletePermission(id))
     }
 
@@ -61,22 +61,21 @@ class ServicePermissionResourceImpl @Autowired constructor(
     }
 
     override fun updatePermissionUser(id: String, uid: String, actionList: List<PermissionAction>): Response<Boolean> {
-        return  Response(permissionService.updateUserPermission(id,uid, actionList))
+        return Response(permissionService.updateUserPermission(id, uid, actionList))
     }
 
     override fun removePermissionUser(id: String, uid: String): Response<Boolean> {
-        return  Response(permissionService.removeUserPermission(id,uid))
+        return Response(permissionService.removeUserPermission(id, uid))
     }
 
 
     override fun updatePermissionRole(id: String, rid: String, actionList: List<PermissionAction>): Response<Boolean> {
-        return  Response(permissionService.updateRolePermission(id,rid, actionList))
+        return Response(permissionService.updateRolePermission(id, rid, actionList))
     }
 
     override fun removePermissionRole(id: String, rid: String): Response<Boolean> {
-        return  Response(permissionService.removeRolePermission(id,rid))
+        return Response(permissionService.removeRolePermission(id, rid))
     }
-
 
 
     private fun checkRequest(request: CheckPermissionRequest) {

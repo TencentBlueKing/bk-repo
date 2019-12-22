@@ -265,10 +265,10 @@ class PermissionServiceImpl @Autowired constructor(
         val roles = user.roles
 
         if (roles != null && request.projectId != null) {
-            roles.forEach{
-                val role = roleRepository.findOneByIdAndProjectId(it,request.projectId!!)
-                if (role!= null) {
-                    if (role.admin!! == true){
+            roles.forEach {
+                val role = roleRepository.findOneByIdAndProjectId(it, request.projectId!!)
+                if (role != null) {
+                    if (role.admin!! == true) {
                         return true
                     }
                 }

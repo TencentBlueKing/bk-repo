@@ -21,33 +21,26 @@ interface ServiceRoleResource {
     ): Response<String?>
 
     @ApiOperation("删除角色")
-    @DeleteMapping("/delete")
+    @DeleteMapping("/delete/{id}")
     fun deleteRole(
-        @ApiParam(value = "角色类型")
-        @RequestParam roleType: RoleType,
-        @ApiParam(value = "项目id")
-        @RequestParam projectId: String,
-        @ApiParam(value = "角色id")
-        @RequestParam rid: String
+        @ApiParam(value = "角色主键id")
+        @PathVariable id: String
     ): Response<Boolean>
 
-    @ApiOperation("查询所有角色")
-    @GetMapping("/list")
-    fun listAll(): Response<List<Role>>
 
     @ApiOperation("根据类型查询角色")
-    @GetMapping("/listByType/{type}")
-    fun listRoleByType(
-        @ApiParam(value = "角色类型")
-        @PathVariable type: RoleType
-    ): Response<List<Role>>
+    @GetMapping("/detail/{id}")
+    fun detail(
+        @ApiParam(value = "角色主键id")
+        @PathVariable id: String
+    ): Response<Role?>
 
     @ApiOperation("根据类型和项目id查询角色")
-    @GetMapping("/list/{type}/{projectId}")
+    @GetMapping("/list")
     fun listRoleByTypeAndProjectId(
         @ApiParam(value = "角色类型")
-        @PathVariable type: RoleType,
+        @RequestParam type: RoleType? = null,
         @ApiParam(value = "项目ID")
-        @PathVariable projectId: String
+        @RequestParam projectId: String? = null
     ): Response<List<Role>>
 }

@@ -3,6 +3,7 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.SERVICE_NAME
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
+import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -27,6 +28,13 @@ interface ServiceUserResource {
         @PathVariable uid: String
     ): Response<Boolean>
 
+    @ApiOperation("用户详情")
+    @GetMapping("/detail/{uid}")
+    fun detail(
+        @ApiParam(value = "用户id")
+        @PathVariable uid: String
+    ): Response<User?>
+
     @ApiOperation("更新用户信息")
     @PutMapping("/{uid}")
     fun updateById(
@@ -43,7 +51,7 @@ interface ServiceUserResource {
         @PathVariable uid: String,
         @ApiParam(value = "用户角色id")
         @PathVariable rid: String
-    ): Response<Boolean>
+    ): Response<User?>
 
     @ApiOperation("删除用户所属角色")
     @DeleteMapping("/role/{uid}/{rid}")
@@ -52,10 +60,10 @@ interface ServiceUserResource {
         @PathVariable uid: String,
         @ApiParam(value = "用户角色")
         @PathVariable rid: String
-    ): Response<Boolean>
+    ): Response<User?>
 
     @ApiOperation("批量新增用户所属角色")
-    @PatchMapping("/role/create/{rid}")
+    @PatchMapping("/role/add/{rid}")
     fun addUserRolePatch(
         @ApiParam(value = "用户角色Id")
         @PathVariable rid: String,
@@ -77,7 +85,7 @@ interface ServiceUserResource {
     fun createToken(
         @ApiParam(value = "用户id")
         @PathVariable uid: String
-    ): Response<Boolean>
+    ): Response<User?>
 
     @ApiOperation("删除用户token")
     @DeleteMapping("/token/{uid}/{token}")
@@ -86,7 +94,7 @@ interface ServiceUserResource {
         @PathVariable uid: String,
         @ApiParam(value = "用户token")
         @PathVariable token: String
-    ): Response<Boolean>
+    ): Response<User?>
 
     @ApiOperation("校验用户token")
     @GetMapping("/token/{uid}/{token}")

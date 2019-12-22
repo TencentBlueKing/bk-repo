@@ -63,7 +63,7 @@ class UserServiceImpl @Autowired constructor(
         return true
     }
 
-    override fun addUserToRole(uId: String, rId: String): Boolean {
+    override fun addUserToRole(uId: String, rId: String): User? {
         //check user
         val user = userRepository.findOneByUId(uId)
         if (user == null) {
@@ -82,15 +82,12 @@ class UserServiceImpl @Autowired constructor(
         val update = Update()
         query.addCriteria(Criteria.where("uId").`is`(uId))
         update.addToSet("roles", rId)
-        val result = mongoTemplate.upsert(query, update, TUser::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
-        return false
+        mongoTemplate.upsert(query, update, TUser::class.java)
+        return getUserById(uId)
     }
 
     override fun addUserToRoleBatch(IdList: List<String>, rId: String): Boolean {
-        IdList.forEach{
+        IdList.forEach {
             //check user
             val user = userRepository.findOneByUId(it)
             if (user == null) {
@@ -118,7 +115,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
 
-    override fun removeUserFromRole(uId: String, rId: String): Boolean {
+    override fun removeUserFromRole(uId: String, rId: String): User? {
         //check user
         val user = userRepository.findOneByUId(uId)
         if (user == null) {
@@ -137,15 +134,12 @@ class UserServiceImpl @Autowired constructor(
         val update = Update()
         query.addCriteria(Criteria.where("uId").`is`(uId).and("roles").`is`(rId))
         update.unset("roles.$")
-        val result = mongoTemplate.upsert(query, update, TUser::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
-        return false
+        mongoTemplate.upsert(query, update, TUser::class.java)
+        return getUserById(uId)
     }
 
     override fun removeUserFromRoleBatch(IdList: List<String>, rId: String): Boolean {
-        IdList.forEach{
+        IdList.forEach {
             val user = userRepository.findOneByUId(it)
             if (user == null) {
                 logger.warn(" user not  exist.")
@@ -198,7 +192,7 @@ class UserServiceImpl @Autowired constructor(
         return false
     }
 
-    override fun createToken(uId: String): Boolean {
+    override fun createToken(uId: String): User? {
         val user = userRepository.findOneByUId(uId)
         if (user == null) {
             logger.warn("user [$uId]  not exist.")
@@ -210,14 +204,11 @@ class UserServiceImpl @Autowired constructor(
         val uuid = UUID.randomUUID().toString()
         val token = Token(id = uuid, createdAt = LocalDateTime.now(), expiredAt = LocalDateTime.now().plusYears(2))
         update.addToSet("tokens", token)
-        val result = mongoTemplate.upsert(query, update, TUser::class.java)
-        if (result.matchedCount == 1L) {
-            return true
-        }
-        return false
+        mongoTemplate.upsert(query, update, TUser::class.java)
+        return getUserById(uId)
     }
 
-    override fun removeToken(uId: String, token: String): Boolean {
+    override fun removeToken(uId: String, token: String): User? {
         val user = userRepository.findOneByUId(uId)
         if (user == null) {
             logger.warn("user [$uId]  not exist.")
@@ -229,11 +220,8 @@ class UserServiceImpl @Autowired constructor(
         s["id"] = token
         val update = Update()
         update.pull("tokens", s)
-        val result = mongoTemplate.updateFirst(query, update, TUser::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
-        return false
+        mongoTemplate.updateFirst(query, update, TUser::class.java)
+        return getUserById(uId)
     }
 
     override fun getUserById(uId: String): User? {
@@ -254,7 +242,7 @@ class UserServiceImpl @Autowired constructor(
         val criteria = Criteria()
         criteria.orOperator(Criteria.where("pwd").`is`(hashPwd), Criteria.where("tokens.id").`is`(pwd)).and("uId").`is`(uId)
         val query = Query.query(criteria)
-        val result = mongoTemplate.findOne(query, TUser::class.java) ?: return  null
+        val result = mongoTemplate.findOne(query, TUser::class.java) ?: return null
         return User(
             uId = result.uId!!,
             name = result.name,
