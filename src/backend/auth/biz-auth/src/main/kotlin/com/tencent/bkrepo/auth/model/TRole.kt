@@ -8,9 +8,10 @@ import org.springframework.data.mongodb.core.mapping.Document
  */
 @Document("role")
 data class TRole(
-        val id: String? = null,
-        val rId: String,
-        val type: RoleType,
-        val name: String,
-        val projectId: String
+    val id: String? = null,
+    val rId: String,
+    val type: RoleType,
+    val name: String,
+    val projectId: String,
+    val admin:Boolean? = false
 )

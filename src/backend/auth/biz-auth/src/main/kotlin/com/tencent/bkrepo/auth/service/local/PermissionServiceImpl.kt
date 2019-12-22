@@ -68,9 +68,9 @@ class PermissionServiceImpl @Autowired constructor(
 
     override fun createPermission(request: CreatePermissionRequest): Boolean {
         // todo check request
-        val permission = permissionRepository.findOneByPermNameAndProjectId(request.permName, request.projectId)
+        val permission = permissionRepository.findOneByPermNameAndProjectIdAndResourceType(request.permName, request.projectId, request.resourceType)
         if (permission != null) {
-            logger.warn("create permission  [${request.permName} , ${request.projectId} ]  is exist.")
+            logger.warn("create permission  [${request.permName} , ${request.projectId}, ${request.resourceType}  ]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_PERMNAME)
         }
         val result = permissionRepository.insert(
@@ -167,12 +167,10 @@ class PermissionServiceImpl @Autowired constructor(
                 .and("users._id").`is`(uid))
             val update = Update()
             update.set("users.$.action", actions)
-            println(query.toString())
             val result = mongoTemplate.updateFirst(query, update, TPermission::class.java)
             if (result.modifiedCount == 1L) {
                 return true
             }
-            println(result.modifiedCount)
             logger.warn("update user permission  [$id] , user [$uid] exist .")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_PERMISSION_EXIST)
         }
@@ -265,13 +263,28 @@ class PermissionServiceImpl @Autowired constructor(
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         if (user.admin!!) return true
         val roles = user.roles
+
+        if (roles != null && request.projectId != null) {
+            roles.forEach{
+                val role = roleRepository.findOneByIdAndProjectId(it,request.projectId!!)
+                if (role!= null) {
+                    if (role.admin!! == true){
+                        return true
+                    }
+                }
+            }
+        }
         val criteria = Criteria()
-        criteria.orOperator(Criteria.where("users._id").`is`(request.uid).and("users.action").`is`(request.action.toString()),
+        var criteriac = criteria.orOperator(Criteria.where("users._id").`is`(request.uid).and("users.action").`is`(request.action.toString()),
             Criteria.where("roles._id").`in`(roles).and("users.action").`is`(request.action.toString()))
-            .and("projectId").`is`(request.projectId)
-            .and("repos").`is`(request.repoName)
             .and("resourceType").`is`(request.resourceType.toString())
-        val query = Query.query(criteria)
+        if (request.resourceType != ResourceType.SYSTEM) {
+            criteriac = criteriac.and("projectId").`is`(request.projectId)
+        }
+        if (request.resourceType == ResourceType.REPO) {
+            criteriac = criteriac.and("repos").`is`(request.repoName)
+        }
+        val query = Query.query(criteriac)
         val result = mongoTemplate.count(query, TPermission::class.java)
         if (result == 0L) {
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_FAILED)

@@ -36,9 +36,9 @@ include ":generic:biz-generic"
 include ":generic:boot-generic"
 
 include ":docker"
-include ":docker:api-registry"
-include ":docker:biz-registry"
-include ":docker:boot-registry"
+include ":docker:api-docker"
+include ":docker:biz-docker"
+include ":docker:boot-docker"
 
 include ":maven"
 include ":maven:api-maven"

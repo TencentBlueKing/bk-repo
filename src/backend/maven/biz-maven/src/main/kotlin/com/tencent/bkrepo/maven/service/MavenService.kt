@@ -13,15 +13,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class MavenHttpService {
+class MavenService {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deploy(mavenArtifactInfo: MavenArtifactInfo,
                file: ArtifactFile)
     {
-        require(mavenArtifactInfo.isValid()){
-            throw IllegalArgumentException("Invalid unit info for '${mavenArtifactInfo.artifactUri}'.")
-        }
         val context = ArtifactUploadContext(file)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.upload(context)
@@ -34,7 +31,4 @@ class MavenHttpService {
         repository.download(context)
     }
 
-    companion object{
-        val logger: Logger = LoggerFactory.getLogger(MavenHttpService::class.java)
-    }
 }

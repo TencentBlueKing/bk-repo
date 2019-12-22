@@ -6,15 +6,15 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 
 interface RoleService {
 
-    fun createRole(request: CreateRoleRequest):Boolean
+    fun createRole(request: CreateRoleRequest): String?
 
-    fun deleteRoleByRid(type: RoleType,projectId:String, rid:String):Boolean
+    fun deleteRoleByRid(type: RoleType, projectId: String, rid: String): Boolean
 
     fun listAllRole(): List<Role>
 
     fun listRoleByType(type: String): List<Role>
 
-    fun listRoleByProject(type: RoleType, projectId:String) :List<Role>
+    fun listRoleByProject(type: RoleType, projectId: String): List<Role>
 
 
 }

@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.auth.pojo
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -13,7 +12,7 @@ data class Permission(
     @ApiModelProperty("资源类型")
     val resourceType: ResourceType,
     @ApiModelProperty("项目ID")
-    val projectId: String,
+    val projectId: String? = null,
     @ApiModelProperty("权限名")
     val permName: String,
     @ApiModelProperty("关联仓库名")

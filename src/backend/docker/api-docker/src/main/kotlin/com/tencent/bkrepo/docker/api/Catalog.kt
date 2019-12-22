@@ -6,7 +6,6 @@ import io.swagger.annotations.ApiParam
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
-
 /**
  *  docker image catalog api
  *

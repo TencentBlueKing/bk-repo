@@ -31,16 +31,22 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
         val artifactId = pathElements[pos--]
         val groupIdBuff = StringBuilder()
         while (pos >= 2) {
-            if (groupIdBuff.length != 0) {
+            if (groupIdBuff.isNotEmpty()) {
                 groupIdBuff.insert(0, '.')
             }
             groupIdBuff.insert(0, pathElements[pos])
             pos--
         }
         val groupId = groupIdBuff.toString()
-        //Extract the type and classifier except for metadata files
 
-        return MavenArtifactInfo(projectId, repoName, artifactUri, groupId, artifactId, version)
+        val mavenArtifactInfo = MavenArtifactInfo(projectId, repoName, artifactUri, groupId, artifactId, version)
+
+        require(mavenArtifactInfo.isValid()){
+            throw IllegalArgumentException("Invalid unit info for '${mavenArtifactInfo.artifactUri}'.")
+        }
+
+        return mavenArtifactInfo
+
     }
 
     companion object{

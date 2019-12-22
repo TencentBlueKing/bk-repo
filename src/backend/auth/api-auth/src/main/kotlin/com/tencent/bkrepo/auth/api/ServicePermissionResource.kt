@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.SERVICE_NAME
+import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/permission")
 interface ServicePermissionResource {
     @ApiOperation("校验系统权限")
-    @PostMapping("/list")
+    @GetMapping("/list")
     fun listPermission(
         @ApiParam(value = "权限类型")
         @RequestParam resourceType: ResourceType?,
@@ -86,7 +86,6 @@ interface ServicePermissionResource {
         @PathVariable uid: String,
         @RequestBody actionList: List<PermissionAction>
     ): Response<Boolean>
-
 
     @ApiOperation("删除权限绑定用户")
     @DeleteMapping("/user/{id}/{uid}")

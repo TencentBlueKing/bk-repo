@@ -13,5 +13,7 @@ data class CreateRoleRequest(
     @ApiModelProperty("角色类型")
     val type: RoleType,
     @ApiModelProperty("显示名")
-    val projectId: String
+    val projectId: String,
+    @ApiModelProperty("管理员")
+    val admin: Boolean? = false
 )
