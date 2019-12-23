@@ -20,6 +20,22 @@ interface ServiceRoleResource {
         @RequestBody request: CreateRoleRequest
     ): Response<String?>
 
+    @ApiOperation("创建项目管理员")
+    @PostMapping("/create/project/manage/{projectId}")
+    fun createProjectManage(
+        @ApiParam(value = "仓库名称")
+        @PathVariable projectId: String
+    ): Response<String?>
+
+    @ApiOperation("创建仓库管理员")
+    @PostMapping("/create/repo/manage/{projectId}/{repoName}")
+    fun createRepoManage(
+        @ApiParam(value = "仓库ID")
+        @PathVariable projectId: String,
+        @ApiParam(value = "项目ID")
+        @PathVariable repoName: String
+    ): Response<String?>
+
     @ApiOperation("删除角色")
     @DeleteMapping("/delete/{id}")
     fun deleteRole(

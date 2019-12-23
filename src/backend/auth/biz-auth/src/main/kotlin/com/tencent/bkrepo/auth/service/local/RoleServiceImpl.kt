@@ -20,7 +20,13 @@ class RoleServiceImpl @Autowired constructor(
 ) : RoleService {
 
     override fun createRole(request: CreateRoleRequest): String? {
-        val role = roleRepository.findOneByRIdAndProjectId(request.rid, request.projectId)
+        var role: TRole?
+        if (request.type == RoleType.REPO) {
+            role = roleRepository.findOneByRIdAndProjectIdAndRepoName(request.rid, request.projectId, request.repoName!!)
+        } else {
+            role = roleRepository.findOneByRIdAndProjectId(request.rid, request.projectId)
+        }
+
         if (role != null) {
             logger.warn("create role [${request.rid} , ${request.projectId} ]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_RID)
@@ -32,6 +38,7 @@ class RoleServiceImpl @Autowired constructor(
                 type = request.type,
                 name = request.name,
                 projectId = request.projectId,
+                repoName = request.repoName,
                 admin = request.admin
             )
         )
