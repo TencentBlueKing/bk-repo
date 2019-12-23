@@ -23,4 +23,19 @@ object MongoEscapeUtils {
         }
         return escapedString
     }
+
+    /**
+     * 正则特殊符号转义, 但不转义通配符
+     */
+    fun escapeRegexExceptWildcard(input: String): String {
+        var escapedString = input.trim()
+        if (escapedString.isNotBlank()) {
+            keywordList.filter { it != "*" }.forEach {
+                if (escapedString.contains(it)) {
+                    escapedString = escapedString.replace(it, "\\$it")
+                }
+            }
+        }
+        return escapedString
+    }
 }

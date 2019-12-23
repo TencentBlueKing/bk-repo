@@ -21,6 +21,7 @@ enum class OperationType(val valueType: KClass<*>) {
     IN(List::class),
     PREFIX(String::class),
     SUFFIX(String::class),
+    MATCH(String::class),
     NULL(Void::class),
     NOT_NULL(Void::class);
 
