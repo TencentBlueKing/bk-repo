@@ -10,6 +10,7 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.message.AuthMessageCode
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -264,9 +265,10 @@ class PermissionServiceImpl @Autowired constructor(
         if (user.admin!!) return true
         val roles = user.roles
 
-        if (roles != null && request.projectId != null) {
+        //check project admin
+        if (roles != null && request.projectId != null && request.resourceType == ResourceType.PROJECT) {
             roles.forEach {
-                val role = roleRepository.findOneByIdAndProjectId(it, request.projectId!!)
+                val role = roleRepository.findOneByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
                 if (role != null) {
                     if (role.admin!! == true) {
                         return true
@@ -274,6 +276,20 @@ class PermissionServiceImpl @Autowired constructor(
                 }
             }
         }
+
+        //check repo admin
+        if (roles != null && request.projectId != null && request.resourceType == ResourceType.REPO) {
+            roles.forEach {
+                val role = roleRepository.findOneByIdAndProjectIdAndTypeAndRepoName(it, request.projectId!!, RoleType.REPO,request.repoName!!)
+                if (role != null) {
+                    if (role.admin!! == true) {
+                        return true
+                    }
+                }
+            }
+        }
+
+        //check repo permission
         val criteria = Criteria()
         var criteriac = criteria.orOperator(Criteria.where("users._id").`is`(request.uid).and("users.action").`is`(request.action.toString()),
             Criteria.where("roles._id").`in`(roles).and("users.action").`is`(request.action.toString()))

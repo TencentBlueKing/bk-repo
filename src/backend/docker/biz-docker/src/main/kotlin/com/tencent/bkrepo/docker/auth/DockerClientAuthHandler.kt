@@ -1,12 +1,10 @@
 package com.tencent.bkrepo.docker.auth
 
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
-import com.tencent.bkrepo.common.artifact.auth.DefaultClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
-import com.tencent.bkrepo.common.artifact.config.REPO_KEY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.docker.util.JwtUtil
@@ -17,9 +15,8 @@ import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.BasicAuthCredentials
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
 import java.lang.Exception
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
@@ -30,6 +27,9 @@ import javax.ws.rs.core.MediaType
 
 @Component
 class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAuthHandler {
+
+    @Value("\${auth.url}")
+    private var authUrl: String = ""
 
     @Autowired
     private lateinit var repositoryResource: RepositoryResource
@@ -58,10 +58,9 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
     override fun onAuthenticateFailed(response: HttpServletResponse, clientAuthException: ClientAuthException) {
         response.status = SC_UNAUTHORIZED
         response.setHeader("Docker-Distribution-Api-Version", "registry/2.0")
-        val tokenUrl = "http://registry.me:8002/v2/auth"
         val registryService = "bkrepo"
         val scopeStr = ""
-        response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\"", tokenUrl, registryService) + scopeStr)
+        response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\"", authUrl, registryService) + scopeStr)
         response.contentType = MediaType.APPLICATION_JSON
         response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}", "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.getWriter().flush()
