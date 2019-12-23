@@ -21,16 +21,16 @@ class ClientAuthInterceptor : HandlerInterceptorAdapter() {
     private lateinit var clientAuthHandler: ClientAuthHandler
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        val authCredentials = clientAuthHandler.extractAuthCredentials(request)
-        if (authCredentials is AnonymousCredentials) {
-            request.setAttribute(USER_KEY, ANONYMOUS_USER)
-            return true
-        }
         return try {
-            val userId = clientAuthHandler.onAuthenticate(request, authCredentials)
-            logger.debug("User[$userId] authenticate success.")
-            clientAuthHandler.onAuthenticateSuccess(userId, request)
-            request.setAttribute(USER_KEY, userId)
+            val authCredentials = clientAuthHandler.extractAuthCredentials(request)
+            if (authCredentials is AnonymousCredentials) {
+                request.setAttribute(USER_KEY, ANONYMOUS_USER)
+            } else {
+                val userId = clientAuthHandler.onAuthenticate(request, authCredentials)
+                logger.debug("User[$userId] authenticate success.")
+                clientAuthHandler.onAuthenticateSuccess(userId, request)
+                request.setAttribute(USER_KEY, userId)
+            }
             true
         } catch (authException: ClientAuthException) {
             clientAuthHandler.onAuthenticateFailed(response, authException)
