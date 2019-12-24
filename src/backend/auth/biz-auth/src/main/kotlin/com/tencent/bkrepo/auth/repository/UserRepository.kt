@@ -6,6 +6,6 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface UserRepository : MongoRepository<TUser, String> {
-    fun findOneByUId(uid: String): TUser?
-    fun deleteByUId(uid: String)
+    fun findOneByUserId(userId: String): TUser?
+    fun deleteByUserId(userId: String)
 }

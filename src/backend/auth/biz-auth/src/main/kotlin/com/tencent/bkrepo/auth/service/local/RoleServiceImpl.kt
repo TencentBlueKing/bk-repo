@@ -22,19 +22,19 @@ class RoleServiceImpl @Autowired constructor(
     override fun createRole(request: CreateRoleRequest): String? {
         var role: TRole?
         if (request.type == RoleType.REPO) {
-            role = roleRepository.findOneByRIdAndProjectIdAndRepoName(request.rid, request.projectId, request.repoName!!)
+            role = roleRepository.findOneByRoleIdAndProjectIdAndRepoName(request.roleId, request.projectId, request.repoName!!)
         } else {
-            role = roleRepository.findOneByRIdAndProjectId(request.rid, request.projectId)
+            role = roleRepository.findOneByRoleIdAndProjectId(request.roleId, request.projectId)
         }
 
         if (role != null) {
-            logger.warn("create role [${request.rid} , ${request.projectId} ]  is exist.")
+            logger.warn("create role [${request.roleId} , ${request.projectId} ]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_RID)
         }
 
         val result = roleRepository.insert(
             TRole(
-                rId = request.rid,
+                roleId = request.roleId,
                 type = request.type,
                 name = request.name,
                 projectId = request.projectId,
@@ -78,7 +78,7 @@ class RoleServiceImpl @Autowired constructor(
     private fun transfer(tRole: TRole): Role {
         return Role(
             id = tRole.id,
-            rId = tRole.rId,
+            roleId = tRole.roleId,
             type = tRole.type,
             name = tRole.name,
             projectId = tRole.projectId,

@@ -6,7 +6,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("创建用户请求")
 data class CreateUserRequest(
     @ApiModelProperty("用户id")
-    val uid: String,
+    val userId: String,
     @ApiModelProperty("用户名")
     val name: String,
     @ApiModelProperty("密码")
