@@ -148,11 +148,11 @@ class AccountServiceImpl @Autowired constructor(
         return false
     }
 
-    override fun checkCredential(accessKey: String, secretKey: String): Boolean {
+    override fun checkCredential(accessKey: String, secretKey: String): String? {
         val query = Query.query(Criteria.where("credentials.secretKey").`is`(secretKey)
             .and("credentials.accessKey").`is`(accessKey))
-        mongoTemplate.findOne(query, TAccount::class.java) ?: return false
-        return true
+        val result = mongoTemplate.findOne(query, TAccount::class.java) ?: throw ErrorCodeException(AuthMessageCode.AUTH_AKSK_CHECK_FAILED)
+        return result.appId
     }
 
     private fun transfer(tAccount: TAccount): Account {

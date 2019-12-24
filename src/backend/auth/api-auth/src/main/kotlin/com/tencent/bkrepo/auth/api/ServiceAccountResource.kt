@@ -87,5 +87,5 @@ interface ServiceAccountResource {
         @PathVariable accesskey: String,
         @ApiParam(value = "secretkey")
         @PathVariable secretkey: String
-    ): Response<Boolean>
+    ): Response<String?>
 }

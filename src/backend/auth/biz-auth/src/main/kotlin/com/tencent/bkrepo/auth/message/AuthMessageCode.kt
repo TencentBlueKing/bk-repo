@@ -16,7 +16,8 @@ enum class AuthMessageCode(private val businessCode: Int, private val key: Strin
     AUTH_USER_PERMISSION_EXIST(10, "auth.user.permission-exist"),
     AUTH_ROLE_PERMISSION_EXIST(11, "auth.role.permission-exist"),
     AUTH_DUP_APPID(12, "auth.dup.appid"),
-    AUTH_APPID_NOT_EXIST(13, "auth.appid.notexist");
+    AUTH_APPID_NOT_EXIST(13, "auth.appid.notexist"),
+    AUTH_AKSK_CHECK_FAILED(14, "auth.asksk.checkfail");
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key
