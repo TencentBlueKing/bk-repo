@@ -1,16 +1,21 @@
 package com.tencent.bkrepo.auth.model
 
-import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.mapping.Document
 import com.tencent.bkrepo.auth.pojo.Token
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 
 /**
  * 角色
  */
 @Document("user")
+@CompoundIndexes(
+    CompoundIndex(name = "userId_idx", def = "{'userId': 1}", background = true),
+    CompoundIndex(name = "tokens_id_idx", def = "{'tokens.id': 1}", background = true),
+    CompoundIndex(name = "roles_idx", def = "{'roles': 1}", background = true)
+)
 data class TUser(
-    val uId: String? = null,
+    val userId: String? = null,
     val name: String,
     val pwd: String,
     val admin: Boolean? = false,

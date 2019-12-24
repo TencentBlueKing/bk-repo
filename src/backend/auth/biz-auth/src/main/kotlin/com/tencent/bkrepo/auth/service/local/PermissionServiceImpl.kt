@@ -154,7 +154,7 @@ class PermissionServiceImpl @Autowired constructor(
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
         }
 
-        val user = userRepository.findOneByUId(uid)
+        val user = userRepository.findOneByUserId(uid)
         if (user == null) {
             logger.warn("add user permission  [$id] , user [$uid]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -260,7 +260,7 @@ class PermissionServiceImpl @Autowired constructor(
 
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-        val user = userRepository.findOneByUId(request.uid)
+        val user = userRepository.findOneByUserId(request.uid)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         if (user.admin!!) return true
         val roles = user.roles

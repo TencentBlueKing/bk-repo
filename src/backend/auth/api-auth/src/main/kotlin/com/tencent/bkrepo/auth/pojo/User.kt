@@ -6,7 +6,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("用户信息")
 data class User(
     @ApiModelProperty("用户ID")
-    val uId: String,
+    val userId: String,
     @ApiModelProperty("用户名")
     val name: String,
     @ApiModelProperty("用户密码")
