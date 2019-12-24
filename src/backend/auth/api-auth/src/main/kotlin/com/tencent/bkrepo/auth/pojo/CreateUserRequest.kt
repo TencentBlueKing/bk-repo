@@ -10,7 +10,7 @@ data class CreateUserRequest(
     @ApiModelProperty("用户名")
     val name: String,
     @ApiModelProperty("密码")
-    val pwd: String,
+    val pwd: String?,
     @ApiModelProperty("管理员")
     val admin: Boolean? = false
 )

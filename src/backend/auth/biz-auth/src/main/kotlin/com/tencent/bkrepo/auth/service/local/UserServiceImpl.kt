@@ -17,6 +17,7 @@ import org.springframework.data.mongodb.core.query.Update
 import java.time.LocalDateTime
 import java.util.*
 import com.mongodb.BasicDBObject
+import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.util.DataDigestUtils
@@ -38,7 +39,10 @@ class UserServiceImpl @Autowired constructor(
             logger.warn("create user [${request.uid}]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
         }
-        val pwd = DataDigestUtils.md5FromStr(request.pwd)
+        var pwd :String = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
+        if (request.pwd != null) {
+            pwd = DataDigestUtils.md5FromStr(request.pwd!!)
+        }
         userRepository.insert(
             TUser(
                 uId = request.uid,
