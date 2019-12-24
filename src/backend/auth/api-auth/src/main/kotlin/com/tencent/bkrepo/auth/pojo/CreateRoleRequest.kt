@@ -7,7 +7,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("创建角色请求")
 data class CreateRoleRequest(
     @ApiModelProperty("角色id")
-    val rid: String,
+    val roleId: String,
     @ApiModelProperty("角色名称")
     val name: String,
     @ApiModelProperty("角色类型")
