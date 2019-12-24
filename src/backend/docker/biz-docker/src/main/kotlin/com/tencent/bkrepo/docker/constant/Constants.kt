@@ -7,3 +7,7 @@ const val BLOB_PATTERN = "/blobs"
 const val MANIFEST_PATTERN = "/manifests"
 
 const val EMPTYSTR = ""
+
+const val AUTH_ENABLE = "enable"
+
+const val AUTH_DISABLE = "disalbe"
