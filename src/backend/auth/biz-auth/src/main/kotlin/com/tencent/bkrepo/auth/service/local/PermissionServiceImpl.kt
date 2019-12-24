@@ -302,10 +302,10 @@ class PermissionServiceImpl @Autowired constructor(
         }
         val query = Query.query(criteriac)
         val result = mongoTemplate.count(query, TPermission::class.java)
-        if (result == 0L) {
-            throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_FAILED)
+        if (result != 0L) {
+            return true
         }
-        return true
+        return false
     }
 
 

@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.auth.service.local
 
 import com.mongodb.BasicDBObject
+import com.tencent.bkrepo.auth.constant.EMPTY_APPID
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.pojo.*
@@ -35,8 +36,8 @@ class AccountServiceImpl @Autowired constructor(
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_APPID)
         }
 
-        val accessKey = "AK:" + UUID.randomUUID().toString()
-        val secretKey = "SK:" + StrUtil.generateNonce(30)
+        val accessKey = UUID.randomUUID().toString()
+        val secretKey = StrUtil.generateNonce(30)
         val credentials = CredentialSet(accessKey = accessKey, secretKey = secretKey, createdAt = LocalDateTime.now(), status = CredentialStatus.ENABLE)
         accountRepository.insert(
             TAccount(
@@ -148,10 +149,10 @@ class AccountServiceImpl @Autowired constructor(
         return false
     }
 
-    override fun checkCredential(accessKey: String, secretKey: String): String? {
+    override fun checkCredential(accessKey: String, secretKey: String): String {
         val query = Query.query(Criteria.where("credentials.secretKey").`is`(secretKey)
             .and("credentials.accessKey").`is`(accessKey))
-        val result = mongoTemplate.findOne(query, TAccount::class.java) ?: throw ErrorCodeException(AuthMessageCode.AUTH_AKSK_CHECK_FAILED)
+        val result = mongoTemplate.findOne(query, TAccount::class.java)  ?: return EMPTY_APPID
         return result.appId
     }
 
