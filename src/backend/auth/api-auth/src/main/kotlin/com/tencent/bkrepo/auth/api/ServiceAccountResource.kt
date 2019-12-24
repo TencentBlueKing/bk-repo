@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*
 interface ServiceAccountResource {
 
     @ApiOperation("查询所有账号账号")
-    @PostMapping("/list")
+    @GetMapping("/list")
     fun listAccount(
     ): Response<List<Account>>
 
@@ -27,53 +27,53 @@ interface ServiceAccountResource {
     @PostMapping("/create")
     fun createAccount(
         @RequestBody request: CreateAccountRequest
-    ): Response<Boolean>
+    ): Response<Account?>
 
     @ApiOperation("更新账号状态账号")
-    @PutMapping("/{account}/{locked}")
+    @PutMapping("/{appid}/{locked}")
     fun updateAccount(
         @ApiParam(value = "账户id")
-        @PathVariable account: String,
+        @PathVariable appid: String,
         @ApiParam(value = "账户id")
         @PathVariable locked: Boolean
     ): Response<Boolean>
 
     @ApiOperation("删除账号")
-    @DeleteMapping("/{account}")
+    @DeleteMapping("/delete/{appid}")
     fun deleteAccount(
         @ApiParam(value = "账户id")
-        @PathVariable account: String
+        @PathVariable appid: String
     ): Response<Boolean>
 
     @ApiOperation("获取账户下的ak/sk对")
-    @GetMapping("/credential/list/{account}")
+    @GetMapping("/credential/list/{appid}")
     fun getCredential(
         @ApiParam(value = "账户id")
         @PathVariable account: String
     ): Response<List<CredentialSet>>
 
     @ApiOperation("创建ak/sk对")
-    @PostMapping("/credential/{account}")
+    @PostMapping("/credential/{appid}")
     fun createCredential(
         @ApiParam(value = "账户id")
-        @PathVariable account: String
-    ): Response<Boolean>
+        @PathVariable appid: String
+    ): Response<List<CredentialSet>>
 
 
     @ApiOperation("删除ak/sk对")
-    @DeleteMapping("/credential/{account}/{accesskey}")
+    @DeleteMapping("/credential/{appid}/{accesskey}")
     fun deleteCredential(
         @ApiParam(value = "账户id")
-        @PathVariable account: String,
+        @PathVariable appid: String,
         @ApiParam(value = "账户id")
         @PathVariable accesskey: String
-    ): Response<Boolean>
+    ): Response<List<CredentialSet>>
 
     @ApiOperation("更新ak/sk对状态")
-    @PutMapping("/credential/{account}/{accesskey}/{status}")
+    @PutMapping("/credential/{appid}/{accesskey}/{status}")
     fun updateCredential(
         @ApiParam(value = "账户id")
-        @PathVariable account: String,
+        @PathVariable appid: String,
         @ApiParam(value = "accesskey")
         @PathVariable accesskey: String,
         @ApiParam(value = "status")
@@ -87,5 +87,5 @@ interface ServiceAccountResource {
         @PathVariable accesskey: String,
         @ApiParam(value = "secretkey")
         @PathVariable secretkey: String
-    ): Response<Boolean>
+    ): Response<String?>
 }

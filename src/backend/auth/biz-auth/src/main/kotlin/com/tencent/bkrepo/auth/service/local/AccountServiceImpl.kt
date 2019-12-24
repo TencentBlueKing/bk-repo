@@ -28,7 +28,7 @@ class AccountServiceImpl @Autowired constructor(
     private val mongoTemplate: MongoTemplate
 ) : AccountService {
 
-    override fun createAccount(request: CreateAccountRequest): Boolean {
+    override fun createAccount(request: CreateAccountRequest): Account? {
         val account = accountRepository.findOneByAppId(request.appId)
         if (account != null) {
             logger.warn("create account [${request.appId}]  is exist.")
@@ -45,7 +45,8 @@ class AccountServiceImpl @Autowired constructor(
                 credentials = listOf(credentials)
             )
         )
-        return true
+        val result = accountRepository.findOneByAppId(request.appId) ?: return null
+        return transfer(result)
     }
 
     override fun listAccount(): List<Account> {
@@ -80,7 +81,7 @@ class AccountServiceImpl @Autowired constructor(
         return false
     }
 
-    override fun createCredential(appId: String): Boolean {
+    override fun createCredential(appId: String): List<CredentialSet> {
         val account = accountRepository.findOneByAppId(appId)
         if (account == null) {
             logger.warn("account [$appId]  not exist.")
@@ -93,11 +94,9 @@ class AccountServiceImpl @Autowired constructor(
         val secretKey = "SK:" + StrUtil.generateNonce(30)
         val credentials = CredentialSet(accessKey = accessKey, secretKey = secretKey, createdAt = LocalDateTime.now(), status = CredentialStatus.ENABLE)
         update.addToSet("credentials", credentials)
-        val result = mongoTemplate.upsert(query, update, TAccount::class.java)
-        if (result.matchedCount == 1L) {
-            return true
-        }
-        return false
+        mongoTemplate.upsert(query, update, TAccount::class.java)
+        val result = accountRepository.findOneByAppId(appId) ?: return emptyList()
+        return result.credentials
     }
 
     override fun listCredentials(appId: String): List<CredentialSet> {
@@ -110,7 +109,7 @@ class AccountServiceImpl @Autowired constructor(
     }
 
 
-    override fun deleteCredential(appId: String, accessKey: String): Boolean {
+    override fun deleteCredential(appId: String, accessKey: String): List<CredentialSet> {
         val account = accountRepository.findOneByAppId(appId)
         if (account == null) {
             logger.warn("appId [$appId]  not exist.")
@@ -122,11 +121,9 @@ class AccountServiceImpl @Autowired constructor(
         s["accessKey"] = accessKey
         val update = Update()
         update.pull("credentials", s)
-        val result = mongoTemplate.updateFirst(query, update, TAccount::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
-        return false
+        mongoTemplate.updateFirst(query, update, TAccount::class.java)
+        val result = accountRepository.findOneByAppId(appId) ?: return emptyList()
+        return result.credentials
     }
 
     override fun updateCredentialStatus(appId: String, accessKey: String, status: CredentialStatus): Boolean {
@@ -151,11 +148,11 @@ class AccountServiceImpl @Autowired constructor(
         return false
     }
 
-    override fun checkCredential(accessKey: String, secretKey: String): Boolean {
+    override fun checkCredential(accessKey: String, secretKey: String): String? {
         val query = Query.query(Criteria.where("credentials.secretKey").`is`(secretKey)
             .and("credentials.accessKey").`is`(accessKey))
-        mongoTemplate.findOne(query, TAccount::class.java) ?: return false
-        return true
+        val result = mongoTemplate.findOne(query, TAccount::class.java) ?: throw ErrorCodeException(AuthMessageCode.AUTH_AKSK_CHECK_FAILED)
+        return result.appId
     }
 
     private fun transfer(tAccount: TAccount): Account {
