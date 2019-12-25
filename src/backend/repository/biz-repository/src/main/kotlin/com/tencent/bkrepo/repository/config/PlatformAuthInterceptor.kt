@@ -3,6 +3,7 @@ package com.tencent.bkrepo.repository.config
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
+import com.tencent.bkrepo.common.api.constant.APP_KEY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.config.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
@@ -33,6 +34,7 @@ class PlatformAuthInterceptor : HandlerInterceptorAdapter() {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         extractAuthCredentials(request)?.run {
             serviceAccountResource.checkCredential(first, second).data?.run {
+                request.setAttribute(APP_KEY, this)
                 val userId = request.getHeader(AUTH_HEADER_USER_ID)
                 if(userId == null) {
                     request.setAttribute(USER_KEY, this)
