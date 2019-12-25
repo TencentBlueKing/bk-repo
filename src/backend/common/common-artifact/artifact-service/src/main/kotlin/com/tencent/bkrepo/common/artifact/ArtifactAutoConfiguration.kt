@@ -36,7 +36,7 @@ class ArtifactAutoConfiguration {
     private lateinit var artifactConfiguration: ArtifactConfiguration
 
     @Bean
-    fun webMvcConfigurer(): WebMvcConfigurer {
+    fun artifactWebMvcConfigurer(): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
                 resolvers.add(artifactInfoMethodArgumentResolver())

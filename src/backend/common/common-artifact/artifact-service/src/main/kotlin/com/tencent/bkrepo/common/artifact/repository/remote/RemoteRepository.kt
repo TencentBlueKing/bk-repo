@@ -51,7 +51,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         }
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val httpClient = createHttpClient(remoteConfiguration)
-        val downloadUri = genericRemoteDownloadUrl(context)
+        val downloadUri = generateRemoteDownloadUrl(context)
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
         return if (checkResponse(response)) {
@@ -166,7 +166,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
     /**
      * 生成远程构件下载url
      */
-    open fun genericRemoteDownloadUrl(context: ArtifactDownloadContext): String {
+    open fun generateRemoteDownloadUrl(context: ArtifactDownloadContext): String {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val artifactUri = context.artifactInfo.artifactUri
         return remoteConfiguration.url.trimEnd('/') + artifactUri

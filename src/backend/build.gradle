@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        kotlinVersion = '1.3.31'
+        kotlinVersion = '1.3.61'
         springBootVersion = '2.1.5.RELEASE'
         springCloudVersion = 'Greenwich.SR2'
 
@@ -14,6 +14,7 @@ buildscript {
         commonsIoVersion = "2.6"
         commonsUploadVersion = "1.4"
         skywalkingVersion = "6.1.0"
+        quartzMongodbVersion = "2.1.0"
     }
 
     repositories {
@@ -109,7 +110,7 @@ subprojects {
         args "src/**/*.kt", "!src/**/*Test.kt"
         // see https://github.com/pinterest/ktlint#usage for more
     }
-    //check.dependsOn ktlint
+    check.dependsOn ktlint
 
     task ktlintFormat(type: JavaExec, group: "formatting") {
         description = "Fix Kotlin code style deviations."
@@ -136,6 +137,7 @@ subprojects {
             dependency "commons-fileupload:commons-fileupload:$commonsUploadVersion"
             dependency "org.apache.skywalking:apm-toolkit-logback-1.x:$skywalkingVersion"
             dependency "org.apache.skywalking:apm-toolkit-trace:$skywalkingVersion"
+            dependency "com.novemberain:quartz-mongodb:$quartzMongodbVersion"
         }
 
     }

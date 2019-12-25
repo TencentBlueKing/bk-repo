@@ -42,7 +42,7 @@ class ShareService @Autowired constructor(
                 expireDate = computeExpireDate(request.expireSeconds),
                 authorizedUserList = request.authorizedUserList,
                 authorizedIpList = request.authorizedIpList,
-                token = genericToken(),
+                token = generateToken(),
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
@@ -63,7 +63,7 @@ class ShareService @Autowired constructor(
                 .and(TShareRecord::token.name).`is`(token))
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, token)
             if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
-                throw ErrorCodeException(CommonMessageCode.PERMISSION_DENIED, token)
+                throw ErrorCodeException(CommonMessageCode.PERMISSION_DENIED)
             }
             if (shareRecord.expireDate?.isBefore(LocalDateTime.now()) == true) {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXPIRED, token)
@@ -85,11 +85,11 @@ class ShareService @Autowired constructor(
     companion object {
         private val logger = LoggerFactory.getLogger(ShareService::class.java)
 
-        private fun genericToken(): String {
+        private fun generateToken(): String {
             return UUID.randomUUID().toString().replace("-", "").toLowerCase()
         }
 
-        private fun genericShareUrl(shareRecord: TShareRecord): String {
+        private fun generateShareUrl(shareRecord: TShareRecord): String {
             return "/api/share/${shareRecord.projectId}/${shareRecord.repoName}${shareRecord.fullPath}?token=${shareRecord.token}"
         }
 
@@ -104,7 +104,7 @@ class ShareService @Autowired constructor(
                     fullPath = it.fullPath,
                     repoName = it.repoName,
                     projectId = it.projectId,
-                    shareUrl = genericShareUrl(it),
+                    shareUrl = generateShareUrl(it),
                     authorizedUserList = it.authorizedUserList,
                     authorizedIpList = it.authorizedIpList,
                     expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME)

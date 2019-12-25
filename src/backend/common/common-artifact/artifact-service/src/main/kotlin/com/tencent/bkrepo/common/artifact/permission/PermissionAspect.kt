@@ -54,6 +54,7 @@ class PermissionAspect {
             permissionCheckHandler.onPermissionCheckSuccess()
             point.proceed()
         } catch (exception: PermissionCheckException) {
+            logger.info("User[$userId] check permission [$permission] on failed.")
             permissionCheckHandler.onPermissionCheckFailed(exception)
             null
         }

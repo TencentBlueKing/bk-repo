@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping
  * @author: carrypan
  * @date: 2019-11-18
  */
-@RequestMapping("/list")
+@RequestMapping("/api/list")
 interface UserListViewResource {
 
     @GetMapping(DEFAULT_MAPPING_URI)
