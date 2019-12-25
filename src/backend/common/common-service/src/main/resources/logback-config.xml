@@ -99,7 +99,7 @@
         </root>
     </springProfile>
 
-    <springProfile name="test, dev">
+    <springProfile name="dev">
         <logger name="com.tencent.bkrepo" level="DEBUG">
             <appender-ref ref="app_log"/>
         </logger>
@@ -121,7 +121,7 @@
         </root>
     </springProfile>
 
-    <springProfile name="prod">
+    <springProfile name="test, prod">
         <logger name="com.tencent.bkrepo" level="INFO">
             <appender-ref ref="app_log"/>
         </logger>

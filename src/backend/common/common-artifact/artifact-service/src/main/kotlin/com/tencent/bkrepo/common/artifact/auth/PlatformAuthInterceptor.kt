@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.config
+package com.tencent.bkrepo.common.artifact.auth
 
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource

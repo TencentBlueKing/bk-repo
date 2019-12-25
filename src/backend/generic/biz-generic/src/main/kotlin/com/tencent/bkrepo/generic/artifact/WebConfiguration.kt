@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.config
+package com.tencent.bkrepo.generic.artifact
 
 import com.tencent.bkrepo.common.artifact.auth.PlatformAuthInterceptor
 import org.springframework.context.annotation.Bean
@@ -18,7 +18,7 @@ class WebConfiguration {
     fun webMvcConfigurer(): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addInterceptors(registry: InterceptorRegistry) {
-                registry.addInterceptor(platformAuthInterceptor()).addPathPatterns(listOf("/api/**"))
+                registry.addInterceptor(platformAuthInterceptor()).addPathPatterns(listOf("/**"))
                 super.addInterceptors(registry)
             }
         }
