@@ -15,12 +15,12 @@ usage: migration.py [-h] [-o] -p PROJECT [-e {dev,prod}] [-f FILE]
 
 ## 迁移项目
 ```
-nohup python -u migration.py -p bkrepo 2>&1 &
+nohup python -u migration.py -p bkrepo >/dev/null 2>&1 &
 ```
 
 ## 迁移指定路径/文件
 ```
-nohup python -u migration.py -p bkrepo -f config/bkrepo.ini 2>&1 &
+nohup python -u migration.py -p bkrepo -f config/bkrepo.ini >/dev/null 2>&1 &
 
 # test.ini 内容
 # 指定节点文件

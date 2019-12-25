@@ -24,7 +24,7 @@ def remove_prefix(text, prefix):
 def init(args):
     log_filename = "logs/{}.log".format(args.project)
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         filename=log_filename,
         filemode="a",
         format="%(asctime)s - %(levelname)s: %(message)s"
@@ -46,7 +46,7 @@ def list_jfrog_node():
                 response = requests.post(url, data=data, auth=auth)
                 assert response.status_code == 200
                 nodes_list = response.json()["results"]
-                logging.debug("Retrieve node[%s] success.", node)
+                logging.info("Retrieve node[%s] success.", node)
                 result.extend(nodes_list)
             except Exception:
                 logging.exception("Retrieve node[%s] failed.", node)
@@ -59,7 +59,7 @@ def list_jfrog_node():
                 response = requests.post(url, data=data, auth=auth)
                 assert response.status_code == 200
                 nodes_list = response.json()["results"]
-                logging.debug("Retrieve [%s]nodes for path[%s].", total, path)
+                logging.info("Retrieve [%s]nodes for path[%s].", total, path)
                 result.extend(nodes_list)
             except Exception:
                 logging.exception("Retrieve nodes for path[%s] failed.", path)
@@ -79,11 +79,14 @@ def check_exist(node):
     url = bkrepo_query_url(node["normalized_full_path"])
     auth = (node["created_by"], node["created_by"])
     response = requests.get(url, auth=auth)
-    assert response.status_code == 200
-    result = response.json()
-    assert result['code'] == 0
-    assert result['data']['nodeInfo']['size'] == node['size']
-    return True
+    try:
+        assert response.status_code == 200
+        result = response.json()
+        assert result['code'] == 0
+        assert result['data']['nodeInfo']['size'] == node['size']
+        return True
+    except Exception:
+        return False
 
 
 def fetch_jfrog_file_response(node):
