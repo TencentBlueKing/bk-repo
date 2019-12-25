@@ -54,7 +54,7 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
 
     @PostConstruct
     private fun init() {
-        // ensureIndex()
+        ensureIndex()
     }
 
     private fun ensureIndex() {
