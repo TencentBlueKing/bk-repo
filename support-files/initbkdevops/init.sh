@@ -1,9 +1,13 @@
 #!/bin/bash
 
-curl -XPOST -H "X-BKREPO-UID: admin" -H "Content-Type: application/json" http://dev.bkrepo.oa.com/api/repository/service/repo -d '{"operator":"admin", "projectId":"'${1}'","name":"pipeline","type":"GENERIC","category":"LOCAL","public":false,"description":"","configuration":{"type":"local"}}'
+project=$1
+user=$2
+authorization=$(echo $3 | base64)
 
-curl -XPOST -H "X-BKREPO-UID: admin" -H "Content-Type: application/json" http://dev.bkrepo.oa.com/api/repository/service/repo -d '{"operator":"admin", "projectId":"'${1}'","name":"custom","type":"GENERIC","category":"LOCAL","public":false,"description":"","configuration":{"type":"local"}}}'
+# 创建项目
+curl -X POST http://dev1.bkrepo.oa.com/api/repository/api/project -H "Authorization:Platform $authorization" -H "X-BKREPO-UID: $user" -H "Content-Type: application/json" -d '{"name": "'$project'", "displayName": "'$project'", "description": ""}'
 
-curl -XPOST -H "X-BKREPO-UID: admin" -H "Content-Type: application/json" http://dev.bkrepo.oa.com/api/repository/service/repo -d '{"operator":"admin", "projectId":"'${1}'","name":"report","type":"GENERIC","category":"LOCAL","public":false,"description":"","configuration":{"type":"local"}}}'
-
-curl -XPOST -H "X-BKREPO-UID: admin" -H "Content-Type: application/json" http://dev.bkrepo.oa.com/api/repository/service/repo -d '{"operator":"admin", "projectId":"'${1}'","name":"report","type":"DOCKER","category":"LOCAL","public":false,"description":"","configuration":{"type":"local"}}}'
+# 创建仓库
+curl -X POST http://dev1.bkrepo.oa.com/api/repository/api/repo -H "Authorization:Platform $authorization" -H "X-BKREPO-UID: $user" -H "Content-Type: application/json" -d '{"projectId": "'$project'", "name": "pipeline", "type":"GENERIC", "category":"LOCAL", "public":false, "configuration": {"type":"local"}, "description":""}'
+curl -X POST http://dev1.bkrepo.oa.com/api/repository/api/repo -H "Authorization:Platform $authorization" -H "X-BKREPO-UID: $user" -H "Content-Type: application/json" -d '{"projectId": "'$project'", "name": "custom", "type":"GENERIC", "category":"LOCAL", "public":false, "configuration": {"type":"local"}, "description":""}'
+curl -X POST http://dev1.bkrepo.oa.com/api/repository/api/repo -H "Authorization:Platform $authorization" -H "X-BKREPO-UID: $user" -H "Content-Type: application/json" -d '{"projectId": "'$project'", "name": "report", "type":"GENERIC", "category":"LOCAL", "public":false, "configuration": {"type":"local"}, "description":""}'

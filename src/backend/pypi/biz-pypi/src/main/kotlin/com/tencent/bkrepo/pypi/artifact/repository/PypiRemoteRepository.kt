@@ -18,7 +18,7 @@ class PypiRemoteRepository : RemoteRepository() {
         throw UnsupportedOperationException()
     }
 
-    override fun genericRemoteDownloadUrl(context: ArtifactDownloadContext): String {
+    override fun generateRemoteDownloadUrl(context: ArtifactDownloadContext): String {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val artifactUri = context.artifactInfo.artifactUri
         return remoteConfiguration.url.trimEnd('/') + "/packages"+artifactUri

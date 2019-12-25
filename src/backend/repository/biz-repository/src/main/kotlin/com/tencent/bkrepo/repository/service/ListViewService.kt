@@ -29,6 +29,7 @@ class ListViewService @Autowired constructor(
             val response = HttpContextHolder.getResponse()
             response.contentType = "text/html; charset=UTF-8"
             if (nodeDetail.nodeInfo.folder) {
+                trailingSlash()
                 val nodeList = nodeService.list(artifactInfo.projectId, artifactInfo.repoName, artifactUri, includeFolder = true, deep = false)
                 val pageContent = buildPageContent(nodeList, nodeDetail.nodeInfo)
                 response.writer.print(pageContent)
@@ -100,5 +101,12 @@ class ListViewService @Autowired constructor(
     private fun computeNameColumnWidth(nodeList: List<NodeInfo>): Int {
         val maxNameLength = nodeList.maxBy { it.name.length }?.name?.length ?: 0
         return maxNameLength + 4
+    }
+
+    private fun trailingSlash() {
+        val url = HttpContextHolder.getRequest().requestURL.toString()
+        if(!url.endsWith("/")) {
+            HttpContextHolder.getResponse().sendRedirect("$url/")
+        }
     }
 }
