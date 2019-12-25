@@ -83,19 +83,20 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
 //        if (!authEnable) {
 //            return JwtAuthCredentials(ANONYMOUS_USER)
 //        }
-        logger.info("bbbbbbbbbbbbbb")
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
-        logger.info("cccccccccccccc")
-        if (basicAuthHeader.isNullOrBlank()) throw ClientAuthException("Authorization value is null")
-        logger.info("dddddddddddddddd")
-        if (!basicAuthHeader.startsWith("Bearer ")) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
-        logger.info("eeeeeeeeeeeeeeeee")
+        if (basicAuthHeader.isNullOrBlank()) {
+            logger.info("bbbbbbbbbbbbbbbbbbb")
+            throw ClientAuthException("Authorization value is null")
+        }
+        if (!basicAuthHeader.startsWith("Bearer ")){
+            logger.info("cccccccccccccccccccccc")
+            throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
+        }
         try {
             val token = basicAuthHeader.removePrefix("Bearer ")
-            logger.info("fffffffffffffffffff")
             return JwtAuthCredentials(token)
         } catch (exception: Exception) {
-            logger.info("gggggggggggggggggg")
+            logger.info("dddddddddddddddddddd")
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
     }
