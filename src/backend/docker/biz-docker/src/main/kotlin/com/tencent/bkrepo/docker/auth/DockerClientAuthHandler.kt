@@ -53,6 +53,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         val token = (authCredentials as JwtAuthCredentials).token
         val userName = JwtUtil.getUserName(token)
         val password = JwtUtil.getPassword(token)
+        logger.debug("auth token {} ,user {}, password {}",token, userName, password)
         val result = userResource.checkUserToken(userName, password)
         if (result.data == false) {
             throw  ClientAuthException("auth failed")
@@ -71,6 +72,8 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         val scopeStr = ""
         response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\"", authUrl, registryService) + scopeStr)
         response.contentType = MediaType.APPLICATION_JSON
+        logger.debug("auth failed")
+        logger.info("aaaaaaaaaaaaaaaaaaaaaa")
         response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}", "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.getWriter().flush()
     }
