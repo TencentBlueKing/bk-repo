@@ -121,8 +121,8 @@ def upload_bkrepo_file(node, jfrog_response, properties):
 
 
 def migrate_node(node, current, total):
-    node["normalized_path"] = remove_prefix(node["path"], "bk-custom/{}/".format(args.project))
-    node["normalized_full_path"] = "{}/{}".format(node["normalized_path"], node["name"])
+    path = remove_prefix(node["path"], "bk-custom/{}".format(args.project))
+    node["normalized_full_path"] = "{}/{}".format(path, node["name"])
     jfrog_response = None
     try:
         if not args.overwrite and check_exist(node):
