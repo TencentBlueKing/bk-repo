@@ -5,26 +5,26 @@ import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 
 interface UserService {
-    fun getUserById(uId: String): User?
+    fun getUserById(userId: String): User?
 
 
     fun createUser(request: CreateUserRequest): Boolean
 
-    fun deleteById(uId: String): Boolean
+    fun deleteById(userId: String): Boolean
 
-    fun updateUserById(uId: String, request: UpdateUserRequest): Boolean
+    fun updateUserById(userId: String, request: UpdateUserRequest): Boolean
 
-    fun addUserToRole(uId: String, rId: String): User?
+    fun addUserToRole(userId: String, roleId: String): User?
 
-    fun addUserToRoleBatch(IdList: List<String>, rId: String): Boolean
+    fun addUserToRoleBatch(IdList: List<String>, roleId: String): Boolean
 
-    fun removeUserFromRole(uId: String, rId: String): User?
+    fun removeUserFromRole(userId: String, roleId: String): User?
 
-    fun removeUserFromRoleBatch(IdList: List<String>, rId: String): Boolean
+    fun removeUserFromRoleBatch(IdList: List<String>, roleId: String): Boolean
 
-    fun createToken(uId: String): User?
+    fun createToken(userId: String): User?
 
-    fun removeToken(uId: String, token: String): User?
+    fun removeToken(userId: String, token: String): User?
 
-    fun findUserByUserToken(uId: String, pwd: String): User?
+    fun findUserByUserToken(userId: String, pwd: String): User?
 }
