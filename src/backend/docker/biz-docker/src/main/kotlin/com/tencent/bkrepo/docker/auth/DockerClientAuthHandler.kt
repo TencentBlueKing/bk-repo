@@ -84,7 +84,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
 //            return JwtAuthCredentials(ANONYMOUS_USER)
 //        }
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
-        logger.info("eeeeeeeeeeeeeee {} , {}", basicAuthHeader, request.requestURI)
+        logger.info("eeeeeeeeeeeeeee {} , {}, {}", basicAuthHeader, request.requestURI, request.method)
         if (basicAuthHeader.isNullOrBlank()) {
             logger.info("bbbbbbbbbbbbbbbbbbb")
             throw ClientAuthException("Authorization value is null")
