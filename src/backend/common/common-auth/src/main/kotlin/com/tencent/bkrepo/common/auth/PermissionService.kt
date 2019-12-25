@@ -26,7 +26,6 @@ class PermissionService @Autowired constructor(
     }
 
     fun hasPermission(request: CheckPermissionRequest): Boolean {
-        println(authProperties.enabled)
         return if (authProperties.enabled) {
             servicePermissionResource.checkPermission(request).data ?: false
         } else true

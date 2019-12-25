@@ -1,9 +1,10 @@
 package com.tencent.bkrepo.common.artifact.auth
 
-import com.tencent.bkrepo.common.artifact.config.AUTH_HEADER_USER_ID
+import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import org.springframework.beans.factory.annotation.Autowired
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -14,6 +15,9 @@ import javax.servlet.http.HttpServletResponse
  * @date: 2019/11/25
  */
 open class DefaultClientAuthHandler : ClientAuthHandler {
+
+    @Autowired
+    private lateinit var serviceUserResource: ServiceUserResource
 
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
@@ -32,20 +36,13 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
     }
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String {
-        val basicAuthCredentials = authCredentials as BasicAuthCredentials
-        val userId = request.getHeader(AUTH_HEADER_USER_ID)
-        //  TODO: header方式传递进来的直接通过
-        if (userId != null) {
-            return userId
+        with(authCredentials as BasicAuthCredentials) {
+            val response = serviceUserResource.checkUserToken(username, password)
+            if(response.data == true) {
+                return username
+            } else {
+                throw ClientAuthException("Authorization value check failed.")
+            }
         }
-        // TODO: auth 进行认证
-        return basicAuthCredentials.username
     }
-
-    override fun onAuthenticateFailed(response: HttpServletResponse, clientAuthException: ClientAuthException) {
-        // 默认向上抛异常，由ArtifactExceptionHandler统一处理
-        throw clientAuthException
-    }
-
-    override fun onAuthenticateSuccess(userId: String, request: HttpServletRequest) {}
 }

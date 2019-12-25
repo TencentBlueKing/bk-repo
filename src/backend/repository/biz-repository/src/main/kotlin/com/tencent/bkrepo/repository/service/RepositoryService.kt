@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.auth.api.ServiceRoleResource
+import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.JsonUtils
@@ -14,7 +16,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.repository.RepoRepository
-import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
@@ -24,6 +25,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 仓库service
@@ -35,6 +37,8 @@ import org.springframework.transaction.annotation.Transactional
 class RepositoryService @Autowired constructor(
     private val repoRepository: RepoRepository,
     private val projectService: ProjectService,
+    private val roleResource: ServiceRoleResource,
+    private val userResource: ServiceUserResource,
     private val nodeDao: NodeDao,
     private val mongoTemplate: MongoTemplate
 ) {
@@ -70,28 +74,30 @@ class RepositoryService @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     fun create(repoCreateRequest: RepoCreateRequest) {
-        repoCreateRequest.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, repoCreateRequest.name)
-        projectService.checkProject(repoCreateRequest.projectId)
+        with(repoCreateRequest) {
+            this.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, repoCreateRequest.name)
+            projectService.checkProject(projectId)
 
-        val tRepository = repoCreateRequest.let {
-            TRepository(
-                name = it.name,
-                type = it.type,
-                category = it.category,
-                public = it.public,
-                description = it.description,
-                configuration = objectMapper.writeValueAsString(it.configuration),
-                storageCredentials = it.storageCredentials?.let { property -> objectMapper.writeValueAsString(property) },
-                projectId = it.projectId,
-
-                createdBy = it.operator,
+            val repository = TRepository(
+                name = name,
+                type = type,
+                category = category,
+                public = public,
+                description = description,
+                configuration = objectMapper.writeValueAsString(configuration),
+                storageCredentials = storageCredentials?.let { objectMapper.writeValueAsString(it) },
+                projectId = projectId,
+                createdBy = operator,
                 createdDate = LocalDateTime.now(),
-                lastModifiedBy = it.operator,
+                lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
+            repoRepository.insert(repository)
+            val roleId = roleResource.createRepoManage(projectId, name).data!!
+            userResource.addUserRole(operator, roleId)
+            logger.info("Create repository [$repoCreateRequest] success.")
         }
-        repoRepository.insert(tRepository)
-        logger.info("Create repository [$repoCreateRequest] success.")
+
     }
 
     @Transactional(rollbackFor = [Throwable::class])

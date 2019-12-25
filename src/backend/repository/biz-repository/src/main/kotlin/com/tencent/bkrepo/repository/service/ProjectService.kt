@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.auth.api.ServiceRoleResource
+import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -7,17 +9,19 @@ import com.tencent.bkrepo.repository.model.TProject
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.repository.ProjectRepository
-import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class ProjectService @Autowired constructor(
     private val projectRepository: ProjectRepository,
+    private val roleResource: ServiceRoleResource,
+    private val userResource: ServiceUserResource,
     private val mongoTemplate: MongoTemplate
 ) {
     fun query(name: String): ProjectInfo? {
@@ -33,25 +37,25 @@ class ProjectService @Autowired constructor(
     }
 
     fun create(request: ProjectCreateRequest) {
-        validateParameter(request)
         with(request) {
+            validateParameter(this)
             if (exist(name)) {
                 throw ErrorCodeException(ArtifactMessageCode.PROJECT_EXISTED, name)
             }
-            projectRepository.insert(
-                TProject(
-                    name = name,
-                    displayName = displayName,
-                    description = description,
-
-                    createdBy = operator,
-                    createdDate = LocalDateTime.now(),
-                    lastModifiedBy = operator,
-                    lastModifiedDate = LocalDateTime.now()
-                )
+            val project = TProject(
+                name = name,
+                displayName = displayName,
+                description = description,
+                createdBy = operator,
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = operator,
+                lastModifiedDate = LocalDateTime.now()
             )
+            projectRepository.insert(project)
+            val roleId = roleResource.createProjectManage(name).data!!
+            userResource.addUserRole(operator, roleId)
+            logger.info("Create project [$request] success.")
         }
-        logger.info("Create project [$request] success.")
     }
 
     fun checkProject(name: String) {

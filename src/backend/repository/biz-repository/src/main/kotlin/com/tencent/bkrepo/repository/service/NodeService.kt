@@ -91,9 +91,10 @@ class NodeService @Autowired constructor(
                 Aggregation.group().sum("size").`as`("size")
         )
         val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
-        val size = aggregateResult.mappedResults.takeIf { it.size > 0 }?.run {
-            this[0].getOrDefault("size", 0) as Long
-        } ?: 0
+        val size = if(aggregateResult.mappedResults.size > 0) {
+            aggregateResult.mappedResults[0]["size"] as? Long ?: 0
+        } else 0
+
         return NodeSizeInfo(subNodeCount = count, size = size)
     }
 
