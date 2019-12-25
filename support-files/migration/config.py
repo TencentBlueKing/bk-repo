@@ -1,12 +1,23 @@
-jfrog_aql_template = """
+jfrog_aql_path_template = """
 items.find(
     {{
         "repo":"generic-local",
         "type":"file",
         "$or":[
-            {{"path":{{"$match": "bk-custom/{project}/*"}}}},
-            {{"path":{{"$eq": "bk-custom/{project}"}}}}
+            {{"path":{{"$match": "bk-custom/{project}{path}/*"}}}},
+            {{"path":{{"$eq": "bk-custom/{project}{path}"}}}}
         ]
+    }}
+).include("size","path","name","created_by")
+"""
+
+jfrog_aql_node_template = """
+items.find(
+    {{
+        "repo":"generic-local",
+        "type":"file",
+        "path":"{path}",
+        "name":"{name}"
     }}
 ).include("size","path","name","created_by")
 """
@@ -47,8 +58,22 @@ def jfrog_aql_url():
     return jfrog_config[env]["url"] + "api/search/aql"
 
 
-def jfrog_aql_data():
-    return jfrog_aql_template.format(project=project)
+def jfrog_aql_data(path=None, node=None):
+    if node:
+        node = node.strip("/")
+        path, name = node.rsplit("/", 1)
+        return jfrog_aql_node_template.format(path=path, name=name)
+    else:
+        path = normalized_path(path)
+        return jfrog_aql_path_template.format(project=project, path=path)
+
+
+def normalized_path(path):
+    path = path if path else ""
+    path = path.strip("/")
+    if len(path) > 0:
+        path = "/" + path
+    return path
 
 
 def jfrog_property_url(path, name):
