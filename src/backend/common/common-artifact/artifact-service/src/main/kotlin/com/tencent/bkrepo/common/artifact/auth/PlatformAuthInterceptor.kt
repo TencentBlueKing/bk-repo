@@ -36,7 +36,7 @@ class PlatformAuthInterceptor : HandlerInterceptorAdapter() {
             serviceAccountResource.checkCredential(first, second).data?.run {
                 request.setAttribute(APP_KEY, this)
                 val userId = request.getHeader(AUTH_HEADER_USER_ID)
-                if(userId == null) {
+                if(userId.isNullOrBlank()) {
                     request.setAttribute(USER_KEY, this)
                 } else {
                     checkUserId(userId)
