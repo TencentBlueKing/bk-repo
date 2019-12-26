@@ -39,7 +39,7 @@ abstract class CachedFileStorage<Credentials : StorageCredentials, Client>(
     }
 
     override fun exist(path: String, filename: String, client: Client): Boolean {
-        return fileCache.exist(path, filename) || checkExist(path, filename, client)
+        return checkExist(path, filename, client)
     }
 
     override fun append(path: String, filename: String, inputStream: InputStream, client: Client) {
