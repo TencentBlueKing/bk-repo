@@ -20,7 +20,7 @@ class AuthUtil {
             val token = JwtUtil.sign(user.username , user.password)
             val issuedAt = TimeUtils.getGMTTime()
             //val issuedAt = ""
-            val tokenUrl = String.format("{\"token\": \"%s\", \"access_token\": \"%s\",\"expires_in\": 36000,\"issued_at\": \"%s\"}", token, issuedAt)
+            val tokenUrl = String.format("{\"token\": \"%s\", \"access_token\": \"%s\",\"expires_in\": 36000,\"issued_at\": \"%s\"}", token,token, issuedAt)
             logger.info("ggggggggggggggggggggggggggg {}", tokenUrl)
             return ResponseEntity.ok().header("Content-Type", "application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body(tokenUrl)
         } catch (authException: ClientAuthException) {
