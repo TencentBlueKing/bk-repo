@@ -56,7 +56,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         }
         val userName = JwtUtil.getUserName(token)
         val password = JwtUtil.getPassword(token)
-        logger.debug("auth token {} ,user {}, password {}",token, userName, password)
+        logger.debug("auth token {} ,user {}, password {}", token, userName, password)
         val result = userResource.checkUserToken(userName, password)
         if (result.data == false) {
             throw  ClientAuthException("auth failed")
@@ -73,9 +73,9 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         response.setHeader("Docker-Distribution-Api-Version", "registry/2.0")
         val registryService = "bkrepo"
         val scopeStr = "repository:bkrepo/docker-local/tb:push,pull"
-        response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\",scope=\"%s\"", authUrl, registryService,scopeStr) )
+        response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\",scope=\"%s\"", authUrl, registryService, scopeStr))
         response.contentType = MediaType.APPLICATION_JSON
-        logger.info("aaaaaaaaaaaaaaaaaaaaaa ,{}",String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}", "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL") )
+        logger.info("aaaaaaaaaaaaaaaaaaaaaa ,{}", String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}", "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}", "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.getWriter().flush()
     }
@@ -91,15 +91,10 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
         logger.info("ffffffffffffffffff {} , {}, {}", basicAuthHeader, request.requestURI, request.method)
         if (basicAuthHeader.isNullOrBlank()) {
-            if (request.method != "GET") {
-                logger.info("eeeeeeeeeeeeeee {} , {}, {}", basicAuthHeader, request.requestURI, request.method)
-                if (request.method == "PATCH") {
-                    return JwtAuthCredentials(ANONYMOUS_USER)
-                }
-            }
+            logger.info("eeeeeeeeeeeeeee {} , {}, {}", basicAuthHeader, request.requestURI, request.method)
             throw ClientAuthException("Authorization value is null")
         }
-        if (!basicAuthHeader.startsWith("Bearer ")){
+        if (!basicAuthHeader.startsWith("Bearer ")) {
             logger.info("cccccccccccccccccccccc")
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
