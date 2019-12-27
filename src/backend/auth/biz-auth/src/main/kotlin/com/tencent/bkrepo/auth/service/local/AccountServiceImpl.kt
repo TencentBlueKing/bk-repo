@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.auth.service.local
 
 import com.mongodb.BasicDBObject
-import com.tencent.bkrepo.auth.constant.EMPTY_APPID
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.pojo.Account
@@ -162,7 +161,7 @@ class AccountServiceImpl @Autowired constructor(
         return false
     }
 
-    override fun checkCredential(accessKey: String, secretKey: String): String {
+    override fun checkCredential(accessKey: String, secretKey: String): String? {
         val query = Query.query(
             Criteria.where("credentials.secretKey").`is`(secretKey)
                 .and("credentials.accessKey").`is`(accessKey)

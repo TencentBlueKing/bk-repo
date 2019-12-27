@@ -54,7 +54,7 @@ class ServiceAccountResourceImpl @Autowired constructor(
         return Response(true)
     }
 
-    override fun checkCredential(accesskey: String, secretkey: String): Response<String> {
+    override fun checkCredential(accesskey: String, secretkey: String): Response<String?> {
         val result = accountService.checkCredential(accesskey, secretkey)
         return Response(result)
     }
