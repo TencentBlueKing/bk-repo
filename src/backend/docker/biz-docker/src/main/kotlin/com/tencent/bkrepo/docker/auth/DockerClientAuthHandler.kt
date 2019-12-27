@@ -85,7 +85,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
 //        if (!authEnable) {
 //            return JwtAuthCredentials(ANONYMOUS_USER)
 //        }
-        if (request.method == "PATCH") {
+        if (request.method == "PATCH" || request.method == "PUT") {
             return JwtAuthCredentials(ANONYMOUS_USER)
         }
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
