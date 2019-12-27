@@ -10,10 +10,10 @@ import com.tencent.bkrepo.auth.pojo.CredentialSet
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.service.AccountService
-import com.tencent.bkrepo.auth.util.StrUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import java.time.LocalDateTime
 import java.util.UUID
+import org.apache.commons.lang.RandomStringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -37,9 +37,14 @@ class AccountServiceImpl @Autowired constructor(
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_APPID)
         }
 
-        val accessKey = UUID.randomUUID().toString()
-        val secretKey = StrUtil.generateNonce(30)
-        val credentials = CredentialSet(accessKey = accessKey, secretKey = secretKey, createdAt = LocalDateTime.now(), status = CredentialStatus.ENABLE)
+        val accessKey = UUID.randomUUID().toString().replace("-", "")
+        val secretKey = RandomStringUtils.randomAlphanumeric(30)
+        val credentials = CredentialSet(
+            accessKey = accessKey,
+            secretKey = secretKey,
+            createdAt = LocalDateTime.now(),
+            status = CredentialStatus.ENABLE
+        )
         accountRepository.insert(
             TAccount(
                 appId = request.appId,
@@ -72,7 +77,7 @@ class AccountServiceImpl @Autowired constructor(
         }
 
         val query = Query()
-        query.addCriteria(Criteria.where("appId").`is`(appId))
+        query.addCriteria(Criteria.where(TAccount::appId.name).`is`(appId))
         val update = Update()
         update.set("locked", locked)
         val result = mongoTemplate.updateFirst(query, update, TAccount::class.java)
@@ -89,11 +94,16 @@ class AccountServiceImpl @Autowired constructor(
             throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
         }
 
-        val query = Query.query(Criteria.where("appId").`is`(appId))
+        val query = Query.query(Criteria.where(TAccount::appId.name).`is`(appId))
         val update = Update()
-        val accessKey = "AK:" + UUID.randomUUID().toString()
-        val secretKey = "SK:" + StrUtil.generateNonce(30)
-        val credentials = CredentialSet(accessKey = accessKey, secretKey = secretKey, createdAt = LocalDateTime.now(), status = CredentialStatus.ENABLE)
+        val accessKey = UUID.randomUUID().toString().replace("-", "")
+        val secretKey = RandomStringUtils.randomAlphanumeric(30)
+        val credentials = CredentialSet(
+            accessKey = accessKey,
+            secretKey = secretKey,
+            createdAt = LocalDateTime.now(),
+            status = CredentialStatus.ENABLE
+        )
         update.addToSet("credentials", credentials)
         mongoTemplate.upsert(query, update, TAccount::class.java)
         val result = accountRepository.findOneByAppId(appId) ?: return emptyList()
@@ -116,7 +126,7 @@ class AccountServiceImpl @Autowired constructor(
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
-        val query = Query.query(Criteria.where("appId").`is`(appId))
+        val query = Query.query(Criteria.where(TAccount::appId.name).`is`(appId))
         val s = BasicDBObject()
         s["accessKey"] = accessKey
         val update = Update()
@@ -132,12 +142,16 @@ class AccountServiceImpl @Autowired constructor(
             logger.warn("update account status  [$appId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
         }
-        val accountQuery = Query.query(Criteria.where("appId").`is`(appId)
-            .and("credentials.accessKey").`is`(accessKey))
+        val accountQuery = Query.query(
+            Criteria.where(TAccount::appId.name).`is`(appId)
+                .and("credentials.accessKey").`is`(accessKey)
+        )
         val accountResult = mongoTemplate.findOne(accountQuery, TAccount::class.java)
         if (accountResult != null) {
-            val query = Query.query(Criteria.where("appId").`is`(appId)
-                .and("credentials.accessKey").`is`(accessKey))
+            val query = Query.query(
+                Criteria.where(TAccount::appId.name).`is`(appId)
+                    .and("credentials.accessKey").`is`(accessKey)
+            )
             val update = Update()
             update.set("credentials.$.status", status.toString())
             val result = mongoTemplate.updateFirst(query, update, TAccount::class.java)
@@ -149,8 +163,10 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun checkCredential(accessKey: String, secretKey: String): String {
-        val query = Query.query(Criteria.where("credentials.secretKey").`is`(secretKey)
-            .and("credentials.accessKey").`is`(accessKey))
+        val query = Query.query(
+            Criteria.where("credentials.secretKey").`is`(secretKey)
+                .and("credentials.accessKey").`is`(accessKey)
+        )
         val result = mongoTemplate.findOne(query, TAccount::class.java) ?: return EMPTY_APPID
         return result.appId
     }
