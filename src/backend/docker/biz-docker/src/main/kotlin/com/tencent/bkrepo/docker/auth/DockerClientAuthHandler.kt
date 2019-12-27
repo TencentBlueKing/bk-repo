@@ -65,25 +65,26 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         response.status = SC_UNAUTHORIZED
         response.setHeader("Docker-Distribution-Api-Version", "registry/2.0")
         val registryService = "bkrepo"
-        val scopeStr = ""
-        response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\"", authUrl, registryService) + scopeStr)
+        val scopeStr = "repository:bkrepo/docker-local/tb:push,pull"
+        response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\",scope=\"%s\"", authUrl, registryService, scopeStr))
         response.contentType = MediaType.APPLICATION_JSON
         response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}", "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.getWriter().flush()
     }
 
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
-//        if (!authEnable) {
-//            return JwtAuthCredentials(ANONYMOUS_USER)
-//        }
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
-        if (basicAuthHeader.isNullOrBlank()) throw ClientAuthException("Authorization value is null")
-        if (!basicAuthHeader.startsWith("Bearer ")) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
-
+        if (basicAuthHeader.isNullOrBlank()) {
+            throw ClientAuthException("Authorization value is null")
+        }
+        if (!basicAuthHeader.startsWith("Bearer ")) {
+            throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
+        }
         try {
             val token = basicAuthHeader.removePrefix("Bearer ")
             return JwtAuthCredentials(token)
         } catch (exception: Exception) {
+            logger.info("dddddddddddddddddddd")
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
     }
