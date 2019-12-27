@@ -89,6 +89,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
 //            return JwtAuthCredentials(ANONYMOUS_USER)
 //        }
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
+        logger.info("ffffffffffffffffff {} , {}, {}", basicAuthHeader, request.requestURI, request.method)
         if (basicAuthHeader.isNullOrBlank()) {
             logger.info("eeeeeeeeeeeeeee {} , {}, {}", basicAuthHeader, request.requestURI, request.method)
             return JwtAuthCredentials(ANONYMOUS_USER)
