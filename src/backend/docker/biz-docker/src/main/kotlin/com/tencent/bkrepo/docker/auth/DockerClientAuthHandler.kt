@@ -73,7 +73,6 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\"", authUrl, registryService) + scopeStr)
         response.contentType = MediaType.APPLICATION_JSON
         logger.debug("auth failed")
-        logger.info("aaaaaaaaaaaaaaaaaaaaaa")
         response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}", "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.getWriter().flush()
     }
