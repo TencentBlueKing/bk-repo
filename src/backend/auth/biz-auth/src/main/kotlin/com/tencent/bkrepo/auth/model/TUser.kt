@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.auth.model
 
-import org.springframework.data.mongodb.core.mapping.Document
 import com.tencent.bkrepo.auth.pojo.Token
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
 
 /**
  * 角色

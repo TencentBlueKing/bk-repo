@@ -44,7 +44,6 @@ class ServiceAccountResourceImpl @Autowired constructor(
         return Response(result)
     }
 
-
     override fun deleteCredential(appid: String, accesskey: String): Response<List<CredentialSet>> {
         val result = accountService.deleteCredential(appid, accesskey)
         return Response(result)

@@ -1,29 +1,28 @@
 package com.tencent.bkrepo.auth.service.local
 
+import com.mongodb.BasicDBObject
+import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
+import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.Token
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
+import com.tencent.bkrepo.auth.util.DataDigestUtils
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import java.time.LocalDateTime
+import java.util.UUID
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.stereotype.Service
 import org.springframework.data.mongodb.core.query.Update
-import java.time.LocalDateTime
-import java.util.*
-import com.mongodb.BasicDBObject
-import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
-import com.tencent.bkrepo.auth.repository.RoleRepository
-import com.tencent.bkrepo.auth.message.AuthMessageCode
-import com.tencent.bkrepo.auth.util.DataDigestUtils
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import org.slf4j.LoggerFactory
-
+import org.springframework.stereotype.Service
 
 @Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
@@ -39,7 +38,7 @@ class UserServiceImpl @Autowired constructor(
             logger.warn("create user [${request.userId}]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
         }
-        var pwd :String = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
+        var pwd: String = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
         if (request.pwd != null) {
             pwd = DataDigestUtils.md5FromStr(request.pwd!!)
         }
@@ -68,14 +67,14 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun addUserToRole(userId: String, roleId: String): User? {
-        //check user
+        // check user
         val user = userRepository.findOneByUserId(userId)
         if (user == null) {
             logger.warn(" user not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
-        //check role
+        // check role
         val role = roleRepository.findOneById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")
@@ -92,7 +91,7 @@ class UserServiceImpl @Autowired constructor(
 
     override fun addUserToRoleBatch(IdList: List<String>, roleId: String): Boolean {
         IdList.forEach {
-            //check user
+            // check user
             val user = userRepository.findOneByUserId(it)
             if (user == null) {
                 logger.warn(" user not  exist.")
@@ -100,7 +99,7 @@ class UserServiceImpl @Autowired constructor(
             }
         }
 
-        //check role
+        // check role
         val role = roleRepository.findOneById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")
@@ -118,16 +117,15 @@ class UserServiceImpl @Autowired constructor(
         return false
     }
 
-
     override fun removeUserFromRole(userId: String, roleId: String): User? {
-        //check user
+        // check user
         val user = userRepository.findOneByUserId(userId)
         if (user == null) {
             logger.warn(" user not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
-        //check role
+        // check role
         val role = roleRepository.findOneById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")
@@ -151,7 +149,7 @@ class UserServiceImpl @Autowired constructor(
             }
         }
 
-        //check role
+        // check role
         val role = roleRepository.findOneById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")

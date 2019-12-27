@@ -4,12 +4,16 @@ import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.constant.EMPTY_APPID
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
-import com.tencent.bkrepo.auth.pojo.*
+import com.tencent.bkrepo.auth.pojo.Account
+import com.tencent.bkrepo.auth.pojo.CreateAccountRequest
+import com.tencent.bkrepo.auth.pojo.CredentialSet
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.util.StrUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import java.time.LocalDateTime
+import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -18,9 +22,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
-import java.util.*
-
 
 @Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
@@ -62,7 +63,6 @@ class AccountServiceImpl @Autowired constructor(
         }
         return true
     }
-
 
     override fun updateAccountStatus(appId: String, locked: Boolean): Boolean {
         val account = accountRepository.findOneByAppId(appId)
@@ -109,7 +109,6 @@ class AccountServiceImpl @Autowired constructor(
         return account.credentials
     }
 
-
     override fun deleteCredential(appId: String, accessKey: String): List<CredentialSet> {
         val account = accountRepository.findOneByAppId(appId)
         if (account == null) {
@@ -152,7 +151,7 @@ class AccountServiceImpl @Autowired constructor(
     override fun checkCredential(accessKey: String, secretKey: String): String {
         val query = Query.query(Criteria.where("credentials.secretKey").`is`(secretKey)
             .and("credentials.accessKey").`is`(accessKey))
-        val result = mongoTemplate.findOne(query, TAccount::class.java)  ?: return EMPTY_APPID
+        val result = mongoTemplate.findOne(query, TAccount::class.java) ?: return EMPTY_APPID
         return result.appId
     }
 

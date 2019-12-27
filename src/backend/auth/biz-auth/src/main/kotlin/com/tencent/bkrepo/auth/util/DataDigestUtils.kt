@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.auth.util
 
-
 import java.security.MessageDigest
 
 object DataDigestUtils {

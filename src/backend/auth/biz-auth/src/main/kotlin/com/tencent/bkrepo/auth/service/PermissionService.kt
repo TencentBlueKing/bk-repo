@@ -3,8 +3,8 @@ package com.tencent.bkrepo.auth.service
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 
 interface PermissionService {
     fun checkPermission(request: CheckPermissionRequest): Boolean
@@ -28,5 +28,4 @@ interface PermissionService {
     fun updateRolePermission(id: String, rid: String, actions: List<PermissionAction>): Boolean
 
     fun removeRolePermission(id: String, rid: String): Boolean
-
 }

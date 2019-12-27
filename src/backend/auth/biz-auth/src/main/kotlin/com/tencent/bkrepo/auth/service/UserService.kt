@@ -7,7 +7,6 @@ import com.tencent.bkrepo.auth.pojo.User
 interface UserService {
     fun getUserById(userId: String): User?
 
-
     fun createUser(request: CreateUserRequest): Boolean
 
     fun deleteById(userId: String): Boolean

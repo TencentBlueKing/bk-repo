@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service
 @Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "bkauth")
 class BkUserServiceImpl @Autowired constructor(
-        private val userRepository: UserRepository
+    private val userRepository: UserRepository
 ) {
     fun createUser(request: CreateUserRequest) {
         throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
