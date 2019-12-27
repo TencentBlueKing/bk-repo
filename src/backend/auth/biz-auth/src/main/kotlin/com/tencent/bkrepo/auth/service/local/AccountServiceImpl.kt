@@ -167,7 +167,7 @@ class AccountServiceImpl @Autowired constructor(
             Criteria.where("credentials.secretKey").`is`(secretKey)
                 .and("credentials.accessKey").`is`(accessKey)
         )
-        val result = mongoTemplate.findOne(query, TAccount::class.java) ?: return EMPTY_APPID
+        val result = mongoTemplate.findOne(query, TAccount::class.java) ?: return null
         return result.appId
     }
 
