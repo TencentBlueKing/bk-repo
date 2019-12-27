@@ -22,10 +22,19 @@ class PypiResourceImpl : PypiResource {
     @Autowired
     private lateinit var pypiService: PypiService
 
+//    @ResponseBody
+//    override fun update(action: String, artifactFileMap: ArtifactFileMap) {
+//        println(action)
+//        println(artifactFileMap.keys)
+//    }
+
     @ResponseBody
-    override fun update(action: String, artifactFileMap: ArtifactFileMap) {
-        println(action)
-        println(artifactFileMap.keys)
+    override fun upload(
+        pypiArtifactInfo: PypiArtifactInfo,
+        artifactFileMap: ArtifactFileMap
+
+    ) {
+        pypiService.upload(pypiArtifactInfo, artifactFileMap)
     }
 
     override fun root(map: ModelMap) = "welcome"

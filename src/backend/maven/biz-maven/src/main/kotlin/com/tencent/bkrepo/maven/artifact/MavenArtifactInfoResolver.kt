@@ -3,7 +3,8 @@ package com.tencent.bkrepo.maven.artifact
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.LinkedList
+import java.util.StringTokenizer
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -14,7 +15,7 @@ import javax.servlet.http.HttpServletRequest
 @Resolver(MavenArtifactInfo::class)
 class MavenArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest): MavenArtifactInfo {
-        val uri= request.requestURI
+        val uri = request.requestURI
         val pathElements = LinkedList<String>()
         val tokenizer = StringTokenizer(uri, "/")
         while (tokenizer.hasMoreTokens()) {
@@ -23,7 +24,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
         if (pathElements.size < 3) {
             logger.debug("Cannot build MavenArtifactInfo from '{}'. The groupId, artifactId and version are unreadable.",
                     uri)
-            return MavenArtifactInfo("","","","","","")
+            return MavenArtifactInfo("", "", "", "", "", "")
         }
         var pos = pathElements.size - 2
 
@@ -41,15 +42,14 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
 
         val mavenArtifactInfo = MavenArtifactInfo(projectId, repoName, artifactUri, groupId, artifactId, version)
 
-        require(mavenArtifactInfo.isValid()){
+        require(mavenArtifactInfo.isValid()) {
             throw IllegalArgumentException("Invalid unit info for '${mavenArtifactInfo.artifactUri}'.")
         }
 
         return mavenArtifactInfo
-
     }
 
-    companion object{
+    companion object {
         private val logger = LoggerFactory.getLogger(MavenArtifactInfoResolver::class.java)
     }
 }

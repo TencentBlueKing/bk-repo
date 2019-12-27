@@ -5,14 +5,11 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.pypi.artifact.PackagesArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.PackagesArtifactInfo.Companion.PACKAGES_MAPPING_URI
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
-import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_PACKAGES_MAPPING_URI
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_ROOT_MAPPING_URI
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_SIMPLE_MAPPING_URI
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * 下载接口
@@ -22,8 +19,16 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 interface PypiResource {
 
+//    @PostMapping(PYPI_ROOT_MAPPING_URI)
+//    fun update(@RequestParam(":action") action: String, artifactFileMap: ArtifactFileMap)
+
     @PostMapping(PYPI_ROOT_MAPPING_URI)
-    fun update(@RequestParam(":action") action: String, artifactFileMap: ArtifactFileMap)
+    fun upload(@ArtifactPathVariable
+        pypiArtifactInfo: PypiArtifactInfo,
+        artifactFileMap: ArtifactFileMap
+        )
+
+//    @GetMapping()
 
     @GetMapping(PYPI_ROOT_MAPPING_URI)
     fun root(map: ModelMap): String
