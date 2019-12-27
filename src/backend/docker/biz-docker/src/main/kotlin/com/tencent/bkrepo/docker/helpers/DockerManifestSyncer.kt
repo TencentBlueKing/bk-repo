@@ -1,13 +1,12 @@
 package com.tencent.bkrepo.docker.helpers
 
-
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
 import com.tencent.bkrepo.docker.context.WriteContext
-import com.tencent.bkrepo.docker.util.DockerSchemaUtils
-import com.tencent.bkrepo.docker.util.DockerUtils
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
+import com.tencent.bkrepo.docker.util.DockerSchemaUtils
+import com.tencent.bkrepo.docker.util.DockerUtils
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import org.apache.commons.lang.StringUtils
@@ -43,7 +42,7 @@ class DockerManifestSyncer() {
                     } else {
                         log.debug("Blob temp file '{}' doesn't exist in temp, trying other tags", tempBlobPath)
                         val targetPath = "/$dockerRepo/$tag/"
-                        if (!this.copyBlobFromFirstReadableDockerRepo(repo, projectId,repoName,dockerRepo,blobFilename, targetPath)) {
+                        if (!this.copyBlobFromFirstReadableDockerRepo(repo, projectId, repoName, dockerRepo, blobFilename, targetPath)) {
                             log.error("Could not find temp blob '{}'", tempBlobPath)
                             return false
                         }
@@ -54,7 +53,7 @@ class DockerManifestSyncer() {
             }
         }
 
-        //this.removeUnreferencedBlobs(repo, "$dockerRepo/$tag", info)
+        // this.removeUnreferencedBlobs(repo, "$dockerRepo/$tag", info)
         log.debug("Finished syncing docker repository blobs")
         return true
     }
@@ -115,7 +114,7 @@ class DockerManifestSyncer() {
         try {
             repo.move(projectId, repoName, tempBlobPath, finalBlobPath)
         } finally {
-            //(repo.getWorkContextC() as DockerWorkContext).unsetSystem()
+            // (repo.getWorkContextC() as DockerWorkContext).unsetSystem()
         }
     }
 

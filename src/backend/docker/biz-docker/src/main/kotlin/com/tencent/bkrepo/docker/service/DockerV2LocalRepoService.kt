@@ -1,53 +1,54 @@
 package com.tencent.bkrepo.docker.service
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
-import com.tencent.bkrepo.docker.exception.DockerNotFoundException
-import com.tencent.bkrepo.docker.exception.DockerSyncManifestException
-import com.tencent.bkrepo.docker.manifest.ManifestDeserializer
-import com.tencent.bkrepo.docker.manifest.ManifestListSchema2Deserializer
-import com.tencent.bkrepo.docker.manifest.ManifestType
 import com.tencent.bkrepo.docker.artifact.Artifact
+import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.UploadContext
-import com.tencent.bkrepo.docker.util.DockerSchemaUtils
-import com.tencent.bkrepo.docker.util.DockerUtils
-import com.tencent.bkrepo.docker.util.JsonUtil
+import com.tencent.bkrepo.docker.errors.DockerV2Errors
+import com.tencent.bkrepo.docker.exception.DockerNotFoundException
+import com.tencent.bkrepo.docker.exception.DockerSyncManifestException
+import com.tencent.bkrepo.docker.helpers.DockerCatalogTagsSlicer
 import com.tencent.bkrepo.docker.helpers.DockerManifestDigester
 import com.tencent.bkrepo.docker.helpers.DockerManifestSyncer
 import com.tencent.bkrepo.docker.helpers.DockerPaginationElementsHolder
-import com.tencent.bkrepo.docker.helpers.DockerCatalogTagsSlicer
 import com.tencent.bkrepo.docker.helpers.DockerSearchBlobPolicy
+import com.tencent.bkrepo.docker.manifest.ManifestDeserializer
+import com.tencent.bkrepo.docker.manifest.ManifestListSchema2Deserializer
+import com.tencent.bkrepo.docker.manifest.ManifestType
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
-import com.tencent.bkrepo.docker.errors.DockerV2Errors
 import com.tencent.bkrepo.docker.response.CatalogResponse
 import com.tencent.bkrepo.docker.response.TagsResponse
+import com.tencent.bkrepo.docker.util.DockerSchemaUtils
+import com.tencent.bkrepo.docker.util.DockerUtils
+import com.tencent.bkrepo.docker.util.JsonUtil
 import com.tencent.bkrepo.docker.util.RepoUtil
-import org.apache.commons.lang.StringUtils
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.net.URI
-import java.util.*
+import java.util.Objects
+import java.util.UUID
 import java.util.function.Predicate
 import java.util.regex.Pattern
 import javax.servlet.http.HttpServletRequest
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.UriBuilder
 import kotlin.collections.HashMap
+import kotlin.streams.toList
 import org.apache.commons.io.IOUtils
 import org.apache.commons.io.output.NullOutputStream
+import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import org.springframework.http.MediaType
-import kotlin.streams.toList
 
 @Service
 class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactoryService) : DockerV2RepoService {
@@ -74,7 +75,6 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
     override fun ping(): ResponseEntity<Any> {
         return ResponseEntity.ok().header("Content-Type", "application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body("{}")
     }
-
 
     override fun getTags(projectId: String, repoName: String, dockerRepo: String, maxEntries: Int, lastEntry: String): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
@@ -464,7 +464,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
                 var file = this.repo.download(context)
                 httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
                 httpHeaders.set("Docker-Content-Digest", digest.toString())
-                val resource = InputStreamResource(file.inputStream());
+                val resource = InputStreamResource(file.inputStream())
                 return ResponseEntity.ok()
                     .headers(httpHeaders)
                     .contentLength(file.length())

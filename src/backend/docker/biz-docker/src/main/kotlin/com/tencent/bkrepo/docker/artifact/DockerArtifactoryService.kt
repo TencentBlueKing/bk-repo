@@ -1,26 +1,29 @@
 package com.tencent.bkrepo.docker.artifact
 
-import com.tencent.bkrepo.docker.exception.DockerRepoNotFoundException
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.util.DataDigestUtils
 import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.context.WriteContext
+import com.tencent.bkrepo.docker.exception.DockerFileReadFailedException
+import com.tencent.bkrepo.docker.exception.DockerFileSaveFailedException
+import com.tencent.bkrepo.docker.exception.DockerMoveFileFailedException
+import com.tencent.bkrepo.docker.exception.DockerRepoNotFoundException
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
-import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.docker.exception.*
 import java.io.File
+import java.io.FileOutputStream
 import java.io.InputStream
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -28,7 +31,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.FileOutputStream
 
 @Service
 class DockerArtifactoryService @Autowired constructor(
@@ -41,12 +43,10 @@ class DockerArtifactoryService @Autowired constructor(
 
     protected lateinit var context: DockerWorkContext
 
-
     @Value("\${storage.localTempPath}")
     private var localPath: String = ""
 
     lateinit var userId: String
-
 
     init {
         this.context = DockerWorkContext()
@@ -80,7 +80,6 @@ class DockerArtifactoryService @Autowired constructor(
         return File(fullPath).inputStream()
     }
 
-
     fun readGlobal(context: DownloadContext): InputStream {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
@@ -97,7 +96,6 @@ class DockerArtifactoryService @Autowired constructor(
     fun getWorkContextC(): DockerWorkContext {
         return this.context
     }
-
 
     fun write(context: WriteContext) {
         // check the repository
@@ -124,7 +122,6 @@ class DockerArtifactoryService @Autowired constructor(
             logger.warn("user[$context.userId] write file [$context.path] failed: [${result.code}, ${result.message}]")
             throw DockerFileSaveFailedException(context.path)
         }
-
     }
 
     fun delete(path: String): Boolean {
@@ -149,7 +146,6 @@ class DockerArtifactoryService @Autowired constructor(
         var file = fileStorage.load(context.sha256, repository.storageCredentials)
         return file!!
     }
-
 
     @Transactional(rollbackFor = [Throwable::class])
     fun upload(context: UploadContext): ResponseEntity<Any> {
@@ -217,7 +213,6 @@ class DockerArtifactoryService @Autowired constructor(
         return ResponseEntity.ok().body("ok")
     }
 
-
     fun copy(projectId: String, repoName: String, srcPath: String, destPath: String): Boolean {
         val copyRequest = NodeCopyRequest(
             srcProjectId = projectId,
@@ -238,11 +233,10 @@ class DockerArtifactoryService @Autowired constructor(
         val result = nodeResource.rename(renameRequest)
         if (result.isNotOk()) {
             logger.warn("user[$userId] rename  [$from] to [$to] failed: [${result.code}, ${result.message}]")
-            throw DockerMoveFileFailedException(from+"->"+to)
+            throw DockerMoveFileFailedException(from + "->" + to)
         }
         return true
     }
-
 
     fun setAttributes(projectId: String, repoName: String, path: String, keyValueMap: Map<String, String>) {
         metadataService.save(MetadataSaveRequest(projectId, repoName, path, keyValueMap))
@@ -273,7 +267,6 @@ class DockerArtifactoryService @Autowired constructor(
     fun canDelete(path: String): Boolean {
         return true
     }
-
 
     fun artifactLocal(projectId: String, repoName: String, dockerRepo: String): Artifact? {
         val fullPath = "$localPath/$projectId/$repoName/$dockerRepo"
@@ -322,7 +315,7 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
     fun findArtifactsByName(projectId: String, repoName: String, fileName: String): List<Map<String, Any>> {
-        //find artifacts by name
+        // find artifacts by name
         val projectRule = Rule.QueryRule("projectId", projectId)
         val repoNameRule = Rule.QueryRule("repoName", repoName)
         val nameRule = Rule.QueryRule("name", fileName)
@@ -348,7 +341,6 @@ class DockerArtifactoryService @Autowired constructor(
         }
         return nodes
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(DockerArtifactoryService::class.java)

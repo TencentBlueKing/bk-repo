@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.docker.config
 
-
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.ClientAuthConfig
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -17,9 +16,8 @@ class DockerArtifactConfiguration : ArtifactConfiguration {
     override fun getRepositoryType() = RepositoryType.DOCKER
 
     override fun getClientAuthConfig() = ClientAuthConfig(includePatterns = listOf("/**"),
-            excludePatterns = listOf("/v2/auth","/v2/_catalog","/v2/*/*/*/tags/list"))
+            excludePatterns = listOf("/v2/auth", "/v2/_catalog", "/v2/*/*/*/tags/list"))
 
 //    override fun getClientAuthConfig() = ClientAuthConfig(includePatterns = emptyList(),
 //        excludePatterns = listOf("/**"))
 }
-

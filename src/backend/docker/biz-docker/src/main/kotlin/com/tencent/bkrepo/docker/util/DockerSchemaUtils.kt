@@ -64,7 +64,6 @@ class DockerSchemaUtils {
             manifestStream.use {
                 val byteArray = IOUtils.toByteArray(it)
                 return byteArray
-
             }
         }
 

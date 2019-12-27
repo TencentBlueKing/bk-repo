@@ -1,11 +1,10 @@
 package com.tencent.bkrepo.docker.resource
 
-
 import com.tencent.bkrepo.docker.api.Manifest
 import com.tencent.bkrepo.docker.constant.MANIFEST_PATTERN
+import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.PathUtil
 import com.tencent.bkrepo.docker.util.UserUtil
-import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import javax.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity

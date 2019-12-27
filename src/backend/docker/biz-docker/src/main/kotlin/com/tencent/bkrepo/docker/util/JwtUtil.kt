@@ -3,7 +3,7 @@ package com.tencent.bkrepo.docker.util
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.Claim
-import java.util.*
+import java.util.Date
 
 /**
  * Jwt 工具类
@@ -26,7 +26,7 @@ open class JwtUtil {
          * @param password 用户密码
          * @return token令牌
          */
-        fun sign(username: String,password:String): String {
+        fun sign(username: String, password: String): String {
             var createDate = Date()
             var expireDate = Date(System.currentTimeMillis() + expireTime)
 
@@ -71,7 +71,7 @@ open class JwtUtil {
          * @param token 令牌
          * @return 用户名
          */
-        fun getUserName(token: String) :String {
+        fun getUserName(token: String): String {
             return JWT.decode(token).getClaim("username").asString()
         }
 
@@ -81,10 +81,9 @@ open class JwtUtil {
          * @param token 令牌
          * @return 密码
          */
-        fun getPassword(token: String) :String {
+        fun getPassword(token: String): String {
             return JWT.decode(token).getClaim("password").asString()
         }
-
 
         /**
          * 刷新token
@@ -107,7 +106,5 @@ open class JwtUtil {
                     .withClaim("password", password)
                     .sign(Algorithm.HMAC512(secret))
         }
-
     }
-
 }

@@ -1,10 +1,9 @@
 package com.tencent.bkrepo.docker.manifest
 
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
-// import com.tencent.bkrepo.docker.repomd.Repo
-import com.tencent.bkrepo.docker.util.DockerSchemaUtils
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
+import com.tencent.bkrepo.docker.util.DockerSchemaUtils
 
 class ManifestDeserializer {
     companion object {
@@ -19,7 +18,7 @@ class ManifestDeserializer {
                     return ManifestSchema2Deserializer.deserialize(manifestBytes, manifestJsonBytes, dockerRepo, tag, digest)
                 }
                 ManifestType.Schema2List -> {
-                    val schema2Path = DockerSchemaUtils.fetchSchema2Path(repo,projectId,repoName, dockerRepo, manifestBytes, true)
+                    val schema2Path = DockerSchemaUtils.fetchSchema2Path(repo, projectId, repoName, dockerRepo, manifestBytes, true)
                     manifestBytes = DockerSchemaUtils.fetchSchema2Manifest(repo, schema2Path)
                     return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 }

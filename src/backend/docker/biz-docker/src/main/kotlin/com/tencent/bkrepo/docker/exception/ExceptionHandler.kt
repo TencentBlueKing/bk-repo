@@ -4,7 +4,7 @@ import com.netflix.client.ClientException
 import com.netflix.hystrix.exception.HystrixRuntimeException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
-import com.tencent.bkrepo.docker.errors.*
+import com.tencent.bkrepo.docker.errors.DockerV2Errors
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -22,28 +22,28 @@ class ExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleExternalErrorCodeException(exception: ExternalErrorCodeException): ResponseEntity<Any> {
         logger.warn("Failed with external error code exception:[${exception.errorCode}-${exception.errorMessage}]")
-        return  DockerV2Errors.internalError(exception.errorMessage)
+        return DockerV2Errors.internalError(exception.errorMessage)
     }
 
     @ExceptionHandler(ErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleErrorCodeException(exception: ErrorCodeException): ResponseEntity<Any> {
         logger.warn("Failed with error code exception:[${exception.message}]")
-        return  DockerV2Errors.internalError(exception.message)
+        return DockerV2Errors.internalError(exception.message)
     }
 
     @ExceptionHandler(ClientException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleClientException(exception: ClientException): ResponseEntity<Any> {
         logger.error("Failed with client exception:[$exception]", exception)
-        return  DockerV2Errors.internalError(exception.errorMessage)
+        return DockerV2Errors.internalError(exception.errorMessage)
     }
 
     @ExceptionHandler(HystrixRuntimeException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleHystrixRuntimeException(exception: HystrixRuntimeException): ResponseEntity<Any> {
         logger.error("Failed with hystrix exception:[${exception.failureType}-${exception.message}]", exception)
-        return  DockerV2Errors.internalError(exception.message)
+        return DockerV2Errors.internalError(exception.message)
     }
 
     @ExceptionHandler(Exception::class)
@@ -52,17 +52,17 @@ class ExceptionHandler {
         // ribbon 会将ClientException 包装为RuntimeException
         if (exception.cause is ClientException) {
             logger.error("Failed with client exception:[${exception.cause}]")
-            return  DockerV2Errors.internalError(exception.message)
+            return DockerV2Errors.internalError(exception.message)
         }
         logger.error("Failed with other exception:[${exception.message}]", exception)
-        return  DockerV2Errors.internalError(exception.message)
+        return DockerV2Errors.internalError(exception.message)
     }
 
     @ExceptionHandler(DockerRepoNotFoundException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleExternalDockeReporNotFoundExceptionn(exception: DockerRepoNotFoundException): ResponseEntity<Any> {
         logger.warn("Failed with repo not found   exception:[${exception.message}]")
-        return  DockerV2Errors.repoInvalid(exception.message!!)
+        return DockerV2Errors.repoInvalid(exception.message!!)
     }
 
     companion object {

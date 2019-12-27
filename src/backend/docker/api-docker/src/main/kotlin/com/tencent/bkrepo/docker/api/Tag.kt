@@ -4,7 +4,11 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestAttribute
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 /**
  *  docker 查询所有的tag
@@ -14,7 +18,6 @@ import org.springframework.web.bind.annotation.*
  */
 @Api("docker镜像blob文件处理接口")
 @RequestMapping("/v2/")
-
 interface Tag {
 
     @ApiOperation("列出指定name的所有tag")

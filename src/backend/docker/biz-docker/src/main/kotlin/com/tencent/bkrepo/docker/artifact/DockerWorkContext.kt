@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.docker.artifact
 
-//import com.tencent.bkrepo.docker.DockerWorkContext
+// import com.tencent.bkrepo.docker.DockerWorkContext
 import java.io.InputStream
 import java.net.URI
 import org.slf4j.LoggerFactory
@@ -29,7 +29,6 @@ class DockerWorkContext() {
     fun isBlobReadable(blob: Artifact): Boolean {
         return true
     }
-
 
     fun cleanup(repoId: String, uploadsPath: String) {
         return

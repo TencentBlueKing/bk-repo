@@ -1,32 +1,28 @@
 package com.tencent.bkrepo.docker.auth
 
+import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.BasicAuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
-import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.docker.util.JwtUtil
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
-import com.tencent.bkrepo.common.artifact.auth.BasicAuthCredentials
-import com.tencent.bkrepo.docker.constant.AUTH_DISABLE
-import com.tencent.bkrepo.docker.constant.AUTH_ENABLE
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Component
 import java.lang.Exception
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
 import javax.ws.rs.core.MediaType
-
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
 
 @Component
 class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAuthHandler {
@@ -53,10 +49,10 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         val token = (authCredentials as JwtAuthCredentials).token
         val userName = JwtUtil.getUserName(token)
         val password = JwtUtil.getPassword(token)
-        logger.debug("auth token {} ,user {}, password {}",token, userName, password)
+        logger.debug("auth token {} ,user {}, password {}", token, userName, password)
         val result = userResource.checkUserToken(userName, password)
         if (result.data == false) {
-            throw  ClientAuthException("auth failed")
+            throw ClientAuthException("auth failed")
         }
         return userName
     }
@@ -72,7 +68,6 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         val scopeStr = ""
         response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\"", authUrl, registryService) + scopeStr)
         response.contentType = MediaType.APPLICATION_JSON
-        logger.debug("auth failed")
         response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}", "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.getWriter().flush()
     }
@@ -114,9 +109,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
                 throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
             }
         }
-
     }
-
 }
 
 data class JwtAuthCredentials(val token: String) : AuthCredentials()

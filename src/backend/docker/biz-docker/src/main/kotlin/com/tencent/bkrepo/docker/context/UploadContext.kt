@@ -17,7 +17,7 @@ class UploadContext {
     private val requestHeaders = Maps.newHashMap<String, String>()
     var attributes: SetMultimap<String, String> = LinkedHashMultimap.create()
 
-    constructor(projectId:String,repoName: String,path: String) {
+    constructor(projectId: String, repoName: String, path: String) {
         this.projectId = projectId
         this.repoName = repoName
         this.path = path

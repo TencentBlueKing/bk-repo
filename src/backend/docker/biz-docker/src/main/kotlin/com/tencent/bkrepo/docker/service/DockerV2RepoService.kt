@@ -3,7 +3,6 @@ package com.tencent.bkrepo.docker.service
 import com.tencent.bkrepo.docker.model.DockerDigest
 import java.io.InputStream
 import javax.servlet.http.HttpServletRequest
-import javax.ws.rs.core.Response
 import org.springframework.http.ResponseEntity
 
 interface DockerV2RepoService {

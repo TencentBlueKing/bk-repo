@@ -40,7 +40,6 @@ class Artifact(projectId: String, repoName: String, name: String) {
         return this
     }
 
-
     fun getLength(): Long {
         return this.contentLength
     }

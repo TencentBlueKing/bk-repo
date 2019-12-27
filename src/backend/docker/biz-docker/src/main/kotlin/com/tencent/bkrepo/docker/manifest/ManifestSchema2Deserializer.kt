@@ -1,18 +1,17 @@
 package com.tencent.bkrepo.docker.manifest
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.tencent.bkrepo.docker.util.JsonUtil
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.DockerImageMetadata
 import com.tencent.bkrepo.docker.model.ManifestMetadata
+import com.tencent.bkrepo.docker.util.JsonUtil
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.Collections
-import kotlin.collections.Map.Entry
+import java.util.stream.StreamSupport
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
-import java.util.stream.StreamSupport
 
 class ManifestSchema2Deserializer {
     companion object {
@@ -44,9 +43,8 @@ class ManifestSchema2Deserializer {
                 // TODO: resolve params pass
                 val iterable = Iterable<JsonNode> { history.elements() }
                 historyCounter = StreamSupport.stream(iterable.spliterator(), false).filter { notEmptyHistoryLayer(it) }.count()
-
             }
-            val foreignHasHistory = layers.size().toLong()  == historyCounter
+            val foreignHasHistory = layers.size().toLong() == historyCounter
             var iterationsCounter = 0
             var historyIndex = 0
 
