@@ -75,7 +75,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         val scopeStr = "repository:samalba/my-app:pull,push"
         response.setHeader(BASIC_AUTH_RESPONSE_HEADER, String.format("Bearer realm=\"%s\",service=\"%s\",scope=\"%s\"", authUrl, registryService,scopeStr) )
         response.contentType = MediaType.APPLICATION_JSON
-        logger.info("aaaaaaaaaaaaaaaaaaaaaa")
+        logger.info("aaaaaaaaaaaaaaaaaaaaaa ,{}",String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}", "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL") )
         response.getWriter().print(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}", "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.getWriter().flush()
     }
