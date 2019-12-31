@@ -16,4 +16,5 @@ interface ArtifactFile {
     fun getSize(): Long
     fun getTempFile(): File
     fun delete()
+    fun isInMemory(): Boolean
 }

@@ -4,7 +4,7 @@ buildscript {
         springBootVersion = '2.1.5.RELEASE'
         springCloudVersion = 'Greenwich.SR2'
 
-        ktlintVersion = "0.34.2"
+        ktlintVersion = "0.36.0"
         swaggerCoreVersion = "1.5.22"
         swaggerFoxVersion = "2.9.2"
         jasyptVersion = "2.1.2"

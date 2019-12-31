@@ -7,7 +7,6 @@ import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import org.springframework.beans.factory.annotation.Autowired
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  *
@@ -38,7 +37,7 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String {
         with(authCredentials as BasicAuthCredentials) {
             val response = serviceUserResource.checkUserToken(username, password)
-            if(response.data == true) {
+            if (response.data == true) {
                 return username
             } else {
                 throw ClientAuthException("Authorization value check failed.")

@@ -9,15 +9,15 @@ import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.repository.model.TShareRecord
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 /**
  * 文件分享 service
@@ -68,7 +68,8 @@ class ShareService @Autowired constructor(
             if (shareRecord.expireDate?.isBefore(LocalDateTime.now()) == true) {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXPIRED, token)
             }
-            val context = ArtifactDownloadContext()
+            val repo = repositoryService.detail(projectId, repoName) ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+            val context = ArtifactDownloadContext(repo)
             val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
             repository.download(context)
         }

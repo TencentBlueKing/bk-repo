@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.resolve.file
+package com.tencent.bkrepo.common.artifact.file
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import java.io.ByteArrayInputStream
@@ -57,8 +57,10 @@ class OctetStreamArtifactFile(
         return ByteArrayInputStream(cachedContent)
     }
 
-    override fun getOutputStream(): OutputStream {
-        return outputStream
+    override fun getOutputStream(): OutputStream = outputStream
+
+    override fun isInMemory(): Boolean {
+        return if (cachedContent != null) true else outputStream.isInMemory
     }
 
     override fun getSize(): Long {
@@ -106,10 +108,6 @@ class OctetStreamArtifactFile(
             id = "00000000$id".substring(id.length)
         }
         return id
-    }
-
-    private fun isInMemory(): Boolean {
-        return if (cachedContent != null) true else outputStream.isInMemory
     }
 
     private fun getStoreLocation(): File? {

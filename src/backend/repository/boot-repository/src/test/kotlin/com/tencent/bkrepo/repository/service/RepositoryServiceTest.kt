@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.pojo.configuration.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.storage.pojo.LocalStorageCredentials
+import com.tencent.bkrepo.common.artifact.pojo.configuration.LocalConfiguration
+import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import org.junit.jupiter.api.AfterEach
@@ -95,7 +95,7 @@ internal class RepositoryServiceTest @Autowired constructor(
     @Test
     fun create() {
         val request = createRequest().apply {
-            storageCredentials = LocalStorageCredentials().apply { path = "path" }
+            storageCredentials = FileSystemCredentials().apply { path = "path" }
         }
         repositoryService.create(request)
         val repository = repositoryService.detail(projectId, repoName, "GENERIC")!!
@@ -105,8 +105,8 @@ internal class RepositoryServiceTest @Autowired constructor(
         assertEquals(true, repository.public)
         assertEquals(projectId, repository.projectId)
         assertEquals("简单描述", repository.description)
-        assertTrue(repository.storageCredentials is LocalStorageCredentials)
-        val storageCredentials = repository.storageCredentials as LocalStorageCredentials
+        assertTrue(repository.storageCredentials is FileSystemCredentials)
+        val storageCredentials = repository.storageCredentials as FileSystemCredentials
         assertEquals("path", storageCredentials.path)
         assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
     }

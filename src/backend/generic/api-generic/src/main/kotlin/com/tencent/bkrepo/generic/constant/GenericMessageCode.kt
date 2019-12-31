@@ -14,5 +14,5 @@ enum class GenericMessageCode(private val businessCode: Int, private val key: St
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key
-    override fun getModuleCode() = 11
+    override fun getModuleCode() = 12
 }

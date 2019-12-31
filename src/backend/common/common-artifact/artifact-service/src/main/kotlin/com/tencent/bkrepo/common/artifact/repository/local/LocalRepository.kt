@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
-import com.tencent.bkrepo.common.storage.core.FileStorage
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import java.io.File
@@ -21,12 +21,12 @@ abstract class LocalRepository : AbstractArtifactRepository {
     lateinit var nodeResource: NodeResource
 
     @Autowired
-    lateinit var fileStorage: FileStorage
+    lateinit var storageService: StorageService
 
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
         nodeResource.create(nodeCreateRequest)
-        fileStorage.store(nodeCreateRequest.sha256!!, context.getArtifactFile().getInputStream(), context.storageCredentials)
+        storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
     }
 
     override fun onDownload(context: ArtifactDownloadContext): File? {
@@ -37,7 +37,7 @@ abstract class LocalRepository : AbstractArtifactRepository {
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
 
         node.nodeInfo.takeIf { !it.folder } ?: return null
-        return fileStorage.load(node.nodeInfo.sha256!!, context.storageCredentials)
+        return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
     }
 
     /**

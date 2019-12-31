@@ -1,27 +1,45 @@
 package com.tencent.bkrepo.common.storage.core
 
-import com.tencent.bkrepo.common.storage.pojo.StorageCredentials
+import com.tencent.bkrepo.common.storage.core.cache.CacheProperties
+import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.storage.credentials.StorageType
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.NestedConfigurationProperty
 
 /**
- * 存储基本配置属性
+ * 存储属性配置
  *
  * @author: carrypan
- * @date: 2019-09-25
+ * @date: 2019/12/26
  */
-abstract class StorageProperties {
+@ConfigurationProperties("storage")
+data class StorageProperties(
+    /**
+     * 存储类型
+     */
+    var type: StorageType = StorageType.FILESYSTEM,
 
-        open var clientCache: ClientCache = ClientCache()
+    /**
+     * 缓存配置
+     */
+    @NestedConfigurationProperty
+    var cache: CacheProperties = CacheProperties(),
 
-        open lateinit var credentials: StorageCredentials
+    /**
+     * 文件系统存储配置
+     */
+    @NestedConfigurationProperty
+    var filesystem: FileSystemCredentials = FileSystemCredentials(),
 
-        class ClientCache {
-                /**
-                 * 客户端缓存开关
-                 */
-                var enabled: Boolean = false
-                /**
-                 * 客户端缓存池大小
-                 */
-                var size: Long = 0L
-        }
-}
+    /**
+     * 内部cos存储配置
+     */
+    @NestedConfigurationProperty
+    var innercos: InnerCosCredentials = InnerCosCredentials(),
+
+    /**
+     * client缓存最大数量
+     */
+    var maxClientPoolSize: Long = 10
+)

@@ -1,10 +1,11 @@
-package com.tencent.bkrepo.common.artifact.resolve.file
+package com.tencent.bkrepo.common.artifact.file
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.apache.commons.fileupload.disk.DiskFileItem
 import org.apache.commons.fileupload.servlet.FileCleanerCleanup
 import org.apache.commons.io.FileCleaningTracker
+import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.context.request.ServletRequestAttributes
 
 /**
  * ArtifactFileItem工厂方法
@@ -27,7 +28,7 @@ object ArtifactFileFactory {
     }
 
     private fun getFileCleaningTracker(): FileCleaningTracker {
-        val context = HttpContextHolder.getRequest().servletContext
+        val context = (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes).request.servletContext
         var tracker = context.getAttribute(FileCleanerCleanup.FILE_CLEANING_TRACKER_ATTRIBUTE) as? FileCleaningTracker
         if (tracker == null) {
             tracker = FileCleaningTracker()
