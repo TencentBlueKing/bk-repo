@@ -6,6 +6,7 @@ import io.swagger.annotations.ApiParam
 import javax.servlet.http.HttpServletRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 
 /**
@@ -22,17 +23,8 @@ interface Base {
     fun ping(): ResponseEntity<Any>
 
     @ApiOperation("校验仓库版本")
-    @GetMapping("/v3/{projectId}/{repoName}/**/bbs/{name}")
+    @PatchMapping("/v3/bs")
     fun ping2(
-        request: HttpServletRequest,
-        @PathVariable
-        @ApiParam(value = "projectId", required = true)
-        projectId: String,
-        @PathVariable
-        @ApiParam(value = "repoName", required = true)
-        repoName: String,
-        @PathVariable
-        @ApiParam(value = "name", required = true)
-        name: String
+        request: HttpServletRequest
     ): ResponseEntity<Any>
 }

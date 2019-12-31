@@ -12,9 +12,10 @@ class BaseImpl : Base {
         return ResponseEntity.ok().header("Content-Type", "application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body("{}")
     }
 
-    override fun ping2(request: HttpServletRequest, projectId: String, repoName: String, name: String): ResponseEntity<Any> {
-        val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
-        println(restOfTheUrl.replaceAfterLast("/bb", "").removePrefix("/v3/$projectId/$repoName/"))
-        return ResponseEntity.ok().header("Content-Type", "application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body("{}")
+    override fun ping2(request: HttpServletRequest): ResponseEntity<Any> {
+        val data = request.getHeader("test")
+        val result = String.format("{\"test\":\"%s\"}",data)
+        return ResponseEntity.ok().header("Content-Type", "application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body(result)
+
     }
 }
