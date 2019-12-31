@@ -24,7 +24,7 @@ object FileDigestUtils {
     }
 
     private fun digest(inputStreamList: List<InputStream>, messageDigest: MessageDigest): String {
-        inputStreamList.forEach { DigestUtils.updateDigest(messageDigest, it) }
+        inputStreamList.forEach { it.use { inputStream -> DigestUtils.updateDigest(messageDigest, inputStream) } }
         return Hex.encodeHexString(messageDigest.digest())
     }
 }

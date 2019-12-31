@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.resolve.file
+package com.tencent.bkrepo.common.artifact.file
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import java.io.File
@@ -24,10 +24,12 @@ class MultipartArtifactFile(private val diskFileItem: DiskFileItem) : ArtifactFi
 
     override fun delete() = diskFileItem.delete()
 
+    override fun isInMemory() = diskFileItem.isInMemory
+
     /**
      * 该方法在DiskFileItem中为protected，采用反射调用
      */
     override fun getTempFile(): File {
-        return diskFileItem.javaClass.getMethod("getTempFile").invoke(null) as File
+        return diskFileItem.javaClass.getMethod(ArtifactFile::getTempFile.name).invoke(null) as File
     }
 }

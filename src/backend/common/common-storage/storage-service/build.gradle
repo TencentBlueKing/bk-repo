@@ -1,5 +1,7 @@
 dependencies {
     api project(":common:common-storage:storage-api")
+    implementation project(":common:common-artifact:artifact-api")
+
     api "commons-codec:commons-codec"
     api "commons-io:commons-io"
     implementation "org.springframework.boot:spring-boot-starter"

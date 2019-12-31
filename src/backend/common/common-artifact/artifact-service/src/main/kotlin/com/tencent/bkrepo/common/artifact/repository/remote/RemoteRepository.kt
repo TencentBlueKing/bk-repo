@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.remote
 
+import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteCredentialsConfiguration
@@ -8,8 +9,7 @@ import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactReposi
 import com.tencent.bkrepo.common.artifact.repository.http.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.repository.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.repository.http.PROXY_AUTHORIZATION
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.storage.core.FileStorage
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -43,7 +43,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
     lateinit var nodeResource: NodeResource
 
     @Autowired
-    lateinit var fileStorage: FileStorage
+    lateinit var storageService: StorageService
 
     override fun onDownload(context: ArtifactDownloadContext): File? {
         getArtifactCache(context)?.let {
@@ -76,7 +76,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         val createdDate = LocalDateTime.parse(node.nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
-            val file = fileStorage.load(node.nodeInfo.sha256!!, context.storageCredentials)
+            val file = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
             file?.let { logger.debug("Cached remote artifact[${context.artifactInfo.getFullUri()}] is hit") }
             file
         } else null
@@ -91,7 +91,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         if (cacheConfiguration.cacheEnabled) {
             val nodeCreateRequest = getCacheNodeCreateRequest(context, file)
             nodeResource.create(nodeCreateRequest)
-            fileStorage.store(nodeCreateRequest.sha256!!, file.inputStream(), context.storageCredentials)
+            storageService.store(nodeCreateRequest.sha256!!, file, context.storageCredentials)
         }
     }
 
