@@ -20,13 +20,12 @@ import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.pojo.BlockInfo
-import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
+import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 /**
@@ -40,7 +39,7 @@ class UploadService @Autowired constructor(
     private val nodeResource: NodeResource,
     private val storageService: StorageService
 ) {
-    @Value("\${upload.transaction.expires:43200}")
+
     private val uploadTransactionExpires: Long = 3600 * 12
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -63,7 +62,10 @@ class UploadService @Autowired constructor(
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
             }
             val uploadId = storageService.createBlockId()
-            val uploadTransaction = UploadTransactionInfo(uploadId = uploadId, expires = uploadTransactionExpires)
+            val uploadTransaction = UploadTransactionInfo(
+                uploadId = uploadId,
+                expireSeconds = uploadTransactionExpires
+            )
 
             logger.info("User[$userId] start block upload [${artifactInfo.getFullUri()}] success: $uploadTransaction.")
             return uploadTransaction
@@ -85,7 +87,7 @@ class UploadService @Autowired constructor(
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         }
 
-        val combinedFileInfo = storageService.mergeBlock(uploadId, storageCredentials)
+        val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials)
         // 保存节点
         nodeResource.create(
             NodeCreateRequest(
@@ -93,13 +95,13 @@ class UploadService @Autowired constructor(
                 repoName = artifactInfo.repoName,
                 folder = false,
                 fullPath = artifactInfo.fullPath,
-                sha256 = combinedFileInfo.digest,
+                sha256 = mergedFileInfo.digest,
                 overwrite = true,
-                size = combinedFileInfo.size,
+                size = mergedFileInfo.size,
                 operator = userId
             )
         )
-        logger.info("User[$userId] complete upload [${artifactInfo.getFullUri()}] success")
+        logger.info("User[$userId] complete upload [${artifactInfo.getFullUri()}] success.")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
