@@ -10,6 +10,6 @@ import org.springframework.stereotype.Component
  * @date: 2019/11/26
  */
 @Component
-class MavenArtifactConfiguration: ArtifactConfiguration {
+class MavenArtifactConfiguration : ArtifactConfiguration {
     override fun getRepositoryType() = RepositoryType.MAVEN
 }
