@@ -38,7 +38,7 @@ interface UserNodeResource {
     fun detail(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
-    ): Response<NodeDetail?>
+    ): Response<NodeDetail>
 
     @ApiOperation("创建文件夹")
     @PostMapping(DEFAULT_MAPPING_URI)
