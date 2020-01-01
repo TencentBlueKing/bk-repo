@@ -12,6 +12,7 @@ import com.tencent.bkrepo.common.auth.PermissionService
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.api.UserNodeResource
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -39,11 +40,10 @@ class UserNodeResourceImpl @Autowired constructor(
     private val permissionService: PermissionService
 ) : UserNodeResource {
 
-    override fun detail(userId: String, artifactInfo: ArtifactInfo): Response<NodeDetail?> {
+    override fun detail(userId: String, artifactInfo: ArtifactInfo): Response<NodeDetail> {
         with(artifactInfo) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-            val nodeDetail = nodeService.detail(projectId, repoName, this.artifactUri) ?: throw ErrorCodeException(
-                ArtifactMessageCode.NODE_NOT_FOUND, this.artifactUri)
+            val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
             return Response.success(nodeDetail)
         }
     }
@@ -55,7 +55,7 @@ class UserNodeResourceImpl @Autowired constructor(
                 projectId = projectId,
                 repoName = repoName,
                 folder = true,
-                fullPath = this.artifactUri,
+                fullPath = artifactUri,
                 overwrite = false,
                 operator = userId
             )
@@ -70,7 +70,7 @@ class UserNodeResourceImpl @Autowired constructor(
             val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = this.artifactUri,
+                fullPath = artifactUri,
                 operator = userId
             )
             nodeService.delete(deleteRequest)
@@ -134,8 +134,15 @@ class UserNodeResourceImpl @Autowired constructor(
     override fun computeSize(userId: String, artifactInfo: ArtifactInfo): Response<NodeSizeInfo> {
         with(artifactInfo) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-            val nodeSizeInfo = nodeService.computeSize(projectId, repoName, this.artifactUri)
+            val nodeSizeInfo = nodeService.computeSize(projectId, repoName, artifactUri)
             return Response.success(nodeSizeInfo)
+        }
+    }
+
+    override fun list(userId: String, artifactInfo: ArtifactInfo, includeFolder: Boolean, deep: Boolean): Response<List<NodeInfo>> {
+        with(artifactInfo) {
+            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+            return Response.success(nodeService.list(projectId, repoName, artifactUri, includeFolder, deep))
         }
     }
 
