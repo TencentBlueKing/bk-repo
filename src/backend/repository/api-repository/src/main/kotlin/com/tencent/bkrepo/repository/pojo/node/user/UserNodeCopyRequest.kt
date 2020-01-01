@@ -24,9 +24,9 @@ data class UserNodeCopyRequest(
     @ApiModelProperty("目的仓库名称", required = false)
     override val destRepoName: String? = null,
     @ApiModelProperty("目的路径", required = true)
-    override val destPath: String,
+    override val destFullPath: String,
     @ApiModelProperty("同名文件是否覆盖", required = false)
     override val overwrite: Boolean = false
 ) : CrossRepoNodeRequest, UserRequest {
-    override fun getOperateName() = "copy"
+    override fun getOperateName() = "Copy"
 }

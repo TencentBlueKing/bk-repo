@@ -30,7 +30,6 @@ class StorageAutoConfiguration {
 
     @Bean
     fun fileStorage(properties: StorageProperties): FileStorage {
-        println(properties)
         val fileStorage = when (properties.type) {
             StorageType.FILESYSTEM -> FileSystemStorage()
             StorageType.INNERCOS -> InnerCosFileStorage()

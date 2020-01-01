@@ -19,6 +19,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
@@ -103,7 +104,7 @@ class UserNodeResourceImpl @Autowired constructor(
                 srcFullPath = srcFullPath,
                 destProjectId = destProjectId,
                 destRepoName = destRepoName,
-                destPath = destPath,
+                destFullPath = destFullPath,
                 overwrite = overwrite,
                 operator = userId
             )
@@ -122,7 +123,7 @@ class UserNodeResourceImpl @Autowired constructor(
                 srcFullPath = srcFullPath,
                 destProjectId = destProjectId,
                 destRepoName = destRepoName,
-                destPath = destPath,
+                destFullPath = destFullPath,
                 overwrite = overwrite,
                 operator = userId
             )
@@ -144,6 +145,15 @@ class UserNodeResourceImpl @Autowired constructor(
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             return Response.success(nodeService.list(projectId, repoName, artifactUri, includeFolder, deep))
         }
+    }
+
+    override fun search(userId: String, searchRequest: NodeSearchRequest): Response<Page<NodeInfo>> {
+        with(searchRequest) {
+            repoNameList.forEach {
+                permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, searchRequest.projectId, it))
+            }
+        }
+        return Response.success(nodeService.search(searchRequest))
     }
 
     override fun query(userId: String, queryModel: QueryModel): Response<Page<Map<String, Any>>> {

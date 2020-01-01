@@ -105,7 +105,7 @@ class ListViewService @Autowired constructor(
 
     private fun trailingSlash() {
         val url = HttpContextHolder.getRequest().requestURL.toString()
-        if(!url.endsWith("/")) {
+        if (!url.endsWith("/")) {
             HttpContextHolder.getResponse().sendRedirect("$url/")
         }
     }

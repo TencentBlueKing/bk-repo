@@ -8,7 +8,7 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BLOCK_M
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.generic.pojo.BlockInfo
-import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
+import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping

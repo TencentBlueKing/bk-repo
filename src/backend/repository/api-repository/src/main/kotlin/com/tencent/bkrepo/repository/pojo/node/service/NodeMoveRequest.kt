@@ -24,11 +24,11 @@ data class NodeMoveRequest(
     @ApiModelProperty("目的仓库名称", required = false)
     override val destRepoName: String? = null,
     @ApiModelProperty("目的路径", required = true)
-    override val destPath: String,
+    override val destFullPath: String,
     @ApiModelProperty("同名文件是否覆盖", required = false)
     override val overwrite: Boolean = false,
     @ApiModelProperty("操作者", required = true)
     override val operator: String
 ) : CrossRepoNodeRequest, ServiceRequest {
-    override fun getOperateName() = "move"
+    override fun getOperateName() = "Move"
 }
