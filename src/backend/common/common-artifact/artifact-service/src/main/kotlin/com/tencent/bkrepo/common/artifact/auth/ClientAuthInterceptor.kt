@@ -24,7 +24,7 @@ class ClientAuthInterceptor : HandlerInterceptorAdapter() {
     private lateinit var clientAuthHandler: ClientAuthHandler
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        if(request.getAttribute(USER_KEY) != null || request.getAttribute(APP_KEY) != null) {
+        if (request.getAttribute(USER_KEY) != null || request.getAttribute(APP_KEY) != null) {
             return true
         }
         return try {

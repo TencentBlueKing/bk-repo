@@ -8,17 +8,17 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class MavenResourceImpl(
-        private val mavenService: MavenService
-): MavenResource{
+    private val mavenService: MavenService
+) : MavenResource {
 
-    override fun deploy(mavenArtifactInfo: MavenArtifactInfo,
-                        file: ArtifactFile)
-    {
+    override fun deploy(
+        mavenArtifactInfo: MavenArtifactInfo,
+        file: ArtifactFile
+    ) {
         return mavenService.deploy(mavenArtifactInfo, file)
     }
 
-    override fun dependency(mavenArtifactInfo: MavenArtifactInfo)
-    {
+    override fun dependency(mavenArtifactInfo: MavenArtifactInfo) {
         mavenService.dependency(mavenArtifactInfo)
     }
 }

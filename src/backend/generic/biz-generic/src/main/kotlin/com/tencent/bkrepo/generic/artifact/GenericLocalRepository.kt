@@ -53,12 +53,11 @@ class GenericLocalRepository : LocalRepository() {
     }
 
     private fun blockUpload(uploadId: String, sequence: Int, context: ArtifactUploadContext) {
-        val storageCredentials = context.storageCredentials
-        if (!fileStorage.checkBlockPath(uploadId, storageCredentials)) {
+        if (!storageService.checkBlockId(uploadId)) {
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         }
         val calculatedSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
-        fileStorage.storeBlock(uploadId, sequence, calculatedSha256, context.getArtifactFile().getInputStream(), storageCredentials)
+        storageService.storeBlock(uploadId, sequence, calculatedSha256, context.getArtifactFile())
     }
 
     override fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
@@ -78,8 +77,8 @@ class GenericLocalRepository : LocalRepository() {
         val headerNames = request.headerNames
         for (headerName in headerNames) {
             if (headerName.startsWith(BKREPO_META_PREFIX)) {
-                val key = headerName.replace(BKREPO_META_PREFIX, "")
-                if (key.trim().isNotEmpty()) {
+                val key = headerName.removePrefix(BKREPO_META_PREFIX).trim()
+                if (key.isNotEmpty()) {
                     metadata[key] = request.getHeader(headerName)
                 }
             }

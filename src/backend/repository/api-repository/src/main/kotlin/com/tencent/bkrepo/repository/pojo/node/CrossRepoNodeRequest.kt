@@ -12,7 +12,7 @@ interface CrossRepoNodeRequest {
     val srcFullPath: String
     val destProjectId: String?
     val destRepoName: String?
-    val destPath: String
+    val destFullPath: String
     val overwrite: Boolean
 
     fun getOperateName(): String

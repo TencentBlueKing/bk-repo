@@ -11,7 +11,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_SIZE
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.generic.pojo.BlockInfo
-import com.tencent.bkrepo.generic.pojo.upload.UploadTransactionInfo
+import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import okhttp3.Credentials
 import okhttp3.MediaType
 import okhttp3.OkHttpClient

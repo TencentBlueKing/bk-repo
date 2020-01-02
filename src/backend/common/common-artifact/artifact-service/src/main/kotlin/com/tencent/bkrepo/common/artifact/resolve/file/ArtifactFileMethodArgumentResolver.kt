@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResolveException
+import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import javax.servlet.http.HttpServletRequest
 import org.apache.commons.fileupload.util.Streams
 import org.springframework.core.MethodParameter

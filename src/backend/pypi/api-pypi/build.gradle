@@ -1,4 +1,5 @@
 dependencies {
     implementation project(":common:common-api")
+    api project(":common:common-service")
     implementation project(":common:common-artifact:artifact-api")
 }

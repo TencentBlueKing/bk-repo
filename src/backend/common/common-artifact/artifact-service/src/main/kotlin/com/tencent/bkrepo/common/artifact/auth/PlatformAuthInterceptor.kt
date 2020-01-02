@@ -8,13 +8,13 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.config.AUTH_HEADER_USER_ID
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import java.util.Base64
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.annotation.Order
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
-import java.util.Base64
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * 平台账户接入认证拦截器
@@ -36,7 +36,7 @@ class PlatformAuthInterceptor : HandlerInterceptorAdapter() {
             serviceAccountResource.checkCredential(first, second).data?.run {
                 request.setAttribute(APP_KEY, this)
                 val userId = request.getHeader(AUTH_HEADER_USER_ID)
-                if(userId.isNullOrBlank()) {
+                if (userId.isNullOrBlank()) {
                     request.setAttribute(USER_KEY, this)
                 } else {
                     checkUserId(userId)
@@ -49,7 +49,7 @@ class PlatformAuthInterceptor : HandlerInterceptorAdapter() {
     }
 
     private fun checkUserId(userId: String) {
-        if(serviceUserResource.detail(userId).data == null) {
+        if (serviceUserResource.detail(userId).data == null) {
             val request = CreateUserRequest(userId = userId, name = userId, pwd = null)
             serviceUserResource.createUser(request)
             logger.info("Create user [$request] success.")
@@ -76,5 +76,4 @@ class PlatformAuthInterceptor : HandlerInterceptorAdapter() {
             }
         }
     }
-
 }

@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.quartz
 
+import java.util.Properties
 import org.quartz.Calendar
 import org.quartz.JobDetail
 import org.quartz.Scheduler
@@ -16,7 +17,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.scheduling.quartz.SchedulerFactoryBean
 import org.springframework.scheduling.quartz.SpringBeanJobFactory
-import java.util.Properties
 
 /**
  * QuartzConfiguration 配置
@@ -64,5 +64,4 @@ class QuartzConfiguration {
         properties.putAll(source)
         return properties
     }
-
 }

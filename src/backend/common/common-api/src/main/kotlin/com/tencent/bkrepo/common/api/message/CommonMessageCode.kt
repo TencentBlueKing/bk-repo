@@ -17,5 +17,5 @@ enum class CommonMessageCode(private val businessCode: Int, private val key: Str
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key
-    override fun getModuleCode() = 0
+    override fun getModuleCode() = 1
 }

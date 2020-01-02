@@ -8,17 +8,16 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
 class MavenService {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun deploy(mavenArtifactInfo: MavenArtifactInfo,
-               file: ArtifactFile)
-    {
+    fun deploy(
+        mavenArtifactInfo: MavenArtifactInfo,
+        file: ArtifactFile
+    ) {
         val context = ArtifactUploadContext(file)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.upload(context)
@@ -30,5 +29,4 @@ class MavenService {
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.download(context)
     }
-
 }

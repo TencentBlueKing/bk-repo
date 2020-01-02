@@ -108,6 +108,15 @@ object NodeUtils {
     }
 
     /**
+     * 根据路径列表和文件名组合新的路径，返回格式/a/b/c/
+     */
+    fun combinePath(parent: String, name: String): String {
+        val parentPath = if (!parent.endsWith(FILE_SEPARATOR)) parent + FILE_SEPARATOR else parent
+        val newPath = parentPath + name
+        return if (!newPath.endsWith(FILE_SEPARATOR)) newPath + FILE_SEPARATOR else newPath
+    }
+
+    /**
      * 获取父级目录，返回格式/a/b/c/
      */
     fun getParentPath(path: String): String {

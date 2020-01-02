@@ -1,27 +1,21 @@
 package com.tencent.bkrepo.common.storage
 
-import com.tencent.bkrepo.common.storage.cache.FileCache
-import com.tencent.bkrepo.common.storage.cache.local.LocalFileCache
-import com.tencent.bkrepo.common.storage.cache.local.LocalFileCacheProperties
 import com.tencent.bkrepo.common.storage.core.FileStorage
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
+import com.tencent.bkrepo.common.storage.core.simple.SimpleStorageService
+import com.tencent.bkrepo.common.storage.credentials.StorageType
+import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
-import com.tencent.bkrepo.common.storage.innercos.InnerCosProperties
-import com.tencent.bkrepo.common.storage.local.LocalFileStorage
-import com.tencent.bkrepo.common.storage.local.LocalStorageProperties
-import com.tencent.bkrepo.common.storage.schedule.StorageSchedule
-import com.tencent.bkrepo.common.storage.strategy.HashLocateStrategy
-import com.tencent.bkrepo.common.storage.strategy.LocateStrategy
+import com.tencent.bkrepo.common.storage.locator.FileLocator
+import com.tencent.bkrepo.common.storage.locator.HashFileLocator
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.annotation.EnableAsync
-import org.springframework.scheduling.annotation.EnableScheduling
 
 /**
  * 存储自动配置
@@ -30,48 +24,31 @@ import org.springframework.scheduling.annotation.EnableScheduling
  * @date: 2019-09-17
  */
 @Configuration
-@ConditionalOnWebApplication
-@EnableScheduling
 @EnableAsync
-@EnableConfigurationProperties(
-        InnerCosProperties::class,
-        LocalStorageProperties::class,
-        LocalFileCacheProperties::class)
+@EnableConfigurationProperties(StorageProperties::class)
 class StorageAutoConfiguration {
 
-    @Autowired
-    lateinit var locateStrategy: LocateStrategy
-
     @Bean
-    fun locateStrategy() = HashLocateStrategy()
-
-    @Bean("innerCosFileStorage")
-    @ConditionalOnProperty(prefix = "storage", name = ["type"], havingValue = "innercos")
-    fun innerCosFileStorage(fileCache: FileCache, innerCosProperties: InnerCosProperties): FileStorage {
-        logger.info("Initializing FileStorage 'innerCosFileStorage'")
-        return InnerCosFileStorage(fileCache, locateStrategy, innerCosProperties)
-    }
-
-    @Bean("localFileStorage")
-    @ConditionalOnMissingBean(FileStorage::class)
-    fun localFileStorage(localStorageProperties: LocalStorageProperties): FileStorage {
-        logger.info("Initializing FileStorage 'localFileStorage'")
-        return LocalFileStorage(locateStrategy, localStorageProperties)
+    fun fileStorage(properties: StorageProperties): FileStorage {
+        val fileStorage = when (properties.type) {
+            StorageType.FILESYSTEM -> FileSystemStorage()
+            StorageType.INNERCOS -> InnerCosFileStorage()
+            else -> FileSystemStorage()
+        }
+        logger.info("Initializing FileStorage[${fileStorage::class.simpleName}]")
+        return fileStorage
     }
 
     @Bean
-    @ConditionalOnMissingBean(name = ["fileCache", "localFileStorage"])
-    fun fileCache(localFileCacheProperties: LocalFileCacheProperties): FileCache {
-        logger.info("Initializing FileCache 'localFileCache'")
-        return LocalFileCache(localFileCacheProperties)
+    fun storageService(properties: StorageProperties): StorageService {
+        val storageService = if (properties.cache.enabled) CacheStorageService() else SimpleStorageService()
+        logger.info("Initializing StorageService[${storageService::class.simpleName}].")
+        return storageService
     }
 
     @Bean
-    @ConditionalOnBean(FileCache::class)
-    fun storageSchedule(fileCache: FileCache): StorageSchedule {
-        logger.info("Initializing StorageSchedule 'storageSchedule'")
-        return StorageSchedule(fileCache)
-    }
+    @ConditionalOnMissingBean(FileLocator::class)
+    fun fileLocator() = HashFileLocator()
 
     companion object {
         private val logger = LoggerFactory.getLogger(StorageAutoConfiguration::class.java)
