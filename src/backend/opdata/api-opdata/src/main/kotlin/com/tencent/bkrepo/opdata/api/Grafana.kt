@@ -6,6 +6,7 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 
@@ -15,32 +16,28 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface Grafana {
 
     @ApiOperation("ping")
-    @PostMapping("/")
-    fun ping(
-    ): ResponseEntity<Any>
+    @GetMapping("")
+    fun ping(): ResponseEntity<Any>
 
     @ApiOperation("search")
     @PostMapping("/search")
-    fun search(
-    ): Response<List<Any>>
+    fun search(): ResponseEntity<Any>
 
     @ApiOperation("query")
     @PostMapping("/query")
-    fun query(
-    ): Response<String?>
+    fun query(): ResponseEntity<Any>
 
     @ApiOperation("annotations")
     @PostMapping("/annotations")
-    fun annotations(
-    ): Response<String?>
+    fun annotations(): ResponseEntity<Any>
 
-    @ApiOperation("tag-keys")
-    @PostMapping("/tag-keys")
-    fun tagKeys(
-    ): Response<String?>
-
-    @ApiOperation("tag-values")
-    @PostMapping("/tag-values")
-    fun tagValues(
-    ): Response<String?>
+//    @ApiOperation("tag-keys")
+//    @PostMapping("/tag-keys")
+//    fun tagKeys(
+//    ): Response<String?>
+//
+//    @ApiOperation("tag-values")
+//    @PostMapping("/tag-values")
+//    fun tagValues(
+//    ): Response<String?>
 }

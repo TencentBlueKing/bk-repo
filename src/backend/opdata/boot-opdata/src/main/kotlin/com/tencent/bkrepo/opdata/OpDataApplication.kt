@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class OpDataApplication
 
 fun main(args: Array<String>) {
-    runApplication<AuthApplication>(*args)
+    runApplication<OpDataApplication>(*args)
 }
