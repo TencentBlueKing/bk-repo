@@ -13,3 +13,4 @@ gradlew
 gradlew.bat
 
 data/
+rest-client.private.env.json

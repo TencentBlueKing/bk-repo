@@ -1,0 +1,25 @@
+### 上传文件
+PUT http://{{host}}/{{project}}/generic-local/test.txt
+Authorization: Basic {{username}} {{password}}
+X-BKREPO-OVERWRITE: true
+X-BKREPO-META-key: value
+
+Hello, World!!!
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+    });
+%}
+
+### 下载文件
+GET http://{{host}}/{{project}}/generic-local/test.txt
+Authorization: Basic {{username}} {{password}}
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+        client.assert(response.body === 'Hello, World!!!', 'Response status is not write');
+    });
+%}
+###
