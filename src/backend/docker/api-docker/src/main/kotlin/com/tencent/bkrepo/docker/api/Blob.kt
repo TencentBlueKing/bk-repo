@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.docker.api
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -43,7 +44,8 @@ interface Blob {
         uuid: String,
         @RequestParam
         @ApiParam(value = "digest", required = false)
-        digest: String?
+        digest: String?,
+        artifactFile: ArtifactFile
     ): ResponseEntity<Any>
 
     @ApiOperation("检查blob文件是否存在")
@@ -115,6 +117,7 @@ interface Blob {
         repoName: String,
         @PathVariable
         @ApiParam(value = "uuid", required = false)
-        uuid: String
+        uuid: String,
+        artifactFile: ArtifactFile
     ): ResponseEntity<Any>
 }

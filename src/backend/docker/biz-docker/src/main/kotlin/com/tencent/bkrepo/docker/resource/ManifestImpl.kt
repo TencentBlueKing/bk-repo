@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.docker.resource
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.api.Manifest
 import com.tencent.bkrepo.docker.constant.MANIFEST_PATTERN
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
@@ -27,11 +28,12 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
         projectId: String,
         repoName: String,
         tag: String,
-        contentType: String
+        contentType: String,
+        artifactFile: ArtifactFile
     ): ResponseEntity<Any> {
         dockerRepo.userId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
-        return dockerRepo.uploadManifest(projectId, repoName, name, tag, contentType, request.inputStream)
+        return dockerRepo.uploadManifest(projectId, repoName, name, tag, contentType, artifactFile)
     }
 
     override fun getManifest(

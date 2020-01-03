@@ -8,6 +8,7 @@ dependencies {
     api project(":common:common-storage")
     api project(":common:common-query:query-api")
     api project(":common:common-auth")
+    api project(":common:common-artifact:artifact-api")
     compile group: 'javax.ws.rs', name: 'jsr311-api', version: '1.1.1'
 }
 

@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.docker.helpers
 
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
-import com.tencent.bkrepo.docker.context.WriteContext
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
@@ -35,7 +34,7 @@ class DockerManifestSyncer() {
                         log.debug("Found empty layer {} in manifest for image {} - creating blob in path {}", blobFilename, dockerRepo, finalBlobPath)
                         val blobContent = ByteArrayInputStream(DockerSchemaUtils.EMPTY_BLOB_CONTENT)
                         blobContent.use {
-                            repo.write(WriteContext(projectId, repoName, finalBlobPath).content(it).sha256(DockerSchemaUtils.emptyBlobDigest().getDigestHex()))
+                            // repo.write(WriteContext(projectId, repoName, finalBlobPath).content(it).sha256(DockerSchemaUtils.emptyBlobDigest().getDigestHex()))
                         }
                     } else if (repo.exists(projectId, repoName, tempBlobPath)) {
                         this.moveBlobFromTempDir(repo, projectId, repoName, tempBlobPath, finalBlobPath)

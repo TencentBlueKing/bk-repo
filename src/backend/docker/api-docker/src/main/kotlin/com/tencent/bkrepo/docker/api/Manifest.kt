@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.docker.api
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -40,7 +41,8 @@ interface Manifest {
         tag: String,
         @ApiParam
         @RequestHeader(value = "Content-Type", required = true)
-        contentType: String
+        contentType: String,
+        artifactFile: ArtifactFile
     ): ResponseEntity<Any>
 
     @ApiOperation("获取manifest文件")

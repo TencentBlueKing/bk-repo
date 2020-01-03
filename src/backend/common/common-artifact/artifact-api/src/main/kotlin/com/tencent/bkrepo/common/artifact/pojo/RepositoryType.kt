@@ -12,5 +12,6 @@ enum class RepositoryType {
     DOCKER,
     MAVEN,
     PYPI,
-    NPM
+    NPM,
+    OPDATA
 }

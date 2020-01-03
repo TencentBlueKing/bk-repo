@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.opdata.pojo.enums
 
-enum class Type {
+enum class MetricsType {
     timeseries,
     table
 }
