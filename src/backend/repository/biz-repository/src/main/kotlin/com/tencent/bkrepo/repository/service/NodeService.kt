@@ -156,51 +156,47 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun create(createRequest: NodeCreateRequest) {
-        logger.info("create, createRequest: $createRequest")
-
-        val projectId = createRequest.projectId
-        val repoName = createRequest.repoName
-        val fullPath = parseFullPath(createRequest.fullPath)
-
-        val repo = repositoryService.checkRepository(projectId, repoName)
-        // 路径唯一性校验
-        val existNode = queryNode(projectId, repoName, fullPath)
-        if (existNode != null) {
-            if (!createRequest.overwrite) throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
-            else if (existNode.folder || createRequest.folder) throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
-            else {
-                // 存在相同路径文件节点且允许覆盖，删除之前的节点
-                deleteByPath(projectId, repoName, fullPath, createRequest.operator)
+        with(createRequest) {
+            this.takeIf { folder || !sha256.isNullOrBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
+            val fullPath = parseFullPath(fullPath)
+            val repo = repositoryService.checkRepository(projectId, repoName)
+            // 路径唯一性校验
+            queryNode(projectId, repoName, fullPath)?.let {
+                if (!overwrite) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
+                }
+                else if (it.folder || this.folder) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
+                }
+                else {
+                    deleteByPath(projectId, repoName, fullPath, operator)
+                }
             }
-        }
-        // 判断父目录是否存在，不存在先创建
-        mkdirs(projectId, repoName, getParentPath(fullPath), createRequest.operator)
-        // 创建节点
-        val node = createRequest.let {
-            TNode(
-                folder = it.folder,
+            // 判断父目录是否存在，不存在先创建
+            mkdirs(projectId, repoName, getParentPath(fullPath), operator)
+            // 创建节点
+            val node = TNode(
+                folder = folder,
                 path = getParentPath(fullPath),
                 name = getName(fullPath),
                 fullPath = fullPath,
-                expireDate = if (it.folder) null else parseExpireDate(it.expires),
-                size = if (it.folder) 0 else it.size ?: 0,
-                sha256 = if (it.folder) null else it.sha256,
+                expireDate = if (folder) null else parseExpireDate(expires),
+                size = if (folder) 0 else size ?: 0,
+                sha256 = if (folder) null else sha256,
                 projectId = projectId,
                 repoName = repoName,
                 metadata = emptyList(),
-                createdBy = it.operator,
+                createdBy = operator,
                 createdDate = LocalDateTime.now(),
-                lastModifiedBy = it.operator,
+                lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
+            // 保存节点
+            doCreate(node, repo)
+            // 保存元数据
+            metadata?.let { metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it)) }
+            logger.info("Create node [$this] success.")
         }
-        // 保存节点
-        doCreate(node, repo)
-        // 保存元数据
-        createRequest.metadata?.let {
-            metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it))
-        }
-        logger.info("Create node [$createRequest] success.")
     }
 
     /**
@@ -251,7 +247,7 @@ class NodeService @Autowired constructor(
     }
 
     /**
-     * 删除指定节点
+     * 删除指定节点, 逻辑删除
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun delete(deleteRequest: NodeDeleteRequest) {
@@ -297,7 +293,6 @@ class NodeService @Autowired constructor(
      * 根据全路径删除文件或者目录
      */
     fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String, soft: Boolean = true) {
-        repositoryService.checkRepository(projectId, repoName)
         val formattedFullPath = formatFullPath(fullPath)
         val formattedPath = formatPath(formattedFullPath)
         val escapedPath = escapeRegex(formattedPath)
