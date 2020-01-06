@@ -58,7 +58,7 @@ class FileSystemClient(private val root: String) {
         return file.isFile
     }
 
-    fun append(path: String, filename: String, inputStream: InputStream) {
+    fun append(path: String, filename: String, inputStream: InputStream): Long {
         val directory = File(this.root, path)
         val file = File(directory, filename)
         if (!file.isFile) {
@@ -67,6 +67,7 @@ class FileSystemClient(private val root: String) {
         FileOutputStream(file, true).use { output ->
             inputStream.use { input -> ByteStreams.copy(input, output) }
         }
+        return file.length()
     }
 
     fun createDirectory(path: String, name: String) {

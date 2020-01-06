@@ -43,10 +43,10 @@ interface StorageService {
     fun createAppendId(): String
 
     /**
-     * 追加文件
+     * 追加文件，返回当前文件长度
      * appendId: 文件追加Id
      */
-    fun append(appendId: String, artifactFile: ArtifactFile)
+    fun append(appendId: String, artifactFile: ArtifactFile): Long
 
     /**
      * 结束追加，存储并返回完整文件
