@@ -13,6 +13,15 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import okhttp3.Authenticator
+import okhttp3.Credentials
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
+import org.apache.commons.fileupload.util.Streams
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
 import java.net.InetSocketAddress
 import java.net.Proxy
@@ -20,17 +29,6 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
-import okhttp3.Authenticator
-import okhttp3.Credentials
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.ResponseBody
-import org.apache.commons.fileupload.servlet.FileCleanerCleanup
-import org.apache.commons.fileupload.util.Streams
-import org.apache.commons.io.FileCleaningTracker
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 
 /**
  *
@@ -55,7 +53,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
         return if (checkResponse(response)) {
-            val file = createTempFile(context, response.body()!!)
+            val file = createTempFile(response.body()!!)
             putArtifactCache(context, file)
             file
         } else null
@@ -102,6 +100,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         val sha256 = FileDigestUtils.fileSha256(listOf(file.inputStream()))
+        val md5 = FileDigestUtils.fileMd5(listOf(file.inputStream()))
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
             repoName = repositoryInfo.name,
@@ -109,6 +108,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
             fullPath = artifactInfo.artifactUri,
             size = file.length(),
             sha256 = sha256,
+            md5 = md5,
             overwrite = true,
             operator = context.userId
         )
@@ -190,12 +190,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
     /**
      * 创建临时文件并将响应体写入文件
      */
-    private fun createTempFile(context: ArtifactDownloadContext, body: ResponseBody): File {
-        var fileCleaningTracker = context.request.servletContext.getAttribute(FileCleanerCleanup.FILE_CLEANING_TRACKER_ATTRIBUTE) as? FileCleaningTracker
-        if (fileCleaningTracker == null) {
-            fileCleaningTracker = FileCleaningTracker()
-            context.request.servletContext.setAttribute(FileCleanerCleanup.FILE_CLEANING_TRACKER_ATTRIBUTE, fileCleaningTracker)
-        }
+    private fun createTempFile(body: ResponseBody): File {
         // set threshold = 0, guarantee any data will be written to file rather than memory cache
         val artifactFile = ArtifactFileFactory.build(0)
         Streams.copy(body.byteStream(), artifactFile.getOutputStream(), true)

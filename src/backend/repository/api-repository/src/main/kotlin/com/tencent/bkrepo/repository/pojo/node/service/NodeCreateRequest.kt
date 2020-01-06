@@ -29,6 +29,8 @@ data class NodeCreateRequest(
     val size: Long? = null,
     @ApiModelProperty("文件sha256")
     val sha256: String? = null,
+    @ApiModelProperty("文件md5")
+    val md5: String? = null,
     @ApiModelProperty("元数据信息")
     val metadata: Map<String, String>? = null,
 

@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.core
 
+import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
@@ -14,8 +15,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.util.HttpResponseUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.util.NodeUtils
-import java.io.File
 import org.slf4j.LoggerFactory
+import java.io.File
 
 /**
  * 构件仓库抽象类
@@ -79,15 +80,18 @@ interface AbstractArtifactRepository : ArtifactRepository {
     @Throws(ArtifactValidateException::class)
     fun onUploadValidate(context: ArtifactUploadContext) {
         val sha256Map = mutableMapOf<String, String>()
-        // 计算sha256
+        val md5Map = mutableMapOf<String, String>()
+        // 计算sha256和md5
         context.artifactFileMap.entries.forEach { (name, file) ->
-            val sha256 = FileDigestUtils.fileSha256(listOf(file.getInputStream()))
-            sha256Map[name] = sha256
+            sha256Map[name] = FileDigestUtils.fileSha256(file.getInputStream())
+            md5Map[name] = FileDigestUtils.fileMd5(file.getInputStream())
             if (name == OCTET_STREAM) {
-                context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] = sha256
+                context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] = sha256Map[name] as String
+                context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] = md5Map[name] as String
             }
         }
         context.contextAttributes[ATTRIBUTE_SHA256MAP] = sha256Map
+        context.contextAttributes[ATTRIBUTE_SHA256MAP] = md5Map
     }
 
     /**

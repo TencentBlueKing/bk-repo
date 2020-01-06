@@ -158,6 +158,7 @@ class NodeService @Autowired constructor(
     fun create(createRequest: NodeCreateRequest) {
         with(createRequest) {
             this.takeIf { folder || !sha256.isNullOrBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
+            this.takeIf { folder || !md5.isNullOrBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::md5.name)
             val fullPath = parseFullPath(fullPath)
             val repo = repositoryService.checkRepository(projectId, repoName)
             // 路径唯一性校验
@@ -183,6 +184,7 @@ class NodeService @Autowired constructor(
                 expireDate = if (folder) null else parseExpireDate(expires),
                 size = if (folder) 0 else size ?: 0,
                 sha256 = if (folder) null else sha256,
+                md5 = if (folder) null else md5,
                 projectId = projectId,
                 repoName = repoName,
                 metadata = emptyList(),
@@ -510,6 +512,7 @@ class NodeService @Autowired constructor(
                     fullPath = it.fullPath,
                     size = it.size,
                     sha256 = it.sha256,
+                    md5 = it.md5,
                     repoName = it.repoName,
                     projectId = it.projectId
                 )

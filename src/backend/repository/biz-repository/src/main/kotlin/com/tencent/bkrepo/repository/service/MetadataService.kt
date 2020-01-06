@@ -47,7 +47,7 @@ class MetadataService @Autowired constructor(
         repositoryService.checkRepository(projectId, repoName)
 
         val query = QueryHelper.nodeQuery(projectId, repoName, fullPath)
-        val update = Update().pull(TNode::metadata.name, Query.query(Criteria.where("key").`in`(request.keyList)))
+        val update = Update().pull(TNode::metadata.name, Query.query(Criteria.where(TMetadata::key.name).`in`(request.keyList)))
 
         nodeDao.updateMulti(query, update)
         logger.info("Delete metadata [$request] success.")

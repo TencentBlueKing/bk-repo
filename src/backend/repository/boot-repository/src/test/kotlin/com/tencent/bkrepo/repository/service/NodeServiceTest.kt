@@ -36,10 +36,8 @@ internal class NodeServiceTest @Autowired constructor(
     private val nodeService: NodeService,
     private val repositoryService: RepositoryService
 ) {
-
     private val projectId = "unit-test"
     private val operator = "system"
-
     private var repoName = "unit-test"
 
     @BeforeEach
@@ -51,7 +49,7 @@ internal class NodeServiceTest @Autowired constructor(
                     name = repoName,
                     type = RepositoryType.GENERIC,
                     category = RepositoryCategory.LOCAL,
-                    public = true,
+                    public = false,
                     description = "单元测试仓库",
                     configuration = LocalConfiguration(),
                     operator = operator
@@ -682,6 +680,7 @@ internal class NodeServiceTest @Autowired constructor(
             overwrite = false,
             size = size,
             sha256 = "sha256",
+            md5 = "md5",
             operator = operator,
             metadata = metadata
         )

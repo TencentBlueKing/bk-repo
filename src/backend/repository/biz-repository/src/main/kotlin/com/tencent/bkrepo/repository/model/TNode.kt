@@ -32,6 +32,7 @@ data class TNode(
     var size: Long,
     var expireDate: LocalDateTime? = null,
     var sha256: String? = null,
+    var md5: String? = null,
     var deleted: LocalDateTime? = null,
     var metadata: List<TMetadata>? = null,
 
