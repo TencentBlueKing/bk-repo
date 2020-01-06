@@ -610,15 +610,15 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             return this.consumeStreamAndReturnError(artifactFile.getInputStream())
         } else {
             val response = this.repo.writeAppend(uuid, artifactFile)
-            if (this.uploadSuccessful(response)) {
-                //val artifact = this.repo.artifactLocal(projectId, repoName, blobPath)
-                //if (artifact != null) {
+//            if (this.uploadSuccessful(response)) {
+                // val artifact = this.repo.artifactLocal(projectId, repoName, blobPath)
+                // if (artifact != null) {
                     val location = this.getDockerURI(repoName, "$projectId/$repoName/$dockerRepo/blobs/uploads/$uuid")
-                    return ResponseEntity.status(202).header("Content-Length", "0").header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Upload-Uuid", uuid).header("Location", location.toString()).header("Range", "0-" + (artifact.getLength() - 1L)).build()
-                //}
-            }
+                    return ResponseEntity.status(202).header("Content-Length", "0").header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Upload-Uuid", uuid).header("Location", location.toString()).header("Range", "0-" + (response - 1L)).build()
+                // }
+//            }
 
-            log.warn("Error uploading blob '{}' got status '{}' and message: '{}'", blobPath, response.statusCode, response.toString())
+            log.warn("Error uploading blob '{}' length '{}' and message: '{}'", blobPath, response, response.toString())
             return DockerV2Errors.blobUploadInvalid(response.toString())
         }
     }

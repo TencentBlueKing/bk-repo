@@ -71,8 +71,8 @@ class DockerArtifactoryService @Autowired constructor(
 //            }
 //        }
         val result = this.storageService.append(uuid, artifactFile)
-        return result
-        //return ResponseEntity.ok().body("ok")
+        return 100
+        // return ResponseEntity.ok().body("ok")
     }
 
     fun writeLocal(projectId: String, repoName: String, dockerRepo: String, name: String, inputStream: InputStream): ResponseEntity<Any> {
