@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.generic.api.OperateResource
 import com.tencent.bkrepo.generic.pojo.FileInfo
-import com.tencent.bkrepo.generic.pojo.operate.FileSearchRequest
+import com.tencent.bkrepo.generic.pojo.FileSearchRequest
 import com.tencent.bkrepo.generic.service.OperateService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
