@@ -33,4 +33,8 @@ class JobAutoConfiguration {
             taskRegistrar.setScheduler(Executors.newScheduledThreadPool(5))
         }
     }
+
+    companion object {
+        private const val JOB_LOGGER_NAME = "JobLogger"
+    }
 }

@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.model.TFileReference
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -27,8 +27,7 @@ class FileReferenceCleanupJob {
     @Autowired
     private lateinit var storageService: StorageService
 
-    //@Scheduled(cron = "0 20 0/1 * * ?")
-    @Scheduled(cron = "0 2/5 * * * ?")
+    @Scheduled(cron = "0 30 0/1 * * ?")
     @SchedulerLock(name = "FileReferenceCleanupJob", lockAtMostFor = "PT59M")
     fun cleanUp() {
         logger.info("Starting to clean up file reference.")
@@ -65,6 +64,6 @@ class FileReferenceCleanupJob {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(FileReferenceCleanupJob::class.java)
+        private val logger = LoggerHolder.JOB
     }
 }

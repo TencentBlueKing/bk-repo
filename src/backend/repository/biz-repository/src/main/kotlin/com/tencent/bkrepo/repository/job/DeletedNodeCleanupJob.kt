@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.repository.job
 
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -30,8 +30,7 @@ class DeletedNodeCleanupJob {
     @Autowired
     private lateinit var repositoryProperties: RepositoryProperties
 
-    //@Scheduled(cron = "0 10 0/1 * * ?")
-    @Scheduled(cron = "0 1/5 * * * ?")
+    @Scheduled(cron = "0 20 0/1 * * ?")
     @SchedulerLock(name = "DeletedNodeCleanupJob", lockAtMostFor = "PT59M")
     fun cleanUp() {
         logger.info("Starting to clean up deleted nodes.")
@@ -61,6 +60,6 @@ class DeletedNodeCleanupJob {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DeletedNodeCleanupJob::class.java)
+        private val logger = LoggerHolder.JOB
     }
 }

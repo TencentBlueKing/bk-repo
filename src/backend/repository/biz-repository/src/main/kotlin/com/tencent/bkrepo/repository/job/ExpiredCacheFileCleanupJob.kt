@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.repository.job
 
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -18,9 +18,9 @@ class ExpiredCacheFileCleanupJob {
     @Autowired
     private lateinit var storageService: StorageService
 
-    //@Scheduled(cron = "0 30 0/1 * * ?")
-    @Scheduled(cron = "0 3/5 * * * ?")
-    @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "PT59M")
+
+    @Scheduled(cron = "0 0 4 * * ?") // 每天凌晨4点执行
+    @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "PT10H")
     fun cleanUp() {
         logger.info("Starting to clean up expired cache files.")
         val startTimeMillis = System.currentTimeMillis()
@@ -30,6 +30,6 @@ class ExpiredCacheFileCleanupJob {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ExpiredCacheFileCleanupJob::class.java)
+        private val logger = LoggerHolder.JOB
     }
 }

@@ -2,8 +2,8 @@ package com.tencent.bkrepo.common.client.log
 
 import feign.Request
 import feign.Response
-import java.io.IOException
 import org.slf4j.LoggerFactory
+import java.io.IOException
 
 /**
  * feign 统一Slf4j日志记录器
@@ -32,6 +32,6 @@ class Slf4jFeignLogger : feign.Logger() {
         }
     }
     companion object {
-        private const val API_LOGGER_NAME = "ServiceResourceApi"
+        private const val API_LOGGER_NAME = "FeignApiLogger"
     }
 }

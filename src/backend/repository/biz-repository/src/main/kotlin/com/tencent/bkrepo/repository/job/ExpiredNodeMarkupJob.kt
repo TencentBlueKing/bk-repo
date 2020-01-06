@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.repository.job
 
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.NodeService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -26,8 +26,7 @@ class ExpiredNodeMarkupJob {
     @Autowired
     private lateinit var nodeService: NodeService
 
-    //@Scheduled(cron = "0 0 0/1 * * ?")
-    @Scheduled(cron = "0 0/5 * * * ?")
+    @Scheduled(cron = "0 0 0/1 * * ?")
     @SchedulerLock(name = "ExpiredNodeMarkupJob", lockAtMostFor = "PT59M")
     fun markUp() {
         logger.info("Starting to mark up expired nodes.")
@@ -53,6 +52,6 @@ class ExpiredNodeMarkupJob {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ExpiredNodeMarkupJob::class.java)
+        private val logger = LoggerHolder.JOB
     }
 }

@@ -4,17 +4,14 @@ import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import com.netflix.client.ClientException
 import com.netflix.hystrix.exception.HystrixRuntimeException
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.service.log.LoggerHolder.logException
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
-import org.slf4j.LoggerFactory
-import org.slf4j.event.Level
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpRequestMethodNotSupportedException
@@ -80,6 +77,15 @@ class GlobalExceptionHandler {
         return Response.fail(messageCode.getCode(), errorMessage)
     }
 
+    @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    fun handleException(exception: HttpRequestMethodNotSupportedException): Response<Void> {
+        val messageCode = CommonMessageCode.OPERATION_UNSUPPORTED
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
+        logException(exception, "[${messageCode.getCode()}]$errorMessage")
+        return Response.fail(messageCode.getCode(), errorMessage)
+    }
+
     @ExceptionHandler(HystrixRuntimeException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: HystrixRuntimeException): Response<Void> {
@@ -92,44 +98,19 @@ class GlobalExceptionHandler {
         } else if (exception.failureType == FailureType.SHORTCIRCUIT) {
             messageCode = CommonMessageCode.SERVICE_CIRCUIT_BREAKER
         }
-        logException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage", Level.ERROR)
+        logException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage", LoggerHolder.SYSTEM)
         return response(messageCode)
-    }
-
-    @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
-    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
-    fun handleException(exception: HttpRequestMethodNotSupportedException): Response<Void> {
-        val messageCode = CommonMessageCode.OPERATION_UNSUPPORTED
-        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
-        logException(exception, "[${messageCode.getCode()}]$errorMessage")
-        return Response.fail(messageCode.getCode(), errorMessage)
     }
 
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: Exception): Response<Void> {
-        logger.error("${exception.javaClass.simpleName}: ${exception.message}", exception)
-        logException(exception, exception.message, Level.ERROR)
+        logException(exception, exception.message, LoggerHolder.SYSTEM, true)
         return response(CommonMessageCode.SYSTEM_ERROR)
-    }
-
-    private fun logException(exception: Exception, message: String? = null, level: Level = Level.WARN) {
-        val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) ?: ANONYMOUS_USER
-        val uri = HttpContextHolder.getRequest().requestURI
-        val exceptionMessage = message ?: exception.message
-        val fullMessage = "User[$userId] access [$uri] failed[${exception.javaClass.simpleName}]: $exceptionMessage"
-        when (level) {
-            Level.ERROR -> message?.run { logger.error(fullMessage) } ?: run { logger.error(fullMessage, exception) }
-            else -> logger.warn(fullMessage)
-        }
     }
 
     private fun response(messageCode: MessageCode): Response<Void> {
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
         return Response.fail(messageCode.getCode(), errorMessage)
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
     }
 }
