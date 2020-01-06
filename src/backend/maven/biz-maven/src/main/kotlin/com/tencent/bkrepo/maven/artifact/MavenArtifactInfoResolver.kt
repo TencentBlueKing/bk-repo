@@ -2,10 +2,10 @@ package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-import org.slf4j.LoggerFactory
 import java.util.LinkedList
 import java.util.StringTokenizer
 import javax.servlet.http.HttpServletRequest
+import org.slf4j.LoggerFactory
 
 /**
  *

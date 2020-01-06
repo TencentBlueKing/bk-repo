@@ -4,9 +4,7 @@ import com.tencent.bkrepo.common.service.MicroService
 import org.springframework.boot.runApplication
 
 @MicroService
-class MavenApplication{
-
-}
+class MavenApplication
 
 fun main(args: Array<String>) {
     runApplication<MavenApplication>(*args)
