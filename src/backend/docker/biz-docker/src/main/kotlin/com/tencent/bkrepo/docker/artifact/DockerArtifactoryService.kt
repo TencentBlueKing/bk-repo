@@ -71,7 +71,7 @@ class DockerArtifactoryService @Autowired constructor(
 //            }
 //        }
         val result = this.storageService.append(uuid, artifactFile)
-        return 100
+        return result
         // return ResponseEntity.ok().body("ok")
     }
 
@@ -178,7 +178,7 @@ class DockerArtifactoryService @Autowired constructor(
             logger.warn("user[$userId]  upload file  [$context.path] failed: ${context.repoName} not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
-
+        logger.info("aaaaaaaaaaaaaaaaaa")
         // save node
         val result = nodeResource.create(NodeCreateRequest(
             projectId = context.projectId,
@@ -191,7 +191,7 @@ class DockerArtifactoryService @Autowired constructor(
             metadata = emptyMap(),
             overwrite = true
         ))
-
+        logger.info("bbbbbbbbbbbbbbbbbbbbb")
         if (result.isOk()) {
             storageService.store(context.sha256, context.artifactFile!!, repository.storageCredentials)
             logger.info("user[$userId]  upload file [$context.path] success")
