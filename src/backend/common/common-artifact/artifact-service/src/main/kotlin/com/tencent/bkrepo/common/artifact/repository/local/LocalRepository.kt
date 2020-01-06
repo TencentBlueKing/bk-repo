@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.local
 
+import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -55,6 +56,7 @@ abstract class LocalRepository : AbstractArtifactRepository {
         val repositoryInfo = context.repositoryInfo
         val artifactFile = context.getArtifactFile()
         val sha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
+        val md5 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] as String
 
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
@@ -63,6 +65,7 @@ abstract class LocalRepository : AbstractArtifactRepository {
             fullPath = artifactInfo.artifactUri,
             size = artifactFile.getSize(),
             sha256 = sha256,
+            md5 = md5,
             operator = context.userId
         )
     }

@@ -33,11 +33,9 @@ internal class NodeQueryTest @Autowired constructor(
     private val nodeQueryService: NodeQueryService,
     private val repositoryService: RepositoryService
 ) {
-
     private val projectId = "unit-test"
     private val operator = "system"
-
-    private var repoName = ""
+    private var repoName = "unit-test"
 
     @BeforeEach
     fun setUp() {
@@ -49,7 +47,7 @@ internal class NodeQueryTest @Autowired constructor(
                 name = repoName,
                 type = RepositoryType.GENERIC,
                 category = RepositoryCategory.LOCAL,
-                public = true,
+                public = false,
                 description = "简单描述",
                 configuration = LocalConfiguration(),
                 operator = operator
@@ -147,6 +145,7 @@ internal class NodeQueryTest @Autowired constructor(
             overwrite = false,
             size = size,
             sha256 = "sha256",
+            md5 = "md5",
             operator = operator,
             metadata = metadata
         )

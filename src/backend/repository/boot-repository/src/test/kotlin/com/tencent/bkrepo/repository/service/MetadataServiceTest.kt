@@ -31,30 +31,29 @@ class MetadataServiceTest @Autowired constructor(
 ){
     private val projectId = "unit-test"
     private val operator = "system"
-
-    private var repoName = ""
+    private var repoName = "unit-test"
 
     @BeforeEach
     fun setUp() {
-        repoName = RandomStringUtils.randomAlphabetic(10)
-        repositoryService.list(projectId).forEach { repositoryService.delete(projectId, it.name) }
-        repositoryService.create(
-            RepoCreateRequest(
-                projectId = projectId,
-                name = repoName,
-                type = RepositoryType.GENERIC,
-                category = RepositoryCategory.LOCAL,
-                public = true,
-                description = "简单描述",
-                configuration = LocalConfiguration(),
-                operator = operator
+        if(!repositoryService.exist(projectId, repoName)) {
+            repositoryService.create(
+                RepoCreateRequest(
+                    projectId = projectId,
+                    name = repoName,
+                    type = RepositoryType.GENERIC,
+                    category = RepositoryCategory.LOCAL,
+                    public = false,
+                    description = "单元测试仓库",
+                    configuration = LocalConfiguration(),
+                    operator = operator
+                )
             )
-        )
+        }
     }
 
     @AfterEach
     fun tearDown() {
-        repositoryService.delete(projectId, repoName)
+        nodeService.deleteByPath(projectId, repoName, "", operator, false)
     }
 
     @Test
@@ -62,7 +61,7 @@ class MetadataServiceTest @Autowired constructor(
         val metadata = mutableMapOf<String, String>()
         metadata["name"] = "c.txt"
         metadata["createdBy"] = "system"
-        
+
         val createRequest = NodeCreateRequest(
             projectId = projectId,
             repoName = repoName,
@@ -72,6 +71,7 @@ class MetadataServiceTest @Autowired constructor(
             overwrite = false,
             size = 1,
             sha256 = "sha256",
+            md5 = "md5",
             metadata = metadata,
             operator = operator
         )
@@ -138,6 +138,7 @@ class MetadataServiceTest @Autowired constructor(
             overwrite = false,
             size = 1,
             sha256 = "sha256",
+            md5 = "md5",
             operator = operator
         )
     }

@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.common.storage.util
 
+import org.apache.commons.codec.binary.Hex
+import org.apache.commons.codec.digest.DigestUtils
 import java.io.IOException
 import java.io.InputStream
 import java.security.MessageDigest
-import org.apache.commons.codec.binary.Hex
-import org.apache.commons.codec.digest.DigestUtils
 
 object FileDigestUtils {
 
@@ -14,8 +14,18 @@ object FileDigestUtils {
     }
 
     @Throws(IOException::class, IllegalArgumentException::class)
-    fun fileMD5(inputStreamList: List<InputStream>): String {
+    fun fileMd5(inputStream: InputStream): String {
+        return digest(listOf(inputStream), DigestUtils.getMd5Digest())
+    }
+
+    @Throws(IOException::class, IllegalArgumentException::class)
+    fun fileMd5(inputStreamList: List<InputStream>): String {
         return digest(inputStreamList, DigestUtils.getMd5Digest())
+    }
+
+    @Throws(IOException::class, IllegalArgumentException::class)
+    fun fileSha256(inputStream: InputStream): String {
+        return digest(listOf(inputStream), DigestUtils.getSha256Digest())
     }
 
     @Throws(IOException::class, IllegalArgumentException::class)
