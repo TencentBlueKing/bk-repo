@@ -29,7 +29,7 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         dockerRepo.httpHeaders = headers
         dockerRepo.userId = getContextUserId(userId)
         val name = PathUtil.artifactName(request, BLOB_PATTERN, projectId, repoName)
-        return dockerRepo.uploadBlob(projectId, repoName, name, DockerDigest(digest), uuid, request.inputStream, artifactFile)
+        return dockerRepo.uploadBlob(projectId, repoName, name, DockerDigest(digest), uuid, artifactFile)
     }
 
     override fun isBlobExists(

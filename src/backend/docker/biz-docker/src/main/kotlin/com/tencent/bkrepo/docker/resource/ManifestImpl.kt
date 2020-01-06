@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 元数据服务接口实现类
  *
  * @author: owenlxu
  * @date: 2019-10-03

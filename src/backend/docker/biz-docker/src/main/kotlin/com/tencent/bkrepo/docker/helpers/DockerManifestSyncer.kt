@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.docker.helpers
 
+import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
+import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
@@ -32,9 +34,10 @@ class DockerManifestSyncer() {
                 if (!repo.exists(projectId, repoName, finalBlobPath)) {
                     if (DockerSchemaUtils.isEmptyBlob(blobDigest)) {
                         log.debug("Found empty layer {} in manifest for image {} - creating blob in path {}", blobFilename, dockerRepo, finalBlobPath)
+                        val artifactFile = ArtifactFileFactory.build()
                         val blobContent = ByteArrayInputStream(DockerSchemaUtils.EMPTY_BLOB_CONTENT)
                         blobContent.use {
-                            // repo.write(WriteContext(projectId, repoName, finalBlobPath).content(it).sha256(DockerSchemaUtils.emptyBlobDigest().getDigestHex()))
+                            repo.upload(UploadContext(projectId, repoName, finalBlobPath).content(it).sha256(DockerSchemaUtils.emptyBlobDigest().getDigestHex()).artifactFile(artifactFile))
                         }
                     } else if (repo.exists(projectId, repoName, tempBlobPath)) {
                         this.moveBlobFromTempDir(repo, projectId, repoName, tempBlobPath, finalBlobPath)
@@ -61,36 +64,36 @@ class DockerManifestSyncer() {
         return "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == blobInfo.mediaType
     }
 
-    private fun removeUnreferencedBlobs(repo: DockerArtifactoryService, repoTag: String, info: ManifestMetadata) {
-/*        log.debug("Starting to remove unreferenced blobs from '{}'", repoTag)
-        val manifestBlobs = Sets.newHashSet<String>()
-        val blobsInfo = info.blobsInfo.iterator()
-
-        while (blobsInfo.hasNext()) {
-            val blobInfo = blobsInfo.next() as DockerBlobInfo
-            if (blobInfo.digest != null) {
-                val blobDigest = DockerDigest(blobInfo.digest!!)
-                manifestBlobs.add(blobDigest.filename())
-            }
-        }
-
-        val artifacts = repo.findArtifacts(repoTag, "*")
-        if (artifacts != null) {
-            val var11 = artifacts!!.iterator()
-
-            while (var11.hasNext()) {
-                val artifact = var11.next() as Artifact
-                val path = artifact.getArtifactPath()
-                val filename = PathUtils.getFileName(path)
-                if (!StringUtils.equals(filename, "manifest.json") && !manifestBlobs.contains(filename)) {
-                    log.info("Removing the unreferenced blob '{}'", path)
-                    repo.delete(path)
-                }
-            }
-        }*/
-
-        log.debug("Completed unreferenced blobs cleanup from '{}'", repoTag)
-    }
+//    private fun removeUnreferencedBlobs(repo: DockerArtifactoryService, repoTag: String, info: ManifestMetadata) {
+//       log.debug("Starting to remove unreferenced blobs from '{}'", repoTag)
+//        val manifestBlobs = Sets.newHashSet<String>()
+//        val blobsInfo = info.blobsInfo.iterator()
+//
+//        while (blobsInfo.hasNext()) {
+//            val blobInfo = blobsInfo.next() as DockerBlobInfo
+//            if (blobInfo.digest != null) {
+//                val blobDigest = DockerDigest(blobInfo.digest!!)
+//                manifestBlobs.add(blobDigest.filename())
+//            }
+//        }
+//
+//        val artifacts = repo.findArtifacts(repoTag, "*")
+//        if (artifacts != null) {
+//            val var11 = artifacts!!.iterator()
+//
+//            while (var11.hasNext()) {
+//                val artifact = var11.next() as Artifact
+//                val path = artifact.getArtifactPath()
+//                val filename = PathUtils.getFileName(path)
+//                if (!StringUtils.equals(filename, "manifest.json") && !manifestBlobs.contains(filename)) {
+//                    log.info("Removing the unreferenced blob '{}'", path)
+//                    repo.delete(path)
+//                }
+//            }
+//        }
+//
+//        log.debug("Completed unreferenced blobs cleanup from '{}'", repoTag)
+//    }
 
     protected fun copyBlobFromFirstReadableDockerRepo(repo: DockerArtifactoryService, projectId: String, repoName: String, dockerRepo: String, blobFilename: String, targetPath: String): Boolean {
         val blob = DockerUtils.findBlobGlobally(repo, projectId, repoName, dockerRepo, blobFilename) ?: run {
