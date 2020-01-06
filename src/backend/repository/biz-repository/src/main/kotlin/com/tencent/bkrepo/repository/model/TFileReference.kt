@@ -18,8 +18,12 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
 )
 data class TFileReference(
     var id: String? = null,
-    @ShardingKey(count = 256)
+    @ShardingKey(count = SHARDING_COUNT)
     var sha256: String,
     var storageCredentials: String? = null,
     var count: Long
-)
+) {
+    companion object {
+        const val SHARDING_COUNT = 256
+    }
+}

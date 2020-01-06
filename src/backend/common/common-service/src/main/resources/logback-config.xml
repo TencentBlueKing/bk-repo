@@ -91,9 +91,6 @@
         <logger name="com.tencent.bkrepo.common.service.config.FeignFilterRequestMappingHandlerMapping" level="INFO" additivity="false">
             <appender-ref ref="console"/>
         </logger>
-        <logger name="com.novemberain.quartz.mongodb" level="WARN">
-            <appender-ref ref="console"/>
-        </logger>
         <root level="INFO">
             <appender-ref ref="console"/>
         </root>
@@ -106,10 +103,6 @@
 
         <logger name="ServiceResourceApi" level="INFO" additivity="false">
             <appender-ref ref="api_log"/>
-        </logger>
-
-        <logger name="com.novemberain.quartz.mongodb" level="WARN">
-            <appender-ref ref="app_log"/>
         </logger>
 
         <logger name="org" level="INFO">
@@ -128,10 +121,6 @@
 
         <logger name="ServiceResourceApi" level="INFO" additivity="false">
             <appender-ref ref="api_log"/>
-        </logger>
-
-        <logger name="com.novemberain.quartz.mongodb" level="WARN">
-            <appender-ref ref="app_log"/>
         </logger>
 
         <logger name="org" level="WARN">

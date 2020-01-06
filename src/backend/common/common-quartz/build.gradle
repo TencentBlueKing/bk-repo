@@ -1,6 +1,0 @@
-dependencies {
-    api project(":common:common-mongo")
-    api "com.novemberain:quartz-mongodb"
-    api "org.springframework:spring-context-support"
-    implementation "org.springframework.boot:spring-boot-starter"
-}

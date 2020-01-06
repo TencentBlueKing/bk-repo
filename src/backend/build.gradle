@@ -14,7 +14,7 @@ buildscript {
         commonsIoVersion = "2.6"
         commonsUploadVersion = "1.4"
         skywalkingVersion = "6.1.0"
-        quartzMongodbVersion = "2.1.0"
+        shedlockVersion = "4.1.0"
     }
 
     repositories {
@@ -137,7 +137,8 @@ subprojects {
             dependency "commons-fileupload:commons-fileupload:$commonsUploadVersion"
             dependency "org.apache.skywalking:apm-toolkit-logback-1.x:$skywalkingVersion"
             dependency "org.apache.skywalking:apm-toolkit-trace:$skywalkingVersion"
-            dependency "com.novemberain:quartz-mongodb:$quartzMongodbVersion"
+            dependency "net.javacrumbs.shedlock:shedlock-spring:$shedlockVersion"
+            dependency "net.javacrumbs.shedlock:shedlock-provider-mongo:$shedlockVersion"
         }
 
     }

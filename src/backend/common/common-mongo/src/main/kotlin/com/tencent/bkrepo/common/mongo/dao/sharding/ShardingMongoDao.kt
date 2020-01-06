@@ -3,8 +3,6 @@ package com.tencent.bkrepo.common.mongo.dao.sharding
 import com.mongodb.BasicDBList
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
-import java.lang.reflect.Field
-import javax.annotation.PostConstruct
 import org.apache.commons.lang3.reflect.FieldUtils
 import org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation
 import org.bson.Document
@@ -14,6 +12,8 @@ import org.springframework.core.annotation.AnnotationUtils
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Query
+import java.lang.reflect.Field
+import javax.annotation.PostConstruct
 
 /**
  * mongodb 支持分表的数据访问层抽象类
@@ -101,7 +101,7 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         return parseSequenceToCollectionName(tableSequence)
     }
 
-    private fun parseSequenceToCollectionName(sequence: Int): String {
+    fun parseSequenceToCollectionName(sequence: Int): String {
         return collectionName + "_" + sequence
     }
 

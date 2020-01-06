@@ -4,9 +4,10 @@ import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import java.io.File
+import java.nio.file.Paths
 
 /**
- * 本地文件存储
+ * 文件系统存储
  *
  * @author: carrypan
  * @date: 2019-09-09
@@ -32,4 +33,6 @@ class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSystemC
     override fun onCreateClient(credentials: FileSystemCredentials) = FileSystemClient(credentials.path)
 
     override fun getDefaultCredentials() = storageProperties.filesystem
+
+    override fun getTempPath() = Paths.get(storageProperties.filesystem.path, "temp").toUri().toString()
 }

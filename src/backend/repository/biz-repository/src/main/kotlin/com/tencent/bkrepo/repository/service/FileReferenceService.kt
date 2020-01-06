@@ -24,7 +24,7 @@ class FileReferenceService @Autowired constructor(
 
     fun increment(node: TNode, repository: TRepository? = null) {
         if (node.folder) return
-        val repo = repository ?: repositoryService.checkRepository(node.projectId, node.repoName)
+        val repo = repository ?: repositoryService.queryRepository(node.projectId, node.repoName) ?: return
         increment(node.sha256!!, repo.storageCredentials)
     }
 

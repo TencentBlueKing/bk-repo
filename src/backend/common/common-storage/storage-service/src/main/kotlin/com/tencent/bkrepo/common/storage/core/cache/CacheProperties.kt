@@ -16,7 +16,7 @@ data class CacheProperties(
      */
     var path: String = "/data/cached",
     /**
-     * 缓存文件时间，单位小时。小于或等于0则永久存储
+     * 缓存文件时间，单位天。小于或等于0则永久存储
      */
-    var expireHours: Int = -1
+    var expireDays: Int = -1
 )
