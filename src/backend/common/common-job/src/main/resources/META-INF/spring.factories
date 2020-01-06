@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.tencent.bkrepo.common.quartz.QuartzConfiguration
+com.tencent.bkrepo.common.job.JobAutoConfiguration

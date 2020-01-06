@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import java.io.File
 
@@ -88,4 +89,9 @@ interface StorageService {
      * blockId: 分块存储id
      */
     fun mergeBlock(blockId: String, storageCredentials: StorageCredentials? = null): FileInfo
+
+    /**
+     * 清理文件
+     */
+    fun cleanUp(): CleanupResult
 }

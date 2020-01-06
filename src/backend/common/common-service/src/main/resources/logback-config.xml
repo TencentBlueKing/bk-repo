@@ -6,8 +6,9 @@
 
     <property name="logging.app.file" value="${logging.path}/${application.name}.log"/>
     <property name="logging.api.file" value="${logging.path}/${application.name}-api.log"/>
-    <property name="logging.framework.file" value="${logging.path}/${application.name}-framework.log"/>
-    <property name="logging.error.file" value="${logging.path}/${application.name}-error.log"/>
+    <property name="logging.job.file" value="${logging.path}/${application.name}-job.log"/>
+    <property name="logging.sys-error.file" value="${logging.path}/${application.name}-sys-error.log"/>
+    <property name="logging.biz-error.file" value="${logging.path}/${application.name}-biz-error.log"/>
     <property name="logging.access.file" value="${logging.path}/${application.name}-access.log"/>
     <property name="logging.file.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS}|%X{ip:--}|%F|%L|%level|%X{err_code:-0}|%tid||||[%t] %m%ex%n"/>
     <property name="logging.console.pattern" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} [%clr(%tid)] %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
@@ -45,8 +46,8 @@
         </encoder>
     </appender>
 
-    <appender name="framework_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${logging.framework.file}</file>
+    <appender name="job_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.job.file}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${logging.framework.file}.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
             <maxHistory>30</maxHistory>
@@ -58,11 +59,31 @@
         </encoder>
     </appender>
 
-    <appender name="error_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${logging.error.file}</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${logging.error.file}.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+    <appender name="biz_error_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.biz-error.file}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${logging.biz-error.file}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <maxHistory>30</maxHistory>
+            <maxFileSize>1GB</maxFileSize>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${logging.file.pattern}</pattern>
+            </layout>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name="sys_error_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.sys-error.file}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${logging.sys-error.file}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <maxFileSize>1GB</maxFileSize>
         </rollingPolicy>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
             <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
@@ -91,55 +112,30 @@
         <logger name="com.tencent.bkrepo.common.service.config.FeignFilterRequestMappingHandlerMapping" level="INFO" additivity="false">
             <appender-ref ref="console"/>
         </logger>
-        <logger name="com.novemberain.quartz.mongodb" level="WARN">
-            <appender-ref ref="console"/>
-        </logger>
         <root level="INFO">
             <appender-ref ref="console"/>
         </root>
     </springProfile>
 
-    <springProfile name="dev">
-        <logger name="com.tencent.bkrepo" level="DEBUG">
-            <appender-ref ref="app_log"/>
+    <springProfile name="dev, test, prod">
+        <logger name="BusinessErrorLogger" level="ERROR">
+            <appender-ref ref="biz_error_log"/>
         </logger>
 
-        <logger name="ServiceResourceApi" level="INFO" additivity="false">
+        <logger name="SystemErrorLogger" level="ERROR">
+            <appender-ref ref="sys_error_log"/>
+        </logger>
+
+        <logger name="FeignApiLogger" level="INFO" additivity="false">
             <appender-ref ref="api_log"/>
         </logger>
 
-        <logger name="com.novemberain.quartz.mongodb" level="WARN">
+        <logger name="JobLogger" level="INFO" additivity="false">
+            <appender-ref ref="job_log"/>
+        </logger>
+
+        <root level="INFO">
             <appender-ref ref="app_log"/>
-        </logger>
-
-        <logger name="org" level="INFO">
-            <appender-ref ref="framework_log"/>
-        </logger>
-
-        <root level="ERROR">
-            <appender-ref ref="error_log"/>
-        </root>
-    </springProfile>
-
-    <springProfile name="test, prod">
-        <logger name="com.tencent.bkrepo" level="INFO">
-            <appender-ref ref="app_log"/>
-        </logger>
-
-        <logger name="ServiceResourceApi" level="INFO" additivity="false">
-            <appender-ref ref="api_log"/>
-        </logger>
-
-        <logger name="com.novemberain.quartz.mongodb" level="WARN">
-            <appender-ref ref="app_log"/>
-        </logger>
-
-        <logger name="org" level="WARN">
-            <appender-ref ref="framework_log"/>
-        </logger>
-
-        <root level="ERROR">
-            <appender-ref ref="error_log"/>
         </root>
     </springProfile>
 

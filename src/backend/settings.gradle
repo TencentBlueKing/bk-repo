@@ -6,7 +6,7 @@ include ":common:common-auth"
 include ":common:common-client"
 include ":common:common-redis"
 include ":common:common-mongo"
-include ":common:common-quartz"
+include ":common:common-job"
 include ":common:common-service"
 
 include ":common:common-storage"

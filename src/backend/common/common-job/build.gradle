@@ -1,0 +1,7 @@
+dependencies {
+    api project(":common:common-mongo")
+    api "net.javacrumbs.shedlock:shedlock-spring"
+    api("net.javacrumbs.shedlock:shedlock-provider-mongo") {
+        exclude group: 'org.mongodb', module: 'mongo-java-driver'
+    }
+}

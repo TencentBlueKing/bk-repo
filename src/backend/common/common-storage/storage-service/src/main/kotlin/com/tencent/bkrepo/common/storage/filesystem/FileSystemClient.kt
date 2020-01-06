@@ -1,11 +1,17 @@
 package com.tencent.bkrepo.common.storage.filesystem
 
 import com.google.common.io.ByteStreams
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.util.FileMergeUtils
 import org.apache.commons.io.FileUtils
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 
 /**
  * 本地文件存储客户端
@@ -16,81 +22,93 @@ import java.io.InputStream
 class FileSystemClient(private val root: String) {
 
     init {
-        File(root).mkdirs()
+        Files.createDirectories(Paths.get(root))
     }
 
-    fun touch(path: String, filename: String): File {
-        val directory = File(this.root, path)
-        val file = File(directory, filename)
-        FileUtils.touch(file)
-        return file
+    fun touch(dir: String, filename: String): File {
+        val filePath = Paths.get(this.root, dir, filename)
+        createDirectories(filePath.parent)
+        return Files.createFile(filePath).toFile()
     }
 
-    fun store(path: String, filename: String, inputStream: InputStream, overwrite: Boolean = true): File {
-        val directory = File(this.root, path)
-        directory.mkdirs()
-        val file = File(directory, filename)
-        if (overwrite || !file.exists()) {
-            file.outputStream().use { output ->
-                inputStream.use { input -> ByteStreams.copy(input, output) }
-            }
+    fun store(dir: String, filename: String, inputStream: InputStream, overwrite: Boolean = true): File {
+        val filePath = Paths.get(this.root, dir, filename)
+        createDirectories(filePath.parent)
+        if (overwrite || !Files.exists(filePath)) {
+            inputStream.use { Files.copy(it, filePath, StandardCopyOption.REPLACE_EXISTING) }
         }
-        return file
+        return filePath.toFile()
     }
 
-    fun delete(path: String, filename: String) {
-        val directory = File(this.root, path)
-        val file = File(directory, filename)
-        if (file.isFile) {
-            file.delete()
-        }
+    fun delete(dir: String, filename: String) {
+        val filePath = Paths.get(this.root, dir, filename)
+        if (Files.isRegularFile(filePath)) Files.delete(filePath)
     }
 
-    fun load(path: String, filename: String): File? {
-        val directory = File(this.root, path)
-        val file = File(directory, filename)
-        return if (file.isFile) file else null
+    fun load(dir: String, filename: String): File? {
+        val filePath = Paths.get(this.root, dir, filename)
+        return if (Files.isRegularFile(filePath)) filePath.toFile() else null
     }
 
-    fun exist(path: String, filename: String): Boolean {
-        val directory = File(this.root, path)
-        val file = File(directory, filename)
-        return file.isFile
+    fun exist(dir: String, filename: String): Boolean {
+        val filePath = Paths.get(this.root, dir, filename)
+        return Files.isRegularFile(filePath)
     }
 
-    fun append(path: String, filename: String, inputStream: InputStream): Long {
-        val directory = File(this.root, path)
-        val file = File(directory, filename)
-        if (!file.isFile) {
+    fun append(dir: String, filename: String, inputStream: InputStream): Long {
+        val filePath = Paths.get(this.root, dir, filename)
+        if (!Files.isRegularFile(filePath)) {
             throw IllegalArgumentException("Append file does not exist.")
         }
-        FileOutputStream(file, true).use { output ->
+        FileOutputStream(filePath.toFile(), true).use { output ->
             inputStream.use { input -> ByteStreams.copy(input, output) }
         }
-        return file.length()
+        return Files.size(filePath)
     }
 
-    fun createDirectory(path: String, name: String) {
-        val directory = File(this.root, path)
-        File(directory, name).mkdirs()
+    fun createDirectory(dir: String, name: String) {
+        val dirPath = Paths.get(this.root, dir, name)
+        if(!Files.exists(dirPath)) {
+            Files.createDirectories(dirPath)
+        }
     }
 
-    fun deleteDirectory(path: String, name: String) {
-        val directory = File(this.root, path)
+    fun deleteDirectory(dir: String, name: String) {
+        val directory = File(this.root, dir)
         FileUtils.deleteDirectory(File(directory, name))
     }
 
-    fun checkDirectory(path: String): Boolean {
-        return File(this.root, path).isDirectory
+    fun checkDirectory(dir: String): Boolean {
+        return Files.isDirectory(Paths.get(this.root, dir))
     }
 
     fun listFiles(path: String, extension: String): Collection<File> {
-        val directory = File(this.root, path)
-        return FileUtils.listFiles(directory, arrayOf(extension), false)
+        return FileUtils.listFiles(File(this.root, path), arrayOf(extension), false)
     }
 
     fun mergeFiles(fileList: List<File>, outputFile: File): File {
         FileMergeUtils.mergeFiles(fileList, outputFile)
         return outputFile
     }
+
+    /**
+     * 清理文件
+     */
+    fun cleanUp(expireDays: Int): CleanupResult {
+        return if (expireDays <= 0) {
+            CleanupResult()
+        } else {
+            val rootPath = Paths.get(root)
+            val visitor = CleanupFileVisitor(rootPath, expireDays)
+            Files.walkFileTree(rootPath, visitor)
+            visitor.cleanupResult
+        }
+    }
+
+    private fun createDirectories(path: Path) {
+        if(!Files.exists(path)) {
+            Files.createDirectories(path)
+        }
+    }
 }
+

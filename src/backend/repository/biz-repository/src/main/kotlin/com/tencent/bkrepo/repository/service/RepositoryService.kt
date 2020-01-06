@@ -16,7 +16,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.repository.RepoRepository
-import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
@@ -26,6 +25,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 仓库service
@@ -149,7 +149,7 @@ class RepositoryService @Autowired constructor(
         return query
     }
 
-    private fun queryRepository(projectId: String, name: String, type: String? = null): TRepository? {
+    fun queryRepository(projectId: String, name: String, type: String? = null): TRepository? {
         if (projectId.isBlank() || name.isBlank()) return null
 
         val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId).and(TRepository::name.name).`is`(name)

@@ -16,6 +16,6 @@ interface FileStorage {
     fun delete(path: String, filename: String, storageCredentials: StorageCredentials)
     fun exist(path: String, filename: String, storageCredentials: StorageCredentials): Boolean
 
-    fun getTempPath(): String = System.getProperty("java.io.tmpdir")
     fun getDefaultCredentials(): StorageCredentials
+    fun getTempPath(): String = System.getProperty("java.io.tmpdir")
 }
