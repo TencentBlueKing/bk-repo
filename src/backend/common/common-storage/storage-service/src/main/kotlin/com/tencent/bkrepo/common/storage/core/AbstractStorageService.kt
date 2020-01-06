@@ -131,10 +131,11 @@ abstract class AbstractStorageService : StorageService {
         }
     }
 
-    override fun append(appendId: String, artifactFile: ArtifactFile) {
+    override fun append(appendId: String, artifactFile: ArtifactFile): Long {
         try {
-            tempFileClient.append(CURRENT_PATH, appendId, artifactFile.getInputStream())
-            logger.info("Success to append file [$appendId]")
+            val length = tempFileClient.append(CURRENT_PATH, appendId, artifactFile.getInputStream())
+            logger.info("Success to append file [$appendId].")
+            return length
         } catch (exception: Exception) {
             logger.error("Failed to append file [$appendId].", exception)
             throw StorageException(

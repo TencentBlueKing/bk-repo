@@ -28,6 +28,7 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
             val parts = decodedHeader.split(":")
             require(parts.size >= 2)
+            require(parts[0].isNotBlank())
             return BasicAuthCredentials(parts[0], parts[1])
         } catch (exception: Exception) {
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
