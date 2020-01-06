@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.common.artifact.file
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import org.apache.commons.fileupload.disk.DiskFileItem
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
-import org.apache.commons.fileupload.disk.DiskFileItem
 
 /**
  *
@@ -30,6 +30,8 @@ class MultipartArtifactFile(private val diskFileItem: DiskFileItem) : ArtifactFi
      * 该方法在DiskFileItem中为protected，采用反射调用
      */
     override fun getTempFile(): File {
-        return diskFileItem.javaClass.getMethod(ArtifactFile::getTempFile.name).invoke(null) as File
+        val method = diskFileItem.javaClass.getDeclaredMethod(ArtifactFile::getTempFile.name)
+        method.isAccessible = true
+        return method.invoke(diskFileItem) as File
     }
 }
