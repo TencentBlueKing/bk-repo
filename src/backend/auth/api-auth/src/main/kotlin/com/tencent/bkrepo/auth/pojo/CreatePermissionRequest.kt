@@ -9,7 +9,7 @@ data class CreatePermissionRequest(
     @ApiModelProperty("资源类型")
     val resourceType: ResourceType = ResourceType.REPO,
     @ApiModelProperty("项目ID")
-    val projectId: String ?= null,
+    val projectId: String ? = null,
     @ApiModelProperty("权限名")
     val permName: String,
     @ApiModelProperty("关联仓库名")

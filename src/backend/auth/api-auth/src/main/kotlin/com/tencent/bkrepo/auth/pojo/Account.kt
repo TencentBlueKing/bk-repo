@@ -10,5 +10,5 @@ data class Account(
     @ApiModelProperty("locked状态")
     val locked: Boolean,
     @ApiModelProperty("认证ak/sk对")
-    val credentials:List<CredentialSet>
+    val credentials: List<CredentialSet>
 )

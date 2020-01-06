@@ -18,7 +18,6 @@ class ServiceUserResourceImpl @Autowired constructor(
         return Response(true)
     }
 
-
     override fun deleteById(uid: String): Response<Boolean> {
         userService.deleteById(uid)
         return Response(true)
@@ -67,5 +66,4 @@ class ServiceUserResourceImpl @Autowired constructor(
         userService.findUserByUserToken(uid, token) ?: return Response(false)
         return Response(true)
     }
-
 }

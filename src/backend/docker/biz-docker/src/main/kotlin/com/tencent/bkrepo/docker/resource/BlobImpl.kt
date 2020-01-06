@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.docker.resource
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.api.Blob
 import com.tencent.bkrepo.docker.constant.BLOB_PATTERN
 import com.tencent.bkrepo.docker.model.DockerDigest
@@ -22,12 +23,13 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         projectId: String,
         repoName: String,
         uuid: String,
-        digest: String?
+        digest: String?,
+        artifactFile: ArtifactFile
     ): ResponseEntity<Any> {
         dockerRepo.httpHeaders = headers
         dockerRepo.userId = getContextUserId(userId)
         val name = PathUtil.artifactName(request, BLOB_PATTERN, projectId, repoName)
-        return dockerRepo.uploadBlob(projectId, repoName, name, DockerDigest(digest), uuid, request.inputStream)
+        return dockerRepo.uploadBlob(projectId, repoName, name, DockerDigest(digest), uuid, artifactFile)
     }
 
     override fun isBlobExists(
@@ -74,11 +76,12 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         headers: HttpHeaders,
         projectId: String,
         repoName: String,
-        uuid: String
+        uuid: String,
+        artifactFile: ArtifactFile
     ): ResponseEntity<Any> {
         dockerRepo.httpHeaders = headers
         dockerRepo.userId = getContextUserId(userId)
         val name = PathUtil.artifactName(request, BLOB_PATTERN, projectId, repoName)
-        return dockerRepo.patchUpload(projectId, repoName, name, uuid, request)
+        return dockerRepo.patchUpload(projectId, repoName, name, uuid, artifactFile)
     }
 }

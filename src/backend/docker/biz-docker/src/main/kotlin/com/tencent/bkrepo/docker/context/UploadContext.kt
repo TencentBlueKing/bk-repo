@@ -3,6 +3,7 @@ package com.tencent.bkrepo.docker.context
 import com.google.common.collect.LinkedHashMultimap
 import com.google.common.collect.Maps
 import com.google.common.collect.SetMultimap
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import java.io.InputStream
 
 class UploadContext {
@@ -14,10 +15,11 @@ class UploadContext {
     var md5: String = ""
     var projectId: String = ""
     var repoName: String = ""
+    var artifactFile: ArtifactFile? = null
     private val requestHeaders = Maps.newHashMap<String, String>()
     var attributes: SetMultimap<String, String> = LinkedHashMultimap.create()
 
-    constructor(projectId:String,repoName: String,path: String) {
+    constructor(projectId: String, repoName: String, path: String) {
         this.projectId = projectId
         this.repoName = repoName
         this.path = path
@@ -25,6 +27,11 @@ class UploadContext {
 
     fun path(path: String): UploadContext {
         this.path = path
+        return this
+    }
+
+    fun artifactFile(artifactFile: ArtifactFile): UploadContext {
+        this.artifactFile = artifactFile
         return this
     }
 

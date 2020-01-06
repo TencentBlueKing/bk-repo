@@ -1,8 +1,9 @@
 package com.tencent.bkrepo.auth.service
 
-import com.tencent.bkrepo.auth.pojo.*
+import com.tencent.bkrepo.auth.pojo.Account
+import com.tencent.bkrepo.auth.pojo.CreateAccountRequest
+import com.tencent.bkrepo.auth.pojo.CredentialSet
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
-
 
 interface AccountService {
 
@@ -22,5 +23,5 @@ interface AccountService {
 
     fun updateCredentialStatus(appId: String, accessKey: String, status: CredentialStatus): Boolean
 
-    fun checkCredential(accessKey: String, secretKey: String): String
+    fun checkCredential(accessKey: String, secretKey: String): String?
 }

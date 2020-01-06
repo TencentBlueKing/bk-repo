@@ -1,0 +1,11 @@
+dependencies {
+    api project(":common:common-service")
+    api project(":common:common-artifact:artifact-api")
+    api project(":generic:api-generic")
+    api project(":common:common-query:query-api")
+    api project(":common:common-artifact:artifact-service")
+    api project(":common:common-client")
+    api project(":common:common-mongo")
+    api project(":opdata:api-opdata")
+    api project(":repository:api-repository")
+}

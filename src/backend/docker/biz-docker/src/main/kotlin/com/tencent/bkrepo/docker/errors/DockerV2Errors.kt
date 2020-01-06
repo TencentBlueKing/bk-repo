@@ -1,8 +1,7 @@
 package com.tencent.bkrepo.docker.errors
 
-import org.springframework.http.ResponseEntity
-// import javax.ws.rs.core.MediaType
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 
 class DockerV2Errors {
     companion object {
@@ -14,12 +13,11 @@ class DockerV2Errors {
         fun internalError(msg: String ?): ResponseEntity<Any> {
             if (null == msg) {
                 return ResponseEntity.status(404).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "INTERNAL_ERROR", "service internal error", "internal error"))
-
             }
             return ResponseEntity.status(404).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "INTERNAL_ERROR", "service internal error", msg))
         }
 
-        fun repoInvalid(repoName: String ): ResponseEntity<Any> {
+        fun repoInvalid(repoName: String): ResponseEntity<Any> {
             return ResponseEntity.status(404).header("Docker-Distribution-Api-Version", "registry/2.0").contentType(MediaType.APPLICATION_JSON).body(String.format("{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}", "REPO_ERROR", "repo not found error", repoName))
         }
 

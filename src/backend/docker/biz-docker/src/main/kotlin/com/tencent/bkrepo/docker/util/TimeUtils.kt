@@ -1,7 +1,8 @@
 package com.tencent.bkrepo.docker.util
 
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.TimeZone
 
 object TimeUtils {
     fun getGMTTime(): String {

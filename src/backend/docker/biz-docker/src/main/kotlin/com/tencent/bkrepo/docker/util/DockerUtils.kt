@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.docker.util
 
 import com.google.common.base.Joiner
+import com.tencent.bkrepo.docker.artifact.Artifact
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
 import com.tencent.bkrepo.docker.artifact.DockerWorkContext
-import com.tencent.bkrepo.docker.artifact.Artifact
 import com.tencent.bkrepo.docker.helpers.DockerSearchBlobPolicy
 import org.slf4j.LoggerFactory
 
@@ -85,28 +85,28 @@ abstract class DockerUtils {
 
         fun findBlobGlobally(repo: DockerArtifactoryService, projectId: String, repoName: String, dockerRepo: String, fileName: String): Artifact? {
             val result = repo.findArtifacts(projectId, repoName, fileName)
-            if (result.size == 0){
+            if (result.size == 0) {
                 return null
             }
             val blob = result.get(0)
             val length = blob.get("size") as Int
             val fullPath = blob.get("fullPath") as String
-            return Artifact(projectId, repoName, dockerRepo).sha256(fileName.replace("sha256__","")).contentLength(length.toLong()).path(fullPath)
+            return Artifact(projectId, repoName, dockerRepo).sha256(fileName.replace("sha256__", "")).contentLength(length.toLong()).path(fullPath)
         }
 
         fun getManifestConfigBlob(repo: DockerArtifactoryService, blobFilename: String, projectId: String, repoName: String, dockerRepo: String, tag: String): Artifact? {
             val configPath = Joiner.on("/").join(dockerRepo, tag, blobFilename)
-            //search blob in the repo first
+            // search blob in the repo first
             log.info("Searching manifest config blob in: '{}'", configPath)
-            if (repo.exists(projectId, repoName,configPath)) {
+            if (repo.exists(projectId, repoName, configPath)) {
                 log.info("Manifest config blob found in: '{}'", configPath)
-                val config = repo.artifact(projectId,repoName, configPath)
+                val config = repo.artifact(projectId, repoName, configPath)
                 if (repo.getWorkContextC().isBlobReadable(config!!)) {
                     return config
                 }
             }
             // search file in the temp path
-            return getBlobFromRepoPath(repo, projectId, repoName,dockerRepo,blobFilename)
+            return getBlobFromRepoPath(repo, projectId, repoName, dockerRepo, blobFilename)
         }
 
         // get blob from repo path
@@ -116,13 +116,13 @@ abstract class DockerUtils {
             var blob: Artifact?
             if (repo.exists(projectId, repoName, tempBlobPath)) {
                 log.info("Blob found in: '{}'", tempBlobPath)
-                blob = repo.artifact(projectId,repoName, tempBlobPath)
+                blob = repo.artifact(projectId, repoName, tempBlobPath)
                 if (repo.getWorkContextC().isBlobReadable(blob!!)) {
                     return blob
                 }
             }
-            log.info("Attempting to search  blob {} globally {}", dockerRepo,blobFilename)
-            blob = findBlobGlobally(repo, projectId, repoName, dockerRepo,blobFilename)
+            log.info("Attempting to search  blob {} globally {}", dockerRepo, blobFilename)
+            blob = findBlobGlobally(repo, projectId, repoName, dockerRepo, blobFilename)
             return blob
         }
 

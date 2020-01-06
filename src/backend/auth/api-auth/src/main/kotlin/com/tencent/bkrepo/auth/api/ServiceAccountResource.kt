@@ -10,8 +10,13 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.*
-
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(tags = ["SERVICE_ACCOUNT"], description = "服务-账号接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceAccountResource")
@@ -20,8 +25,7 @@ interface ServiceAccountResource {
 
     @ApiOperation("查询所有账号账号")
     @GetMapping("/list")
-    fun listAccount(
-    ): Response<List<Account>>
+    fun listAccount(): Response<List<Account>>
 
     @ApiOperation("创建账号")
     @PostMapping("/create")
@@ -58,7 +62,6 @@ interface ServiceAccountResource {
         @ApiParam(value = "账户id")
         @PathVariable appid: String
     ): Response<List<CredentialSet>>
-
 
     @ApiOperation("删除ak/sk对")
     @DeleteMapping("/credential/{appid}/{accesskey}")

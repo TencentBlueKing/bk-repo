@@ -13,9 +13,7 @@ import org.springframework.stereotype.Service
 
 @Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "bkauth")
-class BkPermissionServiceImpl @Autowired constructor(
-
-) {
+class BkPermissionServiceImpl @Autowired constructor() {
     fun deletePermission(id: String) {
     }
 

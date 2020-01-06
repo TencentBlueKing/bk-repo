@@ -12,7 +12,6 @@ class TagsResponse {
         this.tags = elementsHolder.elements
     }
 
-
     constructor(name: String) {
         this.name = name
     }

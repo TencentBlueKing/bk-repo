@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.service.PermissionService
@@ -68,7 +68,6 @@ class ServicePermissionResourceImpl @Autowired constructor(
         return Response(permissionService.removeUserPermission(id, uid))
     }
 
-
     override fun updatePermissionRole(id: String, rid: String, actionList: List<PermissionAction>): Response<Boolean> {
         return Response(permissionService.updateRolePermission(id, rid, actionList))
     }
@@ -77,12 +76,10 @@ class ServicePermissionResourceImpl @Autowired constructor(
         return Response(permissionService.removeRolePermission(id, rid))
     }
 
-
     private fun checkRequest(request: CheckPermissionRequest) {
         with(request) {
             when (resourceType) {
                 ResourceType.SYSTEM -> {
-
                 }
                 ResourceType.PROJECT -> {
                     if (projectId.isNullOrBlank()) {

@@ -7,7 +7,6 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.repository.UserRoleRepository
-
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import org.slf4j.LoggerFactory
@@ -18,9 +17,9 @@ import org.springframework.stereotype.Service
 @Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "bkauth")
 class BkRoleServiceImpl @Autowired constructor(
-        private val userRepository: UserRepository,
-        private val roleRepository: RoleRepository,
-        private val userRoleRepository: UserRoleRepository
+    private val userRepository: UserRepository,
+    private val roleRepository: RoleRepository,
+    private val userRoleRepository: UserRoleRepository
 ) {
     fun addUserRole(request: AddUserRoleRequest) {
         throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)

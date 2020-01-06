@@ -1,8 +1,7 @@
 package com.tencent.bkrepo.docker.helpers
 
+import java.util.TreeSet
 import org.apache.commons.lang.StringUtils
-import java.util.*
-
 
 class DockerCatalogTagsSlicer {
     companion object {
@@ -19,17 +18,25 @@ class DockerCatalogTagsSlicer {
                             if (StringUtils.isBlank(toElement)) {
                                 elementsHolder.elements = TreeSet()
                             } else {
-                                elementsHolder.hasMoreElements = !StringUtils.equals(elementsHolder.elements.last() as String, toElement)
-                                elementsHolder.elements = elementsHolder.elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
+                                elementsHolder.hasMoreElements =
+                                    !StringUtils.equals(elementsHolder.elements.last() as String, toElement)
+                                elementsHolder.elements = elementsHolder.elements.subSet(
+                                    fromElement,
+                                    true,
+                                    toElement,
+                                    true
+                                ) as TreeSet<String>
                             }
                         } else if (!StringUtils.equals(fromElement, elementsHolder.elements.first() as String)) {
-                            elementsHolder.elements = elementsHolder.elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
+                            elementsHolder.elements =
+                                elementsHolder.elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
                         }
                     } else {
-                        elementsHolder.hasMoreElements = !StringUtils.equals(elementsHolder.elements.last() as String, toElement)
-                        elementsHolder.elements = elementsHolder.elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
+                        elementsHolder.hasMoreElements =
+                            !StringUtils.equals(elementsHolder.elements.last() as String, toElement)
+                        elementsHolder.elements =
+                            elementsHolder.elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
                     }
-
                 }
             }
         }
@@ -43,7 +50,11 @@ class DockerCatalogTagsSlicer {
             return fromElement
         }
 
-        private fun calcToElement(elementsHolder: DockerPaginationElementsHolder, fromElement: String, maxEntries: Int): String {
+        private fun calcToElement(
+            elementsHolder: DockerPaginationElementsHolder,
+            fromElement: String,
+            maxEntries: Int
+        ): String {
             var toElement = elementsHolder.elements.last() as String
             if (maxEntries > 0) {
                 val repos = elementsHolder.elements.tailSet(fromElement)

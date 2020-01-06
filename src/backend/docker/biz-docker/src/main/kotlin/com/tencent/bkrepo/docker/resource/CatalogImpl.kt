@@ -12,7 +12,8 @@ class CatalogImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServic
     override fun list(
         userId: String,
         projectId: String,
-        repoName: String, n: Int?,
+        repoName: String,
+        n: Int?,
         last: String?
     ): ResponseEntity<Any> {
         var maxEntries = 0

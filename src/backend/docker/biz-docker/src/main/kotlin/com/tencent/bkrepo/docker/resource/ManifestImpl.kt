@@ -1,18 +1,17 @@
 package com.tencent.bkrepo.docker.resource
 
-
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.api.Manifest
 import com.tencent.bkrepo.docker.constant.MANIFEST_PATTERN
+import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.PathUtil
 import com.tencent.bkrepo.docker.util.UserUtil
-import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import javax.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 元数据服务接口实现类
  *
  * @author: owenlxu
  * @date: 2019-10-03
@@ -28,11 +27,12 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
         projectId: String,
         repoName: String,
         tag: String,
-        contentType: String
+        contentType: String,
+        artifactFile: ArtifactFile
     ): ResponseEntity<Any> {
         dockerRepo.userId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
-        return dockerRepo.uploadManifest(projectId, repoName, name, tag, contentType, request.inputStream)
+        return dockerRepo.uploadManifest(projectId, repoName, name, tag, contentType, artifactFile)
     }
 
     override fun getManifest(

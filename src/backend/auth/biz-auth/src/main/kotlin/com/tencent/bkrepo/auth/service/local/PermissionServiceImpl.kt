@@ -1,17 +1,22 @@
 package com.tencent.bkrepo.auth.service.local
 
 import com.mongodb.BasicDBObject
+import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
-import com.tencent.bkrepo.auth.pojo.*
+import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.Permission
+import com.tencent.bkrepo.auth.pojo.PermissionInstance
+import com.tencent.bkrepo.auth.pojo.PermissionSet
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.PermissionService
-import com.tencent.bkrepo.auth.message.AuthMessageCode
-import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -20,7 +25,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 @Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
@@ -46,7 +50,6 @@ class PermissionServiceImpl @Autowired constructor(
         } else {
             return emptyList()
         }
-
     }
 
     private fun transfer(tPermission: TPermission): Permission {
@@ -206,7 +209,6 @@ class PermissionServiceImpl @Autowired constructor(
         return false
     }
 
-
     override fun updateRolePermission(id: String, rid: String, actions: List<PermissionAction>): Boolean {
         val permission = permissionRepository.findOneById(id)
         if (permission == null) {
@@ -258,14 +260,13 @@ class PermissionServiceImpl @Autowired constructor(
         return false
     }
 
-
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
         val user = userRepository.findOneByUserId(request.uid)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         if (user.admin!!) return true
         val roles = user.roles
 
-        //check project admin
+        // check project admin
         if (roles != null && request.projectId != null && request.resourceType == ResourceType.PROJECT) {
             roles.forEach {
                 val role = roleRepository.findOneByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
@@ -277,10 +278,10 @@ class PermissionServiceImpl @Autowired constructor(
             }
         }
 
-        //check repo admin
+        // check repo admin
         if (roles != null && request.projectId != null && request.resourceType == ResourceType.REPO) {
             roles.forEach {
-                val role = roleRepository.findOneByIdAndProjectIdAndTypeAndRepoName(it, request.projectId!!, RoleType.REPO,request.repoName!!)
+                val role = roleRepository.findOneByIdAndProjectIdAndTypeAndRepoName(it, request.projectId!!, RoleType.REPO, request.repoName!!)
                 if (role != null) {
                     if (role.admin!! == true) {
                         return true
@@ -289,7 +290,7 @@ class PermissionServiceImpl @Autowired constructor(
             }
         }
 
-        //check repo permission
+        // check repo permission
         val criteria = Criteria()
         var criteriac = criteria.orOperator(Criteria.where("users._id").`is`(request.uid).and("users.action").`is`(request.action.toString()),
             Criteria.where("roles._id").`in`(roles).and("users.action").`is`(request.action.toString()))
@@ -308,7 +309,6 @@ class PermissionServiceImpl @Autowired constructor(
         return false
     }
 
-
     private fun check(request: CheckPermissionRequest, permission: PermissionInstance): Boolean {
         when (request.resourceType) {
             ResourceType.PROJECT -> { // 项目管理权限，项目权限匹配 -> 通过
@@ -322,8 +322,8 @@ class PermissionServiceImpl @Autowired constructor(
                     return permission.action == PermissionAction.MANAGE || permission.action == request.action
                 }
                 if (permission.resourceType == ResourceType.REPO) {
-                    return permission.action == request.action
-                        && (permission.repoId == "*" || permission.repoId == request.repoName)
+                    return permission.action == request.action &&
+                        (permission.repoId == "*" || permission.repoId == request.repoName)
                 }
                 return false
             }

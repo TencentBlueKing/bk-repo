@@ -1,14 +1,21 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.SERVICE_NAME
-import com.tencent.bkrepo.auth.pojo.*
+import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.Role
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_ROLE"], description = "服务-角色接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceRoleResource")
@@ -42,7 +49,6 @@ interface ServiceRoleResource {
         @ApiParam(value = "角色主键id")
         @PathVariable id: String
     ): Response<Boolean>
-
 
     @ApiOperation("根据类型查询角色")
     @GetMapping("/detail/{id}")

@@ -14,5 +14,5 @@ import org.springframework.data.mongodb.core.mapping.Document
 data class TAccount(
     var appId: String,
     var locked: Boolean,
-    var credentials:List<CredentialSet>
+    var credentials: List<CredentialSet>
 )

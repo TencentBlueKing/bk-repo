@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.auth.service.local
 
+import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TRole
 import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.Role
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.service.RoleService
-import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -44,7 +44,6 @@ class RoleServiceImpl @Autowired constructor(
         )
         return result.id
     }
-
 
     override fun detail(rid: String): Role? {
         val result = roleRepository.findOneById(rid) ?: return null
