@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.docker.context
 
 import com.google.common.collect.Maps
-import org.springframework.http.HttpHeaders
 import java.io.InputStream
+import org.springframework.http.HttpHeaders
 
 class DownloadContext(projectId: String, repoName: String, path: String) {
     val FORCE_GET_STREAM_HEADER = "artifactory.disableRedirect"

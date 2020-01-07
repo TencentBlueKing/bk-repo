@@ -22,12 +22,12 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import java.io.File
+import java.io.InputStream
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import java.io.File
-import java.io.InputStream
 
 @Service
 class DockerArtifactoryService @Autowired constructor(
@@ -103,7 +103,7 @@ class DockerArtifactoryService @Autowired constructor(
                 fullPath = context.path,
                 size = context.contentLength,
                 sha256 = context.sha256,
-                md5 =  FileDigestUtils.fileMd5(context.artifactFile!!.getInputStream()),
+                md5 = FileDigestUtils.fileMd5(context.artifactFile!!.getInputStream()),
                 operator = userId,
                 metadata = emptyMap(),
                 overwrite = true
@@ -133,6 +133,7 @@ class DockerArtifactoryService @Autowired constructor(
             fullPath = context.path,
             size = file.size,
             sha256 = file.sha256,
+            md5 = file.md5,
             operator = userId,
             metadata = emptyMap(),
             overwrite = true
