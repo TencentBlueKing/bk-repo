@@ -16,8 +16,8 @@ import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
+import org.springframework.stereotype.Component
 
 /**
  *
