@@ -1,5 +1,4 @@
 dependencies {
-    api project(":common:common-artifact:artifact-service")
     api project(":pypi:api-pypi")
-
+    api project(":common:common-artifact:artifact-service")
 }

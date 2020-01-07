@@ -1,4 +1,4 @@
 dependencies {
     implementation project(":common:common-api")
-    implementation "javax.servlet:javax.servlet-api"
+    compileOnly "commons-fileupload:commons-fileupload"
 }

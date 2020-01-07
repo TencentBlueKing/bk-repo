@@ -1,6 +1,5 @@
 dependencies {
     api project(":generic:api-generic")
-    api project(":common:common-query:query-api")
-    api project(":common:common-artifact:artifact-service")
     api project(":common:common-job")
+    api project(":common:common-artifact:artifact-service")
 }

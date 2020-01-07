@@ -36,7 +36,7 @@ buildscript {
 
 allprojects {
     group "com.tencent.bkrepo"
-    version "0.6.2"
+    version "0.6.2-SNAPSHOT"
 
     repositories {
         mavenLocal()
@@ -94,7 +94,6 @@ subprojects {
 
         implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
         implementation "org.jetbrains.kotlin:kotlin-reflect"
-        implementation "org.springframework.boot:spring-boot-configuration-processor"
 
         testImplementation("org.springframework.boot:spring-boot-starter-test") {
             exclude module: "junit"
@@ -174,8 +173,4 @@ subprojects {
         }
     }
     
-}
-
-configurations.all {
-    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
 }

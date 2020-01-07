@@ -1,14 +1,4 @@
-group 'com.tencent.bkrepo'
-version '0.1.0-SNAPSHOT'
-
 dependencies{
-    api project(":common:common-service")
-    api project(":common:common-client")
-    api project(":common:common-api")
-    api project(":common:common-storage")
-    api project(":common:common-mongo")
-    api project(":common:common-auth")
-    implementation project(":maven:api-maven")
+    api project(":maven:api-maven")
     api project(":common:common-artifact:artifact-service")
-    api project(":repository:api-repository")
 }

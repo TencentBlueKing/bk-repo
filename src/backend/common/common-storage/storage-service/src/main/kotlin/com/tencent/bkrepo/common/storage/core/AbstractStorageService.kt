@@ -226,12 +226,13 @@ abstract class AbstractStorageService : StorageService {
     }
 
     private fun storeFile(file: File, credentials: StorageCredentials): FileInfo {
-        val digest = FileDigestUtils.fileSha256(listOf(file.inputStream()))
+        val sha256 = FileDigestUtils.fileSha256(file.inputStream())
+        val md5 = FileDigestUtils.fileMd5(file.inputStream())
         val size = file.length()
-        val fileInfo = FileInfo(digest, size)
-        val path = fileLocator.locate(digest)
-        if (!doExist(path, digest, credentials)) {
-            doStore(path, digest, file, credentials)
+        val fileInfo = FileInfo(sha256, md5, size)
+        val path = fileLocator.locate(sha256)
+        if (!doExist(path, sha256, credentials)) {
+            doStore(path, sha256, file, credentials)
         }
         return fileInfo
     }

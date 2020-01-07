@@ -21,13 +21,12 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import java.io.File
-import java.io.InputStream
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
+import java.io.File
+import java.io.InputStream
 
 @Service
 class DockerArtifactoryService @Autowired constructor(
@@ -89,7 +88,6 @@ class DockerArtifactoryService @Autowired constructor(
         return file!!
     }
 
-    @Transactional(rollbackFor = [Throwable::class])
     fun upload(context: UploadContext): ResponseEntity<Any> {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
@@ -120,7 +118,6 @@ class DockerArtifactoryService @Autowired constructor(
         return ResponseEntity.ok().body("ok")
     }
 
-    @Transactional(rollbackFor = [Throwable::class])
     fun finishAppend(uuid: String, context: UploadContext): ResponseEntity<Any> {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
@@ -134,7 +131,7 @@ class DockerArtifactoryService @Autowired constructor(
             folder = false,
             fullPath = context.path,
             size = file.size,
-            sha256 = file.digest,
+            sha256 = file.sha256,
             operator = userId,
             metadata = emptyMap(),
             overwrite = true
