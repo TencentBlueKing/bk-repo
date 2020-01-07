@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.UploadContext
@@ -61,7 +62,6 @@ class DockerArtifactoryService @Autowired constructor(
             throw DockerRepoNotFoundException(context.repoName)
         }
         // get content from storage
-
         val file = storageService.load(context.sha256, repository.storageCredentials) ?: kotlin.run {
             throw DockerFileReadFailedException(context.repoName)
         }
@@ -105,6 +105,7 @@ class DockerArtifactoryService @Autowired constructor(
                 fullPath = context.path,
                 size = context.contentLength,
                 sha256 = context.sha256,
+                md5 =  FileDigestUtils.fileMd5(context.artifactFile!!.getInputStream()),
                 operator = userId,
                 metadata = emptyMap(),
                 overwrite = true
