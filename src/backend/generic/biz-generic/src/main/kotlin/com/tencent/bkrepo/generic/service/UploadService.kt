@@ -95,9 +95,10 @@ class UploadService @Autowired constructor(
                 repoName = artifactInfo.repoName,
                 folder = false,
                 fullPath = artifactInfo.fullPath,
-                sha256 = mergedFileInfo.digest,
-                overwrite = true,
+                sha256 = mergedFileInfo.sha256,
+                md5 = mergedFileInfo.md5,
                 size = mergedFileInfo.size,
+                overwrite = true,
                 operator = userId
             )
         )

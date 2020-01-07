@@ -1,6 +1,6 @@
 dependencies {
-    api project(":common:common-api")
-    api project(":common:common-artifact:artifact-api")
-    api project(":common:common-query:query-api")
-    api project(":common:common-storage:storage-api")
+    implementation project(":common:common-api")
+    implementation project(":common:common-artifact:artifact-api")
+    implementation project(":common:common-query:query-api")
+    implementation project(":common:common-storage:storage-api")
 }

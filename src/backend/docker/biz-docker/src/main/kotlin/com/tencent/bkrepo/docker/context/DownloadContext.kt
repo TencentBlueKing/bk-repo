@@ -1,9 +1,8 @@
 package com.tencent.bkrepo.docker.context
 
 import com.google.common.collect.Maps
-import java.io.InputStream
-import lombok.Generated
 import org.springframework.http.HttpHeaders
+import java.io.InputStream
 
 class DownloadContext(projectId: String, repoName: String, path: String) {
     val FORCE_GET_STREAM_HEADER = "artifactory.disableRedirect"
@@ -87,7 +86,6 @@ class DownloadContext(projectId: String, repoName: String, path: String) {
         this.skipStatsUpdate = skipStatsUpdate
     }
 
-    @Generated
     override fun equals(o: Any?): Boolean {
         if (o === this) {
             return true
@@ -133,7 +131,6 @@ class DownloadContext(projectId: String, repoName: String, path: String) {
         }
     }
 
-    @Generated
     protected fun canEqual(other: Any): Boolean {
         return other is DownloadContext
     }

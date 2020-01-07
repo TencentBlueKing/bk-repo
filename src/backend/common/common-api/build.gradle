@@ -1,8 +1,10 @@
 dependencies {
-    api "com.fasterxml.jackson.module:jackson-module-kotlin"
-    api "org.springframework.boot:spring-boot-starter-json"
-    api "org.springframework.cloud:spring-cloud-starter-openfeign"
     api "io.swagger:swagger-annotations"
     api "io.swagger:swagger-models"
-    implementation 'org.apache.skywalking:apm-toolkit-trace'
+    api "javax.servlet:javax.servlet-api"
+    api "com.fasterxml.jackson.module:jackson-module-kotlin"
+    api "org.springframework.cloud:spring-cloud-openfeign-core"
+    api "org.springframework.boot:spring-boot-starter-json"
+    implementation "io.github.openfeign:feign-hystrix"
+    implementation "org.apache.skywalking:apm-toolkit-trace"
 }

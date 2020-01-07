@@ -1,8 +1,7 @@
 dependencies {
-    api "javax.servlet:javax.servlet-api"
+    implementation project(":common:common-api")
+
     api "io.github.openfeign:feign-okhttp"
     api "org.springframework.cloud:spring-cloud-starter-openfeign"
     api "org.springframework.cloud:spring-cloud-starter-netflix-hystrix"
-
-    implementation project(":common:common-api")
 }
