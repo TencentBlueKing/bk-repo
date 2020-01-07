@@ -20,8 +20,6 @@ buildscript {
     repositories {
         mavenLocal()
         maven { url MAVEN_REPO_URL }
-        // for inner sdk
-        maven { url MAVEN_SNAPSHOT_REPO_URL }
         maven { url "https://repo.spring.io/libs-milestone" }
         mavenCentral()
         jcenter()
@@ -41,8 +39,8 @@ allprojects {
     repositories {
         mavenLocal()
         maven { url MAVEN_REPO_URL }
-        // for inner cos sdk
-        maven { url MAVEN_SNAPSHOT_REPO_URL }
+        maven { url TENCENT_PUBLIC_REPO_URL }
+        maven { url TENCENT_PUBLIC_SNAPSHOT_REPO_URL }
         maven { url "https://repo.spring.io/libs-milestone" }
         mavenCentral()
         jcenter()
@@ -154,18 +152,18 @@ subprojects {
         repositories {
             maven {
                 if (project.version.endsWith('-SNAPSHOT')) {
-                    url = MAVEN_SNAPSHOT_REPO_DEPLOY_URL
+                    url = TENCENT_PUBLIC_SNAPSHOT_REPO_DEPLOY_URL
                     
                     credentials {
-                        username MAVEN_SNAPSHOT_REPO_USERNAME
-                        password MAVEN_SNAPSHOT_REPO_PASSWORD
+                        username TENCENT_PUBLIC_SNAPSHOT_REPO_USERNAME
+                        password TENCENT_PUBLIC_SNAPSHOT_REPO_PASSWORD
                     }
                 } else {
-                    url = MAVEN_REPO_DEPLOY_URL
+                    url = TENCENT_PUBLIC_REPO_DEPLOY_URL
 
                     credentials {
-                        username MAVEN_REPO_USERNAME
-                        password MAVEN_REPO_PASSWORD
+                        username TENCENT_PUBLIC_REPO_USERNAME
+                        password TENCENT_PUBLIC_REPO_PASSWORD
                     }
                 }
 
