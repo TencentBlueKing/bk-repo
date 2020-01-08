@@ -118,11 +118,11 @@
     </springProfile>
 
     <springProfile name="dev, test, prod">
-        <logger name="BusinessErrorLogger" level="ERROR">
+        <logger name="BusinessErrorLogger" level="WARN">
             <appender-ref ref="biz_error_log"/>
         </logger>
 
-        <logger name="SystemErrorLogger" level="ERROR">
+        <logger name="SystemErrorLogger" level="WARN">
             <appender-ref ref="sys_error_log"/>
         </logger>
 

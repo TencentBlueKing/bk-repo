@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.api.util.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils

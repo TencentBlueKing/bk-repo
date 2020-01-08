@@ -15,11 +15,11 @@ import com.tencent.cos.model.GetObjectRequest
 import com.tencent.cos.model.PutObjectRequest
 import com.tencent.cos.region.Region
 import com.tencent.cos.transfer.TransferManager
+import org.apache.http.HttpStatus
 import java.io.File
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import org.apache.http.HttpStatus
 
 /**
  * 内部cos文件存储实现类
@@ -27,7 +27,7 @@ import org.apache.http.HttpStatus
  * @author: carrypan
  * @date: 2019-09-17
  */
-class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerCosClient>() {
+open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerCosClient>() {
 
     private val executor = ThreadPoolExecutor(100, 200, 5L, TimeUnit.SECONDS,
         LinkedBlockingQueue(1024), ThreadFactoryBuilder().setNameFormat("inner-cos-storage-uploader-pool-%d").build(),

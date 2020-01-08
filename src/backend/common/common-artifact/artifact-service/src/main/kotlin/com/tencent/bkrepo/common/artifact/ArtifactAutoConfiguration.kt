@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthInterceptor
 import com.tencent.bkrepo.common.artifact.auth.DefaultClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
+import com.tencent.bkrepo.common.artifact.event.ArtifactEventListener
 import com.tencent.bkrepo.common.artifact.permission.DefaultPermissionCheckHandler
 import com.tencent.bkrepo.common.artifact.permission.PermissionAspect
 import com.tencent.bkrepo.common.artifact.permission.PermissionCheckHandler
@@ -83,4 +84,7 @@ class ArtifactAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(PermissionCheckHandler::class)
     fun permissionCheckHandler(): PermissionCheckHandler = DefaultPermissionCheckHandler()
+
+    @Bean
+    fun artifactEventListener() = ArtifactEventListener()
 }

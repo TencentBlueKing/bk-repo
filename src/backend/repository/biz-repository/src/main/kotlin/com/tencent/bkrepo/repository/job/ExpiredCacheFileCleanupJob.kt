@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.job
 
-import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.api.util.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.beans.factory.annotation.Autowired

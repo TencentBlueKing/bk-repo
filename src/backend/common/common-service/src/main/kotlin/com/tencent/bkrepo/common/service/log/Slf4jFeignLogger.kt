@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.service.log
 
+import com.tencent.bkrepo.common.api.util.LoggerHolder
 import feign.Request
 import feign.Response
 import java.io.IOException
@@ -12,7 +13,6 @@ import java.io.IOException
  */
 class Slf4jFeignLogger : feign.Logger() {
 
-
     override fun logRequest(configKey: String, logLevel: Level, request: Request) {
         if (logger.isInfoEnabled) {
             super.logRequest(configKey, logLevel, request)
@@ -20,7 +20,7 @@ class Slf4jFeignLogger : feign.Logger() {
     }
 
     @Throws(IOException::class)
-    override fun logAndRebufferResponse(configKey: String, logLevel: Level, response: feign.Response, elapsedTime: Long): Response {
+    override fun logAndRebufferResponse(configKey: String, logLevel: Level, response: Response, elapsedTime: Long): Response {
         return if (logger.isInfoEnabled) super.logAndRebufferResponse(configKey, logLevel, response, elapsedTime) else response
     }
 

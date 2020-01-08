@@ -12,7 +12,7 @@ import java.nio.file.Paths
  * @author: carrypan
  * @date: 2019-09-09
  */
-class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSystemClient>() {
+open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSystemClient>() {
 
     override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
         getClient(storageCredentials).store(path, filename, file.inputStream(), true)

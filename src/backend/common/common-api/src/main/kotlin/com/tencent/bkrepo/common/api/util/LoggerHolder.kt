@@ -1,10 +1,11 @@
-package com.tencent.bkrepo.common.service.log
+package com.tencent.bkrepo.common.api.util
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.context.request.ServletRequestAttributes
 
 /**
  *
@@ -15,11 +16,11 @@ object LoggerHolder {
     /**
      * 系统错误logger
      */
-    val SYSTEM: Logger = LoggerFactory.getLogger("SystemErrorLogger")
+    val SYSTEM_ERROR: Logger = LoggerFactory.getLogger("SystemErrorLogger")
     /**
      * 业务错误logger
      */
-    val BUSINESS: Logger = LoggerFactory.getLogger("BusinessErrorLogger")
+    val BUSINESS_ERROR: Logger = LoggerFactory.getLogger("BusinessErrorLogger")
     /**
      * 定时任务logger
      */
@@ -29,9 +30,10 @@ object LoggerHolder {
      */
     val API: Logger = LoggerFactory.getLogger("FeignApiLogger")
 
-    fun logException(exception: Exception, message: String? = "", logger: Logger = BUSINESS, logDetail: Boolean = false) {
-        val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) ?: ANONYMOUS_USER
-        val uri = HttpContextHolder.getRequest().requestURI
+    fun logException(exception: Exception, message: String? = "", logger: Logger = BUSINESS_ERROR, logDetail: Boolean = false) {
+        val request = (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request
+        val userId = request?.getAttribute(USER_KEY) ?: ANONYMOUS_USER
+        val uri = request?.requestURI
         val fullMessage = "User[$userId] access [$uri] failed[${exception.javaClass.simpleName}]: $message"
         if(logDetail) {
             logger.error(fullMessage, exception)

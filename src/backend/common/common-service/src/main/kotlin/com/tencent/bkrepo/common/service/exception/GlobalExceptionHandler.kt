@@ -8,8 +8,8 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.common.service.log.LoggerHolder.logException
+import com.tencent.bkrepo.common.api.util.LoggerHolder
+import com.tencent.bkrepo.common.api.util.LoggerHolder.logException
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -97,14 +97,14 @@ class GlobalExceptionHandler {
         } else if (exception.failureType == FailureType.SHORTCIRCUIT) {
             messageCode = CommonMessageCode.SERVICE_CIRCUIT_BREAKER
         }
-        logException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage", LoggerHolder.SYSTEM)
+        logException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage", LoggerHolder.SYSTEM_ERROR)
         return response(messageCode)
     }
 
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: Exception): Response<Void> {
-        logException(exception, exception.message, LoggerHolder.SYSTEM, true)
+        logException(exception, exception.message, LoggerHolder.SYSTEM_ERROR, true)
         return response(CommonMessageCode.SYSTEM_ERROR)
     }
 

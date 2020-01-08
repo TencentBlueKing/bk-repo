@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import org.springframework.retry.annotation.Backoff
+import org.springframework.retry.annotation.Recover
+import org.springframework.retry.annotation.Retryable
 import org.springframework.scheduling.annotation.Async
 import java.io.File
 
@@ -12,6 +15,7 @@ import java.io.File
  */
 interface FileStorage {
     @Async
+    @Retryable(Exception::class, label = "FileStorage.store", maxAttempts = 3, backoff = Backoff(delay = 10 * 1000, multiplier = 2.0))
     fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials)
     fun load(path: String, filename: String, received: File, storageCredentials: StorageCredentials): File?
     fun delete(path: String, filename: String, storageCredentials: StorageCredentials)
@@ -19,4 +23,7 @@ interface FileStorage {
 
     fun getDefaultCredentials(): StorageCredentials
     fun getTempPath(): String = System.getProperty("java.io.tmpdir")
+
+    @Recover
+    fun recover(exception: Exception, path: String, filename: String, file: File, storageCredentials: StorageCredentials)
 }
