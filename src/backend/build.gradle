@@ -35,13 +35,11 @@ buildscript {
 
 allprojects {
     group "com.tencent.bkrepo"
-    version "0.7.0-SNAPSHOT"
+    version "0.7.0"
 
     repositories {
         mavenLocal()
         maven { url MAVEN_REPO_URL }
-        maven { url TENCENT_PUBLIC_REPO_URL }
-        maven { url TENCENT_PUBLIC_SNAPSHOT_REPO_URL }
         maven { url "https://repo.spring.io/libs-milestone" }
         mavenCentral()
         jcenter()
@@ -151,10 +149,18 @@ subprojects {
         }
         repositories {
             maven {
-                url = project.version.endsWith('-SNAPSHOT') ? TENCENT_PUBLIC_SNAPSHOT_REPO_URL : TENCENT_PUBLIC_REPO_URL
-                credentials {
-                    username TENCENT_PUBLIC_REPO_USERNAME
-                    password TENCENT_PUBLIC_REPO_PASSWORD
+                if (project.version.endsWith('-SNAPSHOT')) {
+                    url = MAVEN_DEPLOY_REPO_URL
+                    credentials {
+                        username MAVEN_DEPLOY_REPO_USERNAME
+                        password MAVEN_DEPLOY_REPO_PASSWORD
+                    }
+                } else {
+                    url = MAVEN_DEPLOY_SNAPSHOT_REPO_URL
+                    credentials {
+                        username MAVEN_DEPLOY_SNAPSHOT_REPO_USERNAME
+                        password MAVEN_DEPLOY_SNAPSHOT_REPO_PASSWORD
+                    }
                 }
             }
         }
