@@ -35,6 +35,8 @@ import com.tencent.bkrepo.repository.util.NodeUtils.getName
 import com.tencent.bkrepo.repository.util.NodeUtils.getParentPath
 import com.tencent.bkrepo.repository.util.NodeUtils.isRootPath
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -43,8 +45,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 /**
  * 节点service
@@ -165,11 +165,9 @@ class NodeService @Autowired constructor(
             queryNode(projectId, repoName, fullPath)?.let {
                 if (!overwrite) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
-                }
-                else if (it.folder || this.folder) {
+                } else if (it.folder || this.folder) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
-                }
-                else {
+                } else {
                     deleteByPath(projectId, repoName, fullPath, operator)
                 }
             }

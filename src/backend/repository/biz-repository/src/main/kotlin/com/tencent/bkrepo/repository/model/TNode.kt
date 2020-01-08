@@ -2,9 +2,9 @@ package com.tencent.bkrepo.repository.model
 
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
-import java.time.LocalDateTime
 
 /**
  * 资源模型

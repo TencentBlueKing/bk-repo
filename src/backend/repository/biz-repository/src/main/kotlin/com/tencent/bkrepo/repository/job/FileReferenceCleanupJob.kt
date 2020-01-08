@@ -37,13 +37,13 @@ class FileReferenceCleanupJob {
         var fileMissingCount = 0L
         val startTimeMillis = System.currentTimeMillis()
         val query = Query.query(Criteria.where(TFileReference::count.name).`is`(0))
-        for(sequence in 0 until TFileReference.SHARDING_COUNT) {
+        for (sequence in 0 until TFileReference.SHARDING_COUNT) {
             val collectionName = fileReferenceDao.parseSequenceToCollectionName(sequence)
             val zeroReferenceList = fileReferenceDao.determineMongoTemplate().find(query, TFileReference::class.java, collectionName)
-            zeroReferenceList.forEach{
+            zeroReferenceList.forEach {
                 val storageCredentials = it.storageCredentials?.let { value -> objectMapper.readValue(value, StorageCredentials::class.java) }
-                try{
-                    if(it.sha256.isNotBlank() && storageService.exist(it.sha256, storageCredentials)) {
+                try {
+                    if (it.sha256.isNotBlank() && storageService.exist(it.sha256, storageCredentials)) {
                         storageService.delete(it.sha256, storageCredentials)
                         fileReferenceDao.determineMongoTemplate().remove(it, collectionName)
                         cleanupCount += 1

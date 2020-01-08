@@ -5,13 +5,13 @@ import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.FileReferenceService
+import java.time.LocalDateTime
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.time.LocalDateTime
 
 /**
  * 清理被标记为删除的node，同时减少文件引用
@@ -34,16 +34,16 @@ class DeletedNodeCleanupJob {
     @SchedulerLock(name = "DeletedNodeCleanupJob", lockAtMostFor = "PT59M")
     fun cleanUp() {
         logger.info("Starting to clean up deleted nodes.")
-        try{
-            if(repositoryProperties.deletedNodeReserveDays >= 0) {
+        try {
+            if (repositoryProperties.deletedNodeReserveDays >= 0) {
                 var cleanupCount = 0L
                 val startTimeMillis = System.currentTimeMillis()
                 val expireDate = LocalDateTime.now().minusDays(repositoryProperties.deletedNodeReserveDays)
                 val query = Query.query(Criteria.where(TNode::deleted.name).lt(expireDate))
-                for(sequence in 0 until TNode.SHARDING_COUNT) {
+                for (sequence in 0 until TNode.SHARDING_COUNT) {
                     val collectionName = nodeDao.parseSequenceToCollectionName(sequence)
                     val deletedNodeList = nodeDao.determineMongoTemplate().find(query, TNode::class.java, collectionName)
-                    deletedNodeList.forEach{
+                    deletedNodeList.forEach {
                         fileReferenceService.decrement(it)
                         nodeDao.determineMongoTemplate().remove(it, collectionName)
                         cleanupCount += 1

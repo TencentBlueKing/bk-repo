@@ -18,7 +18,6 @@ class ExpiredCacheFileCleanupJob {
     @Autowired
     private lateinit var storageService: StorageService
 
-
     @Scheduled(cron = "0 0 4 * * ?") // 每天凌晨4点执行
     @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "PT10H")
     fun cleanUp() {
