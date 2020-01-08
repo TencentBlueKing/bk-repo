@@ -5,7 +5,6 @@ import com.netflix.client.ClientException
 import com.netflix.hystrix.exception.HystrixRuntimeException
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.pojo.Response

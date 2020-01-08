@@ -19,7 +19,7 @@ object ArtifactFileFactory {
     fun build(sizeThreshold: Int = defaultSizeThreshold): ArtifactFile {
         val artifactFile = OctetStreamArtifactFile(sizeThreshold)
         val tracker = getFileCleaningTracker()
-        tracker.track(artifactFile.getTempFile(), artifactFile)
+        tracker?.track(artifactFile.getTempFile(), artifactFile)
         return artifactFile
     }
 
@@ -27,13 +27,15 @@ object ArtifactFileFactory {
         return MultipartArtifactFile(diskFileItem)
     }
 
-    private fun getFileCleaningTracker(): FileCleaningTracker {
-        val context = (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes).request.servletContext
-        var tracker = context.getAttribute(FileCleanerCleanup.FILE_CLEANING_TRACKER_ATTRIBUTE) as? FileCleaningTracker
-        if (tracker == null) {
-            tracker = FileCleaningTracker()
-            context.setAttribute(FileCleanerCleanup.FILE_CLEANING_TRACKER_ATTRIBUTE, tracker)
+    private fun getFileCleaningTracker(): FileCleaningTracker? {
+        val context = (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request?.servletContext
+        return context?.run {
+            var tracker = this.getAttribute(FileCleanerCleanup.FILE_CLEANING_TRACKER_ATTRIBUTE) as? FileCleaningTracker
+            if (tracker == null) {
+                tracker = FileCleaningTracker()
+                this.setAttribute(FileCleanerCleanup.FILE_CLEANING_TRACKER_ATTRIBUTE, tracker)
+            }
+            return tracker
         }
-        return tracker
     }
 }

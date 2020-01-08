@@ -14,3 +14,8 @@ const val APP_KEY = "appId"
  * 匿名用户
  */
 const val ANONYMOUS_USER = "anonymous"
+
+/**
+ * header user id key
+ */
+const val AUTH_HEADER_UID: String = "X-BKREPO-UID"

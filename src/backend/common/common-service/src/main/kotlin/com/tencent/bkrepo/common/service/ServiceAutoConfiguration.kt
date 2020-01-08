@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.service.client.ClientConfiguration
 import com.tencent.bkrepo.common.service.config.FeignFilterRequestMappingHandlerMapping
 import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
 import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
@@ -23,7 +24,8 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 @Import(
     SwaggerAutoConfiguration::class,
     GlobalExceptionHandler::class,
-    MessageSourceConfiguration::class
+    MessageSourceConfiguration::class,
+    ClientConfiguration::class
 )
 class ServiceAutoConfiguration {
 
