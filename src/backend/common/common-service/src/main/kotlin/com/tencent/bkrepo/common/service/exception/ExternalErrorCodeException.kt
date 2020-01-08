@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.api.exception
+package com.tencent.bkrepo.common.service.exception
 
 import com.netflix.hystrix.exception.HystrixBadRequestException
 

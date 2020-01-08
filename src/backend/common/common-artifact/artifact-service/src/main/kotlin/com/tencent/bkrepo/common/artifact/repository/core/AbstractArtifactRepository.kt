@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.core
 
+import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
@@ -91,7 +92,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
             }
         }
         context.contextAttributes[ATTRIBUTE_SHA256MAP] = sha256Map
-        context.contextAttributes[ATTRIBUTE_SHA256MAP] = md5Map
+        context.contextAttributes[ATTRIBUTE_MD5MAP] = md5Map
     }
 
     /**

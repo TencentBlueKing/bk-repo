@@ -24,6 +24,10 @@ object LoggerHolder {
      * 定时任务logger
      */
     val JOB: Logger = LoggerFactory.getLogger("JobLogger")
+    /**
+     * API logger
+     */
+    val API: Logger = LoggerFactory.getLogger("FeignApiLogger")
 
     fun logException(exception: Exception, message: String? = "", logger: Logger = BUSINESS, logDetail: Boolean = false) {
         val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) ?: ANONYMOUS_USER

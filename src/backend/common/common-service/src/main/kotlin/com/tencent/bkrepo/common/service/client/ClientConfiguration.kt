@@ -1,7 +1,7 @@
-package com.tencent.bkrepo.common.client
+package com.tencent.bkrepo.common.service.client
 
-import com.tencent.bkrepo.common.client.error.ErrorCodeDecoder
-import com.tencent.bkrepo.common.client.log.Slf4jFeignLogger
+import com.tencent.bkrepo.common.service.exception.ErrorCodeDecoder
+import com.tencent.bkrepo.common.service.log.Slf4jFeignLogger
 import feign.RequestInterceptor
 import org.springframework.cloud.openfeign.EnableFeignClients
 import org.springframework.cloud.openfeign.FeignLoggerFactory
@@ -12,7 +12,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 
 @Configuration
 @EnableFeignClients(basePackages = ["com.tencent.bkrepo"])
-class ClientAutoConfiguration {
+class ClientConfiguration {
 
     @Bean
     fun requestInterceptor(): RequestInterceptor {

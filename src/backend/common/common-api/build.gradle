@@ -5,6 +5,5 @@ dependencies {
     api "com.fasterxml.jackson.module:jackson-module-kotlin"
     api "org.springframework.cloud:spring-cloud-openfeign-core"
     api "org.springframework.boot:spring-boot-starter-json"
-    api "com.netflix.hystrix:hystrix-core"
     implementation "org.apache.skywalking:apm-toolkit-trace"
 }
