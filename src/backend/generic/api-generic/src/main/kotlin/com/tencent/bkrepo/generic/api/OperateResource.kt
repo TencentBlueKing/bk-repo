@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam
  * @author: carrypan
  * @date: 2019-09-29
  */
+@Deprecated("OperateResource is deprecated!", ReplaceWith("UserNodeResource"))
 @Api("文件操作接口")
 interface OperateResource {
 

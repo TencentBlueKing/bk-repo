@@ -3,7 +3,7 @@ package com.tencent.bkrepo.docker.exception
 import com.netflix.client.ClientException
 import com.netflix.hystrix.exception.HystrixRuntimeException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.exception.ExternalErrorCodeException
+import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.docker.errors.DockerV2Errors
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus

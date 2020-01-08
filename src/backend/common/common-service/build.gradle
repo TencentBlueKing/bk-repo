@@ -2,10 +2,15 @@ dependencies {
     api project(":common:common-api")
 
     api "io.springfox:springfox-swagger2"
+    api "io.github.openfeign:feign-okhttp"
     api "org.springframework.boot:spring-boot-starter-actuator"
     api "org.springframework.cloud:spring-cloud-starter-consul-discovery"
     api "org.springframework.cloud:spring-cloud-starter-consul-config"
-    api "org.springframework.boot:spring-boot-starter-web"
+    api "org.springframework.cloud:spring-cloud-starter-openfeign"
+    api "org.springframework.cloud:spring-cloud-starter-netflix-hystrix"
+    api("org.springframework.boot:spring-boot-starter-web") {
+        exclude module: "spring-boot-starter-tomcat"
+    }
     api "org.springframework.boot:spring-boot-starter-undertow"
     api "com.github.ulisesbocchio:jasypt-spring-boot-starter"
     api 'org.apache.skywalking:apm-toolkit-logback-1.x'

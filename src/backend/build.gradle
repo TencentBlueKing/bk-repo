@@ -34,7 +34,7 @@ buildscript {
 
 allprojects {
     group "com.tencent.bkrepo"
-    version "0.6.2-SNAPSHOT"
+    version "0.7.0-SNAPSHOT"
 
     repositories {
         mavenLocal()
@@ -81,10 +81,8 @@ subprojects {
         useJUnitPlatform()
     }
 
-
     configurations {
         ktlint
-        all*.exclude group: "org.springframework.boot", module: "spring-boot-starter-tomcat"
     }
 
     dependencies {
@@ -151,24 +149,25 @@ subprojects {
         }
         repositories {
             maven {
-                if (project.version.endsWith('-SNAPSHOT')) {
-                    url = TENCENT_PUBLIC_SNAPSHOT_REPO_DEPLOY_URL
-                    
-                    credentials {
-                        username TENCENT_PUBLIC_SNAPSHOT_REPO_USERNAME
-                        password TENCENT_PUBLIC_SNAPSHOT_REPO_PASSWORD
-                    }
-                } else {
-                    url = TENCENT_PUBLIC_REPO_DEPLOY_URL
-
-                    credentials {
-                        username TENCENT_PUBLIC_REPO_USERNAME
-                        password TENCENT_PUBLIC_REPO_PASSWORD
-                    }
+                url = project.version.endsWith('-SNAPSHOT') ? TENCENT_PUBLIC_SNAPSHOT_REPO_URL : TENCENT_PUBLIC_REPO_URL
+                credentials {
+                    username TENCENT_PUBLIC_REPO_USERNAME
+                    password TENCENT_PUBLIC_REPO_PASSWORD
                 }
-
             }
         }
     }
-    
+}
+
+task publishApiJar(group: "publishing") {
+    def projectList = [
+        ":common:common-api",
+        ":common:common-artifact:artifact-api",
+        ":common:common-query:query-api",
+        ":common:common-storage:storage-api",
+        ":generic:api-generic",
+        ":repository:api-repository"
+    ]
+    projectList.each { dependsOn project(it).tasks.publish }
+    print("publishApiJar")
 }
