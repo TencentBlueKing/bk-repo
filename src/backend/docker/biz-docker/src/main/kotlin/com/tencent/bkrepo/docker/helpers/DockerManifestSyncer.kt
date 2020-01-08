@@ -19,7 +19,7 @@ class DockerManifestSyncer() {
 
     @Throws(IOException::class)
     fun sync(repo: DockerArtifactoryService, info: ManifestMetadata, projectId: String, repoName: String, dockerRepo: String, tag: String): Boolean {
-        log.info("Starting to sync docker repository blobs")
+        log.info("start to sync docker repository blobs")
         val manifestInfo = info.blobsInfo.iterator()
 
         while (manifestInfo.hasNext()) {

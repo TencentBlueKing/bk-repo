@@ -339,7 +339,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         val stream = artifactFile.getInputStream()
         logger.info(
-            "deploying docker manifest for repo '{}' and tag '{}' into repo '{}' mediatype",
+            "deploying docker manifest for repo '{}' and tag '{}' into repo '{}' mediatype {}",
             dockerRepo,
             tag,
             repoName,
@@ -349,7 +349,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         val manifestPath = buildManifestPathFromType(dockerRepo, tag, manifestType)
         logger.info("manifest path to {} .", manifestPath)
         if (!this.repo.canWrite(manifestPath)) {
-            logger.debug("Attempt to write manifest to {} failed the permission check.", manifestPath)
+            logger.debug("attempt to write manifest to {} failed the permission check.", manifestPath)
             return this.consumeStreamAndReturnError(stream)
         } else {
             stream.use {

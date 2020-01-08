@@ -10,18 +10,12 @@ object DataDigestUtils {
     fun md5FromStr(str: String): String {
         val digest = MessageDigest.getInstance("MD5")
         val result = digest.digest(str.toByteArray())
-        // 没转16进制之前是16位
-        println("result${result.size}")
-        // 转成16进制后是32字节
         return toHex(result)
     }
 
     fun md5FromByteArray(byteArr: ByteArray): String {
         val digest = MessageDigest.getInstance("MD5")
         val result = digest.digest(byteArr)
-        // 没转16进制之前是16位
-        println("result${result.size}")
-        // 转成16进制后是32字节
         return toHex(result)
     }
 
