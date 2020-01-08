@@ -2,9 +2,9 @@ package com.tencent.bkrepo.pypi.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import javax.servlet.http.HttpServletRequest
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 /**
  *
@@ -20,7 +20,7 @@ class PackagesArtifactInfoResolver : ArtifactInfoResolver {
                 request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE) as String
             )
         }
-        originalArtifactUri = if(originalArtifactUri.isNotBlank()) originalArtifactUri else "/"
+        originalArtifactUri = if (originalArtifactUri.isNotBlank()) originalArtifactUri else "/"
         return PackagesArtifactInfo(projectId, repoName, originalArtifactUri)
     }
 }

@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.auth
+package com.tencent.bkrepo.common.artifact.permission
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.api.constant.APP_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 
@@ -16,7 +16,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
  * @author: carrypan
  * @date: 2019-10-18
  */
-@Service
+@Component
 class PermissionService @Autowired constructor(
     private val servicePermissionResource: ServicePermissionResource,
     private val authProperties: AuthProperties

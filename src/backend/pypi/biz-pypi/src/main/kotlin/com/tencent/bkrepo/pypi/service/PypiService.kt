@@ -42,16 +42,16 @@ class PypiService {
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    fun upload(pypiArtifactInfo: PypiArtifactInfo,
+    fun upload(
+        pypiArtifactInfo: PypiArtifactInfo,
         artifactFileMap: ArtifactFileMap
-    )
-    {
+    ) {
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.upload(context)
     }
 
-    companion object{
+    companion object {
         private val logger = LoggerFactory.getLogger(PypiService::class.java)
     }
 }

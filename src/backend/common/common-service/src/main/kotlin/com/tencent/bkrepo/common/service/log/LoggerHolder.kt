@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.api.util
+package com.tencent.bkrepo.common.service.log
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY

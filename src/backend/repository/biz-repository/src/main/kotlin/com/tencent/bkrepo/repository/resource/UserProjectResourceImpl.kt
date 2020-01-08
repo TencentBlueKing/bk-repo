@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.UserProjectResource
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.UserProjectCreateRequest
@@ -23,6 +24,6 @@ class UserProjectResourceImpl @Autowired constructor(
             )
         }
         projectService.create(createRequest)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 }

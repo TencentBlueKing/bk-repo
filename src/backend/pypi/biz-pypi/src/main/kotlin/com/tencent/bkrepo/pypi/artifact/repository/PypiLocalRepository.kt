@@ -7,8 +7,8 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
-import org.springframework.stereotype.Component
 import java.io.File
+import org.springframework.stereotype.Component
 
 /**
  *
@@ -21,7 +21,7 @@ class PypiLocalRepository : LocalRepository() {
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
         nodeResource.create(nodeCreateRequest)
-        fileStorage.store(nodeCreateRequest.sha256!!, context.getArtifactFile("content")!!.getInputStream(), context.storageCredentials)
+        storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile("content")!!, context.storageCredentials)
     }
 
     /**
@@ -56,13 +56,13 @@ class PypiLocalRepository : LocalRepository() {
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
 
         node.nodeInfo.takeIf { !it.folder } ?: return null
-        return fileStorage.load(node.nodeInfo.sha256!!, context.storageCredentials)
+        return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
     }
 
     /**
      * 创建PYPI simple请求
      */
-    fun getNodeSearchRequest(context: ArtifactUploadContext): NodeSearchRequest{
+    fun getNodeSearchRequest(context: ArtifactUploadContext): NodeSearchRequest {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         val artifactFile = context.getArtifactFile("content")
@@ -88,6 +88,4 @@ class PypiLocalRepository : LocalRepository() {
             metadataCondition = metadataCondition
         )
     }
-
-
 }

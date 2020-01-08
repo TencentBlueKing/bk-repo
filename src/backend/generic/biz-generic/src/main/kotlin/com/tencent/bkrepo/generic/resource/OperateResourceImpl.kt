@@ -3,6 +3,7 @@ package com.tencent.bkrepo.generic.resource
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.api.OperateResource
 import com.tencent.bkrepo.generic.pojo.FileInfo
 import com.tencent.bkrepo.generic.pojo.FileSearchRequest
@@ -22,11 +23,11 @@ class OperateResourceImpl @Autowired constructor(
 ) : OperateResource {
     override fun listFile(userId: String, artifactInfo: ArtifactInfo, includeFolder: Boolean, deep: Boolean): Response<List<FileInfo>> {
         return artifactInfo.run {
-            Response.success(operateService.listFile(userId, projectId, repoName, this.artifactUri, includeFolder, deep))
+            ResponseBuilder.success(operateService.listFile(userId, projectId, repoName, this.artifactUri, includeFolder, deep))
         }
     }
 
     override fun searchFile(userId: String, searchRequest: FileSearchRequest): Response<Page<FileInfo>> {
-        return Response.success(operateService.searchFile(userId, searchRequest))
+        return ResponseBuilder.success(operateService.searchFile(userId, searchRequest))
     }
 }

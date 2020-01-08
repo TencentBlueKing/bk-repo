@@ -13,13 +13,6 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import java.io.File
-import java.net.InetSocketAddress
-import java.net.Proxy
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
 import okhttp3.Authenticator
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
@@ -29,6 +22,13 @@ import okhttp3.ResponseBody
 import org.apache.commons.fileupload.util.Streams
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import java.io.File
+import java.net.InetSocketAddress
+import java.net.Proxy
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 
 /**
  *
@@ -44,7 +44,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
     lateinit var storageService: StorageService
 
     override fun onDownload(context: ArtifactDownloadContext): File? {
-        getArtifactCache(context)?.let {
+        getCacheArtifact(context)?.let {
             return it
         }
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
@@ -62,7 +62,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
     /**
      * 尝试读取缓存的远程构件
      */
-    private fun getArtifactCache(context: ArtifactDownloadContext): File? {
+    private fun getCacheArtifact(context: ArtifactDownloadContext): File? {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
         if (!cacheConfiguration.cacheEnabled) return null

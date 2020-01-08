@@ -402,7 +402,7 @@ class NodeService @Autowired constructor(
                 }
             } else {
                 // 文件 ->
-                val destPath = if (destNode?.folder == true) destNode.fullPath else getParentPath(destFullPath)
+                val destPath = if (destNode?.folder == true) formatPath(destNode.fullPath) else getParentPath(destFullPath)
                 val destName = if (destNode?.folder == true) srcNode.name else getName(destFullPath)
                 mkdirs(destProjectId, destRepoName, destPath, operator)
                 moveOrCopyNode(srcNode, destRepository, destPath, destName, request, operator)

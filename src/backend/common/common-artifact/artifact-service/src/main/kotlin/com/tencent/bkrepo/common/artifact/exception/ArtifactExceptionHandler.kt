@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.common.artifact.exception
 
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.api.util.LoggerHolder.logException
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_VALUE
+import com.tencent.bkrepo.common.service.log.LoggerHolder.logException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
@@ -67,7 +67,7 @@ class ArtifactExceptionHandler {
 
     private fun response(status: HttpStatus, exception: ArtifactException) {
         logException(exception, exception.message)
-        val responseObject = Response.fail(status.value(), exception.message)
+        val responseObject = ResponseBuilder.fail(status.value(), exception.message)
         val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
         val response = HttpContextHolder.getResponse()
         response.contentType = "application/json; charset=utf-8"

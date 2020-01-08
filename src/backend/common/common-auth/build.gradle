@@ -1,4 +1,0 @@
-dependencies {
-    api project(":auth:api-auth")
-    implementation project(":common:common-api")
-}

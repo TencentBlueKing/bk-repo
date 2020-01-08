@@ -4,7 +4,7 @@ import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.auth.PermissionService
+import com.tencent.bkrepo.common.artifact.permission.PermissionService
 import com.tencent.bkrepo.generic.pojo.FileInfo
 import com.tencent.bkrepo.generic.pojo.FileSearchRequest
 import com.tencent.bkrepo.repository.api.NodeResource

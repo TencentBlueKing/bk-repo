@@ -2,7 +2,6 @@ rootProject.name = "bk-repo-backend"
 
 include ":common"
 include ":common:common-api"
-include ":common:common-auth"
 include ":common:common-redis"
 include ":common:common-mongo"
 include ":common:common-job"

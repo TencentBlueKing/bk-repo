@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.ProjectResource
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
@@ -14,15 +15,15 @@ class ProjectResourceImpl @Autowired constructor(
 ) : ProjectResource {
 
     override fun query(name: String): Response<ProjectInfo?> {
-        return Response.success(projectService.query(name))
+        return ResponseBuilder.success(projectService.query(name))
     }
 
     override fun list(): Response<List<ProjectInfo>> {
-        return Response.success(projectService.list())
+        return ResponseBuilder.success(projectService.list())
     }
 
     override fun create(request: ProjectCreateRequest): Response<Void> {
         projectService.create(request)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 }

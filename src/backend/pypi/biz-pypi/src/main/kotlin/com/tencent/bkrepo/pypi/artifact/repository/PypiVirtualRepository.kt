@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.pypi.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import java.io.File
+import org.springframework.stereotype.Component
 
 /**
  *

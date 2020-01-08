@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.job
 
-import com.tencent.bkrepo.common.api.util.LoggerHolder
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.NodeService

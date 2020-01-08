@@ -424,7 +424,7 @@ internal class NodeServiceTest @Autowired constructor(
         nodeService.create(createRequest("/a/1.txt", false))
         nodeService.create(createRequest("/ab", true))
 
-        val moveRequest = NodeMoveRequest(
+        var moveRequest = NodeMoveRequest(
             srcProjectId = projectId,
             srcRepoName = repoName,
             srcFullPath = "/a/b",
@@ -449,10 +449,23 @@ internal class NodeServiceTest @Autowired constructor(
         assertTrue(nodeService.exist(projectId, repoName, "/ab/b/c/d"))
         assertTrue(nodeService.exist(projectId, repoName, "/ab/b/c/d/1.txt"))
         assertTrue(nodeService.exist(projectId, repoName, "/ab/b/c/d/e/2.txt"))
+
+        nodeService.create(createRequest("/data/mkdir/aa.txt", false))
+        nodeService.create(createRequest("/data/dir3", true))
+
+        moveRequest = NodeMoveRequest(
+            srcProjectId = projectId,
+            srcRepoName = repoName,
+            srcFullPath = "/data/mkdir/aa.txt",
+            destFullPath = "/data/dir3",
+            operator = operator
+        )
+        nodeService.move(moveRequest)
+        assertTrue(nodeService.list(projectId, repoName, "/data/dir3", includeFolder = false, deep = false).size == 1)
     }
 
     @Test
-    @DisplayName("移动文件，文件 -> 存在的目录")
+    @DisplayName("移动文件 -> 存在的目录")
     fun moveFileToExistPathTest() {
         nodeService.create(createRequest("/a/1.txt", false))
         nodeService.create(createRequest("/ab", true))

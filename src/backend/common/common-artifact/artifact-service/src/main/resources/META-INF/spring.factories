@@ -1,4 +1,5 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
 com.tencent.bkrepo.common.artifact.ArtifactAutoConfiguration,\
 com.tencent.bkrepo.common.artifact.resolve.path.ResolverScannerRegistrar,\
+com.tencent.bkrepo.common.artifact.permission.PermissionService,\
 com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionHandler

@@ -8,8 +8,9 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.auth.PermissionService
+import com.tencent.bkrepo.common.artifact.permission.PermissionService
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.UserNodeResource
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -45,7 +46,7 @@ class UserNodeResourceImpl @Autowired constructor(
         with(artifactInfo) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
-            return Response.success(nodeDetail)
+            return ResponseBuilder.success(nodeDetail)
         }
     }
 
@@ -61,7 +62,7 @@ class UserNodeResourceImpl @Autowired constructor(
                 operator = userId
             )
             nodeService.create(createRequest)
-            return Response.success()
+            return ResponseBuilder.success()
         }
     }
 
@@ -75,7 +76,7 @@ class UserNodeResourceImpl @Autowired constructor(
                 operator = userId
             )
             nodeService.delete(deleteRequest)
-            return Response.success()
+            return ResponseBuilder.success()
         }
     }
 
@@ -90,7 +91,7 @@ class UserNodeResourceImpl @Autowired constructor(
                 operator = userId
             )
             nodeService.rename(renameRequest)
-            return Response.success()
+            return ResponseBuilder.success()
         }
     }
 
@@ -109,7 +110,7 @@ class UserNodeResourceImpl @Autowired constructor(
                 operator = userId
             )
             nodeService.move(moveRequest)
-            return Response.success()
+            return ResponseBuilder.success()
         }
     }
 
@@ -128,7 +129,7 @@ class UserNodeResourceImpl @Autowired constructor(
                 operator = userId
             )
             nodeService.copy(copyRequest)
-            return Response.success()
+            return ResponseBuilder.success()
         }
     }
 
@@ -136,14 +137,14 @@ class UserNodeResourceImpl @Autowired constructor(
         with(artifactInfo) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             val nodeSizeInfo = nodeService.computeSize(projectId, repoName, artifactUri)
-            return Response.success(nodeSizeInfo)
+            return ResponseBuilder.success(nodeSizeInfo)
         }
     }
 
     override fun list(userId: String, artifactInfo: ArtifactInfo, includeFolder: Boolean, deep: Boolean): Response<List<NodeInfo>> {
         with(artifactInfo) {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-            return Response.success(nodeService.list(projectId, repoName, artifactUri, includeFolder, deep))
+            return ResponseBuilder.success(nodeService.list(projectId, repoName, artifactUri, includeFolder, deep))
         }
     }
 
@@ -153,11 +154,11 @@ class UserNodeResourceImpl @Autowired constructor(
                 permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, searchRequest.projectId, it))
             }
         }
-        return Response.success(nodeService.search(searchRequest))
+        return ResponseBuilder.success(nodeService.search(searchRequest))
     }
 
     override fun query(userId: String, queryModel: QueryModel): Response<Page<Map<String, Any>>> {
         // 由于涉及到queryModel校验和解析规则，自定义查询在service内部鉴权
-        return Response.success(nodeQueryService.userQuery(userId, queryModel))
+        return ResponseBuilder.success(nodeQueryService.userQuery(userId, queryModel))
     }
 }

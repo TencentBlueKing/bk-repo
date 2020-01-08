@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.common.storage.core.simple
 
+import com.google.common.io.ByteStreams
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import java.io.File
-import org.apache.commons.fileupload.util.Streams
 
 /**
  * 存储服务简单实现
@@ -19,7 +19,9 @@ class SimpleStorageService : AbstractStorageService() {
         // force to write file
         val file = if (artifactFile.isInMemory()) {
             val tempArtifactFile = ArtifactFileFactory.build(0)
-            Streams.copy(artifactFile.getInputStream(), tempArtifactFile.getOutputStream(), true)
+            artifactFile.getInputStream().use { input ->
+                tempArtifactFile.getOutputStream().use { output -> ByteStreams.copy(input, output)}
+            }
             tempArtifactFile.getTempFile()
         } else {
             artifactFile.getTempFile()

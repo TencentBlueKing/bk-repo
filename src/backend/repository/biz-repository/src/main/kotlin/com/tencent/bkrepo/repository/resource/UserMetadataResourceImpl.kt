@@ -5,7 +5,8 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.auth.PermissionService
+import com.tencent.bkrepo.common.artifact.permission.PermissionService
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.UserMetadataResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -29,7 +30,7 @@ class UserMetadataResourceImpl @Autowired constructor(
     override fun query(userId: String, artifactInfo: ArtifactInfo): Response<Map<String, String>> {
         artifactInfo.run {
             permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
-            return Response.success(metadataService.query(projectId, repoName, this.artifactUri))
+            return ResponseBuilder.success(metadataService.query(projectId, repoName, this.artifactUri))
         }
     }
 
@@ -43,7 +44,7 @@ class UserMetadataResourceImpl @Autowired constructor(
                 metadata = metadataSaveRequest.metadata
             )
             metadataService.save(request)
-            return Response.success()
+            return ResponseBuilder.success()
         }
     }
 
@@ -57,7 +58,7 @@ class UserMetadataResourceImpl @Autowired constructor(
                 keyList = metadataDeleteRequest.keyList
             )
             metadataService.delete(request)
-            return Response.success()
+            return ResponseBuilder.success()
         }
     }
 }

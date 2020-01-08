@@ -1,7 +1,7 @@
 dependencies {
     api project(":repository:api-repository")
+    api project(":auth:api-auth")
     api project(":common:common-service")
-    api project(":common:common-auth")
     api project(":common:common-artifact:artifact-api")
     api project(":common:common-storage:storage-service")
 

@@ -3,6 +3,7 @@ package com.tencent.bkrepo.repository.resource
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -31,59 +32,59 @@ class NodeResourceImpl @Autowired constructor(
 ) : NodeResource {
 
     override fun detail(projectId: String, repoName: String, repoType: String, fullPath: String): Response<NodeDetail?> {
-        return Response.success(nodeService.detail(projectId, repoName, fullPath, repoType))
+        return ResponseBuilder.success(nodeService.detail(projectId, repoName, fullPath, repoType))
     }
 
     override fun detail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
-        return Response.success(nodeService.detail(projectId, repoName, fullPath))
+        return ResponseBuilder.success(nodeService.detail(projectId, repoName, fullPath))
     }
 
     override fun exist(projectId: String, repoName: String, fullPath: String): Response<Boolean> {
-        return Response.success(nodeService.exist(projectId, repoName, fullPath))
+        return ResponseBuilder.success(nodeService.exist(projectId, repoName, fullPath))
     }
 
     override fun list(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Response<List<NodeInfo>> {
-        return Response.success(nodeService.list(projectId, repoName, path, includeFolder, deep))
+        return ResponseBuilder.success(nodeService.list(projectId, repoName, path, includeFolder, deep))
     }
 
     override fun page(projectId: String, repoName: String, page: Int, size: Int, path: String, includeFolder: Boolean, deep: Boolean): Response<Page<NodeInfo>> {
-        return Response.success(nodeService.page(projectId, repoName, path, page, size, includeFolder, deep))
+        return ResponseBuilder.success(nodeService.page(projectId, repoName, path, page, size, includeFolder, deep))
     }
 
     override fun search(nodeSearchRequest: NodeSearchRequest): Response<Page<NodeInfo>> {
-        return Response.success(nodeService.search(nodeSearchRequest))
+        return ResponseBuilder.success(nodeService.search(nodeSearchRequest))
     }
 
     override fun create(nodeCreateRequest: NodeCreateRequest): Response<Void> {
         nodeService.create(nodeCreateRequest)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 
     override fun rename(nodeRenameRequest: NodeRenameRequest): Response<Void> {
         nodeService.rename(nodeRenameRequest)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 
     override fun move(nodeMoveRequest: NodeMoveRequest): Response<Void> {
         nodeService.move(nodeMoveRequest)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 
     override fun copy(nodeCopyRequest: NodeCopyRequest): Response<Void> {
         nodeService.copy(nodeCopyRequest)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 
     override fun delete(nodeDeleteRequest: NodeDeleteRequest): Response<Void> {
         nodeService.delete(nodeDeleteRequest)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 
     override fun computeSize(projectId: String, repoName: String, fullPath: String): Response<NodeSizeInfo> {
-        return Response.success(nodeService.computeSize(projectId, repoName, fullPath))
+        return ResponseBuilder.success(nodeService.computeSize(projectId, repoName, fullPath))
     }
 
     override fun query(queryModel: QueryModel): Response<Page<Map<String, Any>>> {
-        return Response.success(nodeQueryService.query(queryModel))
+        return ResponseBuilder.success(nodeQueryService.query(queryModel))
     }
 }

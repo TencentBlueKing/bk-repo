@@ -2,12 +2,14 @@ dependencies {
     api project(":common:common-api")
     api project(":common:common-storage:storage-api")
     api project(":common:common-artifact:artifact-api")
+    compileOnly project(":common:common-service")
 
     api "commons-codec:commons-codec"
     api "commons-io:commons-io"
-    api "org.springframework.retry:spring-retry"
-    runtime "org.springframework.boot:spring-boot-starter-aop"
+    implementation "org.springframework.retry:spring-retry"
+    implementation "org.springframework.boot:spring-boot-starter-aop"
     implementation "com.tencent:innercos-java-sdk"
     implementation "com.amazonaws:aws-java-sdk-s3"
     implementation "com.google.guava:guava"
+
 }

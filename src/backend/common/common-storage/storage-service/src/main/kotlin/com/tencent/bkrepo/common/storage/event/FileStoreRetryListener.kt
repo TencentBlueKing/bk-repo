@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.storage.event
 
-import com.tencent.bkrepo.common.api.util.LoggerHolder
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import org.springframework.retry.RetryCallback
 import org.springframework.retry.RetryContext
 import org.springframework.retry.listener.RetryListenerSupport

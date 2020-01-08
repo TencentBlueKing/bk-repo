@@ -7,7 +7,7 @@ package com.tencent.bkrepo.common.artifact.pojo.configuration
  */
 class RemoteCacheConfiguration(
     // 是否开启缓存
-    val cacheEnabled: Boolean = false,
+    val cacheEnabled: Boolean = true,
     // 构件缓存时间，单位分钟，负数表示永久缓存
-    val cachePeriod: Long = -1
+    val cachePeriod: Long = 60
 )

@@ -2,6 +2,7 @@ package com.tencent.bkrepo.generic.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.api.UploadResource
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.pojo.BlockInfo
@@ -23,24 +24,24 @@ class UploadResourceImpl @Autowired constructor(
 
     override fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile): Response<Void> {
         uploadService.upload(artifactInfo, file)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 
     override fun startBlockUpload(userId: String, artifactInfo: GenericArtifactInfo): Response<UploadTransactionInfo> {
-        return Response.success(uploadService.startBlockUpload(userId, artifactInfo))
+        return ResponseBuilder.success(uploadService.startBlockUpload(userId, artifactInfo))
     }
 
     override fun abortBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): Response<Void> {
         uploadService.abortBlockUpload(userId, uploadId, artifactInfo)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 
     override fun completeBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): Response<Void> {
         uploadService.completeBlockUpload(userId, uploadId, artifactInfo)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 
     override fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): Response<List<BlockInfo>> {
-        return Response.success(uploadService.listBlock(userId, uploadId, artifactInfo))
+        return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
     }
 }

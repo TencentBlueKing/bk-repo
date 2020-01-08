@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.service.log
 
-import com.tencent.bkrepo.common.api.util.LoggerHolder
 import feign.Request
 import feign.Response
 import java.io.IOException

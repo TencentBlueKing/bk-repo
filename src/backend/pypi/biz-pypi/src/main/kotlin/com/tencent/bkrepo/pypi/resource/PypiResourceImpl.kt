@@ -7,7 +7,6 @@ import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.service.PypiService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
-import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.ResponseBody
 
 /**
@@ -37,11 +36,9 @@ class PypiResourceImpl : PypiResource {
         pypiService.upload(pypiArtifactInfo, artifactFileMap)
     }
 
-    override fun root(map: ModelMap) = "welcome"
-
     @ResponseBody
     override fun simple(artifactInfo: PypiArtifactInfo) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
     }
 
     @ResponseBody

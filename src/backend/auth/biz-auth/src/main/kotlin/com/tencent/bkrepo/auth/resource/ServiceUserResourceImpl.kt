@@ -6,6 +6,7 @@ import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
@@ -15,55 +16,55 @@ class ServiceUserResourceImpl @Autowired constructor(
 ) : ServiceUserResource {
     override fun createUser(request: CreateUserRequest): Response<Boolean> {
         userService.createUser(request)
-        return Response(true)
+        return ResponseBuilder.success(true)
     }
 
     override fun deleteById(uid: String): Response<Boolean> {
         userService.deleteById(uid)
-        return Response(true)
+        return ResponseBuilder.success(true)
     }
 
     override fun detail(uid: String): Response<User?> {
-        return Response(userService.getUserById(uid))
+        return ResponseBuilder.success(userService.getUserById(uid))
     }
 
     override fun updateById(uid: String, request: UpdateUserRequest): Response<Boolean> {
         userService.updateUserById(uid, request)
-        return Response(true)
+        return ResponseBuilder.success(true)
     }
 
     override fun addUserRole(uid: String, rid: String): Response<User?> {
         val result = userService.addUserToRole(uid, rid)
-        return Response(result)
+        return ResponseBuilder.success(result)
     }
 
     override fun removeUserRole(uid: String, rid: String): Response<User?> {
         val result = userService.removeUserFromRole(uid, rid)
-        return Response(result)
+        return ResponseBuilder.success(result)
     }
 
     override fun addUserRolePatch(rid: String, request: List<String>): Response<Boolean> {
         userService.addUserToRoleBatch(request, rid)
-        return Response(true)
+        return ResponseBuilder.success(true)
     }
 
     override fun deleteUserRolePatch(rid: String, request: List<String>): Response<Boolean> {
         userService.removeUserFromRoleBatch(request, rid)
-        return Response(true)
+        return ResponseBuilder.success(true)
     }
 
     override fun createToken(uid: String): Response<User?> {
         val result = userService.createToken(uid)
-        return Response(result)
+        return ResponseBuilder.success(result)
     }
 
     override fun deleteToken(uid: String, token: String): Response<User?> {
         val result = userService.removeToken(uid, token)
-        return Response(result)
+        return ResponseBuilder.success(result)
     }
 
     override fun checkUserToken(uid: String, token: String): Response<Boolean> {
-        userService.findUserByUserToken(uid, token) ?: return Response(false)
-        return Response(true)
+        userService.findUserByUserToken(uid, token) ?: return ResponseBuilder.success(false)
+        return ResponseBuilder.success(true)
     }
 }

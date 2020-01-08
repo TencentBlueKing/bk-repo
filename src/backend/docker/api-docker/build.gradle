@@ -3,6 +3,8 @@ dependencies {
     implementation project(":common:common-artifact:artifact-api")
     implementation project(":common:common-query:query-api")
     implementation project(":common:common-storage:storage-api")
+    compileOnly "javax.servlet:javax.servlet-api"
+    compileOnly "org.springframework:spring-web"
     compile group: 'javax.ws.rs', name: 'jsr311-api', version: '1.1.1'
 }
 
