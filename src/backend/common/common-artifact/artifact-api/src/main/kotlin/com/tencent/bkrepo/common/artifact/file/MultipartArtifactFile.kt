@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.common.artifact.file
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import org.apache.commons.fileupload.disk.DiskFileItem
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import org.apache.commons.fileupload.disk.DiskFileItem
 
 /**
  *

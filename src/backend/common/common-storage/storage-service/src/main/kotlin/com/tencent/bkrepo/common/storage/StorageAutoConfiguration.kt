@@ -6,9 +6,9 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.simple.SimpleStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageType
+import com.tencent.bkrepo.common.storage.event.FileStoreRetryListener
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
-import com.tencent.bkrepo.common.storage.event.FileStoreRetryListener
 import com.tencent.bkrepo.common.storage.locator.FileLocator
 import com.tencent.bkrepo.common.storage.locator.HashFileLocator
 import org.slf4j.LoggerFactory

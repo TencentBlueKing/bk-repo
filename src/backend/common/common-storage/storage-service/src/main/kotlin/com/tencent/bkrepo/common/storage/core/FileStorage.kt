@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import java.io.File
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Recover
 import org.springframework.retry.annotation.Retryable
 import org.springframework.scheduling.annotation.Async
-import java.io.File
 
 /**
  * 文件存储接口

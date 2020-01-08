@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.job
 
 import com.mongodb.MongoClient
+import java.util.concurrent.Executors
 import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.provider.mongo.MongoLockProvider
 import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock
@@ -11,7 +12,6 @@ import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.annotation.SchedulingConfigurer
 import org.springframework.scheduling.config.ScheduledTaskRegistrar
-import java.util.concurrent.Executors
 
 /**
  *

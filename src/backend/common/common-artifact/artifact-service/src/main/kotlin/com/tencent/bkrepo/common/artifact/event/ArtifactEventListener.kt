@@ -4,7 +4,6 @@ import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 
-
 /**
  * 构件相关事件监听器
  *

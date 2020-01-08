@@ -4,9 +4,9 @@ import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
-import org.springframework.beans.factory.annotation.Autowired
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  *

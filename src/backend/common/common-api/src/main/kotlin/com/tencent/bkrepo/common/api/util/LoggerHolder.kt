@@ -35,7 +35,7 @@ object LoggerHolder {
         val userId = request?.getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val uri = request?.requestURI
         val fullMessage = "User[$userId] access [$uri] failed[${exception.javaClass.simpleName}]: $message"
-        if(logDetail) {
+        if (logDetail) {
             logger.error(fullMessage, exception)
         } else {
             logger.error(fullMessage)

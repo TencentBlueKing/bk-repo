@@ -10,9 +10,9 @@ import org.springframework.retry.listener.RetryListenerSupport
  * @author: carrypan
  * @date: 2020/1/8
  */
-class FileStoreRetryListener: RetryListenerSupport() {
+class FileStoreRetryListener : RetryListenerSupport() {
     override fun <T : Any, E : Throwable> onError(context: RetryContext, callback: RetryCallback<T, E>, throwable: Throwable) {
-        logger.warn("Retryable method [${context.getAttribute(RetryContext.NAME)}] threw [${context.retryCount}]th exception {${throwable}}")
+        logger.warn("Retryable method [${context.getAttribute(RetryContext.NAME)}] threw [${context.retryCount}]th exception {$throwable}")
     }
 
     companion object {

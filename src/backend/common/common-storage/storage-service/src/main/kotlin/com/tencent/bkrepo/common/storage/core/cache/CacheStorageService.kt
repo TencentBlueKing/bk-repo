@@ -6,9 +6,9 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
 import java.nio.file.Paths
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 支持缓存的存储服务

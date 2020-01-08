@@ -15,13 +15,13 @@ import java.nio.file.attribute.BasicFileAttributes
 class CleanupFileVisitor(
     private val rootPath: Path,
     private val expireDays: Int
-): SimpleFileVisitor<Path>() {
+) : SimpleFileVisitor<Path>() {
 
     val cleanupResult = CleanupResult()
 
     @Throws(IOException::class)
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
-        if(isExpired(attributes, expireDays)) {
+        if (isExpired(attributes, expireDays)) {
             val size = attributes.size()
             Files.deleteIfExists(filePath)
             cleanupResult.count += 1
@@ -32,7 +32,7 @@ class CleanupFileVisitor(
 
     @Throws(IOException::class)
     override fun postVisitDirectory(dirPath: Path, exc: IOException?): FileVisitResult {
-        if(!Files.isSameFile(rootPath, dirPath) && !Files.list(dirPath).iterator().hasNext()) {
+        if (!Files.isSameFile(rootPath, dirPath) && !Files.list(dirPath).iterator().hasNext()) {
             Files.deleteIfExists(dirPath)
             cleanupResult.count += 1
         }

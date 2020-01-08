@@ -15,11 +15,11 @@ import com.tencent.cos.model.GetObjectRequest
 import com.tencent.cos.model.PutObjectRequest
 import com.tencent.cos.region.Region
 import com.tencent.cos.transfer.TransferManager
-import org.apache.http.HttpStatus
 import java.io.File
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import org.apache.http.HttpStatus
 
 /**
  * 内部cos文件存储实现类

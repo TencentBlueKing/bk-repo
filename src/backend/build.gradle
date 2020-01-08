@@ -171,5 +171,4 @@ task publishApiJar(group: "publishing") {
         ":repository:api-repository"
     ]
     projectList.each { dependsOn project(it).tasks.publish }
-    print("publishApiJar")
 }
