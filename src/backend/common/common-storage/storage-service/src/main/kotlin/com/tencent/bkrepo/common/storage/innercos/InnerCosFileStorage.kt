@@ -9,7 +9,6 @@ import com.tencent.cos.ClientConfig
 import com.tencent.cos.auth.BasicCOSCredentials
 import com.tencent.cos.cl5.CL5Info
 import com.tencent.cos.endpoint.CL5EndpointResolver
-import com.tencent.cos.exception.CosServiceException
 import com.tencent.cos.model.DeleteObjectRequest
 import com.tencent.cos.model.GetObjectRequest
 import com.tencent.cos.model.PutObjectRequest
@@ -19,7 +18,6 @@ import java.io.File
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import org.apache.http.HttpStatus
 
 /**
  * 内部cos文件存储实现类
@@ -60,15 +58,11 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
 
     override fun exist(path: String, filename: String, storageCredentials: StorageCredentials): Boolean {
         val client = getClient(storageCredentials)
-        var exists = true
-        try {
-            client.cosClient.getObjectMetadata(client.bucketName, filename)
-        } catch (cosServiceException: CosServiceException) {
-            exists = cosServiceException.statusCode != HttpStatus.SC_NOT_FOUND
+        return try {
+            return client.cosClient.getObjectMetadata(client.bucketName, filename) != null
         } catch (ignored: Exception) {
-            exists = false
+            false
         }
-        return exists
     }
 
     override fun onCreateClient(credentials: InnerCosCredentials): InnerCosClient {
