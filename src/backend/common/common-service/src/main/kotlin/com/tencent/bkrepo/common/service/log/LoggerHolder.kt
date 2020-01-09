@@ -1,6 +1,10 @@
 package com.tencent.bkrepo.common.service.log
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.API_LOGGER_NAME
+import com.tencent.bkrepo.common.api.constant.BUSINESS_ERROR_LOGGER_NAME
+import com.tencent.bkrepo.common.api.constant.JOB_LOGGER_NAME
+import com.tencent.bkrepo.common.api.constant.SYSTEM_ERROR_LOGGER_NAME
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -16,21 +20,21 @@ object LoggerHolder {
     /**
      * 系统错误logger
      */
-    val SYSTEM_ERROR: Logger = LoggerFactory.getLogger("SystemErrorLogger")
+    val sysErrorLogger: Logger = LoggerFactory.getLogger(SYSTEM_ERROR_LOGGER_NAME)
     /**
      * 业务错误logger
      */
-    val BUSINESS_ERROR: Logger = LoggerFactory.getLogger("BusinessErrorLogger")
+    val bizErrorLogger: Logger = LoggerFactory.getLogger(BUSINESS_ERROR_LOGGER_NAME)
     /**
      * 定时任务logger
      */
-    val JOB: Logger = LoggerFactory.getLogger("JobLogger")
+    val jobLogger: Logger = LoggerFactory.getLogger(JOB_LOGGER_NAME)
     /**
      * API logger
      */
-    val API: Logger = LoggerFactory.getLogger("FeignApiLogger")
+    val apiLogger: Logger = LoggerFactory.getLogger(API_LOGGER_NAME)
 
-    fun logException(exception: Exception, message: String? = "", logger: Logger = BUSINESS_ERROR, logDetail: Boolean = false) {
+    fun logException(exception: Exception, message: String? = "", logger: Logger = bizErrorLogger, logDetail: Boolean = false) {
         val request = (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request
         val userId = request?.getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val uri = request?.requestURI

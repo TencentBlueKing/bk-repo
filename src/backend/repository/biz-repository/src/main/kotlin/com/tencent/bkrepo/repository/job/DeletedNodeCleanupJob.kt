@@ -60,6 +60,6 @@ class DeletedNodeCleanupJob {
     }
 
     companion object {
-        private val logger = LoggerHolder.JOB
+        private val logger = LoggerHolder.jobLogger
     }
 }

@@ -19,3 +19,11 @@ const val ANONYMOUS_USER = "anonymous"
  * header user id key
  */
 const val AUTH_HEADER_UID: String = "X-BKREPO-UID"
+
+/**
+ * common logger name
+ */
+const val SYSTEM_ERROR_LOGGER_NAME = "SystemErrorLogger"
+const val BUSINESS_ERROR_LOGGER_NAME = "BusinessErrorLogger"
+const val JOB_LOGGER_NAME = "JobLogger"
+const val API_LOGGER_NAME = "ApiLogger"

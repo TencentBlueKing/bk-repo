@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.storage.event
 
-import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.api.constant.SYSTEM_ERROR_LOGGER_NAME
+import org.slf4j.LoggerFactory
 import org.springframework.retry.RetryCallback
 import org.springframework.retry.RetryContext
 import org.springframework.retry.listener.RetryListenerSupport
@@ -16,6 +17,6 @@ class FileStoreRetryListener : RetryListenerSupport() {
     }
 
     companion object {
-        private val logger = LoggerHolder.SYSTEM_ERROR
+        private val logger = LoggerFactory.getLogger(SYSTEM_ERROR_LOGGER_NAME)
     }
 }

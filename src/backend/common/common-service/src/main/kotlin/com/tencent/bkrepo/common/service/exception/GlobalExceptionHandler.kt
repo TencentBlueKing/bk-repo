@@ -98,14 +98,14 @@ class GlobalExceptionHandler {
         } else if (exception.failureType == FailureType.SHORTCIRCUIT) {
             messageCode = CommonMessageCode.SERVICE_CIRCUIT_BREAKER
         }
-        logException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage", LoggerHolder.SYSTEM_ERROR)
+        logException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage", LoggerHolder.sysErrorLogger)
         return response(messageCode)
     }
 
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: Exception): Response<Void> {
-        logException(exception, exception.message, LoggerHolder.SYSTEM_ERROR, true)
+        logException(exception, exception.message, LoggerHolder.sysErrorLogger, true)
         return response(CommonMessageCode.SYSTEM_ERROR)
     }
 

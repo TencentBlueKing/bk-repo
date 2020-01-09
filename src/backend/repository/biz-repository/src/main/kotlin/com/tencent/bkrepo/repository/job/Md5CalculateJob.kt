@@ -93,6 +93,6 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
     }
 
     companion object {
-        private val logger = LoggerHolder.JOB
+        private val logger = LoggerHolder.jobLogger
     }
 }

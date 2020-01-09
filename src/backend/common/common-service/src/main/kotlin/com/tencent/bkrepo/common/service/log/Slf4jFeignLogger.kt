@@ -29,6 +29,6 @@ class Slf4jFeignLogger : feign.Logger() {
         }
     }
     companion object {
-        private val logger = LoggerHolder.API
+        private val logger = LoggerHolder.apiLogger
     }
 }

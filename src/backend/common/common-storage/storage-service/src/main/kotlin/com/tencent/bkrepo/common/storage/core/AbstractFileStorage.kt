@@ -3,9 +3,10 @@ package com.tencent.bkrepo.common.storage.core
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
-import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.api.constant.SYSTEM_ERROR_LOGGER_NAME
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import java.io.File
@@ -37,7 +38,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     override fun recover(exception: Exception, path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
-        LoggerHolder.SYSTEM_ERROR.error("Failed to store file[$filename] on [$storageCredentials].", exception)
+        logger.error("Failed to store file[$filename] on [$storageCredentials].", exception)
         val event = StoreFailureEvent(path, filename, file.absolutePath, storageCredentials)
         publisher.publishEvent(event)
     }
@@ -47,4 +48,8 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     protected abstract fun onCreateClient(credentials: Credentials): Client
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SYSTEM_ERROR_LOGGER_NAME)
+    }
 }
