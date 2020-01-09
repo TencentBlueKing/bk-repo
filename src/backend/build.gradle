@@ -21,6 +21,7 @@ buildscript {
     repositories {
         mavenLocal()
         maven { url MAVEN_REPO_URL }
+        maven { url MAVEN_REPO_SNAPSHOT_URL }
         maven { url "https://repo.spring.io/libs-milestone" }
         mavenCentral()
         jcenter()
@@ -40,6 +41,7 @@ allprojects {
     repositories {
         mavenLocal()
         maven { url MAVEN_REPO_URL }
+        maven { url MAVEN_REPO_SNAPSHOT_URL }
         maven { url "https://repo.spring.io/libs-milestone" }
         mavenCentral()
         jcenter()
@@ -150,16 +152,16 @@ subprojects {
         repositories {
             maven {
                 if (project.version.endsWith('-SNAPSHOT')) {
-                    url = MAVEN_DEPLOY_SNAPSHOT_REPO_URL
+                    url = MAVEN_REPO_SNAPSHOT_DEPLOY_URL
                     credentials {
-                        username MAVEN_DEPLOY_SNAPSHOT_REPO_USERNAME
-                        password MAVEN_DEPLOY_SNAPSHOT_REPO_PASSWORD
+                        username MAVEN_REPO_SNAPSHOT_USERNAME
+                        password MAVEN_REPO_SNAPSHOT_PASSWORD
                     }
                 } else {
-                    url = MAVEN_DEPLOY_REPO_URL
+                    url = MAVEN_REPO_DEPLOY_URL
                     credentials {
-                        username MAVEN_DEPLOY_REPO_USERNAME
-                        password MAVEN_DEPLOY_REPO_PASSWORD
+                        username MAVEN_REPO_USERNAME
+                        password MAVEN_REPO_PASSWORD
                     }
 
                 }
