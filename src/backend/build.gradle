@@ -21,7 +21,6 @@ buildscript {
     repositories {
         mavenLocal()
         maven { url MAVEN_REPO_URL }
-        maven { url MAVEN_REPO_SNAPSHOT_URL }
         maven { url "https://repo.spring.io/libs-milestone" }
         mavenCentral()
         jcenter()
@@ -41,7 +40,6 @@ allprojects {
     repositories {
         mavenLocal()
         maven { url MAVEN_REPO_URL }
-        maven { url MAVEN_REPO_SNAPSHOT_URL }
         maven { url "https://repo.spring.io/libs-milestone" }
         mavenCentral()
         jcenter()
