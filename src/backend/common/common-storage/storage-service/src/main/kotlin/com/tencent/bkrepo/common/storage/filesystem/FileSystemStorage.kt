@@ -34,5 +34,5 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
 
     override fun getDefaultCredentials() = storageProperties.filesystem
 
-    override fun getTempPath() = Paths.get(storageProperties.filesystem.path, "temp").toUri().toString()
+    override fun getTempPath() = Paths.get(storageProperties.filesystem.path, "temp").toString()
 }
