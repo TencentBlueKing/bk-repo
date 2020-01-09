@@ -26,8 +26,8 @@ abstract class LocalRepository : AbstractArtifactRepository {
 
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
-        nodeResource.create(nodeCreateRequest)
         storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
+        nodeResource.create(nodeCreateRequest)
     }
 
     override fun onDownload(context: ArtifactDownloadContext): File? {
