@@ -62,7 +62,6 @@ class PlatformAuthInterceptor : HandlerInterceptorAdapter() {
 
         private fun extractAuthCredentials(request: HttpServletRequest): Pair<String, String>? {
             val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
-            logger.info("platform basicAuthHeader: [$basicAuthHeader]")
             if (basicAuthHeader.isNullOrBlank()) return null
             return try {
                 if (basicAuthHeader.startsWith(THIRD_APP_AUTH_HEADER_PREFIX)) {
