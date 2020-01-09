@@ -29,7 +29,8 @@ class CacheStorageService : AbstractStorageService() {
     }
 
     override fun doStore(path: String, filename: String, file: File, credentials: StorageCredentials) {
-        fileStorage.store(path, filename, file, credentials)
+        val cachedFile = cacheClient.store(path, filename, file.inputStream())
+        fileStorage.store(path, filename, cachedFile, credentials)
     }
 
     override fun doLoad(path: String, filename: String, credentials: StorageCredentials): File? {

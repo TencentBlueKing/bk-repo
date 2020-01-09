@@ -9,12 +9,12 @@ import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
-import java.io.File
-import java.nio.charset.Charset
-import java.util.UUID
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import java.io.File
+import java.nio.charset.Charset
+import java.util.UUID
 
 /**
  * 存储服务抽象实现
@@ -132,9 +132,7 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
         try {
             tempFileClient.load(CURRENT_PATH, appendId)?.let {
-                val fileInfo = storeFile(it, credentials)
-                tempFileClient.delete(CURRENT_PATH, appendId)
-                return fileInfo
+                return storeFile(it, credentials)
             } ?: throw IllegalArgumentException("Append file does not exist.")
         } catch (exception: Exception) {
             logger.error("Failed to finish append file [$appendId] on [$credentials].", exception)
@@ -186,9 +184,7 @@ abstract class AbstractStorageService : StorageService {
                 }
             }
             val mergedFile = tempFileClient.mergeFiles(blockFileList, tempFileClient.touch(blockId, MERGED_FILENAME))
-            val fileInfo = storeFile(mergedFile, credentials)
-            tempFileClient.deleteDirectory(CURRENT_PATH, blockId)
-            return fileInfo
+            return storeFile(mergedFile, credentials)
         } catch (exception: Exception) {
             logger.error("Failed to combine block id [$blockId] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
