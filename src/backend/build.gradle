@@ -150,17 +150,18 @@ subprojects {
         repositories {
             maven {
                 if (project.version.endsWith('-SNAPSHOT')) {
-                    url = MAVEN_DEPLOY_REPO_URL
-                    credentials {
-                        username MAVEN_DEPLOY_REPO_USERNAME
-                        password MAVEN_DEPLOY_REPO_PASSWORD
-                    }
-                } else {
                     url = MAVEN_DEPLOY_SNAPSHOT_REPO_URL
                     credentials {
                         username MAVEN_DEPLOY_SNAPSHOT_REPO_USERNAME
                         password MAVEN_DEPLOY_SNAPSHOT_REPO_PASSWORD
                     }
+                } else {
+                    url = MAVEN_DEPLOY_REPO_URL
+                    credentials {
+                        username MAVEN_DEPLOY_REPO_USERNAME
+                        password MAVEN_DEPLOY_REPO_PASSWORD
+                    }
+
                 }
             }
         }
