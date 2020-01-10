@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.pypi.artifact
 
+import com.alibaba.fastjson.JSON
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -17,10 +19,6 @@ class PypiArtifactInfoResolver : ArtifactInfoResolver {
         artifactUri: String,
         request: HttpServletRequest
     ): PypiArtifactInfo {
-        val name = request.getParameter("name")
-        val version = request.getParameter("version")
-        val filetype = request.getParameter("filetype")
-        val coord = "/$name/$version/$filetype"
-        return PypiArtifactInfo(projectId, repoName, coord, name, version, filetype)
+        return UrlPatternUtil.urlPattern(projectId, repoName, artifactUri, request)
     }
 }

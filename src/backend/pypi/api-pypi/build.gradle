@@ -1,5 +1,8 @@
 dependencies {
     implementation project(":common:common-api")
+    api project(":common:common-service")
     implementation project(":common:common-artifact:artifact-api")
-    compileOnly "org.springframework:spring-web"
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.10.1"
+    compile group: 'com.fasterxml.jackson.jaxrs', name: 'jackson-jaxrs-xml-provider', version: '2.10.1'
+
 }

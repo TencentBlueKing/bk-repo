@@ -18,6 +18,6 @@ class PackagesArtifactInfo(
     }
 
     companion object {
-        const val PACKAGES_MAPPING_URI = "/{projectId}/{repoName}/packages/**"
+        const val PACKAGES_MAPPING_URI = "/{projectId}/api/pypi/{repoName}/packages/**"
     }
 }

@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import java.lang.UnsupportedOperationException
 import org.springframework.stereotype.Component
 
 /**

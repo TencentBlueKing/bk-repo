@@ -5,10 +5,12 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
-import com.tencent.bkrepo.pypi.artifact.PackagesArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.pypi.artifact.repository.PypiLocalRepository
+import com.tencent.bkrepo.pypi.pojo.xml.XmlMethodCallRootElement
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -28,7 +30,7 @@ class PypiService {
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    fun packages(artifactInfo: PackagesArtifactInfo) {
+    fun packages(artifactInfo: PypiArtifactInfo) {
         val context = ArtifactDownloadContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.download(context)
@@ -36,14 +38,22 @@ class PypiService {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun simple(artifactInfo: PypiArtifactInfo) {
-        val context = ArtifactDownloadContext()
+        val context = ArtifactListContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        repository.download(context)
+        repository.list(context)
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    fun search(pypiArtifactInfo: PypiArtifactInfo,
+        xmlMethodCallRootElement: XmlMethodCallRootElement
+    ) {
+        val context = ArtifactListContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        (repository as PypiLocalRepository).searchXml(context, xmlMethodCallRootElement)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    fun upload(
-        pypiArtifactInfo: PypiArtifactInfo,
+    fun upload(pypiArtifactInfo: PypiArtifactInfo,
         artifactFileMap: ArtifactFileMap
     ) {
         val context = ArtifactUploadContext(artifactFileMap)
@@ -51,7 +61,9 @@ class PypiService {
         repository.upload(context)
     }
 
-    companion object {
+    companion object{
         private val logger = LoggerFactory.getLogger(PypiService::class.java)
     }
+
+
 }
