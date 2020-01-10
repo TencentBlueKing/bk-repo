@@ -17,17 +17,16 @@ open class JwtUtil {
         private val secret = "bkrepo"
         private val expireTime = 15 * 60 * 1000
 
-        fun sign(username: String, password: String): String {
+        fun sign(username: String): String {
             var createDate = Date()
             var expireDate = Date(System.currentTimeMillis() + expireTime)
 
-            var claims = mapOf("username" to username, "password" to password)
+            var header = mapOf("alg" to "HS512", "typ" to "JWT")
             return JWT.create()
-                .withHeader(claims)
+                .withHeader(header)
                 .withIssuedAt(createDate)
                 .withExpiresAt(expireDate)
                 .withClaim("username", username)
-                .withClaim("password", password)
                 .sign(Algorithm.HMAC512(secret))
         }
 
@@ -48,23 +47,17 @@ open class JwtUtil {
             return JWT.decode(token).getClaim("username").asString()
         }
 
-        fun getPassword(token: String): String {
-            return JWT.decode(token).getClaim("password").asString()
-        }
-
         fun refresh(token: String): String {
             var createDate = Date()
             var expireDate = Date(System.currentTimeMillis() + expireTime)
 
             val username = getUserName(token)
-            val password = getPassword(token)
-            var header = mapOf("username" to "username", "password" to password)
+            var header = mapOf("alg" to "HS512", "typ" to "JWT")
             return JWT.create()
                 .withHeader(header)
                 .withIssuedAt(createDate)
                 .withExpiresAt(expireDate)
                 .withClaim("username", username)
-                .withClaim("password", password)
                 .sign(Algorithm.HMAC512(secret))
         }
     }
