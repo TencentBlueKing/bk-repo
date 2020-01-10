@@ -54,6 +54,6 @@ class CacheStorageService : AbstractStorageService() {
     }
 
     override fun cleanUp(): CleanupResult {
-        return cacheClient.cleanUp(storageProperties.cache.expireDays) + super.cleanUp()
+        return cacheClient.cleanUp(storageProperties.cache.expireDays)
     }
 }

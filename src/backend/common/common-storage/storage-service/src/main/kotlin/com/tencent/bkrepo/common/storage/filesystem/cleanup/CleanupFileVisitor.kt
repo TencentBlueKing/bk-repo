@@ -25,7 +25,7 @@ class CleanupFileVisitor(
             val size = attributes.size()
             Files.deleteIfExists(filePath)
             cleanupResult.count += 1
-            cleanupResult.count += size
+            cleanupResult.size += size
         }
         return FileVisitResult.CONTINUE
     }
