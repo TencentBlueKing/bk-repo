@@ -44,6 +44,12 @@ class GrafanaService @Autowired constructor(
                 Metrics.PROJECTNODESIZE -> {
                     dealProjectNodeSize(result)
                 }
+                Metrics.CAPSIZE -> {
+                    dealCapSize(it, result)
+                }
+                Metrics.NODENUM -> {
+                    dealNodeNum(it, result)
+                }
             }
         }
         return result
@@ -53,6 +59,30 @@ class GrafanaService @Autowired constructor(
         val count = projectModel.getProjectNum()
         val column = Columns("ProjectNum", "number")
         val row = listOf(count)
+        val data = QueryResult(listOf(column), listOf(row), target.type)
+        result.add(data)
+    }
+
+    private fun dealCapSize(target: Target, result: MutableList<Any>) {
+        var size = 0L
+        val projects = projectMetricsRepository.findAll()
+        projects.forEach {
+            size += it.capSize
+        }
+        val column = Columns("CapSize", "number")
+        val row = listOf(size)
+        val data = QueryResult(listOf(column), listOf(row), target.type)
+        result.add(data)
+    }
+
+    private fun dealNodeNum(target: Target, result: MutableList<Any>) {
+        var num = 0L
+        val projects = projectMetricsRepository.findAll()
+        projects.forEach {
+            num += it.nodeNum
+        }
+        val column = Columns("NodeNum", "number")
+        val row = listOf(num)
         val data = QueryResult(listOf(column), listOf(row), target.type)
         result.add(data)
     }

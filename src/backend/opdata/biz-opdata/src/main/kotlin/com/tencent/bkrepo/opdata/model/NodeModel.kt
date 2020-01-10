@@ -12,11 +12,10 @@ class NodeModel @Autowired constructor(
 ) {
     fun getNodeSize(projectId: String, repoName: String): RepoMetrics {
         try {
-            val result = nodeResource.computeSize(projectId, repoName, "/").data ?: return RepoMetrics(repoName,0L,0L)
-            return RepoMetrics(repoName,result.size,result.subNodeCount)
+            val result = nodeResource.computeSize(projectId, repoName, "/").data ?: return RepoMetrics(repoName, 0L, 0L)
+            return RepoMetrics(repoName, result.size, result.subNodeCount)
         } catch (e: Exception) {
-            return RepoMetrics(repoName,0L,0L)
+            return RepoMetrics(repoName, 0L, 0L)
         }
     }
-
 }
