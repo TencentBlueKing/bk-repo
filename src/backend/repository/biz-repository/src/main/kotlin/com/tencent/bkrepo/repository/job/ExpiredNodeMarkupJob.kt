@@ -27,8 +27,8 @@ class ExpiredNodeMarkupJob {
     @Autowired
     private lateinit var nodeService: NodeService
 
-    @Scheduled(cron = "0 0 0/1 * * ?")
-    @SchedulerLock(name = "ExpiredNodeMarkupJob", lockAtMostFor = "PT59M")
+    @Scheduled(cron = "0 0 0/3 * * ?")
+    @SchedulerLock(name = "ExpiredNodeMarkupJob", lockAtMostFor = "PT1H")
     fun markUp() {
         logger.info("Starting to mark up expired nodes.")
         try {
@@ -38,7 +38,8 @@ class ExpiredNodeMarkupJob {
             val mongoTemplate = nodeDao.determineMongoTemplate()
             for (sequence in 0 until TNode.SHARDING_COUNT) {
                 val collectionName = nodeDao.parseSequenceToCollectionName(sequence)
-                query.with(PageRequest.of(0, 1000))
+                var page = 0
+                query.with(PageRequest.of(page, 1000))
                 var deletedNodeList = mongoTemplate.find(query, TNode::class.java, collectionName)
                 while(deletedNodeList.isNotEmpty()) {
                     logger.info("Retrieved [${deletedNodeList.size}] expired records to be clean up.")
@@ -46,6 +47,8 @@ class ExpiredNodeMarkupJob {
                         nodeService.deleteByPath(it.projectId, it.repoName, it.fullPath, it.lastModifiedBy)
                         markupCount += 1
                     }
+                    page += 1
+                    query.with(PageRequest.of(page, 1000))
                     deletedNodeList = mongoTemplate.find(query, TNode::class.java, collectionName)
                 }
             }

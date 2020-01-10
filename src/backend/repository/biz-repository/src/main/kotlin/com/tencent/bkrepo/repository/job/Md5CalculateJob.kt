@@ -55,14 +55,16 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
         val startTimeMillis = System.currentTimeMillis()
 
         repoRepository.findAll().forEach { repo ->
+            val storageCredentials = repo.storageCredentials?.let { property ->
+                JsonUtils.objectMapper.readValue(property, StorageCredentials::class.java)
+            }
+
+            var page = 0
             val query = Query.query(Criteria.where(TNode::projectId.name).`is`(repo.projectId)
                 .and(TNode::repoName.name).`is`(repo.name)
                 .and(TNode::folder.name).`is`(false)
                 .and(TNode::md5.name).`is`(null)
-            ).with(PageRequest.of(0, 100))
-            val storageCredentials = repo.storageCredentials?.let { property ->
-                JsonUtils.objectMapper.readValue(property, StorageCredentials::class.java)
-            }
+            ).with(PageRequest.of(page, 1000))
             var nodeList = nodeDao.find(query)
             while(nodeList.isNotEmpty()) {
                 logger.info("Retrieved [${nodeList.size}] records to calculate md5.")
@@ -80,15 +82,18 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
                             nodeDao.updateFirst(nodeQuery, nodeUpdate)
                             cleanupCount += 1
                         } else {
-                            logger.error("File[${node.sha256}] is missing on [$storageCredentials], skip calculating.")
+                            logger.error("File[$node] is missing on [$storageCredentials], skip calculating.")
                             fileMissingCount += 1
                         }
                     } catch (exception: Exception) {
                         logger.error("Failed to calculate md5 of file[${node.sha256}] on [$storageCredentials].", exception)
                         failedCount += 1
+                    } finally {
+                        totalCount += 1
                     }
-                    totalCount += 1
                 }
+                page += 1
+                query.with(PageRequest.of(page, 1000))
                 nodeList = nodeDao.find(query)
             }
         }

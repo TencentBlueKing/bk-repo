@@ -27,8 +27,8 @@ class FileReferenceCleanupJob {
     @Autowired
     private lateinit var storageService: StorageService
 
-    @Scheduled(cron = "0 40 0/1 * * ?")
-    @SchedulerLock(name = "FileReferenceCleanupJob", lockAtMostFor = "PT59M")
+    @Scheduled(cron = "0 0 2/3 * * ?")
+    @SchedulerLock(name = "FileReferenceCleanupJob", lockAtMostFor = "PT1H")
     fun cleanUp() {
         logger.info("Starting to clean up file reference.")
         var totalCount = 0L
