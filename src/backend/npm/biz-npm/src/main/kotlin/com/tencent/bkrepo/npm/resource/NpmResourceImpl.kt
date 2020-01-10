@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.npm.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.npm.api.NpmResource
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.service.NpmService
@@ -16,7 +17,7 @@ class NpmResourceImpl : NpmResource {
 
     override fun publish(userId: String, artifactInfo: NpmArtifactInfo, body: String): Response<Void> {
         npmService.publish(userId, artifactInfo, body)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 
     override fun searchPackageInfo(artifactInfo: NpmArtifactInfo): Map<String, Any> {
@@ -32,6 +33,6 @@ class NpmResourceImpl : NpmResource {
 
     override fun unpublish(userId: String, artifactInfo: NpmArtifactInfo): Response<Void> {
         npmService.unpublish(userId, artifactInfo)
-        return Response.success()
+        return ResponseBuilder.success()
     }
 }

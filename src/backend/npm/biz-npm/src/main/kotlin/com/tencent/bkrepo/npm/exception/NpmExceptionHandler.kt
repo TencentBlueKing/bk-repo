@@ -2,10 +2,10 @@ package com.tencent.bkrepo.npm.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionHandler
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -32,7 +32,7 @@ class NpmExceptionHandler {
 
     private fun response(status: HttpStatus, exception: NpmException) {
         logNpmException(exception)
-        val responseObject = Response.fail(status.value(), exception.message)
+        val responseObject = ResponseBuilder.fail(status.value(), exception.message)
         val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
         val response = HttpContextHolder.getResponse()
         response.contentType = "application/json; charset=utf-8"
