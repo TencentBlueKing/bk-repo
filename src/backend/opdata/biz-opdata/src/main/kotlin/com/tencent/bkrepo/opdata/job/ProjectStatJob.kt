@@ -7,6 +7,7 @@ import com.tencent.bkrepo.opdata.model.RepoModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.RepoMetrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -27,6 +28,7 @@ class ProjectStatJob {
     private lateinit var projectMetricsRepository: ProjectMetricsRepository
 
     @Scheduled(cron = "00 45 * * * ?")
+    @SchedulerLock(name = "ProjectStatJob", lockAtMostFor = "PT1H")
     fun statProjectRepoSize() {
         logger.info("start to stat project metrics")
         val projects = projectModel.getProjectList()
@@ -39,11 +41,10 @@ class ProjectStatJob {
             var repoMetrics = mutableListOf<RepoMetrics>()
             repos.forEach {
                 val repoName = it.name
-                val size = nodeModel.getNodeSize(projectId, repoName)
-                repoCapSize += size
-                val num = nodeModel.getNodeNum(projectId, repoName)
-                repoNodeNum += num
-                repoMetrics.add(RepoMetrics(repoName, size / (1024 * 1024 * 1024), num))
+                val nodeSize = nodeModel.getNodeSize(projectId, repoName)
+                repoCapSize += nodeSize.size
+                repoNodeNum += nodeSize.num
+                repoMetrics.add(RepoMetrics(repoName, nodeSize.size / (1024 * 1024 * 1024), nodeSize.num))
             }
             result.add(TProjectMetrics(projectId, repoNodeNum, repoCapSize / (1024 * 1024 * 1024), repoMetrics))
         }
