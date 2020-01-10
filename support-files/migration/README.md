@@ -3,12 +3,13 @@
 > 脚本兼容python2.7+和python3+
 
 ```
-usage: migration.py [-h] [-o] -p PROJECT [-e {dev,prod}] [-f FILE]
+usage: migration.py [-h] -p PROJECT [-e {dev,prod}] [-m] [-o] [-f FILE] [-i]
 
 -p: 项目名称
--o: 是否强制覆盖
 -e: 环境，默认为prod环境
+-o: 是否强制覆盖, 默认false
 -f: 配置文件，可以配置指定路径或者指定文件进行迁移
+-i: 是否初始化bkrepo项目和仓库，默认true
 
 迁移过程日志会记录在logs/{project}.log下
 ```
