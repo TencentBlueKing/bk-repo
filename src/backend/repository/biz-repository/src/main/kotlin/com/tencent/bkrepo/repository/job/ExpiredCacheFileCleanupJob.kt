@@ -25,7 +25,9 @@ class ExpiredCacheFileCleanupJob {
         val startTimeMillis = System.currentTimeMillis()
         val result = storageService.cleanUp()
         val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
-        logger.info("Clean up [${result.count}] expired cache and temp files, [${result.size}] bytes totally, elapse [$elapseTimeMillis] ms.")
+        logger.info("[${result.getTotal()}] expired cache and temp files has been clean up" +
+            ", file[${result.fileCount}], folder[${result.folderCount}]" +
+            ", [${result.size}] bytes totally, elapse [$elapseTimeMillis] ms.")
     }
 
     companion object {
