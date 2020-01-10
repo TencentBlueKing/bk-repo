@@ -2,7 +2,7 @@
 
 project=$1
 user=$2
-authorization=$(echo $3 | base64)
+authorization=$3
 
 # 创建项目
 curl -X POST http://dev1.bkrepo.oa.com/api/repository/api/project -H "Authorization:Platform $authorization" -H "X-BKREPO-UID: $user" -H "Content-Type: application/json" -d '{"name": "'$project'", "displayName": "'$project'", "description": ""}'
