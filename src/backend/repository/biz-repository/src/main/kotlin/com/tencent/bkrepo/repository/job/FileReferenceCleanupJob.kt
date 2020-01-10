@@ -44,13 +44,13 @@ class FileReferenceCleanupJob {
                 val storageCredentials = it.storageCredentials?.let { value -> objectMapper.readValue(value, StorageCredentials::class.java) }
                 try {
                     if (it.sha256.isNotBlank() && storageService.exist(it.sha256, storageCredentials)) {
-                        fileReferenceDao.determineMongoTemplate().remove(it, collectionName)
+                        storageService.delete(it.sha256, storageCredentials)
                         cleanupCount += 1
                     } else {
                         logger.warn("File[${it.sha256}] is missing on [$storageCredentials], skip cleaning up.")
                         fileMissingCount += 1
                     }
-                    storageService.delete(it.sha256, storageCredentials)
+                    fileReferenceDao.determineMongoTemplate().remove(it, collectionName)
                 } catch (exception: Exception) {
                     logger.error("Failed to delete file[${it.sha256}] on [$storageCredentials].", exception)
                     failedCount += 1

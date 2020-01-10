@@ -23,15 +23,17 @@ class FileReferenceService @Autowired constructor(
 ) {
 
     fun increment(node: TNode, repository: TRepository? = null) {
-        if (node.folder) return
-        val repo = repository ?: repositoryService.queryRepository(node.projectId, node.repoName) ?: return
-        increment(node.sha256!!, repo.storageCredentials)
+        if(validateParameter(node)) {
+            val repo = repository ?: repositoryService.queryRepository(node.projectId, node.repoName) ?: return
+            increment(node.sha256!!, repo.storageCredentials)
+        }
     }
 
     fun decrement(node: TNode, repository: TRepository? = null) {
-        if (node.folder) return
-        val repo = repository ?: repositoryService.checkRepository(node.projectId, node.repoName)
-        decrement(node.sha256!!, repo.storageCredentials)
+        if(validateParameter(node)) {
+            val repo = repository ?: repositoryService.checkRepository(node.projectId, node.repoName)
+            decrement(node.sha256!!, repo.storageCredentials)
+        }
     }
 
     private fun query(sha256: String, storageCredentials: String?): TFileReference? {
@@ -41,8 +43,6 @@ class FileReferenceService @Autowired constructor(
     }
 
     private fun increment(sha256: String, storageCredentials: String?) {
-        validateParameter(sha256)
-
         query(sha256, storageCredentials)?.run {
             this.count += 1
             fileReferenceDao.save(this)
@@ -51,8 +51,6 @@ class FileReferenceService @Autowired constructor(
     }
 
     private fun decrement(sha256: String, storageCredentials: String?) {
-        validateParameter(sha256)
-
         val fileReference = query(sha256, storageCredentials) ?: return
         fileReference.count = if (fileReference.count >= 1) fileReference.count - 1 else 0
         fileReferenceDao.save(fileReference)
@@ -63,8 +61,13 @@ class FileReferenceService @Autowired constructor(
         return TFileReference(sha256 = sha256, storageCredentials = storageCredentials, count = 1)
     }
 
-    private fun validateParameter(sha256: String) {
-        require(sha256.isNotBlank()) { "The sha256 of reference file can not be blank" }
+    private fun validateParameter(node: TNode): Boolean {
+        if (node.folder) return false
+        if (node.sha256.isNullOrBlank()) {
+            logger.warn("Failed to increment file reference, node[$node] sha256 is null or blank")
+            return false
+        }
+        return true
     }
 
     companion object {
