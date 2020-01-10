@@ -49,6 +49,11 @@ include ":maven:api-maven"
 include ":maven:biz-maven"
 include ":maven:boot-maven"
 
+include ":npm"
+include ":npm:api-npm"
+include ":npm:biz-npm"
+include ":npm:boot-npm"
+
 include ":pypi"
 include ":pypi:api-pypi"
 include ":pypi:biz-pypi"
