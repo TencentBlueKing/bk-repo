@@ -1,14 +1,13 @@
 package com.tencent.bkrepo.opdata.service
 
-import com.tencent.bkrepo.opdata.model.NodeModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
-import com.tencent.bkrepo.opdata.model.RepoModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.NodeResult
 import com.tencent.bkrepo.opdata.pojo.QueryRequest
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -16,8 +15,7 @@ import org.springframework.stereotype.Service
 @Service
 class GrafanaService @Autowired constructor(
     private val projectModel: ProjectModel,
-    private val repoModel: RepoModel,
-    private val nodeModel: NodeModel
+    private val projectMetricsRepository: ProjectMetricsRepository
 ) {
     fun search(): List<String> {
         var data = mutableListOf<String>()
@@ -75,19 +73,12 @@ class GrafanaService @Autowired constructor(
     }
 
     private fun dealProjectNodeSize(result: MutableList<Any>): List<Any> {
-        val projects = projectModel.getProjectList()
+        val projects = projectMetricsRepository.findAll()
         projects.forEach {
-            var totalSize = 0L
-            val projectId = it.name
-            val repos = repoModel.getRepoListByProjectId(it.name)
-            repos.forEach {
-                val size = nodeModel.getNodeSize(projectId, it.name)
-                totalSize += size
-            }
-            val displaySize = totalSize / (1024 * 1024 * 1024)
-            val data = listOf<Long>(displaySize, System.currentTimeMillis())
+            val projectId = it.projectId
+            val data = listOf<Long>(it.capSize, System.currentTimeMillis())
             val element = listOf<List<Long>>(data)
-            if (displaySize != 0L) {
+            if (it.capSize != 0L) {
                 result.add(NodeResult(projectId, element))
             }
         }
@@ -95,18 +86,14 @@ class GrafanaService @Autowired constructor(
     }
 
     private fun dealProjectNodeNum(result: MutableList<Any>): List<Any> {
-        val projects = projectModel.getProjectList()
+        val projects = projectMetricsRepository.findAll()
         projects.forEach {
-            var totalSize = 0L
-            val projectId = it.name
-            val repos = repoModel.getRepoListByProjectId(it.name)
-            repos.forEach {
-                val size = nodeModel.getNodeNum(projectId, it.name)
-                totalSize += size
-            }
-            val data = listOf<Long>(totalSize, System.currentTimeMillis())
+            val projectId = it.projectId
+            val data = listOf<Long>(it.nodeNum, System.currentTimeMillis())
             val element = listOf<List<Long>>(data)
-            result.add(NodeResult(projectId, element))
+            if (it.nodeNum != 0L) {
+                result.add(NodeResult(projectId, element))
+            }
         }
         return result
     }
