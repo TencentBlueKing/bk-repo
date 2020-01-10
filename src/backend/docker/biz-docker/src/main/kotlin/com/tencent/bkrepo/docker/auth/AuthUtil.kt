@@ -15,7 +15,7 @@ class AuthUtil {
     fun authUser(request: HttpServletRequest, response: HttpServletResponse): ResponseEntity<Any> {
         try {
             val user = DockerClientAuthHandler.extractBasicAuth(request)
-            val token = JwtUtil.sign(user.username, user.password)
+            val token = JwtUtil.sign(user.username)
             val issuedAt = TimeUtils.getGMTTime()
             val tokenUrl = String.format("{\"token\": \"%s\", \"access_token\": \"%s\",\"issued_at\": \"%s\"}", token, token, issuedAt)
             return ResponseEntity.ok().header("Content-Type", "application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body(tokenUrl)
