@@ -87,7 +87,9 @@ class GrafanaService @Autowired constructor(
             val displaySize = totalSize / (1024 * 1024 * 1024)
             val data = listOf<Long>(displaySize, System.currentTimeMillis())
             val element = listOf<List<Long>>(data)
-            result.add(NodeResult(projectId, element))
+            if (displaySize != 0L) {
+                result.add(NodeResult(projectId, element))
+            }
         }
         return result
     }
