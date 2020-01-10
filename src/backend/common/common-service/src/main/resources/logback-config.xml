@@ -126,7 +126,7 @@
             <appender-ref ref="sys_error_log"/>
         </logger>
 
-        <logger name="FeignApiLogger" level="INFO" additivity="false">
+        <logger name="ApiLogger" level="INFO" additivity="false">
             <appender-ref ref="api_log"/>
         </logger>
 

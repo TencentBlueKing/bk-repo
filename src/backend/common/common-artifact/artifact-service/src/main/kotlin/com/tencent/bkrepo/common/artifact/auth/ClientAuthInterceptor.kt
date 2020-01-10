@@ -4,12 +4,12 @@ import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.APP_KEY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.annotation.Order
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 /**
  * 依赖源客户端认证拦截器
@@ -33,7 +33,7 @@ class ClientAuthInterceptor : HandlerInterceptorAdapter() {
                 request.setAttribute(USER_KEY, ANONYMOUS_USER)
             } else {
                 val userId = clientAuthHandler.onAuthenticate(request, authCredentials)
-                logger.debug("User[$userId] authenticate success.")
+                logger.info("User[$userId] authenticate success.")
                 clientAuthHandler.onAuthenticateSuccess(userId, request)
                 request.setAttribute(USER_KEY, userId)
             }

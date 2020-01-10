@@ -16,7 +16,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.repository.RepoRepository
-import java.time.LocalDateTime
+import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
@@ -26,6 +26,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 仓库service
@@ -77,7 +78,7 @@ class RepositoryService @Autowired constructor(
         with(repoCreateRequest) {
             this.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, repoCreateRequest.name)
             projectService.checkProject(projectId)
-
+            // 创建仓库
             val repository = TRepository(
                 name = name,
                 type = type,
@@ -93,6 +94,22 @@ class RepositoryService @Autowired constructor(
                 lastModifiedDate = LocalDateTime.now()
             )
             repoRepository.insert(repository)
+            // 创建root节点
+            val rootNode = TNode(
+                projectId = projectId,
+                repoName = name,
+                folder = true,
+                path = NodeUtils.FILE_SEPARATOR,
+                name = "",
+                fullPath = NodeUtils.FILE_SEPARATOR,
+                size = 0,
+                createdBy = operator,
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = operator,
+                lastModifiedDate = LocalDateTime.now()
+            )
+            nodeDao.save(rootNode)
+            // 创建角色权限
             val roleId = roleResource.createRepoManage(projectId, name).data!!
             userResource.addUserRole(operator, roleId)
             logger.info("Create repository [$repoCreateRequest] success.")
