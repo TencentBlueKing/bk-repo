@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = FileSystemCredentials::class, name = FileSystemCredentials.type),
-    JsonSubTypes.Type(value = InnerCosCredentials::class, name = InnerCosCredentials.type)
+    JsonSubTypes.Type(value = InnerCosCredentials::class, name = InnerCosCredentials.type),
+    JsonSubTypes.Type(value = HDFSCredentials::class, name = HDFSCredentials.type)
 )
 abstract class StorageCredentials

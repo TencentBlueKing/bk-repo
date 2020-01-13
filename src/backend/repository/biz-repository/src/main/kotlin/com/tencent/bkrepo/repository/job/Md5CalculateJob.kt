@@ -18,9 +18,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
-import kotlin.concurrent.thread
 
 /**
  * 计算文件md5
@@ -40,10 +38,9 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
     @Autowired
     private lateinit var repoRepository: RepoRepository
 
-    @Async
     @SchedulerLock(name = "Md5CalculateJob", lockAtMostFor = "P1D")
     override fun onApplicationEvent(event: ApplicationReadyEvent) {
-        thread { calculate() }
+        //thread { calculate() }
     }
 
     fun calculate() {
@@ -70,19 +67,21 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
                 logger.info("Retrieved [${nodeList.size}] records to calculate md5.")
                 nodeList.forEach { node ->
                     try {
-                        if (storageService.exist(node.sha256!!, storageCredentials)) {
+                        val nodeQuery = Query.query(Criteria.where(TNode::projectId.name).`is`(node.projectId)
+                            .and(TNode::repoName.name).`is`(node.repoName)
+                            .and(TNode::fullPath.name).`is`(node.fullPath)
+                            .and(TNode::deleted.name).`is`(node.deleted)
+                        )
+                        if (!node.sha256.isNullOrBlank() && storageService.exist(node.sha256!!, storageCredentials)) {
                             val file = storageService.load(node.sha256!!, storageCredentials)!!
                             val md5 = FileDigestUtils.fileMd5(file.inputStream())
-                            val nodeQuery = Query.query(Criteria.where(TNode::projectId.name).`is`(node.projectId)
-                                .and(TNode::repoName.name).`is`(node.repoName)
-                                .and(TNode::fullPath.name).`is`(node.fullPath)
-                                .and(TNode::deleted.name).`is`(node.deleted)
-                            )
                             val nodeUpdate = Update.update("md5", md5)
                             nodeDao.updateFirst(nodeQuery, nodeUpdate)
                             cleanupCount += 1
                         } else {
                             logger.error("File[$node] is missing on [$storageCredentials], skip calculating.")
+                            val nodeUpdate = Update.update("md5", "")
+                            nodeDao.updateFirst(nodeQuery, nodeUpdate)
                             fileMissingCount += 1
                         }
                     } catch (exception: Exception) {

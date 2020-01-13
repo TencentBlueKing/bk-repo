@@ -19,7 +19,73 @@ Authorization: Basic {{username}} {{password}}
 > {%
     client.test('Request executed successfully', function() {
         client.assert(response.status === 200, 'Response status is not 200');
-        client.assert(response.body === 'Hello, World!!!', 'Response status is not write');
+        client.assert(response.body === 'Hello, World!!!', 'Response status is invalid');
     });
 %}
+
+###
+
+### 分块上传文件, 获取uploadId
+POST http://{{host}}/block/{{project}}/generic-local/block.txt
+Authorization: Basic {{username}} {{password}}
+Content-Type: application/json
+X-BKREPO-OVERWRITE: true
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+        client.global.set("uploadId", response.body.data.uploadId);
+    });
+%}
+
+### 上传第一个分块
+PUT http://{{host}}/{{project}}/generic-local/block.txt
+Authorization: Basic {{username}} {{password}}
+X-BKREPO-UPLOAD-ID: {{uploadId}}
+X-BKREPO-SEQUENCE: 1
+
+11111
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+    });
+%}
+
+### 上传第二个分块
+PUT http://{{host}}/{{project}}/generic-local/block.txt
+Authorization: Basic {{username}} {{password}}
+X-BKREPO-UPLOAD-ID: {{uploadId}}
+X-BKREPO-SEQUENCE: 2
+
+22222
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+    });
+%}
+
+### 完成分块上传
+PUT http://{{host}}/block/{{project}}/generic-local/block.txt
+Authorization: Basic {{username}} {{password}}
+X-BKREPO-UPLOAD-ID: {{uploadId}}
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+    });
+%}
+
+### 下载文件
+GET http://{{host}}/{{project}}/generic-local/block.txt
+Authorization: Basic {{username}} {{password}}
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+        client.assert(response.body === '111112FileReferenceCleanupJob2222', 'Response content invalid');
+    });
+%}
+
 ###

@@ -7,10 +7,10 @@ package com.tencent.bkrepo.common.storage.credentials
  * @date: 2019-09-17
  */
 data class InnerCosCredentials(
-    var secretId: String? = null,
-    var secretKey: String? = null,
-    var region: String? = null,
-    var bucket: String? = null,
+    var secretId: String = "",
+    var secretKey: String = "",
+    var region: String = "",
+    var bucket: String = "",
     var modId: Int? = null,
     var cmdId: Int? = null,
     var timeout: Float = 0.5F
