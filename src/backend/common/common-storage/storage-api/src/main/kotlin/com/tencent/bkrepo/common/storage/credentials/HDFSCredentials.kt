@@ -9,9 +9,9 @@ package com.tencent.bkrepo.common.storage.credentials
 data class HDFSCredentials(
     var clusterMode: Boolean = false,
     var url: String = "hdfs://localhost:9000",
-    var user: String = "",
-    var workingDirectory: String = "",
-    var clusterName: String = "",
+    var user: String = "root",
+    var workingDirectory: String = "/",
+    var clusterName: String = "localhost",
     var nameNodeMap: MutableMap<String, String> = mutableMapOf()
 ) : StorageCredentials() {
     companion object {
