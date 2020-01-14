@@ -83,6 +83,8 @@ subprojects {
 
     configurations {
         ktlint
+        all*.exclude group: "org.slf4j", module: "slf4j-log4j12"
+        all*.exclude group: "log4j", module: "log4j"
     }
 
     dependencies {
@@ -135,8 +137,6 @@ subprojects {
             dependency "org.apache.skywalking:apm-toolkit-trace:$skywalkingVersion"
             dependency "net.javacrumbs.shedlock:shedlock-spring:$shedlockVersion"
             dependency "net.javacrumbs.shedlock:shedlock-provider-mongo:$shedlockVersion"
-            dependency "org.apache.hadoop:hadoop-common:$hdfsVersion"
-            dependency "org.apache.hadoop:hadoop-hdfs:$hdfsVersion"
             dependency "org.apache.hadoop:hadoop-client:$hdfsVersion"
         }
 
