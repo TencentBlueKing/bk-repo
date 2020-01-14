@@ -17,25 +17,31 @@ open class HDFSStorage : AbstractFileStorage<HDFSCredentials, HDFSClient>() {
 
     override fun store(path: String, filename: String, file: File, client: HDFSClient) {
         val localPath = Path(file.absolutePath)
-        val hdfsPath = Path(client.workingPath, Path(path, filename))
+        val hdfsPath = getHDFSPath(path, filename, client)
         client.fileSystem.copyFromLocalFile(localPath, hdfsPath)
     }
 
     override fun load(path: String, filename: String, received: File, client: HDFSClient): File? {
         val localPath = Path(received.absolutePath)
-        val hdfsPath = Path(client.workingPath, Path(path, filename))
+        val hdfsPath = getHDFSPath(path, filename, client)
         client.fileSystem.copyToLocalFile(hdfsPath, localPath)
         return received
     }
 
     override fun delete(path: String, filename: String, client: HDFSClient) {
-        val hdfsPath = Path(client.workingPath, Path(path, filename))
+        val hdfsPath = getHDFSPath(path, filename, client)
         client.fileSystem.deleteOnExit(hdfsPath)
     }
 
     override fun exist(path: String, filename: String, client: HDFSClient): Boolean {
-        val hdfsPath = Path(client.workingPath, Path(path, filename))
+        val hdfsPath = getHDFSPath(path, filename, client)
         return client.fileSystem.exists(hdfsPath)
+    }
+
+    private fun getHDFSPath(path: String, filename: String, client: HDFSClient): Path {
+        val childPath = Path(path, filename)
+        val parentPath = client.workingPath
+        return Path.mergePaths(parentPath, childPath)
     }
 
     override fun onCreateClient(credentials: HDFSCredentials): HDFSClient {
