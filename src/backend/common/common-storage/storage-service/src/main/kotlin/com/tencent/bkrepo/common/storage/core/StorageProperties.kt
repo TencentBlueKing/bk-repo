@@ -2,7 +2,9 @@ package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.storage.core.cache.CacheProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.bkrepo.common.storage.credentials.HDFSCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.storage.credentials.S3Credentials
 import com.tencent.bkrepo.common.storage.credentials.StorageType
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
@@ -37,6 +39,18 @@ data class StorageProperties(
      */
     @NestedConfigurationProperty
     var innercos: InnerCosCredentials = InnerCosCredentials(),
+
+    /**
+     * hdfs存储配置
+     */
+    @NestedConfigurationProperty
+    var hdfs: HDFSCredentials = HDFSCredentials(),
+
+    /**
+     * s3存储配置
+     */
+    @NestedConfigurationProperty
+    var s3: S3Credentials = S3Credentials(),
 
     /**
      * client缓存最大数量
