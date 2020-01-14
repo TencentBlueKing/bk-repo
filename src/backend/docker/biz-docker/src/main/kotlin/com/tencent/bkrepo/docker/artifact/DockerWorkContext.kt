@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.docker.artifact
 
-// import com.tencent.bkrepo.docker.DockerWorkContext
 import java.io.InputStream
 import java.net.URI
 import org.slf4j.LoggerFactory
@@ -32,32 +31,11 @@ class DockerWorkContext() {
 
     fun cleanup(repoId: String, uploadsPath: String) {
         return
-        // (ContextHelper.get().beanForType(DockerService::class.java) as DockerService).cleanup(repoId, uploadsPath)
     }
 
-    fun onTagPushedSuccessfully(s: String, s1: String, s2: String) {}
-
-    fun obtainManifestLock(repoTag: String): String {
-        return ""
-    }
+    fun onTagPushedSuccessfully(repoName: String, dockerRepo: String, tag: String) {}
 
     fun releaseManifestLock(lockId: String, repoTag: String) {}
-
-    fun copy(sourcePath: String, targetPath: String): Boolean {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-    }
-
-    fun getContextPath(): String {
-        return this.contextPath
-    }
-
-    fun getSubject(): String {
-        throw UnsupportedOperationException("NOT IMPLEMENTED")
-    }
-
-    fun getContextMap(): Map<String, Any> {
-        return this.contextMap
-    }
 
     fun setSystem() {
     }
@@ -65,8 +43,11 @@ class DockerWorkContext() {
     fun unsetSystem() {
     }
 
-    fun rewriteRepoURI(repoKey: String, uri: URI, headers: MutableSet<MutableMap.MutableEntry<String, List<String>>>): URI {
+    fun rewriteRepoURI(
+        repoKey: String,
+        uri: URI,
+        headers: MutableSet<MutableMap.MutableEntry<String, List<String>>>
+    ): URI {
         return uri
-        // return DockerInternalRewrite.rewriteBack(repoKey, uri, headers)
     }
 }
