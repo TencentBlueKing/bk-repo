@@ -10,6 +10,7 @@ data class HDFSCredentials(
     var clusterMode: Boolean = false,
     var url: String = "hdfs://localhost:9000",
     var user: String = "",
+    var workingDirectory: String = "",
     var clusterName: String = "",
     var nameNodeMap: MutableMap<String, String> = mutableMapOf()
 ) : StorageCredentials() {

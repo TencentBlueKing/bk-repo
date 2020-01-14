@@ -54,6 +54,7 @@ open class HDFSStorage : AbstractFileStorage<HDFSCredentials, HDFSClient>() {
             configuration["fs.hdfs.impl"] = "org.apache.hadoop.hdfs.DistributedFileSystem"
         }
         val fileSystem = FileSystem.get(URI.create(url), configuration, username)
+        fileSystem.workingDirectory = Path(URI.create(credentials.workingDirectory))
         return HDFSClient(fileSystem)
     }
 
