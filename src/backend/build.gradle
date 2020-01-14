@@ -16,7 +16,7 @@ buildscript {
         commonsUploadVersion = "1.4"
         skywalkingVersion = "6.1.0"
         shedlockVersion = "4.1.0"
-        hdfsVersion = "3.2.1"
+        hdfsVersion = "2.6.0"
     }
 
     repositories {
