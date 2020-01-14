@@ -10,8 +10,9 @@ import com.tencent.bkrepo.npm.auth.BEARER_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.npm.constants.ID
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.PASSWORD
+import com.tencent.bkrepo.npm.jwt.JwtProperties
+import com.tencent.bkrepo.npm.jwt.JwtUtils
 import com.tencent.bkrepo.npm.pojo.NpmAuthResponse
-import com.tencent.bkrepo.npm.utils.JwtUtils
 import org.apache.commons.lang.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -22,6 +23,9 @@ class AuthService {
     @Autowired
     private lateinit var serviceUserResource: ServiceUserResource
 
+    @Autowired
+    private lateinit var jwtProperties: JwtProperties
+
     fun addUser(body: String): NpmAuthResponse<String> {
         body.takeIf { StringUtils.isNotBlank(it) }
             ?: throw ArtifactNotFoundException("userInfo request body not found!")
@@ -31,7 +35,7 @@ class AuthService {
         val password = userInfo[PASSWORD].asString
         val response = serviceUserResource.checkUserToken(username, password)
         return if (response.data == true) {
-            val token = JwtUtils.sign(username, password)
+            val token = JwtUtils.generateToken(username,jwtProperties)
             NpmAuthResponse.success(id, token)
         } else {
             throw ClientAuthException("username or password error!")
