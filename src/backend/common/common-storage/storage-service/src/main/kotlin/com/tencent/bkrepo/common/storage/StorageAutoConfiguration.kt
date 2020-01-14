@@ -48,7 +48,6 @@ class StorageAutoConfiguration {
 
     @Bean
     fun storageService(properties: StorageProperties): StorageService {
-        println(properties)
         val storageService = if (properties.cache.enabled) CacheStorageService() else SimpleStorageService()
         logger.info("Initializing StorageService[${storageService::class.simpleName}].")
         return storageService
