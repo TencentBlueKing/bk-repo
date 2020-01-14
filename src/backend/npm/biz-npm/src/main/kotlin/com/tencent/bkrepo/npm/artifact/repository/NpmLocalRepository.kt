@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.npm.artifact.repository
 
+import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
@@ -15,7 +16,6 @@ import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_METADATA
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
-import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FILE_FULL_PATH
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
@@ -61,9 +61,10 @@ class NpmLocalRepository : LocalRepository() {
         val repositoryInfo = context.repositoryInfo
         val artifactFile = context.getArtifactFile(name)
         val contextAttributes = context.contextAttributes
-
-        val mutableMap = context.contextAttributes[ATTRIBUTE_SHA256MAP] as MutableMap<String, String>
-        val sha256 = mutableMap[name]!!
+        val fileSha256Map = context.contextAttributes[ATTRIBUTE_SHA256MAP] as Map<String, String>
+        val fileMd5Map = context.contextAttributes[ATTRIBUTE_MD5MAP] as Map<String, String>
+        val sha256 = fileSha256Map[name]
+        val md5 = fileMd5Map[name]
 
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
@@ -72,6 +73,7 @@ class NpmLocalRepository : LocalRepository() {
             fullPath = contextAttributes[name + "_full_path"] as String,
             size = artifactFile?.getSize(),
             sha256 = sha256,
+            md5 = md5,
             operator = context.userId,
             metadata = parseMetaData(name, contextAttributes),
             overwrite = name != NPM_PACKAGE_TGZ_FILE
@@ -79,7 +81,7 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     fun parseMetaData(name: String, contextAttributes: MutableMap<String, Any>): Map<String, String> {
-        return if (name == NPM_PKG_TGZ_FILE_FULL_PATH) contextAttributes[NPM_METADATA] as Map<String, String> else mapOf()
+        return if (name == NPM_PACKAGE_TGZ_FILE) contextAttributes[NPM_METADATA] as Map<String, String> else emptyMap()
     }
 
     override fun download(context: ArtifactDownloadContext) {
