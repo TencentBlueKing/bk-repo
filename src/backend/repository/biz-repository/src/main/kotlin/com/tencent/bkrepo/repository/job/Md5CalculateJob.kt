@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.repository.RepoRepository
+import kotlin.concurrent.thread
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -19,7 +20,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Component
-import kotlin.concurrent.thread
 
 /**
  * 计算文件md5
@@ -64,7 +64,7 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
                 .and(TNode::md5.name).`is`(null)
             ).with(PageRequest.of(page, 1000))
             var nodeList = nodeDao.find(query)
-            while(nodeList.isNotEmpty()) {
+            while (nodeList.isNotEmpty()) {
                 logger.info("Retrieved [${nodeList.size}] records to calculate md5.")
                 nodeList.forEach { node ->
                     try {

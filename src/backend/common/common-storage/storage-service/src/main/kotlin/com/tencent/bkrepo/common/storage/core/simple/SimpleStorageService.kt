@@ -20,7 +20,7 @@ class SimpleStorageService : AbstractStorageService() {
         val file = if (artifactFile.isInMemory()) {
             val tempArtifactFile = ArtifactFileFactory.build(0)
             artifactFile.getInputStream().use { input ->
-                tempArtifactFile.getOutputStream().use { output -> ByteStreams.copy(input, output)}
+                tempArtifactFile.getOutputStream().use { output -> ByteStreams.copy(input, output) }
             }
             tempArtifactFile.getTempFile()
         } else {

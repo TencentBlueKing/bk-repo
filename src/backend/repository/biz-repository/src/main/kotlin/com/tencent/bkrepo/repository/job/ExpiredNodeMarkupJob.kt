@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.NodeService
+import java.time.LocalDateTime
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
@@ -11,7 +12,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.time.LocalDateTime
 
 /**
  * 标记已过期的节点为已删除
@@ -41,7 +41,7 @@ class ExpiredNodeMarkupJob {
                 var page = 0
                 query.with(PageRequest.of(page, 1000))
                 var deletedNodeList = mongoTemplate.find(query, TNode::class.java, collectionName)
-                while(deletedNodeList.isNotEmpty()) {
+                while (deletedNodeList.isNotEmpty()) {
                     logger.info("Retrieved [${deletedNodeList.size}] expired records to be clean up.")
                     deletedNodeList.forEach {
                         nodeService.deleteByPath(it.projectId, it.repoName, it.fullPath, it.lastModifiedBy)
