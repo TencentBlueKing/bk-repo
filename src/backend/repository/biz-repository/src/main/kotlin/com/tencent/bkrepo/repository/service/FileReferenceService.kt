@@ -24,9 +24,9 @@ class FileReferenceService @Autowired constructor(
 ) {
 
     fun increment(node: TNode, repository: TRepository? = null): Boolean {
-        return if(validateParameter(node)) {
+        return if (validateParameter(node)) {
             val repo = repository ?: repositoryService.queryRepository(node.projectId, node.repoName)
-            if(repo == null) {
+            if (repo == null) {
                 LoggerHolder.sysErrorLogger.warn("Failed to decrement reference of node [$node], repository not found.")
                 return false
             }
@@ -35,9 +35,9 @@ class FileReferenceService @Autowired constructor(
     }
 
     fun decrement(node: TNode, repository: TRepository? = null): Boolean {
-        return if(validateParameter(node)) {
+        return if (validateParameter(node)) {
             val repo = repository ?: repositoryService.queryRepository(node.projectId, node.repoName)
-            if(repo == null) {
+            if (repo == null) {
                 LoggerHolder.sysErrorLogger.warn("Failed to decrement reference of node [$node], repository not found.")
                 return false
             }

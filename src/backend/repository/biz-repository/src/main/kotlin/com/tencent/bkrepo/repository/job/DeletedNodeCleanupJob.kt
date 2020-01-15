@@ -53,12 +53,12 @@ class DeletedNodeCleanupJob {
                         .and(TNode::deleted.name).lt(expireDate)
                     ).with(PageRequest.of(0, 1000))
                     var deletedNodeList = nodeDao.find(query)
-                    while(deletedNodeList.isNotEmpty()) {
+                    while (deletedNodeList.isNotEmpty()) {
                         logger.info("Retrieved [${deletedNodeList.size}] deleted records to be clean up.")
-                        deletedNodeList.forEach {node ->
+                        deletedNodeList.forEach { node ->
                             var fileReferenceChange = false
-                            try{
-                                if(node.folder) {
+                            try {
+                                if (node.folder) {
                                     folderCleanupCount += 1
                                 } else {
                                     fileReferenceChange = fileReferenceService.decrement(node, repo)
@@ -72,7 +72,7 @@ class DeletedNodeCleanupJob {
                                 nodeDao.remove(nodeQuery)
                             } catch (exception: Exception) {
                                 logger.error("Clean up deleted node[$node] failed.", exception)
-                                if(fileReferenceChange) {
+                                if (fileReferenceChange) {
                                     fileReferenceService.increment(node, repo)
                                 }
                             } finally {
