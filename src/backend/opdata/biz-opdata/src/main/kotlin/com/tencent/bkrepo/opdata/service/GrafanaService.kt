@@ -93,9 +93,8 @@ class GrafanaService @Autowired constructor(
         val info = projectModel.getProjectList()
         columns.add(Columns(ProjectInfo::name.name, "string"))
         columns.add(Columns(ProjectInfo::displayName.name, "string"))
-        columns.add(Columns(ProjectInfo::description.name, "string"))
         info.forEach {
-            val row = listOf(it.name, it.displayName, it.description)
+            val row = listOf(it.name, it.displayName)
             rows.add(row)
         }
         val data = QueryResult(columns, rows, target.type)
@@ -104,11 +103,18 @@ class GrafanaService @Autowired constructor(
 
     private fun dealProjectNodeSize(result: MutableList<Any>): List<Any> {
         val projects = projectMetricsRepository.findAll()
+        var tmpMap = HashMap<String, Long>()
         projects.forEach {
             val projectId = it.projectId
-            val data = listOf<Long>(it.capSize, System.currentTimeMillis())
-            val element = listOf<List<Long>>(data)
             if (it.capSize != 0L) {
+                tmpMap.put(projectId, it.capSize)
+            }
+        }
+        tmpMap.toList().sortedByDescending { it.second }.forEach {
+            val projectId = it.first
+            val data = listOf<Long>(it.second, System.currentTimeMillis())
+            val element = listOf<List<Long>>(data)
+            if (it.second != 0L) {
                 result.add(NodeResult(projectId, element))
             }
         }
@@ -117,11 +123,18 @@ class GrafanaService @Autowired constructor(
 
     private fun dealProjectNodeNum(result: MutableList<Any>): List<Any> {
         val projects = projectMetricsRepository.findAll()
+        var tmpMap = HashMap<String, Long>()
         projects.forEach {
             val projectId = it.projectId
-            val data = listOf<Long>(it.nodeNum, System.currentTimeMillis())
-            val element = listOf<List<Long>>(data)
             if (it.nodeNum != 0L) {
+                tmpMap.put(projectId, it.nodeNum)
+            }
+        }
+        tmpMap.toList().sortedByDescending { it.second }.subList(0, 19).forEach {
+            val projectId = it.first
+            val data = listOf<Long>(it.second, System.currentTimeMillis())
+            val element = listOf<List<Long>>(data)
+            if (it.second != 0L) {
                 result.add(NodeResult(projectId, element))
             }
         }
