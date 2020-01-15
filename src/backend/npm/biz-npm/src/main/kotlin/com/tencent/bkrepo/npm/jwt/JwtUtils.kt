@@ -25,10 +25,10 @@ object JwtUtils {
      * 创建JWT
      */
     private fun createJWT(claims: Map<String, Any>, expireTime: Int): String {
-        //指定签名的时候使用的签名算法，也就是header那部分，jjwt已经将这部分内容封装好了。
+        // 指定签名的时候使用的签名算法，也就是header那部分，jjwt已经将这部分内容封装好了。
         val signatureAlgorithm = SignatureAlgorithm.HS512
         val now = Date()
-        //生成JWT的时间
+        // 生成JWT的时间
         val nowTime = Calendar.getInstance()
         val builder =
             Jwts.builder().setClaims(claims).setId(jwtId).setIssuedAt(now).signWith(
@@ -57,7 +57,7 @@ object JwtUtils {
      * 验证jwt
      */
     private fun verifyJwt(token: String): Claims {
-        //签名秘钥，和生成的签名的秘钥一模一样
+        // 签名秘钥，和生成的签名的秘钥一模一样
         val key = generalKey()
         return try {
             Jwts.parser()
@@ -85,7 +85,7 @@ object JwtUtils {
     /**
      * 根据userId生成token
      */
-    fun generateToken(username: String,jwtProperties: JwtProperties): String {
+    fun generateToken(username: String, jwtProperties: JwtProperties): String {
         val map = HashMap<String, Any>()
         map["username"] = username
         return createJWT(map, jwtProperties.expireSecond)

@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.npm.constants
 
-//package.json
+// package.json
 const val ID = "_id"
 const val REV = "_rev"
 const val revValue = "1-0"
@@ -23,7 +23,7 @@ const val TIME = "time"
 const val CREATED = "created"
 const val MODIFIED = "modified"
 
-//auth
+// auth
 const val PASSWORD = "password"
 const val TYPE = "type"
 const val ROLES = "roles"

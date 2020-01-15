@@ -221,7 +221,7 @@ class NpmService @Autowired constructor(
                 metadataResource.query(artifactInfo.projectId, artifactInfo.repoName, tgzFullPath).data
             metadataInfo?.forEach { (key, value) ->
                 if (StringUtils.isNotBlank(value)) fileJson.addProperty(key, value)
-                if(key == KEYWORDS) fileJson.add(key,GsonUtils.stringToArray(value))
+                if (key == KEYWORDS) fileJson.add(key, GsonUtils.stringToArray(value))
             }
         } else {
             versions.keySet().forEach {
@@ -232,7 +232,7 @@ class NpmService @Autowired constructor(
                     metadataResource.query(artifactInfo.projectId, artifactInfo.repoName, tgzFullPath).data
                 metadataInfo?.forEach { (key, value) ->
                     if (StringUtils.isNotBlank(value)) versions.getAsJsonObject(it).addProperty(key, value)
-                    if(key == KEYWORDS) versions.getAsJsonObject(it).add(key,GsonUtils.stringToArray(value))
+                    if (key == KEYWORDS) versions.getAsJsonObject(it).add(key, GsonUtils.stringToArray(value))
                 }
             }
         }

@@ -35,7 +35,7 @@ class AuthService {
         val password = userInfo[PASSWORD].asString
         val response = serviceUserResource.checkUserToken(username, password)
         return if (response.data == true) {
-            val token = JwtUtils.generateToken(username,jwtProperties)
+            val token = JwtUtils.generateToken(username, jwtProperties)
             NpmAuthResponse.success(id, token)
         } else {
             throw ClientAuthException("username or password error!")
@@ -55,6 +55,6 @@ class AuthService {
         val bearerAuthHeader = HttpContextHolder.getRequest().getHeader(BEARER_AUTH_HEADER)
         val token = bearerAuthHeader.removePrefix(BEARER_AUTH_HEADER_PREFIX)
         val username = JwtUtils.getUserName(token)
-        return mapOf(Pair("username",username))
+        return mapOf(Pair("username", username))
     }
 }

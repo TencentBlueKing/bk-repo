@@ -30,8 +30,7 @@ class NpmArtifactInfo(
         const val NPM_PACKAGE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}/-/*.tgz"
         const val NPM_PACKAGE_SCOPE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{scope}/{pkgName}/-/{scope}/*.tgz"
 
-
-        //auth user
+        // auth user
         const val NPM_ADD_USER_MAPPING_URI = "/{projectId}/{repoName}/-/user/org.couchdb.user:*"
         const val NPM_USER_LOGOUT_MAPPING_URI = "/{projectId}/{repoName}/-/user/token/*"
         const val NPM_WHOAMI_MAPPING_URI = "/{projectId}/{repoName}/-/whoami"
