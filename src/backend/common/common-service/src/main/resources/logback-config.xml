@@ -109,7 +109,7 @@
         <logger name="com.tencent.bkrepo" level="DEBUG" additivity="false">
             <appender-ref ref="console"/>
         </logger>
-        <logger name="com.tencent.bkrepo.common.service.config.FeignFilterRequestMappingHandlerMapping" level="INFO" additivity="false">
+        <logger name="com.tencent.bkrepo.common.service.feign.FeignFilterRequestMappingHandlerMapping" level="INFO" additivity="false">
             <appender-ref ref="console"/>
         </logger>
         <root level="INFO">

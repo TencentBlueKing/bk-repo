@@ -1,5 +1,6 @@
-package com.tencent.bkrepo.common.service.log
+package com.tencent.bkrepo.common.service.feign
 
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import feign.Request
 import feign.Response
 import java.io.IOException
@@ -10,7 +11,7 @@ import java.io.IOException
  * @author: carrypan
  * @date: 2019/11/1
  */
-class Slf4jFeignLogger : feign.Logger() {
+class FeignApiLogger : feign.Logger() {
 
     override fun logRequest(configKey: String, logLevel: Level, request: Request) {
         if (logger.isInfoEnabled) {
