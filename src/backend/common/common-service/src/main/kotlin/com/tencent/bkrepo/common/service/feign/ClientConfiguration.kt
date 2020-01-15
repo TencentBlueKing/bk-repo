@@ -28,7 +28,7 @@ class ClientConfiguration {
             }
             // user
             val userId = request.getAttribute(USER_KEY) as? String
-            if(userId != null) {
+            if (userId != null) {
                 requestTemplate.header(MS_AUTH_HEADER_UID, userId) // 设置uid请求头
             }
         }
