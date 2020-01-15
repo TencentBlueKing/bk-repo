@@ -106,18 +106,15 @@ class GrafanaService @Autowired constructor(
         var tmpMap = HashMap<String, Long>()
         projects.forEach {
             val projectId = it.projectId
-//            val data = listOf<Long>(it.capSize, System.currentTimeMillis())
-//            val element = listOf<List<Long>>(data)
             if (it.capSize != 0L) {
                 tmpMap.put(projectId, it.capSize)
-                // result.add(NodeResult(projectId, element))
             }
         }
-        tmpMap.toList().sortedByDescending { it.second }.toMap().forEach {
-            val projectId = it.key
-            val data = listOf<Long>(it.value, System.currentTimeMillis())
+        tmpMap.toList().sortedByDescending { it.second }.forEach {
+            val projectId = it.first
+            val data = listOf<Long>(it.second, System.currentTimeMillis())
             val element = listOf<List<Long>>(data)
-            if (it.value != 0L) {
+            if (it.second != 0L) {
                 result.add(NodeResult(projectId, element))
             }
         }
@@ -126,11 +123,18 @@ class GrafanaService @Autowired constructor(
 
     private fun dealProjectNodeNum(result: MutableList<Any>): List<Any> {
         val projects = projectMetricsRepository.findAll()
+        var tmpMap = HashMap<String, Long>()
         projects.forEach {
             val projectId = it.projectId
-            val data = listOf<Long>(it.nodeNum, System.currentTimeMillis())
-            val element = listOf<List<Long>>(data)
             if (it.nodeNum != 0L) {
+                tmpMap.put(projectId, it.nodeNum)
+            }
+        }
+        tmpMap.toList().sortedByDescending { it.second }.subList(0, 19).forEach {
+            val projectId = it.first
+            val data = listOf<Long>(it.second, System.currentTimeMillis())
+            val element = listOf<List<Long>>(data)
+            if (it.second != 0L) {
                 result.add(NodeResult(projectId, element))
             }
         }
