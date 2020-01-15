@@ -9,12 +9,12 @@ import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
-import org.apache.commons.io.FileUtils
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
 import java.nio.charset.Charset
 import java.util.UUID
+import org.apache.commons.io.FileUtils
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 存储服务抽象实现

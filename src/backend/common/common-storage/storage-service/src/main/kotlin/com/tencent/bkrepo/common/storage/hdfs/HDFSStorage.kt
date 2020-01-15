@@ -2,11 +2,11 @@ package com.tencent.bkrepo.common.storage.hdfs
 
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.HDFSCredentials
+import java.io.File
+import java.net.URI
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
-import java.io.File
-import java.net.URI
 
 /**
  *
@@ -49,7 +49,7 @@ open class HDFSStorage : AbstractFileStorage<HDFSCredentials, HDFSClient>() {
         val username = credentials.user
         var url = credentials.url
         val workingPath = Path(URI.create(credentials.workingDirectory))
-        if(credentials.clusterMode) {
+        if (credentials.clusterMode) {
             url = "hdfs://${credentials.clusterName}"
             configuration["fs.defaultFS"] = url
             configuration["dfs.nameservices"] = credentials.clusterName
