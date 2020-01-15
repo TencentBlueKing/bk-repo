@@ -1,7 +1,8 @@
-package com.tencent.bkrepo.common.service.exception
+package com.tencent.bkrepo.common.service.feign
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
 import feign.Response
 import feign.codec.ErrorDecoder
 

@@ -41,7 +41,7 @@ abstract class AbstractStorageService : StorageService {
 
         try {
             if (doExist(path, digest, credentials)) {
-                logger.debug("File [$digest] exists on [$credentials], skip store.")
+                logger.info("File [$digest] exists on [$credentials], skip store.")
                 return
             }
             doStore(path, digest, artifactFile, credentials)
@@ -58,7 +58,7 @@ abstract class AbstractStorageService : StorageService {
 
         try {
             if (doExist(path, digest, credentials)) {
-                logger.debug("File [$digest] exists on [$credentials], skip store.")
+                logger.info("File [$digest] exists on [$credentials], skip store.")
                 return
             }
             doStore(path, digest, file, credentials)

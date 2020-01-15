@@ -19,6 +19,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Component
+import kotlin.concurrent.thread
 
 /**
  * 计算文件md5
@@ -40,7 +41,7 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
 
     @SchedulerLock(name = "Md5CalculateJob", lockAtMostFor = "P1D")
     override fun onApplicationEvent(event: ApplicationReadyEvent) {
-        //thread { calculate() }
+        thread { calculate() }
     }
 
     fun calculate() {
