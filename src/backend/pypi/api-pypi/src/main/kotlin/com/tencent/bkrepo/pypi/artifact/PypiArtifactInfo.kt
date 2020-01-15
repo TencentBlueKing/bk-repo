@@ -13,11 +13,12 @@ class PypiArtifactInfo(
     artifactUri: String,
     val packageName: String?,
     val version: String?,
-    val metadata: Map<String, String>
+    val metadata: Map<String, String>?
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
         const val PYPI_PACKAGES_MAPPING_URI = "/{projectId}/{repoName}/packages/**"
         const val PYPI_ROOT_POST_URI = "/{projectId}/{repoName}"
-        const val PYPI_SIMPLE_MAPPING_INSTALL_URI = "/{projectId}/{repoName}/simple/{package}/"
+        const val PYPI_SIMPLE_MAPPING_INSTALL_URI = "/{projectId}/{repoName}/simple/package"
+        const val PYPI_SIMPLE_URI = "/{projectId}/{repoName}/simples"
     }
 }

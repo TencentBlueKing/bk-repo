@@ -6,11 +6,12 @@ import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_PACKAGES_MAPPING_URI
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_ROOT_POST_URI
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_SIMPLE_MAPPING_INSTALL_URI
-import com.tencent.bkrepo.pypi.pojo.xml.XmlMethodCallRootElement
+import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_SIMPLE_URI
 import org.springframework.http.MediaType
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 
 /**
  * 下载接口
@@ -20,9 +21,9 @@ import org.springframework.web.bind.annotation.PostMapping
  */
 interface PypiResource {
 
-//    @PostMapping(PYPI_ROOT_MAPPING_URI)
-//    fun update(@RequestParam(":action") action: String, artifactFileMap: ArtifactFileMap)
-
+    /**
+     * pypi upload 接口
+     */
     @PostMapping(PYPI_ROOT_POST_URI)
     fun upload(
         @ArtifactPathVariable
@@ -30,6 +31,9 @@ interface PypiResource {
         artifactFileMap: ArtifactFileMap
     )
 
+    /**
+     * pypi search 接口
+     */
     @PostMapping(PYPI_ROOT_POST_URI,
         consumes = [MediaType.TEXT_XML_VALUE],
         produces = [MediaType.TEXT_XML_VALUE]
@@ -37,15 +41,28 @@ interface PypiResource {
     fun search(
         @ArtifactPathVariable
         pypiArtifactInfo: PypiArtifactInfo,
-        xmlMethodCallRootElement: XmlMethodCallRootElement
+        @RequestBody xmlString: String
     )
 
     @GetMapping(PYPI_ROOT_POST_URI)
     fun root(map: ModelMap): String
 
+    /**
+     * pypi simple/{package} 接口
+     */
     @GetMapping(PYPI_SIMPLE_MAPPING_INSTALL_URI)
     fun simple(@ArtifactPathVariable artifactInfo: PypiArtifactInfo)
 
+    /**
+     * pypi install 接口
+     * packages/{package}/{version}/{filename}#md5={md5}
+     */
     @GetMapping(PYPI_PACKAGES_MAPPING_URI)
     fun packages(@ArtifactPathVariable artifactInfo: PypiArtifactInfo)
+
+    /**
+     * pypi simple 接口
+     */
+    @GetMapping(PYPI_SIMPLE_URI)
+    fun simples(@ArtifactPathVariable artifactInfo: PypiArtifactInfo)
 }

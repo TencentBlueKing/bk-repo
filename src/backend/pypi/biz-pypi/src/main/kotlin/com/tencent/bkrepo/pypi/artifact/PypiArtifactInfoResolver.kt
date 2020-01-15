@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.pypi.artifact
 
-import com.alibaba.fastjson.JSON
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil
@@ -19,6 +18,15 @@ class PypiArtifactInfoResolver : ArtifactInfoResolver {
         artifactUri: String,
         request: HttpServletRequest
     ): PypiArtifactInfo {
-        return UrlPatternUtil.urlPattern(projectId, repoName, artifactUri, request)
+        when (request.method) {
+            "POST" -> {
+                when (request.getParameter(":action")) {
+                    "file_upload" -> {
+                        return UrlPatternUtil.fileUpload(projectId, repoName, artifactUri, request)
+                    }
+                }
+            }
+        }
+        return PypiArtifactInfo(projectId, repoName, artifactUri, null, null, null)
     }
 }

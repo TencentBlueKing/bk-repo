@@ -3,6 +3,7 @@ dependencies {
     api project(":common:common-service")
     implementation project(":common:common-artifact:artifact-api")
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.10.1"
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.1'
     compile group: 'com.fasterxml.jackson.jaxrs', name: 'jackson-jaxrs-xml-provider', version: '2.10.1'
 
 }

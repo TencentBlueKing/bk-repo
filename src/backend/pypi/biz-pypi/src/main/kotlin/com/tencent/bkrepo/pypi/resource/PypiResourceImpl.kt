@@ -3,11 +3,11 @@ package com.tencent.bkrepo.pypi.resource
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.pypi.api.PypiResource
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
-import com.tencent.bkrepo.pypi.pojo.xml.XmlMethodCallRootElement
 import com.tencent.bkrepo.pypi.service.PypiService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
 import org.springframework.ui.ModelMap
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseBody
 
 /**
@@ -39,9 +39,9 @@ class PypiResourceImpl : PypiResource {
 
     @ResponseBody
     override fun search(pypiArtifactInfo: PypiArtifactInfo,
-        xmlMethodCallRootElement: XmlMethodCallRootElement
+        @RequestBody xmlString: String
     ) {
-        pypiService.search(pypiArtifactInfo,xmlMethodCallRootElement)
+        pypiService.search(pypiArtifactInfo, xmlString)
     }
 
     override fun root(map: ModelMap) = "welcome"
@@ -54,5 +54,10 @@ class PypiResourceImpl : PypiResource {
     @ResponseBody
     override fun packages(artifactInfo: PypiArtifactInfo) {
         pypiService.packages(artifactInfo)
+    }
+
+    @ResponseBody
+    override fun simples(artifactInfo: PypiArtifactInfo) {
+        pypiService.simples(artifactInfo)
     }
 }
