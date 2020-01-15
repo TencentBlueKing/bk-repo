@@ -41,6 +41,7 @@ def parse_args():
     parser.add_argument("-o", "--overwrite", action='store_true', dest="overwrite")
     parser.add_argument("-f", "--file", dest="file", help='migration specific node')
     parser.add_argument("-i", "--init", action='store_true', default=True, dest="init", help='init bkrepo project and repos')
+    parser.add_argument("-u", "--user", dest="user", default="admin", help='bkrepo user')
     
     return parser.parse_args()
 
@@ -72,8 +73,9 @@ def init_project():
     url = bkrepo_project_create_url()
     auth = bkrepo_auth()
     data = bkrepo_project_create_data()
+    uid = args.user
     try:
-        response = requests.post(url, json=data, auth=BkrepoAuth(auth))
+        response = requests.post(url, json=data, auth=BkrepoAuth(auth, uid))
         assert response.status_code == 200 or response.json() != 251002
         logging.info("Create bkrepo project[%s] success.", project)
     except Exception:
@@ -84,10 +86,11 @@ def init_project():
 def init_repos():
     url = bkrepo_repo_create_url()
     auth = bkrepo_auth()
+    uid = args.user
     try:
         for repo in ["pipeline", "custom", "report"]:
             data = bkrepo_repo_create_data(repo)
-            response = requests.post(url, json=data, auth=BkrepoAuth(auth))
+            response = requests.post(url, json=data, auth=BkrepoAuth(auth, uid))
             assert response.status_code == 200 or response.json() != 251002
             logging.info("Create bkrepo repository[%s] success.", project)
     except Exception:
