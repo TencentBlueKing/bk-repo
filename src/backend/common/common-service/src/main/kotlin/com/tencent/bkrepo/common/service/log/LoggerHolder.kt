@@ -49,7 +49,7 @@ object LoggerHolder {
         }
     }
 
-    private fun determineAccessChannel(request: HttpServletRequest?) : String {
+    private fun determineAccessChannel(request: HttpServletRequest?): String {
         return when {
             request == null -> {
                 "None"
@@ -61,6 +61,5 @@ object LoggerHolder {
                 "UserApi"
             }
         }
-
     }
 }
