@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 import os
 import argparse
 import time
@@ -8,6 +10,8 @@ import base64
 import sys
 from config import *
 
+reload(sys)
+sys.setdefaultencoding("utf8")
 parser = configparser.ConfigParser()
 
 class BkrepoAuth(requests.auth.AuthBase):
@@ -77,9 +81,9 @@ def init_project():
     try:
         response = requests.post(url, json=data, auth=BkrepoAuth(auth, uid))
         assert response.status_code == 200 or response.json() != 251002
-        logging.info("Create bkrepo project[%s] success.", project)
+        logging.info("Create bkrepo project[%s] success.", args.project)
     except Exception:
-        logging.exception("Create bkrepo project[%s] failed.", project)
+        logging.exception("Create bkrepo project[%s] failed.", args.project)
         exit(-1)
 
 
@@ -92,9 +96,9 @@ def init_repos():
             data = bkrepo_repo_create_data(repo)
             response = requests.post(url, json=data, auth=BkrepoAuth(auth, uid))
             assert response.status_code == 200 or response.json() != 251002
-            logging.info("Create bkrepo repository[%s] success.", project)
+            logging.info("Create bkrepo repository[%s] success.", repo)
     except Exception:
-        logging.exception("Create bkrepo repository[%s] failed.", project)
+        logging.exception("Create bkrepo repository[%s] failed.", repo)
         exit(-1)
 
 
@@ -167,11 +171,12 @@ def fetch_jfrog_properties(node):
     url = jfrog_property_url(node["path"], node["name"])
     auth = jfrog_auth()
     response = requests.get(url, auth=auth)
-    assert response.status_code == 200
+    assert response.status_code == 200 or response.status_code == 404
     properties = dict()
-    for key, value in response.json()['properties'].items():
-        if isinstance(value, list) and len(value) > 0:
-            properties[key] = value[0]
+    if response.status_code != 404:       
+        for key, value in response.json()['properties'].items():
+            if isinstance(value, list) and len(value) > 0:
+                properties[key] = value[0]
     return properties
 
 
