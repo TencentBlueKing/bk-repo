@@ -47,13 +47,12 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
 //            return ANONYMOUS_USER
 //        }
         val token = (authCredentials as JwtAuthCredentials).token
-        val userName = JwtUtil.getUserName(token)
-        val password = JwtUtil.getPassword(token)
-        logger.debug("auth token {} ,user {}, password {}", token, userName, password)
-        val result = userResource.checkUserToken(userName, password)
-        if (result.data == false) {
+        val tokenStatu = JwtUtil.verifyToken(token)
+        if (tokenStatu == false) {
             throw ClientAuthException("auth failed")
         }
+        val userName = JwtUtil.getUserName(token)
+        logger.debug("auth token {} ,user {}", token, userName)
         return userName
     }
 

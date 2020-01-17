@@ -24,8 +24,8 @@ class CleanupFileVisitor(
         if (isExpired(attributes, expireDays)) {
             val size = attributes.size()
             Files.deleteIfExists(filePath)
-            cleanupResult.count += 1
-            cleanupResult.count += size
+            cleanupResult.fileCount += 1
+            cleanupResult.size += size
         }
         return FileVisitResult.CONTINUE
     }
@@ -34,7 +34,7 @@ class CleanupFileVisitor(
     override fun postVisitDirectory(dirPath: Path, exc: IOException?): FileVisitResult {
         if (!Files.isSameFile(rootPath, dirPath) && !Files.list(dirPath).iterator().hasNext()) {
             Files.deleteIfExists(dirPath)
-            cleanupResult.count += 1
+            cleanupResult.folderCount += 1
         }
         return FileVisitResult.CONTINUE
     }

@@ -1,7 +1,7 @@
-package com.tencent.bkrepo.common.service.client
+package com.tencent.bkrepo.common.service.feign
 
-import com.tencent.bkrepo.common.service.exception.ErrorCodeDecoder
-import com.tencent.bkrepo.common.service.log.Slf4jFeignLogger
+import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import feign.RequestInterceptor
 import org.springframework.cloud.openfeign.EnableFeignClients
 import org.springframework.cloud.openfeign.FeignLoggerFactory
@@ -20,25 +20,23 @@ class ClientConfiguration {
             val attributes =
                     RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes ?: return@RequestInterceptor
             val request = attributes.request
+            // language
             val languageHeaderName = "Accept-Language"
             val languageHeaderValue = request.getHeader(languageHeaderName)
             if (!languageHeaderValue.isNullOrBlank()) {
                 requestTemplate.header(languageHeaderName, languageHeaderValue) // 设置Accept-Language请求头
             }
-            val cookies = request.cookies
-            if (cookies != null && cookies.isNotEmpty()) {
-                val cookieBuilder = StringBuilder()
-                cookies.forEach {
-                    cookieBuilder.append(it.name).append("=").append(it.value).append(";")
-                }
-                requestTemplate.header("Cookie", cookieBuilder.toString()) // 设置cookie信息
+            // user
+            val userId = request.getAttribute(USER_KEY) as? String
+            if (userId != null) {
+                requestTemplate.header(MS_AUTH_HEADER_UID, userId) // 设置uid请求头
             }
         }
     }
 
     @Bean
     fun feignLoggerFactory(): FeignLoggerFactory {
-        val feignLogger = Slf4jFeignLogger()
+        val feignLogger = FeignApiLogger()
         return FeignLoggerFactory { feignLogger }
     }
 

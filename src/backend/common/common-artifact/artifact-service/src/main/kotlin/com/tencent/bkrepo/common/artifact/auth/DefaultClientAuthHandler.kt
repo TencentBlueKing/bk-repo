@@ -41,7 +41,7 @@ open class DefaultClientAuthHandler : ClientAuthHandler {
             if (response.data == true) {
                 return username
             } else {
-                throw ClientAuthException("Authorization value check failed.")
+                throw ClientAuthException("Authorization value check failed")
             }
         }
     }

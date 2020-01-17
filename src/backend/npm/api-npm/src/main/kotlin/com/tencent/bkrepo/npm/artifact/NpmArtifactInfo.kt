@@ -33,8 +33,7 @@ class NpmArtifactInfo(
         //search
         const val NPM_PACKAGE_SEARCH_MAPPING_URI = "/{projectId}/{repoName}/-/v1/search"
 
-
-        //auth user
+        // auth user
         const val NPM_ADD_USER_MAPPING_URI = "/{projectId}/{repoName}/-/user/org.couchdb.user:*"
         const val NPM_USER_LOGOUT_MAPPING_URI = "/{projectId}/{repoName}/-/user/token/*"
         const val NPM_WHOAMI_MAPPING_URI = "/{projectId}/{repoName}/-/whoami"

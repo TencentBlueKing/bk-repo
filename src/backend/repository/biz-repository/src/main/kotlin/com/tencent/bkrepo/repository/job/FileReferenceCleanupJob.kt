@@ -27,8 +27,8 @@ class FileReferenceCleanupJob {
     @Autowired
     private lateinit var storageService: StorageService
 
-    @Scheduled(cron = "0 40 0/1 * * ?")
-    @SchedulerLock(name = "FileReferenceCleanupJob", lockAtMostFor = "PT59M")
+    @Scheduled(cron = "0 0 2/3 * * ?")
+    @SchedulerLock(name = "FileReferenceCleanupJob", lockAtMostFor = "PT1H")
     fun cleanUp() {
         logger.info("Starting to clean up file reference.")
         var totalCount = 0L
@@ -44,13 +44,13 @@ class FileReferenceCleanupJob {
                 val storageCredentials = it.storageCredentials?.let { value -> objectMapper.readValue(value, StorageCredentials::class.java) }
                 try {
                     if (it.sha256.isNotBlank() && storageService.exist(it.sha256, storageCredentials)) {
-                        fileReferenceDao.determineMongoTemplate().remove(it, collectionName)
+                        storageService.delete(it.sha256, storageCredentials)
                         cleanupCount += 1
                     } else {
                         logger.warn("File[${it.sha256}] is missing on [$storageCredentials], skip cleaning up.")
                         fileMissingCount += 1
                     }
-                    storageService.delete(it.sha256, storageCredentials)
+                    fileReferenceDao.determineMongoTemplate().remove(it, collectionName)
                 } catch (exception: Exception) {
                     logger.error("Failed to delete file[${it.sha256}] on [$storageCredentials].", exception)
                     failedCount += 1

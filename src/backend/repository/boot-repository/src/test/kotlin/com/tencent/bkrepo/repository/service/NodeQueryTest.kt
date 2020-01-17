@@ -34,33 +34,34 @@ internal class NodeQueryTest @Autowired constructor(
     private val repositoryService: RepositoryService
 ) {
     private val projectId = "unit-test"
-    private val operator = "system"
     private var repoName = "unit-test"
+    private val operator = "system"
 
     @BeforeEach
     fun setUp() {
-        repoName = RandomStringUtils.randomAlphabetic(10)
-        repositoryService.list(projectId).forEach { repositoryService.delete(projectId, it.name) }
-        repositoryService.create(
-            RepoCreateRequest(
-                projectId = projectId,
-                name = repoName,
-                type = RepositoryType.GENERIC,
-                category = RepositoryCategory.LOCAL,
-                public = false,
-                description = "简单描述",
-                configuration = LocalConfiguration(),
-                operator = operator
+        if(!repositoryService.exist(projectId, repoName)) {
+            repositoryService.create(
+                RepoCreateRequest(
+                    projectId = projectId,
+                    name = repoName,
+                    type = RepositoryType.GENERIC,
+                    category = RepositoryCategory.LOCAL,
+                    public = false,
+                    description = "单元测试仓库",
+                    configuration = LocalConfiguration(),
+                    operator = operator
+                )
             )
-        )
+        }
     }
 
     @AfterEach
     fun tearDown() {
-        repositoryService.delete(projectId, repoName)
+        nodeService.deleteByPath(projectId, repoName, "", operator, false)
     }
 
     @Test
+    @DisplayName("完整路径前缀匹配查询")
     fun fullPathQueryTest() {
         nodeService.create(createRequest("/a/b"))
         nodeService.create(createRequest("/a/b/1.txt", false))
@@ -87,37 +88,16 @@ internal class NodeQueryTest @Autowired constructor(
     }
 
     @Test
-    fun metadataQueryTest() {
+    @DisplayName("元数据精确查询")
+    fun metadataUserQueryTest() {
         nodeService.create(createRequest("/a/b/1.txt", false, metadata = mapOf("key1" to "1", "key2" to "2")))
+        nodeService.create(createRequest("/a/b/2.txt", false, metadata = mapOf("key1" to "11", "key2" to "2")))
+        nodeService.create(createRequest("/a/b/3.txt", false, metadata = mapOf("key1" to "22")))
 
         val projectId = Rule.QueryRule("projectId", projectId)
         val repoName = Rule.QueryRule("repoName", repoName)
-        val fullPath = Rule.QueryRule("fullPath", "/a/b/1.txt")
-        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, fullPath))
-
-        val queryModel = QueryModel(
-            page = PageLimit(0, 10),
-            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-            rule = rule
-        )
-
-        val result = nodeQueryService.query(queryModel)
-        Assertions.assertEquals(1, result.count)
-        Assertions.assertEquals(1, result.records.size)
-        val node = result.records[0]
-        val metadata = node["metadata"] as Map<*, *>
-        Assertions.assertEquals("1", metadata["key1"])
-    }
-
-    @Test
-    fun metadataUserQueryTest() {
-        nodeService.create(createRequest("/a/b/1.txt", false, metadata = mapOf("key1" to "1", "key2" to "2")))
-
-        val projectId = Rule.QueryRule("projectId", projectId)
-        val repoName = Rule.QueryRule("repoName", listOf(repoName, "test1", "test2"), OperationType.IN)
-        val fullPath = Rule.QueryRule("fullPath", "/a/b/1.txt")
-        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, fullPath))
+        val metadata = Rule.QueryRule("metadata.key1", "1")
+        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, metadata))
 
         val queryModel = QueryModel(
             page = PageLimit(0, 10),
@@ -130,8 +110,58 @@ internal class NodeQueryTest @Autowired constructor(
         Assertions.assertEquals(1, result.count)
         Assertions.assertEquals(1, result.records.size)
         val node = result.records[0]
-        val metadata = node["metadata"] as Map<*, *>
-        Assertions.assertEquals("1", metadata["key1"])
+        val metadataMap = node["metadata"] as Map<*, *>
+        Assertions.assertEquals("1", metadataMap["key1"])
+        Assertions.assertEquals("/a/b/1.txt", node["fullPath"])
+
+    }
+
+    @Test
+    @DisplayName("元数据前缀匹配查询")
+    fun metadataPrefixQueryTest() {
+        nodeService.create(createRequest("/a/b/1.txt", false, metadata = mapOf("key" to "1")))
+        nodeService.create(createRequest("/a/b/2.txt", false, metadata = mapOf("key" to "11")))
+        nodeService.create(createRequest("/a/b/3.txt", false, metadata = mapOf("key" to "22")))
+
+        val projectId = Rule.QueryRule("projectId", projectId)
+        val repoName = Rule.QueryRule("repoName", repoName)
+        val metadata = Rule.QueryRule("metadata.key", "1", OperationType.PREFIX) // 前缀
+        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, metadata))
+
+        val queryModel = QueryModel(
+            page = PageLimit(0, 10),
+            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
+            select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
+            rule = rule
+        )
+
+        val result = nodeQueryService.userQuery(operator, queryModel)
+        Assertions.assertEquals(2, result.count)
+        Assertions.assertEquals(2, result.records.size)
+    }
+
+    @Test
+    @DisplayName("元数据模糊匹配查询")
+    fun metadataFuzzyQueryTest() {
+        nodeService.create(createRequest("/a/b/1.txt", false, metadata = mapOf("key" to "121")))
+        nodeService.create(createRequest("/a/b/2.txt", false, metadata = mapOf("key" to "131")))
+        nodeService.create(createRequest("/a/b/3.txt", false, metadata = mapOf("key" to "144")))
+
+        val projectId = Rule.QueryRule("projectId", projectId)
+        val repoName = Rule.QueryRule("repoName", repoName)
+        val metadata = Rule.QueryRule("metadata.key", "1*1", OperationType.MATCH) // 前缀
+        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, metadata))
+
+        val queryModel = QueryModel(
+            page = PageLimit(0, 10),
+            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
+            select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
+            rule = rule
+        )
+
+        val result = nodeQueryService.userQuery(operator, queryModel)
+        Assertions.assertEquals(2, result.count)
+        Assertions.assertEquals(2, result.records.size)
     }
 
 

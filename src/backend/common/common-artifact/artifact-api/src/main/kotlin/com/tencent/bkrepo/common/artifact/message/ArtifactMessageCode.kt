@@ -17,7 +17,8 @@ enum class ArtifactMessageCode(private val businessCode: Int, private val key: S
     NODE_NOT_FOUND(5, "artifact.node.notfound"),
     NODE_PATH_INVALID(6, "artifact.node.path.invalid"),
     NODE_EXISTED(7, "artifact.node.existed"),
-    NODE_CONFLICT(8, "artifact.node.conflict");
+    NODE_CONFLICT(8, "artifact.node.conflict"),
+    NODE_LIST_TOO_LARGE(9, "artifact.node.list.too-large");
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key
