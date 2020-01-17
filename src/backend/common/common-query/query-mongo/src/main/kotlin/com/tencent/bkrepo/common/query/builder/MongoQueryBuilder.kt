@@ -84,15 +84,20 @@ open class MongoQueryBuilder {
     fun resolveRule(rule: Rule): Criteria {
         // interceptor
         var newRule = rule
-        for (interceptor in queryRuleInterceptorList) {
-            if (interceptor.match(newRule)) {
-                newRule = interceptor.intercept(newRule, this)
+        if(rule !is Rule.FixedRule) {
+            for (interceptor in queryRuleInterceptorList) {
+                if (interceptor.match(newRule)) {
+                    newRule = interceptor.intercept(newRule, this)
+                }
             }
+        } else {
+            newRule = rule.wrapperRule
         }
 
         return when (newRule) {
             is Rule.NestedRule -> resolveNestedRule(newRule)
             is Rule.QueryRule -> resolveQueryRule(newRule)
+            is Rule.FixedRule -> resolveFixedRule(newRule)
         }
     }
 
@@ -103,6 +108,10 @@ open class MongoQueryBuilder {
     private fun resolveQueryRule(rule: Rule.QueryRule): Criteria {
         // 默认handler
         return findDefaultHandler(rule.operation).handle(rule)
+    }
+
+    private fun resolveFixedRule(rule: Rule.FixedRule): Criteria {
+        return resolveRule(rule.wrapperRule)
     }
 
     private fun findDefaultHandler(operation: OperationType): MongoQueryRuleHandler {

@@ -50,4 +50,11 @@ sealed class Rule {
         @ApiModelProperty("操作类型")
         val operation: OperationType = OperationType.DEFAULT
     ) : Rule()
+
+    @ApiModel("固定查询规则")
+    data class FixedRule(val wrapperRule: Rule) : Rule()
+
+    fun toFixed(): FixedRule {
+        return FixedRule(this)
+    }
 }
