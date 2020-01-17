@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.npm.api.NpmResource
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
+import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.service.NpmService
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import org.springframework.beans.factory.annotation.Autowired
@@ -34,5 +35,9 @@ class NpmResourceImpl : NpmResource {
     override fun unpublish(userId: String, artifactInfo: NpmArtifactInfo): Response<Void> {
         npmService.unpublish(userId, artifactInfo)
         return ResponseBuilder.success()
+    }
+
+    override fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): Map<String, Any> {
+        return npmService.search(artifactInfo, searchRequest)
     }
 }

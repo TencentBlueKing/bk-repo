@@ -14,6 +14,11 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.APPLICATION_OCTET_STEAM
 import com.tencent.bkrepo.npm.constants.ATTACHMENTS
@@ -21,6 +26,8 @@ import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.CONTENT_TYPE
 import com.tencent.bkrepo.npm.constants.CREATED
 import com.tencent.bkrepo.npm.constants.DATA
+import com.tencent.bkrepo.npm.constants.DATE
+import com.tencent.bkrepo.npm.constants.DESCRIPTION
 import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.DISTTAGS
 import com.tencent.bkrepo.npm.constants.FILE_DASH
@@ -47,9 +54,11 @@ import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.constants.revValue
 import com.tencent.bkrepo.npm.pojo.NpmMetaData
+import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
+import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.fileupload.util.Streams
@@ -64,7 +73,8 @@ import java.util.Date
 
 @Service
 class NpmService @Autowired constructor(
-    private val metadataResource: MetadataResource
+    private val metadataResource: MetadataResource,
+    private val nodeResource: NodeResource
 ) {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -221,7 +231,7 @@ class NpmService @Autowired constructor(
                 metadataResource.query(artifactInfo.projectId, artifactInfo.repoName, tgzFullPath).data
             metadataInfo?.forEach { (key, value) ->
                 if (StringUtils.isNotBlank(value)) fileJson.addProperty(key, value)
-                if(key == KEYWORDS) fileJson.add(key,GsonUtils.stringToArray(value))
+                if (key == KEYWORDS) fileJson.add(key, GsonUtils.stringToArray(value))
             }
         } else {
             versions.keySet().forEach {
@@ -232,7 +242,7 @@ class NpmService @Autowired constructor(
                     metadataResource.query(artifactInfo.projectId, artifactInfo.repoName, tgzFullPath).data
                 metadataInfo?.forEach { (key, value) ->
                     if (StringUtils.isNotBlank(value)) versions.getAsJsonObject(it).addProperty(key, value)
-                    if(key == KEYWORDS) versions.getAsJsonObject(it).add(key,GsonUtils.stringToArray(value))
+                    if (key == KEYWORDS) versions.getAsJsonObject(it).add(key, GsonUtils.stringToArray(value))
                 }
             }
         }
@@ -276,6 +286,50 @@ class NpmService @Autowired constructor(
         context.contextAttributes[NPM_FILE_FULL_PATH] = fullPathList
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.remove(context)
+    }
+
+    fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): Map<String, Any> {
+        val projectId = Rule.QueryRule("projectId", artifactInfo.projectId)
+        val repoName = Rule.QueryRule("repoName", artifactInfo.repoName)
+        val fullPath = Rule.QueryRule("fullPath", ".tgz", OperationType.SUFFIX)
+        val metadata = Rule.QueryRule("metadata.license", searchRequest.text)
+
+        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, fullPath))
+
+        val queryModel = QueryModel(
+            page = PageLimit(searchRequest.from, searchRequest.size),
+            sort = Sort(listOf("lastModifiedDate"), Sort.Direction.DESC),
+            select = mutableListOf("projectId", "repoName", "fullPath", "metadata", "lastModifiedDate"),
+            rule = rule
+        )
+
+        val result = nodeResource.query(queryModel)
+        val data = result.data ?: return emptyMap()
+        //val records = data.records
+        return transferRecords(data.records)
+    }
+
+    private fun transferRecords(records: List<Map<String, Any>>): Map<String, Any> {
+        val returnInfo = mutableMapOf<String,List<Map<String,Any>>>()
+        val listInfo = mutableListOf<Map<String,Any>>()
+        if (records.isNullOrEmpty()) return emptyMap()
+        records.forEach {
+            val packageInfo = mutableMapOf<String,Any>()
+            val metadataInfo = mutableMapOf<String, Any>()
+            val date = it["lastModifiedDate"] as String
+            val metadata = it["metadata"] as Map<String, String>
+            metadataInfo[NAME] = metadata.getOrDefault(NAME,"")
+            metadataInfo[DESCRIPTION] = metadata.getOrDefault(DESCRIPTION,"")
+            metadataInfo["maintainers"] = ""
+            metadataInfo[VERSION] = metadata.getOrDefault(VERSION,"")
+            metadataInfo[DATE] = date
+            metadataInfo[KEYWORDS] = metadata.getOrDefault(KEYWORDS,"")
+            metadataInfo["author"] = metadata.getOrDefault("author","")
+            packageInfo["package"] = metadataInfo
+            listInfo.add(packageInfo)
+        }
+        returnInfo["objects"] = listInfo
+        return returnInfo
     }
 
     companion object {

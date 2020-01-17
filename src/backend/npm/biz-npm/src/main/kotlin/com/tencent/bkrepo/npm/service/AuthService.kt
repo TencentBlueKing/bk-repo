@@ -12,7 +12,7 @@ import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.PASSWORD
 import com.tencent.bkrepo.npm.jwt.JwtProperties
 import com.tencent.bkrepo.npm.jwt.JwtUtils
-import com.tencent.bkrepo.npm.pojo.NpmAuthResponse
+import com.tencent.bkrepo.npm.pojo.auth.NpmAuthResponse
 import org.apache.commons.lang.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service

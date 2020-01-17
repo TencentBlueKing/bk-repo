@@ -5,9 +5,11 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_INFO_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_SCOPE_TGZ_MAPPING_URI
+import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_SEARCH_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_TGZ_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PUBLISH_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_UNPUBLISH_MAPPING_URI
+import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -37,4 +39,8 @@ interface NpmResource {
     @ApiOperation("unpublish package")
     @DeleteMapping(NPM_UNPUBLISH_MAPPING_URI)
     fun unpublish(@RequestAttribute userId: String, @ArtifactPathVariable artifactInfo: NpmArtifactInfo): Response<Void>
+
+    @ApiOperation("npm search")
+    @GetMapping(NPM_PACKAGE_SEARCH_MAPPING_URI)
+    fun search(@ArtifactPathVariable artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): Map<String, Any>
 }

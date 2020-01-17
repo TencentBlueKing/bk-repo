@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.npm.pojo
+package com.tencent.bkrepo.npm.pojo.auth
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import io.swagger.annotations.ApiModel
@@ -23,6 +23,6 @@ data class NpmAuthResponse<out T>(
 
         fun <T> success(id: String, data: T) = NpmAuthResponse(true, id, data)
 
-        fun fail(id:String)  = NpmAuthResponse(false,id,null)
+        fun fail(id:String)  = NpmAuthResponse(false, id, null)
     }
 }
