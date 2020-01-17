@@ -24,6 +24,6 @@ data class TFileReference(
     var count: Long
 ) {
     companion object {
-        const val SHARDING_COUNT = 256
+        const val SHARDING_COUNT = 1
     }
 }

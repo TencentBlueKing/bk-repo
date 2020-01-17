@@ -8,7 +8,7 @@ buildscript {
         swaggerCoreVersion = "1.5.22"
         swaggerFoxVersion = "2.9.2"
         jasyptVersion = "2.1.2"
-        awsS3Version = "1.11.631"
+        awsS3Version = "1.11.700"
         innerCosVersion = "5.6.7"
         guavaVersion = "28.1-jre"
         commonsCodecVersion = "1.10"
@@ -16,6 +16,7 @@ buildscript {
         commonsUploadVersion = "1.4"
         skywalkingVersion = "6.1.0"
         shedlockVersion = "4.1.0"
+        hdfsVersion = "2.6.0"
     }
 
     repositories {
@@ -35,7 +36,7 @@ buildscript {
 
 allprojects {
     group "com.tencent.bkrepo"
-    version "0.7.0"
+    version "0.7.1"
 
     repositories {
         mavenLocal()
@@ -82,6 +83,7 @@ subprojects {
 
     configurations {
         ktlint
+        all*.exclude group: "org.slf4j", module: "slf4j-log4j12"
     }
 
     dependencies {
@@ -134,6 +136,7 @@ subprojects {
             dependency "org.apache.skywalking:apm-toolkit-trace:$skywalkingVersion"
             dependency "net.javacrumbs.shedlock:shedlock-spring:$shedlockVersion"
             dependency "net.javacrumbs.shedlock:shedlock-provider-mongo:$shedlockVersion"
+            dependency "org.apache.hadoop:hadoop-client:$hdfsVersion"
         }
 
     }

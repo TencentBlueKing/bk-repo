@@ -8,5 +8,7 @@ package com.tencent.bkrepo.common.storage.credentials
  */
 enum class StorageType {
     FILESYSTEM,
-    INNERCOS
+    INNERCOS,
+    HDFS,
+    S3
 }

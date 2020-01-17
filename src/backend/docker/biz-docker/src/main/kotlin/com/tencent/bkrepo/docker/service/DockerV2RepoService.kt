@@ -51,5 +51,5 @@ interface DockerV2RepoService {
         lastEntry: String
     ): ResponseEntity<Any>
 
-    fun catalog(projectId: String, repoName: String, maxEntries: Int, lastEntry: String): ResponseEntity<Any>
+    fun catalog(projectId: String, name: String, maxEntries: Int, lastEntry: String): ResponseEntity<Any>
 }

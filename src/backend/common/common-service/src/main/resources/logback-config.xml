@@ -49,7 +49,7 @@
     <appender name="job_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${logging.job.file}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${logging.framework.file}.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <fileNamePattern>${logging.job.file}.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
@@ -109,7 +109,7 @@
         <logger name="com.tencent.bkrepo" level="DEBUG" additivity="false">
             <appender-ref ref="console"/>
         </logger>
-        <logger name="com.tencent.bkrepo.common.service.config.FeignFilterRequestMappingHandlerMapping" level="INFO" additivity="false">
+        <logger name="com.tencent.bkrepo.common.service.feign.FeignFilterRequestMappingHandlerMapping" level="INFO" additivity="false">
             <appender-ref ref="console"/>
         </logger>
         <root level="INFO">

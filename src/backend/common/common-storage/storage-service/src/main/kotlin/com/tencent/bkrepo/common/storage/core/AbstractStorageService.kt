@@ -1,20 +1,20 @@
 package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import com.tencent.bkrepo.common.storage.locator.FileLocator
 import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
-import org.apache.commons.io.FileUtils
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
 import java.nio.charset.Charset
 import java.util.UUID
+import org.apache.commons.io.FileUtils
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 存储服务抽象实现
@@ -41,7 +41,7 @@ abstract class AbstractStorageService : StorageService {
 
         try {
             if (doExist(path, digest, credentials)) {
-                logger.debug("File [$digest] exists on [$credentials], skip store.")
+                logger.info("File [$digest] exists on [$credentials], skip store.")
                 return
             }
             doStore(path, digest, artifactFile, credentials)
@@ -58,7 +58,7 @@ abstract class AbstractStorageService : StorageService {
 
         try {
             if (doExist(path, digest, credentials)) {
-                logger.debug("File [$digest] exists on [$credentials], skip store.")
+                logger.info("File [$digest] exists on [$credentials], skip store.")
                 return
             }
             doStore(path, digest, file, credentials)

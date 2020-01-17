@@ -3,7 +3,6 @@ package com.tencent.bkrepo.common.storage.innercos
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.cos.COSClient
 import com.tencent.cos.ClientConfig
 import com.tencent.cos.auth.BasicCOSCredentials
@@ -31,8 +30,7 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
         LinkedBlockingQueue(1024), ThreadFactoryBuilder().setNameFormat("inner-cos-storage-uploader-pool-%d").build(),
         ThreadPoolExecutor.AbortPolicy())
 
-    override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
-        val client = getClient(storageCredentials)
+    override fun store(path: String, filename: String, file: File, client: InnerCosClient) {
         val transferManager = TransferManager(client.cosClient, executor, false)
         val putObjectRequest = PutObjectRequest(client.bucketName, filename, file)
         val upload = transferManager.upload(putObjectRequest)
@@ -40,8 +38,7 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
         transferManager.shutdownNow()
     }
 
-    override fun load(path: String, filename: String, received: File, storageCredentials: StorageCredentials): File? {
-        val client = getClient(storageCredentials)
+    override fun load(path: String, filename: String, received: File, client: InnerCosClient): File? {
         val getObjectRequest = GetObjectRequest(client.bucketName, filename)
         val transferManager = TransferManager(client.cosClient, executor, false)
         val download = transferManager.download(getObjectRequest, received)
@@ -50,14 +47,12 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
         return received
     }
 
-    override fun delete(path: String, filename: String, storageCredentials: StorageCredentials) {
-        val client = getClient(storageCredentials)
+    override fun delete(path: String, filename: String, client: InnerCosClient) {
         val deleteObjectRequest = DeleteObjectRequest(client.bucketName, filename)
         client.cosClient.deleteObject(deleteObjectRequest)
     }
 
-    override fun exist(path: String, filename: String, storageCredentials: StorageCredentials): Boolean {
-        val client = getClient(storageCredentials)
+    override fun exist(path: String, filename: String, client: InnerCosClient): Boolean {
         return try {
             return client.cosClient.getObjectMetadata(client.bucketName, filename) != null
         } catch (ignored: Exception) {
@@ -66,6 +61,10 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
     }
 
     override fun onCreateClient(credentials: InnerCosCredentials): InnerCosClient {
+        require(credentials.secretId.isNotBlank())
+        require(credentials.secretKey.isNotBlank())
+        require(credentials.region.isNotBlank())
+        require(credentials.bucket.isNotBlank())
         val basicCOSCredentials = BasicCOSCredentials(credentials.secretId, credentials.secretKey)
         val clientConfig = ClientConfig(Region(credentials.region))
         if (credentials.modId != null && credentials.cmdId != null) {
@@ -73,11 +72,7 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
             val cl5Info = CL5Info(credentials.modId!!, credentials.cmdId!!, credentials.timeout)
             clientConfig.endpointResolver = CL5EndpointResolver(cl5Info)
         }
-        requireNotNull(credentials.bucket) { "Bucket cannot be null." }
-        return InnerCosClient(
-            credentials.bucket!!,
-            COSClient(basicCOSCredentials, clientConfig)
-        )
+        return InnerCosClient(credentials.bucket, COSClient(basicCOSCredentials, clientConfig))
     }
 
     override fun getDefaultCredentials() = storageProperties.innercos

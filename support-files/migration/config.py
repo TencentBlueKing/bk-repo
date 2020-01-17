@@ -37,10 +37,14 @@ jfrog_config = {
 
 bkrepo_config = {
     "dev": {
-        "url": "http://dev.bkrepo.oa.com/"
+        "url": "http://dev.bkrepo.oa.com/",
+        "accessKey": "",
+        "secretKey": ""
     },
     "prod": {
-        "url": "http://bkrepo.oa.com/"
+        "url": "http://bkrepo.oa.com/",
+        "accessKey": "",
+        "secretKey": ""
     }
 }
 
@@ -88,9 +92,41 @@ def jfrog_download_url(path, name):
     return jfrog_config[env]["url"] + "generic-local/{}/{}".format(path, name)
 
 
+def bkrepo_auth():
+    return bkrepo_config[env]["accessKey"], bkrepo_config[env]["secretKey"] 
+
+    
 def bkrepo_query_url(full_path):
     return bkrepo_config[env]["url"] + 'api/repository/api/node/{}/custom/{}'.format(project, full_path)
 
 
 def bkrepo_upload_url(full_path):
     return bkrepo_config[env]["url"] + 'generic/{}/custom/{}'.format(project, full_path)
+
+
+def bkrepo_project_create_url():
+    return bkrepo_config[env]["url"] + 'api/repository/api/project'
+
+
+def bkrepo_repo_create_url():
+    return bkrepo_config[env]["url"] + 'api/repository/api/repo'
+
+
+def bkrepo_project_create_data():
+    return {
+        "name": project,
+        "displayName": project,
+        "description": ""
+    }
+
+
+def bkrepo_repo_create_data(name):
+    return {
+        "projectId": project,
+        "name": name,
+        "category": "LOCAL",
+        "type": "GENERIC",
+        "public": True,
+        "configuration": {"type": "local"},
+        "description": ""
+    }
