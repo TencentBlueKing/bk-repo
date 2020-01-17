@@ -22,12 +22,6 @@ class PypiResourceImpl : PypiResource {
     @Autowired
     private lateinit var pypiService: PypiService
 
-//    @ResponseBody
-//    override fun update(action: String, artifactFileMap: ArtifactFileMap) {
-//        println(action)
-//        println(artifactFileMap.keys)
-//    }
-
     @ResponseBody
     override fun upload(
         pypiArtifactInfo: PypiArtifactInfo,
@@ -38,7 +32,8 @@ class PypiResourceImpl : PypiResource {
     }
 
     @ResponseBody
-    override fun search(pypiArtifactInfo: PypiArtifactInfo,
+    override fun search(
+        pypiArtifactInfo: PypiArtifactInfo,
         @RequestBody xmlString: String
     ) {
         pypiService.search(pypiArtifactInfo, xmlString)
@@ -54,10 +49,5 @@ class PypiResourceImpl : PypiResource {
     @ResponseBody
     override fun packages(artifactInfo: PypiArtifactInfo) {
         pypiService.packages(artifactInfo)
-    }
-
-    @ResponseBody
-    override fun simples(artifactInfo: PypiArtifactInfo) {
-        pypiService.simples(artifactInfo)
     }
 }

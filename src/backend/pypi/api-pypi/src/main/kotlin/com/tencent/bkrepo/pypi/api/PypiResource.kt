@@ -6,7 +6,6 @@ import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_PACKAGES_MAPPING_URI
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_ROOT_POST_URI
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_SIMPLE_MAPPING_INSTALL_URI
-import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_SIMPLE_URI
 import org.springframework.http.MediaType
 import org.springframework.ui.ModelMap
 import org.springframework.web.bind.annotation.GetMapping
@@ -59,10 +58,4 @@ interface PypiResource {
      */
     @GetMapping(PYPI_PACKAGES_MAPPING_URI)
     fun packages(@ArtifactPathVariable artifactInfo: PypiArtifactInfo)
-
-    /**
-     * pypi simple 接口
-     */
-    @GetMapping(PYPI_SIMPLE_URI)
-    fun simples(@ArtifactPathVariable artifactInfo: PypiArtifactInfo)
 }

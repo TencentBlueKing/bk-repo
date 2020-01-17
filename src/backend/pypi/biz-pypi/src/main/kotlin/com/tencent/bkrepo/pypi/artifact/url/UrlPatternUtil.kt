@@ -13,8 +13,8 @@ import javax.servlet.http.HttpServletRequest
 
 object UrlPatternUtil {
 
-    //匹配路径,构建post请求。
-    fun urlMatcher(uri: String): PypiRequestType{
+    // 匹配路径,构建post请求。
+    fun urlMatcher(uri: String): PypiRequestType {
         val uriMap = mapOf<PypiRequestType, String>(
             PypiRequestType.UPLOAD to "(/)?(.+)/(.+)",
             PypiRequestType.SEARCH to "(/)?(.+)/(.+)"
@@ -27,36 +27,12 @@ object UrlPatternUtil {
         throw IllegalArgumentException("")
     }
 
-    //匹配路径,构建post请求。
-    // fun simplePackage(uri: String): Boolean{
-    //     val uriPattern = "(/)?(.+)/simple/(.+)"
-    //
-    //     if (Pattern.compile(uri).matcher(uri).find()) {
-    //         return uriStr.key
-    //     }
-    //
-    //     throw IllegalArgumentException("")
-    // }
-
-    fun simpleToPypiArtifactInfo(projectId: String,
+    fun packagesToPypiArtifactInfo(
+        projectId: String,
         repoName: String,
         artifactUri: String,
-        matcher: Matcher): PypiArtifactInfo {
-        val map = mapOf("project" to matcher.group(2),
-                "repository" to matcher.group(3),
-                "package" to matcher.group(4))
-        return PypiArtifactInfo(
-            projectId,
-            repoName,
-            artifactUri,
-            null, null, mapOf()
-        )
-    }
-
-    fun packagesToPypiArtifactInfo(projectId: String,
-        repoName: String,
-        artifactUri: String,
-        matcher: Matcher): PypiArtifactInfo {
+        matcher: Matcher
+    ): PypiArtifactInfo {
         return PypiArtifactInfo(
             projectId,
             repoName,

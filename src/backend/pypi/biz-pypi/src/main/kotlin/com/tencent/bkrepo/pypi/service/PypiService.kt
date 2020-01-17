@@ -30,7 +30,6 @@ class PypiService {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun packages(pypiArtifactInfo: PypiArtifactInfo) {
-        logger.info("#########${pypiArtifactInfo.projectId}-${pypiArtifactInfo.repoName}-${pypiArtifactInfo.artifactUri}")
         val context = ArtifactDownloadContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.download(context)
@@ -44,37 +43,26 @@ class PypiService {
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    fun search(pypiArtifactInfo: PypiArtifactInfo,
+    fun search(
+        pypiArtifactInfo: PypiArtifactInfo,
         xmlString: String
     ) {
-        logger.info("${pypiArtifactInfo.projectId}-${pypiArtifactInfo.repoName}-${pypiArtifactInfo.artifactUri}")
         val context = ArtifactListContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         (repository as PypiLocalRepository).searchXml(context, xmlString)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    fun upload(pypiArtifactInfo: PypiArtifactInfo,
+    fun upload(
+        pypiArtifactInfo: PypiArtifactInfo,
         artifactFileMap: ArtifactFileMap
     ) {
-        logger.info("${pypiArtifactInfo.projectId}-${pypiArtifactInfo.repoName}-${pypiArtifactInfo.artifactUri}")
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.upload(context)
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
-    fun simples(pypiArtifactInfo: PypiArtifactInfo){
-        logger.info("${pypiArtifactInfo.projectId}-${pypiArtifactInfo.repoName}-${pypiArtifactInfo.artifactUri}")
-        val context = ArtifactListContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        (repository as PypiLocalRepository).simpleList(context)
-    }
-
-
     companion object {
         private val logger = LoggerFactory.getLogger(PypiService::class.java)
     }
-
-
 }

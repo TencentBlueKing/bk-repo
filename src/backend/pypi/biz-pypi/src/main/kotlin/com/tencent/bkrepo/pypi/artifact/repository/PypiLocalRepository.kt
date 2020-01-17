@@ -10,11 +10,12 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.url.XmlUtil
+import com.tencent.bkrepo.pypi.pojo.xml.XmlConvertUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
-import org.springframework.stereotype.Component
 import java.io.File
+import org.springframework.stereotype.Component
 
 /**
  *
@@ -46,13 +47,12 @@ class PypiLocalRepository : LocalRepository() {
         val md5 = (context.contextAttributes[ATTRIBUTE_MD5MAP] as LinkedHashMap<*, *>)["content"]
         val pypiArtifactInfo = artifactInfo as PypiArtifactInfo
 
-
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
             repoName = repositoryInfo.name,
             folder = false,
             overwrite = true,
-            fullPath = artifactInfo.artifactUri+"/$filename",
+            fullPath = artifactInfo.artifactUri + "/$filename",
             size = artifactFile.getSize(),
             sha256 = sha256 as String?,
             md5 = md5 as String?,
@@ -75,7 +75,7 @@ class PypiLocalRepository : LocalRepository() {
     /**
      * 创建PYPI simple请求
      */
-    fun getNodeSearchRequest(context: ArtifactListContext): NodeSearchRequest{
+    fun getNodeSearchRequest(context: ArtifactListContext): NodeSearchRequest {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
 
@@ -99,85 +99,92 @@ class PypiLocalRepository : LocalRepository() {
             pathPattern = pathVariable,
             metadataCondition = metadataCondition
         )
-
     }
 
-    fun searchXml(context: ArtifactListContext,
+    fun searchXml(
+        context: ArtifactListContext,
         xmlString: String
     ) {
         val artifactInfo = context.artifactInfo
-        // val xmlMethodCallRootElement = XmlToBeanUtil.convertXmlStrToObject(XmlMethodCallRootElement::class.java, xmlString) as XmlMethodCallRootElement
-        val packageName = XmlUtil.getPackageName(xmlString)
-        val action = XmlUtil.getAction(xmlString)
+
+        val methodCall = XmlConvertUtil.convert(xmlString)
+        val action = methodCall.methodName
+        val packageName = methodCall.params.paramList[0].value.struct?.memberList?.get(0)?.value?.array?.data?.valueList?.get(0)?.string
+        val summary = methodCall.params.paramList[0].value.struct?.memberList?.get(1)?.value?.array?.data?.valueList?.get(0)?.string
         var xml: String
 
-        //TODO 多个参数
+//        with(artifactInfo) {
+//
+//            val projectId = Rule.QueryRule("projectId", projectId)
+//            val repoName = Rule.QueryRule("repoName", repoName)
+//            val target = Rule.QueryRule("metadata.name", "weaving")
+//            val rule1 = Rule.NestedRule(mutableListOf(repoName, projectId, target), Rule.NestedRule.RelationType.AND)
+//            val queryModel = QueryModel(
+//                    page = PageLimit(0, 10),
+//                    sort = Sort(listOf("name"), Sort.Direction.ASC),
+//                    select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
+//                    rule = rule1
+//            )
+//            val map = nodeResource.query(queryModel)
+//            val test = "dd"
+//        }
 
         with(artifactInfo) {
-            val nodeDetail = nodeResource.detail(projectId, repoName, packageName).data ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
-                com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
-                packageName
-            )
-
+            val nodeDetail = packageName?.let { nodeResource.detail(projectId, repoName, it).data } ?: throw packageName?.let {
+                com.tencent.bkrepo.common.api.exception.ErrorCodeException(
+                        com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
+                        it
+                )
+            }!!
             val response = HttpContextHolder.getResponse()
             response.contentType = "text/xml; charset=UTF-8"
             if (nodeDetail.nodeInfo.folder) {
-                var nodeList = nodeResource.list(artifactInfo.projectId, artifactInfo.repoName, packageName, includeFolder = true, deep = true).data ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
-                    com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
-                    packageName
-                )
-
-                xml = XmlUtil.getXmlMethodResponse(packageName, nodeList)
+                var nodeList = nodeResource.list(artifactInfo.projectId, artifactInfo.repoName, packageName, includeFolder = true, deep = true).data ?: throw packageName?.let {
+                    com.tencent.bkrepo.common.api.exception.ErrorCodeException(
+                            com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
+                            it
+                    )
+                }!!
+                xml = XmlUtil.getXmlMethodResponse02(packageName, nodeList)
                 response.writer.print(xml)
             }
         }
     }
 
-    override fun list(context: ArtifactListContext){
+    override fun list(context: ArtifactListContext) {
         val artifactInfo = context.artifactInfo
         with(artifactInfo) {
-            val nodeDetail = nodeResource.detail(projectId, repoName, artifactUri).data ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
-                    com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
-                    artifactUri
-            )
+            val nodeDetail = nodeResource.detail(projectId, repoName, artifactUri).data
+                    ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
+                            com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
+                            artifactUri
+                    )
 
             val response = HttpContextHolder.getResponse()
             response.contentType = "text/html; charset=UTF-8"
-            if (nodeDetail.nodeInfo.folder) {
-                val nodeList = nodeResource.list(artifactInfo.projectId, artifactInfo.repoName, artifactUri, includeFolder = false, deep = true).data ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
-                        com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
-                        artifactUri
-                )
-                val pageContent = buildPypiPageContent(nodeList, nodeDetail.nodeInfo)
-                response.writer.print(pageContent)
+            if (artifactUri == "/") {
+                if (nodeDetail.nodeInfo.folder) {
+                    val nodeList = nodeResource.list(artifactInfo.projectId, artifactInfo.repoName, artifactInfo.artifactUri, includeFolder = true, deep = true).data
+                            ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
+                                    com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
+                                    artifactInfo.artifactUri
+                            )
+                    response.writer.print(buildPypiSimplePageContent(nodeList.filter { it.folder }.filter { it.path == "/" }))
+                }
+            } else {
+                if (nodeDetail.nodeInfo.folder) {
+                    val nodeList = nodeResource.list(artifactInfo.projectId, artifactInfo.repoName, artifactUri, includeFolder = false, deep = true).data
+                            ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
+                                    com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
+                                    artifactUri
+                            )
+                    response.writer.print(buildPypiPageContent(nodeList))
+                }
             }
         }
     }
 
-    fun simpleList(context: ArtifactListContext){
-        val artifactInfo = context.artifactInfo
-        with(artifactInfo) {
-            val nodeDetail = nodeResource.detail(projectId, repoName, artifactUri).data ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
-                com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
-                artifactUri
-            )
-
-            val response = HttpContextHolder.getResponse()
-            response.contentType = "text/html; charset=UTF-8"
-            if (nodeDetail.nodeInfo.folder) {
-                val nodeList = nodeResource.list(artifactInfo.projectId, artifactInfo.repoName, artifactUri, includeFolder = true, deep = true).data ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
-                    com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
-                    artifactUri
-                )
-                val pageContent = buildPypiSimplePageContent(nodeList.filter { it.folder }.filter { it.path=="/" }, nodeDetail.nodeInfo)
-                response.writer.print(pageContent)
-            }
-        }
-    }
-
-
-
-    private fun buildPypiPageContent(nodeList: List<NodeInfo>, currentNode: NodeInfo): String {
+    private fun buildPypiPageContent(nodeList: List<NodeInfo>): String {
         val listContent = buildPypiListContent(nodeList)
         return """
             <html>
@@ -196,12 +203,12 @@ class PypiLocalRepository : LocalRepository() {
         }
         for (node in nodeList) {
             val md5 = node.md5
-            builder.append("<a data-requires-python=\">=${node.metadata?.get("requires_python")}\" href=\"packages${node.fullPath}#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>")
+            builder.append("<a data-requires-python=\">=${node.metadata?.get("requires_python")}\" href=\"../../packages${node.fullPath}#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>")
         }
         return builder.toString()
     }
 
-    private fun buildPypiSimplePageContent(nodeList: List<NodeInfo>, currentNode: NodeInfo): String {
+    private fun buildPypiSimplePageContent(nodeList: List<NodeInfo>): String {
         val listContent = buildPypiSimpleListContent(nodeList)
         return """
             <html>
@@ -223,6 +230,4 @@ class PypiLocalRepository : LocalRepository() {
         }
         return builder.toString()
     }
-
-
 }

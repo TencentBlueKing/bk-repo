@@ -2,5 +2,4 @@ dependencies {
     api project(":common:common-artifact:artifact-service")
     api project(":pypi:api-pypi")
     implementation "com.alibaba:fastjson:1.2.62"
-    implementation "org.apache.commons:commons-lang3"
 }
