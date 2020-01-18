@@ -9,12 +9,12 @@ import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
-import java.io.File
-import java.nio.charset.Charset
-import java.util.UUID
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import java.io.File
+import java.nio.charset.Charset
+import java.util.UUID
 
 /**
  * 存储服务抽象实现
@@ -77,7 +77,7 @@ abstract class AbstractStorageService : StorageService {
             return doLoad(path, digest, credentials)
         } catch (exception: Exception) {
             logger.error("Failed to load file [$digest] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageException(StorageMessageCode.LOAD_ERROR, exception.message.toString())
         }
     }
 
@@ -90,7 +90,7 @@ abstract class AbstractStorageService : StorageService {
             logger.info("Success to delete file [$digest] on [$credentials].")
         } catch (exception: Exception) {
             logger.error("Failed to delete file [$digest] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageException(StorageMessageCode.DELETE_ERROR, exception.message.toString())
         }
     }
 
@@ -102,7 +102,7 @@ abstract class AbstractStorageService : StorageService {
             return doExist(path, digest, credentials)
         } catch (exception: Exception) {
             logger.error("Failed to check file [$digest] exist on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageException(StorageMessageCode.QUERY_ERROR, exception.message.toString())
         }
     }
 
