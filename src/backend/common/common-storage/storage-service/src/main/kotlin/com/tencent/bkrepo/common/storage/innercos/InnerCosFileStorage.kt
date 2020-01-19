@@ -26,8 +26,8 @@ import java.util.concurrent.TimeUnit
  */
 open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerCosClient>() {
 
-    private val executor = ThreadPoolExecutor(100, 200, 5L, TimeUnit.SECONDS,
-        LinkedBlockingQueue(1024), ThreadFactoryBuilder().setNameFormat("inner-cos-storage-uploader-pool-%d").build(),
+    private val executor = ThreadPoolExecutor(100, 512, 5L, TimeUnit.SECONDS,
+        LinkedBlockingQueue(4096), ThreadFactoryBuilder().setNameFormat("inner-cos-storage-uploader-pool-%d").build(),
         ThreadPoolExecutor.AbortPolicy())
 
     override fun store(path: String, filename: String, file: File, client: InnerCosClient) {
