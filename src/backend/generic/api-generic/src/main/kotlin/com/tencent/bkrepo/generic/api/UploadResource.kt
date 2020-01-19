@@ -13,6 +13,7 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -61,4 +62,11 @@ interface UploadResource {
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo
     ): Response<List<BlockInfo>>
+
+    @ApiOperation("手动补偿文件落地")
+    @GetMapping("/retry/{sha256}")
+    fun retry(
+        @RequestAttribute userId: String,
+        @PathVariable sha256: String
+    ): Response<Void>
 }
