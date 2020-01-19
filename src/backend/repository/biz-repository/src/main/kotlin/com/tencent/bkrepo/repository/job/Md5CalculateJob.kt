@@ -57,7 +57,7 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
                 JsonUtils.objectMapper.readValue(property, StorageCredentials::class.java)
             }
 
-            var page = 0
+            val page = 0
             val query = Query.query(Criteria.where(TNode::projectId.name).`is`(repo.projectId)
                 .and(TNode::repoName.name).`is`(repo.name)
                 .and(TNode::folder.name).`is`(false)
@@ -92,7 +92,6 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
                         totalCount += 1
                     }
                 }
-                page += 1
                 query.with(PageRequest.of(page, 1000))
                 nodeList = nodeDao.find(query)
             }
