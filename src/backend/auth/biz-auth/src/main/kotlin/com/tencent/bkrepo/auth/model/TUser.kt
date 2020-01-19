@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document
  */
 @Document("user")
 @CompoundIndexes(
-    CompoundIndex(name = "userId_idx", def = "{'userId': 1}", background = true),
+    CompoundIndex(name = "userId_idx", def = "{'userId': 1}", unique = true, background = true),
     CompoundIndex(name = "tokens_id_idx", def = "{'tokens.id': 1}", background = true),
     CompoundIndex(name = "roles_idx", def = "{'roles': 1}", background = true)
 )
