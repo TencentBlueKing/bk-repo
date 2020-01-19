@@ -10,14 +10,15 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.util.HttpResponseUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.util.NodeUtils
-import java.io.File
 import org.slf4j.LoggerFactory
+import java.io.File
 
 /**
  * 构件仓库抽象类
@@ -63,7 +64,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
         }
     }
 
-    override fun search(context: ArtifactSearchContext) {
+    override fun search(context: ArtifactSearchContext): File? {
         throw UnsupportedMethodException()
     }
 
@@ -71,7 +72,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
         throw UnsupportedMethodException()
     }
 
-    override fun remove(context: ArtifactListContext) {
+    override fun remove(context: ArtifactRemoveContext) {
         throw UnsupportedMethodException()
     }
 
@@ -124,7 +125,8 @@ interface AbstractArtifactRepository : ArtifactRepository {
      * 下载验证
      */
     @Throws(ArtifactValidateException::class)
-    fun onDownloadValidate(context: ArtifactDownloadContext) {}
+    fun onDownloadValidate(context: ArtifactDownloadContext) {
+    }
 
     /**
      * 下载前回调

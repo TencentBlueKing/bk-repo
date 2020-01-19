@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.storage.locator
+package com.tencent.bkrepo.common.storage.core.locator
 
 /**
  * 使用hash落地文件

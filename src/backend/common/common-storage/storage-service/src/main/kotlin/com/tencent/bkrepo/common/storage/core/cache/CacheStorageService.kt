@@ -49,11 +49,16 @@ class CacheStorageService : AbstractStorageService() {
         return fileStorage.exist(path, filename, credentials)
     }
 
+    override fun doManualRetry(path: String, filename: String, credentials: StorageCredentials) {
+        val cachedFile = cacheClient.load(path, filename) ?: throw RuntimeException("File [$filename] is missing.")
+        fileStorage.store(path, filename, cachedFile, credentials)
+    }
+
     override fun getTempPath(): String? {
         return Paths.get(storageProperties.cache.path, "temp").toString()
     }
 
     override fun cleanUp(): CleanupResult {
-        return cacheClient.cleanUp(storageProperties.cache.expireDays) + super.cleanUp()
+        return cacheClient.cleanUp(storageProperties.cache.expireDays)
     }
 }

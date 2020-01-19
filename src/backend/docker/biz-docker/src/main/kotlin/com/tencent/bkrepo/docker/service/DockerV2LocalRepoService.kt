@@ -31,7 +31,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.net.URI
 import java.util.Objects
-import java.util.function.Predicate
 import java.util.regex.Pattern
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.UriBuilder
@@ -61,14 +60,6 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         private val logger = LoggerFactory.getLogger(DockerV2LocalRepoService::class.java)
         private val ERR_MANIFEST_UPLOAD = "Error uploading manifest: "
         private val OLD_USER_AGENT_PATTERN = Pattern.compile("^(?:docker\\/1\\.(?:3|4|5|6|7(?!\\.[0-9]-dev))|Go ).*$")
-    }
-
-    var nonTempUploads: Predicate<Artifact> = object : Predicate<Artifact> {
-        private val TMP_UPLOADS_PATH_ELEMENT = "/_uploads/"
-
-        override fun test(artifact: Artifact): Boolean {
-            return !artifact.getArtifactPath().contains("/_uploads/")
-        }
     }
 
     override fun ping(): ResponseEntity<Any> {
@@ -115,9 +106,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         }
     }
 
-    override fun catalog(projectId: String, repoName: String, maxEntries: Int, lastEntry: String): ResponseEntity<Any> {
-        RepoUtil.loadRepo(repo, userId, projectId, repoName)
-        val manifests = this.repo.findArtifacts(projectId, repoName, "manifest.json")
+    override fun catalog(projectId: String, name: String, maxEntries: Int, lastEntry: String): ResponseEntity<Any> {
+        RepoUtil.loadRepo(repo, userId, projectId, name)
+        val manifests = this.repo.findArtifacts(projectId, name, "manifest.json")
         val elementsHolder = DockerPaginationElementsHolder()
 
         manifests.forEach {
@@ -165,11 +156,11 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
     ): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         logger.info("Fetching docker manifest for repo '{}' and digest '{}' in repo '{}'", dockerRepo, digest, repoName)
-        var matched = this.findMatchingArtifacts(projectId, repoName, dockerRepo, digest, "manifest.json")
+        var matched = this.findMatchingArtifacts(projectId, repoName, dockerRepo, "manifest.json")
         if (matched == null) {
             val acceptable = this.getAcceptableManifestTypes()
             if (acceptable.contains(ManifestType.Schema2List)) {
-                matched = this.findMatchingArtifacts(projectId, repoName, dockerRepo, digest, "list.manifest.json")
+                matched = this.findMatchingArtifacts(projectId, repoName, dockerRepo, "list.manifest.json")
             }
         }
 
@@ -177,8 +168,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             projectId,
             repoName,
             dockerRepo,
-            digest,
-            matched
+            digest
         )
     }
 
@@ -186,7 +176,6 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         projectId: String,
         repoName: String,
         dockerRepo: String,
-        digest: DockerDigest,
         filename: String
     ): Artifact? {
         var nodeDetail = this.repo.findArtifact(projectId, repoName, dockerRepo, filename)
@@ -219,17 +208,14 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             if (manifest == null) {
                 return DockerV2Errors.manifestUnknown(manifestPath)
             } else {
-                val artifact = Artifact(projectId, repoName, manifestPath).sha256(manifest.nodeInfo.sha256!!)
                 return this.buildManifestResponse(
                     projectId,
                     repoName,
                     manifestPath,
-                    DockerDigest("sh256:${manifest.nodeInfo.sha256}"),
-                    artifact
+                    DockerDigest("sh256:${manifest.nodeInfo.sha256}")
                 )
             }
         }
-        return DockerV2Errors.manifestUnknown(manifestPath)
     }
 
     private fun chooseManifestType(projectId: String, repoName: String, dockerRepo: String, tag: String): ManifestType {
@@ -254,8 +240,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         projectId: String,
         repoName: String,
         dockerRepo: String,
-        digest: DockerDigest,
-        manifest: Artifact
+        digest: DockerDigest
     ): ResponseEntity<Any> {
         var context = DownloadContext(projectId, repoName, dockerRepo).projectId(projectId).repoName(repoName)
             .sha256(digest.getDigestHex())
@@ -268,7 +253,6 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             .headers(httpHeaders)
             .contentLength(file.length())
             .body(inputStreamResource)
-        return ResponseEntity(inputStreamResource, httpHeaders, HttpStatus.OK)
     }
 
     override fun deleteManifest(
@@ -279,7 +263,6 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
     ): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         try {
-            val digest = DockerDigest(reference)
             return this.deleteManifestByDigest(projectId, repoName, dockerRepo, DockerDigest(reference))
         } catch (var4: Exception) {
             logger.trace("Unable to parse digest, deleting manifest by tag '{}'", reference)
@@ -294,18 +277,18 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         digest: DockerDigest
     ): ResponseEntity<Any> {
         logger.info("Deleting docker manifest for repo '{}' and digest '{}' in repo '{}'", dockerRepo, digest, repoName)
-//        val manifests = this.repo.findArtifacts(dockerRepo, "manifest.json")
-//        val manifestIter = manifests.iterator()
-//
-//        while (manifestIter.hasNext()) {
+        val manifests = this.repo.findArtifacts(projectId, repoName, "manifest.json")
+        val manifestIter = manifests.iterator()
+
+        while (manifestIter.hasNext()) {
 //            val manifest = manifestIter.next()
-//            if (this.repo.canWrite(manifest.path)) {
+//            if (this.repo.canWrite(manifest.)) {
 //                val manifestDigest = this.repo.getAttribute(projectId ,repoName ,manifest.path, digest.getDigestAlg())
 //                if (StringUtils.isNotBlank(manifestDigest) && StringUtils.equals(manifestDigest, digest.getDigestHex()) && this.repo.delete(manifest.path)) {
 //                    return ResponseEntity.status(202).header("Docker-Distribution-Api-Version", "registry/2.0").build()
 //                }
 //            }
-//        }
+        }
 
         return DockerV2Errors.manifestUnknown(digest.toString())
     }
@@ -732,14 +715,14 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
     }
 
     private fun getProtocol(httpHeaders: HttpHeaders): String {
-        val protocolHeaders = httpHeaders.get("X-Forwarded-Proto")
         return "http"
-        if (protocolHeaders != null && !protocolHeaders.isEmpty()) {
-            return protocolHeaders.iterator().next() as String
-        } else {
-            logger.debug("X-Forwarded-Proto does not exist, returning https.")
-            return "https"
-        }
+//        val protocolHeaders = httpHeaders.get("X-Forwarded-Proto")
+//        if (protocolHeaders != null && !protocolHeaders.isEmpty()) {
+//            return protocolHeaders.iterator().next() as String
+//        } else {
+//            logger.debug("X-Forwarded-Proto does not exist, returning https.")
+//            return "https"
+//        }
     }
 
     override fun uploadBlob(
@@ -757,7 +740,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             dockerRepo,
             digest,
             artifactFile.getInputStream()
-        ) else this.finishPatchUpload(projectId, repoName, dockerRepo, digest, uuid, artifactFile)
+        ) else this.finishPatchUpload(projectId, repoName, dockerRepo, digest, uuid)
     }
 
     private fun putHasStream(): Boolean {
@@ -812,11 +795,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         repoName: String,
         dockerRepo: String,
         digest: DockerDigest,
-        uuid: String,
-        artifactFile: ArtifactFile
+        uuid: String
     ): ResponseEntity<Any> {
         logger.info("finish upload {}", digest)
-        val uuidPath = "$dockerRepo/_uploads/$uuid"
         val fileName = digest.filename()
         val blobPath = "/$dockerRepo/_uploads/$fileName"
         var context = UploadContext(projectId, repoName, blobPath)
@@ -837,7 +818,6 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
     ): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         logger.info("patch upload {}", uuid)
-        val path = "$dockerRepo/_uploads/"
         val blobPath = "$dockerRepo/_uploads/$uuid"
         if (!this.repo.canWrite(blobPath)) {
             return this.consumeStreamAndReturnError(artifactFile.getInputStream())
@@ -847,13 +827,6 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             return ResponseEntity.status(202).header("Content-Length", "0")
                 .header("Docker-Distribution-Api-Version", "registry/2.0").header("Docker-Upload-Uuid", uuid)
                 .header("Location", location.toString()).header("Range", "0-" + (response - 1L)).build()
-            logger.warn(
-                "Error uploading blob '{}' length '{}' and message: '{}'",
-                blobPath,
-                response,
-                response.toString()
-            )
-            return DockerV2Errors.blobUploadInvalid(response.toString())
         }
     }
 
@@ -862,10 +835,5 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             IOUtils.copy(stream, it)
         }
         return DockerV2Errors.unauthorizedUpload()
-    }
-
-    private fun logException(e: Exception) {
-        logger.error("Error uploading manifest: '{}'", e.message)
-        logger.debug("Error uploading manifest: ", e)
     }
 }

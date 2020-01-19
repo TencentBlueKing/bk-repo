@@ -1,19 +1,52 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 import os
 import argparse
 import time
 import requests
 import logging
 import configparser
+import base64
+import sys
 from config import *
 
+reload(sys)
+sys.setdefaultencoding("utf8")
 parser = configparser.ConfigParser()
+
+class BkrepoAuth(requests.auth.AuthBase):
+    def __init__(self, bk_auth, uid="admin"):
+        self.access_key, self.secret_key = bk_auth
+        self.uid = uid
+
+    def __call__(self, r):
+        content = ":".join([self.access_key, self.secret_key])
+        r.headers['Authorization'] = "Platform " + self.base64encode(content)
+        r.headers['X-BKREPO-UID'] = self.uid
+        return r
+    
+    def base64encode(self, bytes_or_str):
+        if sys.version_info[0] >= 3 and isinstance(bytes_or_str, str):
+            input_bytes = bytes_or_str.encode('utf8')
+        else:
+            input_bytes = bytes_or_str
+
+        output_bytes = base64.b64encode(input_bytes)
+        if sys.version_info[0] >= 3:
+            return output_bytes.decode('ascii')
+        else:
+            return output_bytes
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Migration data from Jfrog to BKRepo.")
-    parser.add_argument("-o", "--overwrite", action='store_true', dest="overwrite")
     parser.add_argument("-p", "--project", required=True, dest="project")
     parser.add_argument("-e", "--environment", default="prod", choices=["dev", "prod"], dest="env")
-    parser.add_argument("-f", "--file", dest="file")
+    parser.add_argument("-m", "--migration", action='store_true', dest="migration", help='migration data')
+    parser.add_argument("-o", "--overwrite", action='store_true', dest="overwrite")
+    parser.add_argument("-f", "--file", dest="file", help='migration specific node')
+    parser.add_argument("-i", "--init", action='store_true', default=True, dest="init", help='init bkrepo project and repos')
+    parser.add_argument("-u", "--user", dest="user", default="admin", help='bkrepo user')
+    
     return parser.parse_args()
 
 
@@ -21,7 +54,7 @@ def remove_prefix(text, prefix):
     return text[len(prefix):] if text.startswith(prefix) else text
 
 
-def init(args):
+def run(args):
     log_filename = "logs/{}.log".format(args.project)
     logging.basicConfig(
         level=logging.INFO,
@@ -30,8 +63,44 @@ def init(args):
         format="%(asctime)s - %(levelname)s: %(message)s"
     )
     config(args)
+    if args.init:
+        init_project()
+        init_repos()
+    
     if args.file:
         parser.read(args.file)
+    
+    if args.migration:
+        migration()
+
+def init_project():
+    url = bkrepo_project_create_url()
+    auth = bkrepo_auth()
+    data = bkrepo_project_create_data()
+    uid = args.user
+    try:
+        response = requests.post(url, json=data, auth=BkrepoAuth(auth, uid))
+        assert response.status_code == 200 or response.json() != 251002
+        logging.info("Create bkrepo project[%s] success.", args.project)
+    except Exception:
+        logging.exception("Create bkrepo project[%s] failed.", args.project)
+        exit(-1)
+
+
+def init_repos():
+    url = bkrepo_repo_create_url()
+    auth = bkrepo_auth()
+    uid = args.user
+    try:
+        for repo in ["pipeline", "custom", "report"]:
+            data = bkrepo_repo_create_data(repo)
+            response = requests.post(url, json=data, auth=BkrepoAuth(auth, uid))
+            assert response.status_code == 200 or response.json() != 251002
+            logging.info("Create bkrepo repository[%s] success.", repo)
+    except Exception:
+        logging.exception("Create bkrepo repository[%s] failed.", repo)
+        exit(-1)
+
 
 def list_jfrog_node():
     result = []
@@ -77,8 +146,9 @@ def list_jfrog_node():
 
 def check_exist(node):
     url = bkrepo_query_url(node["normalized_full_path"])
-    auth = (node["created_by"], node["created_by"])
-    response = requests.get(url, auth=auth)
+    auth = bkrepo_auth()
+    uid = node["created_by"]
+    response = requests.get(url, auth=BkrepoAuth(auth, uid))
     try:
         assert response.status_code == 200
         result = response.json()
@@ -96,27 +166,30 @@ def fetch_jfrog_file_response(node):
     assert response.status_code == 200
     return response
 
+
 def fetch_jfrog_properties(node):
     url = jfrog_property_url(node["path"], node["name"])
     auth = jfrog_auth()
     response = requests.get(url, auth=auth)
-    assert response.status_code == 200
+    assert response.status_code == 200 or response.status_code == 404
     properties = dict()
-    for key, value in response.json()['properties'].items():
-        if isinstance(value, list) and len(value) > 0:
-            properties[key] = value[0]
+    if response.status_code != 404:       
+        for key, value in response.json()['properties'].items():
+            if isinstance(value, list) and len(value) > 0:
+                properties[key] = value[0]
     return properties
 
 
 def upload_bkrepo_file(node, jfrog_response, properties):
     url = bkrepo_upload_url(node["normalized_full_path"])
-    auth = (node["created_by"], node["created_by"])
+    auth = bkrepo_auth()
+    uid = node["created_by"]
     headers = dict()
     for key, value in properties.items():
         headers["X-BKREPO-META-" + key] = value
     headers["X-BKREPO-SIZE"] = str(node["size"])
     headers["X-BKREPO-OVERWRITE"] = "true"
-    response = requests.put(url, auth=auth, headers=headers, data=jfrog_response.iter_content(1024))
+    response = requests.put(url, auth=BkrepoAuth(auth, uid), headers=headers, data=jfrog_response.iter_content(5120))
     assert response.status_code == 200
 
 
@@ -158,5 +231,4 @@ def migration():
 
 if __name__ == "__main__":
     args = parse_args()
-    init(args)
-    migration()
+    run(args)

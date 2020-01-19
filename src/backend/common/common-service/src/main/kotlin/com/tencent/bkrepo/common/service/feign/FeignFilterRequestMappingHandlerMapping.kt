@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.service.config
+package com.tencent.bkrepo.common.service.feign
 
 import org.springframework.core.annotation.AnnotatedElementUtils
 import org.springframework.stereotype.Controller

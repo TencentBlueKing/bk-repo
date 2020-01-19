@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import com.tencent.bkrepo.common.storage.locator.FileLocator
 import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
@@ -41,7 +41,7 @@ abstract class AbstractStorageService : StorageService {
 
         try {
             if (doExist(path, digest, credentials)) {
-                logger.debug("File [$digest] exists on [$credentials], skip store.")
+                logger.info("File [$digest] exists on [$credentials], skip store.")
                 return
             }
             doStore(path, digest, artifactFile, credentials)
@@ -58,7 +58,7 @@ abstract class AbstractStorageService : StorageService {
 
         try {
             if (doExist(path, digest, credentials)) {
-                logger.debug("File [$digest] exists on [$credentials], skip store.")
+                logger.info("File [$digest] exists on [$credentials], skip store.")
                 return
             }
             doStore(path, digest, file, credentials)
@@ -77,7 +77,7 @@ abstract class AbstractStorageService : StorageService {
             return doLoad(path, digest, credentials)
         } catch (exception: Exception) {
             logger.error("Failed to load file [$digest] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageException(StorageMessageCode.LOAD_ERROR, exception.message.toString())
         }
     }
 
@@ -90,7 +90,7 @@ abstract class AbstractStorageService : StorageService {
             logger.info("Success to delete file [$digest] on [$credentials].")
         } catch (exception: Exception) {
             logger.error("Failed to delete file [$digest] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageException(StorageMessageCode.DELETE_ERROR, exception.message.toString())
         }
     }
 
@@ -102,6 +102,19 @@ abstract class AbstractStorageService : StorageService {
             return doExist(path, digest, credentials)
         } catch (exception: Exception) {
             logger.error("Failed to check file [$digest] exist on [$credentials].", exception)
+            throw StorageException(StorageMessageCode.QUERY_ERROR, exception.message.toString())
+        }
+    }
+
+    override fun manualRetry(digest: String, storageCredentials: StorageCredentials?) {
+        val path = fileLocator.locate(digest)
+        val credentials = getCredentialsOrDefault(storageCredentials)
+
+        try {
+            doManualRetry(path, digest, credentials)
+            logger.info("Success to retry manually store file [$digest] on [$credentials].")
+        } catch (exception: Exception) {
+            logger.error("Failed to retry manually store file [$digest] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -250,6 +263,7 @@ abstract class AbstractStorageService : StorageService {
     protected abstract fun doLoad(path: String, filename: String, credentials: StorageCredentials): File?
     protected abstract fun doDelete(path: String, filename: String, credentials: StorageCredentials)
     protected abstract fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean
+    protected abstract fun doManualRetry(path: String, filename: String, credentials: StorageCredentials)
     open fun getTempPath(): String? = null
 
     companion object {

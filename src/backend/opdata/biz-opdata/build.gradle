@@ -1,5 +1,6 @@
 dependencies {
     api project(":opdata:api-opdata")
+    api project(":common:common-job")
     api project(":common:common-artifact:artifact-service")
     api project(":common:common-mongo")
 }

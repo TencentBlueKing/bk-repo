@@ -8,18 +8,18 @@ import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.repository.RepoRepository
-import kotlin.concurrent.thread
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.ApplicationListener
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
+import kotlin.concurrent.thread
 
 /**
  * 计算文件md5
@@ -39,8 +39,7 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
     @Autowired
     private lateinit var repoRepository: RepoRepository
 
-    @Async
-    @SchedulerLock(name = "Md5CalculateJob", lockAtMostFor = "P1D")
+    @SchedulerLock(name = "Md5CalculateJob", lockAtLeastFor = "PT10M", lockAtMostFor = "P1D")
     override fun onApplicationEvent(event: ApplicationReadyEvent) {
         thread { calculate() }
     }
@@ -54,36 +53,47 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
         val startTimeMillis = System.currentTimeMillis()
 
         repoRepository.findAll().forEach { repo ->
+            val storageCredentials = repo.storageCredentials?.let { property ->
+                JsonUtils.objectMapper.readValue(property, StorageCredentials::class.java)
+            }
+
+            val page = 0
             val query = Query.query(Criteria.where(TNode::projectId.name).`is`(repo.projectId)
                 .and(TNode::repoName.name).`is`(repo.name)
                 .and(TNode::folder.name).`is`(false)
                 .and(TNode::md5.name).`is`(null)
-            )
-            val storageCredentials = repo.storageCredentials?.let { property ->
-                JsonUtils.objectMapper.readValue(property, StorageCredentials::class.java)
-            }
-            nodeDao.find(query).forEach { node ->
-                try {
-                    if (storageService.exist(node.sha256!!, storageCredentials)) {
-                        val file = storageService.load(node.sha256!!, storageCredentials)!!
-                        val md5 = FileDigestUtils.fileMd5(file.inputStream())
-                        val nodeQuery = Query.query(Criteria.where(TNode::projectId.name).`is`(repo.projectId)
-                            .and(TNode::repoName.name).`is`(repo.name)
+            ).with(PageRequest.of(page, 1000))
+            var nodeList = nodeDao.find(query)
+            while (nodeList.isNotEmpty()) {
+                logger.info("Retrieved [${nodeList.size}] records to calculate md5.")
+                nodeList.forEach { node ->
+                    try {
+                        val nodeQuery = Query.query(Criteria.where(TNode::projectId.name).`is`(node.projectId)
+                            .and(TNode::repoName.name).`is`(node.repoName)
                             .and(TNode::fullPath.name).`is`(node.fullPath)
                             .and(TNode::deleted.name).`is`(node.deleted)
                         )
-                        val nodeUpdate = Update.update("md5", md5)
-                        nodeDao.updateFirst(nodeQuery, nodeUpdate)
-                        cleanupCount += 1
-                    } else {
-                        logger.warn("File[${node.sha256}] is missing on [$storageCredentials], skip calculating.")
-                        fileMissingCount += 1
+                        if (!node.sha256.isNullOrBlank() && storageService.exist(node.sha256!!, storageCredentials)) {
+                            val file = storageService.load(node.sha256!!, storageCredentials)!!
+                            val md5 = FileDigestUtils.fileMd5(file.inputStream())
+                            val nodeUpdate = Update.update("md5", md5)
+                            nodeDao.updateFirst(nodeQuery, nodeUpdate)
+                            cleanupCount += 1
+                        } else {
+                            logger.error("File[$node] is missing on [$storageCredentials], skip calculating.")
+                            val nodeUpdate = Update.update("md5", "")
+                            nodeDao.updateFirst(nodeQuery, nodeUpdate)
+                            fileMissingCount += 1
+                        }
+                    } catch (exception: Exception) {
+                        logger.error("Failed to calculate md5 of file[${node.sha256}] on [$storageCredentials].", exception)
+                        failedCount += 1
+                    } finally {
+                        totalCount += 1
                     }
-                } catch (exception: Exception) {
-                    logger.error("Failed to calculate md5 of file[${node.sha256}] on [$storageCredentials].", exception)
-                    failedCount += 1
                 }
-                totalCount += 1
+                query.with(PageRequest.of(page, 1000))
+                nodeList = nodeDao.find(query)
             }
         }
 

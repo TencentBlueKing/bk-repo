@@ -1,14 +1,13 @@
 package com.tencent.bkrepo.opdata.service
 
-import com.tencent.bkrepo.opdata.model.NodeModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
-import com.tencent.bkrepo.opdata.model.RepoModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.NodeResult
 import com.tencent.bkrepo.opdata.pojo.QueryRequest
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -16,8 +15,7 @@ import org.springframework.stereotype.Service
 @Service
 class GrafanaService @Autowired constructor(
     private val projectModel: ProjectModel,
-    private val repoModel: RepoModel,
-    private val nodeModel: NodeModel
+    private val projectMetricsRepository: ProjectMetricsRepository
 ) {
     fun search(): List<String> {
         var data = mutableListOf<String>()
@@ -46,6 +44,12 @@ class GrafanaService @Autowired constructor(
                 Metrics.PROJECTNODESIZE -> {
                     dealProjectNodeSize(result)
                 }
+                Metrics.CAPSIZE -> {
+                    dealCapSize(it, result)
+                }
+                Metrics.NODENUM -> {
+                    dealNodeNum(it, result)
+                }
             }
         }
         return result
@@ -59,15 +63,38 @@ class GrafanaService @Autowired constructor(
         result.add(data)
     }
 
+    private fun dealCapSize(target: Target, result: MutableList<Any>) {
+        var size = 0L
+        val projects = projectMetricsRepository.findAll()
+        projects.forEach {
+            size += it.capSize
+        }
+        val column = Columns("CapSize", "number")
+        val row = listOf(size)
+        val data = QueryResult(listOf(column), listOf(row), target.type)
+        result.add(data)
+    }
+
+    private fun dealNodeNum(target: Target, result: MutableList<Any>) {
+        var num = 0L
+        val projects = projectMetricsRepository.findAll()
+        projects.forEach {
+            num += it.nodeNum
+        }
+        val column = Columns("NodeNum", "number")
+        val row = listOf(num)
+        val data = QueryResult(listOf(column), listOf(row), target.type)
+        result.add(data)
+    }
+
     private fun dealProjectList(target: Target, result: MutableList<Any>) {
         var rows = mutableListOf<List<Any>>()
         var columns = mutableListOf<Columns>()
         val info = projectModel.getProjectList()
         columns.add(Columns(ProjectInfo::name.name, "string"))
         columns.add(Columns(ProjectInfo::displayName.name, "string"))
-        columns.add(Columns(ProjectInfo::description.name, "string"))
         info.forEach {
-            val row = listOf(it.name, it.displayName, it.description)
+            val row = listOf(it.name, it.displayName)
             rows.add(row)
         }
         val data = QueryResult(columns, rows, target.type)
@@ -75,36 +102,41 @@ class GrafanaService @Autowired constructor(
     }
 
     private fun dealProjectNodeSize(result: MutableList<Any>): List<Any> {
-        val projects = projectModel.getProjectList()
+        val projects = projectMetricsRepository.findAll()
+        var tmpMap = HashMap<String, Long>()
         projects.forEach {
-            var totalSize = 0L
-            val projectId = it.name
-            val repos = repoModel.getRepoListByProjectId(it.name)
-            repos.forEach {
-                val size = nodeModel.getNodeSize(projectId, it.name)
-                totalSize += size
+            val projectId = it.projectId
+            if (it.capSize != 0L) {
+                tmpMap.put(projectId, it.capSize)
             }
-            val displaySize = totalSize / (1024 * 1024 * 1024)
-            val data = listOf<Long>(displaySize, System.currentTimeMillis())
+        }
+        tmpMap.toList().sortedByDescending { it.second }.forEach {
+            val projectId = it.first
+            val data = listOf<Long>(it.second, System.currentTimeMillis())
             val element = listOf<List<Long>>(data)
-            result.add(NodeResult(projectId, element))
+            if (it.second != 0L) {
+                result.add(NodeResult(projectId, element))
+            }
         }
         return result
     }
 
     private fun dealProjectNodeNum(result: MutableList<Any>): List<Any> {
-        val projects = projectModel.getProjectList()
+        val projects = projectMetricsRepository.findAll()
+        var tmpMap = HashMap<String, Long>()
         projects.forEach {
-            var totalSize = 0L
-            val projectId = it.name
-            val repos = repoModel.getRepoListByProjectId(it.name)
-            repos.forEach {
-                val size = nodeModel.getNodeNum(projectId, it.name)
-                totalSize += size
+            val projectId = it.projectId
+            if (it.nodeNum != 0L && projectId != "bkrepo") {
+                tmpMap.put(projectId, it.nodeNum)
             }
-            val data = listOf<Long>(totalSize, System.currentTimeMillis())
+        }
+        tmpMap.toList().sortedByDescending { it.second }.subList(0, 19).forEach {
+            val projectId = it.first
+            val data = listOf<Long>(it.second, System.currentTimeMillis())
             val element = listOf<List<Long>>(data)
-            result.add(NodeResult(projectId, element))
+            if (it.second != 0L) {
+                result.add(NodeResult(projectId, element))
+            }
         }
         return result
     }

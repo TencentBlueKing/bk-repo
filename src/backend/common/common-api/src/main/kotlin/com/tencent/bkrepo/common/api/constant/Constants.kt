@@ -11,6 +11,11 @@ const val USER_KEY = "userId"
 const val APP_KEY = "appId"
 
 /**
+ * 微服务调用请求标记key
+ */
+const val MS_REQUEST_KEY = "MSRequest"
+
+/**
  * 匿名用户
  */
 const val ANONYMOUS_USER = "anonymous"
@@ -19,6 +24,11 @@ const val ANONYMOUS_USER = "anonymous"
  * header user id key
  */
 const val AUTH_HEADER_UID: String = "X-BKREPO-UID"
+
+/**
+ * micro service header user id key
+ */
+const val MS_AUTH_HEADER_UID: String = "X-BKREPO-MS-UID"
 
 /**
  * common logger name

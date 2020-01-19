@@ -105,7 +105,9 @@ class NodeService @Autowired constructor(
     fun list(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<NodeInfo> {
         repositoryService.checkRepository(projectId, repoName)
         val query = nodeListQuery(projectId, repoName, path, includeFolder, deep)
-
+        if (nodeDao.count(query) >= THRESHOLD) {
+            throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
+        }
         return nodeDao.find(query).map { convert(it)!! }
     }
 
@@ -496,6 +498,8 @@ class NodeService @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeService::class.java)
+
+        private const val THRESHOLD: Long = 100000L
 
         private fun convert(tNode: TNode?): NodeInfo? {
             return tNode?.let {
