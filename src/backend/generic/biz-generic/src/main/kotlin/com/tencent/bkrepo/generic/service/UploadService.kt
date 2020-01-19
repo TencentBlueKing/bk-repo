@@ -112,6 +112,10 @@ class UploadService @Autowired constructor(
         return blockInfoList.mapIndexed { index, it -> BlockInfo(size = it.first, sequence = index + 1, sha256 = it.second) }
     }
 
+    fun retry(userId: String, sha256: String) {
+        storageService.manualRetry(sha256, null)
+    }
+
     private fun getStorageCredentials(): StorageCredentials? {
         val repoInfo = HttpContextHolder.getRequest().getAttribute(REPO_KEY) as RepositoryInfo
         return repoInfo.storageCredentials

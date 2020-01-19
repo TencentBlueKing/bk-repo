@@ -106,6 +106,19 @@ abstract class AbstractStorageService : StorageService {
         }
     }
 
+    override fun manualRetry(digest: String, storageCredentials: StorageCredentials?) {
+        val path = fileLocator.locate(digest)
+        val credentials = getCredentialsOrDefault(storageCredentials)
+
+        try {
+            doManualRetry(path, digest, credentials)
+            logger.info("Success to retry manually store file [$digest] on [$credentials].")
+        } catch (exception: Exception) {
+            logger.error("Failed to retry manually store file [$digest] on [$credentials].", exception)
+            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+        }
+    }
+
     override fun createAppendId(): String {
         try {
             val appendId = generateUniqueId()
@@ -250,6 +263,7 @@ abstract class AbstractStorageService : StorageService {
     protected abstract fun doLoad(path: String, filename: String, credentials: StorageCredentials): File?
     protected abstract fun doDelete(path: String, filename: String, credentials: StorageCredentials)
     protected abstract fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean
+    protected abstract fun doManualRetry(path: String, filename: String, credentials: StorageCredentials)
     open fun getTempPath(): String? = null
 
     companion object {
