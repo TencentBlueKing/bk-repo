@@ -126,7 +126,7 @@ class GrafanaService @Autowired constructor(
         var tmpMap = HashMap<String, Long>()
         projects.forEach {
             val projectId = it.projectId
-            if (it.nodeNum != 0L) {
+            if (it.nodeNum != 0L && projectId != "bkrepo") {
                 tmpMap.put(projectId, it.nodeNum)
             }
         }

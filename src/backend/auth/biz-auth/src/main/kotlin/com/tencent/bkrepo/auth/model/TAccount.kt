@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 
 @Document("account")
 @CompoundIndexes(
-    CompoundIndex(name = "appId_idx", def = "{'appId': 1}", background = true),
+    CompoundIndex(name = "appId_idx", def = "{'appId': 1}", unique = true, background = true),
     CompoundIndex(name = "credentials_accessKey_idx", def = "{'credentials.accessKey': 1}", background = true),
     CompoundIndex(name = "credentials_secretKey_idx", def = "{'credentials.secretKey': 1}", background = true)
 )
