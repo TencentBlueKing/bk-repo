@@ -18,7 +18,6 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
-import kotlin.concurrent.thread
 
 /**
  * 重新计算文件索引数量
@@ -43,7 +42,7 @@ class FileReferenceRecalculateJob : ApplicationListener<ApplicationReadyEvent> {
 
     @SchedulerLock(name = "FileReferenceRecalculateJob", lockAtLeastFor = "PT10M", lockAtMostFor = "P1D")
     override fun onApplicationEvent(event: ApplicationReadyEvent) {
-        thread { recalculate() }
+        // thread { recalculate() }
     }
 
     fun recalculate() {
