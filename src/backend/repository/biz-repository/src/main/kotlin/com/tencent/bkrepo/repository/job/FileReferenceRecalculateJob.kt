@@ -56,11 +56,12 @@ class FileReferenceRecalculateJob : ApplicationListener<ApplicationReadyEvent> {
             logger.info("Cleanup file reference collection[$sequence] success: ${deleteResult.deletedCount} records.")
         }
         repoRepository.findAll().forEach { repo ->
-            val page = PageRequest.of(0, 10000)
+            logger.info("Recalculate file reference for [${repo.projectId}/${repo.name}].")
+            var page = 0
             val query = Query.query(Criteria.where(TNode::projectId.name).`is`(repo.projectId)
                 .and(TNode::repoName.name).`is`(repo.name)
                 .and(TNode::folder.name).`is`(false)
-            ).with(page)
+            ).with(PageRequest.of(page, 5000))
             var nodeList = nodeDao.find(query)
             while (nodeList.isNotEmpty()) {
                 logger.info("Retrieved [${nodeList.size}] records to calculate file reference.")
@@ -69,7 +70,8 @@ class FileReferenceRecalculateJob : ApplicationListener<ApplicationReadyEvent> {
                         logger.warn("Failed to increment file reference of node [$node].")
                     }
                 }
-                query.with(page.next())
+                page += 1
+                query.with(PageRequest.of(page, 10000))
                 nodeList = nodeDao.find(query)
             }
         }
