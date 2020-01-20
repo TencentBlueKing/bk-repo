@@ -33,7 +33,7 @@ class ClientAuthInterceptor : HandlerInterceptorAdapter() {
                 request.setAttribute(USER_KEY, ANONYMOUS_USER)
             } else {
                 val userId = clientAuthHandler.onAuthenticate(request, authCredentials)
-                logger.info("User[$userId] authenticate success.")
+                logger.debug("User[$userId] authenticate success.")
                 clientAuthHandler.onAuthenticateSuccess(userId, request)
                 request.setAttribute(USER_KEY, userId)
             }
