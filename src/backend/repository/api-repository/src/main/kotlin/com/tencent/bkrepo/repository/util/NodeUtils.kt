@@ -25,7 +25,7 @@ object NodeUtils {
     /**
      * 文件名称最大长度
      */
-    private const val MAX_FILENAME_LENGTH = 128
+    private const val MAX_FILENAME_LENGTH = 256
 
     /**
      * 文件分隔符
