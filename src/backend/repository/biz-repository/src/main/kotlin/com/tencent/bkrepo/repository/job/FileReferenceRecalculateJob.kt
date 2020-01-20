@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
+import kotlin.concurrent.thread
 
 /**
  * 重新计算文件索引数量
@@ -42,7 +43,7 @@ class FileReferenceRecalculateJob : ApplicationListener<ApplicationReadyEvent> {
 
     @SchedulerLock(name = "FileReferenceRecalculateJob", lockAtLeastFor = "PT10M", lockAtMostFor = "P1D")
     override fun onApplicationEvent(event: ApplicationReadyEvent) {
-        recalculate()
+        thread { recalculate() }
     }
 
     fun recalculate() {
@@ -55,11 +56,11 @@ class FileReferenceRecalculateJob : ApplicationListener<ApplicationReadyEvent> {
             logger.info("Cleanup file reference collection[$sequence] success: ${deleteResult.deletedCount} records.")
         }
         repoRepository.findAll().forEach { repo ->
-            var page = 0
+            val page = PageRequest.of(0, 10000)
             val query = Query.query(Criteria.where(TNode::projectId.name).`is`(repo.projectId)
                 .and(TNode::repoName.name).`is`(repo.name)
                 .and(TNode::folder.name).`is`(false)
-            ).with(PageRequest.of(page, 5000))
+            ).with(page)
             var nodeList = nodeDao.find(query)
             while (nodeList.isNotEmpty()) {
                 logger.info("Retrieved [${nodeList.size}] records to calculate file reference.")
@@ -68,8 +69,7 @@ class FileReferenceRecalculateJob : ApplicationListener<ApplicationReadyEvent> {
                         logger.warn("Failed to increment file reference of node [$node].")
                     }
                 }
-                page += 1
-                query.with(PageRequest.of(page, 5000))
+                query.with(page.next())
                 nodeList = nodeDao.find(query)
             }
         }
