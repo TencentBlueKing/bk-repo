@@ -30,7 +30,7 @@ class NpmArtifactInfo(
         const val NPM_PACKAGE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}/-/*.tgz"
         const val NPM_PACKAGE_SCOPE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{scope}/{pkgName}/-/{scope}/*.tgz"
 
-        //search
+        // search
         const val NPM_PACKAGE_SEARCH_MAPPING_URI = "/{projectId}/{repoName}/-/v1/search"
 
         // auth user

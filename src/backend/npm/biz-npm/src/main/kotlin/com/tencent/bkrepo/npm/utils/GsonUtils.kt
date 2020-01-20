@@ -28,7 +28,7 @@ object GsonUtils {
         return gson.fromJson(gsonString, object : TypeToken<Map<String, T>>() {}.type)
     }
 
-    fun <T> gsonToList(gsonString: String): List<T>? {
+    fun <T> gsonToList(gsonString: String): List<T> {
         return gson.fromJson(gsonString, object : TypeToken<List<T>>() {}.type)
     }
 

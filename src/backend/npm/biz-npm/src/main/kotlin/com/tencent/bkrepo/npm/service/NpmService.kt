@@ -23,6 +23,7 @@ import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.APPLICATION_OCTET_STEAM
 import com.tencent.bkrepo.npm.constants.ATTACHMENTS
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
+import com.tencent.bkrepo.npm.constants.AUTHOR
 import com.tencent.bkrepo.npm.constants.CONTENT_TYPE
 import com.tencent.bkrepo.npm.constants.CREATED
 import com.tencent.bkrepo.npm.constants.DATA
@@ -33,7 +34,10 @@ import com.tencent.bkrepo.npm.constants.DISTTAGS
 import com.tencent.bkrepo.npm.constants.FILE_DASH
 import com.tencent.bkrepo.npm.constants.FILE_SUFFIX
 import com.tencent.bkrepo.npm.constants.KEYWORDS
+import com.tencent.bkrepo.npm.constants.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.npm.constants.LATEST
+import com.tencent.bkrepo.npm.constants.MAINTAINERS
+import com.tencent.bkrepo.npm.constants.METADATA
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -47,6 +51,8 @@ import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_JSON_FILE_FULL_PATH
+import com.tencent.bkrepo.npm.constants.OBJECTS
+import com.tencent.bkrepo.npm.constants.PACKAGE
 import com.tencent.bkrepo.npm.constants.REV
 import com.tencent.bkrepo.npm.constants.SHASUM
 import com.tencent.bkrepo.npm.constants.TIME
@@ -292,9 +298,15 @@ class NpmService @Autowired constructor(
         val projectId = Rule.QueryRule("projectId", artifactInfo.projectId)
         val repoName = Rule.QueryRule("repoName", artifactInfo.repoName)
         val fullPath = Rule.QueryRule("fullPath", ".tgz", OperationType.SUFFIX)
-        val metadata = Rule.QueryRule("metadata.license", searchRequest.text)
 
-        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, fullPath))
+        val nameMd = Rule.QueryRule("metadata.name", searchRequest.text, OperationType.MATCH)
+        val descMd = Rule.QueryRule("metadata.description", searchRequest.text, OperationType.MATCH)
+        val maintainerMd = Rule.QueryRule("metadata.maintainers", searchRequest.text, OperationType.MATCH)
+        val versionMd = Rule.QueryRule("metadata.version", searchRequest.text, OperationType.MATCH)
+        val keywordsMd = Rule.QueryRule("metadata.keywords", searchRequest.text, OperationType.MATCH)
+        val metadata = Rule.NestedRule(mutableListOf(nameMd, descMd, maintainerMd, versionMd, keywordsMd), Rule.NestedRule.RelationType.OR)
+
+        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, fullPath, metadata))
 
         val queryModel = QueryModel(
             page = PageLimit(searchRequest.from, searchRequest.size),
@@ -305,31 +317,38 @@ class NpmService @Autowired constructor(
 
         val result = nodeResource.query(queryModel)
         val data = result.data ?: return emptyMap()
-        //val records = data.records
         return transferRecords(data.records)
     }
 
     private fun transferRecords(records: List<Map<String, Any>>): Map<String, Any> {
-        val returnInfo = mutableMapOf<String,List<Map<String,Any>>>()
-        val listInfo = mutableListOf<Map<String,Any>>()
+        val returnInfo = mutableMapOf<String, List<Map<String, Any>>>()
+        val listInfo = mutableListOf<Map<String, Any>>()
         if (records.isNullOrEmpty()) return emptyMap()
         records.forEach {
-            val packageInfo = mutableMapOf<String,Any>()
-            val metadataInfo = mutableMapOf<String, Any>()
-            val date = it["lastModifiedDate"] as String
-            val metadata = it["metadata"] as Map<String, String>
-            metadataInfo[NAME] = metadata.getOrDefault(NAME,"")
-            metadataInfo[DESCRIPTION] = metadata.getOrDefault(DESCRIPTION,"")
-            metadataInfo["maintainers"] = ""
-            metadataInfo[VERSION] = metadata.getOrDefault(VERSION,"")
+            val packageInfo = mutableMapOf<String, Any>()
+            val metadataInfo = mutableMapOf<String, Any?>()
+            val date = it[LAST_MODIFIED_DATE] as String
+            val metadata = it[METADATA] as Map<String, String?>
+            metadataInfo[NAME] = metadata[NAME]
+            metadataInfo[DESCRIPTION] = metadata[DESCRIPTION]
+            metadataInfo[MAINTAINERS] = parseJsonArrayToList(metadata[MAINTAINERS])
+            metadataInfo[VERSION] = metadata[VERSION]
             metadataInfo[DATE] = date
-            metadataInfo[KEYWORDS] = metadata.getOrDefault(KEYWORDS,"")
-            metadataInfo["author"] = metadata.getOrDefault("author","")
-            packageInfo["package"] = metadataInfo
+            metadataInfo[KEYWORDS] = parseJsonArrayToList(metadata[KEYWORDS])
+            metadataInfo[AUTHOR] = metadata[AUTHOR]
+            packageInfo[PACKAGE] = metadataInfo
             listInfo.add(packageInfo)
         }
-        returnInfo["objects"] = listInfo
+        returnInfo[OBJECTS] = listInfo
         return returnInfo
+    }
+
+    private fun parseJsonArrayToList(jsonArray: String?): List<Map<String, Any>> {
+        return if (jsonArray != null) {
+            GsonUtils.gsonToList(jsonArray)
+        } else {
+            emptyList()
+        }
     }
 
     companion object {

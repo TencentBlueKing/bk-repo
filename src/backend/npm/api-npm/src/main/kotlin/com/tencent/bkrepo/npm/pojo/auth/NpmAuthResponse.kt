@@ -23,6 +23,6 @@ data class NpmAuthResponse<out T>(
 
         fun <T> success(id: String, data: T) = NpmAuthResponse(true, id, data)
 
-        fun fail(id: String)  = NpmAuthResponse(false, id, null)
+        fun fail(id: String) = NpmAuthResponse(false, id, null)
     }
 }
