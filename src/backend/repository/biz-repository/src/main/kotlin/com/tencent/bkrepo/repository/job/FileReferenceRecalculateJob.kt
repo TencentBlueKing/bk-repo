@@ -61,7 +61,7 @@ class FileReferenceRecalculateJob : ApplicationListener<ApplicationReadyEvent> {
             val query = Query.query(Criteria.where(TNode::projectId.name).`is`(repo.projectId)
                 .and(TNode::repoName.name).`is`(repo.name)
                 .and(TNode::folder.name).`is`(false)
-            ).with(PageRequest.of(page, 5000))
+            ).with(PageRequest.of(page, 10000))
             var nodeList = nodeDao.find(query)
             while (nodeList.isNotEmpty()) {
                 logger.info("Retrieved [${nodeList.size}] records to calculate file reference.")
