@@ -22,13 +22,6 @@ import org.springframework.stereotype.Service
 class PypiService {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    fun download(artifactInfo: PypiArtifactInfo) {
-        val context = ArtifactDownloadContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        repository.download(context)
-    }
-
-    @Permission(ResourceType.REPO, PermissionAction.READ)
     fun packages(pypiArtifactInfo: PypiArtifactInfo) {
         val context = ArtifactDownloadContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)

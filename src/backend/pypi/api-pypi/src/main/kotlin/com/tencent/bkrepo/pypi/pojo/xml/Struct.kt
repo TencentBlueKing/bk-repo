@@ -6,4 +6,5 @@ import com.thoughtworks.xstream.annotations.XStreamImplicit
 class Struct(
     @XStreamImplicit
     val memberList: List<Member>?
+
 )

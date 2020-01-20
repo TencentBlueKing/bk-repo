@@ -39,8 +39,6 @@ class PypiResourceImpl : PypiResource {
         pypiService.search(pypiArtifactInfo, xmlString)
     }
 
-    override fun root(map: ModelMap) = "welcome"
-
     @ResponseBody
     override fun simple(artifactInfo: PypiArtifactInfo) {
         pypiService.simple(artifactInfo)

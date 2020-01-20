@@ -43,9 +43,6 @@ interface PypiResource {
         @RequestBody xmlString: String
     )
 
-    @GetMapping(PYPI_ROOT_POST_URI)
-    fun root(map: ModelMap): String
-
     /**
      * pypi simple/{package} 接口
      */

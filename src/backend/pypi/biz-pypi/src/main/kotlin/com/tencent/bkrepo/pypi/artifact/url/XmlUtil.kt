@@ -1,26 +1,26 @@
 package com.tencent.bkrepo.pypi.artifact.url
 
-import com.tencent.bkrepo.pypi.pojo.xml.*
+import com.tencent.bkrepo.pypi.pojo.xml.Data
+import com.tencent.bkrepo.pypi.pojo.xml.MethodResponse
+import com.tencent.bkrepo.pypi.pojo.xml.Param
+import com.tencent.bkrepo.pypi.pojo.xml.Params
+import com.tencent.bkrepo.pypi.pojo.xml.Struct
+import com.tencent.bkrepo.pypi.pojo.xml.Value
+import com.tencent.bkrepo.pypi.pojo.xml.Array
+import com.tencent.bkrepo.pypi.pojo.xml.Member
+import com.tencent.bkrepo.pypi.pojo.xml.XmlConvertUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 
 object XmlUtil {
 
-    fun getXmlMethodResponse02(packageName: String, nodeList: List<NodeInfo>): String {
-        /*
-        nodeList分为两部分，
-        -- versionNodeList: 版本节点列表
-        -- summaryNodeList: 每个版本对应的summary信息
-         */
-        val versionNodeList = nodeList.filter { it.folder }
-        val summaryNodeList = nodeList.filter { !it.folder }
-
-        // 遍历版本
+    fun getXmlMethodResponse(nodeList: List<Map<String, Any>>): String {
         val values: MutableList<Value> = ArrayList()
-        for (node in versionNodeList) {
+        //过滤掉重复节点，每个节点对应一个Struct
+        for (node in nodeList) {
             values.add(Value(
                 null,
                 null,
-                Struct(getMembers02(packageName, node)),
+                Struct(getMembers(node["metadata"] as Map<String, String>)),
                 null
             ))
         }
@@ -48,7 +48,7 @@ object XmlUtil {
         return (XmlConvertUtil.convert(methodResponse))
     }
 
-    fun getMembers02(packageName: String, childNode: NodeInfo): List<Member> {
+    fun getMembers(metadata: Map<String, String>): List<Member> {
         val members: MutableList<Member> = ArrayList()
         members.add(
             Member(
@@ -65,7 +65,7 @@ object XmlUtil {
             Member(
                 "version",
                 Value(
-                    childNode.name,
+                    metadata["version"],
                     null,
                     // 填入子节点name
                     null,
@@ -77,7 +77,7 @@ object XmlUtil {
             Member(
                 "name",
                 Value(
-                    packageName,
+                    metadata["name"],
                     null,
                     null,
                     null
@@ -88,7 +88,7 @@ object XmlUtil {
             Member(
                 "summary",
                 Value(
-                    null,
+                    metadata["summary"],
                     null,
                     null,
                     null
@@ -97,12 +97,4 @@ object XmlUtil {
         )
         return members
     }
-
-    // TODO
-    // fun mapVersionAndSummary(
-    //     versionNodeList: MutableList<NodeInfo>,
-    //     summaryNodeList: MutableList<NodeInfo>
-    // ): MutableMap<NodeInfo, NodeInfo> {
-    //
-    // }
 }

@@ -13,34 +13,6 @@ import javax.servlet.http.HttpServletRequest
 
 object UrlPatternUtil {
 
-    // 匹配路径,构建post请求。
-    fun urlMatcher(uri: String): PypiRequestType {
-        val uriMap = mapOf<PypiRequestType, String>(
-            PypiRequestType.UPLOAD to "(/)?(.+)/(.+)",
-            PypiRequestType.SEARCH to "(/)?(.+)/(.+)"
-        )
-        for (uriStr in uriMap) {
-            if (Pattern.compile(uriStr.value).matcher(uri).find()) {
-                return uriStr.key
-            }
-        }
-        throw IllegalArgumentException("")
-    }
-
-    fun packagesToPypiArtifactInfo(
-        projectId: String,
-        repoName: String,
-        artifactUri: String,
-        matcher: Matcher
-    ): PypiArtifactInfo {
-        return PypiArtifactInfo(
-            projectId,
-            repoName,
-            artifactUri,
-            null, null, mapOf()
-        )
-    }
-
     fun fileUpload(
         projectId: String,
         repoName: String,
@@ -78,7 +50,6 @@ object UrlPatternUtil {
             "action" to (request.getParameter("action") ?: ""),
             "protocol_version" to (request.getParameter("protocol_version") ?: "")
         )
-        val artifactUri = "/$packageName/$version"
-        return PypiArtifactInfo(projectId, repoName, artifactUri, packageName, version, metadata)
+        return PypiArtifactInfo(projectId, repoName, "/$packageName/$version", packageName, version, metadata)
     }
 }
