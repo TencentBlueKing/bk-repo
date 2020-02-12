@@ -116,7 +116,7 @@ class PypiLocalRepository : LocalRepository() {
         }
     }
 
-    //节点数据与元数据分开查询。
+    // 节点数据与元数据分开查询。
     override fun list(context: ArtifactListContext) {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
@@ -129,7 +129,7 @@ class PypiLocalRepository : LocalRepository() {
 
             val response = HttpContextHolder.getResponse()
             response.contentType = "text/html; charset=UTF-8"
-            //请求不带包名，返回包名列表。
+            // 请求不带包名，返回包名列表。
             if (artifactUri == "/") {
                 if (nodeDetail.nodeInfo.folder) {
                     val nodeList = nodeResource.list(projectId, repositoryInfo.name, artifactUri, includeFolder = true, deep = true).data
@@ -137,7 +137,7 @@ class PypiLocalRepository : LocalRepository() {
                                     com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
                                     artifactInfo.artifactUri
                             )
-                    //过滤掉'根节点'，
+                    // 过滤掉'根节点'，
                     val htmlContent = buildPypiSimpleListContent(
                         artifactInfo.projectId,
                         artifactInfo.repoName,
@@ -145,7 +145,7 @@ class PypiLocalRepository : LocalRepository() {
                     response.writer.print(htmlContent)
                 }
             }
-            //请求中带包名，返回对应包的文件列表。
+            // 请求中带包名，返回对应包的文件列表。
             else {
                 if (nodeDetail.nodeInfo.folder) {
                     val nodeList = nodeResource.list(projectId, repositoryInfo.name, artifactUri, includeFolder = false, deep = true).data

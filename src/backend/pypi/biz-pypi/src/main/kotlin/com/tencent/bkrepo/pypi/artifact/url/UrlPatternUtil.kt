@@ -2,8 +2,6 @@ package com.tencent.bkrepo.pypi.artifact.url
 
 import com.alibaba.fastjson.JSON
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
-import java.util.regex.Matcher
-import java.util.regex.Pattern
 import javax.servlet.http.HttpServletRequest
 
 /**

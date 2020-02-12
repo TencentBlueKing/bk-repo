@@ -9,13 +9,12 @@ import com.tencent.bkrepo.pypi.pojo.xml.Value
 import com.tencent.bkrepo.pypi.pojo.xml.Array
 import com.tencent.bkrepo.pypi.pojo.xml.Member
 import com.tencent.bkrepo.pypi.pojo.xml.XmlConvertUtil
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 
 object XmlUtil {
 
     fun getXmlMethodResponse(nodeList: List<Map<String, Any>>): String {
         val values: MutableList<Value> = ArrayList()
-        //过滤掉重复节点，每个节点对应一个Struct
+        // 过滤掉重复节点，每个节点对应一个Struct
         for (node in nodeList) {
             values.add(Value(
                 null,

@@ -55,14 +55,14 @@ class PypiVirtualRepository : VirtualRepository() {
                 val subContext = pypiArtifactListContextCopy(repositoryInfo = subRepoInfo, contextAttributes = context.contextAttributes)
                 // val subContext = context.copy(repositoryInfo = subRepoInfo )
                 repository.list(subContext)
-
             } catch (exception: Exception) {
                 logger.warn("Download Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
     }
 
-    fun pypiArtifactListContextCopy(repositoryInfo: RepositoryInfo,
+    fun pypiArtifactListContextCopy(
+        repositoryInfo: RepositoryInfo,
         contextAttributes: MutableMap<String, Any>
     ): ArtifactListContext {
         val targetContext = ArtifactListContext()

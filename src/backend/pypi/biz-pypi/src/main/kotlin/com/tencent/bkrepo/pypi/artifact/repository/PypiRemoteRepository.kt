@@ -28,7 +28,6 @@ class PypiRemoteRepository : RemoteRepository() {
         return remoteConfiguration.url.trimEnd('/') + "/packages" + artifactUri
     }
 
-
     /**
      * 生成远程list url
      */
