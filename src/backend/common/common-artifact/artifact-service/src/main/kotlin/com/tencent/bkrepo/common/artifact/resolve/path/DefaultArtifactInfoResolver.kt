@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.artifact.resolve.path
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -16,5 +16,3 @@ class DefaultArtifactInfoResolver : ArtifactInfoResolver {
         return DefaultArtifactInfo(projectId, repoName, artifactUri)
     }
 }
-
-class DefaultArtifactInfo(projectId: String, repoName: String, fullPath: String) : ArtifactInfo(projectId, repoName, fullPath)

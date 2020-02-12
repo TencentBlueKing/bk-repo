@@ -65,7 +65,7 @@ class FileReferenceRecalculateJob : ApplicationListener<ApplicationReadyEvent> {
             while (nodeList.isNotEmpty()) {
                 logger.info("Retrieved [${nodeList.size}] records to calculate file reference.")
                 nodeList.forEach { node ->
-                    if(!fileReferenceService.increment(node, repo)) {
+                    if (!fileReferenceService.increment(node, repo)) {
                         logger.warn("Failed to increment file reference of node [$node].")
                     }
                 }
