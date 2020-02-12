@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
+import com.tencent.bkrepo.repository.pojo.share.BatchShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import io.swagger.annotations.ApiOperation
@@ -30,6 +31,13 @@ interface UserShareResource {
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestBody shareRecordCreateRequest: ShareRecordCreateRequest
     ): Response<ShareRecordInfo>
+
+    @ApiOperation("批量创建分享链接")
+    @PostMapping("/batch")
+    fun batchShare(
+        @RequestAttribute userId: String,
+        @RequestBody batchShareRecordCreateRequest: BatchShareRecordCreateRequest
+    ): Response<List<ShareRecordInfo>>
 
     @ApiOperation("下载分享文件")
     @GetMapping(DEFAULT_MAPPING_URI)
