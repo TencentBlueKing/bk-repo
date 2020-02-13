@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.permission
+package com.tencent.bkrepo.common.artifact.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

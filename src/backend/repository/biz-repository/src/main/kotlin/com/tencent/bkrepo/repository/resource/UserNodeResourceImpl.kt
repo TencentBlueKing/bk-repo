@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.repository.resource
 
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -8,6 +7,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.permission.PermissionService
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -42,17 +42,17 @@ class UserNodeResourceImpl @Autowired constructor(
     private val permissionService: PermissionService
 ) : UserNodeResource {
 
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     override fun detail(userId: String, artifactInfo: ArtifactInfo): Response<NodeDetail> {
         with(artifactInfo) {
-            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
             return ResponseBuilder.success(nodeDetail)
         }
     }
 
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     override fun mkdir(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
         with(artifactInfo) {
-            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             val createRequest = NodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -66,9 +66,9 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     override fun delete(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
         with(artifactInfo) {
-            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
             val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -82,7 +82,7 @@ class UserNodeResourceImpl @Autowired constructor(
 
     override fun rename(userId: String, request: UserNodeRenameRequest): Response<Void> {
         with(request) {
-            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName))
+            permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
             val renameRequest = NodeRenameRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -97,8 +97,10 @@ class UserNodeResourceImpl @Autowired constructor(
 
     override fun move(userId: String, request: UserNodeMoveRequest): Response<Void> {
         with(request) {
-            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName))
-            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId, destRepoName))
+            permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
+            if (destProjectId != null && destRepoName != null) {
+                permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId!!, destRepoName!!)
+            }
             val moveRequest = NodeMoveRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
@@ -116,8 +118,10 @@ class UserNodeResourceImpl @Autowired constructor(
 
     override fun copy(userId: String, request: UserNodeCopyRequest): Response<Void> {
         with(request) {
-            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName))
-            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId, destRepoName))
+            permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
+            if (destProjectId != null && destRepoName != null) {
+                permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId!!, destRepoName!!)
+            }
             val copyRequest = NodeCopyRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
@@ -133,17 +137,17 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     override fun computeSize(userId: String, artifactInfo: ArtifactInfo): Response<NodeSizeInfo> {
         with(artifactInfo) {
-            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             val nodeSizeInfo = nodeService.computeSize(projectId, repoName, artifactUri)
             return ResponseBuilder.success(nodeSizeInfo)
         }
     }
 
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     override fun list(userId: String, artifactInfo: ArtifactInfo, includeFolder: Boolean, deep: Boolean): Response<List<NodeInfo>> {
         with(artifactInfo) {
-            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
             return ResponseBuilder.success(nodeService.list(projectId, repoName, artifactUri, includeFolder, deep))
         }
     }
@@ -151,7 +155,7 @@ class UserNodeResourceImpl @Autowired constructor(
     override fun search(userId: String, searchRequest: NodeSearchRequest): Response<Page<NodeInfo>> {
         with(searchRequest) {
             repoNameList.forEach {
-                permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, searchRequest.projectId, it))
+                permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, searchRequest.projectId, it)
             }
         }
         return ResponseBuilder.success(nodeService.search(searchRequest))

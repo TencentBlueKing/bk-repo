@@ -5,6 +5,7 @@ include ":common:common-api"
 include ":common:common-redis"
 include ":common:common-mongo"
 include ":common:common-job"
+include ":common:common-mq"
 include ":common:common-service"
 
 include ":common:common-storage"
