@@ -36,7 +36,5 @@ data class NodeInfo(
     @ApiModelProperty("所属项目id")
     val projectId: String,
     @ApiModelProperty("所属仓库名称")
-    val repoName: String,
-    @ApiModelProperty("元数据信息")
-    val metadata: Map<String, String>? = null
+    val repoName: String
 )

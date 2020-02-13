@@ -41,6 +41,6 @@ data class TNode(
     var repoName: String
 ) {
     companion object {
-        const val SHARDING_COUNT = 1
+        const val SHARDING_COUNT = 256
     }
 }
