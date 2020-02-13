@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.artifact.auth.platform
 
-import com.tencent.bkrepo.auth.api.ServiceAccountResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.common.api.constant.APP_KEY
@@ -8,6 +7,7 @@ import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.auth.AnonymousCredentials
 import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.AuthService
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
@@ -27,10 +27,10 @@ import javax.servlet.http.HttpServletRequest
 open class PlatformClientAuthHandler : ClientAuthHandler {
 
     @Autowired
-    private lateinit var serviceAccountResource: ServiceAccountResource
+    private lateinit var serviceUserResource: ServiceUserResource
 
     @Autowired
-    private lateinit var serviceUserResource: ServiceUserResource
+    private lateinit var authService: AuthService
 
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER) ?: ""
@@ -49,15 +49,14 @@ open class PlatformClientAuthHandler : ClientAuthHandler {
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String {
         with(authCredentials as PlatformAuthCredentials) {
-            serviceAccountResource.checkCredential(accessKey, secretKey).data?.run {
-                val userId = request.getHeader(AUTH_HEADER_UID)?.let {
-                    checkUserId(it)
-                    it
-                } ?: this
-                request.setAttribute(APP_KEY, this)
-                request.setAttribute(USER_KEY, userId)
-                return userId
-            } ?: throw ClientAuthException("AccessKey/SecretKey check failed.")
+            val appId = authService.checkPlatformAccount(accessKey, secretKey)
+            val userId = request.getHeader(AUTH_HEADER_UID)?.let {
+                checkUserId(it)
+                it
+            } ?: appId
+            request.setAttribute(APP_KEY, appId)
+            request.setAttribute(USER_KEY, userId)
+            return userId
         }
     }
 

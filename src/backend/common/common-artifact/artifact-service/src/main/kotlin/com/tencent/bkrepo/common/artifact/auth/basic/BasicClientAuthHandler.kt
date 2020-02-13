@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.artifact.auth.basic
 
-import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.artifact.auth.AnonymousCredentials
 import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.AuthService
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletRequest
 open class BasicClientAuthHandler : ClientAuthHandler {
 
     @Autowired
-    private lateinit var serviceUserResource: ServiceUserResource
+    private lateinit var authService: AuthService
 
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
         val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER) ?: ""
@@ -41,12 +41,7 @@ open class BasicClientAuthHandler : ClientAuthHandler {
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String {
         with(authCredentials as BasicAuthCredentials) {
-            val response = serviceUserResource.checkUserToken(username, password)
-            if (response.data == true) {
-                return username
-            } else {
-                throw ClientAuthException("Authorization value check failed")
-            }
+            return authService.checkUserAccount(username, password)
         }
     }
 }
