@@ -3,7 +3,6 @@ package com.tencent.bkrepo.common.artifact.auth
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
-import com.tencent.bkrepo.common.artifact.permission.AuthProperties
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
@@ -21,15 +20,7 @@ class ClientAuthInterceptor : HandlerInterceptorAdapter() {
     @Autowired
     private lateinit var clientAuthHandlerList: List<ClientAuthHandler>
 
-    @Autowired
-    private lateinit var authProperties: AuthProperties
-
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        if (!authProperties.enabled) {
-            logger.debug("Auth disabled, set anonymous user.")
-            request.setAttribute(USER_KEY, ANONYMOUS_USER)
-            return true
-        }
         clientAuthHandlerList.forEach { authHandler ->
             try {
                 val authCredentials = authHandler.extractAuthCredentials(request)
