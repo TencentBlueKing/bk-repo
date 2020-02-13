@@ -31,5 +31,4 @@ class MavenLocalRepository : LocalRepository() {
             operator = context.userId
         )
     }
-
 }
