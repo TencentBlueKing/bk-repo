@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.repository.service.query
 
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -12,13 +11,13 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Date
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.Date
 
 /**
  * 节点自定义查询service
@@ -65,7 +64,7 @@ class NodeQueryService @Autowired constructor(
         }
         // 鉴权
         repoNameList.forEach {
-            permissionService.checkPermission(CheckPermissionRequest(operator, ResourceType.REPO, PermissionAction.READ, projectId, it))
+            permissionService.checkPermission(operator, ResourceType.REPO, PermissionAction.READ, projectId!!, it)
         }
 
         return doQuery(query)
