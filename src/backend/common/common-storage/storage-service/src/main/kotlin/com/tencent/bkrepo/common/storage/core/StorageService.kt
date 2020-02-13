@@ -94,4 +94,9 @@ interface StorageService {
      * 清理文件
      */
     fun cleanUp(): CleanupResult
+
+    /**
+     * 手动补偿上传文件
+     */
+    fun manualRetry(digest: String, storageCredentials: StorageCredentials? = null)
 }

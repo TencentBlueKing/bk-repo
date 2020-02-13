@@ -6,14 +6,14 @@ import com.tencent.bkrepo.common.artifact.config.CONTENT_DISPOSITION_TEMPLATE
 import com.tencent.bkrepo.common.artifact.config.DEFAULT_MIME_TYPE
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.util.NodeUtils
+import org.slf4j.LoggerFactory
+import org.springframework.boot.web.server.MimeMappings
+import org.springframework.http.HttpHeaders
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.InputStream
 import java.io.RandomAccessFile
 import javax.servlet.http.HttpServletResponse
-import org.slf4j.LoggerFactory
-import org.springframework.boot.web.server.MimeMappings
-import org.springframework.http.HttpHeaders
 
 /**
  * Http响应工具类
@@ -69,8 +69,6 @@ object HttpResponseUtils {
                 out.write(buffer, 0, readLength)
             }
             out.flush()
-            out.close()
-            response.flushBuffer()
         }
     }
 
