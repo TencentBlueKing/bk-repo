@@ -1,4 +1,5 @@
 dependencies {
-    api project(":pypi:api-pypi")
     api project(":common:common-artifact:artifact-service")
+    api project(":pypi:api-pypi")
+    implementation "net.sf.json-lib:json-lib:2.4:jdk15"
 }

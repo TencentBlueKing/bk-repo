@@ -117,7 +117,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
     /**
      * 创建http client
      */
-    private fun createHttpClient(configuration: RemoteConfiguration): OkHttpClient {
+    open fun createHttpClient(configuration: RemoteConfiguration): OkHttpClient {
         val builder = HttpClientBuilderFactory.create()
         builder.readTimeout(configuration.networkConfiguration.readTimeout, TimeUnit.MILLISECONDS)
         builder.connectTimeout(configuration.networkConfiguration.connectTimeout, TimeUnit.MILLISECONDS)
