@@ -34,49 +34,49 @@ interface ServiceAccountResource {
     ): Response<Account?>
 
     @ApiOperation("更新账号状态账号")
-    @PutMapping("/{appid}/{locked}")
+    @PutMapping("/{appId}/{locked}")
     fun updateAccount(
         @ApiParam(value = "账户id")
-        @PathVariable appid: String,
+        @PathVariable appId: String,
         @ApiParam(value = "账户id")
         @PathVariable locked: Boolean
     ): Response<Boolean>
 
     @ApiOperation("删除账号")
-    @DeleteMapping("/delete/{appid}")
+    @DeleteMapping("/delete/{appId}")
     fun deleteAccount(
         @ApiParam(value = "账户id")
-        @PathVariable appid: String
+        @PathVariable appId: String
     ): Response<Boolean>
 
     @ApiOperation("获取账户下的ak/sk对")
-    @GetMapping("/credential/list/{appid}")
+    @GetMapping("/credential/list/{appId}")
     fun getCredential(
         @ApiParam(value = "账户id")
-        @PathVariable account: String
+        @PathVariable appId: String
     ): Response<List<CredentialSet>>
 
     @ApiOperation("创建ak/sk对")
-    @PostMapping("/credential/{appid}")
+    @PostMapping("/credential/{appId}")
     fun createCredential(
         @ApiParam(value = "账户id")
-        @PathVariable appid: String
+        @PathVariable appId: String
     ): Response<List<CredentialSet>>
 
     @ApiOperation("删除ak/sk对")
-    @DeleteMapping("/credential/{appid}/{accesskey}")
+    @DeleteMapping("/credential/{appId}/{accesskey}")
     fun deleteCredential(
         @ApiParam(value = "账户id")
-        @PathVariable appid: String,
+        @PathVariable appId: String,
         @ApiParam(value = "账户id")
         @PathVariable accesskey: String
     ): Response<List<CredentialSet>>
 
     @ApiOperation("更新ak/sk对状态")
-    @PutMapping("/credential/{appid}/{accesskey}/{status}")
+    @PutMapping("/credential/{appId}/{accesskey}/{status}")
     fun updateCredential(
         @ApiParam(value = "账户id")
-        @PathVariable appid: String,
+        @PathVariable appId: String,
         @ApiParam(value = "accesskey")
         @PathVariable accesskey: String,
         @ApiParam(value = "status")
