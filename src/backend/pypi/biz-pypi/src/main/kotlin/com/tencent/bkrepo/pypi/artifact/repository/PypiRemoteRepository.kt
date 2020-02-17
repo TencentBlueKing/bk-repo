@@ -39,9 +39,10 @@ class PypiRemoteRepository : RemoteRepository() {
 
     override fun list(context: ArtifactListContext) {
         val listUri = generateRemoteListUrl(context)
+        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+        val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
         val response = HttpContextHolder.getResponse()
         response.contentType = "text/html; charset=UTF-8"
-        val okHttpClient = OkHttpClient()
         val build: Request = Request.Builder().get().url(listUri).build()
         val htmlContent: String? = okHttpClient.newCall(build).execute().body()?.string()
         response.writer.print(htmlContent)

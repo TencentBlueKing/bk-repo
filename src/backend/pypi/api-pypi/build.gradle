@@ -1,6 +1,6 @@
 dependencies {
     implementation project(":common:common-api")
-    api project(":common:common-service")
+    compileOnly "org.springframework:spring-web"
     implementation project(":common:common-artifact:artifact-api")
     compile "com.thoughtworks.xstream:xstream:1.4.11.1"
 }

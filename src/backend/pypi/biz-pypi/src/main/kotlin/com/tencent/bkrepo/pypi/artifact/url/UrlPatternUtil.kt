@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.pypi.artifact.url
 
-import com.alibaba.fastjson.JSON
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import net.sf.json.JSONArray
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -20,7 +20,7 @@ object UrlPatternUtil {
         val packageName: String = request.getParameter("name")
         val version: String = request.getParameter("version")
         val classifiersList = request.getParameterValues("classifiers")
-        val classifiers = JSON.toJSONString(classifiersList)
+        val classifiers = JSONArray.fromObject(classifiersList)
         val metadata = mapOf<String, String>(
             "name" to (request.getParameter("name")),
             "version" to request.getParameter("version"),
