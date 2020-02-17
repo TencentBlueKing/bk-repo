@@ -18,9 +18,6 @@ import org.springframework.stereotype.Component
  */
 @Component
 class PypiRemoteRepository : RemoteRepository() {
-    override fun onUpload(context: ArtifactUploadContext) {
-        throw UnsupportedOperationException()
-    }
 
     override fun generateRemoteDownloadUrl(context: ArtifactDownloadContext): String {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
