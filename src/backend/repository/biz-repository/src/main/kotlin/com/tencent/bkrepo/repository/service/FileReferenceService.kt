@@ -52,27 +52,27 @@ class FileReferenceService @Autowired constructor(
     }
 
     private fun increment(sha256: String, storageCredentials: String?): Boolean {
-        query(sha256, storageCredentials)?.run {
+        val fileReference = query(sha256, storageCredentials)?.run {
             this.count += 1
-            fileReferenceDao.save(this)
+            this
         } ?: createNewReference(sha256, storageCredentials)
+        fileReferenceDao.save(fileReference)
         logger.info("Increment reference of file [$sha256] on storageCredentials [$storageCredentials].")
         return true
     }
 
     private fun decrement(sha256: String, storageCredentials: String?): Boolean {
-        return query(sha256, storageCredentials)?.run {
-            if (this.count >= 1) {
-                this.count -= 1
-                fileReferenceDao.save(this)
-                logger.info("Decrement references of file [$sha256] on storageCredentials [$storageCredentials].")
-                true
-            } else {
-                LoggerHolder.sysErrorLogger.warn("Failed to decrement reference of file [$sha256] on storageCredentials [$storageCredentials]: sha256 reference is 0.")
-                false
-            }
-        } ?: run {
-            LoggerHolder.sysErrorLogger.warn("Failed to decrement reference of file [$sha256] on storageCredentials [$storageCredentials]: sha256 reference not found.")
+        val fileReference = query(sha256, storageCredentials) ?: run {
+            LoggerHolder.sysErrorLogger.warn("Failed to decrement reference of file [$sha256] on storageCredentials [$storageCredentials]: sha256 reference not found, create new one.")
+            createNewReference(sha256, storageCredentials)
+        }
+        return if (fileReference.count >= 1) {
+            fileReference.count -= 1
+            fileReferenceDao.save(fileReference)
+            logger.info("Decrement references of file [$sha256] on storageCredentials [$storageCredentials].")
+            true
+        } else {
+            LoggerHolder.sysErrorLogger.warn("Failed to decrement reference of file [$sha256] on storageCredentials [$storageCredentials]: sha256 reference is 0.")
             false
         }
     }

@@ -103,8 +103,8 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
         if (cacheConfiguration.cacheEnabled) {
             val nodeCreateRequest = getCacheNodeCreateRequest(context, file)
-            nodeResource.create(nodeCreateRequest)
             storageService.store(nodeCreateRequest.sha256!!, file, context.storageCredentials)
+            nodeResource.create(nodeCreateRequest)
         }
     }
 

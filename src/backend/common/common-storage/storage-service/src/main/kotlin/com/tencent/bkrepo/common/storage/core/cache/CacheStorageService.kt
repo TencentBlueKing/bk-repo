@@ -6,9 +6,9 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
 import java.nio.file.Paths
-import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 支持缓存的存储服务
@@ -47,6 +47,11 @@ class CacheStorageService : AbstractStorageService() {
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
         return fileStorage.exist(path, filename, credentials)
+    }
+
+    override fun doManualRetry(path: String, filename: String, credentials: StorageCredentials) {
+        val cachedFile = cacheClient.load(path, filename) ?: throw RuntimeException("File [$filename] is missing.")
+        fileStorage.store(path, filename, cachedFile, credentials)
     }
 
     override fun getTempPath(): String? {

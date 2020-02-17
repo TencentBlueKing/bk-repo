@@ -8,7 +8,6 @@ import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.repository.RepoRepository
-import kotlin.concurrent.thread
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -39,9 +38,9 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
     @Autowired
     private lateinit var repoRepository: RepoRepository
 
-    @SchedulerLock(name = "Md5CalculateJob", lockAtMostFor = "P1D")
+    @SchedulerLock(name = "Md5CalculateJob", lockAtLeastFor = "PT10M", lockAtMostFor = "P1D")
     override fun onApplicationEvent(event: ApplicationReadyEvent) {
-        thread { calculate() }
+        // thread { calculate() }
     }
 
     fun calculate() {
@@ -57,7 +56,7 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
                 JsonUtils.objectMapper.readValue(property, StorageCredentials::class.java)
             }
 
-            var page = 0
+            val page = 0
             val query = Query.query(Criteria.where(TNode::projectId.name).`is`(repo.projectId)
                 .and(TNode::repoName.name).`is`(repo.name)
                 .and(TNode::folder.name).`is`(false)
@@ -92,7 +91,6 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
                         totalCount += 1
                     }
                 }
-                page += 1
                 query.with(PageRequest.of(page, 1000))
                 nodeList = nodeDao.find(query)
             }

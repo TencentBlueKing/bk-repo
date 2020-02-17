@@ -189,7 +189,7 @@ def upload_bkrepo_file(node, jfrog_response, properties):
         headers["X-BKREPO-META-" + key] = value
     headers["X-BKREPO-SIZE"] = str(node["size"])
     headers["X-BKREPO-OVERWRITE"] = "true"
-    response = requests.put(url, auth=BkrepoAuth(auth, uid), headers=headers, data=jfrog_response.iter_content(1024))
+    response = requests.put(url, auth=BkrepoAuth(auth, uid), headers=headers, data=jfrog_response.iter_content(5120))
     assert response.status_code == 200
 
 
