@@ -7,6 +7,8 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
+import java.io.File
+import java.io.InputStreamReader
 
 object GsonUtils {
     val gson: Gson =
@@ -38,5 +40,12 @@ object GsonUtils {
 
     fun <T> mapToGson(map: Map<String, T>): JsonObject {
         return JsonParser().parse(gson.toJson(map)).asJsonObject
+    }
+
+    fun transferFileToJson(file: File): JsonObject {
+        return gson.fromJson<JsonObject>(
+            InputStreamReader(file.inputStream()),
+            object : TypeToken<JsonObject>() {}.type
+        )
     }
 }

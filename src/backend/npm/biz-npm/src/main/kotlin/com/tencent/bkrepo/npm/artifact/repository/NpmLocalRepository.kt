@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.npm.artifact.repository
 
+import com.google.gson.JsonObject
+import com.google.gson.reflect.TypeToken
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
@@ -16,6 +18,7 @@ import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_METADATA
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
+import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
@@ -24,6 +27,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import java.io.File
+import java.io.InputStreamReader
 
 @Component
 class NpmLocalRepository : LocalRepository() {
@@ -119,7 +123,7 @@ class NpmLocalRepository : LocalRepository() {
         return context.contextAttributes[NPM_FILE_FULL_PATH] as String
     }
 
-    override fun search(context: ArtifactSearchContext): File? {
+    override fun search(context: ArtifactSearchContext): JsonObject? {
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         return try {
             this.onSearch(context) ?: throw ArtifactNotFoundException("Artifact[$fullPath] does not exist")
@@ -129,7 +133,7 @@ class NpmLocalRepository : LocalRepository() {
         }
     }
 
-    private fun onSearch(context: ArtifactSearchContext): File? {
+    private fun onSearch(context: ArtifactSearchContext): JsonObject? {
         val repositoryInfo = context.repositoryInfo
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
@@ -137,7 +141,11 @@ class NpmLocalRepository : LocalRepository() {
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
 
         node.nodeInfo.takeIf { !it.folder } ?: return null
-        return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
+        val file = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials) ?: return null
+        return GsonUtils.gson.fromJson<JsonObject>(
+            InputStreamReader(file.inputStream()),
+            object : TypeToken<JsonObject>() {}.type
+        )
     }
 
     override fun remove(context: ArtifactRemoveContext) {

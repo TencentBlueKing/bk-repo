@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.common.artifact.repository.core
 
+import com.google.gson.JsonObject
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import java.io.File
 
 /**
  * 构件仓库接口
@@ -27,7 +27,7 @@ interface ArtifactRepository {
     /**
      * 构件搜索
      */
-    fun search(context: ArtifactSearchContext): File?
+    fun search(context: ArtifactSearchContext): JsonObject?
 
     /**
      * 构件列表

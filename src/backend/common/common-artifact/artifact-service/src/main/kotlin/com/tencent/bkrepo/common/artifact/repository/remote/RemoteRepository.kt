@@ -1,10 +1,14 @@
 package com.tencent.bkrepo.common.artifact.repository.remote
 
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteCredentialsConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.http.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.repository.http.HttpClientBuilderFactory
@@ -13,13 +17,6 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import java.io.File
-import java.net.InetSocketAddress
-import java.net.Proxy
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
 import okhttp3.Authenticator
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
@@ -29,6 +26,13 @@ import okhttp3.ResponseBody
 import org.apache.commons.fileupload.util.Streams
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import java.io.File
+import java.net.InetSocketAddress
+import java.net.Proxy
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.TimeUnit
 
 /**
  *
@@ -42,6 +46,17 @@ abstract class RemoteRepository : AbstractArtifactRepository {
 
     @Autowired
     lateinit var storageService: StorageService
+
+    override fun search(context: ArtifactSearchContext): JsonObject? {
+        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+        val httpClient = createHttpClient(remoteConfiguration)
+        val downloadUri = generateRemoteDownloadUrl(context)
+        val request = Request.Builder().url(downloadUri).build()
+        val response = httpClient.newCall(request).execute()
+        return if(checkResponse(response)){
+            JsonParser().parse(response.body()!!.string()).asJsonObject
+        } else null
+    }
 
     override fun onDownload(context: ArtifactDownloadContext): File? {
         getCacheArtifact(context)?.let {
@@ -109,7 +124,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
             size = file.length(),
             sha256 = sha256,
             md5 = md5,
-            overwrite = true,
+            overwrite = false,
             operator = context.userId
         )
     }
@@ -117,7 +132,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
     /**
      * 创建http client
      */
-    private fun createHttpClient(configuration: RemoteConfiguration): OkHttpClient {
+    open fun createHttpClient(configuration: RemoteConfiguration): OkHttpClient {
         val builder = HttpClientBuilderFactory.create()
         builder.readTimeout(configuration.networkConfiguration.readTimeout, TimeUnit.MILLISECONDS)
         builder.connectTimeout(configuration.networkConfiguration.connectTimeout, TimeUnit.MILLISECONDS)
@@ -166,7 +181,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
     /**
      * 生成远程构件下载url
      */
-    open fun generateRemoteDownloadUrl(context: ArtifactDownloadContext): String {
+    open fun generateRemoteDownloadUrl(context: ArtifactTransferContext): String {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val artifactUri = context.artifactInfo.artifactUri
         return remoteConfiguration.url.trimEnd('/') + artifactUri
@@ -180,17 +195,17 @@ abstract class RemoteRepository : AbstractArtifactRepository {
             logger.warn("Download artifact from remote failed: [${response.code()}]")
             return false
         }
-        if (response.body()?.contentLength() ?: 0 <= 0) {
-            logger.warn("Download artifact from remote failed: response body is empty.")
-            return false
-        }
+        // if (response.body()?.contentLength() ?: 0 <= 0) {
+        //     logger.warn("Download artifact from remote failed: response body is empty.")
+        //     return false
+        // }
         return true
     }
 
     /**
      * 创建临时文件并将响应体写入文件
      */
-    private fun createTempFile(body: ResponseBody): File {
+    protected fun createTempFile(body: ResponseBody): File {
         // set threshold = 0, guarantee any data will be written to file rather than memory cache
         val artifactFile = ArtifactFileFactory.build(0)
         Streams.copy(body.byteStream(), artifactFile.getOutputStream(), true)

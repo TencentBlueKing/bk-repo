@@ -2,7 +2,6 @@ package com.tencent.bkrepo.npm.service
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.google.gson.reflect.TypeToken
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
@@ -14,6 +13,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -54,11 +54,11 @@ import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_JSON_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.OBJECTS
 import com.tencent.bkrepo.npm.constants.PACKAGE
 import com.tencent.bkrepo.npm.constants.REV
+import com.tencent.bkrepo.npm.constants.REV_VALUE
 import com.tencent.bkrepo.npm.constants.SHASUM
 import com.tencent.bkrepo.npm.constants.TIME
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
-import com.tencent.bkrepo.npm.constants.revValue
 import com.tencent.bkrepo.npm.pojo.NpmMetaData
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
@@ -74,7 +74,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.InputStreamReader
 import java.util.Date
 
 @Service
@@ -133,7 +132,7 @@ class NpmService @Autowired constructor(
         // 如果是第一次上传
         val timeMap = if (pkgInfo.size() == 0) pkgInfo else pkgInfo.getAsJsonObject(TIME)!!
         if (pkgInfo.size() == 0) {
-            jsonObj.addProperty(REV, revValue)
+            jsonObj.addProperty(REV, REV_VALUE)
             pkgInfo = jsonObj
             timeMap.add(CREATED, GsonUtils.gson.toJsonTree(Date()))
         }
@@ -219,11 +218,10 @@ class NpmService @Autowired constructor(
         val context = ArtifactSearchContext()
         context.contextAttributes[NPM_FILE_FULL_PATH] = getFileFullPath(artifactInfo)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        val file = repository.search(context) ?: return null
-        val fileJson = GsonUtils.gson.fromJson<JsonObject>(
-            InputStreamReader(file.inputStream()),
-            object : TypeToken<JsonObject>() {}.type
-        )
+        if (repository !is LocalRepository) {
+            return repository.search(context)
+        }
+        val fileJson = repository.search(context) ?: return null
         return getPkgInfo(fileJson, artifactInfo)
     }
 
@@ -240,10 +238,9 @@ class NpmService @Autowired constructor(
                 if (key == KEYWORDS) fileJson.add(key, GsonUtils.stringToArray(value))
             }
         } else {
+            val name = fileJson.get(NAME).asString
             versions.keySet().forEach {
-                val name = fileJson.get(NAME).asString
-                val version = versions.getAsJsonObject(it)[VERSION].asString
-                val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
+                val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, it)
                 val metadataInfo =
                     metadataResource.query(artifactInfo.projectId, artifactInfo.repoName, tgzFullPath).data
                 metadataInfo?.forEach { (key, value) ->
@@ -304,17 +301,17 @@ class NpmService @Autowired constructor(
         val maintainerMd = Rule.QueryRule("metadata.maintainers", searchRequest.text, OperationType.MATCH)
         val versionMd = Rule.QueryRule("metadata.version", searchRequest.text, OperationType.MATCH)
         val keywordsMd = Rule.QueryRule("metadata.keywords", searchRequest.text, OperationType.MATCH)
-        val metadata = Rule.NestedRule(mutableListOf(nameMd, descMd, maintainerMd, versionMd, keywordsMd), Rule.NestedRule.RelationType.OR)
-
+        val metadata = Rule.NestedRule(
+            mutableListOf(nameMd, descMd, maintainerMd, versionMd, keywordsMd),
+            Rule.NestedRule.RelationType.OR
+        )
         val rule = Rule.NestedRule(mutableListOf(projectId, repoName, fullPath, metadata))
-
         val queryModel = QueryModel(
             page = PageLimit(searchRequest.from, searchRequest.size),
             sort = Sort(listOf("lastModifiedDate"), Sort.Direction.DESC),
             select = mutableListOf("projectId", "repoName", "fullPath", "metadata", "lastModifiedDate"),
             rule = rule
         )
-
         val result = nodeResource.query(queryModel)
         val data = result.data ?: return emptyMap()
         return transferRecords(data.records)

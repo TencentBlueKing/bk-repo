@@ -12,6 +12,7 @@ import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_UNPUBLISH_M
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
+import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -29,7 +30,7 @@ interface NpmResource {
     ): Response<Void>
 
     @ApiOperation("search package.json info")
-    @GetMapping(NPM_PACKAGE_INFO_MAPPING_URI)
+    @GetMapping(NPM_PACKAGE_INFO_MAPPING_URI, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
     fun searchPackageInfo(@ArtifactPathVariable artifactInfo: NpmArtifactInfo): Map<String, Any>
 
     @ApiOperation("install tgz file")

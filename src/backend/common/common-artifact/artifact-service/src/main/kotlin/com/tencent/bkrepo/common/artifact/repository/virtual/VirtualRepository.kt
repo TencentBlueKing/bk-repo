@@ -1,9 +1,12 @@
 package com.tencent.bkrepo.common.artifact.repository.virtual
 
+import com.google.gson.JsonObject
 import com.tencent.bkrepo.common.artifact.config.TRAVERSED_LIST
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.pojo.configuration.VirtualConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.repository.api.RepositoryResource
@@ -20,6 +23,32 @@ abstract class VirtualRepository : AbstractArtifactRepository {
 
     @Autowired
     lateinit var repositoryResource: RepositoryResource
+
+    override fun search(context: ArtifactSearchContext): JsonObject? {
+        val artifactInfo = context.artifactInfo
+        val virtualConfiguration = context.repositoryConfiguration as VirtualConfiguration
+        val repoList = virtualConfiguration.repositoryList
+        val traversedList = getTraversedList(context)
+        for (repoIdentify in repoList) {
+            if (repoIdentify in traversedList) {
+                logger.debug("Repository[$repoIdentify] has been traversed, skip it.")
+                continue
+            }
+            traversedList.add(repoIdentify)
+            try {
+                val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
+                val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
+                val subContext = context.copy(repositoryInfo = subRepoInfo)
+                repository.search(subContext)?.let { jsonObj ->
+                    logger.debug("Artifact[${artifactInfo.getFullUri()}] is found it Repository[$repoIdentify].")
+                    return jsonObj
+                } ?: logger.debug("Artifact[${artifactInfo.getFullUri()}] is not found in Repository[$repoIdentify], skipped.")
+            } catch (exception: Exception) {
+                logger.warn("Download Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
+            }
+        }
+        return null
+    }
 
     override fun onDownload(context: ArtifactDownloadContext): File? {
         val artifactInfo = context.artifactInfo
@@ -48,7 +77,7 @@ abstract class VirtualRepository : AbstractArtifactRepository {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun getTraversedList(context: ArtifactDownloadContext): MutableList<RepositoryIdentify> {
+    private fun getTraversedList(context: ArtifactTransferContext): MutableList<RepositoryIdentify> {
         return context.contextAttributes[TRAVERSED_LIST] as? MutableList<RepositoryIdentify> ?: let {
             val selfRepoInfo = context.repositoryInfo
             val traversedList = mutableListOf(RepositoryIdentify(selfRepoInfo.projectId, selfRepoInfo.name))
