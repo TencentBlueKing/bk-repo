@@ -88,8 +88,8 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
         if (cacheConfiguration.cacheEnabled) {
             val nodeCreateRequest = getCacheNodeCreateRequest(context, file)
-            nodeResource.create(nodeCreateRequest)
             storageService.store(nodeCreateRequest.sha256!!, file, context.storageCredentials)
+            nodeResource.create(nodeCreateRequest)
         }
     }
 
@@ -117,7 +117,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
     /**
      * 创建http client
      */
-    private fun createHttpClient(configuration: RemoteConfiguration): OkHttpClient {
+    open fun createHttpClient(configuration: RemoteConfiguration): OkHttpClient {
         val builder = HttpClientBuilderFactory.create()
         builder.readTimeout(configuration.networkConfiguration.readTimeout, TimeUnit.MILLISECONDS)
         builder.connectTimeout(configuration.networkConfiguration.connectTimeout, TimeUnit.MILLISECONDS)

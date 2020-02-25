@@ -34,4 +34,8 @@ class MultipartArtifactFile(private val diskFileItem: DiskFileItem) : ArtifactFi
         method.isAccessible = true
         return method.invoke(diskFileItem) as File
     }
+
+    fun getOriginalFilename(): String {
+        return diskFileItem.name
+    }
 }

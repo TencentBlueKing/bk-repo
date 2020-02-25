@@ -84,7 +84,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
     client.test('Request executed successfully', function() {
         client.assert(response.status === 200, 'Response status is not 200');
-        client.assert(response.body === '111112FileReferenceCleanupJob2222', 'Response content invalid');
+        client.assert(response.body === '1111122222', 'Response content invalid');
     });
 %}
 
