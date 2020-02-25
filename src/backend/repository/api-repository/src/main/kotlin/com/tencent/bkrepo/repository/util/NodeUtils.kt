@@ -20,12 +20,12 @@ object NodeUtils {
     /**
      * 最大目录深度
      */
-    private const val MAX_DIR_DEPTH = 32
+    private const val MAX_DIR_DEPTH = 64
 
     /**
      * 文件名称最大长度
      */
-    private const val MAX_FILENAME_LENGTH = 512
+    private const val MAX_FILENAME_LENGTH = 1024
 
     /**
      * 文件分隔符
