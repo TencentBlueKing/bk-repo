@@ -16,8 +16,8 @@ import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import javax.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
+import javax.servlet.http.HttpServletRequest
 
 /**
  *
@@ -84,13 +84,14 @@ class GenericLocalRepository : LocalRepository() {
         val metadata = mutableMapOf<String, String>()
         val headerNames = request.headerNames
         for (headerName in headerNames) {
-            if (headerName.startsWith(BKREPO_META_PREFIX)) {
-                val key = headerName.removePrefix(BKREPO_META_PREFIX).trim()
+            if (headerName.startsWith(BKREPO_META_PREFIX, true)) {
+                val key = headerName.substring(BKREPO_META_PREFIX.length).trim()
                 if (key.isNotEmpty()) {
-                    metadata[key] = request.getHeader(headerName)
+                    metadata[key] = HeaderUtils.getUrlDecodedHeader(headerName)!!
                 }
             }
         }
         return metadata
     }
+
 }
