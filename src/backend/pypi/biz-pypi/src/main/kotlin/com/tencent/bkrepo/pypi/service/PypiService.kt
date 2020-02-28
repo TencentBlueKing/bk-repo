@@ -6,11 +6,11 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
-import com.tencent.bkrepo.pypi.artifact.repository.PypiLocalRepository
-import org.slf4j.LoggerFactory
+import com.tencent.bkrepo.pypi.artifact.repository.PypiRepository
 import org.springframework.stereotype.Service
 
 /**
@@ -40,9 +40,9 @@ class PypiService {
         pypiArtifactInfo: PypiArtifactInfo,
         xmlString: String
     ) {
-        val context = ArtifactListContext()
+        val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        (repository as PypiLocalRepository).searchXml(context, xmlString)
+        (repository as PypiRepository).searchXml(context, xmlString)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -53,9 +53,5 @@ class PypiService {
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.upload(context)
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(PypiService::class.java)
     }
 }
