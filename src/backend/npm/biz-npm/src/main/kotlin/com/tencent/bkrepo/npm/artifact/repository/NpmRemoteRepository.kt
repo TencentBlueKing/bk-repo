@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
@@ -16,10 +17,9 @@ import com.tencent.bkrepo.npm.constants.ID
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
-import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_FULL_PATH
+import com.tencent.bkrepo.npm.constants.SEARCH_MAP
 import com.tencent.bkrepo.npm.constants.TARBALL
-import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -49,8 +49,11 @@ class NpmRemoteRepository : RemoteRepository() {
 
     override fun generateRemoteDownloadUrl(context: ArtifactTransferContext): String {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
-        val artifactUri = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        return remoteConfiguration.url.trimEnd('/') + artifactUri
+        val tarballPrefix = getTarballPrefix(context)
+
+        val requestURL = context.request.requestURL.toString() + "?" + context.request.queryString
+        context.contextAttributes[NPM_FILE_FULL_PATH] = requestURL.removePrefix(tarballPrefix)
+        return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
     }
 
     override fun getCacheNodeCreateRequest(context: ArtifactDownloadContext, file: File): NodeCreateRequest {
@@ -110,27 +113,27 @@ class NpmRemoteRepository : RemoteRepository() {
         val pkgJson = GsonUtils.transferFileToJson(file)
         val name = pkgJson.get(NAME).asString
         val id = pkgJson[ID].asString
-        val tarball = getTarball(context)
-        if (id.contains('@')) {
-            val version = pkgJson[VERSION]
-            val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
-            pkgJson.getAsJsonObject(DIST).addProperty(TARBALL, tarball + tgzFullPath)
+        if (id.substring(1).contains('@')) {
+            val oldTarball = pkgJson.getAsJsonObject(DIST)[TARBALL].asString
+            val prefix = oldTarball.split(name)[0].trimEnd('/')
+            val newTarball = oldTarball.replace(prefix, getTarballPrefix(context))
+            pkgJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
         } else {
             val versions = pkgJson.getAsJsonObject(VERSIONS)
             versions.keySet().forEach {
                 val versionObject = versions.getAsJsonObject(it)
-                val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, it)
-                // 替换tarball
-                versionObject.getAsJsonObject(DIST).addProperty(TARBALL, tarball + tgzFullPath)
+                val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
+                val prefix = oldTarball.split(name)[0].trimEnd('/')
+                val newTarball = oldTarball.replace(prefix, getTarballPrefix(context))
+                versionObject.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
             }
         }
         return pkgJson
     }
 
-    private fun getTarball(context: ArtifactSearchContext): String {
-        val request = HttpContextHolder.getRequest()
-        val requestURL = request.requestURL.toString()
-        val requestURI = request.requestURI
+    private fun getTarballPrefix(context: ArtifactTransferContext): String {
+        val requestURL = context.request.requestURL.toString()
+        val requestURI = context.request.requestURI
         val projectId = context.artifactInfo.projectId
         val repoName = context.artifactInfo.repoName
         val replace = requestURL.replace(requestURI, "")
@@ -153,7 +156,7 @@ class NpmRemoteRepository : RemoteRepository() {
 
     private fun getNpmVersion(jsonObj: JsonObject): String {
         val id = jsonObj[ID].asString
-        val latestVersion = if (!id.contains('@')) {
+        val latestVersion = if (!id.substring(1).contains('@')) {
             jsonObj.getAsJsonObject(DISTTAGS).get(LATEST).asString
         } else {
             isWithFileVersion = true
@@ -178,7 +181,6 @@ class NpmRemoteRepository : RemoteRepository() {
 
             val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
             val cacheConfiguration = remoteConfiguration.cacheConfiguration
-            // if (!cacheConfiguration.cacheEnabled) return
 
             val repositoryInfo = context.repositoryInfo
             val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
@@ -216,8 +218,9 @@ class NpmRemoteRepository : RemoteRepository() {
 
     private fun generateRemoteSearchUrl(context: ArtifactSearchContext): String {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
-        val artifactUri = context.artifactInfo.artifactUri
-        return remoteConfiguration.url.trimEnd('/') + artifactUri
+        val tarballPrefix = getTarballPrefix(context)
+        val requestURL = context.request.requestURL.toString()
+        return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
     }
 
     private fun getNodeCreateRequest(context: ArtifactSearchContext, file: ArtifactFile): NodeCreateRequest {
@@ -235,6 +238,18 @@ class NpmRemoteRepository : RemoteRepository() {
             overwrite = true,
             operator = context.userId
         )
+    }
+
+    override fun list(context: ArtifactListContext): Map<String, Any> {
+        // val searchRequest = context.contextAttributes[SEARCH_REQUEST] as MetadataSearchRequest
+        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+        val httpClient = createHttpClient(remoteConfiguration)
+        val downloadUri = generateRemoteDownloadUrl(context)
+        val request = Request.Builder().url(downloadUri).build()
+        val response = httpClient.newCall(request).execute()
+        return if (checkResponse(response)) {
+            GsonUtils.gsonToMaps<Any>(response.body()!!.string()) ?: SEARCH_MAP
+        } else SEARCH_MAP
     }
 
     companion object {

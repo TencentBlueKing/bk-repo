@@ -47,14 +47,14 @@ abstract class RemoteRepository : AbstractArtifactRepository {
     @Autowired
     lateinit var storageService: StorageService
 
-    override fun search(context: ArtifactSearchContext): JsonObject? {
+    override fun search(context: ArtifactSearchContext): Any? {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val httpClient = createHttpClient(remoteConfiguration)
         val downloadUri = generateRemoteDownloadUrl(context)
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
         return if(checkResponse(response)){
-            JsonParser().parse(response.body()!!.string()).asJsonObject
+            response.body()!!.string()
         } else null
     }
 
@@ -124,7 +124,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
             size = file.length(),
             sha256 = sha256,
             md5 = md5,
-            overwrite = false,
+            overwrite = true,
             operator = context.userId
         )
     }
@@ -195,10 +195,6 @@ abstract class RemoteRepository : AbstractArtifactRepository {
             logger.warn("Download artifact from remote failed: [${response.code()}]")
             return false
         }
-        // if (response.body()?.contentLength() ?: 0 <= 0) {
-        //     logger.warn("Download artifact from remote failed: response body is empty.")
-        //     return false
-        // }
         return true
     }
 

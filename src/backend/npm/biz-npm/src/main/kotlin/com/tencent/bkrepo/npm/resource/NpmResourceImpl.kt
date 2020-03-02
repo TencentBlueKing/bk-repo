@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.npm.api.NpmResource
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
+import com.tencent.bkrepo.npm.constants.ERROR_MAP
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.service.NpmService
 import com.tencent.bkrepo.npm.utils.GsonUtils
@@ -23,9 +24,7 @@ class NpmResourceImpl : NpmResource {
 
     override fun searchPackageInfo(artifactInfo: NpmArtifactInfo): Map<String, Any> {
         val fileInfo = npmService.searchPackageInfo(artifactInfo)
-        val errorMap = mapOf(Pair("error", "not_found"), Pair("reason", "document not found"))
-        val gsonToMaps = fileInfo?.let { GsonUtils.gsonToMaps<Any>(it) }
-        return gsonToMaps ?: errorMap
+        return fileInfo?.let { GsonUtils.gsonToMaps<Any>(it) } ?: ERROR_MAP
     }
 
     override fun download(artifactInfo: NpmArtifactInfo) {
@@ -39,5 +38,17 @@ class NpmResourceImpl : NpmResource {
 
     override fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): Map<String, Any> {
         return npmService.search(artifactInfo, searchRequest)
+    }
+
+    override fun getDistTagsInfo(artifactInfo: NpmArtifactInfo): Map<String, String> {
+        return npmService.getDistTagsInfo(artifactInfo)
+    }
+
+    override fun addDistTags(artifactInfo: NpmArtifactInfo, body: String): Map<String, String> {
+        return npmService.addDistTags(artifactInfo, body)
+    }
+
+    override fun deleteDistTags(artifactInfo: NpmArtifactInfo) {
+        return npmService.deleteDistTags(artifactInfo)
     }
 }

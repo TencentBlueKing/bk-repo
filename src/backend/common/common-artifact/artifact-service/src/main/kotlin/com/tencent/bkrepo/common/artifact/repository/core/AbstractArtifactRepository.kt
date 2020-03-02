@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.artifact.repository.core
 
-import com.google.gson.JsonObject
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
@@ -65,11 +64,11 @@ interface AbstractArtifactRepository : ArtifactRepository {
         }
     }
 
-    override fun search(context: ArtifactSearchContext): JsonObject? {
+    override fun search(context: ArtifactSearchContext): Any? {
         throw UnsupportedMethodException()
     }
 
-    override fun list(context: ArtifactListContext) {
+    override fun list(context: ArtifactListContext): Any? {
         throw UnsupportedMethodException()
     }
 

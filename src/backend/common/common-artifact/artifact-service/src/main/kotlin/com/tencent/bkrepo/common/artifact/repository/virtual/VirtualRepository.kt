@@ -24,7 +24,7 @@ abstract class VirtualRepository : AbstractArtifactRepository {
     @Autowired
     lateinit var repositoryResource: RepositoryResource
 
-    override fun search(context: ArtifactSearchContext): JsonObject? {
+    override fun search(context: ArtifactSearchContext): Any? {
         val artifactInfo = context.artifactInfo
         val virtualConfiguration = context.repositoryConfiguration as VirtualConfiguration
         val repoList = virtualConfiguration.repositoryList
@@ -77,7 +77,7 @@ abstract class VirtualRepository : AbstractArtifactRepository {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun getTraversedList(context: ArtifactTransferContext): MutableList<RepositoryIdentify> {
+    protected fun getTraversedList(context: ArtifactTransferContext): MutableList<RepositoryIdentify> {
         return context.contextAttributes[TRAVERSED_LIST] as? MutableList<RepositoryIdentify> ?: let {
             val selfRepoInfo = context.repositoryInfo
             val traversedList = mutableListOf(RepositoryIdentify(selfRepoInfo.projectId, selfRepoInfo.name))
