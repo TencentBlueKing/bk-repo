@@ -50,8 +50,8 @@ class NpmRemoteRepository : RemoteRepository() {
     override fun generateRemoteDownloadUrl(context: ArtifactTransferContext): String {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val tarballPrefix = getTarballPrefix(context)
-
-        val requestURL = context.request.requestURL.toString() + "?" + context.request.queryString
+        val queryString = context.request.queryString
+        val requestURL = context.request.requestURL.toString() + if (StringUtils.isNotEmpty(queryString)) "?$queryString" else ""
         context.contextAttributes[NPM_FILE_FULL_PATH] = requestURL.removePrefix(tarballPrefix)
         return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
     }

@@ -34,4 +34,13 @@ open class ArtifactTransferContext(repo: RepositoryInfo? = null) {
         this.repositoryConfiguration = repositoryInfo.configuration
         this.contextAttributes = mutableMapOf()
     }
+
+    fun copy(repositoryInfo: RepositoryInfo): ArtifactTransferContext {
+        val context = this.javaClass.newInstance()
+        context.repositoryInfo = repositoryInfo
+        context.storageCredentials = repositoryInfo.storageCredentials
+        context.repositoryConfiguration = repositoryInfo.configuration
+        context.contextAttributes = contextAttributes
+        return context
+    }
 }
