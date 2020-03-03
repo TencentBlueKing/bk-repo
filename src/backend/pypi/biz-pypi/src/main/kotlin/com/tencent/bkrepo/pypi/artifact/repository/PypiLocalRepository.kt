@@ -109,7 +109,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 val nodeList: List<Map<String, Any>>? = nodeResource.query(queryModel).data?.records
                 if (nodeList != null) {
                     xml = XmlUtil.getXmlMethodResponse(nodeList)
-                    // response.writer.print(xml)
+                    response.writer.print(xml)
                 }
             }
         }
@@ -117,7 +117,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     /**
      *
      */
-    override fun list(context: ArtifactListContext) {
+    override fun list(context: ArtifactListContext): Any? {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         with(artifactInfo) {
@@ -158,6 +158,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 }
             }
         }
+        return null
     }
 
     /**
@@ -222,8 +223,9 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
             val projectId = Rule.QueryRule("projectId", projectId)
             val repoName = Rule.QueryRule("repoName", repoName)
             val packageQuery = Rule.QueryRule("metadata.name", name, OperationType.EQ)
+            val fullPathQuery = Rule.QueryRule("fullPath", fullPath)
             val rule1 = Rule.NestedRule(
-                mutableListOf(repoName, projectId, packageQuery),
+                mutableListOf(repoName, projectId, packageQuery, fullPathQuery),
                 Rule.NestedRule.RelationType.AND
             )
             val queryModel = QueryModel(

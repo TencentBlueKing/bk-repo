@@ -8,7 +8,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -52,36 +51,11 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
             try {
                 val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category)
-                val subContext = pypiArtifactListContextCopy(repositoryInfo = subRepoInfo, contextAttributes = context.contextAttributes)
-                repository.list(subContext)
+                repository.list(context)
             } catch (exception: Exception) {
                 logger.warn("Download Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
-    }
-
-    fun pypiArtifactListContextCopy(
-        repositoryInfo: RepositoryInfo,
-        contextAttributes: MutableMap<String, Any>
-    ): ArtifactListContext {
-        val targetContext = ArtifactListContext()
-        targetContext.repositoryInfo = repositoryInfo
-        targetContext.storageCredentials = repositoryInfo.storageCredentials
-        targetContext.repositoryConfiguration = repositoryInfo.configuration
-        targetContext.contextAttributes = contextAttributes
-        return targetContext
-    }
-
-    fun pypiArtifactSearchContextCopy(
-        repositoryInfo: RepositoryInfo,
-        contextAttributes: MutableMap<String, Any>
-    ): ArtifactSearchContext {
-        val targetContext = ArtifactSearchContext()
-        targetContext.repositoryInfo = repositoryInfo
-        targetContext.storageCredentials = repositoryInfo.storageCredentials
-        targetContext.repositoryConfiguration = repositoryInfo.configuration
-        targetContext.contextAttributes = contextAttributes
-        return targetContext
     }
 
     override fun searchXml(context: ArtifactSearchContext, xmlString: String) {
@@ -99,8 +73,7 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
             try {
                 val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as PypiRepository
-                val subContext = pypiArtifactSearchContextCopy(repositoryInfo = subRepoInfo, contextAttributes = context.contextAttributes)
-                repository.searchXml(subContext, xmlString)
+                repository.searchXml(context, xmlString)
             } catch (exception: Exception) {
                 logger.warn("Download Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
             }

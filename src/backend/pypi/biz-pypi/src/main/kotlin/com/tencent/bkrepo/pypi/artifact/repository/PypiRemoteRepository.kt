@@ -7,11 +7,23 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.pypi.artifact.REMOTE_HTML_CACHE_FULL_PATH
+import com.tencent.bkrepo.pypi.artifact.SSL_PORT
+import com.tencent.bkrepo.pypi.artifact.XML_RPC_URI
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.springframework.stereotype.Component
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileReader
+import java.io.FileWriter
+import java.io.IOException
 import java.security.cert.CertificateException
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
@@ -42,15 +54,93 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         return remoteConfiguration.url.trimEnd('/') + "/simple$artifactUri"
     }
 
-    override fun list(context: ArtifactListContext) {
+    override fun list(context: ArtifactListContext): Any? {
+        val response = HttpContextHolder.getResponse()
+        response.contentType = "text/html; charset=UTF-8"
+        val cacheHtml = getCacheHtml(context)
+        val htmlContext = StringBuilder()
+        cacheHtml?.let {
+            BufferedReader(FileReader(cacheHtml)).use {
+                var line: String
+                while (true) {
+                    line = it.readLine() ?: break
+                    htmlContext.append(line)
+                }
+            }
+        }
+        response.writer.print(htmlContext.toString())
+        return null
+    }
+
+    /**
+     * 获取项目-仓库缓存对应的html文件
+     */
+    fun getCacheHtml(context: ArtifactListContext): File? {
+        val repositoryInfo = context.repositoryInfo
+        val projectId = repositoryInfo.projectId
+        val repoName = repositoryInfo.name
+        val fullPath = REMOTE_HTML_CACHE_FULL_PATH
+        val node = nodeResource.detail(projectId, repoName, fullPath).data
+        while (node == null) {
+            cacheRemoteRepoList(context)
+        }
+        node.nodeInfo.takeIf { !it.folder } ?: return null
+        return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
+    }
+
+    /**
+     * 缓存html文件
+     */
+    fun cacheRemoteRepoList(context: ArtifactListContext) {
         val listUri = generateRemoteListUrl(context)
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
         val response = HttpContextHolder.getResponse()
         response.contentType = "text/html; charset=UTF-8"
         val build: Request = Request.Builder().get().url(listUri).build()
-        val htmlContent: String? = okHttpClient.newCall(build).execute().body()?.string()
-        response.writer.print(htmlContent)
+        val htmlContent = okHttpClient.newCall(build).execute().body()?.string()
+        val cacheHtmlFile = File(REMOTE_HTML_CACHE_FULL_PATH)
+        htmlContent?.let {
+            // 保存html文件
+            try {
+                val fileWriter = FileWriter(cacheHtmlFile)
+                fileWriter.write(htmlContent)
+            } catch (ioe: IOException) {
+            }
+        }
+        onUpload(context, cacheHtmlFile)
+    }
+
+    fun onUpload(context: ArtifactListContext, file: File) {
+        val nodeCreateRequest = getNodeCreateRequest(context, file)
+        nodeResource.create(nodeCreateRequest)
+        storageService.store(nodeCreateRequest.sha256!!, file, context.storageCredentials)
+    }
+
+    /**
+     * 获取PYPI节点创建请求,保存html文件
+     */
+    fun getNodeCreateRequest(context: ArtifactListContext, file: File): NodeCreateRequest {
+        val artifactInfo = context.artifactInfo
+        val repositoryInfo = context.repositoryInfo
+        val fileInputStream01 = FileInputStream(file)
+        val sha256 = FileDigestUtils.fileSha256(fileInputStream01)
+        val fileInputStream02 = FileInputStream(file)
+        val md5 = FileDigestUtils.fileMd5(fileInputStream02)
+        val pypiArtifactInfo = artifactInfo as PypiArtifactInfo
+
+        return NodeCreateRequest(
+            projectId = repositoryInfo.projectId,
+            repoName = repositoryInfo.name,
+            folder = false,
+            overwrite = true,
+            fullPath = "/$REMOTE_HTML_CACHE_FULL_PATH",
+            size = file.length(),
+            sha256 = sha256 as String?,
+            md5 = md5 as String?,
+            operator = context.userId,
+            metadata = pypiArtifactInfo.metadata
+        )
     }
 
     override fun searchXml(context: ArtifactSearchContext, xmlString: String) {
@@ -59,14 +149,20 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         val response = HttpContextHolder.getResponse()
         val body = RequestBody.create(MediaType.parse("text/xml"), xmlString)
         response.contentType = "text/xml; charset=UTF-8"
-        val build: Request = Request.Builder().url(remoteConfiguration.url)
-            .addHeader("Accept-Encoding", "gzip, deflate")
-            .addHeader("Accept", "*/*")
+        val remoteUrl = removeSlash(remoteConfiguration.url)
+        val build: Request = Request.Builder().url("$remoteUrl:$SSL_PORT/$XML_RPC_URI")
             .addHeader("Connection", "keep-alive")
             .post(body)
             .build()
         val htmlContent: String? = okHttpClient.newCall(build).execute().body()?.string()
         response.writer.print(htmlContent)
+    }
+
+    private fun removeSlash(url: String): String {
+        if (url.endsWith("/")) {
+            return url.substring(0, url.length - 1)
+        }
+        return url
     }
 
     private fun createHttpsClient(configuration: RemoteConfiguration): OkHttpClient {
@@ -77,7 +173,6 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         builder.proxyAuthenticator(createProxyAuthenticator(configuration.networkConfiguration.proxy))
         builder.authenticator(createAuthenticator(configuration.credentialsConfiguration))
         builder.sslSocketFactory(sslSocketFactory(), trustAllCerts[0] as X509TrustManager)
-
         return builder.build()
     }
 

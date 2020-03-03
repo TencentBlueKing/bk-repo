@@ -2,5 +2,4 @@ dependencies {
     implementation project(":common:common-api")
     compileOnly "org.springframework:spring-web"
     implementation project(":common:common-artifact:artifact-api")
-    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.10.2"
 }
