@@ -2,6 +2,7 @@ package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.pojo.AddClusterRequest
 import com.tencent.bkrepo.auth.pojo.Cluster
+import com.tencent.bkrepo.auth.pojo.UpdateClusterRequest
 
 interface ClusterService {
 
@@ -9,5 +10,9 @@ interface ClusterService {
 
     fun ping(clusterId: String): Boolean
 
-    fun listcluster(): List<Cluster>
+    fun delete(clusterId: String): Boolean
+
+    fun updateCluster(clusterId: String, request: UpdateClusterRequest): Boolean
+
+    fun listCluster(): List<Cluster>
 }
