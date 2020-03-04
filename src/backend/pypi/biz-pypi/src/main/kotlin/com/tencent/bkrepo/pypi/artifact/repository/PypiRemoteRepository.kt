@@ -8,15 +8,20 @@ import com.tencent.bkrepo.common.artifact.repository.http.HttpClientBuilderFacto
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import com.tencent.bkrepo.pypi.artifact.FLUSH_CACHE_EXPIRE
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.REMOTE_HTML_CACHE_FULL_PATH
 import com.tencent.bkrepo.pypi.artifact.SSL_PORT
 import com.tencent.bkrepo.pypi.artifact.XML_RPC_URI
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.BufferedReader
 import java.io.File
@@ -25,6 +30,9 @@ import java.io.FileReader
 import java.io.FileWriter
 import java.io.IOException
 import java.security.cert.CertificateException
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory
@@ -38,6 +46,10 @@ import javax.net.ssl.X509TrustManager
  */
 @Component
 class PypiRemoteRepository : RemoteRepository(), PypiRepository {
+
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(PypiRemoteRepository::class.java)
+    }
 
     override fun generateRemoteDownloadUrl(context: ArtifactDownloadContext): String {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
@@ -54,7 +66,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         return remoteConfiguration.url.trimEnd('/') + "/simple$artifactUri"
     }
 
-    override fun list(context: ArtifactListContext): Any? {
+    override fun list(context: ArtifactListContext) {
         val response = HttpContextHolder.getResponse()
         response.contentType = "text/html; charset=UTF-8"
         val cacheHtml = getCacheHtml(context)
@@ -69,7 +81,6 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
             }
         }
         response.writer.print(htmlContext.toString())
-        return null
     }
 
     /**
@@ -83,8 +94,19 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         val node = nodeResource.detail(projectId, repoName, fullPath).data
         while (node == null) {
             cacheRemoteRepoList(context)
+            Thread.sleep(60)
         }
         node.nodeInfo.takeIf { !it.folder } ?: return null
+        val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SS")
+        val date = LocalDateTime.parse(node.nodeInfo.lastModifiedDate, format)
+        val currentTime = LocalDateTime.now()
+        val duration = Duration.between(date, currentTime).toMinutes()
+        while (duration > FLUSH_CACHE_EXPIRE) {
+            var job = GlobalScope.launch {
+                cacheRemoteRepoList(context)
+            }
+        }
+
         return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
     }
 

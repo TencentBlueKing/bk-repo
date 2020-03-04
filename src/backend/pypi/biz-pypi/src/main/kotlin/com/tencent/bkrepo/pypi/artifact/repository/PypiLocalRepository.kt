@@ -117,7 +117,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     /**
      *
      */
-    override fun list(context: ArtifactListContext): Any? {
+    override fun list(context: ArtifactListContext) {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         with(artifactInfo) {
@@ -158,7 +158,6 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 }
             }
         }
-        return null
     }
 
     /**
