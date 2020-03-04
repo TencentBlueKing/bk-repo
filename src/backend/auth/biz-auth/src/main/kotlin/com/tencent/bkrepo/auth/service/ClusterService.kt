@@ -7,5 +7,7 @@ interface ClusterService {
 
     fun addCluster(request: AddClusterRequest): Boolean
 
+    fun ping(clusterId: String): Boolean
+
     fun listcluster(): List<Cluster>
 }

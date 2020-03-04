@@ -23,7 +23,7 @@ class ServiceClusterResourceImpl @Autowired constructor(
     }
 
     override fun ping(clusterId: String): Response<Boolean> {
-        return ResponseBuilder.success(true)
+        return ResponseBuilder.success(clusterService.ping(clusterId))
     }
 
     override fun credential(): Response<Boolean> {
