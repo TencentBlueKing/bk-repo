@@ -82,7 +82,6 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
             val token = basicAuthHeader.removePrefix("Bearer ")
             return JwtAuthCredentials(token)
         } catch (exception: Exception) {
-            logger.info("dddddddddddddddddddd")
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
     }

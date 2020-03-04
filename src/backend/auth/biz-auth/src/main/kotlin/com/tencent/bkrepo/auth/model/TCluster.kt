@@ -7,12 +7,13 @@ import org.springframework.data.mongodb.core.mapping.Document
 /**
  * 角色
  */
-@Document("Cluster")
+@Document("cluster")
 @CompoundIndexes(
     CompoundIndex(name = "clusterId_idx", def = "{'clusterId': 1}", unique = true, background = true)
 )
 data class TCluster(
-    val clusterId: String,
+    var clusterId: String,
+    var cert: String = "",
     var clusterAddr: String,
     val credentialStatus: Boolean? = false
 )
