@@ -35,7 +35,7 @@ abstract class VirtualRepository : AbstractArtifactRepository {
             try {
                 val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
-                val subContext = context.copy(repositoryInfo = subRepoInfo)
+                val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactDownloadContext
                 repository.onDownload(subContext)?.let { file ->
                     logger.debug("Artifact[${artifactInfo.getFullUri()}] is found it Repository[$repoIdentify].")
                     return file

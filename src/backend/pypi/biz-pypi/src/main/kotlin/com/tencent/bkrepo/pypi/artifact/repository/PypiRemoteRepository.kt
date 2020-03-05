@@ -105,6 +105,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
             var job = GlobalScope.launch {
                 cacheRemoteRepoList(context)
             }
+
         }
 
         return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
