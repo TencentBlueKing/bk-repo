@@ -27,7 +27,7 @@ class ProjectStatJob {
     @Autowired
     private lateinit var projectMetricsRepository: ProjectMetricsRepository
 
-    @Scheduled(cron = "00 45 * * * ?")
+    @Scheduled(cron = "00 15 * * * ?")
     @SchedulerLock(name = "ProjectStatJob", lockAtMostFor = "PT1H")
     fun statProjectRepoSize() {
         logger.info("start to stat project metrics")
