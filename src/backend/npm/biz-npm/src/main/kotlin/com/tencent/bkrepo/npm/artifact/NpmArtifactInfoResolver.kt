@@ -18,8 +18,6 @@ class NpmArtifactInfoResolver : ArtifactInfoResolver {
         artifactUri: String,
         request: HttpServletRequest
     ): NpmArtifactInfo {
-        // 校验npm版本号的正则表达式
-        val versionPattern = "\\d.\\d.\\d"
         val uri = URLDecoder.decode(request.requestURI, "utf-8")
 
         val pathElements = LinkedList<String>()
@@ -36,14 +34,9 @@ class NpmArtifactInfoResolver : ArtifactInfoResolver {
         }
         val scope = if (pathElements[2].contains('@')) pathElements[2] else ""
         val pkgName = if (scope.contains('@')) pathElements[3] else pathElements[2]
-        var version =
+        val version =
             if (pathElements.size > 4) pathElements[4] else (if (StringUtils.isBlank(scope) && pathElements.size == 4) pathElements[3] else "")
-        version = versionPattern.toRegex().matchEntire(version)?.value ?: ""
-        val npmArtifactInfo = NpmArtifactInfo(projectId, repoName, artifactUri, scope, pkgName, version)
-        require(npmArtifactInfo.isValid()) {
-            throw IllegalArgumentException("Invalid value for '${npmArtifactInfo.pkgName}'.")
-        }
-        return npmArtifactInfo
+        return NpmArtifactInfo(projectId, repoName, artifactUri, scope, pkgName, version)
     }
 
     companion object {
