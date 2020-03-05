@@ -2,14 +2,15 @@ package com.tencent.bkrepo.npm.service
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.google.gson.reflect.TypeToken
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
+import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -23,10 +24,9 @@ import com.tencent.bkrepo.npm.constants.CREATED
 import com.tencent.bkrepo.npm.constants.DATA
 import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.DISTTAGS
+import com.tencent.bkrepo.npm.constants.ERROR_MAP
 import com.tencent.bkrepo.npm.constants.FILE_DASH
 import com.tencent.bkrepo.npm.constants.FILE_SUFFIX
-import com.tencent.bkrepo.npm.constants.KEYWORDS
-import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -41,12 +41,15 @@ import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_JSON_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.REV
+import com.tencent.bkrepo.npm.constants.REV_VALUE
+import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SHASUM
+import com.tencent.bkrepo.npm.constants.SUCCESS_MAP
 import com.tencent.bkrepo.npm.constants.TIME
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
-import com.tencent.bkrepo.npm.constants.revValue
 import com.tencent.bkrepo.npm.pojo.NpmMetaData
+import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
@@ -59,7 +62,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.InputStreamReader
 import java.util.Date
 
 @Service
@@ -114,23 +116,31 @@ class NpmService @Autowired constructor(
         var pkgInfo = searchPackageInfo(artifactInfo) ?: JsonObject()
         val leastJsonObject = jsonObj.getAsJsonObject(VERSIONS)
 
-        // 如果是第一次上传
+        // 第一次上传
         val timeMap = if (pkgInfo.size() == 0) pkgInfo else pkgInfo.getAsJsonObject(TIME)!!
         if (pkgInfo.size() == 0) {
-            jsonObj.addProperty(REV, revValue)
+            jsonObj.addProperty(REV, REV_VALUE)
             pkgInfo = jsonObj
             timeMap.add(CREATED, GsonUtils.gson.toJsonTree(Date()))
         }
 
-        val version = jsonObj.getAsJsonObject(DISTTAGS).get(LATEST).asString
-        pkgInfo.getAsJsonObject(VERSIONS).add(version, leastJsonObject.getAsJsonObject(version))
-        pkgInfo.getAsJsonObject(DISTTAGS).addProperty(LATEST, version)
-        timeMap.add(version, GsonUtils.gson.toJsonTree(Date()))
+        val distTags = getDistTags(jsonObj)!!
+        pkgInfo.getAsJsonObject(VERSIONS).add(distTags.second, leastJsonObject.getAsJsonObject(distTags.second))
+        pkgInfo.getAsJsonObject(DISTTAGS).addProperty(distTags.first, distTags.second)
+        timeMap.add(distTags.second, GsonUtils.gson.toJsonTree(Date()))
         timeMap.add(MODIFIED, GsonUtils.gson.toJsonTree(Date()))
         pkgInfo.add(TIME, timeMap)
         val packageJsonFile = ArtifactFileFactory.build()
         Streams.copy(GsonUtils.gson.toJson(pkgInfo).byteInputStream(), packageJsonFile.getOutputStream(), true)
         artifactFileMap[NPM_PACKAGE_JSON_FILE] = packageJsonFile
+    }
+
+    private fun getDistTags(jsonObj: JsonObject): Pair<String, String>? {
+        val distTags = jsonObj.getAsJsonObject(DISTTAGS)
+        distTags.entrySet().forEach {
+            return Pair(it.key, it.value.asString)
+        }
+        return null
     }
 
     /**
@@ -141,9 +151,10 @@ class NpmService @Autowired constructor(
         jsonObj: JsonObject,
         attributesMap: MutableMap<String, Any>
     ) {
-        val version = jsonObj.getAsJsonObject(DISTTAGS).get(LATEST).asString
+        val distTags = getDistTags(jsonObj)!!
+        // val version = jsonObj.getAsJsonObject(DISTTAGS).get(LATEST).asString
         val name = jsonObj.get(NAME).asString
-        val versionJsonObj = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(version)
+        val versionJsonObj = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(distTags.second)
         val packageJsonWithVersionFile = ArtifactFileFactory.build()
         Streams.copy(
             GsonUtils.gson.toJson(versionJsonObj).byteInputStream(),
@@ -155,7 +166,7 @@ class NpmService @Autowired constructor(
         attributesMap[ATTRIBUTE_OCTET_STREAM_SHA1] = versionJsonObj.getAsJsonObject(DIST).get(SHASUM).asString
         attributesMap[NPM_METADATA] = buildMetaData(versionJsonObj)
         attributesMap[NPM_PKG_VERSION_JSON_FILE_FULL_PATH] =
-            String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
+            String.format(NPM_PKG_VERSION_FULL_PATH, name, name, distTags.second)
         attributesMap[NPM_PKG_JSON_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
     }
 
@@ -186,12 +197,13 @@ class NpmService @Autowired constructor(
      * 获取文件模块相关信息，最后将文件信息移除（data量容易过大）
      */
     private fun getAttachmentsInfo(jsonObj: JsonObject, attributesMap: MutableMap<String, Any>): JsonObject {
+        val distTags = getDistTags(jsonObj)!!
         val name = jsonObj.get(NAME).asString
-        val version = jsonObj.getAsJsonObject(DISTTAGS).get(LATEST).asString
-        logger.info("current pkgName : $name ,current version : $version")
-        val attachKey = "$name$FILE_DASH$version$FILE_SUFFIX"
+        // val version = jsonObj.getAsJsonObject(DISTTAGS).get(LATEST).asString
+        logger.info("current pkgName : $name ,current version : ${distTags.second}")
+        val attachKey = "$name$FILE_DASH${distTags.second}$FILE_SUFFIX"
         val mutableMap = jsonObj.getAsJsonObject(ATTACHMENTS).getAsJsonObject(attachKey)
-        attributesMap[NPM_PKG_TGZ_FILE_FULL_PATH] = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
+        attributesMap[NPM_PKG_TGZ_FILE_FULL_PATH] = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, distTags.second)
         attributesMap[APPLICATION_OCTET_STEAM] = mutableMap.get(CONTENT_TYPE).asString
         jsonObj.remove(ATTACHMENTS)
         return mutableMap
@@ -203,40 +215,7 @@ class NpmService @Autowired constructor(
         val context = ArtifactSearchContext()
         context.contextAttributes[NPM_FILE_FULL_PATH] = getFileFullPath(artifactInfo)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        val file = repository.search(context) ?: return null
-        val fileJson = GsonUtils.gson.fromJson<JsonObject>(
-            InputStreamReader(file.inputStream()),
-            object : TypeToken<JsonObject>() {}.type
-        )
-        return getPkgInfo(fileJson, artifactInfo)
-    }
-
-    private fun getPkgInfo(fileJson: JsonObject, artifactInfo: NpmArtifactInfo): JsonObject {
-        val versions = fileJson.getAsJsonObject(VERSIONS)
-        if (StringUtils.isNotBlank(artifactInfo.version)) {
-            val name = fileJson.get(NAME).asString
-            val version = fileJson[VERSION].asString
-            val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
-            val metadataInfo =
-                metadataResource.query(artifactInfo.projectId, artifactInfo.repoName, tgzFullPath).data
-            metadataInfo?.forEach { (key, value) ->
-                if (StringUtils.isNotBlank(value)) fileJson.addProperty(key, value)
-                if (key == KEYWORDS) fileJson.add(key, GsonUtils.stringToArray(value))
-            }
-        } else {
-            versions.keySet().forEach {
-                val name = fileJson.get(NAME).asString
-                val version = versions.getAsJsonObject(it)[VERSION].asString
-                val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
-                val metadataInfo =
-                    metadataResource.query(artifactInfo.projectId, artifactInfo.repoName, tgzFullPath).data
-                metadataInfo?.forEach { (key, value) ->
-                    if (StringUtils.isNotBlank(value)) versions.getAsJsonObject(it).addProperty(key, value)
-                    if (key == KEYWORDS) versions.getAsJsonObject(it).add(key, GsonUtils.stringToArray(value))
-                }
-            }
-        }
-        return fileJson
+        return repository.search(context) as? JsonObject
     }
 
     private fun getFileFullPath(artifactInfo: NpmArtifactInfo): String {
@@ -276,6 +255,68 @@ class NpmService @Autowired constructor(
         context.contextAttributes[NPM_FILE_FULL_PATH] = fullPathList
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.remove(context)
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): Map<String, Any> {
+        val context = ArtifactListContext()
+        context.contextAttributes[SEARCH_REQUEST] = searchRequest
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        return repository.list(context) as Map<String, Any>
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    fun getDistTagsInfo(artifactInfo: NpmArtifactInfo): Map<String, String> {
+        val context = ArtifactSearchContext()
+        context.contextAttributes[NPM_FILE_FULL_PATH] =
+            String.format(NPM_PKG_FULL_PATH, artifactInfo.artifactUri.trimStart('/').removeSuffix("/dist-tags"))
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val pkgInfo = repository.search(context) as? JsonObject
+        return pkgInfo?.let {
+            GsonUtils.gsonToMaps<String>(it.get(DISTTAGS))
+        } ?: ERROR_MAP
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    fun addDistTags(artifactInfo: NpmArtifactInfo, body: String): Map<String, String> {
+        val context = ArtifactSearchContext()
+        val uriInfo = artifactInfo.artifactUri.split(DISTTAGS)
+        val name = uriInfo[0].trimStart('/').trimEnd('/')
+        val tag = uriInfo[1].trimStart('/')
+        context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val pkgInfo = repository.search(context) as JsonObject
+        pkgInfo.getAsJsonObject(DISTTAGS).addProperty(tag, body.replace("\"", ""))
+        val artifactFile = ArtifactFileFactory.build()
+        Streams.copy(
+            GsonUtils.gson.toJson(pkgInfo).byteInputStream(),
+            artifactFile.getOutputStream(),
+            true
+        )
+        val uploadContext = ArtifactUploadContext(artifactFile)
+        uploadContext.contextAttributes[OCTET_STREAM + "_full_path"] = String.format(NPM_PKG_FULL_PATH, name)
+        repository.upload(uploadContext)
+        return SUCCESS_MAP
+    }
+
+    fun deleteDistTags(artifactInfo: NpmArtifactInfo) {
+        val context = ArtifactSearchContext()
+        val uriInfo = artifactInfo.artifactUri.split(DISTTAGS)
+        val name = uriInfo[0].trimStart('/').trimEnd('/')
+        val tag = uriInfo[1].trimStart('/')
+        context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val pkgInfo = repository.search(context) as JsonObject
+        pkgInfo.getAsJsonObject(DISTTAGS).remove(tag)
+        val artifactFile = ArtifactFileFactory.build()
+        Streams.copy(
+            GsonUtils.gson.toJson(pkgInfo).byteInputStream(),
+            artifactFile.getOutputStream(),
+            true
+        )
+        val uploadContext = ArtifactUploadContext(artifactFile)
+        uploadContext.contextAttributes[OCTET_STREAM + "_full_path"] = String.format(NPM_PKG_FULL_PATH, name)
+        repository.upload(uploadContext)
     }
 
     companion object {
