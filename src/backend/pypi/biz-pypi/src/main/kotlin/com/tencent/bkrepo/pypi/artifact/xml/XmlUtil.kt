@@ -1,16 +1,15 @@
-package com.tencent.bkrepo.pypi.artifact.url
-
-import com.tencent.bkrepo.pypi.pojo.xml.Data
-import com.tencent.bkrepo.pypi.pojo.xml.MethodResponse
-import com.tencent.bkrepo.pypi.pojo.xml.Param
-import com.tencent.bkrepo.pypi.pojo.xml.Params
-import com.tencent.bkrepo.pypi.pojo.xml.Struct
-import com.tencent.bkrepo.pypi.pojo.xml.Value
-import com.tencent.bkrepo.pypi.pojo.xml.Array
-import com.tencent.bkrepo.pypi.pojo.xml.Member
-import com.tencent.bkrepo.pypi.pojo.xml.XmlConvertUtil
+package com.tencent.bkrepo.pypi.artifact.xml
 
 object XmlUtil {
+
+    fun getSearchArgs(xmlString: String): HashMap<String, String?> {
+        val methodCall = XmlConvertUtil.xml2Bean(xmlString)
+        val action = methodCall.methodName
+        val packageName = methodCall.params.paramList[0].value.struct?.memberList?.get(0)?.value?.array?.data?.valueList?.get(0)?.string
+        val summary = methodCall.params.paramList[0].value.struct?.memberList?.get(1)?.value?.array?.data?.valueList?.get(0)?.string
+        val operation = methodCall.params.paramList[1].value.string
+        return hashMapOf("action" to action, "packageName" to packageName, "summary" to summary, "operation" to operation)
+    }
 
     fun getXmlMethodResponse(nodeList: List<Map<String, Any>>): String {
         val values: MutableList<Value> = ArrayList()
@@ -44,7 +43,7 @@ object XmlUtil {
                     )
                 )
             )
-        return (XmlConvertUtil.convert(methodResponse))
+        return (XmlConvertUtil.bean2Xml(methodResponse))
     }
 
     fun getMembers(metadata: Map<String, String>): List<Member> {

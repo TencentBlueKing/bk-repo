@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.npm.resource
 
 import com.tencent.bkrepo.npm.api.AuthResource
-import com.tencent.bkrepo.npm.pojo.NpmAuthResponse
+import com.tencent.bkrepo.npm.pojo.auth.NpmAuthResponse
 import com.tencent.bkrepo.npm.service.AuthService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController

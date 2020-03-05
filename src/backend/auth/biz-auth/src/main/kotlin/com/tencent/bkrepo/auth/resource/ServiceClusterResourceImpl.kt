@@ -3,6 +3,7 @@ package com.tencent.bkrepo.auth.resource
 import com.tencent.bkrepo.auth.api.ServiceClusterResource
 import com.tencent.bkrepo.auth.pojo.AddClusterRequest
 import com.tencent.bkrepo.auth.pojo.Cluster
+import com.tencent.bkrepo.auth.pojo.UpdateClusterRequest
 import com.tencent.bkrepo.auth.service.ClusterService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -19,11 +20,19 @@ class ServiceClusterResourceImpl @Autowired constructor(
     }
 
     override fun list(): Response<List<Cluster>> {
-        return ResponseBuilder.success(clusterService.listcluster())
+        return ResponseBuilder.success(clusterService.listCluster())
     }
 
     override fun ping(clusterId: String): Response<Boolean> {
         return ResponseBuilder.success(clusterService.ping(clusterId))
+    }
+
+    override fun delete(clusterId: String): Response<Boolean> {
+        return ResponseBuilder.success(clusterService.delete(clusterId))
+    }
+
+    override fun update(clusterId: String, request: UpdateClusterRequest): Response<Boolean> {
+        return ResponseBuilder.success(clusterService.updateCluster(clusterId, request))
     }
 
     override fun credential(): Response<Boolean> {

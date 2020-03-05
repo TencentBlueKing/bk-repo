@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 
 /**
- * 下载接口
  *
  * @author: carrypan
  * @date: 2019/12/4

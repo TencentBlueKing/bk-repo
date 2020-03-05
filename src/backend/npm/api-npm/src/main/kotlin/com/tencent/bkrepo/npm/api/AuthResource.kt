@@ -3,7 +3,7 @@ package com.tencent.bkrepo.npm.api
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_ADD_USER_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_USER_LOGOUT_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_WHOAMI_MAPPING_URI
-import com.tencent.bkrepo.npm.pojo.NpmAuthResponse
+import com.tencent.bkrepo.npm.pojo.auth.NpmAuthResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
