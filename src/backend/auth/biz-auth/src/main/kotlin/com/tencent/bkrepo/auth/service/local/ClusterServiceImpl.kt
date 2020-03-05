@@ -48,12 +48,13 @@ class ClusterServiceImpl @Autowired constructor(
         try {
             val cluster = clusterRepository.findOneByClusterId(clusterId)
             if (cluster == null) {
-                logger.warn("add cluster [$clusterId]  not exist.")
+                logger.warn("ping cluster [$clusterId]  not exist.")
                 setClusterCredentialStatus(clusterId, false)
                 return false
             }
             CertTrust.initClient(cluster.cert)
-            CertTrust.call(cluster.clusterAddr)
+            var addr = cluster.clusterAddr.removeSuffix("/")  + "/cluster/credential"
+            CertTrust.call(addr)
             setClusterCredentialStatus(clusterId, true)
             return true
         } catch (e: Exception) {
@@ -73,7 +74,32 @@ class ClusterServiceImpl @Autowired constructor(
     }
 
     override fun updateCluster(clusterId: String, request: UpdateClusterRequest): Boolean {
-        return true
+        val cluster = clusterRepository.findOneByClusterId(clusterId)
+        if (cluster == null) {
+            logger.warn("update cluster [$clusterId]  not exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_CLUSTER_NOT_EXIST)
+        }
+
+        val query = Query.query(Criteria.where(TCluster::clusterId.name).`is`(clusterId))
+        val update = Update()
+
+        if (request.credentialStatus != null) {
+            update.set(TCluster::credentialStatus.name, request.credentialStatus!!)
+        }
+
+        if (request.cert != "") {
+            update.set(TCluster::cert.name, request.cert)
+        }
+
+        if (request.clusterAddr != "") {
+            update.set(TCluster::clusterAddr.name, request.clusterAddr)
+        }
+
+        val result = mongoTemplate.upsert(query, update, TCluster::class.java)
+        if (result.matchedCount == 1L) {
+            return true
+        }
+        return false
     }
 
     override fun listCluster(): List<Cluster> {

@@ -6,9 +6,9 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("更新集群请求")
 data class UpdateClusterRequest(
     @ApiModelProperty("集群地址")
-    val clusterAddr: String,
+    val clusterAddr: String = "",
     @ApiModelProperty("集群证书")
-    val cert: String,
+    val cert: String = "",
     @ApiModelProperty("集群认证状态")
-    val credentialStatus: Boolean? = false
+    val credentialStatus: Boolean? = null
 )
