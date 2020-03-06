@@ -35,7 +35,7 @@ class BkRepoStatJob {
             capSize += it.capSize
             nodeNum += it.nodeNum
         }
-        val data = TBkRepoMetrics(date, projectNum, nodeNum, capSize / (1024 * 1024 * 1024))
+        val data = TBkRepoMetrics(date, projectNum, nodeNum, capSize)
         bkRepoMetricsRepository.insert(data)
     }
 
