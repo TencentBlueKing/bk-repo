@@ -8,7 +8,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.pypi.artifact.xml.Value
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -60,34 +60,10 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
         }
     }
 
-    fun pypiArtifactListContextCopy(
-        repositoryInfo: RepositoryInfo,
-        contextAttributes: MutableMap<String, Any>
-    ): ArtifactListContext {
-        val targetContext = ArtifactListContext()
-        targetContext.repositoryInfo = repositoryInfo
-        targetContext.storageCredentials = repositoryInfo.storageCredentials
-        targetContext.repositoryConfiguration = repositoryInfo.configuration
-        targetContext.contextAttributes = contextAttributes
-        return targetContext
-    }
-
-    fun pypiArtifactSearchContextCopy(
-        repositoryInfo: RepositoryInfo,
-        contextAttributes: MutableMap<String, Any>
-    ): ArtifactSearchContext {
-        val targetContext = ArtifactSearchContext()
-        targetContext.repositoryInfo = repositoryInfo
-        targetContext.storageCredentials = repositoryInfo.storageCredentials
-        targetContext.repositoryConfiguration = repositoryInfo.configuration
-        targetContext.contextAttributes = contextAttributes
-        return targetContext
-    }
-
-    override fun searchXml(context: ArtifactSearchContext, xmlString: String) {
+    override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
+        val valueList: MutableList<Value> = mutableListOf()
         val artifactInfo = context.artifactInfo
         val virtualConfiguration = context.repositoryConfiguration as VirtualConfiguration
-
         val repoList = virtualConfiguration.repositoryList
         val traversedList = getTraversedList(context)
         for (repoIdentify in repoList) {
@@ -99,11 +75,15 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
             try {
                 val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as PypiRepository
-                val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactSearchContext
-                repository.searchXml(subContext, xmlString)
+                val subContext = context.copy(subRepoInfo) as ArtifactSearchContext
+                val subValueList = repository.searchNodeList(subContext, xmlString)
+                subValueList?.let {
+                    valueList.addAll(it)
+                }
             } catch (exception: Exception) {
                 logger.warn("Download Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
+        return valueList
     }
 }
