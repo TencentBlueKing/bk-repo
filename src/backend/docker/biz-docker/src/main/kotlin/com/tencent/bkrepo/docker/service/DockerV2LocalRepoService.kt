@@ -210,17 +210,22 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         dockerRepo: String,
         tag: String
     ): ResponseEntity<Any> {
+        logger.error("fffffffffffffffffffff")
         val useManifestType = this.chooseManifestType(projectId, repoName, dockerRepo, tag)
         val manifestPath = buildManifestPathFromType(dockerRepo, tag, useManifestType)
         if (!this.repo.canRead(manifestPath)) {
+            logger.error("ggggggggggggg")
             return DockerV2Errors.unauthorizedManifest(manifestPath, null as String?)
         } else if (!this.repo.exists(projectId, repoName, manifestPath)) {
+            logger.error("mmmmmmmmmmmmmmm")
             return DockerV2Errors.manifestUnknown(manifestPath)
         } else {
             var manifest = this.repo.findManifest(projectId, repoName, manifestPath)
             if (manifest == null) {
+                logger.error("llllllllllllll")
                 return DockerV2Errors.manifestUnknown(manifestPath)
             } else {
+                logger.error("nnnnnnnnnnnnnnn")
                 return this.buildManifestResponse(
                     projectId,
                     repoName,
