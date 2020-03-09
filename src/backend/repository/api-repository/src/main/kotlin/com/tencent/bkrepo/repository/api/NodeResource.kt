@@ -153,6 +153,17 @@ interface NodeResource {
         @RequestParam fullPath: String
     ): Response<NodeSizeInfo>
 
+    @ApiOperation("查询文件节点数量")
+    @GetMapping("/file/{projectId}/{repoName}")
+    fun countFileNode(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "节点完整路径", required = true)
+        @RequestParam path: String
+    ): Response<Long>
+
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
     fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any>>>

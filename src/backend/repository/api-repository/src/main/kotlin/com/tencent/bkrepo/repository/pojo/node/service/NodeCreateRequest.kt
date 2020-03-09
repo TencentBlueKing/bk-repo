@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.node.service
 
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
@@ -34,7 +35,7 @@ data class NodeCreateRequest(
     @ApiModelProperty("元数据信息")
     val metadata: Map<String, String>? = null,
 
-    @ApiModelProperty("创建者", required = true)
-    override val operator: String
+    @ApiModelProperty("创建者")
+    override val operator: String = SYSTEM_USER
 
 ) : NodeRequest, ServiceRequest

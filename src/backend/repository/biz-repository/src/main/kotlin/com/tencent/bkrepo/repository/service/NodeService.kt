@@ -35,8 +35,6 @@ import com.tencent.bkrepo.repository.util.NodeUtils.getName
 import com.tencent.bkrepo.repository.util.NodeUtils.getParentPath
 import com.tencent.bkrepo.repository.util.NodeUtils.isRootPath
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -45,6 +43,8 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * 节点service
@@ -97,6 +97,16 @@ class NodeService @Autowired constructor(
         } else 0
 
         return NodeSizeInfo(subNodeCount = count, size = size)
+    }
+
+    /**
+     * 查询文件节点数量
+     */
+    fun countFileNode(projectId: String, repoName: String, path: String): Long {
+        repositoryService.checkRepository(projectId, repoName)
+        val formattedPath = formatPath(path)
+        val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = false, deep = true)
+        return nodeDao.count(query)
     }
 
     /**

@@ -6,7 +6,8 @@ import feign.Response
 import java.io.IOException
 
 /**
- * feign 统一Slf4j日志记录器
+ * feign 统一slf4j日志记录器
+ * 将默认的debug级别修改为info，并统一logger
  *
  * @author: carrypan
  * @date: 2019/11/1
