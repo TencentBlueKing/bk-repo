@@ -36,13 +36,6 @@ object CertTrust {
     }
 
     private fun trustedCertificatesInputStream(cert: String): InputStream {
-//        val entrustRootCertificateAuthority = "" +
-//            "-----BEGIN CERTIFICATE-----\n" +
-//            "asdlfjas3ldfjaoisj6lqwkejqi\n" +
-//            "-----END CERTIFICATE-----"
-        println("bbbbbbbbbbbbb")
-        println(cert)
-        println("ccccccccccccc")
         return Buffer()
             .writeUtf8(cert)
             .inputStream()
@@ -97,7 +90,10 @@ object CertTrust {
         val trustManager: X509TrustManager
         val sslSocketFactory: SSLSocketFactory
         try {
+<<<<<<< HEAD
             println("aaaaaaaaaaa")
+=======
+>>>>>>> remotes/origin/develop
             trustManager = trustManagerForCertificates(trustedCertificatesInputStream(cert))
             val sslContext = SSLContext.getInstance("TLS")
             sslContext.init(null, arrayOf<TrustManager>(trustManager), null)

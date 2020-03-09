@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.npm.pojo
+package com.tencent.bkrepo.npm.pojo.auth
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import io.swagger.annotations.ApiModel

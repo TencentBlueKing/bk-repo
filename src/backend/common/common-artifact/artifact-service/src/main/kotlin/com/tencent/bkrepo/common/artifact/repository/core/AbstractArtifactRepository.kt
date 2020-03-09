@@ -64,11 +64,11 @@ interface AbstractArtifactRepository : ArtifactRepository {
         }
     }
 
-    override fun search(context: ArtifactSearchContext): File? {
+    override fun search(context: ArtifactSearchContext): Any? {
         throw UnsupportedMethodException()
     }
 
-    override fun list(context: ArtifactListContext) {
+    override fun list(context: ArtifactListContext): Any? {
         throw UnsupportedMethodException()
     }
 

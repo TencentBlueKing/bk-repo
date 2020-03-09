@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface ClusterRepository : MongoRepository<TCluster, String> {
-    fun findOneByClusterId(appId: String): TCluster?
+    fun findOneByClusterId(clusterId: String): TCluster?
+    fun deleteByClusterId(clusterId: String): Long
     fun findAllBy(): List<TCluster>
 }

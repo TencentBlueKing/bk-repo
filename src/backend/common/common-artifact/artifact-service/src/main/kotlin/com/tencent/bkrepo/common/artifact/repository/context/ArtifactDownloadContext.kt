@@ -7,6 +7,4 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
  * @author: carrypan
  * @date: 2019/11/26
  */
-class ArtifactDownloadContext(repo: RepositoryInfo? = null) : ArtifactTransferContext(repo) {
-
-}
+class ArtifactDownloadContext(repo: RepositoryInfo? = null) : ArtifactTransferContext(repo)
