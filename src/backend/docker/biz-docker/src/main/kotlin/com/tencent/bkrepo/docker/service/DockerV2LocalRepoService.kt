@@ -264,6 +264,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             .sha256(digest.getDigestHex())
         var file = this.repo.download(context)
         val inputStreamResource = InputStreamResource(file.inputStream())
+        logger.error("kkkkkkkkkkkkkk {}", file.length())
         httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
         httpHeaders.set("Docker-Content-Digest", digest.toString())
         httpHeaders.set("Content-Type", DockerSchemaUtils.getManifestType(projectId, repoName, dockerRepo, this.repo))
