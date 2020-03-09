@@ -17,6 +17,7 @@ buildscript {
         skywalkingVersion = "6.1.0"
         shedlockVersion = "4.1.0"
         hdfsVersion = "2.6.0"
+        quartzMongoVersion = "2.1.0"
     }
 
     repositories {
@@ -137,6 +138,8 @@ subprojects {
             dependency "net.javacrumbs.shedlock:shedlock-spring:$shedlockVersion"
             dependency "net.javacrumbs.shedlock:shedlock-provider-mongo:$shedlockVersion"
             dependency "org.apache.hadoop:hadoop-client:$hdfsVersion"
+            dependency "org.apache.hadoop:hadoop-client:$hdfsVersion"
+            dependency "com.novemberain:quartz-mongodb:$quartzMongoVersion"
         }
 
     }

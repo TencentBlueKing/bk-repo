@@ -84,6 +84,10 @@ class NodeResourceImpl @Autowired constructor(
         return ResponseBuilder.success(nodeService.computeSize(projectId, repoName, fullPath))
     }
 
+    override fun countFileNode(projectId: String, repoName: String, path: String): Response<Long> {
+        return ResponseBuilder.success(nodeService.countFileNode(projectId, repoName, path))
+    }
+
     override fun query(queryModel: QueryModel): Response<Page<Map<String, Any>>> {
         return ResponseBuilder.success(nodeQueryService.query(queryModel))
     }

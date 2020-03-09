@@ -1,10 +1,13 @@
 rootProject.name = "bk-repo-backend"
 
+include ":boot-assembly"
+
 include ":common"
 include ":common:common-api"
 include ":common:common-redis"
 include ":common:common-mongo"
 include ":common:common-job"
+include ":common:common-quartz"
 include ":common:common-mq"
 include ":common:common-service"
 
@@ -35,6 +38,11 @@ include ":opdata:api-opdata"
 include ":opdata:biz-opdata"
 include ":opdata:boot-opdata"
 
+include ":replication"
+include ":replication:api-replication"
+include ":replication:biz-replication"
+include ":replication:boot-replication"
+
 include ":generic"
 include ":generic:api-generic"
 include ":generic:biz-generic"
@@ -60,5 +68,4 @@ include ":pypi:api-pypi"
 include ":pypi:biz-pypi"
 include ":pypi:boot-pypi"
 
-include ":boot-assembly"
 
