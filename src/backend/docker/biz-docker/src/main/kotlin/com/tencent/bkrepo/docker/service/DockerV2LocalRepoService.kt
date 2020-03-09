@@ -138,7 +138,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         dockerRepo: String,
         reference: String
     ): ResponseEntity<Any> {
-        logger.error("ccccccccccccccccc")
+        logger.error("ccccccccccccccccc {} , {} ,{} ,{} ", projectId, repoName, dockerRepo, reference)
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         try {
             val digest = DockerDigest(reference)
