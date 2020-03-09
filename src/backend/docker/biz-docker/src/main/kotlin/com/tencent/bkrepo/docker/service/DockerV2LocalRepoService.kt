@@ -138,6 +138,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         dockerRepo: String,
         reference: String
     ): ResponseEntity<Any> {
+        logger.error("ccccccccccccccccc")
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         try {
             val digest = DockerDigest(reference)
@@ -155,7 +156,12 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         digest: DockerDigest
     ): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
-        logger.info("Fetching docker manifest for repo '{}' and digest '{}' in repo '{}'", dockerRepo, digest, repoName)
+        logger.error(
+            "Fetching docker manifest for repo '{}' and digest '{}' in repo '{}'",
+            dockerRepo,
+            digest,
+            repoName
+        )
         var matched = this.findMatchingArtifacts(projectId, repoName, dockerRepo, "manifest.json")
         if (matched == null) {
             val acceptable = this.getAcceptableManifestTypes()
@@ -164,12 +170,18 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             }
         }
 
-        return if (matched == null) DockerV2Errors.manifestUnknown(digest.toString()) else this.buildManifestResponse(
-            projectId,
-            repoName,
-            dockerRepo,
-            digest
-        )
+        if (matched == null) {
+            logger.error("aaaaaa")
+            return DockerV2Errors.manifestUnknown(digest.toString())
+        } else {
+            logger.error("bbbbbbbbbb")
+            return this.buildManifestResponse(
+                projectId,
+                repoName,
+                dockerRepo,
+                digest
+            )
+        }
     }
 
     private fun findMatchingArtifacts(
