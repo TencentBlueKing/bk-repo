@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.pypi.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteConfiguration
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -43,7 +43,7 @@ import javax.net.ssl.X509TrustManager
 @Component
 class PypiRemoteRepository : RemoteRepository(), PypiRepository {
 
-    override fun generateRemoteDownloadUrl(context: ArtifactDownloadContext): String {
+    override fun generateRemoteDownloadUrl(context: ArtifactTransferContext): String {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val artifactUri = context.artifactInfo.artifactUri
         return remoteConfiguration.url.trimEnd('/') + "/packages" + artifactUri

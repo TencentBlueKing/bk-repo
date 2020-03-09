@@ -1,11 +1,8 @@
 package com.tencent.bkrepo.pypi.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.config.TRAVERSED_LIST
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.pojo.configuration.VirtualConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.pypi.artifact.xml.Value
@@ -19,16 +16,6 @@ import org.springframework.stereotype.Component
  */
 @Component
 class PypiVirtualRepository : VirtualRepository(), PypiRepository {
-
-    @Suppress("UNCHECKED_CAST")
-    private fun getTraversedList(context: ArtifactTransferContext): MutableList<RepositoryIdentify> {
-        return context.contextAttributes[TRAVERSED_LIST] as? MutableList<RepositoryIdentify> ?: let {
-            val selfRepoInfo = context.repositoryInfo
-            val traversedList = mutableListOf(RepositoryIdentify(selfRepoInfo.projectId, selfRepoInfo.name))
-            context.contextAttributes[TRAVERSED_LIST] = traversedList
-            return traversedList
-        }
-    }
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(PypiVirtualRepository::class.java)

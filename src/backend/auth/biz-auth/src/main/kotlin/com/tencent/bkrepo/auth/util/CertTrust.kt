@@ -90,10 +90,6 @@ object CertTrust {
         val trustManager: X509TrustManager
         val sslSocketFactory: SSLSocketFactory
         try {
-<<<<<<< HEAD
-            println("aaaaaaaaaaa")
-=======
->>>>>>> remotes/origin/develop
             trustManager = trustManagerForCertificates(trustedCertificatesInputStream(cert))
             val sslContext = SSLContext.getInstance("TLS")
             sslContext.init(null, arrayOf<TrustManager>(trustManager), null)
