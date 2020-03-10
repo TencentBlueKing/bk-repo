@@ -152,11 +152,11 @@ class FullReplicaJob : QuartzJobBean() {
             val selfRepo = queryOrCreateRepo(remoteRepo, selfProjectId, selfRepoName)
             // 分页查询节点
             var page = 0
-            var fileNodeList = context.replicaResource.listFileNode(remoteRepo.projectId, remoteRepo.name, page, pageSize).data!!
+            var fileNodeList = context.replicaResource.listFileNode(remoteRepo.projectId, remoteRepo.name, page, pageSize).data!!.records
             while (fileNodeList.isNotEmpty()) {
                 fileNodeList.forEach { replicaNode(it, selfRepo, context) }
                 page += 1
-                fileNodeList = context.replicaResource.listFileNode(remoteRepo.projectId, remoteRepo.name, page, pageSize).data!!
+                fileNodeList = context.replicaResource.listFileNode(remoteRepo.projectId, remoteRepo.name, page, pageSize).data!!.records
             }
         }
     }
@@ -220,6 +220,7 @@ class FullReplicaJob : QuartzJobBean() {
                     description = this.description
                 )
                 projectResource.create(request)
+                // 创建用户?
             }
         }
     }

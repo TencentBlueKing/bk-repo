@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.api
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.constant.SERVICE_NAME
 import com.tencent.bkrepo.replication.pojo.RemoteProjectInfo
@@ -34,7 +35,7 @@ interface ReplicaResource {
         @PathVariable page: Int = 0,
         @PathVariable size: Int = 100,
         @RequestParam path: String = "/"
-    ): Response<List<NodeInfo>>
+    ): Response<Page<NodeInfo>>
 
     @GetMapping("/node/metadata/{projectId}/{repoName}")
     fun getMetadata(

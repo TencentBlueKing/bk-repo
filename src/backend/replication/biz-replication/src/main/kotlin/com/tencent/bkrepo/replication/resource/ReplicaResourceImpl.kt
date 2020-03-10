@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.resource
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -74,8 +75,8 @@ class ReplicaResourceImpl : ReplicaResource {
         return ResponseBuilder.success(remoteProjectList)
     }
 
-    override fun listFileNode(projectId: String, repoName: String, page: Int, size: Int, path: String): Response<List<NodeInfo>> {
-        return nodeResource.list(projectId, repoName, path, includeFolder = false, deep = true)
+    override fun listFileNode(projectId: String, repoName: String, page: Int, size: Int, path: String): Response<Page<NodeInfo>> {
+        return nodeResource.page(projectId, repoName, page, size, path, includeFolder = false, deep = true)
     }
 
     override fun getMetadata(projectId: String, repoName: String, fullPath: String): Response<Map<String, String>> {
