@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: replication
+    version: 0.7
+  cloud:
+    consul:
+      discovery:
+        heartbeat:
+          enabled: true
+        query-passing: true
+        prefer-ip-address: true
+      config:
+        prefix: bkrepo-config
+        format: YAML
+        data-key: data
+        profileSeparator: '::'
