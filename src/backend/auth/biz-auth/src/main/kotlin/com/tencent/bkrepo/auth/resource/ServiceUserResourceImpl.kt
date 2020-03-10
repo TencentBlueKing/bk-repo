@@ -64,8 +64,6 @@ class ServiceUserResourceImpl @Autowired constructor(
     }
 
     override fun checkUserToken(uid: String, token: String): Response<Boolean> {
-        println(uid)
-        println(token)
         userService.findUserByUserToken(uid, token) ?: return ResponseBuilder.success(false)
         return ResponseBuilder.success(true)
     }

@@ -240,9 +240,11 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
+        logger.error("aaaaaaaaaa {} ,{} ", userId, pwd)
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
         val criteria = Criteria()
-        criteria.orOperator(Criteria.where(TUser::pwd.name).`is`(hashPwd), Criteria.where("tokens.id").`is`(pwd)).and(TUser::userId.name).`is`(userId)
+        criteria.orOperator(Criteria.where(TUser::pwd.name).`is`(hashPwd), Criteria.where("tokens.id").`is`(pwd))
+            .and(TUser::userId.name).`is`(userId)
         val query = Query.query(criteria)
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: return null
         return User(
