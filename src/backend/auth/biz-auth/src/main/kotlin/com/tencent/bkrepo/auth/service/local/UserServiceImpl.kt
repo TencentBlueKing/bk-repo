@@ -246,6 +246,7 @@ class UserServiceImpl @Autowired constructor(
         criteria.orOperator(Criteria.where(TUser::pwd.name).`is`(hashPwd), Criteria.where("tokens.id").`is`(pwd))
             .and(TUser::userId.name).`is`(userId)
         val query = Query.query(criteria)
+        logger.error("bbbbbbbbbbbb  {}", query.toString())
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: return null
         return User(
             userId = result.userId!!,
