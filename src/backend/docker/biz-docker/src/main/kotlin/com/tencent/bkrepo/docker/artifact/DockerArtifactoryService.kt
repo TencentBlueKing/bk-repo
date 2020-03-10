@@ -162,6 +162,7 @@ class DockerArtifactoryService @Autowired constructor(
             overwrite = true,
             operator = userId
         )
+        logger.error("copy_request {} ", copyRequest.toString())
         nodeResource.copy(copyRequest)
         return true
     }
