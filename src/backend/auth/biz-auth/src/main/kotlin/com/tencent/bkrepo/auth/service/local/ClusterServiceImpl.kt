@@ -53,7 +53,7 @@ class ClusterServiceImpl @Autowired constructor(
                 return false
             }
             CertTrust.initClient(cluster.cert)
-            var addr = cluster.clusterAddr.removeSuffix("/")  + "/cluster/credential"
+            var addr = cluster.clusterAddr.removeSuffix("/") + "/cluster/credential"
             CertTrust.call(addr)
             setClusterCredentialStatus(clusterId, true)
             return true

@@ -239,8 +239,6 @@ class UserServiceImpl @Autowired constructor(
         )
     }
 
-
-
     override fun findUserByUserToken(userId: String, pwd: String): User? {
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
         val criteria = Criteria()

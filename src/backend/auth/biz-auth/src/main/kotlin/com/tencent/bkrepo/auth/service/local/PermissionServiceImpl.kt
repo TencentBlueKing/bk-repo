@@ -40,13 +40,16 @@ class PermissionServiceImpl @Autowired constructor(
         return true
     }
 
-    override fun listPermission(resourceType: ResourceType?, projectId: String?): List<Permission> {
-        return if (resourceType == null && projectId == null) {
+    override fun listPermission(resourceType: ResourceType?, projectId: String?, repoName: String?): List<Permission> {
+        return if (resourceType == null && projectId == null && repoName == null) {
             return permissionRepository.findAll().map { transfer(it) }
         } else if (projectId == null && resourceType != null) {
             return permissionRepository.findByResourceType(resourceType).map { transfer(it) }
         } else if (projectId != null && resourceType != null) {
             return permissionRepository.findByResourceTypeAndProjectId(resourceType, projectId).map { transfer(it) }
+        } else if (projectId != null && resourceType != null && repoName != null) {
+            return permissionRepository.findByResourceTypeAndProjectIdAndRepos(resourceType, projectId, repoName)
+                .map { transfer(it) }
         } else {
             return emptyList()
         }
@@ -72,7 +75,11 @@ class PermissionServiceImpl @Autowired constructor(
 
     override fun createPermission(request: CreatePermissionRequest): Boolean {
         // todo check request
-        val permission = permissionRepository.findOneByPermNameAndProjectIdAndResourceType(request.permName, request.projectId, request.resourceType)
+        val permission = permissionRepository.findOneByPermNameAndProjectIdAndResourceType(
+            request.permName,
+            request.projectId,
+            request.resourceType
+        )
         if (permission != null) {
             logger.warn("create permission  [${request.permName} , ${request.projectId}, ${request.resourceType}  ]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_PERMNAME)
@@ -163,12 +170,16 @@ class PermissionServiceImpl @Autowired constructor(
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
-        val userQuery = Query.query(Criteria.where("_id").`is`(id)
-            .and("users.id").`is`(uid))
+        val userQuery = Query.query(
+            Criteria.where("_id").`is`(id)
+                .and("users.id").`is`(uid)
+        )
         val userResult = mongoTemplate.findOne(userQuery, TPermission::class.java)
         if (userResult != null) {
-            val query = Query.query(Criteria.where("_id").`is`(id)
-                .and("users._id").`is`(uid))
+            val query = Query.query(
+                Criteria.where("_id").`is`(id)
+                    .and("users._id").`is`(uid)
+            )
             val update = Update()
             update.set("users.$.action", actions)
             val result = mongoTemplate.updateFirst(query, update, TPermission::class.java)
@@ -222,8 +233,10 @@ class PermissionServiceImpl @Autowired constructor(
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         }
 
-        val roleQuery = Query.query(Criteria.where("_id").`is`(id)
-            .and("roles.id").`is`(rid))
+        val roleQuery = Query.query(
+            Criteria.where("_id").`is`(id)
+                .and("roles.id").`is`(rid)
+        )
         val roleResult = mongoTemplate.findOne(roleQuery, TPermission::class.java)
         if (roleResult != null) {
             logger.warn("add role permission [$id] role [$rid]   exist.")
@@ -281,7 +294,12 @@ class PermissionServiceImpl @Autowired constructor(
         // check repo admin
         if (roles != null && request.projectId != null && request.resourceType == ResourceType.REPO) {
             roles.forEach {
-                val role = roleRepository.findOneByIdAndProjectIdAndTypeAndRepoName(it, request.projectId!!, RoleType.REPO, request.repoName!!)
+                val role = roleRepository.findOneByIdAndProjectIdAndTypeAndRepoName(
+                    it,
+                    request.projectId!!,
+                    RoleType.REPO,
+                    request.repoName!!
+                )
                 if (role != null) {
                     if (role.admin!! == true) {
                         return true
@@ -292,8 +310,10 @@ class PermissionServiceImpl @Autowired constructor(
 
         // check repo permission
         val criteria = Criteria()
-        var criteriac = criteria.orOperator(Criteria.where("users._id").`is`(request.uid).and("users.action").`is`(request.action.toString()),
-            Criteria.where("roles._id").`in`(roles).and("users.action").`is`(request.action.toString()))
+        var criteriac = criteria.orOperator(
+            Criteria.where("users._id").`is`(request.uid).and("users.action").`is`(request.action.toString()),
+            Criteria.where("roles._id").`in`(roles).and("users.action").`is`(request.action.toString())
+        )
             .and("resourceType").`is`(request.resourceType.toString())
         if (request.resourceType != ResourceType.SYSTEM) {
             criteriac = criteriac.and("projectId").`is`(request.projectId)
