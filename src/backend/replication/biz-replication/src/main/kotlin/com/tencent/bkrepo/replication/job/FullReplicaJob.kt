@@ -13,7 +13,6 @@ import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationSetting
 import com.tencent.bkrepo.replication.pojo.ReplicationStatus
 import com.tencent.bkrepo.replication.repository.TaskRepository
-import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.ProjectResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
@@ -52,9 +51,6 @@ class FullReplicaJob : QuartzJobBean() {
 
     @Autowired
     private lateinit var storageService: StorageService
-
-    @Autowired
-    private lateinit var metadataResource: MetadataResource
 
     @Value("\${spring.application.version}")
     private var version: String = ""
@@ -118,16 +114,16 @@ class FullReplicaJob : QuartzJobBean() {
                 replicaDetailList.addAll(replicaResource.listProject().data!!.map { convertReplicationProject(it) })
             }
             // 同步指定项目
-            setting.replicationProjectReplicaList != null -> {
-                setting.replicationProjectReplicaList!!.forEach {
+            setting.replicationProjectList != null -> {
+                setting.replicationProjectList!!.forEach {
                     replicaDetailList.addAll(replicaResource.listProject(it.remoteProjectId).data!!.map {
                         info -> convertReplicationProject(info, it.selfProjectId)
                     })
                 }
             }
             // 同步指定仓库
-            setting.replicationList != null -> {
-                setting.replicationList!!.forEach {
+            setting.replicationRepoList != null -> {
+                setting.replicationRepoList!!.forEach {
                     replicaDetailList.addAll(replicaResource.listProject(it.remoteProjectId, it.remoteRepoName).data!!.map {
                         info -> convertReplicationProject(info, it.selfProjectId, it.selfRepoName)
                     })
@@ -156,11 +152,11 @@ class FullReplicaJob : QuartzJobBean() {
             val selfRepo = queryOrCreateRepo(remoteRepo, selfProjectId, selfRepoName)
             // 分页查询节点
             var page = 0
-            var fileNodeList = context.replicaResource.listFileNode(remoteRepo.projectId, remoteRepo.name, page, pageSize).data!!
+            var fileNodeList = context.replicaResource.listFileNode(remoteRepo.projectId, remoteRepo.name, page, pageSize).data!!.records
             while (fileNodeList.isNotEmpty()) {
                 fileNodeList.forEach { replicaNode(it, selfRepo, context) }
                 page += 1
-                fileNodeList = context.replicaResource.listFileNode(remoteRepo.projectId, remoteRepo.name, page, pageSize).data!!
+                fileNodeList = context.replicaResource.listFileNode(remoteRepo.projectId, remoteRepo.name, page, pageSize).data!!.records
             }
         }
     }
@@ -224,6 +220,7 @@ class FullReplicaJob : QuartzJobBean() {
                     description = this.description
                 )
                 projectResource.create(request)
+                // 创建用户?
             }
         }
     }

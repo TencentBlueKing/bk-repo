@@ -9,6 +9,6 @@ data class ReplicationSetting(
     val remoteClusterInfo: RemoteClusterInfo,
     val executionPlan: ExecutionPlan = ExecutionPlan(),
     val includeAllProject: Boolean = true,
-    val replicationProjectReplicaList: List<ReplicationProject>? = null,
-    val replicationList: List<ReplicationRepo>? = null
+    val replicationProjectList: List<ReplicationProject>? = null,
+    val replicationRepoList: List<ReplicationRepo>? = null
 )
