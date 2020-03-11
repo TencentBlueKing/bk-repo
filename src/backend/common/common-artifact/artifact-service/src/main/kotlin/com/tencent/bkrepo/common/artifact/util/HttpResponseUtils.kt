@@ -9,11 +9,11 @@ import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
+import org.springframework.web.util.UriUtils
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.InputStream
 import java.io.RandomAccessFile
-import java.net.URLEncoder
 import javax.servlet.http.HttpServletResponse
 
 /**
@@ -32,7 +32,8 @@ object HttpResponseUtils {
         var readStart = 0L
         var readEnd = fileLength
 
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(encode(filename)))
+        val disposition = encodeDisposition(filename)
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, disposition)
         response.setHeader(HttpHeaders.ACCEPT_RANGES, "bytes")
 
         request.getHeader("Range")?.run {
@@ -76,7 +77,8 @@ object HttpResponseUtils {
     fun response(filename: String, inputStream: InputStream) {
         val response = HttpContextHolder.getResponse()
         val fileLength = inputStream.available()
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(encode(filename)))
+        val disposition = encodeDisposition(filename)
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, disposition)
         response.setHeader(HttpHeaders.CONTENT_LENGTH, fileLength.toString())
         response.contentType = determineMediaType(filename)
         response.characterEncoding = "UTF-8"
@@ -116,8 +118,8 @@ object HttpResponseUtils {
         return MimeMappings.DEFAULT.get(NodeUtils.getExtension(name)) ?: DEFAULT_MIME_TYPE
     }
 
-    private fun encode(filename: String): String {
-        return URLEncoder.encode(filename, "UTF-8").replace("\\+", "%20")
-
+    private fun encodeDisposition(filename: String): String {
+        val encodeFilename = UriUtils.encode(filename, Charsets.UTF_8)
+        return CONTENT_DISPOSITION_TEMPLATE.format(encodeFilename, encodeFilename)
     }
 }
