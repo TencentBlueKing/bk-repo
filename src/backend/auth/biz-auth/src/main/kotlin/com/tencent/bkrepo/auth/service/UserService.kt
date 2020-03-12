@@ -9,6 +9,8 @@ interface UserService {
 
     fun createUser(request: CreateUserRequest): Boolean
 
+    fun listUser(rids: List<String>): List<User>
+
     fun deleteById(userId: String): Boolean
 
     fun updateUserById(userId: String, request: UpdateUserRequest): Boolean

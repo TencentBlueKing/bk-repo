@@ -56,6 +56,14 @@ class UserServiceImpl @Autowired constructor(
         return true
     }
 
+    override fun listUser(rids: List<String>): List<User> {
+        if (rids.isEmpty()) {
+            return userRepository.findAll().map { transfer(it) }
+        } else {
+            return userRepository.findAllByRolesIn(rids).map { transfer(it) }
+        }
+    }
+
     override fun deleteById(userId: String): Boolean {
         val user = userRepository.findOneByUserId(userId)
         if (user == null) {
@@ -228,15 +236,7 @@ class UserServiceImpl @Autowired constructor(
 
     override fun getUserById(userId: String): User? {
         val user = userRepository.findOneByUserId(userId) ?: return null
-        return User(
-            userId = user.userId!!,
-            name = user.name,
-            pwd = "",
-            admin = user.admin,
-            locked = user.locked,
-            tokens = user.tokens,
-            roles = user.roles
-        )
+        return transfer(user)
     }
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
@@ -246,14 +246,18 @@ class UserServiceImpl @Autowired constructor(
             .and(TUser::userId.name).`is`(userId)
         val query = Query.query(criteria)
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: return null
+        return transfer(result)
+    }
+
+    private fun transfer(tUser: TUser): User {
         return User(
-            userId = result.userId!!,
-            name = result.name,
-            pwd = "",
-            admin = result.admin,
-            locked = result.locked,
-            tokens = result.tokens,
-            roles = result.roles
+            userId = tUser.userId,
+            name = tUser.name,
+            pwd = tUser.pwd,
+            admin = tUser.admin,
+            locked = tUser.locked,
+            tokens = tUser.tokens,
+            roles = tUser.roles
         )
     }
 

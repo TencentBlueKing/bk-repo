@@ -28,6 +28,12 @@ interface ServiceUserResource {
         @RequestBody request: CreateUserRequest
     ): Response<Boolean>
 
+    @ApiOperation("用户列表")
+    @PostMapping("/list")
+    fun listUser(
+        @RequestBody rid: List<String> = emptyList()
+    ): Response<List<User>>
+
     @ApiOperation("删除用户")
     @DeleteMapping("/{uid}")
     fun deleteById(
