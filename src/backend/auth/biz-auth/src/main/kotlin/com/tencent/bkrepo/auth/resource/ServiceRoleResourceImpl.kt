@@ -47,7 +47,11 @@ class ServiceRoleResourceImpl @Autowired constructor(
         return ResponseBuilder.success(roleService.detail(id))
     }
 
-    override fun listRoleByTypeAndProjectId(type: RoleType?, projectId: String?): Response<List<Role>> {
-        return ResponseBuilder.success(roleService.listRoleByProject(type, projectId))
+    override fun listRole(
+        type: RoleType?,
+        projectId: String?,
+        repoName: String?
+    ): Response<List<Role>> {
+        return ResponseBuilder.success(roleService.listRoleByProject(type, projectId, repoName))
     }
 }
