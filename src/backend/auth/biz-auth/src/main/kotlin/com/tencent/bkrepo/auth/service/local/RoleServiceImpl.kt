@@ -22,7 +22,11 @@ class RoleServiceImpl @Autowired constructor(
     override fun createRole(request: CreateRoleRequest): String? {
         var role: TRole?
         if (request.type == RoleType.REPO) {
-            role = roleRepository.findOneByRoleIdAndProjectIdAndRepoName(request.roleId, request.projectId, request.repoName!!)
+            role = roleRepository.findOneByRoleIdAndProjectIdAndRepoName(
+                request.roleId,
+                request.projectId,
+                request.repoName!!
+            )
         } else {
             role = roleRepository.findOneByRoleIdAndProjectId(request.roleId, request.projectId)
         }
@@ -50,7 +54,7 @@ class RoleServiceImpl @Autowired constructor(
         return transfer(result)
     }
 
-    override fun listRoleByProject(type: RoleType?, projectId: String?): List<Role> {
+    override fun listRoleByProject(type: RoleType?, projectId: String?, repoName: String?): List<Role> {
         if (type == null && projectId == null) {
             return roleRepository.findAll().map { transfer(it) }
         } else if (type != null && projectId == null) {
@@ -59,6 +63,8 @@ class RoleServiceImpl @Autowired constructor(
             return roleRepository.findByProjectId(projectId).map { transfer(it) }
         } else if (type != null && projectId != null) {
             return roleRepository.findByTypeAndProjectId(type, projectId).map { transfer(it) }
+        } else if (projectId != null && repoName != null) {
+            roleRepository.findByRepoNameAndProjectId(repoName, projectId).map { transfer(it) }
         }
         return emptyList()
     }
