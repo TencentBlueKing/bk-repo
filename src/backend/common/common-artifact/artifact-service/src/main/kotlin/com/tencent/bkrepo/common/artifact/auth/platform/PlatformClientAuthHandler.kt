@@ -70,6 +70,6 @@ open class PlatformClientAuthHandler : ClientAuthHandler {
 
     companion object {
         private val logger = LoggerFactory.getLogger(PlatformClientAuthHandler::class.java)
-        private const val PLATFORM_AUTH_HEADER_PREFIX = "Platform "
+        const val PLATFORM_AUTH_HEADER_PREFIX = "Platform "
     }
 }
