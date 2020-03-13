@@ -50,11 +50,20 @@ interface ServiceRoleResource {
         @PathVariable id: String
     ): Response<Boolean>
 
-    @ApiOperation("根据类型查询角色")
+    @ApiOperation("根据主键id查询角色详情")
     @GetMapping("/detail/{id}")
     fun detail(
         @ApiParam(value = "角色主键id")
         @PathVariable id: String
+    ): Response<Role?>
+
+    @ApiOperation("根据角色ID与项目Id查询角色")
+    @GetMapping("/detail/{rid}/{projectId}")
+    fun detailByRidAndProjectId(
+        @ApiParam(value = "角色主键id")
+        @PathVariable rid: String,
+        @ApiParam(value = "角色主键id")
+        @PathVariable projectId: String
     ): Response<Role?>
 
     @ApiOperation("根据类型和项目id查询角色")
