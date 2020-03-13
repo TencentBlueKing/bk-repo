@@ -49,8 +49,13 @@ class RoleServiceImpl @Autowired constructor(
         return result.id
     }
 
-    override fun detail(rid: String): Role? {
-        val result = roleRepository.findOneById(rid) ?: return null
+    override fun detail(id: String): Role? {
+        val result = roleRepository.findOneById(id) ?: return null
+        return transfer(result)
+    }
+
+    override fun detail(rid: String, projectId: String): Role? {
+        val result = roleRepository.findOneByRoleIdAndProjectId(rid, projectId) ?: return null
         return transfer(result)
     }
 

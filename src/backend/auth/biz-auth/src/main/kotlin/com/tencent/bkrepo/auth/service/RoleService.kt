@@ -12,5 +12,7 @@ interface RoleService {
 
     fun listRoleByProject(type: RoleType?, projectId: String?, repoName: String?): List<Role>
 
-    fun detail(rid: String): Role?
+    fun detail(id: String): Role?
+
+    fun detail(rid: String, projectId: String): Role?
 }
