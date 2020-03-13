@@ -48,12 +48,12 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
-    override fun addUserRolePatch(rid: String, request: List<String>): Response<Boolean> {
+    override fun addUserRoleBatch(rid: String, request: List<String>): Response<Boolean> {
         userService.addUserToRoleBatch(request, rid)
         return ResponseBuilder.success(true)
     }
 
-    override fun deleteUserRolePatch(rid: String, request: List<String>): Response<Boolean> {
+    override fun deleteUserRoleBatch(rid: String, request: List<String>): Response<Boolean> {
         userService.removeUserFromRoleBatch(request, rid)
         return ResponseBuilder.success(true)
     }

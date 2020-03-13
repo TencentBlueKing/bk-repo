@@ -33,7 +33,7 @@ class UserServiceImpl @Autowired constructor(
 ) : UserService {
     override fun createUser(request: CreateUserRequest): Boolean {
         // todo 校验
-        val user = userRepository.findOneByUserId(request.userId)
+        val user = userRepository.findFirstByUserId(request.userId)
         if (user != null) {
             logger.warn("create user [${request.userId}]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
@@ -65,25 +65,25 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun deleteById(userId: String): Boolean {
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
-        userRepository.findOneByUserId(userId)
+        userRepository.findFirstByUserId(userId)
         return true
     }
 
     override fun addUserToRole(userId: String, roleId: String): User? {
         // check user
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn(" user not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
         // check role
-        val role = roleRepository.findOneById(roleId)
+        val role = roleRepository.findFirstById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
@@ -100,7 +100,7 @@ class UserServiceImpl @Autowired constructor(
     override fun addUserToRoleBatch(IdList: List<String>, roleId: String): Boolean {
         IdList.forEach {
             // check user
-            val user = userRepository.findOneByUserId(it)
+            val user = userRepository.findFirstByUserId(it)
             if (user == null) {
                 logger.warn(" user not  exist.")
                 throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -108,7 +108,7 @@ class UserServiceImpl @Autowired constructor(
         }
 
         // check role
-        val role = roleRepository.findOneById(roleId)
+        val role = roleRepository.findFirstById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
@@ -127,14 +127,14 @@ class UserServiceImpl @Autowired constructor(
 
     override fun removeUserFromRole(userId: String, roleId: String): User? {
         // check user
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn(" user not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
         // check role
-        val role = roleRepository.findOneById(roleId)
+        val role = roleRepository.findFirstById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
@@ -150,7 +150,7 @@ class UserServiceImpl @Autowired constructor(
 
     override fun removeUserFromRoleBatch(IdList: List<String>, roleId: String): Boolean {
         IdList.forEach {
-            val user = userRepository.findOneByUserId(it)
+            val user = userRepository.findFirstByUserId(it)
             if (user == null) {
                 logger.warn(" user not  exist.")
                 throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -158,7 +158,7 @@ class UserServiceImpl @Autowired constructor(
         }
 
         // check role
-        val role = roleRepository.findOneById(roleId)
+        val role = roleRepository.findFirstById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
@@ -176,7 +176,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun updateUserById(userId: String, request: UpdateUserRequest): Boolean {
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -203,7 +203,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun createToken(userId: String): User? {
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -219,7 +219,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun removeToken(userId: String, token: String): User? {
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -235,7 +235,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun getUserById(userId: String): User? {
-        val user = userRepository.findOneByUserId(userId) ?: return null
+        val user = userRepository.findFirstByUserId(userId) ?: return null
         return transfer(user)
     }
 
