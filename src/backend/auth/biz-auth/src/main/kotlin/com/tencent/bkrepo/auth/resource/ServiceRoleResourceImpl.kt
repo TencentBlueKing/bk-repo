@@ -52,6 +52,11 @@ class ServiceRoleResourceImpl @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
+    override fun detailByRidAndProjectIdAndRepoName(rid: String, projectId: String, repoName: String): Response<Role?> {
+        val result = roleService.detail(rid, projectId, repoName)
+        return ResponseBuilder.success(result)
+    }
+
     override fun listRole(
         type: RoleType?,
         projectId: String?,

@@ -60,10 +60,21 @@ interface ServiceRoleResource {
     @ApiOperation("根据角色ID与项目Id查询角色")
     @GetMapping("/detail/{rid}/{projectId}")
     fun detailByRidAndProjectId(
-        @ApiParam(value = "角色主键id")
+        @ApiParam(value = "角色id")
         @PathVariable rid: String,
-        @ApiParam(value = "角色主键id")
+        @ApiParam(value = "项目id")
         @PathVariable projectId: String
+    ): Response<Role?>
+
+    @ApiOperation("根据角色ID与项目Id,仓库名查询角色")
+    @GetMapping("/detail/{rid}/{projectId}/{repoName}")
+    fun detailByRidAndProjectIdAndRepoName(
+        @ApiParam(value = "角色id")
+        @PathVariable rid: String,
+        @ApiParam(value = "项目id")
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名")
+        @PathVariable repoName: String
     ): Response<Role?>
 
     @ApiOperation("根据类型和项目id查询角色")

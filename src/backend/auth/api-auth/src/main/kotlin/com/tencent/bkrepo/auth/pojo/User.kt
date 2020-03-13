@@ -12,11 +12,11 @@ data class User(
     @ApiModelProperty("用户密码")
     var pwd: String? = null,
     @ApiModelProperty("是否是管理员")
-    val admin: Boolean? = false,
+    val admin: Boolean = false,
     @ApiModelProperty("是否锁定")
-    val locked: Boolean? = false,
+    val locked: Boolean = false,
     @ApiModelProperty("用户token")
-    val tokens: List<Token>? = emptyList(),
+    val tokens: List<Token> = emptyList(),
     @ApiModelProperty("所属角色")
-    val roles: List<String>? = emptyList()
+    val roles: List<String> = emptyList()
 )

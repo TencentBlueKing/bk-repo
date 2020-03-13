@@ -18,8 +18,8 @@ data class TUser(
     val userId: String,
     val name: String,
     val pwd: String,
-    val admin: Boolean? = false,
-    val locked: Boolean? = false,
-    val tokens: List<Token>? = emptyList(),
-    val roles: List<String>? = emptyList()
+    val admin: Boolean = false,
+    val locked: Boolean = false,
+    val tokens: List<Token> = emptyList(),
+    val roles: List<String> = emptyList()
 )

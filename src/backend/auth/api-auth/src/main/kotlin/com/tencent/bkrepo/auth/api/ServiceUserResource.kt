@@ -31,7 +31,7 @@ interface ServiceUserResource {
     @ApiOperation("用户列表")
     @PostMapping("/list")
     fun listUser(
-        @RequestBody rid: List<String> = emptyList()
+        @RequestBody rids: List<String> = emptyList()
     ): Response<List<User>>
 
     @ApiOperation("删除用户")
@@ -77,7 +77,7 @@ interface ServiceUserResource {
 
     @ApiOperation("批量新增用户所属角色")
     @PatchMapping("/role/add/{rid}")
-    fun addUserRolePatch(
+    fun addUserRoleBatch(
         @ApiParam(value = "用户角色Id")
         @PathVariable rid: String,
         @ApiParam(value = "用户id集合")
@@ -86,7 +86,7 @@ interface ServiceUserResource {
 
     @ApiOperation("批量删除用户所属角色")
     @PatchMapping("/role/delete/{rid}")
-    fun deleteUserRolePatch(
+    fun deleteUserRoleBatch(
         @ApiParam(value = "用户角色Id")
         @PathVariable rid: String,
         @ApiParam(value = "用户id集合")

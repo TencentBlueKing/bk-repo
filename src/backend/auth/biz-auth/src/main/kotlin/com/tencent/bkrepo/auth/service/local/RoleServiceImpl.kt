@@ -22,13 +22,13 @@ class RoleServiceImpl @Autowired constructor(
     override fun createRole(request: CreateRoleRequest): String? {
         var role: TRole?
         if (request.type == RoleType.REPO) {
-            role = roleRepository.findOneByRoleIdAndProjectIdAndRepoName(
+            role = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(
                 request.roleId,
                 request.projectId,
                 request.repoName!!
             )
         } else {
-            role = roleRepository.findOneByRoleIdAndProjectId(request.roleId, request.projectId)
+            role = roleRepository.findFirstByRoleIdAndProjectId(request.roleId, request.projectId)
         }
 
         if (role != null) {
@@ -50,12 +50,17 @@ class RoleServiceImpl @Autowired constructor(
     }
 
     override fun detail(id: String): Role? {
-        val result = roleRepository.findOneById(id) ?: return null
+        val result = roleRepository.findFirstById(id) ?: return null
         return transfer(result)
     }
 
     override fun detail(rid: String, projectId: String): Role? {
-        val result = roleRepository.findOneByRoleIdAndProjectId(rid, projectId) ?: return null
+        val result = roleRepository.findFirstByRoleIdAndProjectId(rid, projectId) ?: return null
+        return transfer(result)
+    }
+
+    override fun detail(rid: String, projectId: String, repoName: String): Role? {
+        val result = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(rid, projectId, repoName) ?: return null
         return transfer(result)
     }
 
@@ -75,7 +80,7 @@ class RoleServiceImpl @Autowired constructor(
     }
 
     override fun deleteRoleByid(id: String): Boolean {
-        val role = roleRepository.findOneById(id)
+        val role = roleRepository.findFirstById(id)
         if (role == null) {
             logger.warn("delete role [$id ] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)

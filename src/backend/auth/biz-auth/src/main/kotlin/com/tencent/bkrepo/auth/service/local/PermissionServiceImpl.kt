@@ -41,7 +41,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun listPermission(resourceType: ResourceType?, projectId: String?, repoName: String?): List<Permission> {
-        return if (resourceType == null && projectId == null && repoName == null) {
+        if (resourceType == null && projectId == null && repoName == null) {
             return permissionRepository.findAll().map { transfer(it) }
         } else if (projectId == null && resourceType != null) {
             return permissionRepository.findByResourceType(resourceType).map { transfer(it) }
@@ -107,7 +107,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateIncludePath(id: String, path: List<String>): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("update permission includePath [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
@@ -124,7 +124,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateExcludePath(id: String, path: List<String>): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("update permission excludePath [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
@@ -141,7 +141,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateRepoPermission(id: String, repos: List<String>): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("update permission repos [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
@@ -158,13 +158,13 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateUserPermission(id: String, uid: String, actions: List<PermissionAction>): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("add user permission  [$id] , user [$uid] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
         }
 
-        val user = userRepository.findOneByUserId(uid)
+        val user = userRepository.findFirstByUserId(uid)
         if (user == null) {
             logger.warn("add user permission  [$id] , user [$uid]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -202,7 +202,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun removeUserPermission(id: String, uid: String): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("remove user permission  [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
@@ -221,13 +221,13 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateRolePermission(id: String, rid: String, actions: List<PermissionAction>): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("add role permission  [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
         }
 
-        val role = roleRepository.findOneById(rid)
+        val role = roleRepository.findFirstById(rid)
         if (role == null) {
             logger.warn("add role permission  role [$rid]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
@@ -255,7 +255,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun removeRolePermission(id: String, rid: String): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("remove role permission  [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
@@ -274,17 +274,19 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-        val user = userRepository.findOneByUserId(request.uid)
+        val user = userRepository.findFirstByUserId(request.uid)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        if (user.admin!!) return true
+        if (user.admin) {
+            return true
+        }
         val roles = user.roles
 
         // check project admin
-        if (roles != null && request.projectId != null && request.resourceType == ResourceType.PROJECT) {
+        if (!roles.isEmpty() && request.projectId != null && request.resourceType == ResourceType.PROJECT) {
             roles.forEach {
-                val role = roleRepository.findOneByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
+                val role = roleRepository.findFirstByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
                 if (role != null) {
-                    if (role.admin!! == true) {
+                    if (role.admin == true) {
                         return true
                     }
                 }
@@ -292,16 +294,16 @@ class PermissionServiceImpl @Autowired constructor(
         }
 
         // check repo admin
-        if (roles != null && request.projectId != null && request.resourceType == ResourceType.REPO) {
+        if (!roles.isEmpty() && request.projectId != null && request.resourceType == ResourceType.REPO) {
             roles.forEach {
-                val role = roleRepository.findOneByIdAndProjectIdAndTypeAndRepoName(
+                val role = roleRepository.findFirstByIdAndProjectIdAndTypeAndRepoName(
                     it,
                     request.projectId!!,
                     RoleType.REPO,
                     request.repoName!!
                 )
                 if (role != null) {
-                    if (role.admin!! == true) {
+                    if (role.admin == true) {
                         return true
                     }
                 }
