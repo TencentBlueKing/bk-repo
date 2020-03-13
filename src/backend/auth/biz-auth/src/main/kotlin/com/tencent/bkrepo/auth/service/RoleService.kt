@@ -15,4 +15,6 @@ interface RoleService {
     fun detail(id: String): Role?
 
     fun detail(rid: String, projectId: String): Role?
+
+    fun detail(rid: String, projectId: String, repoName: String): Role?
 }
