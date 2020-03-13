@@ -100,6 +100,15 @@ interface ServiceUserResource {
         @PathVariable uid: String
     ): Response<User?>
 
+    @ApiOperation("新加用户token")
+    @PostMapping("/token/{uid}/{token}")
+    fun addUserToken(
+        @ApiParam(value = "用户id")
+        @PathVariable uid: String,
+        @ApiParam(value = "token")
+        @PathVariable token: String
+    ): Response<User?>
+
     @ApiOperation("删除用户token")
     @DeleteMapping("/token/{uid}/{token}")
     fun deleteToken(
