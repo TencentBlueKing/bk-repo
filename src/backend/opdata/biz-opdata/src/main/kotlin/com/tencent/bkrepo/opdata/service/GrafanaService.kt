@@ -110,7 +110,7 @@ class GrafanaService @Autowired constructor(
                 tmpMap.put(projectId, it.capSize)
             }
         }
-        tmpMap.toList().sortedByDescending { it.second }.forEach {
+        tmpMap.toList().sortedByDescending { it.second }.subList(0, 29).forEach {
             val projectId = it.first
             val data = listOf<Long>(it.second, System.currentTimeMillis())
             val element = listOf<List<Long>>(data)
@@ -130,7 +130,7 @@ class GrafanaService @Autowired constructor(
                 tmpMap.put(projectId, it.nodeNum)
             }
         }
-        tmpMap.toList().sortedByDescending { it.second }.subList(0, 19).forEach {
+        tmpMap.toList().sortedByDescending { it.second }.subList(0, 29).forEach {
             val projectId = it.first
             val data = listOf<Long>(it.second, System.currentTimeMillis())
             val element = listOf<List<Long>>(data)
