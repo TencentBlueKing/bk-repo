@@ -24,8 +24,8 @@ interface ReplicaResource {
     @GetMapping("/ping")
     fun ping(): Response<Void>
 
-    @PostMapping("/version")
-    fun version(): Response<Any>
+    @GetMapping("/version")
+    fun version(): Response<String>
 
     @GetMapping("/project/list")
     fun listProject(

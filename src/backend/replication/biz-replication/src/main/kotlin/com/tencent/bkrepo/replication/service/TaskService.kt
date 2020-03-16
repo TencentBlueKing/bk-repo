@@ -10,6 +10,7 @@ import com.tencent.bkrepo.replication.pojo.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.ReplicationType
 import com.tencent.bkrepo.replication.repository.TaskRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -52,14 +53,36 @@ class TaskService @Autowired constructor(
 
     fun pause(id: String) {
         val task = taskRepository.findByIdOrNull(id) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
+        if (task.type == ReplicationType.FULL) {
+            if (task.status == ReplicationStatus.REPLICATING) {
+                scheduleService.pauseJob(task.id!!)
+                task.status = ReplicationStatus.PAUSED
+                taskRepository.save(task)
+            } else {
+                throw ErrorCodeException(ReplicationMessageCode.TASK_STATUS_INVALID)
+            }
+        }
     }
 
     fun resume(id: String) {
         val task = taskRepository.findByIdOrNull(id) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
+        if (task.type == ReplicationType.FULL) {
+            if (task.status == ReplicationStatus.PAUSED) {
+                scheduleService.resumeJob(task.id!!)
+                task.status = ReplicationStatus.REPLICATING
+                taskRepository.save(task)
+            } else {
+                throw ErrorCodeException(ReplicationMessageCode.TASK_STATUS_INVALID)
+            }
+        }
     }
 
     fun delete(id: String) {
         val task = taskRepository.findByIdOrNull(id) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
+        if (task.type == ReplicationType.FULL) {
+            scheduleService.deleteJob(task.id!!)
+            taskRepository.delete(task)
+        }
     }
 
     private fun validate(request: ReplicaTaskCreateRequest) {

@@ -107,7 +107,7 @@ class FullReplicaJob : QuartzJobBean() {
             // 保存结果
             task.endTime = LocalDateTime.now()
             taskRepository.save(task)
-            val consumeSeconds = Duration.between(task.endTime!!, task.startTime!!).seconds
+            val consumeSeconds = Duration.between(task.startTime!!, task.endTime!!).seconds
             logger.info("Replica task[$taskId] is finished[${task.status}], consume [$consumeSeconds]s.")
         }
     }
