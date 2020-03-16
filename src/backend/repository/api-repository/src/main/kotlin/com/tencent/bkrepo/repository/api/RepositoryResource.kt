@@ -71,7 +71,7 @@ interface RepositoryResource {
     @PostMapping
     fun create(
         @RequestBody repoCreateRequest: RepoCreateRequest
-    ): Response<Void>
+    ): Response<RepositoryInfo>
 
     @ApiOperation("修改仓库")
     @PutMapping

@@ -17,7 +17,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.repository.RepoRepository
 import com.tencent.bkrepo.repository.util.NodeUtils
-import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
@@ -27,6 +26,8 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * 仓库service
@@ -74,7 +75,7 @@ class RepositoryService @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun create(repoCreateRequest: RepoCreateRequest) {
+    fun create(repoCreateRequest: RepoCreateRequest) : RepositoryInfo {
         with(repoCreateRequest) {
             this.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, repoCreateRequest.name)
             projectService.checkProject(projectId)
@@ -113,6 +114,7 @@ class RepositoryService @Autowired constructor(
             val roleId = roleResource.createRepoManage(projectId, name).data!!
             userResource.addUserRole(operator, roleId)
             logger.info("Create repository [$repoCreateRequest] success.")
+            return convert(repository)!!
         }
     }
 
@@ -190,7 +192,11 @@ class RepositoryService @Autowired constructor(
                     description = it.description,
                     configuration = objectMapper.readValue(it.configuration, RepositoryConfiguration::class.java),
                     storageCredentials = it.storageCredentials?.let { property -> objectMapper.readValue(property, StorageCredentials::class.java) },
-                    projectId = it.projectId
+                    projectId = it.projectId,
+                    createdBy = it.createdBy,
+                    createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    lastModifiedBy = it.lastModifiedBy,
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
                 )
             }
         }

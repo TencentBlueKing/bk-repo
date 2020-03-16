@@ -37,9 +37,8 @@ class RepositoryResourceImpl @Autowired constructor(
         return ResponseBuilder.success(repositoryService.page(projectId, page, size))
     }
 
-    override fun create(repoCreateRequest: RepoCreateRequest): Response<Void> {
-        repositoryService.create(repoCreateRequest)
-        return ResponseBuilder.success()
+    override fun create(repoCreateRequest: RepoCreateRequest): Response<RepositoryInfo> {
+        return ResponseBuilder.success(repositoryService.create(repoCreateRequest))
     }
 
     override fun update(repoUpdateRequest: RepoUpdateRequest): Response<Void> {
