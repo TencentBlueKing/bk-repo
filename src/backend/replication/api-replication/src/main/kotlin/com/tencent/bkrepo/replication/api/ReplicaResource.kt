@@ -3,6 +3,7 @@ package com.tencent.bkrepo.replication.api
 import com.tencent.bkrepo.auth.pojo.Permission
 import com.tencent.bkrepo.auth.pojo.Role
 import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.constant.SERVICE_NAME
@@ -55,6 +56,7 @@ interface ReplicaResource {
     @GetMapping("/permission/list")
     fun listPermission(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestParam resourceType: ResourceType,
         @RequestParam projectId: String,
         @RequestParam repoName: String? = null
     ): Response<List<Permission>>

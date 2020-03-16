@@ -126,8 +126,11 @@ class ReplicaResourceImpl {
     }
 
     @GetMapping("/permission/list")
-    fun listPermission(@RequestParam projectId: String, @RequestParam repoName: String? = null): Response<List<Permission>> {
-        val resourceType = if (repoName == null) ResourceType.PROJECT else ResourceType.REPO
+    fun listPermission(
+        @RequestParam resourceType: ResourceType,
+        @RequestParam projectId: String,
+        @RequestParam repoName: String? = null
+    ): Response<List<Permission>> {
         return permissionResource.listPermission(resourceType, projectId, repoName)
     }
 
