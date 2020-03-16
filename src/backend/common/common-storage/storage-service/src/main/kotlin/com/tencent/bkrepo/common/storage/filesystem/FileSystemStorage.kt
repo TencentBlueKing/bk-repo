@@ -18,7 +18,10 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
     }
 
     override fun load(path: String, filename: String, received: File, client: FileSystemClient): File? {
-        return client.load(path, filename)
+        return client.load(path, filename)?.run {
+            FileSystemClient.copy(this, received)
+            received
+        }
     }
 
     override fun delete(path: String, filename: String, client: FileSystemClient) {
