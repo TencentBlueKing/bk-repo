@@ -78,14 +78,11 @@ interface ReplicaResource {
         @PathVariable uid: String
     ): Response<User?>
 
-    @GetMapping("/download")
+    @GetMapping("/download/{projectId}/{repoName}")
     fun downloadFile(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        @RequestParam projectId: String,
-        @RequestParam repoName: String,
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
         @RequestParam fullPath: String
     ): feign.Response
-
-    @GetMapping("/test")
-    fun test(): feign.Response
 }
