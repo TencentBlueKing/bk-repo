@@ -3,4 +3,5 @@ dependencies {
     api project(":repository:api-repository")
     compileOnly "org.springframework.cloud:spring-cloud-openfeign-core"
     compileOnly "io.github.openfeign:feign-core"
+    api project(":auth:api-auth")
 }

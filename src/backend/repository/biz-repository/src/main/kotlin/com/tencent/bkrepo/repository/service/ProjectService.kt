@@ -9,13 +9,14 @@ import com.tencent.bkrepo.repository.model.TProject
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.repository.ProjectRepository
-import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
 class ProjectService @Autowired constructor(
@@ -36,7 +37,7 @@ class ProjectService @Autowired constructor(
         return queryProject(name) != null
     }
 
-    fun create(request: ProjectCreateRequest) {
+    fun create(request: ProjectCreateRequest): ProjectInfo {
         with(request) {
             validateParameter(this)
             if (exist(name)) {
@@ -55,6 +56,7 @@ class ProjectService @Autowired constructor(
             val roleId = roleResource.createProjectManage(name).data!!
             userResource.addUserRole(operator, roleId)
             logger.info("Create project [$request] success.")
+            return convert(project)!!
         }
     }
 
@@ -82,7 +84,11 @@ class ProjectService @Autowired constructor(
                 ProjectInfo(
                     name = it.name,
                     displayName = it.displayName,
-                    description = it.description
+                    description = it.description,
+                    createdBy = it.createdBy,
+                    createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    lastModifiedBy = it.lastModifiedBy,
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
                 )
             }
         }

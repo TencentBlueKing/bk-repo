@@ -25,12 +25,12 @@ interface TaskResource {
     @GetMapping("/detail/{id}")
     fun detail(@PathVariable id: String): Response<ReplicaTaskInfo?>
 
-    @GetMapping("/pause")
-    fun pause(): Response<Any>
+    @GetMapping("/pause/{id}")
+    fun pause(@PathVariable id: String): Response<Any>
 
-    @GetMapping("/resume")
-    fun resume(): Response<Any>
+    @GetMapping("/resume/{id}")
+    fun resume(@PathVariable id: String): Response<Any>
 
-    @GetMapping("/stop")
-    fun stop(): Response<Any>
+    @GetMapping("/delete/{id}")
+    fun delete(@PathVariable id: String): Response<Any>
 }

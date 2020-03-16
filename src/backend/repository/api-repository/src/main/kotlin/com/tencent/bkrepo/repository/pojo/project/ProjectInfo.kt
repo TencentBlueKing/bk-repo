@@ -10,5 +10,13 @@ data class ProjectInfo(
     @ApiModelProperty("显示名称")
     val displayName: String,
     @ApiModelProperty("描述")
-    val description: String
+    val description: String,
+    @ApiModelProperty("创建者")
+    val createdBy: String,
+    @ApiModelProperty("创建日期")
+    val createdDate: String,
+    @ApiModelProperty("上次修改者")
+    val lastModifiedBy: String,
+    @ApiModelProperty("上次修改日期")
+    val lastModifiedDate: String
 )
