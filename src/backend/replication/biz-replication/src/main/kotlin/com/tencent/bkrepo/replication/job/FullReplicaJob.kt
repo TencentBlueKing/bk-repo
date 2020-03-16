@@ -227,7 +227,7 @@ class FullReplicaJob : QuartzJobBean() {
                 // 下载数据
                 val response = replicaResource.downloadFile(authToken, node.projectId, node.repoName, node.fullPath)
                 if (response.status() != HttpStatus.OK.value()) {
-                    throw RuntimeException("Download file[${node.projectId}/${node.repoName}/${node.fullPath}] error!")
+                    throw RuntimeException("Download file[${node.projectId}/${node.repoName}/${node.fullPath}] error, reason: ${response.reason()}")
                 }
                 // 保存数据
                 val file = ArtifactFileFactory.build()
