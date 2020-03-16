@@ -218,6 +218,21 @@ class UserServiceImpl @Autowired constructor(
         return getUserById(userId)
     }
 
+    override fun addUserToken(userId: String, token: String): User? {
+        val user = userRepository.findFirstByUserId(userId)
+        if (user == null) {
+            logger.warn("user [$userId]  not exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+
+        val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
+        val update = Update()
+        val token = Token(id = token, createdAt = LocalDateTime.now(), expiredAt = LocalDateTime.now().plusYears(2))
+        update.addToSet(TUser::tokens.name, token)
+        mongoTemplate.upsert(query, update, TUser::class.java)
+        return getUserById(userId)
+    }
+
     override fun removeToken(userId: String, token: String): User? {
         val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
