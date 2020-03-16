@@ -44,13 +44,6 @@ interface ReplicaResource {
         @RequestParam path: String = "/"
     ): Response<Page<NodeInfo>>
 
-    @GetMapping("/permission/list")
-    fun listPermission(
-        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        @RequestParam projectId: String,
-        @RequestParam repoName: String? = null
-    ): Response<List<Permission>>
-
     @GetMapping("/metadata/{projectId}/{repoName}")
     fun getMetadata(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
@@ -59,13 +52,12 @@ interface ReplicaResource {
         @RequestParam fullPath: String = "/"
     ): Response<Map<String, String>>
 
-    @GetMapping("/download")
-    fun downloadFile(
+    @GetMapping("/permission/list")
+    fun listPermission(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
         @RequestParam projectId: String,
-        @RequestParam repoName: String,
-        @RequestParam fullPath: String
-    ): feign.Response
+        @RequestParam repoName: String? = null
+    ): Response<List<Permission>>
 
     @GetMapping("/role/list")
     fun listRole(
@@ -85,4 +77,15 @@ interface ReplicaResource {
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
         @PathVariable uid: String
     ): Response<User?>
+
+    @GetMapping("/download")
+    fun downloadFile(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestParam projectId: String,
+        @RequestParam repoName: String,
+        @RequestParam fullPath: String
+    ): feign.Response
+
+    @GetMapping("/test")
+    fun test(): feign.Response
 }
