@@ -36,7 +36,10 @@ class CacheStorageService : AbstractStorageService() {
     override fun doLoad(path: String, filename: String, credentials: StorageCredentials): File? {
         return cacheClient.load(path, filename) ?: run {
             val cachedFile = cacheClient.touch(path, filename)
-            fileStorage.load(path, filename, cachedFile, credentials)
+            fileStorage.load(path, filename, cachedFile, credentials) ?: run {
+                cachedFile.deleteOnExit()
+                null
+            }
         }
     }
 

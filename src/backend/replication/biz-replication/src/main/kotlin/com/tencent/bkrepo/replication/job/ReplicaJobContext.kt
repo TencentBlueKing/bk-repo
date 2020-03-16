@@ -20,7 +20,7 @@ class ReplicaJobContext(val task: TReplicaTask, val replicaResource: ReplicaReso
     lateinit var selfRepo: RepositoryInfo
     init {
         with(task.setting.remoteClusterInfo) {
-            val byteArray = ("$username:$password").toByteArray(Charsets.UTF_8)
+            val byteArray = ("$accessKey:$secretKey").toByteArray(Charsets.UTF_8)
             val encodedValue = Base64Utils.encodeToString(byteArray)
             authToken = "$PLATFORM_AUTH_HEADER_PREFIX $encodedValue"
         }

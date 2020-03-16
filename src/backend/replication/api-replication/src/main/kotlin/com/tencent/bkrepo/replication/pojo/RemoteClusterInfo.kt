@@ -6,6 +6,6 @@ package com.tencent.bkrepo.replication.pojo
 data class RemoteClusterInfo(
     val url: String,
     val cert: String? = null,
-    val username: String,
-    val password: String
+    val accessKey: String,
+    val secretKey: String
 )

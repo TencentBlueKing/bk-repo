@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.http.HttpStatus
 import org.springframework.scheduling.quartz.QuartzJobBean
 import java.time.Duration
 import java.time.LocalDateTime
@@ -107,8 +108,8 @@ class FullReplicaJob : QuartzJobBean() {
             // 保存结果
             task.endTime = LocalDateTime.now()
             taskRepository.save(task)
-            val consumeSeconds = Duration.between(task.endTime!!, task.startTime!!).seconds
-            logger.info("Replica task[$taskId] is finished[${task.status}], consume [$consumeSeconds]s.")
+            val consumeSeconds = Duration.between(task.startTime!!, task.endTime!!).seconds
+            logger.info("Replica task[$taskId] is finished[${task.status}], reason[${task.errorReason}], consume [$consumeSeconds]s.")
         }
     }
 
@@ -188,8 +189,8 @@ class FullReplicaJob : QuartzJobBean() {
         with(context) {
             // 创建仓库
             this.repoDetail = repoDetail
-            this.selfRepo = createRepo(context)
             this.remoteRepo = repoDetail.remoteRepo
+            this.selfRepo = createRepo(context)
             // 同步节点
             var page = 0
             var fileNodeList = replicaResource.listFileNode(authToken, remoteRepo.projectId, remoteRepo.name, page, pageSize).data!!.records
@@ -221,10 +222,13 @@ class FullReplicaJob : QuartzJobBean() {
             try {
                 // 查询元数据
                 val metadata = if (task.setting.includeMetadata) {
-                    replicaResource.getMetadata(node.projectId, node.repoName, node.fullPath).data!!
+                    replicaResource.getMetadata(authToken, node.projectId, node.repoName, node.fullPath).data!!
                 } else null
                 // 下载数据
                 val response = replicaResource.downloadFile(authToken, node.projectId, node.repoName, node.fullPath)
+                if (response.status() != HttpStatus.OK.value()) {
+                    throw RuntimeException("Download file[${node.projectId}/${node.repoName}/${node.fullPath}] error!")
+                }
                 // 保存数据
                 val file = ArtifactFileFactory.build()
                 Streams.copy(response.body().asInputStream(), file.getOutputStream(), true)
