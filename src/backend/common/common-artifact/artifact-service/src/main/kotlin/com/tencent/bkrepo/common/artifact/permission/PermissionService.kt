@@ -48,7 +48,7 @@ class PermissionService @Autowired constructor(
 
     fun checkPrincipal(userId: String, principalType: PrincipalType) {
         if (!authProperties.enabled) {
-            logger.debug("Auth disabled, skip checking permission")
+            logger.debug("Auth disabled, skip checking principal")
             return
         }
         // 匿名用户，提示登录

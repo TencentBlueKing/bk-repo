@@ -5,6 +5,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.permission.PermissionService
+import com.tencent.bkrepo.common.artifact.permission.Principal
 import com.tencent.bkrepo.common.artifact.permission.PrincipalType
 import com.tencent.bkrepo.repository.api.UserListViewResource
 import com.tencent.bkrepo.repository.service.ListViewService
@@ -27,8 +28,8 @@ class UserListViewResourceImpl @Autowired constructor(
         listViewService.listNodeView(artifactInfo)
     }
 
+    @Principal(type = PrincipalType.ADMIN)
     override fun listProjectView(userId: String) {
-        permissionService.checkPrincipal(userId, PrincipalType.ADMIN)
         listViewService.listRepoView()
     }
 

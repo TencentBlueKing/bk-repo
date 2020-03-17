@@ -2,9 +2,11 @@ package com.tencent.bkrepo.replication.config
 
 import com.novemberain.quartz.mongodb.cluster.CheckinTask
 import com.novemberain.quartz.mongodb.dao.TriggerDao
+import com.tencent.bkrepo.common.artifact.auth.basic.BasicClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.config.ClientAuthConfig
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.logging.LogLevel
 import org.springframework.boot.logging.LoggingSystem
 import org.springframework.cloud.openfeign.FeignClientsConfiguration
@@ -16,6 +18,7 @@ import javax.annotation.PostConstruct
 @Component
 @Configuration
 @Import(FeignClientsConfiguration::class)
+@EnableAutoConfiguration(exclude= [BasicClientAuthHandler::class])
 class ReplicationConfiguration : ArtifactConfiguration {
 
     @Autowired

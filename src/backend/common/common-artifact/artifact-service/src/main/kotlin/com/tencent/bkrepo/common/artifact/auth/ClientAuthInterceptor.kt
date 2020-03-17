@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
+import javax.annotation.PostConstruct
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -18,7 +19,14 @@ import javax.servlet.http.HttpServletResponse
 class ClientAuthInterceptor : HandlerInterceptorAdapter() {
 
     @Autowired
-    private lateinit var clientAuthHandlerList: List<ClientAuthHandler>
+    lateinit var clientAuthHandlerList: List<ClientAuthHandler>
+
+    @PostConstruct
+    private fun init() {
+        clientAuthHandlerList.forEach {
+            logger.info("Initializing client auth interceptor[${it::class.simpleName}].")
+        }
+    }
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         clientAuthHandlerList.forEach { authHandler ->

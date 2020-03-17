@@ -19,6 +19,10 @@ open class DefaultPermissionCheckHandler : PermissionCheckHandler {
         permissionService.checkPermission(userId, permission.type, permission.action, repositoryInfo)
     }
 
+    override fun onPrincipalCheck(userId: String, principal: Principal) {
+        permissionService.checkPrincipal(userId, principal.type)
+    }
+
     override fun onPermissionCheckFailed(exception: PermissionCheckException) {
         // 默认向上抛异常，由ArtifactExceptionHandler统一处理
         throw exception
