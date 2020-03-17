@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
+import com.tencent.bkrepo.repository.pojo.repo.RepoListViewItem
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.apache.commons.lang.StringEscapeUtils
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,9 +21,11 @@ import org.springframework.stereotype.Service
  */
 @Service
 class ListViewService @Autowired constructor(
+    private val projectService: ProjectService,
+    private val repositoryService: RepositoryService,
     private val nodeService: NodeService
 ) {
-    fun listView(artifactInfo: ArtifactInfo) {
+    fun listNodeView(artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
             val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(
                 ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
@@ -31,7 +34,7 @@ class ListViewService @Autowired constructor(
             if (nodeDetail.nodeInfo.folder) {
                 trailingSlash()
                 val nodeList = nodeService.list(artifactInfo.projectId, artifactInfo.repoName, artifactUri, includeFolder = true, deep = false)
-                val pageContent = buildPageContent(nodeList, nodeDetail.nodeInfo)
+                val pageContent = buildNodePageContent(nodeList, nodeDetail.nodeInfo)
                 response.writer.print(pageContent)
             } else {
                 val context = ArtifactDownloadContext()
@@ -41,11 +44,11 @@ class ListViewService @Autowired constructor(
         }
     }
 
-    private fun buildPageContent(nodeList: List<NodeInfo>, currentNode: NodeInfo): String {
+    private fun buildNodePageContent(nodeList: List<NodeInfo>, currentNode: NodeInfo): String {
         val currentPath = computeCurrentPath(currentNode)
-        val nameColumnWidth = computeNameColumnWidth(nodeList)
+        val nameColumnWidth = computeNameColumnWidth(nodeList.map { it.name })
         val itemList = nodeList.map { NodeListViewItem.from(it) }.sorted()
-        val listContent = buildListContent(itemList, currentNode, nameColumnWidth)
+        val listContent = buildNodeListContent(itemList, currentNode, nameColumnWidth)
         return """
             <!DOCTYPE html>
             <html>
@@ -65,7 +68,7 @@ class ListViewService @Autowired constructor(
         """.trimIndent()
     }
 
-    private fun buildListContent(itemList: List<NodeListViewItem>, currentNode: NodeInfo, nameColumnWidth: Int): String {
+    private fun buildNodeListContent(itemList: List<NodeListViewItem>, currentNode: NodeInfo, nameColumnWidth: Int): String {
         val builder = StringBuilder()
         if (!NodeUtils.isRootPath(currentNode.fullPath)) {
             builder.append("""<a href="../">../</a>""")
@@ -74,13 +77,8 @@ class ListViewService @Autowired constructor(
         if (itemList.isEmpty()) {
             builder.append("The directory is empty.")
         }
-        for (item in itemList) {
-            builder.append("""<a href="${item.name}">${StringEscapeUtils.escapeXml(item.name)}</a>""")
-            builder.append(" ".repeat(nameColumnWidth - item.name.length))
-            builder.append(item.lastModifiedDate)
-            builder.append("    ")
-            builder.append(item.size)
-            builder.append("\n")
+        itemList.forEach { item ->
+            buildContent(builder, item.name, item.lastModifiedDate, item.size, nameColumnWidth)
         }
         return builder.toString()
     }
@@ -98,8 +96,62 @@ class ListViewService @Autowired constructor(
         return builder.toString()
     }
 
-    private fun computeNameColumnWidth(nodeList: List<NodeInfo>): Int {
-        val maxNameLength = nodeList.maxBy { it.name.length }?.name?.length ?: 0
+    fun listRepoView(projectId: String? = null) {
+        trailingSlash()
+        val itemList = projectId?.run {
+            repositoryService.list(this).map { RepoListViewItem.from(it) }.sorted()
+        } ?: run {
+            projectService.list().map { RepoListViewItem.from(it) }
+        }
+        val title = if (projectId == null) "Project" else "Repository"
+        val pageContent = buildRepoPageContent(itemList, title)
+        HttpContextHolder.getResponse().writer.print(pageContent)
+    }
+
+    private fun buildRepoPageContent(itemList: List<RepoListViewItem>, title: String): String {
+        val nameColumnWidth = computeNameColumnWidth(itemList.map { it.name })
+        val listContent = buildRepoListContent(itemList, nameColumnWidth, title)
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Index of $title</title>
+            </head>
+            <body>
+                <h1>Index of $title</h1>
+                <pre>${"Name".padEnd(nameColumnWidth)}Last modified       createdBy</pre>
+                <hr/>
+                <pre>$listContent</pre>
+                <hr/>
+                <address style="font-size:small;">BlueKing Repository</address>
+            </body>
+            </html>
+        """.trimIndent()
+    }
+
+    private fun buildRepoListContent(itemList: List<RepoListViewItem>, nameColumnWidth: Int, title: String): String {
+        val builder = StringBuilder()
+        if (itemList.isEmpty()) {
+            builder.append("No ${title.toLowerCase()} existed.")
+        }
+        itemList.forEach { item ->
+            buildContent(builder, item.name, item.lastModifiedDate, item.createdBy, nameColumnWidth)
+        }
+        return builder.toString()
+    }
+
+    private fun buildContent(builder: StringBuilder, name: String, lastModifiedDate: String, thirdPart: String, nameColumnWidth: Int) {
+        builder.append("""<a href="$name">${StringEscapeUtils.escapeXml(name)}</a>""")
+        builder.append(" ".repeat(nameColumnWidth - name.length))
+        builder.append(lastModifiedDate)
+        builder.append("    ")
+        builder.append(thirdPart)
+        builder.append("\n")
+    }
+
+    private fun computeNameColumnWidth(nameList: List<String>): Int {
+        val maxNameLength = nameList.maxBy { it.length }?.length ?: 0
         return maxNameLength + 4
     }
 
@@ -109,4 +161,5 @@ class ListViewService @Autowired constructor(
             HttpContextHolder.getResponse().sendRedirect("$url/")
         }
     }
+
 }
