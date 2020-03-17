@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.NodeService
-import java.time.LocalDateTime
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 /**
  * 标记已过期的节点为已删除
@@ -36,7 +37,7 @@ class ExpiredNodeMarkupJob {
             val startTimeMillis = System.currentTimeMillis()
             val query = Query.query(Criteria.where(TNode::expireDate.name).lt(LocalDateTime.now()))
             val mongoTemplate = nodeDao.determineMongoTemplate()
-            for (sequence in 0 until TNode.SHARDING_COUNT) {
+            for (sequence in 0 until SHARDING_COUNT) {
                 val collectionName = nodeDao.parseSequenceToCollectionName(sequence)
                 var page = 0
                 query.with(PageRequest.of(page, 1000))
