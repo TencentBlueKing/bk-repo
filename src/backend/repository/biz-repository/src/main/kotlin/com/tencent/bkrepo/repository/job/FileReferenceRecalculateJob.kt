@@ -2,9 +2,9 @@ package com.tencent.bkrepo.repository.job
 
 import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TFileReference
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.repository.RepoRepository
 import com.tencent.bkrepo.repository.service.FileReferenceService
@@ -49,7 +49,7 @@ class FileReferenceRecalculateJob : ApplicationListener<ApplicationReadyEvent> {
         logger.info("Starting to recalculate file reference.")
         // 清理file reference
         val startTimeMillis = System.currentTimeMillis()
-        for (sequence in 0 until TFileReference.SHARDING_COUNT) {
+        for (sequence in 0 until SHARDING_COUNT) {
             val collectionName = fileReferenceDao.parseSequenceToCollectionName(sequence)
             val deleteResult = fileReferenceDao.determineMongoTemplate().getCollection(collectionName).deleteMany(BasicDBObject())
             logger.info("Cleanup file reference collection[$sequence] success: ${deleteResult.deletedCount} records.")

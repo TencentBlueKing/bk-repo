@@ -2,6 +2,7 @@ package com.tencent.bkrepo.repository.model
 
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 
@@ -22,8 +23,4 @@ data class TFileReference(
     var sha256: String,
     var storageCredentials: String? = null,
     var count: Long
-) {
-    companion object {
-        const val SHARDING_COUNT = 256
-    }
-}
+)

@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.repository.resource
 
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -25,7 +24,7 @@ class UserRepositoryResourceImpl @Autowired constructor(
     private val repositoryService: RepositoryService
 ) : UserRepositoryResource {
     override fun create(userId: String, userRepoCreateRequest: UserRepoCreateRequest): Response<Void> {
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.PROJECT, PermissionAction.MANAGE, userRepoCreateRequest.projectId))
+        permissionService.checkPermission(userId, ResourceType.PROJECT, PermissionAction.MANAGE, userRepoCreateRequest.projectId)
 
         val createRequest = with(userRepoCreateRequest) {
             RepoCreateRequest(

@@ -6,9 +6,11 @@ import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.Permission
 import com.tencent.bkrepo.auth.pojo.PermissionSet
 import com.tencent.bkrepo.auth.pojo.Role
 import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.replication.api.ReplicaResource
@@ -326,8 +328,14 @@ class FullReplicaJob : QuartzJobBean() {
                 userResource.addUserRoleBatch(selfRoleId, userIdList)
             }
             // 同步权限数据
-            val permissionList = replicaResource.listPermission(authToken, remoteProjectId, remoteRepoName).data!!
-            permissionList.forEach { permission ->
+            val resourceType = if (isRepo) ResourceType.REPO else ResourceType.PROJECT
+            val remotePermissionList = replicaResource.listPermission(authToken, resourceType, remoteProjectId, remoteRepoName).data!!
+            val selfPermissionList = permissionResource.listPermission(resourceType, selfProjectId, selfRepoName).data!!
+            remotePermissionList.forEach { permission ->
+                // 存在相同权限则跳过
+                if (containsPermission(permission, selfPermissionList)) {
+                    return
+                }
                 // 创建用户
                 permission.users.forEach {
                     if (!traversedUserList.contains(it.id)) {
@@ -399,6 +407,15 @@ class FullReplicaJob : QuartzJobBean() {
                 userResource.addUserToken(user.userId, it.id)
             }
         }
+    }
+
+    private fun containsPermission(permission: Permission, permissionList: List<Permission>): Boolean {
+        permissionList.forEach {
+            if (it.projectId == permission.projectId && it.permName == permission.permName) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun convertReplicationProject(
