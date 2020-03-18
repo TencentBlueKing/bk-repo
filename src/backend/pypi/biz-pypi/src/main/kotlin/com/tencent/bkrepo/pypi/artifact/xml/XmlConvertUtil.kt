@@ -8,7 +8,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper
 
 object XmlConvertUtil {
 
-    fun xml2Bean(xmlString: String): MethodCall {
+    fun xml2MethodCall(xmlString: String): MethodCall {
         val module = JacksonXmlModule()
         module.setDefaultUseWrapper(false)
         val xmlMapper = XmlMapper(module)
@@ -16,7 +16,15 @@ object XmlConvertUtil {
         return xmlMapper.readValue(xmlString, MethodCall::class.java)
     }
 
-    fun bean2Xml(methodResponse: MethodResponse): String {
+    fun xml2MethodResponse(xmlString: String): MethodResponse {
+        val module = JacksonXmlModule()
+        module.setDefaultUseWrapper(false)
+        val xmlMapper = XmlMapper(module)
+        xmlMapper.enable(SerializationFeature.INDENT_OUTPUT)
+        return xmlMapper.readValue(xmlString, MethodResponse::class.java)
+    }
+
+    fun methodResponse2Xml(methodResponse: MethodResponse): String {
         var xmlMapper = XmlMapper()
         xmlMapper.setDefaultUseWrapper(false)
         xmlMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)

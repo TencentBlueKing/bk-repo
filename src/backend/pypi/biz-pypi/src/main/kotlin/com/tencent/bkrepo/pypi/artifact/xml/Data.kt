@@ -8,5 +8,5 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 data class Data constructor(
     @JacksonXmlElementWrapper(localName = "valueList", useWrapping = false)
     @JacksonXmlProperty(localName = "value")
-    val valueList: List<Value>
+    val valueList: MutableList<Value>?
 )

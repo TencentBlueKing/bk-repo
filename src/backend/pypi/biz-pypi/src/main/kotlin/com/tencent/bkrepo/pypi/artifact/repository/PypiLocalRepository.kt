@@ -15,6 +15,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -76,28 +77,24 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
     }
 
-    override fun searchXml(
-        context: ArtifactSearchContext,
-        xmlString: String
-    ) {
-        val response = HttpContextHolder.getResponse()
-        response.contentType = "text/xml; charset=UTF-8"
+    override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
         val artifactInfo = context.artifactInfo
+        val repository = context.repositoryInfo
         val searchArgs = XmlUtil.getSearchArgs(xmlString)
-
         val packageName = searchArgs["packageName"]
         val summary = searchArgs["summary"]
-        var xml: String
-
         if (packageName != null && summary != null) {
-            with(artifactInfo) {
+            with(repository) {
                 val projectId = Rule.QueryRule("projectId", projectId)
-                val repoName = Rule.QueryRule("repoName", repoName)
+                val repoName = Rule.QueryRule("repoName", name)
                 val packageQuery = Rule.QueryRule("metadata.name", packageName, OperationType.MATCH)
                 val filetypeAuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
                 val summaryQuery = Rule.QueryRule("metadata.summary", summary, OperationType.MATCH)
                 // val versionQuery = Rule.QueryRule("metadata.verison", OperationType.EQ)
-                val rule1 = Rule.NestedRule(mutableListOf(repoName, projectId, packageQuery, filetypeAuery), Rule.NestedRule.RelationType.AND)
+                val rule1 = Rule.NestedRule(
+                    mutableListOf(repoName, projectId, packageQuery, filetypeAuery),
+                    Rule.NestedRule.RelationType.AND
+                )
                 val rule2 = Rule.NestedRule(mutableListOf(rule1, summaryQuery), Rule.NestedRule.RelationType.OR)
 
                 val queryModel = QueryModel(
@@ -108,16 +105,17 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 )
                 val nodeList: List<Map<String, Any>>? = nodeResource.query(queryModel).data?.records
                 if (nodeList != null) {
-                    xml = XmlUtil.getXmlMethodResponse(nodeList)
-                    response.writer.print(xml)
+                    return XmlUtil.nodeLis2Values(nodeList)
                 }
             }
         }
+        return null
     }
+
     /**
      *
      */
-    override fun list(context: ArtifactListContext): Any? {
+    override fun list(context: ArtifactListContext) {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         with(artifactInfo) {
@@ -158,7 +156,6 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 }
             }
         }
-        return null
     }
 
     /**
