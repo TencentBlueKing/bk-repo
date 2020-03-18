@@ -260,7 +260,7 @@ class DockerArtifactoryService @Autowired constructor(
         return data.distinct()
     }
 
-    fun findRepoTagList(projectId: String, repoName: String, image: String): List<String> {
+    fun findRepoTagList(projectId: String, repoName: String, image: String): Map<String, String> {
         val projectRule = Rule.QueryRule("projectId", projectId)
         val repoNameRule = Rule.QueryRule("repoName", repoName)
         val nameRule = Rule.QueryRule("name", "manifest.json")
@@ -269,20 +269,22 @@ class DockerArtifactoryService @Autowired constructor(
         val queryModel = QueryModel(
             page = PageLimit(0, 100000),
             sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("fullPath", "path", "size"),
+            select = mutableListOf("fullPath", "path", "size", "createdBy"),
             rule = rule
         )
 
         val result = nodeResource.query(queryModel).data ?: run {
             logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
-            return emptyList()
+            return emptyMap()
         }
-        var data = mutableListOf<String>()
+        var data = mutableMapOf<String, String>()
         result.records.forEach {
             var path = it.get("path") as String
-            data.add(path.removePrefix("/$image/").removeSuffix("/"))
+            val tag = path.removePrefix("/$image/").removeSuffix("/")
+            val user = it.get("createdBy") as String
+            data.put(tag, user)
         }
-        return data.distinct()
+        return data
     }
 
     fun findArtifactsByName(projectId: String, repoName: String, fileName: String): List<Map<String, Any>> {
