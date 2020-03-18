@@ -10,7 +10,7 @@ import com.tencent.bkrepo.common.artifact.auth.AuthService
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.auth.basic.BasicAuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.platform.PlatformAuthCredentials
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
+import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
@@ -99,7 +99,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
     }
 
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
-        val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
+        val basicAuthHeader = request.getHeader(AUTHORIZATION)
         if (request.requestURI.startsWith("/user")) {
             val encodedCredentials = basicAuthHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
@@ -128,7 +128,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         private val logger = LoggerFactory.getLogger(DockerClientAuthHandler::class.java)
 
         fun extractBasicAuth(request: HttpServletRequest): BasicAuthCredentials {
-            val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
+            val basicAuthHeader = request.getHeader(AUTHORIZATION)
             if (basicAuthHeader.isNullOrBlank()) throw ClientAuthException("Authorization value is null")
             if (!basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
 

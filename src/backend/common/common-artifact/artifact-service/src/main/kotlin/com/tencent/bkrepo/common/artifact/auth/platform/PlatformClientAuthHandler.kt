@@ -9,7 +9,8 @@ import com.tencent.bkrepo.common.artifact.auth.AnonymousCredentials
 import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.AuthService
 import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
+import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
+import com.tencent.bkrepo.common.artifact.config.PLATFORM_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -33,7 +34,7 @@ open class PlatformClientAuthHandler : ClientAuthHandler {
     private lateinit var authService: AuthService
 
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
-        val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER) ?: ""
+        val basicAuthHeader = request.getHeader(AUTHORIZATION) ?: ""
         return if (basicAuthHeader.startsWith(PLATFORM_AUTH_HEADER_PREFIX)) {
             try {
                 val encodedCredentials = basicAuthHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
@@ -70,6 +71,6 @@ open class PlatformClientAuthHandler : ClientAuthHandler {
 
     companion object {
         private val logger = LoggerFactory.getLogger(PlatformClientAuthHandler::class.java)
-        const val PLATFORM_AUTH_HEADER_PREFIX = "Platform "
+
     }
 }
