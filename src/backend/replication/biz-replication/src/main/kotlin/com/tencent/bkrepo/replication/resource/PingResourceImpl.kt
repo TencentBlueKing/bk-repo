@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/replica")
+@RequestMapping("/cluster")
 class PingResourceImpl {
 
     @Value("\${spring.application.version}")
