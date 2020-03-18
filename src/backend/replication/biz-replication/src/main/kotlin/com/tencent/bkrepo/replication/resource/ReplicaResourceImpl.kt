@@ -24,7 +24,6 @@ import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -37,9 +36,6 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/replica")
 class ReplicaResourceImpl {
-
-    @Value("\${spring.application.version}")
-    private var version: String = ""
 
     @Autowired
     private lateinit var projectResource: ProjectResource
@@ -64,16 +60,6 @@ class ReplicaResourceImpl {
 
     @Autowired
     private lateinit var storageService: StorageService
-
-    @GetMapping("/ping")
-    fun ping(): Response<Void> {
-        return ResponseBuilder.success()
-    }
-
-    @GetMapping("/version")
-    fun version(): Response<String> {
-        return ResponseBuilder.success(version)
-    }
 
     @GetMapping("/project/list")
     fun listProject(
