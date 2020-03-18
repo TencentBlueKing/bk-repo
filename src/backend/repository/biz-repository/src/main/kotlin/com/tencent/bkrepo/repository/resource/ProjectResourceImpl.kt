@@ -22,8 +22,7 @@ class ProjectResourceImpl @Autowired constructor(
         return ResponseBuilder.success(projectService.list())
     }
 
-    override fun create(request: ProjectCreateRequest): Response<Void> {
-        projectService.create(request)
-        return ResponseBuilder.success()
+    override fun create(request: ProjectCreateRequest): Response<ProjectInfo> {
+        return ResponseBuilder.success(projectService.create(request))
     }
 }

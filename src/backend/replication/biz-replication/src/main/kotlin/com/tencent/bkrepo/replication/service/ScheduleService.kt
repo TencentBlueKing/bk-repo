@@ -7,6 +7,7 @@ import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.ReplicationType
 import org.quartz.CronScheduleBuilder
 import org.quartz.JobBuilder
+import org.quartz.JobKey
 import org.quartz.Scheduler
 import org.quartz.Trigger
 import org.quartz.TriggerBuilder
@@ -64,6 +65,18 @@ class ScheduleService @Autowired constructor(
 
     private fun createIncrementalReplicaJob(task: TReplicaTask) {
         TODO("IncrementalReplicaJob")
+    }
+
+    fun pauseJob(id: String) {
+        scheduler.pauseJob(JobKey.jobKey(id, DEFAULT_GROUP_ID))
+    }
+
+    fun resumeJob(id: String) {
+        scheduler.resumeJob(JobKey.jobKey(id, DEFAULT_GROUP_ID))
+    }
+
+    fun deleteJob(id: String) {
+        scheduler.deleteJob(JobKey.jobKey(id, DEFAULT_GROUP_ID))
     }
 
     companion object {

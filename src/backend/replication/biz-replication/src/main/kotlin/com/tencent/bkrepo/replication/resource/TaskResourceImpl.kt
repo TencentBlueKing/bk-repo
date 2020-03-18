@@ -14,7 +14,7 @@ class TaskResourceImpl @Autowired constructor(
     private val taskService: TaskService
 ) : TaskResource {
     override fun create(userId: String, request: ReplicaTaskCreateRequest): Response<Void> {
-        taskService.createTask(userId, request)
+        taskService.create(userId, request)
         return ResponseBuilder.success()
     }
 
@@ -26,15 +26,18 @@ class TaskResourceImpl @Autowired constructor(
         return ResponseBuilder.success(taskService.detail(id))
     }
 
-    override fun pause(): Response<Any> {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+    override fun pause(id: String): Response<Void> {
+        taskService.pause(id)
+        return ResponseBuilder.success()
     }
 
-    override fun resume(): Response<Any> {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+    override fun resume(id: String): Response<Void> {
+        taskService.resume(id)
+        return ResponseBuilder.success()
     }
 
-    override fun stop(): Response<Any> {
-        TODO("not implemented") // To change body of created functions use File | Settings | File Templates.
+    override fun delete(id: String): Response<Void> {
+        taskService.delete(id)
+        return ResponseBuilder.success()
     }
 }

@@ -4,6 +4,7 @@ import com.google.common.io.ByteStreams
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.util.FileMergeUtils
+import org.apache.commons.io.FileUtils
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -11,7 +12,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
-import org.apache.commons.io.FileUtils
 
 /**
  * 本地文件存储客户端
@@ -109,5 +109,9 @@ class FileSystemClient(private val root: String) {
         if (!Files.exists(path)) {
             Files.createDirectories(path)
         }
+    }
+
+    companion object {
+        fun copy(src: File, dest: File) = FileUtils.copyFile(src, dest)
     }
 }

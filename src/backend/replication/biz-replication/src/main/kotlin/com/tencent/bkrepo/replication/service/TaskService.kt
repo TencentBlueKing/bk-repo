@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.replication.api.ReplicaResource
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.constant.ReplicationMessageCode
@@ -9,6 +10,7 @@ import com.tencent.bkrepo.replication.pojo.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.ReplicationType
 import com.tencent.bkrepo.replication.repository.TaskRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,7 +24,7 @@ class TaskService @Autowired constructor(
     private val taskRepository: TaskRepository,
     private val scheduleService: ScheduleService
 ) {
-    fun createTask(userId: String, request: ReplicaTaskCreateRequest) {
+    fun create(userId: String, request: ReplicaTaskCreateRequest) {
         with(request) {
             val task = TReplicaTask(
                 createdBy = userId,
@@ -49,6 +51,51 @@ class TaskService @Autowired constructor(
         return taskRepository.findAll().map { convert(it)!! }
     }
 
+    fun pause(id: String) {
+        val task = taskRepository.findByIdOrNull(id) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
+        if (task.type == ReplicationType.FULL) {
+            if (task.status == ReplicationStatus.REPLICATING) {
+                scheduleService.pauseJob(task.id!!)
+                task.status = ReplicationStatus.PAUSED
+                taskRepository.save(task)
+            } else {
+                throw ErrorCodeException(ReplicationMessageCode.TASK_STATUS_INVALID)
+            }
+        }
+    }
+
+    fun resume(id: String) {
+        val task = taskRepository.findByIdOrNull(id) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
+        if (task.type == ReplicationType.FULL) {
+            if (task.status == ReplicationStatus.PAUSED) {
+                scheduleService.resumeJob(task.id!!)
+                task.status = ReplicationStatus.REPLICATING
+                taskRepository.save(task)
+            } else {
+                throw ErrorCodeException(ReplicationMessageCode.TASK_STATUS_INVALID)
+            }
+        }
+    }
+
+    fun delete(id: String) {
+        val task = taskRepository.findByIdOrNull(id) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
+        if (task.type == ReplicationType.FULL) {
+            scheduleService.deleteJob(task.id!!)
+            taskRepository.delete(task)
+        }
+    }
+
+    private fun validate(request: ReplicaTaskCreateRequest) {
+        with(request.setting) {
+            try {
+                val replicaResource = FeignClientFactory.create(ReplicaResource::class.java, remoteClusterInfo)
+                replicaResource.ping()
+            } catch (exception: Exception) {
+                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR)
+            }
+        }
+    }
+
     private fun convert(task: TReplicaTask?): ReplicaTaskInfo? {
         return task?.let {
             ReplicaTaskInfo(
@@ -65,23 +112,6 @@ class TaskService @Autowired constructor(
                 endTime = it.endTime?.format(DateTimeFormatter.ISO_DATE_TIME),
                 errorReason = it.errorReason
             )
-        }
-    }
-
-    fun deleteTask() {}
-
-    fun pauseTask() {}
-
-    fun resumeTask() {}
-
-    private fun validate(request: ReplicaTaskCreateRequest) {
-        with(request.setting) {
-            try {
-                val replicaResource = FeignClientFactory.create(ReplicaResource::class.java, remoteClusterInfo.url)
-                replicaResource.ping()
-            } catch (exception: Exception) {
-                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR)
-            }
         }
     }
 
