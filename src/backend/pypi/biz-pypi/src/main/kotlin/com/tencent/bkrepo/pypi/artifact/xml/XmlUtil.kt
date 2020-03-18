@@ -3,12 +3,52 @@ package com.tencent.bkrepo.pypi.artifact.xml
 object XmlUtil {
 
     fun getSearchArgs(xmlString: String): HashMap<String, String?> {
-        val methodCall = XmlConvertUtil.xml2Bean(xmlString)
+        val methodCall = XmlConvertUtil.xml2MethodCall(xmlString)
         val action = methodCall.methodName
         val packageName = methodCall.params.paramList[0].value.struct?.memberList?.get(0)?.value?.array?.data?.valueList?.get(0)?.string
         val summary = methodCall.params.paramList[0].value.struct?.memberList?.get(1)?.value?.array?.data?.valueList?.get(0)?.string
         val operation = methodCall.params.paramList[1].value.string
         return hashMapOf("action" to action, "packageName" to packageName, "summary" to summary, "operation" to operation)
+    }
+
+    /**
+     * null response
+     */
+    fun getEmptyMethodResponse(): MethodResponse {
+        return MethodResponse(
+            Params(
+                listOf(
+                    Param(
+                        Value(
+                            null,
+                            null,
+                            null,
+                            Array(
+                                Data(
+                                    mutableListOf()
+                                )
+                            ),
+                            null
+                        )
+                    )
+                )
+            )
+        )
+    }
+
+    fun nodeLis2Values(nodeList: List<Map<String, Any>>): MutableList<Value> {
+        val values: MutableList<Value> = ArrayList()
+        // 过滤掉重复节点，每个节点对应一个Struct
+        for (node in nodeList) {
+            values.add(Value(
+                null,
+                null,
+                Struct(getMembers(node["metadata"] as Map<String, String>)),
+                null,
+                null
+            ))
+        }
+        return values
     }
 
     fun getXmlMethodResponse(nodeList: List<Map<String, Any>>): String {
@@ -19,6 +59,7 @@ object XmlUtil {
                 null,
                 null,
                 Struct(getMembers(node["metadata"] as Map<String, String>)),
+                null,
                 null
             ))
         }
@@ -37,13 +78,14 @@ object XmlUtil {
                                         // 按版本分段
                                         values
                                     )
-                                )
+                                ),
+                                null
                             )
                         )
                     )
                 )
             )
-        return (XmlConvertUtil.bean2Xml(methodResponse))
+        return (XmlConvertUtil.methodResponse2Xml(methodResponse))
     }
 
     fun getMembers(metadata: Map<String, String>): List<Member> {
@@ -54,6 +96,7 @@ object XmlUtil {
                 Value(
                     null,
                     0,
+                    null,
                     null,
                     null
                 )
@@ -67,6 +110,7 @@ object XmlUtil {
                     null,
                     // 填入子节点name
                     null,
+                    null,
                     null
                 )
             )
@@ -78,6 +122,7 @@ object XmlUtil {
                     metadata["name"],
                     null,
                     null,
+                    null,
                     null
                 )
             )
@@ -87,6 +132,7 @@ object XmlUtil {
                 "summary",
                 Value(
                     metadata["summary"],
+                    null,
                     null,
                     null,
                     null
