@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.artifact.config.AuthProperties
 import com.tencent.bkrepo.common.artifact.permission.DefaultPermissionCheckHandler
 import com.tencent.bkrepo.common.artifact.permission.PermissionAspect
 import com.tencent.bkrepo.common.artifact.permission.PermissionCheckHandler
+import com.tencent.bkrepo.common.artifact.permission.PrincipalAspect
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMapMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoMethodArgumentResolver
@@ -74,6 +75,9 @@ class ArtifactAutoConfiguration {
 
     @Bean
     fun permissionAspect() = PermissionAspect()
+
+    @Bean
+    fun principalAspect() = PrincipalAspect()
 
     @Bean
     fun clientAuthInterceptor() = ClientAuthInterceptor()

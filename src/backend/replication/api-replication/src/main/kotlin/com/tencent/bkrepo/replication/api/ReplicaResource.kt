@@ -20,14 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @RequestMapping("/replica")
-@FeignClient(SERVICE_NAME, contextId = "ReplicationResource")
+@FeignClient(SERVICE_NAME, contextId = "ReplicaResource")
 interface ReplicaResource {
-    @GetMapping("/ping")
-    fun ping(): Response<Void>
-
-    @GetMapping("/version")
-    fun version(): Response<String>
-
     @GetMapping("/project/list")
     fun listProject(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,

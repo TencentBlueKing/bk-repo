@@ -10,6 +10,8 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.permission.Principal
+import com.tencent.bkrepo.common.artifact.permission.PrincipalType
 import com.tencent.bkrepo.common.artifact.util.HttpResponseUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -22,7 +24,6 @@ import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -31,12 +32,10 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+@Principal(type = PrincipalType.ADMIN)
 @RestController
 @RequestMapping("/replica")
 class ReplicaResourceImpl {
-
-    @Value("\${spring.application.version}")
-    private var version: String = ""
 
     @Autowired
     private lateinit var projectResource: ProjectResource
@@ -61,16 +60,6 @@ class ReplicaResourceImpl {
 
     @Autowired
     private lateinit var storageService: StorageService
-
-    @GetMapping("/ping")
-    fun ping(): Response<Void> {
-        return ResponseBuilder.success()
-    }
-
-    @GetMapping("/version")
-    fun version(): Response<String> {
-        return ResponseBuilder.success(version)
-    }
 
     @GetMapping("/project/list")
     fun listProject(

@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.replication.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.permission.Principal
+import com.tencent.bkrepo.common.artifact.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.TaskResource
 import com.tencent.bkrepo.replication.pojo.ReplicaTaskCreateRequest
@@ -9,6 +11,7 @@ import com.tencent.bkrepo.replication.service.TaskService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
+@Principal(type = PrincipalType.ADMIN)
 @RestController
 class TaskResourceImpl @Autowired constructor(
     private val taskService: TaskService
