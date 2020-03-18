@@ -266,7 +266,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         projectId: String,
         repoName: String,
         image: String
-    ): List<String> {
+    ): Map<String, String> {
         return this.repo.findRepoTagList(projectId, repoName, image)
     }
 
@@ -777,6 +777,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
 
     private fun getProtocol(httpHeaders: HttpHeaders): String {
         val protocolHeaders = httpHeaders.get("X-Forwarded-Proto")
+        if (protocolHeaders == null || protocolHeaders.isEmpty()) {
+            return "http"
+        }
         if (protocolHeaders != null && !protocolHeaders.isEmpty()) {
             return protocolHeaders.iterator().next() as String
         } else {

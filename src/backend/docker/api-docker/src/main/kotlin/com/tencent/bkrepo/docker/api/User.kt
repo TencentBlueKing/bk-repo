@@ -81,5 +81,5 @@ interface User {
         @PathVariable
         @ApiParam(value = "repoName", required = true)
         repoName: String
-    ): Response<List<String>>
+    ): Response<Map<String, String>>
 }
