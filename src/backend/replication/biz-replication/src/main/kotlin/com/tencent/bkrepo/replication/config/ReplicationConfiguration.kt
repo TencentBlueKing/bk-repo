@@ -29,4 +29,6 @@ class ReplicationConfiguration : ArtifactConfiguration {
         loggingSystem.setLogLevel(TriggerDao::class.java.name, LogLevel.WARN)
     }
 
+    override
+    fun getClientAuthConfig() = ClientAuthConfig(excludePatterns = listOf("/replica/ping", "/replica/version"))
 }
