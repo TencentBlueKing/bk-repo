@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.artifact.repository.remote
 
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
+import com.tencent.bkrepo.common.artifact.config.PROXY_AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteConfiguration
@@ -10,9 +10,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
-import com.tencent.bkrepo.common.artifact.repository.http.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.repository.http.HttpClientBuilderFactory
-import com.tencent.bkrepo.common.artifact.repository.http.PROXY_AUTHORIZATION
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.api.NodeResource

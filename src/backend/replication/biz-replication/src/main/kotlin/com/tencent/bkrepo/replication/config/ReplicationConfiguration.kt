@@ -18,7 +18,6 @@ import javax.annotation.PostConstruct
 @Component
 @Configuration
 @Import(FeignClientsConfiguration::class)
-@EnableAutoConfiguration(exclude= [BasicClientAuthHandler::class])
 class ReplicationConfiguration : ArtifactConfiguration {
 
     @Autowired
@@ -30,6 +29,4 @@ class ReplicationConfiguration : ArtifactConfiguration {
         loggingSystem.setLogLevel(TriggerDao::class.java.name, LogLevel.WARN)
     }
 
-    override
-    fun getClientAuthConfig() = ClientAuthConfig(includePatterns = emptyList())
 }

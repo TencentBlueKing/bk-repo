@@ -17,13 +17,23 @@ class PrincipalAspect {
     @Autowired
     private lateinit var permissionCheckHandler: PermissionCheckHandler
 
-    @Around("@annotation(com.tencent.bkrepo.common.artifact.permission.Principal)")
+    @Around("@within(com.tencent.bkrepo.common.artifact.permission.Principal) || @annotation(com.tencent.bkrepo.common.artifact.permission.Principal)")
     @Throws(Throwable::class)
     fun around(point: ProceedingJoinPoint): Any? {
         val signature = point.signature as MethodSignature
         val method = signature.method
-        val principal = method.getAnnotation(Principal::class.java)
-
+        var principal = method.getAnnotation(Principal::class.java)
+        if (principal == null) {
+            principal = point.target.javaClass.getAnnotation(Principal::class.java)
+            if (principal == null) { // 获取接口上的注解
+                for (clazz in point.javaClass.interfaces) {
+                    principal = clazz.getAnnotation(Principal::class.java)
+                    if (principal != null) {
+                        break
+                    }
+                }
+            }
+        }
         val request = HttpContextHolder.getRequest()
         val userId = request.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
 
