@@ -234,6 +234,63 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         }
     }
 
+    fun getManifestString(
+        projectId: String,
+        repoName: String,
+        dockerRepo: String,
+        tag: String
+    ): String {
+        val useManifestType = this.chooseManifestType(projectId, repoName, dockerRepo, tag)
+        val manifestPath = buildManifestPathFromType(dockerRepo, tag, useManifestType)
+        var manifest = this.repo.findManifest(projectId, repoName, manifestPath)
+        if (manifest == null) {
+            logger.info("node not exist {}, {},{}", projectId, repoName, manifestPath)
+            return ""
+        } else {
+            var context = DownloadContext(projectId, repoName, dockerRepo).projectId(projectId).repoName(repoName)
+                .sha256(manifest.nodeInfo.sha256!!)
+            var file = this.repo.download(context)
+            val contents = file.readText()
+            return contents
+        }
+    }
+
+    fun getRepoList(
+        projectId: String,
+        repoName: String
+    ): List<String> {
+        return this.repo.findRepoList(projectId, repoName)
+    }
+
+    fun getRepoTagList(
+        projectId: String,
+        repoName: String,
+        image: String
+    ): List<String> {
+        return this.repo.findRepoTagList(projectId, repoName, image)
+    }
+
+    fun buildLayerResponse(
+        projectId: String,
+        repoName: String,
+        dockerRepo: String,
+        id: String
+    ): ResponseEntity<Any> {
+        val digest = DockerDigest(id)
+        var context = DownloadContext(projectId, repoName, dockerRepo).projectId(projectId).repoName(repoName)
+            .sha256(digest.getDigestHex())
+        var file = this.repo.download(context)
+        val inputStreamResource = InputStreamResource(file.inputStream())
+        httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
+        httpHeaders.set("Docker-Content-Digest", digest.toString())
+        httpHeaders.set("Content-Type", DockerSchemaUtils.getManifestType(projectId, repoName, dockerRepo, this.repo))
+        logger.info("file result length {}", file.length())
+        return ResponseEntity.ok()
+            .headers(httpHeaders)
+            .contentLength(file.length())
+            .body(inputStreamResource)
+    }
+
     private fun buildManifestResponse(
         projectId: String,
         repoName: String,
