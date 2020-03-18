@@ -87,11 +87,11 @@ class TaskService @Autowired constructor(
 
     private fun validate(request: ReplicaTaskCreateRequest) {
         with(request.setting) {
+            val pingResource = FeignClientFactory.create(PingResource::class.java, remoteClusterInfo)
             try {
-                val pingResource = FeignClientFactory.create(PingResource::class.java, remoteClusterInfo)
                 pingResource.ping()
             } catch (exception: Exception) {
-                logger.error("connect remote cluster[${remoteClusterInfo.url}] failed: $exception")
+                logger.error("connect remote cluster[${remoteClusterInfo.url}] failed.", exception)
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR)
             }
         }
