@@ -55,7 +55,7 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         userId: String?,
         projectId: String,
         repoName: String
-    ): Response<List<String>> {
+    ): Response<Map<String,String>> {
         dockerRepo.userId = UserUtil.getContextUserId(userId)
         val imageName = PathUtil.tagArtifactName(request, projectId, repoName)
         val result = dockerRepo.getRepoTagList(projectId, repoName, imageName)
