@@ -12,5 +12,8 @@ data class Value constructor(
     @JacksonXmlProperty(localName = "struct")
     val struct: Struct?,
     @JacksonXmlProperty(localName = "array")
-    val array: Array?
+    val array: Array?,
+    @JacksonXmlProperty(localName = "boolean")
+    val boolean: String?
+
 )
