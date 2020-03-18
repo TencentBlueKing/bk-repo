@@ -6,7 +6,7 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 
-@RequestMapping("/replica")
+@RequestMapping("/cluster")
 @FeignClient(SERVICE_NAME, contextId = "PingResource")
 interface PingResource {
     @GetMapping("/ping")

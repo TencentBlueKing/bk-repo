@@ -13,10 +13,12 @@ import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.replication.api.PingResource
 import com.tencent.bkrepo.replication.api.ReplicaResource
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.constant.TASK_ID_KEY
 import com.tencent.bkrepo.replication.pojo.ConflictStrategy
+import com.tencent.bkrepo.replication.pojo.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.RemoteProjectInfo
 import com.tencent.bkrepo.replication.pojo.RemoteRepoInfo
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
@@ -93,7 +95,7 @@ class FullReplicaJob : QuartzJobBean() {
                 task.status = ReplicationStatus.REPLICATING
                 task.startTime = LocalDateTime.now()
                 // 检查版本
-                checkVersion(replicaResource)
+                checkVersion(remoteClusterInfo)
                 // 查询同步详情信息
                 queryReplicaDetail(replicaContext)
                 taskRepository.save(task)
@@ -122,8 +124,9 @@ class FullReplicaJob : QuartzJobBean() {
         }
     }
 
-    private fun checkVersion(replicaResource: ReplicaResource) {
-        val remoteVersion = replicaResource.version().data!!
+    private fun checkVersion(remoteClusterInfo: RemoteClusterInfo) {
+        val pingResource = FeignClientFactory.create(PingResource::class.java, remoteClusterInfo)
+        val remoteVersion = pingResource.version().data!!
         if (version != remoteVersion) {
             logger.warn("The local cluster's version[$version] is different from remote cluster's version[$remoteVersion]")
         }

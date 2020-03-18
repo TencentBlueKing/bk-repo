@@ -2,7 +2,7 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.replication.api.ReplicaResource
+import com.tencent.bkrepo.replication.api.PingResource
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.constant.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaTask
@@ -88,8 +88,8 @@ class TaskService @Autowired constructor(
     private fun validate(request: ReplicaTaskCreateRequest) {
         with(request.setting) {
             try {
-                val replicaResource = FeignClientFactory.create(ReplicaResource::class.java, remoteClusterInfo)
-                replicaResource.ping()
+                val pingResource = FeignClientFactory.create(PingResource::class.java, remoteClusterInfo)
+                pingResource.ping()
             } catch (exception: Exception) {
                 logger.error("connect remote cluster[${remoteClusterInfo.url}] failed: $exception")
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR)

@@ -30,5 +30,5 @@ class ReplicationConfiguration : ArtifactConfiguration {
     }
 
     override
-    fun getClientAuthConfig() = ClientAuthConfig(excludePatterns = listOf("/replica/ping", "/replica/version"))
+    fun getClientAuthConfig() = ClientAuthConfig(excludePatterns = listOf("/cluster/ping", "/cluster/version"))
 }
