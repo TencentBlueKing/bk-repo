@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.pypi.artifact.url
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
-import net.sf.json.JSONArray
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -20,7 +20,7 @@ object UrlPatternUtil {
         val packageName: String = request.getParameter("name")
         val version: String = request.getParameter("version")
         val classifiersList = request.getParameterValues("classifiers")
-        val classifiers = JSONArray.fromObject(classifiersList)
+        val classifiers = ObjectMapper().writeValueAsString(classifiersList)
         val metadata = mapOf<String, String>(
             "name" to (request.getParameter("name")),
             "version" to request.getParameter("version"),
@@ -37,7 +37,7 @@ object UrlPatternUtil {
             "description" to (request.getParameter("description") ?: ""),
             "keywords" to (request.getParameter("keywords") ?: ""),
             "platform" to (request.getParameter("platform") ?: ""),
-            "classifiers" to (classifiers.toString() ?: ""),
+            "classifiers" to (classifiers ?: ""),
             "download_url" to (request.getParameter("download_url") ?: ""),
             "comment" to (request.getParameter("comment") ?: ""),
             "md5_digest" to (request.getParameter("md5_digest") ?: ""),
