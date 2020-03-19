@@ -14,13 +14,11 @@ import feign.codec.Decoder
 import feign.codec.Encoder
 import feign.codec.ErrorDecoder
 import org.apache.http.conn.ssl.NoopHostnameVerifier
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy
 import org.apache.http.ssl.SSLContexts
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.openfeign.FeignLoggerFactory
-import java.io.ByteArrayInputStream
 import java.security.KeyStore
-import java.util.Base64
+import java.security.cert.CertificateFactory
 import javax.net.ssl.SSLSocketFactory
 
 object FeignClientFactory {
@@ -47,11 +45,16 @@ object FeignClientFactory {
     private fun createSSLSocketFactory(cert: String): SSLSocketFactory {
 
         try {
-            val decoder = Base64.getDecoder()
-            val trustCertBytes = decoder.decode(cert)
-            val trustStore: KeyStore = KeyStore.getInstance(KeyStore.getDefaultType())
-            trustStore.load(ByteArrayInputStream(trustCertBytes), null)
-            val sslContext = SSLContexts.custom().loadTrustMaterial(trustStore, TrustSelfSignedStrategy()).build()
+            val certInputStream = cert.byteInputStream(Charsets.UTF_8)
+            val certificateFactory = CertificateFactory.getInstance("X.509")
+            val certificateList = certificateFactory.generateCertificates(certInputStream)
+            require(!certificateList.isEmpty()) { "Expected non-empty set of trusted certificates." }
+            val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
+            keyStore.load(null, null)
+            certificateList.forEachIndexed { index, certificate ->
+                keyStore.setCertificateEntry(index.toString(), certificate)
+            }
+            val sslContext = SSLContexts.custom().loadTrustMaterial(keyStore, null).build()
             return sslContext.socketFactory
         } catch (exception: Exception) {
             logger.error("Create SSLSocketFactory error.", exception)
