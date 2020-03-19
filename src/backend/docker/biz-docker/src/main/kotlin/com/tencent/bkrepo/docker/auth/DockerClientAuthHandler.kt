@@ -107,7 +107,9 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
             require(parts.size >= 2)
             return PlatformAuthCredentials(parts[0], parts[1])
         }
+        logger.error("basic header {}", basicAuthHeader)
         if (basicAuthHeader.isNullOrBlank()) {
+            logger.error("path {}", request.requestURI)
             throw ClientAuthException("Authorization value is null")
         }
         if (!basicAuthHeader.startsWith("Bearer ")) {
