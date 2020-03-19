@@ -777,9 +777,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
 
     private fun getProtocol(httpHeaders: HttpHeaders): String {
         val protocolHeaders = httpHeaders.get("X-Forwarded-Proto")
-        if (protocolHeaders == null || protocolHeaders.isEmpty()) {
-            return "http"
-        }
+//        if (protocolHeaders == null || protocolHeaders.isEmpty()) {
+//            return "http"
+//        }
         if (protocolHeaders != null && !protocolHeaders.isEmpty()) {
             return protocolHeaders.iterator().next() as String
         } else {
