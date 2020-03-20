@@ -2,6 +2,7 @@ package com.tencent.bkrepo.docker.service
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.storage.util.DataDigestUtils
 import com.tencent.bkrepo.docker.artifact.Artifact
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
 import com.tencent.bkrepo.docker.context.DownloadContext
@@ -835,10 +836,13 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         if (!this.repo.canWrite(blobPath)) {
             return this.consumeStreamAndReturnError(stream)
         } else {
-            logger.info("Deploying docker blob '{}' into repo '{}'", blobPath, repoName)
+            logger.info("deploy docker blob '{}' into repo '{}'", blobPath, repoName)
+            var bytes = IOUtils.toByteArray(stream)
+            val sha256 = DataDigestUtils.sha256FromByteArray(bytes)
             var context =
-                UploadContext(projectId, repoName, blobPath).content(stream).projectId(projectId).repoName(repoName)
-                    .sha256(digest.getDigestHex())
+                UploadContext(projectId, repoName, blobPath).content(bytes.inputStream()).projectId(projectId)
+                    .repoName(repoName)
+                    .sha256(sha256)
             val response = this.repo.upload(context)
             if (this.uploadSuccessful(response)) {
                 val location = this.getDockerURI(repoName, "$dockerRepo/blobs/$digest")
@@ -846,7 +850,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
                     .header("Docker-Content-Digest", digest.toString()).build()
             } else {
                 logger.error(
-                    "error uploading blob '{}' status '{}' and message: '{}'",
+                    "error upload blob {} status {} and message: {}",
                     blobPath,
                     response.statusCodeValue,
                     response.toString()
