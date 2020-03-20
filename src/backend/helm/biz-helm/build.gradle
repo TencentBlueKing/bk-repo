@@ -1,0 +1,5 @@
+dependencies {
+    api project(":helm:api-helm")
+    api project(":common:common-job")
+    api project(":common:common-artifact:artifact-service")
+}
