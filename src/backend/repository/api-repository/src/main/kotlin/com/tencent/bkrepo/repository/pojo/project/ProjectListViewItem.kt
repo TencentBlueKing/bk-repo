@@ -1,33 +1,32 @@
-package com.tencent.bkrepo.repository.pojo.repo
+package com.tencent.bkrepo.repository.pojo.project
 
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.util.NodeUtils
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-data class RepoListViewItem(
+data class ProjectListViewItem(
     val name: String,
     val createdBy: String,
     val lastModified: String,
-    val category: String,
-    val type: String,
-    val public: String
-) : Comparable<RepoListViewItem> {
+    val shardingIndex: String
+) : Comparable<ProjectListViewItem> {
 
-    override fun compareTo(other: RepoListViewItem): Int {
+    override fun compareTo(other: ProjectListViewItem): Int {
         return this.name.compareTo(other.name)
     }
 
     companion object {
         private val formatters = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
-        fun from(repoInfo: RepositoryInfo): RepoListViewItem {
-            with(repoInfo) {
+        fun from(projectInfo: ProjectInfo): ProjectListViewItem {
+            with(projectInfo) {
                 val normalizedName = name + NodeUtils.FILE_SEPARATOR
                 val localDateTime = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
                 val lastModified = formatters.format(localDateTime)
-                return RepoListViewItem(normalizedName, lastModified, createdBy, category.name, type.name, public.toString())
+                val shardingIndex = name.hashCode() and SHARDING_COUNT - 1
+                return ProjectListViewItem(normalizedName, lastModified, createdBy, shardingIndex.toString())
             }
         }
-
     }
 }

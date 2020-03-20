@@ -14,7 +14,7 @@ class ArtifactEventListener {
 
     @EventListener(StoreFailureEvent::class)
     fun listen(event: StoreFailureEvent) {
-        logger.info("Receive event[$event]")
+        logger.error("Receive event[$event]")
     }
 
     companion object {
