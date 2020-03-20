@@ -103,14 +103,14 @@ class DockerManifestSyncer() {
 
     protected fun copyBlob(repo: DockerArtifactoryService, projectId: String, repoName: String, sourcePath: String, targetPath: String, blobFilename: String): Boolean {
         if (!StringUtils.equals(sourcePath, targetPath)) {
-            log.debug("Found {} in path {}, copying over to {}", blobFilename, sourcePath, targetPath)
+            log.debug("found {} in path {}, copy over to {}", blobFilename, sourcePath, targetPath)
             return repo.copy(projectId, repoName, sourcePath, targetPath)
         }
         return false
     }
 
     private fun moveBlobFromTempDir(repo: DockerArtifactoryService, projectId: String, repoName: String, tempBlobPath: String, finalBlobPath: String) {
-        log.debug("Moving temp blob from '{}' to '{}'", tempBlobPath, finalBlobPath)
+        log.debug("move temp blob from '{}' to '{}'", tempBlobPath, finalBlobPath)
         // move from temp path
         try {
             repo.move(projectId, repoName, tempBlobPath, finalBlobPath)

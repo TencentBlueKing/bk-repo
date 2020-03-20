@@ -58,7 +58,6 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
     companion object {
         private val manifestSyncer = DockerManifestSyncer()
         private val logger = LoggerFactory.getLogger(DockerV2LocalRepoService::class.java)
-        private val ERR_MANIFEST_UPLOAD = "Error uploading manifest: "
         private val OLD_USER_AGENT_PATTERN = Pattern.compile("^(?:docker\\/1\\.(?:3|4|5|6|7(?!\\.[0-9]-dev))|Go ).*$")
     }
 
@@ -661,7 +660,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         logger.info("is blob exist upload {}, {},{},{}", projectId, repoName, dockerRepo, digest.getDigestHex())
         if (DockerSchemaUtils.isEmptyBlob(digest)) {
-            logger.info("Request for empty layer for image {}, returning dummy HEAD response.", dockerRepo)
+            logger.info("request for empty layer for image {}, returning dummy HEAD response.", dockerRepo)
             return DockerSchemaUtils.emptyBlobHeadResponse()
         } else {
             val blob = DockerUtils.getBlobFromRepoPath(this.repo, projectId, repoName, dockerRepo, digest.filename())

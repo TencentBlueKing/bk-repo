@@ -112,6 +112,7 @@ class DockerArtifactoryService @Autowired constructor(
                 overwrite = true
             )
         )
+        logger.info("sha256 {}", context.artifactFile!!.getInputStream())
         if (result.isOk()) {
             storageService.store(context.sha256, context.artifactFile!!, repository.storageCredentials)
             logger.info("user[$userId]  upload file [$context.path] success")
@@ -141,14 +142,14 @@ class DockerArtifactoryService @Autowired constructor(
             metadata = emptyMap(),
             overwrite = true
         )
-
+        logger.info("sha256 {}", file.sha256)
         // save node
         val result = nodeResource.create(node)
         if (result.isOk()) {
             // storageService.store(context.sha256, file, repository.storageCredentials)
-            logger.info("user[$userId] upload file from local [$context.path] success")
+            logger.info("user[$userId] finish upload file  {} , {} success", context.path, file.sha256)
         } else {
-            logger.warn("user[$userId] upload file from local  [$context.path] failed: [${result.code}, ${result.message}]")
+            logger.warn("user[$userId] finish upload file  [$context.path] failed: [${result.code}, ${result.message}]")
             throw DockerFileSaveFailedException(context.path)
         }
         return ResponseEntity.ok().body("ok")
@@ -165,13 +166,14 @@ class DockerArtifactoryService @Autowired constructor(
             overwrite = true,
             operator = userId
         )
-        logger.error("copy_request {} ", copyRequest.toString())
+        logger.info("destFullPath {}", destPath)
         nodeResource.copy(copyRequest)
         return true
     }
 
     fun move(projectId: String, repoName: String, from: String, to: String): Boolean {
         val renameRequest = NodeRenameRequest(projectId, repoName, from, to, userId)
+        logger.info("rename request {}", renameRequest.toString())
         val result = nodeResource.rename(renameRequest)
         if (result.isNotOk()) {
             logger.warn("user[$userId] rename  [$from] to [$to] failed: [${result.code}, ${result.message}]")
