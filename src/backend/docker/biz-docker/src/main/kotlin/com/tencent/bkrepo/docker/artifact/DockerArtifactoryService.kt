@@ -65,7 +65,7 @@ class DockerArtifactoryService @Autowired constructor(
         val file = storageService.load(context.sha256, repository.storageCredentials) ?: kotlin.run {
             throw DockerFileReadFailedException(context.repoName)
         }
-        logger.info("load file sha256 {}, length", context.sha256, file.length())
+        logger.info("load file sha256 {}, length {}", context.sha256, file.length())
         return file.inputStream()
     }
 
