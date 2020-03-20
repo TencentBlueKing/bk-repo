@@ -112,7 +112,6 @@ class DockerArtifactoryService @Autowired constructor(
                 overwrite = true
             )
         )
-        logger.info("sha256 {}", context.artifactFile!!.getInputStream())
         if (result.isOk()) {
             storageService.store(context.sha256, context.artifactFile!!, repository.storageCredentials)
             logger.info("user[$userId]  upload file [$context.path] success")
@@ -142,7 +141,6 @@ class DockerArtifactoryService @Autowired constructor(
             metadata = emptyMap(),
             overwrite = true
         )
-        logger.info("sha256 {}", file.sha256)
         // save node
         val result = nodeResource.create(node)
         if (result.isOk()) {
@@ -166,7 +164,6 @@ class DockerArtifactoryService @Autowired constructor(
             overwrite = true,
             operator = userId
         )
-        logger.info("destFullPath {}", destPath)
         nodeResource.copy(copyRequest)
         return true
     }
