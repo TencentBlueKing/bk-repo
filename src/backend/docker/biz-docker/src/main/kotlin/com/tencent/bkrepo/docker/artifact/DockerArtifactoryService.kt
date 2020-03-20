@@ -61,6 +61,7 @@ class DockerArtifactoryService @Autowired constructor(
             logger.warn("user [$userId] read local  [${context.name}] failed: [${context.projectId},${context.repoName}] not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
+        logger.info("load data sha256 {}", context.sha256)
         // get content from storage
         val file = storageService.load(context.sha256, repository.storageCredentials) ?: kotlin.run {
             throw DockerFileReadFailedException(context.repoName)
