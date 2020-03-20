@@ -65,6 +65,7 @@ class DockerArtifactoryService @Autowired constructor(
         val file = storageService.load(context.sha256, repository.storageCredentials) ?: kotlin.run {
             throw DockerFileReadFailedException(context.repoName)
         }
+        logger.info("load file sha256 {}, length {}", context.sha256, file.length())
         return file.inputStream()
     }
 
@@ -95,6 +96,7 @@ class DockerArtifactoryService @Autowired constructor(
             logger.warn("user[$userId]  upload file  [$context.path] failed: ${context.repoName} not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
+
         // save node
         val result = nodeResource.create(
             NodeCreateRequest(
@@ -103,7 +105,7 @@ class DockerArtifactoryService @Autowired constructor(
                 folder = false,
                 fullPath = context.path,
                 size = context.contentLength,
-                sha256 = context.sha256,
+                sha256 = FileDigestUtils.fileSha256(context.artifactFile!!.getInputStream()),
                 md5 = FileDigestUtils.fileMd5(context.artifactFile!!.getInputStream()),
                 operator = userId,
                 metadata = emptyMap(),
@@ -139,14 +141,13 @@ class DockerArtifactoryService @Autowired constructor(
             metadata = emptyMap(),
             overwrite = true
         )
-
         // save node
         val result = nodeResource.create(node)
         if (result.isOk()) {
             // storageService.store(context.sha256, file, repository.storageCredentials)
-            logger.info("user[$userId] upload file from local [$context.path] success")
+            logger.info("user[$userId] finish upload file  {} , {} success", context.path, file.sha256)
         } else {
-            logger.warn("user[$userId] upload file from local  [$context.path] failed: [${result.code}, ${result.message}]")
+            logger.warn("user[$userId] finish upload file  [$context.path] failed: [${result.code}, ${result.message}]")
             throw DockerFileSaveFailedException(context.path)
         }
         return ResponseEntity.ok().body("ok")
@@ -163,13 +164,13 @@ class DockerArtifactoryService @Autowired constructor(
             overwrite = true,
             operator = userId
         )
-        logger.error("copy_request {} ", copyRequest.toString())
         nodeResource.copy(copyRequest)
         return true
     }
 
     fun move(projectId: String, repoName: String, from: String, to: String): Boolean {
         val renameRequest = NodeRenameRequest(projectId, repoName, from, to, userId)
+        logger.info("rename request {}", renameRequest.toString())
         val result = nodeResource.rename(renameRequest)
         if (result.isNotOk()) {
             logger.warn("user[$userId] rename  [$from] to [$to] failed: [${result.code}, ${result.message}]")

@@ -58,7 +58,6 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
     companion object {
         private val manifestSyncer = DockerManifestSyncer()
         private val logger = LoggerFactory.getLogger(DockerV2LocalRepoService::class.java)
-        private val ERR_MANIFEST_UPLOAD = "Error uploading manifest: "
         private val OLD_USER_AGENT_PATTERN = Pattern.compile("^(?:docker\\/1\\.(?:3|4|5|6|7(?!\\.[0-9]-dev))|Go ).*$")
     }
 
@@ -144,7 +143,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             val digest = DockerDigest(reference)
             return this.getManifestByDigest(projectId, repoName, dockerRepo, digest)
         } catch (exception: Exception) {
-            logger.trace("Unable to parse digest, fetching manifest by tag '{}'", reference)
+            logger.trace("unable to parse digest, fetching manifest by tag '{}'", reference)
             return this.getManifestByTag(projectId, repoName, dockerRepo, reference)
         }
     }
@@ -156,7 +155,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         digest: DockerDigest
     ): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
-        logger.info("fetch docker manifest  '{}' and digest '{}' in repo '{}'", dockerRepo, digest, repoName)
+        logger.info("fetch docker manifest {} and digest {} in repo {}", dockerRepo, digest, repoName)
         var matched = this.findMatchingArtifacts(projectId, repoName, dockerRepo, "manifest.json")
         if (matched == null) {
             val acceptable = this.getAcceptableManifestTypes()
@@ -321,7 +320,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         try {
             return this.deleteManifestByDigest(projectId, repoName, dockerRepo, DockerDigest(reference))
         } catch (var4: Exception) {
-            logger.error("unable to parse digest, deleting manifest by tag '{}'", reference)
+            logger.error("unable to parse digest, delete manifest by tag '{}'", reference)
             return this.deleteManifestByTag(projectId, repoName, dockerRepo, reference)
         }
     }
@@ -333,7 +332,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         digest: DockerDigest
     ): ResponseEntity<Any> {
         logger.info(
-            "delete docker manifest for repo '{}' and digest '{}' in repo '{}'",
+            "delete docker manifest for repo {} and digest {} in repo {}",
             dockerRepo,
             digest,
             repoName
@@ -367,7 +366,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         } else if (this.repo.delete(tagPath)) {
             return ResponseEntity.status(202).header("Docker-Distribution-Api-Version", "registry/2.0").build()
         } else {
-            logger.error("unable to delete tag '{}'", manifestPath)
+            logger.error("unable to delete tag {}", manifestPath)
             return DockerV2Errors.manifestUnknown(manifestPath)
         }
     }
@@ -383,7 +382,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         val stream = artifactFile.getInputStream()
         logger.info(
-            "deploy docker manifest for repo '{}' and tag '{}' into repo '{}' media type {}",
+            "deploy docker manifest for repo {} , tag {} into repo {} ,media type is  {}",
             dockerRepo,
             tag,
             repoName,
@@ -391,9 +390,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         )
         val manifestType = ManifestType.from(mediaType)
         val manifestPath = buildManifestPathFromType(dockerRepo, tag, manifestType)
-        logger.info("manifest path to {} .", manifestPath)
+        logger.info("manifest path {} .", manifestPath)
         if (!this.repo.canWrite(manifestPath)) {
-            logger.info("attempt to write manifest to {} failed the permission check.", manifestPath)
+            logger.info("attempt to write manifest to {} failed for permission.", manifestPath)
             return this.consumeStreamAndReturnError(stream)
         } else {
             stream.use {
@@ -437,8 +436,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         artifactFile: ArtifactFile
     ): DockerDigest {
         val manifestBytes = IOUtils.toByteArray(stream)
+        logger.info("manifest file content : {}", manifestBytes.toString())
         val digest = DockerManifestDigester.calc(manifestBytes)
-        logger.info("digest : {}", digest)
+        logger.info("manifest file digest : {}", digest)
         if (ManifestType.Schema2List == manifestType) {
             this.processManifestList(
                 projectId,
@@ -464,7 +464,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             )
             this.addManifestsBlobs(manifestType, manifestBytes, manifestMetadata)
             if (!manifestSyncer.sync(this.repo, manifestMetadata, projectId, repoName, dockerRepo, tag)) {
-                val msg = "Failed syncing manifest blobs, canceling manifest upload"
+                val msg = "fail to  sync manifest blobs, canceling manifest upload"
                 logger.error(msg)
                 throw DockerSyncManifestException(msg)
             } else {
@@ -518,7 +518,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
                 val manifestFile =
                     DockerUtils.findBlobGlobally(this.repo, projectId, repoName, dockerRepo, manifestFilename)
                 if (manifestFile == null) {
-                    throw DockerNotFoundException("Manifest list (" + digest.toString() + ") Missing manifest digest " + mDigest + ". ==>" + manifest.toString())
+                    throw DockerNotFoundException("manifest list (" + digest.toString() + ") miss manifest digest " + mDigest + ". ==>" + manifest.toString())
                 }
             }
         }
@@ -660,7 +660,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         logger.info("is blob exist upload {}, {},{},{}", projectId, repoName, dockerRepo, digest.getDigestHex())
         if (DockerSchemaUtils.isEmptyBlob(digest)) {
-            logger.info("Request for empty layer for image {}, returning dummy HEAD response.", dockerRepo)
+            logger.info("request for empty layer for image {}", dockerRepo)
             return DockerSchemaUtils.emptyBlobHeadResponse()
         } else {
             val blob = DockerUtils.getBlobFromRepoPath(this.repo, projectId, repoName, dockerRepo, digest.filename())
@@ -683,9 +683,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         digest: DockerDigest
     ): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
-        logger.info("fetch docker blob '{}' from repo '{}'", digest, repoName)
+        logger.info("fetch docker blob {} from repo {}", digest.getDigestHex(), repoName)
         if (DockerSchemaUtils.isEmptyBlob(digest)) {
-            logger.info("request for empty layer for image {}, returning dummy GET response.", dockerRepo)
+            logger.info("request for empty layer for image {}", dockerRepo)
             return DockerSchemaUtils.emptyBlobGetResponse()
         } else {
             val blob = this.getRepoBlob(projectId, repoName, dockerRepo, digest)
@@ -723,7 +723,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
     ): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         val uploadDirectory = "$dockerRepo/_uploads"
-        logger.info("start upload {}, {}, {}", projectId, repoName, dockerRepo)
+        logger.info("start upload blob , {}, {}, {}", projectId, repoName, dockerRepo)
         if (!this.repo.canWrite(uploadDirectory)) {
             return DockerV2Errors.unauthorizedUpload()
         } else {
@@ -734,8 +734,8 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
                     DockerUtils.findBlobGlobally(this.repo, projectId, repoName, dockerRepo, mountDigest.filename())
                 if (mountableBlob != null) {
                     location = this.getDockerURI(repoName, "$dockerRepo/blobs/$mount")
-                    logger.debug(
-                        "Found accessible blob at {}/{} to mount onto {}",
+                    logger.info(
+                        "found accessible blob at {}/{} to mount  {}",
                         mountableBlob.repoName,
                         mountableBlob.path,
                         repoName + "/" + dockerRepo + "/" + mount
@@ -763,7 +763,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
                 port = Integer.valueOf(parts[1])
             }
         } else {
-            logger.error("Docker location URL is blank, make sure the Host request header exists.")
+            logger.error("docker location url is blank, make sure the host request header exists.")
         }
 
         val builder = UriBuilder.fromPath("v2/$path").host(host).scheme(this.getProtocol(this.httpHeaders))
@@ -777,9 +777,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
 
     private fun getProtocol(httpHeaders: HttpHeaders): String {
         val protocolHeaders = httpHeaders.get("X-Forwarded-Proto")
-        if (protocolHeaders == null || protocolHeaders.isEmpty()) {
-            return "http"
-        }
+//        if (protocolHeaders == null || protocolHeaders.isEmpty()) {
+//            return "http"
+//        }
         if (protocolHeaders != null && !protocolHeaders.isEmpty()) {
             return protocolHeaders.iterator().next() as String
         } else {
@@ -802,7 +802,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             repoName,
             dockerRepo,
             digest,
-            artifactFile.getInputStream()
+            artifactFile
         ) else this.finishPatchUpload(projectId, repoName, dockerRepo, digest, uuid)
     }
 
@@ -828,15 +828,16 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         repoName: String,
         dockerRepo: String,
         digest: DockerDigest,
-        stream: InputStream
+        artifactFile: ArtifactFile
     ): ResponseEntity<Any> {
         val blobPath = dockerRepo + "/" + "_uploads" + "/" + digest.filename()
         if (!this.repo.canWrite(blobPath)) {
-            return this.consumeStreamAndReturnError(stream)
+            return this.consumeStreamAndReturnError(artifactFile.getInputStream())
         } else {
-            logger.info("Deploying docker blob '{}' into repo '{}'", blobPath, repoName)
+            logger.info("deploy docker blob {} into repo {}", blobPath, repoName)
             var context =
-                UploadContext(projectId, repoName, blobPath).content(stream).projectId(projectId).repoName(repoName)
+                UploadContext(projectId, repoName, blobPath).content(artifactFile.getInputStream()).projectId(projectId)
+                    .repoName(repoName)
                     .sha256(digest.getDigestHex())
             val response = this.repo.upload(context)
             if (this.uploadSuccessful(response)) {
@@ -845,7 +846,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
                     .header("Docker-Content-Digest", digest.toString()).build()
             } else {
                 logger.error(
-                    "error uploading blob '{}' status '{}' and message: '{}'",
+                    "error upload blob {} status {} and message: {}",
                     blobPath,
                     response.statusCodeValue,
                     response.toString()
@@ -862,7 +863,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         digest: DockerDigest,
         uuid: String
     ): ResponseEntity<Any> {
-        logger.info("finish upload {}", digest)
+        logger.info("finish upload blob {}", digest.getDigestHex())
         val fileName = digest.filename()
         val blobPath = "/$dockerRepo/_uploads/$fileName"
         var context = UploadContext(projectId, repoName, blobPath)
@@ -882,7 +883,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         artifactFile: ArtifactFile
     ): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
-        logger.info("patch upload {}", uuid)
+        logger.info("patch upload blob {}", uuid)
         val blobPath = "$dockerRepo/_uploads/$uuid"
         if (!this.repo.canWrite(blobPath)) {
             return this.consumeStreamAndReturnError(artifactFile.getInputStream())
