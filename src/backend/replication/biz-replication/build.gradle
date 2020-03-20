@@ -1,0 +1,6 @@
+dependencies {
+    api project(":replication:api-replication")
+    api project(":common:common-quartz")
+    api project(":common:common-artifact:artifact-service")
+    api project(":repository:api-repository")
+}

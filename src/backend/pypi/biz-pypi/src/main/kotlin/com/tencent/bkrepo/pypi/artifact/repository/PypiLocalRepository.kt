@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.file.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -14,8 +15,8 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
-import com.tencent.bkrepo.pypi.artifact.url.XmlUtil
-import com.tencent.bkrepo.pypi.pojo.xml.XmlConvertUtil
+import com.tencent.bkrepo.pypi.artifact.xml.Value
+import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import java.io.File
@@ -27,7 +28,7 @@ import org.springframework.stereotype.Component
  * @date: 2019/12/4
  */
 @Component
-class PypiLocalRepository : LocalRepository() {
+class PypiLocalRepository : LocalRepository(), PypiRepository {
 
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
@@ -76,29 +77,24 @@ class PypiLocalRepository : LocalRepository() {
         return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
     }
 
-    fun searchXml(
-        context: ArtifactListContext,
-        xmlString: String
-    ) {
-        val response = HttpContextHolder.getResponse()
-        response.contentType = "text/xml; charset=UTF-8"
+    override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
         val artifactInfo = context.artifactInfo
-
-        val methodCall = XmlConvertUtil.convert(xmlString)
-
-        val action = methodCall.methodName
-        val packageName = methodCall.params.paramList[0].value.struct?.memberList?.get(0)?.value?.array?.data?.valueList?.get(0)?.string
-        val summary = methodCall.params.paramList[0].value.struct?.memberList?.get(1)?.value?.array?.data?.valueList?.get(0)?.string
-        var xml: String
-
+        val repository = context.repositoryInfo
+        val searchArgs = XmlUtil.getSearchArgs(xmlString)
+        val packageName = searchArgs["packageName"]
+        val summary = searchArgs["summary"]
         if (packageName != null && summary != null) {
-            with(artifactInfo) {
+            with(repository) {
                 val projectId = Rule.QueryRule("projectId", projectId)
-                val repoName = Rule.QueryRule("repoName", repoName)
+                val repoName = Rule.QueryRule("repoName", name)
                 val packageQuery = Rule.QueryRule("metadata.name", packageName, OperationType.MATCH)
                 val filetypeAuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
-                val summaryQuery = Rule.QueryRule("metadata.summary", summary)
-                val rule1 = Rule.NestedRule(mutableListOf(repoName, projectId, packageQuery, filetypeAuery), Rule.NestedRule.RelationType.AND)
+                val summaryQuery = Rule.QueryRule("metadata.summary", summary, OperationType.MATCH)
+                // val versionQuery = Rule.QueryRule("metadata.verison", OperationType.EQ)
+                val rule1 = Rule.NestedRule(
+                    mutableListOf(repoName, projectId, packageQuery, filetypeAuery),
+                    Rule.NestedRule.RelationType.AND
+                )
                 val rule2 = Rule.NestedRule(mutableListOf(rule1, summaryQuery), Rule.NestedRule.RelationType.OR)
 
                 val queryModel = QueryModel(
@@ -107,16 +103,18 @@ class PypiLocalRepository : LocalRepository() {
                     select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
                     rule = rule1
                 )
-                val nodoList: List<Map<String, Any>>? = nodeResource.query(queryModel).data?.records
-                if (nodoList != null) {
-                    xml = XmlUtil.getXmlMethodResponse(nodoList)
-                    response.writer.print(xml)
+                val nodeList: List<Map<String, Any>>? = nodeResource.query(queryModel).data?.records
+                if (nodeList != null) {
+                    return XmlUtil.nodeLis2Values(nodeList)
                 }
             }
         }
+        return null
     }
 
-    // 节点数据与元数据分开查询。
+    /**
+     *
+     */
     override fun list(context: ArtifactListContext) {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
@@ -129,7 +127,7 @@ class PypiLocalRepository : LocalRepository() {
 
             val response = HttpContextHolder.getResponse()
             response.contentType = "text/html; charset=UTF-8"
-            // 请求不带包名，返回包名列表。
+            // 请求不带包名，返回包名列表.
             if (artifactUri == "/") {
                 if (nodeDetail.nodeInfo.folder) {
                     val nodeList = nodeResource.list(projectId, repositoryInfo.name, artifactUri, includeFolder = true, deep = true).data
@@ -137,8 +135,8 @@ class PypiLocalRepository : LocalRepository() {
                                     com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
                                     artifactInfo.artifactUri
                             )
-                    // 过滤掉'根节点'，
-                    val htmlContent = buildPypiSimpleListContent(
+                    // 过滤掉'根节点',
+                    val htmlContent = buildPackageListContent(
                         artifactInfo.projectId,
                         artifactInfo.repoName,
                         nodeList.filter { it.folder }.filter { it.path == "/" })
@@ -148,12 +146,12 @@ class PypiLocalRepository : LocalRepository() {
             // 请求中带包名，返回对应包的文件列表。
             else {
                 if (nodeDetail.nodeInfo.folder) {
-                    val nodeList = nodeResource.list(projectId, repositoryInfo.name, artifactUri, includeFolder = false, deep = true).data
+                    val packageNode = nodeResource.list(projectId, repositoryInfo.name, artifactUri, includeFolder = false, deep = true).data
                             ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
                                     com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
                                     artifactUri
                             )
-                    val htmlContent = buildPypiPageContent(buildPypiPackageListContent(artifactInfo.projectId, artifactInfo.repoName, nodeList))
+                    val htmlContent = buildPypiPageContent(buildPackageFilenodeListContent(artifactInfo.projectId, artifactInfo.repoName, packageNode))
                     response.writer.print(htmlContent)
                 }
             }
@@ -161,7 +159,8 @@ class PypiLocalRepository : LocalRepository() {
     }
 
     /**
-     * @param listContent 显示的包名列表
+     * html 页面公用的元素
+     * @param listContent 显示的内容
      */
     private fun buildPypiPageContent(listContent: String): String {
         return """
@@ -175,35 +174,65 @@ class PypiLocalRepository : LocalRepository() {
     }
 
     /**
+     * 对应包中的文件列表
      * @param projectId
      * @param repoName
-     * @param nodeList 包节点列表
+     * @param nodeList
      */
-    private fun buildPypiPackageListContent(projectId: String, repoName: String, nodeList: List<NodeInfo>): String {
+    private fun buildPackageFilenodeListContent(projectId: String, repoName: String, nodeList: List<NodeInfo>): String {
         val builder = StringBuilder()
         if (nodeList.isEmpty()) {
             builder.append("The directory is empty.")
         }
         for (node in nodeList) {
             val md5 = node.md5
-            builder.append("<a data-requires-python=\">=${node.metadata?.get("requires_python")}\" href=\"/$projectId/$repoName/packages${node.fullPath}#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>")
+            // 查询的对应的文件节点的metadata
+            val metadata = filenodeMetadata(node)
+            builder.append("<a data-requires-python=\">=$metadata[\"requires_python\"]\" href=\"/$projectId/$repoName/packages${node.fullPath}#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>")
         }
         return builder.toString()
     }
 
     /**
-     * @param projectId
+     * 所有包列表
+     * @param projecdId
      * @param repoName
-     * @param nodeList 文件节点列表
+     * @param nodeList
      */
-    private fun buildPypiSimpleListContent(projectId: String, repoName: String, nodeList: List<NodeInfo>): String {
+    private fun buildPackageListContent(projectId: String, repoName: String, nodeList: List<NodeInfo>): String {
         val builder = StringBuilder()
         if (nodeList.isEmpty()) {
             builder.append("The directory is empty.")
         }
         for (node in nodeList) {
-            builder.append("<a data-requires-python=\">=${node.metadata?.get("requires_python")}\" href=\"/$projectId/$repoName/simple/${node.name}\" rel=\"internal\" >${node.name}</a><br/>")
+            builder.append("<a data-requires-python=\">=\" href=\"/$projectId/$repoName/simple/${node.name}\" rel=\"internal\" >${node.name}</a><br/>")
         }
         return builder.toString()
+    }
+
+    /**
+     * 根据每个文件节点数据去查metadata
+     * @param nodeInfo 节点
+     */
+    fun filenodeMetadata(nodeInfo: NodeInfo): List<Map<String, Any>>? {
+        val filenodeList: List<Map<String, Any>>?
+        with(nodeInfo) {
+            val projectId = Rule.QueryRule("projectId", projectId)
+            val repoName = Rule.QueryRule("repoName", repoName)
+            val packageQuery = Rule.QueryRule("metadata.name", name, OperationType.EQ)
+            val fullPathQuery = Rule.QueryRule("fullPath", fullPath)
+            val rule1 = Rule.NestedRule(
+                mutableListOf(repoName, projectId, packageQuery, fullPathQuery),
+                Rule.NestedRule.RelationType.AND
+            )
+            val queryModel = QueryModel(
+                page = PageLimit(0, 10),
+                sort = Sort(listOf("name"), Sort.Direction.ASC),
+                select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
+                rule = rule1
+            )
+            filenodeList = nodeResource.query(queryModel).data?.records
+        }
+        return filenodeList
     }
 }

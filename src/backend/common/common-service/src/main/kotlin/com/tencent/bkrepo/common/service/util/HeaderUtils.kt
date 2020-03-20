@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.service.util
 
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
+import java.net.URLDecoder
 
 /**
  *
@@ -14,12 +15,22 @@ object HeaderUtils {
         return request().getHeader(name)
     }
 
-    fun getLongHeader(header: String): Long {
-        return getHeader(header)?.toLong() ?: 0L
+    fun getLongHeader(name: String): Long {
+        return getHeader(name)?.toLong() ?: 0L
     }
 
-    fun getBooleanHeader(header: String): Boolean {
-        return getHeader(header)?.toBoolean() ?: false
+    fun getBooleanHeader(name: String): Boolean {
+        return getHeader(name)?.toBoolean() ?: false
+    }
+
+    fun getUrlDecodedHeader(name: String): String? {
+        return getHeader(name)?.let {
+            try {
+                URLDecoder.decode(it, "UTF-8")
+            } catch (exception: Exception) {
+                it
+            }
+        }
     }
 
     private fun request() = (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes).request

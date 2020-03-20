@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.docker.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
@@ -162,6 +163,7 @@ class DockerArtifactoryService @Autowired constructor(
             overwrite = true,
             operator = userId
         )
+        logger.error("copy_request {} ", copyRequest.toString())
         nodeResource.copy(copyRequest)
         return true
     }
@@ -232,6 +234,57 @@ class DockerArtifactoryService @Autowired constructor(
             return emptyList()
         }
         return result.records
+    }
+
+    fun findRepoList(projectId: String, repoName: String): List<String> {
+        val projectRule = Rule.QueryRule("projectId", projectId)
+        val repoNameRule = Rule.QueryRule("repoName", repoName)
+        val nameRule = Rule.QueryRule("name", "manifest.json")
+        val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule))
+        val queryModel = QueryModel(
+            page = PageLimit(0, 10000),
+            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
+            select = mutableListOf("fullPath", "path", "size"),
+            rule = rule
+        )
+
+        val result = nodeResource.query(queryModel).data ?: run {
+            logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
+            return emptyList()
+        }
+        var data = mutableListOf<String>()
+        result.records.forEach {
+            var path = it.get("path") as String
+            data.add(path.removeSuffix("/").replaceAfterLast("/", "").removeSuffix("/").removePrefix("/"))
+        }
+        return data.distinct()
+    }
+
+    fun findRepoTagList(projectId: String, repoName: String, image: String): Map<String, String> {
+        val projectRule = Rule.QueryRule("projectId", projectId)
+        val repoNameRule = Rule.QueryRule("repoName", repoName)
+        val nameRule = Rule.QueryRule("name", "manifest.json")
+        val pathRule = Rule.QueryRule("path", "/$image/", OperationType.PREFIX)
+        val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule, pathRule))
+        val queryModel = QueryModel(
+            page = PageLimit(0, 100000),
+            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
+            select = mutableListOf("fullPath", "path", "size", "createdBy"),
+            rule = rule
+        )
+
+        val result = nodeResource.query(queryModel).data ?: run {
+            logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
+            return emptyMap()
+        }
+        var data = mutableMapOf<String, String>()
+        result.records.forEach {
+            var path = it.get("path") as String
+            val tag = path.removePrefix("/$image/").removeSuffix("/")
+            val user = it.get("createdBy") as String
+            data.put(tag, user)
+        }
+        return data
     }
 
     fun findArtifactsByName(projectId: String, repoName: String, fileName: String): List<Map<String, Any>> {

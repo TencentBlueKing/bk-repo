@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.artifact.repository.virtual
 
-import com.google.gson.JsonObject
 import com.tencent.bkrepo.common.artifact.config.TRAVERSED_LIST
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.pojo.configuration.VirtualConfiguration

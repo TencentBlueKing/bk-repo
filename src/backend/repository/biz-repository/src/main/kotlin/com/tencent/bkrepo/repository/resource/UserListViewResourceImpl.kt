@@ -4,6 +4,9 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.permission.Permission
+import com.tencent.bkrepo.common.artifact.permission.PermissionService
+import com.tencent.bkrepo.common.artifact.permission.Principal
+import com.tencent.bkrepo.common.artifact.permission.PrincipalType
 import com.tencent.bkrepo.repository.api.UserListViewResource
 import com.tencent.bkrepo.repository.service.ListViewService
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,11 +19,22 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class UserListViewResourceImpl @Autowired constructor(
-    private val listViewService: ListViewService
+    private val listViewService: ListViewService,
+    private val permissionService: PermissionService
 ) : UserListViewResource {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    override fun listView(artifactInfo: ArtifactInfo) {
-        listViewService.listView(artifactInfo)
+    override fun listNodeView(userId: String, artifactInfo: ArtifactInfo) {
+        listViewService.listNodeView(artifactInfo)
+    }
+
+    @Principal(type = PrincipalType.ADMIN)
+    override fun listProjectView(userId: String) {
+        listViewService.listRepoView()
+    }
+
+    override fun listRepositoryView(userId: String, projectId: String) {
+        permissionService.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
+        listViewService.listRepoView(projectId)
     }
 }

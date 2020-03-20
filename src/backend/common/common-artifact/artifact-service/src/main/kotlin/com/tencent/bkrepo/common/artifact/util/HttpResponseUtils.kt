@@ -9,6 +9,7 @@ import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
+import org.springframework.web.util.UriUtils
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.InputStream
@@ -31,7 +32,8 @@ object HttpResponseUtils {
         var readStart = 0L
         var readEnd = fileLength
 
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(filename))
+        val disposition = encodeDisposition(filename)
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, disposition)
         response.setHeader(HttpHeaders.ACCEPT_RANGES, "bytes")
 
         request.getHeader("Range")?.run {
@@ -47,9 +49,9 @@ object HttpResponseUtils {
                 return
             }
         }
-
         response.setHeader(HttpHeaders.CONTENT_LENGTH, (readEnd - readStart).toString())
         response.contentType = determineMediaType(filename)
+        response.characterEncoding = "UTF-8"
 
         RandomAccessFile(file, "r").use {
             it.seek(readStart)
@@ -75,14 +77,15 @@ object HttpResponseUtils {
     fun response(filename: String, inputStream: InputStream) {
         val response = HttpContextHolder.getResponse()
         val fileLength = inputStream.available()
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(filename))
+        val disposition = encodeDisposition(filename)
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, disposition)
         response.setHeader(HttpHeaders.CONTENT_LENGTH, fileLength.toString())
         response.contentType = determineMediaType(filename)
+        response.characterEncoding = "UTF-8"
         inputStream.use {
             val out = BufferedOutputStream(response.outputStream)
             ByteStreams.copy(inputStream, out)
             out.flush()
-            response.flushBuffer()
         }
     }
 
@@ -113,5 +116,10 @@ object HttpResponseUtils {
 
     private fun determineMediaType(name: String): String {
         return MimeMappings.DEFAULT.get(NodeUtils.getExtension(name)) ?: DEFAULT_MIME_TYPE
+    }
+
+    private fun encodeDisposition(filename: String): String {
+        val encodeFilename = UriUtils.encode(filename, Charsets.UTF_8)
+        return CONTENT_DISPOSITION_TEMPLATE.format(encodeFilename, encodeFilename)
     }
 }

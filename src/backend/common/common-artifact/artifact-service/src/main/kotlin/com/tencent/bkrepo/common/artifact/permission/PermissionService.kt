@@ -1,14 +1,22 @@
 package com.tencent.bkrepo.common.artifact.permission
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.APP_KEY
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.config.AuthProperties
+import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.api.RepositoryResource
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
 
 /**
  * 权限服务类
@@ -18,24 +26,93 @@ import org.springframework.web.context.request.ServletRequestAttributes
  */
 @Component
 class PermissionService @Autowired constructor(
-    private val servicePermissionResource: ServicePermissionResource,
+    private val repositoryResource: RepositoryResource,
+    private val permissionResource: ServicePermissionResource,
+    private val userResource: ServiceUserResource,
     private val authProperties: AuthProperties
 ) {
+    fun checkPermission(userId: String, type: ResourceType, action: PermissionAction, repositoryInfo: RepositoryInfo) {
+        if (preCheck()) return
+        checkRepoPermission(userId, type, action, repositoryInfo)
+    }
 
-    fun checkPermission(request: CheckPermissionRequest) {
-        if (!hasPermission(request)) {
-            throw ErrorCodeException(CommonMessageCode.PERMISSION_DENIED)
+    fun checkPermission(userId: String, type: ResourceType, action: PermissionAction, projectId: String, repoName: String? = null) {
+        if (preCheck()) return
+        if(type == ResourceType.PROJECT) {
+            checkProjectPermission(userId, type, action, projectId)
+        } else {
+            val repositoryInfo = queryRepositoryInfo(projectId, repoName!!)
+            checkRepoPermission(userId, type, action, repositoryInfo)
         }
     }
 
-    fun hasPermission(request: CheckPermissionRequest): Boolean {
-        return if (authProperties.enabled) {
-            val httpRequest = (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes).request
-            if (httpRequest.getAttribute(APP_KEY) != null) {
-                // 平台账号 直接跳过
-                return true
+    fun checkPrincipal(userId: String, principalType: PrincipalType) {
+        if (!authProperties.enabled) {
+            logger.debug("Auth disabled, skip checking principal")
+            return
+        }
+        // 匿名用户，提示登录
+        if (userId == ANONYMOUS_USER) throw ClientAuthException("Authentication required")
+        if (principalType == PrincipalType.ADMIN) {
+            if (!isAdminUser(userId)) {
+                throw PermissionCheckException("Access Forbidden")
             }
-            servicePermissionResource.checkPermission(request).data ?: false
-        } else true
+        } else if (principalType == PrincipalType.PLATFORM) {
+            if (!isPlatformUser() && !isAdminUser(userId)) {
+                throw PermissionCheckException("Access Forbidden")
+            }
+        }
+    }
+
+    private fun preCheck(): Boolean {
+        return if (!authProperties.enabled) {
+            logger.debug("Auth disabled, skip checking permission")
+            true
+        } else if(isPlatformUser()) {
+            logger.debug("Platform user, skip checking permission")
+            true
+        } else {
+            false
+        }
+    }
+
+    private fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
+        val response = repositoryResource.detail(projectId, repoName)
+        return response.data ?: throw ArtifactNotFoundException("Repository[$repoName] not found")
+    }
+
+    private fun checkRepoPermission(userId: String, type: ResourceType, action: PermissionAction, repositoryInfo: RepositoryInfo) {
+        // public仓库且为READ操作，直接跳过
+        if (type == ResourceType.REPO && action == PermissionAction.READ && repositoryInfo.public) return
+        // 匿名用户，提示登录
+        if (userId == ANONYMOUS_USER) throw ClientAuthException("Authentication required")
+        // auth 校验
+        with(repositoryInfo) {
+            val checkRequest = CheckPermissionRequest(userId, type, action, projectId, name)
+            checkPermission(checkRequest)
+        }
+    }
+
+    private fun checkProjectPermission(userId: String, type: ResourceType, action: PermissionAction, projectId: String) {
+        val checkRequest = CheckPermissionRequest(userId, type, action, projectId)
+        checkPermission(checkRequest)
+    }
+
+    private fun checkPermission(checkRequest: CheckPermissionRequest) {
+        if (permissionResource.checkPermission(checkRequest).data != true) {
+            throw PermissionCheckException("Access Forbidden")
+        }
+    }
+
+    private fun isPlatformUser(): Boolean {
+        return HttpContextHolder.getRequest().getAttribute(APP_KEY) != null
+    }
+
+    private fun isAdminUser(userId: String): Boolean {
+        return userResource.detail(userId).data?.admin == true
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(PermissionService::class.java)
     }
 }

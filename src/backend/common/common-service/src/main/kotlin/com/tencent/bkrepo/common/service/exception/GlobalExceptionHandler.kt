@@ -15,6 +15,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpRequestMethodNotSupportedException
+import org.springframework.web.bind.MissingRequestHeaderException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -61,6 +62,18 @@ class GlobalExceptionHandler {
     fun handleException(exception: HttpMessageNotReadableException): Response<Void> {
         val messageCode = CommonMessageCode.REQUEST_CONTENT_INVALID
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
+        logException(exception, "[${messageCode.getCode()}]$errorMessage")
+        return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
+    }
+
+    /**
+     * header参数异常
+     */
+    @ExceptionHandler(MissingRequestHeaderException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleException(exception: MissingRequestHeaderException): Response<Void> {
+        val messageCode = CommonMessageCode.HEADER_MISSING
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, arrayOf(exception.headerName))
         logException(exception, "[${messageCode.getCode()}]$errorMessage")
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
     }

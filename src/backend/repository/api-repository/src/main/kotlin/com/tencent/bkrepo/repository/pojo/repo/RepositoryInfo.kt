@@ -14,6 +14,8 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("仓库信息")
 data class RepositoryInfo(
+    @ApiModelProperty("所属项目id")
+    val projectId: String,
     @ApiModelProperty("仓库名称")
     val name: String,
     @ApiModelProperty("仓库类型")
@@ -28,7 +30,12 @@ data class RepositoryInfo(
     val configuration: RepositoryConfiguration,
     @ApiModelProperty("存储身份信息")
     var storageCredentials: StorageCredentials? = null,
-
-    @ApiModelProperty("所属项目id")
-    val projectId: String
+    @ApiModelProperty("创建者")
+    val createdBy: String,
+    @ApiModelProperty("创建日期")
+    val createdDate: String,
+    @ApiModelProperty("上次修改者")
+    val lastModifiedBy: String,
+    @ApiModelProperty("上次修改日期")
+    val lastModifiedDate: String
 )

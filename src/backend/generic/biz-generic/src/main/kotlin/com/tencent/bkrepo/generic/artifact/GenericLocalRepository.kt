@@ -16,8 +16,8 @@ import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import javax.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
+import javax.servlet.http.HttpServletRequest
 
 /**
  *
@@ -32,13 +32,13 @@ class GenericLocalRepository : LocalRepository() {
         // 校验sha256
         val calculatedSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
         val uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256)
-        if (uploadSha256 != null && calculatedSha256 != uploadSha256) {
+        if (uploadSha256 != null && !calculatedSha256.equals(uploadSha256, true)) {
             throw ArtifactValidateException("File sha256 validate failed.")
         }
         // 校验md5
         val calculatedMd5 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] as String
         val uploadMd5 = HeaderUtils.getHeader(HEADER_MD5)
-        if (uploadMd5 != null && calculatedMd5 != calculatedMd5) {
+        if (uploadMd5 != null && !calculatedMd5.equals(calculatedMd5, true)) {
             throw ArtifactValidateException("File md5 validate failed.")
         }
     }
@@ -84,13 +84,14 @@ class GenericLocalRepository : LocalRepository() {
         val metadata = mutableMapOf<String, String>()
         val headerNames = request.headerNames
         for (headerName in headerNames) {
-            if (headerName.startsWith(BKREPO_META_PREFIX)) {
-                val key = headerName.removePrefix(BKREPO_META_PREFIX).trim()
+            if (headerName.startsWith(BKREPO_META_PREFIX, true)) {
+                val key = headerName.substring(BKREPO_META_PREFIX.length).trim()
                 if (key.isNotEmpty()) {
-                    metadata[key] = request.getHeader(headerName)
+                    metadata[key] = HeaderUtils.getUrlDecodedHeader(headerName)!!
                 }
             }
         }
         return metadata
     }
+
 }

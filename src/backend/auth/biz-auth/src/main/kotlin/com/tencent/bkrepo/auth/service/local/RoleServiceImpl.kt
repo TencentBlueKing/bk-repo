@@ -22,9 +22,13 @@ class RoleServiceImpl @Autowired constructor(
     override fun createRole(request: CreateRoleRequest): String? {
         var role: TRole?
         if (request.type == RoleType.REPO) {
-            role = roleRepository.findOneByRoleIdAndProjectIdAndRepoName(request.roleId, request.projectId, request.repoName!!)
+            role = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(
+                request.roleId,
+                request.projectId,
+                request.repoName!!
+            )
         } else {
-            role = roleRepository.findOneByRoleIdAndProjectId(request.roleId, request.projectId)
+            role = roleRepository.findFirstByRoleIdAndProjectId(request.roleId, request.projectId)
         }
 
         if (role != null) {
@@ -45,12 +49,22 @@ class RoleServiceImpl @Autowired constructor(
         return result.id
     }
 
-    override fun detail(rid: String): Role? {
-        val result = roleRepository.findOneById(rid) ?: return null
+    override fun detail(id: String): Role? {
+        val result = roleRepository.findFirstById(id) ?: return null
         return transfer(result)
     }
 
-    override fun listRoleByProject(type: RoleType?, projectId: String?): List<Role> {
+    override fun detail(rid: String, projectId: String): Role? {
+        val result = roleRepository.findFirstByRoleIdAndProjectId(rid, projectId) ?: return null
+        return transfer(result)
+    }
+
+    override fun detail(rid: String, projectId: String, repoName: String): Role? {
+        val result = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(rid, projectId, repoName) ?: return null
+        return transfer(result)
+    }
+
+    override fun listRoleByProject(type: RoleType?, projectId: String?, repoName: String?): List<Role> {
         if (type == null && projectId == null) {
             return roleRepository.findAll().map { transfer(it) }
         } else if (type != null && projectId == null) {
@@ -59,12 +73,14 @@ class RoleServiceImpl @Autowired constructor(
             return roleRepository.findByProjectId(projectId).map { transfer(it) }
         } else if (type != null && projectId != null) {
             return roleRepository.findByTypeAndProjectId(type, projectId).map { transfer(it) }
+        } else if (projectId != null && repoName != null) {
+            roleRepository.findByRepoNameAndProjectId(repoName, projectId).map { transfer(it) }
         }
         return emptyList()
     }
 
     override fun deleteRoleByid(id: String): Boolean {
-        val role = roleRepository.findOneById(id)
+        val role = roleRepository.findFirstById(id)
         if (role == null) {
             logger.warn("delete role [$id ] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)

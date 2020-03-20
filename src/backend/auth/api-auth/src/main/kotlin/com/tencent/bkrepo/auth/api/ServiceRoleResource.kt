@@ -50,19 +50,41 @@ interface ServiceRoleResource {
         @PathVariable id: String
     ): Response<Boolean>
 
-    @ApiOperation("根据类型查询角色")
+    @ApiOperation("根据主键id查询角色详情")
     @GetMapping("/detail/{id}")
     fun detail(
         @ApiParam(value = "角色主键id")
         @PathVariable id: String
     ): Response<Role?>
 
+    @ApiOperation("根据角色ID与项目Id查询角色")
+    @GetMapping("/detail/{rid}/{projectId}")
+    fun detailByRidAndProjectId(
+        @ApiParam(value = "角色id")
+        @PathVariable rid: String,
+        @ApiParam(value = "项目id")
+        @PathVariable projectId: String
+    ): Response<Role?>
+
+    @ApiOperation("根据角色ID与项目Id,仓库名查询角色")
+    @GetMapping("/detail/{rid}/{projectId}/{repoName}")
+    fun detailByRidAndProjectIdAndRepoName(
+        @ApiParam(value = "角色id")
+        @PathVariable rid: String,
+        @ApiParam(value = "项目id")
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名")
+        @PathVariable repoName: String
+    ): Response<Role?>
+
     @ApiOperation("根据类型和项目id查询角色")
     @GetMapping("/list")
-    fun listRoleByTypeAndProjectId(
+    fun listRole(
         @ApiParam(value = "角色类型")
         @RequestParam type: RoleType? = null,
         @ApiParam(value = "项目ID")
-        @RequestParam projectId: String? = null
+        @RequestParam projectId: String? = null,
+        @ApiParam(value = "仓库名")
+        @RequestParam repoName: String? = null
     ): Response<List<Role>>
 }

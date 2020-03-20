@@ -2,9 +2,9 @@ package com.tencent.bkrepo.common.service.feign
 
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import feign.Logger
 import feign.RequestInterceptor
 import org.springframework.cloud.openfeign.EnableFeignClients
-import org.springframework.cloud.openfeign.FeignLoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.context.request.RequestContextHolder
@@ -35,10 +35,7 @@ class ClientConfiguration {
     }
 
     @Bean
-    fun feignLoggerFactory(): FeignLoggerFactory {
-        val feignLogger = FeignApiLogger()
-        return FeignLoggerFactory { feignLogger }
-    }
+    fun logger(): Logger = FeignApiLogger()
 
     @Bean
     fun errorCodeDecoder() = ErrorCodeDecoder()

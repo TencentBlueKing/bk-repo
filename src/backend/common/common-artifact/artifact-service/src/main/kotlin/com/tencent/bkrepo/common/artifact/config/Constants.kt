@@ -19,10 +19,12 @@ const val REPO_NAME = "repoName"
 /**
  * 认证相关
  */
-const val BASIC_AUTH_HEADER = "Authorization"
+const val AUTHORIZATION = "Authorization"
+const val PROXY_AUTHORIZATION = "Proxy-Authorization"
 const val BASIC_AUTH_HEADER_PREFIX = "Basic "
 const val BASIC_AUTH_RESPONSE_HEADER = "WWW-Authenticate"
-const val BASIC_AUTH_RESPONSE_VALUE = "Basic realm=\"Login Required\""
+const val BASIC_AUTH_RESPONSE_VALUE = "Basic realm=\"Authentication Required\""
+const val PLATFORM_AUTH_HEADER_PREFIX = "Platform "
 
 /**
  * 构件传输相关
@@ -33,7 +35,7 @@ const val ATTRIBUTE_OCTET_STREAM_SHA256 = "artifact.sha256.octet-stream"
 const val ATTRIBUTE_MD5MAP = "artifact.md5"
 const val ATTRIBUTE_OCTET_STREAM_MD5 = "artifact.md5.octet-stream"
 const val DEFAULT_MIME_TYPE = "application/octet-stream"
-const val CONTENT_DISPOSITION_TEMPLATE = "attachment; filename=\"%s\""
+const val CONTENT_DISPOSITION_TEMPLATE = "attachment;filename=\"%s\";filename*=UTF-8''%s"
 const val BYTES = "bytes="
 
 /**

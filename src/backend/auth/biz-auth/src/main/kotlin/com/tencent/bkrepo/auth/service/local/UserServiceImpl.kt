@@ -33,7 +33,7 @@ class UserServiceImpl @Autowired constructor(
 ) : UserService {
     override fun createUser(request: CreateUserRequest): Boolean {
         // todo 校验
-        val user = userRepository.findOneByUserId(request.userId)
+        val user = userRepository.findFirstByUserId(request.userId)
         if (user != null) {
             logger.warn("create user [${request.userId}]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
@@ -56,26 +56,34 @@ class UserServiceImpl @Autowired constructor(
         return true
     }
 
+    override fun listUser(rids: List<String>): List<User> {
+        if (rids.isEmpty()) {
+            return userRepository.findAll().map { transfer(it) }
+        } else {
+            return userRepository.findAllByRolesIn(rids).map { transfer(it) }
+        }
+    }
+
     override fun deleteById(userId: String): Boolean {
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
-        userRepository.findOneByUserId(userId)
+        userRepository.findFirstByUserId(userId)
         return true
     }
 
     override fun addUserToRole(userId: String, roleId: String): User? {
         // check user
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn(" user not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
         // check role
-        val role = roleRepository.findOneById(roleId)
+        val role = roleRepository.findFirstById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
@@ -92,7 +100,7 @@ class UserServiceImpl @Autowired constructor(
     override fun addUserToRoleBatch(IdList: List<String>, roleId: String): Boolean {
         IdList.forEach {
             // check user
-            val user = userRepository.findOneByUserId(it)
+            val user = userRepository.findFirstByUserId(it)
             if (user == null) {
                 logger.warn(" user not  exist.")
                 throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -100,7 +108,7 @@ class UserServiceImpl @Autowired constructor(
         }
 
         // check role
-        val role = roleRepository.findOneById(roleId)
+        val role = roleRepository.findFirstById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
@@ -119,14 +127,14 @@ class UserServiceImpl @Autowired constructor(
 
     override fun removeUserFromRole(userId: String, roleId: String): User? {
         // check user
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn(" user not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
         // check role
-        val role = roleRepository.findOneById(roleId)
+        val role = roleRepository.findFirstById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
@@ -142,7 +150,7 @@ class UserServiceImpl @Autowired constructor(
 
     override fun removeUserFromRoleBatch(IdList: List<String>, roleId: String): Boolean {
         IdList.forEach {
-            val user = userRepository.findOneByUserId(it)
+            val user = userRepository.findFirstByUserId(it)
             if (user == null) {
                 logger.warn(" user not  exist.")
                 throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -150,7 +158,7 @@ class UserServiceImpl @Autowired constructor(
         }
 
         // check role
-        val role = roleRepository.findOneById(roleId)
+        val role = roleRepository.findFirstById(roleId)
         if (role == null) {
             logger.warn(" role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
@@ -168,7 +176,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun updateUserById(userId: String, request: UpdateUserRequest): Boolean {
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -195,7 +203,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun createToken(userId: String): User? {
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -210,8 +218,23 @@ class UserServiceImpl @Autowired constructor(
         return getUserById(userId)
     }
 
+    override fun addUserToken(userId: String, token: String): User? {
+        val user = userRepository.findFirstByUserId(userId)
+        if (user == null) {
+            logger.warn("user [$userId]  not exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+
+        val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
+        val update = Update()
+        val token = Token(id = token, createdAt = LocalDateTime.now(), expiredAt = LocalDateTime.now().plusYears(2))
+        update.addToSet(TUser::tokens.name, token)
+        mongoTemplate.upsert(query, update, TUser::class.java)
+        return getUserById(userId)
+    }
+
     override fun removeToken(userId: String, token: String): User? {
-        val user = userRepository.findOneByUserId(userId)
+        val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -227,32 +250,29 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun getUserById(userId: String): User? {
-        val user = userRepository.findOneByUserId(userId) ?: return null
-        return User(
-            userId = user.userId!!,
-            name = user.name,
-            pwd = "",
-            admin = user.admin,
-            locked = user.locked,
-            tokens = user.tokens,
-            roles = user.roles
-        )
+        val user = userRepository.findFirstByUserId(userId) ?: return null
+        return transfer(user)
     }
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
         val criteria = Criteria()
-        criteria.orOperator(Criteria.where(TUser::pwd.name).`is`(hashPwd), Criteria.where("tokens.id").`is`(pwd)).and(TUser::userId.name).`is`(userId)
+        criteria.orOperator(Criteria.where(TUser::pwd.name).`is`(hashPwd), Criteria.where("tokens.id").`is`(pwd))
+            .and(TUser::userId.name).`is`(userId)
         val query = Query.query(criteria)
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: return null
+        return transfer(result)
+    }
+
+    private fun transfer(tUser: TUser): User {
         return User(
-            userId = result.userId!!,
-            name = result.name,
-            pwd = "",
-            admin = result.admin,
-            locked = result.locked,
-            tokens = result.tokens,
-            roles = result.roles
+            userId = tUser.userId,
+            name = tUser.name,
+            pwd = tUser.pwd,
+            admin = tUser.admin,
+            locked = tUser.locked,
+            tokens = tUser.tokens,
+            roles = tUser.roles
         )
     }
 

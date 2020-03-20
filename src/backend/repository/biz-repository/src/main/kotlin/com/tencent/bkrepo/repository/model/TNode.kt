@@ -2,9 +2,10 @@ package com.tencent.bkrepo.repository.model
 
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
-import java.time.LocalDateTime
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
+import java.time.LocalDateTime
 
 /**
  * 资源模型
@@ -39,8 +40,4 @@ data class TNode(
     @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,
     var repoName: String
-) {
-    companion object {
-        const val SHARDING_COUNT = 256
-    }
-}
+)

@@ -668,6 +668,27 @@ internal class NodeServiceTest @Autowired constructor(
     }
 
     @Test
+    @DisplayName("拷贝文件 -> 存在的目录")
+    fun copyFileToExistPathTest() {
+        nodeService.create(createRequest("/a/1.txt", false))
+        nodeService.create(createRequest("/b", true))
+
+        val copyRequest = NodeCopyRequest(
+            srcProjectId = projectId,
+            srcRepoName = repoName,
+            srcFullPath = "/a/1.txt",
+            destFullPath = "/b/",
+            operator = operator,
+            overwrite = true
+        )
+        nodeService.copy(copyRequest)
+
+        assertTrue(nodeService.detail(projectId, repoName, "/b")?.nodeInfo?.folder == true)
+        assertTrue(nodeService.detail(projectId, repoName, "/b/1.txt")?.nodeInfo?.folder == false)
+        nodeService.list(projectId, repoName, "/", true, deep = true).forEach { println(it) }
+    }
+
+    @Test
     @DisplayName("拷贝文件, 元数据一起拷贝")
     fun copyWithMetadataTest() {
         nodeService.create(createRequest("/a", false, metadata = mapOf("key" to "value")))

@@ -9,6 +9,8 @@ interface UserService {
 
     fun createUser(request: CreateUserRequest): Boolean
 
+    fun listUser(rids: List<String>): List<User>
+
     fun deleteById(userId: String): Boolean
 
     fun updateUserById(userId: String, request: UpdateUserRequest): Boolean
@@ -22,6 +24,8 @@ interface UserService {
     fun removeUserFromRoleBatch(IdList: List<String>, roleId: String): Boolean
 
     fun createToken(userId: String): User?
+
+    fun addUserToken(uid: String, token: String): User?
 
     fun removeToken(userId: String, token: String): User?
 
