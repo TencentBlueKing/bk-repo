@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
 import com.tencent.bkrepo.common.service.feign.ClientConfiguration
 import com.tencent.bkrepo.common.service.feign.FeignFilterRequestMappingHandlerMapping
 import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
+import com.tencent.bkrepo.common.service.ribbon.RibbonRouteRuleConfiguration
 import com.tencent.bkrepo.common.service.swagger.SwaggerAutoConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
@@ -27,7 +28,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
     SwaggerAutoConfiguration::class,
     GlobalExceptionHandler::class,
     MessageSourceConfiguration::class,
-    ClientConfiguration::class
+    ClientConfiguration::class,
+    RibbonRouteRuleConfiguration::class
 )
 class ServiceAutoConfiguration {
 

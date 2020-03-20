@@ -31,7 +31,7 @@ object FileDigestUtils {
 
     @Throws(IOException::class, IllegalArgumentException::class)
     fun fileSha256(file: File): String {
-        return digest(listOf(file.inputStream()), DigestUtils.getSha1Digest())
+        return digest(listOf(file.inputStream()), DigestUtils.getSha256Digest())
     }
 
     @Throws(IOException::class, IllegalArgumentException::class)
