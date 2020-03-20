@@ -2,7 +2,6 @@ package com.tencent.bkrepo.docker.service
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.storage.util.DataDigestUtils
 import com.tencent.bkrepo.docker.artifact.Artifact
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
 import com.tencent.bkrepo.docker.context.DownloadContext
@@ -392,9 +391,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         )
         val manifestType = ManifestType.from(mediaType)
         val manifestPath = buildManifestPathFromType(dockerRepo, tag, manifestType)
-        logger.info("manifest path to {} .", manifestPath)
+        logger.info("manifest path {} .", manifestPath)
         if (!this.repo.canWrite(manifestPath)) {
-            logger.info("attempt to write manifest to {} failed the permission check.", manifestPath)
+            logger.info("attempt to write manifest to {} failed for permission.", manifestPath)
             return this.consumeStreamAndReturnError(stream)
         } else {
             stream.use {
@@ -737,7 +736,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
                 if (mountableBlob != null) {
                     location = this.getDockerURI(repoName, "$dockerRepo/blobs/$mount")
                     logger.debug(
-                        "Found accessible blob at {}/{} to mount onto {}",
+                        "found accessible blob at {}/{} to mount onto {}",
                         mountableBlob.repoName,
                         mountableBlob.path,
                         repoName + "/" + dockerRepo + "/" + mount
@@ -765,7 +764,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
                 port = Integer.valueOf(parts[1])
             }
         } else {
-            logger.error("Docker location URL is blank, make sure the Host request header exists.")
+            logger.error("docker location url is blank, make sure the host request header exists.")
         }
 
         val builder = UriBuilder.fromPath("v2/$path").host(host).scheme(this.getProtocol(this.httpHeaders))
@@ -804,7 +803,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             repoName,
             dockerRepo,
             digest,
-            artifactFile.getInputStream()
+            artifactFile
         ) else this.finishPatchUpload(projectId, repoName, dockerRepo, digest, uuid)
     }
 
@@ -830,19 +829,17 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         repoName: String,
         dockerRepo: String,
         digest: DockerDigest,
-        stream: InputStream
+        artifactFile: ArtifactFile
     ): ResponseEntity<Any> {
         val blobPath = dockerRepo + "/" + "_uploads" + "/" + digest.filename()
         if (!this.repo.canWrite(blobPath)) {
-            return this.consumeStreamAndReturnError(stream)
+            return this.consumeStreamAndReturnError(artifactFile.getInputStream())
         } else {
             logger.info("deploy docker blob '{}' into repo '{}'", blobPath, repoName)
-            var bytes = IOUtils.toByteArray(stream)
-            val sha256 = DataDigestUtils.sha256FromByteArray(bytes)
             var context =
-                UploadContext(projectId, repoName, blobPath).content(bytes.inputStream()).projectId(projectId)
+                UploadContext(projectId, repoName, blobPath).content(artifactFile.getInputStream()).projectId(projectId)
                     .repoName(repoName)
-                    .sha256(sha256)
+                    .sha256(digest.getDigestHex())
             val response = this.repo.upload(context)
             if (this.uploadSuccessful(response)) {
                 val location = this.getDockerURI(repoName, "$dockerRepo/blobs/$digest")

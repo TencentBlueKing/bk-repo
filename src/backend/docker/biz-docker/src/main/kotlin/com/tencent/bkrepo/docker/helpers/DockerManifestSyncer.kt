@@ -33,7 +33,7 @@ class DockerManifestSyncer() {
                 val finalBlobPath = "/$dockerRepo/$tag/$blobFilename"
                 if (!repo.exists(projectId, repoName, finalBlobPath)) {
                     if (DockerSchemaUtils.isEmptyBlob(blobDigest)) {
-                        log.debug("Found empty layer {} in manifest for image {} - creating blob in path {}", blobFilename, dockerRepo, finalBlobPath)
+                        log.debug("found empty layer {} in manifest for image {} ,create blob in path {}", blobFilename, dockerRepo, finalBlobPath)
                         val artifactFile = ArtifactFileFactory.build()
                         val blobContent = ByteArrayInputStream(DockerSchemaUtils.EMPTY_BLOB_CONTENT)
                         blobContent.use {
@@ -42,21 +42,20 @@ class DockerManifestSyncer() {
                     } else if (repo.exists(projectId, repoName, tempBlobPath)) {
                         this.moveBlobFromTempDir(repo, projectId, repoName, tempBlobPath, finalBlobPath)
                     } else {
-                        log.debug("Blob temp file '{}' doesn't exist in temp, trying other tags", tempBlobPath)
+                        log.debug("blob temp file '{}' doesn't exist in temp, try other tags", tempBlobPath)
                         val targetPath = "/$dockerRepo/$tag/$blobFilename"
                         if (!this.copyBlobFromFirstReadableDockerRepo(repo, projectId, repoName, dockerRepo, blobFilename, targetPath)) {
-                            log.error("Could not find temp blob '{}'", tempBlobPath)
+                            log.error("could not find temp blob '{}'", tempBlobPath)
                             return false
                         }
-
-                        log.debug("blob {} copied to {}", blobDigest.filename(), finalBlobPath)
+                        log.debug("blob {} copy to {}", blobDigest.filename(), finalBlobPath)
                     }
                 }
             }
         }
 
         // this.removeUnreferencedBlobs(repo, "$dockerRepo/$tag", info)
-        log.debug("Finished syncing docker repository blobs")
+        log.debug("finish synv docker repository blobs")
         return true
     }
 

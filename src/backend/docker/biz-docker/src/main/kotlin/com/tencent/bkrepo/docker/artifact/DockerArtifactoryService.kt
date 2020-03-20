@@ -96,6 +96,7 @@ class DockerArtifactoryService @Autowired constructor(
             logger.warn("user[$userId]  upload file  [$context.path] failed: ${context.repoName} not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
+
         // save node
         val result = nodeResource.create(
             NodeCreateRequest(
@@ -104,7 +105,7 @@ class DockerArtifactoryService @Autowired constructor(
                 folder = false,
                 fullPath = context.path,
                 size = context.contentLength,
-                sha256 = context.sha256,
+                sha256 = FileDigestUtils.fileSha256(context.artifactFile!!.getInputStream()),
                 md5 = FileDigestUtils.fileMd5(context.artifactFile!!.getInputStream()),
                 operator = userId,
                 metadata = emptyMap(),
