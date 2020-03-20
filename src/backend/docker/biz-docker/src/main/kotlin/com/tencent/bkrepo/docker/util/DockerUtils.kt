@@ -135,16 +135,16 @@ abstract class DockerUtils {
             blobFilename: String
         ): Artifact? {
             val tempBlobPath = "/$dockerRepo/_uploads/$blobFilename"
-            logger.info("Searching blob in '{}'", tempBlobPath)
+            logger.info("search blob in '{}'", tempBlobPath)
             var blob: Artifact?
             if (repo.exists(projectId, repoName, tempBlobPath)) {
-                logger.info("Blob found in: '{}'", tempBlobPath)
+                logger.info("blob found in: '{}'", tempBlobPath)
                 blob = repo.artifact(projectId, repoName, tempBlobPath)
                 if (repo.getWorkContextC().isBlobReadable(blob!!)) {
                     return blob
                 }
             }
-            logger.info("Attempting to search  blob {} globally {}", dockerRepo, blobFilename)
+            logger.info("attempt to search  blob {} globally {}", dockerRepo, blobFilename)
             blob = findBlobGlobally(repo, projectId, repoName, dockerRepo, blobFilename)
             return blob
         }

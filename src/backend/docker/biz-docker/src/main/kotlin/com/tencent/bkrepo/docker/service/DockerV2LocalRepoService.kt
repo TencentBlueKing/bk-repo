@@ -383,7 +383,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         val stream = artifactFile.getInputStream()
         logger.info(
-            "deploy docker manifest for repo '{}' and tag '{}' into repo '{}' media type {}",
+            "deploy docker manifest for repo {} , tag {} into repo {} ,media type is  {}",
             dockerRepo,
             tag,
             repoName,
@@ -437,8 +437,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         artifactFile: ArtifactFile
     ): DockerDigest {
         val manifestBytes = IOUtils.toByteArray(stream)
+        logger.info("manifest file content : {}", manifestBytes.toString())
         val digest = DockerManifestDigester.calc(manifestBytes)
-        logger.info("digest : {}", digest)
+        logger.info("manifest file digest : {}", digest)
         if (ManifestType.Schema2List == manifestType) {
             this.processManifestList(
                 projectId,
