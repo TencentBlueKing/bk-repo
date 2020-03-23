@@ -20,4 +20,5 @@ class ChartManipulationService {
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.upload(context)
     }
+
 }

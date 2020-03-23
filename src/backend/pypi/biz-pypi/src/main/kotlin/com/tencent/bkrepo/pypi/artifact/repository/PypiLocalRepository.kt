@@ -78,7 +78,6 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     }
 
     override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
-        val artifactInfo = context.artifactInfo
         val repository = context.repositoryInfo
         val searchArgs = XmlUtil.getSearchArgs(xmlString)
         val packageName = searchArgs["packageName"]
