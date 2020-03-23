@@ -138,27 +138,28 @@ class RepositoryService @Autowired constructor(
     }
 
     /**
-     * 检查仓库是否存在，不存在则抛异常
-     * 首先检查项目是否存在，再检查仓库
-     */
-    fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
-        return queryRepository(projectId, repoName, repoType) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
-    }
-
-    /**
      * 用于测试的函数，不对外提供
      */
+    @Transactional(rollbackFor = [Throwable::class])
     fun delete(projectId: String, name: String) {
         val repository = queryRepository(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
 
         repoRepository.deleteById(repository.id!!)
         nodeDao.remove(Query(Criteria
-                .where(TNode::projectId.name)
-                .`is`(repository.projectId)
-                .and(TNode::repoName.name).`is`(repository.name)
+            .where(TNode::projectId.name)
+            .`is`(repository.projectId)
+            .and(TNode::repoName.name).`is`(repository.name)
         ))
 
         logger.info("Delete repository [$projectId/$name] success.")
+    }
+
+    /**
+     * 检查仓库是否存在，不存在则抛异常
+     * 首先检查项目是否存在，再检查仓库
+     */
+    fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
+        return queryRepository(projectId, repoName, repoType) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
     }
 
     private fun createListQuery(projectId: String): Query {
