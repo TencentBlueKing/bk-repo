@@ -36,7 +36,7 @@ object HttpResponseUtils {
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, disposition)
         response.setHeader(HttpHeaders.ACCEPT_RANGES, "bytes")
 
-        request.getHeader("Range")?.run {
+        request.getHeader(HttpHeaders.RANGE)?.run {
             parseContentRange(this, fileLength)?.run {
                 first?.let { readStart = first!! }
                 second?.let { readEnd = second!! + 1 }
