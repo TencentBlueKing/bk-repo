@@ -81,23 +81,26 @@ class DockerArtifactoryService @Autowired constructor(
     fun download(context: DownloadContext): File {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
-            logger.warn("user [$userId] simply download file  [$context.path] failed: [$context.repoName] not found")
+            logger.warn("user [$userId]  download file  [$context.path] failed: [$context.repoName] not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
-
-        // fileStorage
-        var file = storageService.load(context.sha256, repository.storageCredentials)
-        return file!!
+        // load file from storage
+        var file = storageService.load(context.sha256, repository.storageCredentials) ?: run {
+            logger.warn("user [$userId]  download file  [$context.path] failed: [$context.repoName] not found")
+            throw DockerRepoNotFoundException(context.repoName)
+        }
+        return file
     }
 
+    // upload file
     fun upload(context: UploadContext): ResponseEntity<Any> {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId]  upload file  [$context.path] failed: ${context.repoName} not found")
+            logger.warn("user[$userId]  upload file  [$context.path] failed: [${context.repoName}] not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
 
-        // save node
+        // save the node
         val result = nodeResource.create(
             NodeCreateRequest(
                 projectId = context.projectId,
@@ -122,10 +125,11 @@ class DockerArtifactoryService @Autowired constructor(
         return ResponseEntity.ok().body("ok")
     }
 
+    // finish append file
     fun finishAppend(uuid: String, context: UploadContext): ResponseEntity<Any> {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId]  upload file  [$context.path] failed: ${context.repoName} not found")
+            logger.warn("user[$userId]  finish append file  [$context.path] failed: ${context.repoName} not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
         val file = this.storageService.finishAppend(uuid, repository.storageCredentials)
@@ -143,16 +147,15 @@ class DockerArtifactoryService @Autowired constructor(
         )
         // save node
         val result = nodeResource.create(node)
-        if (result.isOk()) {
-            // storageService.store(context.sha256, file, repository.storageCredentials)
-            logger.info("user[$userId] finish upload file  {} , {} success", context.path, file.sha256)
-        } else {
-            logger.warn("user[$userId] finish upload file  [$context.path] failed: [${result.code}, ${result.message}]")
+        if (!result.isOk()) {
+            logger.error("user [$userId] finish upload file  [$context.path] failed: [${result.code}, ${result.message}]")
             throw DockerFileSaveFailedException(context.path)
         }
+        logger.info("user [$userId] finish upload file  {} , {} success", context.path, file.sha256)
         return ResponseEntity.ok().body("ok")
     }
 
+    // copy file
     fun copy(projectId: String, repoName: String, srcPath: String, destPath: String): Boolean {
         val copyRequest = NodeCopyRequest(
             srcProjectId = projectId,
@@ -168,56 +171,72 @@ class DockerArtifactoryService @Autowired constructor(
         return true
     }
 
+    // move file
     fun move(projectId: String, repoName: String, from: String, to: String): Boolean {
         val renameRequest = NodeRenameRequest(projectId, repoName, from, to, userId)
         logger.info("rename request {}", renameRequest.toString())
         val result = nodeResource.rename(renameRequest)
         if (result.isNotOk()) {
-            logger.warn("user[$userId] rename  [$from] to [$to] failed: [${result.code}, ${result.message}]")
+            logger.error("user [$userId] rename  [$from] to [$to] failed: [${result.code}, ${result.message}]")
             throw DockerMoveFileFailedException(from + "->" + to)
         }
         return true
     }
 
+    // set node  attribute
     fun setAttributes(projectId: String, repoName: String, path: String, keyValueMap: Map<String, String>) {
         metadataService.save(MetadataSaveRequest(projectId, repoName, path, keyValueMap))
     }
 
+    // get node  attribute
     fun getAttribute(projectId: String, repoName: String, fullPath: String, key: String): String? {
         return metadataService.query(projectId, repoName, fullPath).data!!.get(key)
     }
 
+    // check node
     fun exists(projectId: String, repoName: String, dockerRepo: String): Boolean {
-        return nodeResource.exist(projectId, repoName, dockerRepo).data!!
+        val result = nodeResource.exist(projectId, repoName, dockerRepo).data ?: return false
+        return result
     }
 
+    // check path be read
     fun canRead(path: String): Boolean {
+        logger.debug("is node [$path] can be read check")
         return true
     }
 
+    // check path be write
     fun canWrite(path: String): Boolean {
+        logger.debug("is node [$path] can be write check")
         return true
     }
 
+    // construct artifact object
     fun artifact(projectId: String, repoName: String, fullPath: String): Artifact? {
         val nodes = nodeResource.detail(projectId, repoName, fullPath).data ?: run {
-            logger.warn("find artifact failed: $projectId, $repoName, $fullPath found no artifacts")
+            logger.error("get  artifact detail failed: $projectId, $repoName, $fullPath found no artifact")
+            return null
+        }
+        if (nodes.nodeInfo.sha256 == null) {
+            logger.error("get  artifact detail failed: $projectId, $repoName, $fullPath found no artifact")
             return null
         }
         return Artifact(projectId, repoName, fullPath).sha256(nodes.nodeInfo.sha256!!)
             .contentLength(nodes.nodeInfo.size)
     }
 
+    // find artifact
     fun findArtifact(projectId: String, repoName: String, dockerRepo: String, fileName: String): NodeDetail? {
-        // query node info
+        // get node info
         var fullPath = "/$dockerRepo/$fileName"
         val nodes = nodeResource.detail(projectId, repoName, fullPath).data ?: run {
-            logger.warn("find artifacts failed: $projectId, $repoName, $fullPath found no node")
+            logger.warn("get  artifact detail failed: $projectId, $repoName, $fullPath found no node")
             return null
         }
         return nodes
     }
 
+    // find artifact list
     fun findArtifacts(projectId: String, repoName: String, fileName: String): List<Map<String, Any>> {
         val projectRule = Rule.QueryRule("projectId", projectId)
         val repoNameRule = Rule.QueryRule("repoName", repoName)
@@ -231,12 +250,13 @@ class DockerArtifactoryService @Autowired constructor(
         )
 
         val result = nodeResource.query(queryModel).data ?: run {
-            logger.warn("find artifacts failed: [$projectId, $repoName, $fileName] found no node")
+            logger.warn("find artifact list failed: [$projectId, $repoName, $fileName] found no node")
             return emptyList()
         }
         return result.records
     }
 
+    // find repo list
     fun findRepoList(projectId: String, repoName: String): List<String> {
         val projectRule = Rule.QueryRule("projectId", projectId)
         val repoNameRule = Rule.QueryRule("repoName", repoName)
@@ -250,7 +270,7 @@ class DockerArtifactoryService @Autowired constructor(
         )
 
         val result = nodeResource.query(queryModel).data ?: run {
-            logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
+            logger.warn("find repo list failed: [$projectId, $repoName] ")
             return emptyList()
         }
         var data = mutableListOf<String>()
@@ -261,6 +281,7 @@ class DockerArtifactoryService @Autowired constructor(
         return data.distinct()
     }
 
+    // find repo tag list
     fun findRepoTagList(projectId: String, repoName: String, image: String): Map<String, String> {
         val projectRule = Rule.QueryRule("projectId", projectId)
         val repoNameRule = Rule.QueryRule("repoName", repoName)
@@ -288,8 +309,8 @@ class DockerArtifactoryService @Autowired constructor(
         return data
     }
 
+    // find artifacts by name
     fun findArtifactsByName(projectId: String, repoName: String, fileName: String): List<Map<String, Any>> {
-        // find artifacts by name
         val projectRule = Rule.QueryRule("projectId", projectId)
         val repoNameRule = Rule.QueryRule("repoName", repoName)
         val nameRule = Rule.QueryRule("name", fileName)
@@ -301,16 +322,17 @@ class DockerArtifactoryService @Autowired constructor(
             rule = rule
         )
         val result = nodeResource.query(queryModel).data ?: run {
-            logger.warn("find artifacts failed:  $fileName found no node")
+            logger.error("find artifacts failed:  $fileName found no node")
             return emptyList()
         }
         return result.records
     }
 
+    // find manifest
     fun findManifest(projectId: String, repoName: String, manifestPath: String): NodeDetail? {
         // query node info
         val nodes = nodeResource.detail(projectId, repoName, manifestPath).data ?: run {
-            logger.warn("find manifest failed: $projectId, $repoName, $manifestPath found no node")
+            logger.error("find manifest failed: $projectId, $repoName, $manifestPath found no node")
             return null
         }
         return nodes

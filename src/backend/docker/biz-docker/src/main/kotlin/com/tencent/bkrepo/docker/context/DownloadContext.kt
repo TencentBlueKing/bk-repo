@@ -5,14 +5,12 @@ import java.io.InputStream
 import org.springframework.http.HttpHeaders
 
 class DownloadContext(projectId: String, repoName: String, path: String) {
-    val FORCE_GET_STREAM_HEADER = "artifactory.disableRedirect"
     private var skipStatsUpdate = false
     private val requestHeaders = Maps.newHashMap<String, String>()
 
     var name: String = ""
     var content: InputStream? = null
     var contentLength: Long = 0
-    var sha1: String = ""
     var sha256: String = ""
     var md5: String = ""
     var projectId: String = ""
@@ -45,7 +43,7 @@ class DownloadContext(projectId: String, repoName: String, path: String) {
         return this
     }
 
-    fun header(key: String, value: String): DownloadContext {
+    fun header(key: String?, value: String?): DownloadContext {
         if (key != null && value != null) {
             this.requestHeaders[key] = value
         }
@@ -84,54 +82,5 @@ class DownloadContext(projectId: String, repoName: String, path: String) {
 
     fun setSkipStatsUpdate(skipStatsUpdate: Boolean) {
         this.skipStatsUpdate = skipStatsUpdate
-    }
-
-    override fun equals(o: Any?): Boolean {
-        if (o === this) {
-            return true
-        } else if (o !is DownloadContext) {
-            return false
-        } else {
-            val other = o as DownloadContext?
-            if (!other!!.canEqual(this)) {
-                return false
-            } else {
-                run loop@{
-                    val `this$path` = this.getPath()
-                    val `other$path` = other.getPath()
-                    if (`this$path` == null) {
-                        if (`other$path` == null) {
-                            // TODO : break
-                            // break@loop
-                        }
-                    } else if (`this$path` == `other$path`) {
-                        // TODO: break
-                        // break@loop
-                    }
-
-                    return false
-                }
-
-                if (this.isSkipStatsUpdate() != other.isSkipStatsUpdate()) {
-                    return false
-                } else {
-                    val `this$requestHeaders` = this.getRequestHeaders()
-                    val `other$requestHeaders` = other.getRequestHeaders()
-                    if (`this$requestHeaders` == null) {
-                        if (`other$requestHeaders` != null) {
-                            return false
-                        }
-                    } else if (`this$requestHeaders` != `other$requestHeaders`) {
-                        return false
-                    }
-
-                    return true
-                }
-            }
-        }
-    }
-
-    protected fun canEqual(other: Any): Boolean {
-        return other is DownloadContext
     }
 }
