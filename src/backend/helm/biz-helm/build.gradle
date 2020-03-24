@@ -2,4 +2,6 @@ dependencies {
     api project(":helm:api-helm")
     api project(":common:common-job")
     api project(":common:common-artifact:artifact-service")
+    implementation "com.fasterxml.jackson.core:jackson-core:2.10.3"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.10.3"
 }

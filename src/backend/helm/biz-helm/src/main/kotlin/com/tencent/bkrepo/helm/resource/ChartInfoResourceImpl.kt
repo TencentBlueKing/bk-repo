@@ -2,19 +2,18 @@ package com.tencent.bkrepo.helm.resource
 
 import com.tencent.bkrepo.helm.api.ChartInfoResource
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.pojo.ChartInfoList
+import com.tencent.bkrepo.helm.service.ChartInfoService
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ChartInfoResourceImpl : ChartInfoResource {
-    override fun allChartsList(artifactInfo: HelmArtifactInfo) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
 
-    override fun chartsVersion(artifactInfo: HelmArtifactInfo) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    @Autowired
+    private lateinit var chartInfoService: ChartInfoService
 
-    override fun chartsDescribe(artifactInfo: HelmArtifactInfo) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun allChartsList(artifactInfo: HelmArtifactInfo): ChartInfoList? {
+        return chartInfoService.allChartsList(artifactInfo)
     }
 }
