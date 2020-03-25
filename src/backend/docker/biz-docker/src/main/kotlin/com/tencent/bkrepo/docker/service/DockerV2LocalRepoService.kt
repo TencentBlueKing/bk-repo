@@ -358,6 +358,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         artifactFile: ArtifactFile
     ): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, path.projectId, path.repoName)
+        if (!this.repo.canWrite(path)) {
+            return DockerV2Errors.unauthorizedUpload()
+        }
         val stream = artifactFile.getInputStream()
         logger.info(
             "deploy docker manifest for repo {} , tag {} into repo {} ,media type is  {}",
@@ -701,30 +704,29 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             logger.info("start upload blob , {}, {}, {}", projectId, repoName, dockerRepo)
             if (!this.repo.canWrite(DockerBasicPath(projectId, repoName, dockerRepo))) {
                 return DockerV2Errors.unauthorizedUpload()
-            } else {
-                val location: URI
-                if (mount != null) {
-                    var mountDigest = DockerDigest(mount)
-                    val mountableBlob =
-                        DockerUtils.findBlobGlobally(this.repo, projectId, repoName, dockerRepo, mountDigest.filename())
-                    if (mountableBlob != null) {
-                        location = this.getDockerURI(repoName, "$dockerRepo/blobs/$mount")
-                        logger.info(
-                            "found accessible blob at {}/{} to mount  {}",
-                            mountableBlob.repoName,
-                            mountableBlob.path,
-                            repoName + "/" + dockerRepo + "/" + mount
-                        )
-                        return ResponseEntity.status(201).header("Docker-Distribution-Api-Version", "registry/2.0")
-                            .header("Docker-Content-Digest", mount).header("Content-Length", "0")
-                            .header("Location", location.toString()).build()
-                    }
-                }
-                val uuid = this.repo.startAppend()
-                location = this.getDockerURI(repoName, "$projectId/$repoName/$dockerRepo/blobs/uploads/$uuid")
-                return ResponseEntity.status(202).header("Docker-Distribution-Api-Version", "registry/2.0")
-                    .header("Docker-Upload-Uuid", uuid).header("Location", location.toString()).build()
             }
+            val location: URI
+            if (mount != null) {
+                var mountDigest = DockerDigest(mount)
+                val mountableBlob =
+                    DockerUtils.findBlobGlobally(this.repo, projectId, repoName, dockerRepo, mountDigest.filename())
+                if (mountableBlob != null) {
+                    location = this.getDockerURI(repoName, "$dockerRepo/blobs/$mount")
+                    logger.info(
+                        "found accessible blob at {}/{} to mount  {}",
+                        mountableBlob.repoName,
+                        mountableBlob.path,
+                        repoName + "/" + dockerRepo + "/" + mount
+                    )
+                    return ResponseEntity.status(201).header("Docker-Distribution-Api-Version", "registry/2.0")
+                        .header("Docker-Content-Digest", mount).header("Content-Length", "0")
+                        .header("Location", location.toString()).build()
+                }
+            }
+            val uuid = this.repo.startAppend()
+            location = this.getDockerURI(repoName, "$projectId/$repoName/$dockerRepo/blobs/uploads/$uuid")
+            return ResponseEntity.status(202).header("Docker-Distribution-Api-Version", "registry/2.0")
+                .header("Docker-Upload-Uuid", uuid).header("Location", location.toString()).build()
         } catch (e: PermissionCheckException) {
             return DockerV2Errors.unauthorizedUpload()
         }
