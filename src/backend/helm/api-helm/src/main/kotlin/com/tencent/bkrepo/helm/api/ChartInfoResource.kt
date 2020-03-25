@@ -2,9 +2,10 @@ package com.tencent.bkrepo.helm.api
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
-import com.tencent.bkrepo.helm.pojo.ChartInfoList
 import io.swagger.annotations.Api
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
 
 @Api("chart search info API")
 interface ChartInfoResource {
@@ -12,5 +13,11 @@ interface ChartInfoResource {
     fun allChartsList(
         @ArtifactPathVariable
         artifactInfo: HelmArtifactInfo
-    ): ChartInfoList?
+    ): String
+
+    @RequestMapping(HelmArtifactInfo.CHARTS_LIST , method = [RequestMethod.HEAD])
+    fun exists(
+        @ArtifactPathVariable
+        artifactInfo: HelmArtifactInfo
+    )
 }

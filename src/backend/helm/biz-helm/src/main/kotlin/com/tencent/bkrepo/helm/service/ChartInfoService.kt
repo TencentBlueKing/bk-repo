@@ -7,15 +7,24 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.artifact.repository.HelmLocalRepository
-import com.tencent.bkrepo.helm.pojo.ChartInfoList
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class ChartInfoService{
+class ChartInfoService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    fun allChartsList(artifactInfo: HelmArtifactInfo): ChartInfoList? {
+    fun allChartsList(artifactInfo: HelmArtifactInfo): String {
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        return (repository as HelmLocalRepository).search(context)
+        return (repository as HelmLocalRepository).searchYaml(context)
     }
+
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    fun isExists(artifactInfo: HelmArtifactInfo) {
+        val context = ArtifactSearchContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        (repository as HelmLocalRepository).isExists(context)
+    }
+
 }
