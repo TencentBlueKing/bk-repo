@@ -51,21 +51,13 @@ class DownloadContext(projectId: String, repoName: String, path: String) {
         return this
     }
 
-    fun getPath(): String {
-        return this.name
-    }
-
-    fun getRequestHeaders(): kotlin.collections.Map<String, String> {
-        return this.requestHeaders
-    }
-
     fun headers(httpHeaders: HttpHeaders?): DownloadContext {
         if (!httpHeaders.isNullOrEmpty()) {
             val multiMap = httpHeaders.toMap()
-            val var3 = multiMap.keys.iterator()
+            val headerKeys = multiMap.keys.iterator()
 
-            while (var3.hasNext()) {
-                val key = var3.next() as String
+            while (headerKeys.hasNext()) {
+                val key = headerKeys.next() as String
                 val requestHeader = multiMap[key] as kotlin.collections.List<*>
                 if (requestHeader.size >= 1) {
                     this.header(key, requestHeader[0] as String)

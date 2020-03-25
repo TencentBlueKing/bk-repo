@@ -1,6 +1,10 @@
 package com.tencent.bkrepo.docker.artifact
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
+import com.tencent.bkrepo.common.artifact.permission.PermissionService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -15,6 +19,7 @@ import com.tencent.bkrepo.docker.exception.DockerFileReadFailedException
 import com.tencent.bkrepo.docker.exception.DockerFileSaveFailedException
 import com.tencent.bkrepo.docker.exception.DockerMoveFileFailedException
 import com.tencent.bkrepo.docker.exception.DockerRepoNotFoundException
+import com.tencent.bkrepo.docker.model.DockerBasicPath
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
@@ -35,7 +40,8 @@ class DockerArtifactoryService @Autowired constructor(
     val repositoryResource: RepositoryResource,
     private val nodeResource: NodeResource,
     private val storageService: StorageService,
-    private val metadataService: MetadataResource
+    private val metadataService: MetadataResource,
+    private val permissionService: PermissionService
 ) {
 
     protected lateinit var context: DockerWorkContext
@@ -199,16 +205,39 @@ class DockerArtifactoryService @Autowired constructor(
         return result
     }
 
-    // check path be read
-    fun canRead(path: String): Boolean {
-        logger.debug("is node [$path] can be read check")
+    // check path read permission
+    fun canRead(path: DockerBasicPath): Boolean {
         return true
+        try {
+            permissionService.checkPermission(
+                userId,
+                ResourceType.PROJECT,
+                PermissionAction.WRITE,
+                path.projectId,
+                path.repoName
+            )
+            return true
+        } catch (e: PermissionCheckException) {
+            logger.error("user: {} ,check read permission fail {},{}", userId, path.projectId, path.repoName)
+            return false
+        }
     }
 
-    // check path be write
-    fun canWrite(path: String): Boolean {
-        logger.debug("is node [$path] can be write check")
-        return true
+    // check path write permission
+    fun canWrite(path: DockerBasicPath): Boolean {
+        try {
+            permissionService.checkPermission(
+                userId,
+                ResourceType.PROJECT,
+                PermissionAction.WRITE,
+                path.projectId,
+                path.repoName
+            )
+            return true
+        } catch (e: PermissionCheckException) {
+            logger.error("user: {} ,check write permission fail {},{}", userId, path.projectId, path.repoName)
+            return false
+        }
     }
 
     // construct artifact object
@@ -226,11 +255,11 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
     // find artifact
-    fun findArtifact(projectId: String, repoName: String, dockerRepo: String, fileName: String): NodeDetail? {
+    fun findArtifact(path: DockerBasicPath, fileName: String): NodeDetail? {
         // get node info
-        var fullPath = "/$dockerRepo/$fileName"
-        val nodes = nodeResource.detail(projectId, repoName, fullPath).data ?: run {
-            logger.warn("get  artifact detail failed: $projectId, $repoName, $fullPath found no node")
+        var fullPath = "/${path.dockerRepo}/$fileName"
+        val nodes = nodeResource.detail(path.projectId, path.repoName, fullPath).data ?: run {
+            logger.warn("get  artifact detail failed: ${path.projectId}, ${path.repoName}, $fullPath found no node")
             return null
         }
         return nodes

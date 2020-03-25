@@ -3,6 +3,7 @@ package com.tencent.bkrepo.docker.helpers
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
 import com.tencent.bkrepo.docker.context.UploadContext
+import com.tencent.bkrepo.docker.model.DockerBasicPath
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
@@ -21,9 +22,7 @@ class DockerManifestSyncer() {
     fun sync(
         repo: DockerArtifactoryService,
         info: ManifestMetadata,
-        projectId: String,
-        repoName: String,
-        dockerRepo: String,
+        path: DockerBasicPath,
         tag: String
     ): Boolean {
         log.info("start to sync docker repository blobs")
@@ -36,35 +35,35 @@ class DockerManifestSyncer() {
                 val blobDigest = DockerDigest(blobInfo.digest!!)
                 val blobFilename = blobDigest.filename()
                 log.info(" blob file name digest {}", blobFilename)
-                val tempBlobPath = "/$dockerRepo/_uploads/$blobFilename"
-                val finalBlobPath = "/$dockerRepo/$tag/$blobFilename"
-                if (!repo.exists(projectId, repoName, finalBlobPath)) {
+                val tempBlobPath = "/${path.dockerRepo}/_uploads/$blobFilename"
+                val finalBlobPath = "/${path.dockerRepo}/$tag/$blobFilename"
+                if (!repo.exists(path.projectId, path.repoName, finalBlobPath)) {
                     if (DockerSchemaUtils.isEmptyBlob(blobDigest)) {
                         log.debug(
                             "found empty layer {} in manifest for image {} ,create blob in path {}",
                             blobFilename,
-                            dockerRepo,
+                            path.dockerRepo,
                             finalBlobPath
                         )
                         val artifactFile = ArtifactFileFactory.build()
                         val blobContent = ByteArrayInputStream(DockerSchemaUtils.EMPTY_BLOB_CONTENT)
                         blobContent.use {
                             repo.upload(
-                                UploadContext(projectId, repoName, finalBlobPath).content(it).sha256(
+                                UploadContext(path.projectId, path.repoName, finalBlobPath).content(it).sha256(
                                     DockerSchemaUtils.emptyBlobDigest().getDigestHex()
                                 ).artifactFile(artifactFile)
                             )
                         }
-                    } else if (repo.exists(projectId, repoName, tempBlobPath)) {
-                        this.moveBlobFromTempDir(repo, projectId, repoName, tempBlobPath, finalBlobPath)
+                    } else if (repo.exists(path.projectId, path.repoName, tempBlobPath)) {
+                        this.moveBlobFromTempDir(repo, path.projectId, path.repoName, tempBlobPath, finalBlobPath)
                     } else {
                         log.debug("blob temp file '{}' doesn't exist in temp, try other tags", tempBlobPath)
-                        val targetPath = "/$dockerRepo/$tag/$blobFilename"
+                        val targetPath = "/${path.dockerRepo}/$tag/$blobFilename"
                         if (!this.copyBlobFromFirstReadableDockerRepo(
                                 repo,
-                                projectId,
-                                repoName,
-                                dockerRepo,
+                                path.projectId,
+                                path.repoName,
+                                path.dockerRepo,
                                 blobFilename,
                                 targetPath
                             )
