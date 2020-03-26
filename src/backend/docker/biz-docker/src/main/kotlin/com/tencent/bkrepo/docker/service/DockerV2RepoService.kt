@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.docker.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.docker.model.DockerBasicPath
 import com.tencent.bkrepo.docker.model.DockerDigest
 import org.springframework.http.ResponseEntity
 
@@ -31,15 +32,13 @@ interface DockerV2RepoService {
     ): ResponseEntity<Any>
 
     fun uploadManifest(
-        projectId: String,
-        repoName: String,
-        dockerRepo: String,
+        path: DockerBasicPath,
         tag: String,
         mediaType: String,
         artifactFile: ArtifactFile
     ): ResponseEntity<Any>
 
-    fun getManifest(projectId: String, repoName: String, dockerRepo: String, reference: String): ResponseEntity<Any>
+    fun getManifest(path: DockerBasicPath, reference: String): ResponseEntity<Any>
 
     fun deleteManifest(projectId: String, repoName: String, dockerRepo: String, reference: String): ResponseEntity<Any>
 

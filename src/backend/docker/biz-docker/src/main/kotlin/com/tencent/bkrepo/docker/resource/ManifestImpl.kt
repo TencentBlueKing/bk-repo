@@ -3,6 +3,7 @@ package com.tencent.bkrepo.docker.resource
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.api.Manifest
 import com.tencent.bkrepo.docker.constant.MANIFEST_PATTERN
+import com.tencent.bkrepo.docker.model.DockerBasicPath
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.PathUtil
 import com.tencent.bkrepo.docker.util.UserUtil
@@ -32,7 +33,7 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
     ): ResponseEntity<Any> {
         dockerRepo.userId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
-        return dockerRepo.uploadManifest(projectId, repoName, name, tag, contentType, artifactFile)
+        return dockerRepo.uploadManifest(DockerBasicPath(projectId, repoName, name), tag, contentType, artifactFile)
     }
 
     override fun getManifest(
@@ -44,7 +45,7 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
     ): ResponseEntity<Any> {
         dockerRepo.userId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
-        return dockerRepo.getManifest(projectId, repoName, name, reference)
+        return dockerRepo.getManifest(DockerBasicPath(projectId, repoName, name), reference)
     }
 
     override fun existManifest(
@@ -56,6 +57,6 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
     ): ResponseEntity<Any> {
         dockerRepo.userId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
-        return dockerRepo.getManifest(projectId, repoName, name, reference)
+        return dockerRepo.getManifest(DockerBasicPath(projectId, repoName, name), reference)
     }
 }
