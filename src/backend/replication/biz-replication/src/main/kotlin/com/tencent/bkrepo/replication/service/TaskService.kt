@@ -119,7 +119,7 @@ class TaskService @Autowired constructor(
                 val authToken = ReplicaJobContext.encodeAuthToken(username, password)
                 replicationService.ping(authToken)
             } catch (exception: Exception) {
-                logger.error("connect remote cluster[${remoteClusterInfo.url}] failed.", exception)
+                logger.error("Connect remote cluster[${remoteClusterInfo.url}] failed.", exception)
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, exception.message ?: UNKNOWN)
             }
         }
