@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.repository
+package com.tencent.bkrepo.repository.dao.repository
 
 import com.tencent.bkrepo.repository.model.TProject
 import org.springframework.data.mongodb.repository.MongoRepository
