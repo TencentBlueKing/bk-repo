@@ -31,6 +31,7 @@ class NodeReplicationService {
                 .addFormDataPart("overwrite", true.toString())
                 .addFormDataPart("sha256", nodeInfo.sha256!!)
                 .addFormDataPart("md5", nodeInfo.md5!!)
+                .addFormDataPart("userId", nodeInfo.createdBy)
             metadata?.forEach { key, value ->
                 builder.addFormDataPart("metadata[$key]", value)
             }
