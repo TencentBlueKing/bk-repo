@@ -183,7 +183,7 @@ class RepositoryService @Autowired constructor(
         private val logger = LoggerFactory.getLogger(RepositoryService::class.java)
         private val objectMapper = JsonUtils.objectMapper
 
-        private fun convert(tRepository: TRepository?): RepositoryInfo? {
+        fun convert(tRepository: TRepository?): RepositoryInfo? {
             return tRepository?.let {
                 RepositoryInfo(
                     name = it.name,

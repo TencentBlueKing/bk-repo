@@ -1,0 +1,3 @@
+dependencies {
+    api "org.springframework.cloud:spring-cloud-stream-binder-kafka"
+}

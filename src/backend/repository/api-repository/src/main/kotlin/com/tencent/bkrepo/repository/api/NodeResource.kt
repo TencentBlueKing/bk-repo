@@ -13,6 +13,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -116,7 +117,7 @@ interface NodeResource {
     @PostMapping
     fun create(
         @RequestBody nodeCreateRequest: NodeCreateRequest
-    ): Response<Void>
+    ): Response<NodeInfo>
 
     @ApiOperation("重命名节点")
     @PutMapping("/rename")
@@ -164,7 +165,19 @@ interface NodeResource {
         @RequestParam path: String
     ): Response<Long>
 
+    @ApiOperation("列表查询分享链接")
+    @GetMapping("/share/list")
+    fun listShareRecord(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "节点完整路径", required = true)
+        @RequestParam fullPath: String
+    ): Response<List<ShareRecordInfo>>
+
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
     fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any>>>
+
 }
