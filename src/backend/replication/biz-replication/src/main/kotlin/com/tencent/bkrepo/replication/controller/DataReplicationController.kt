@@ -33,6 +33,8 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.MediaType
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 
 @Principal(type = PrincipalType.ADMIN)
@@ -89,37 +91,6 @@ class DataReplicationController : DataReplicationService {
         }
     }
 
-    override fun replicaNode(token: String, fileMap: ArtifactFileMap, nodeReplicaRequest: NodeReplicaRequest): Response<NodeInfo> {
-        with(nodeReplicaRequest) {
-            val file = fileMap["file"]!!
-            // 校验
-            if (file.getSize() != size) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
-            }
-            if (sha256.isBlank()) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
-            }
-            // 保存文件
-            val repoInfo = repositoryResource.detail(projectId, repoName).data!!
-            storageService.store(sha256, file, repoInfo.storageCredentials)
-            // 保存节点
-            val request = NodeCreateRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                folder = false,
-                expires = expires,
-                overwrite = true,
-                size = size,
-                sha256 = sha256,
-                md5 = md5,
-                metadata = metadata,
-                operator = userId
-            )
-            return nodeResource.create(request)
-        }
-    }
-
     override fun replicaUser(token: String, userReplicaRequest: UserReplicaRequest): Response<User> {
         with(userReplicaRequest) {
             val userInfo = userResource.detail(userId).data ?: run {
@@ -167,6 +138,38 @@ class DataReplicationController : DataReplicationService {
 
     override fun listPermission(token: String, resourceType: ResourceType, projectId: String, repoName: String?): Response<List<Permission>> {
         return permissionResource.listPermission(resourceType, projectId, repoName)
+    }
+
+    @PostMapping("/node", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun replicaNode(token: String, fileMap: ArtifactFileMap, nodeReplicaRequest: NodeReplicaRequest): Response<NodeInfo> {
+        with(nodeReplicaRequest) {
+            val file = fileMap["file"]!!
+            // 校验
+            if (file.getSize() != size) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
+            }
+            if (sha256.isBlank()) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
+            }
+            // 保存文件
+            val repoInfo = repositoryResource.detail(projectId, repoName).data!!
+            storageService.store(sha256, file, repoInfo.storageCredentials)
+            // 保存节点
+            val request = NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                folder = false,
+                expires = expires,
+                overwrite = true,
+                size = size,
+                sha256 = sha256,
+                md5 = md5,
+                metadata = metadata,
+                operator = userId
+            )
+            return nodeResource.create(request)
+        }
     }
 
 }

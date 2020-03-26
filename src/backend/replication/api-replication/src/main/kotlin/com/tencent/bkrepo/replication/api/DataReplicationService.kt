@@ -6,19 +6,15 @@ import com.tencent.bkrepo.auth.pojo.Role
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.replication.constant.SERVICE_NAME
-import com.tencent.bkrepo.replication.pojo.request.NodeReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -56,13 +52,6 @@ interface DataReplicationService {
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
         @RequestBody repoCreateRequest: RepoCreateRequest
     ): Response<RepositoryInfo>
-
-    @PostMapping("/node", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun replicaNode(
-        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        fileMap: ArtifactFileMap,
-        nodeReplicaRequest: NodeReplicaRequest
-    ): Response<NodeInfo>
 
     @PostMapping("/user")
     fun replicaUser(
