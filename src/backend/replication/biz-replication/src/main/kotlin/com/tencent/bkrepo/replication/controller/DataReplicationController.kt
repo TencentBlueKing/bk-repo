@@ -19,6 +19,7 @@ import com.tencent.bkrepo.common.artifact.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.replication.api.DataReplicationService
+import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.pojo.request.NodeReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
@@ -63,7 +64,7 @@ class DataReplicationController : DataReplicationService {
     private lateinit var storageService: StorageService
 
     @Value("\${spring.application.version}")
-    private var version: String = ""
+    private var version: String = DEFAULT_VERSION
 
     override fun ping(token: String) = ResponseBuilder.success()
 
@@ -149,7 +150,7 @@ class DataReplicationController : DataReplicationService {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
             }
             if (sha256.isBlank()) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "sha256")
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "sha256")
             }
             // 保存文件
             val repoInfo = repositoryResource.detail(projectId, repoName).data!!
