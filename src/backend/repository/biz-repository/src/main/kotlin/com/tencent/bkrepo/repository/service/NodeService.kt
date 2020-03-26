@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -37,6 +38,7 @@ import com.tencent.bkrepo.repository.util.NodeUtils.isRootPath
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
@@ -57,7 +59,8 @@ class NodeService @Autowired constructor(
     private val repositoryService: RepositoryService,
     private val fileReferenceService: FileReferenceService,
     private val metadataService: MetadataService,
-    private val nodeDao: NodeDao
+    private val nodeDao: NodeDao,
+    private val publisher: ApplicationEventPublisher
 ) {
 
     /**
@@ -89,11 +92,11 @@ class NodeService @Autowired constructor(
 
         val aggregation = Aggregation.newAggregation(
                 Aggregation.match(criteria),
-                Aggregation.group().sum("size").`as`("size")
+                Aggregation.group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
         )
         val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
         val size = if (aggregateResult.mappedResults.size > 0) {
-            aggregateResult.mappedResults[0]["size"] as? Long ?: 0
+            aggregateResult.mappedResults[0][NodeSizeInfo::size.name] as? Long ?: 0
         } else 0
 
         return NodeSizeInfo(subNodeCount = count, size = size)
@@ -167,7 +170,7 @@ class NodeService @Autowired constructor(
      * 创建节点，返回id
      */
     @Transactional(rollbackFor = [Throwable::class])
-    fun create(createRequest: NodeCreateRequest) {
+    fun create(createRequest: NodeCreateRequest): NodeInfo {
         with(createRequest) {
             this.takeIf { folder || !sha256.isNullOrBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
             this.takeIf { folder || !md5.isNullOrBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::md5.name)
@@ -208,6 +211,9 @@ class NodeService @Autowired constructor(
             // 保存元数据
             metadata?.let { metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it)) }
             logger.info("Create node [$this] success.")
+            // 发送事件
+            publisher.publishEvent(NodeCreatedEvent(RepositoryService.convert(repo)!!, convert(node)!!))
+            return convert(node)!!
         }
     }
 
