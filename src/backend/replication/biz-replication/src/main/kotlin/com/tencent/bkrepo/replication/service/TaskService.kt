@@ -106,7 +106,7 @@ class TaskService @Autowired constructor(
     private fun validate(request: ReplicationTaskCreateRequest) {
         with(request) {
             if (!includeAllProject && localProjectId == null) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, request::includeAllProject.name)
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, request::localProjectId.name)
             }
             tryConnect(setting.remoteClusterInfo)
         }
