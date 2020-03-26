@@ -42,7 +42,6 @@ class NodeReplicationService {
             val response = httpClient.newCall(request).execute()
             if (!response.isSuccessful) {
                 val responseString = response.body()?.string() ?: UNKNOWN
-                logger.error("Failed replica node, response: $responseString")
                 throw RuntimeException("Failed replica node, response message: $responseString")
             }
         }

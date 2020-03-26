@@ -100,15 +100,15 @@ class FullReplicationJob : QuartzJobBean() {
 
     private fun prepare(context: ReplicaJobContext) {
         with(context) {
-            val detailProjectList = repoDataService.listProject(task.localProjectId).map {
+            projectDetailList = repoDataService.listProject(task.localProjectId).map {
                 convertReplicationProject(it, task.remoteProjectId, task.remoteRepoName)
             }
-            task.replicationProgress.totalProject = detailProjectList.size
-            this.projectDetailList.forEach { project ->
+            task.replicationProgress.totalProject = projectDetailList.size
+            projectDetailList.forEach { project ->
                 task.replicationProgress.totalRepo += project.repoDetailList.size
                 project.repoDetailList.forEach { repo -> task.replicationProgress.totalNode += repo.fileCount }
             }
-            context.projectDetailList = detailProjectList
+
         }
     }
 

@@ -32,7 +32,7 @@ class TaskService @Autowired constructor(
         tryConnect(remoteClusterInfo)
     }
 
-    fun create(userId: String, request: ReplicationTaskCreateRequest) {
+    fun create(userId: String, request: ReplicationTaskCreateRequest): ReplicationTaskInfo {
         with(request) {
             validate(this)
             val task = TReplicationTask(
@@ -56,8 +56,10 @@ class TaskService @Autowired constructor(
             if (type == ReplicationType.FULL) {
                 scheduleService.createJob(task)
             }
+            logger.info("Create replica task success.")
+            return convert(task)!!
         }
-        logger.info("Create replica task success.")
+
     }
 
 

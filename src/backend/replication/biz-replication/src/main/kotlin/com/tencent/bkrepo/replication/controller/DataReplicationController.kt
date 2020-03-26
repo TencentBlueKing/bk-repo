@@ -142,7 +142,7 @@ class DataReplicationController : DataReplicationService {
     }
 
     @PostMapping("/node", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun replicaNode(token: String, fileMap: ArtifactFileMap, nodeReplicaRequest: NodeReplicaRequest): Response<NodeInfo> {
+    fun replicaNode(fileMap: ArtifactFileMap, nodeReplicaRequest: NodeReplicaRequest): Response<NodeInfo> {
         with(nodeReplicaRequest) {
             val file = fileMap["file"]!!
             // 校验
