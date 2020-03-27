@@ -17,48 +17,41 @@ object JsonUtil {
         val jsonParser = JsonParser()
         val jsonStr = YamlUtil.yaml2Json(indexYamlFile)
         val urlList = urls.removePrefix("/").split("/").filter { it.isNotBlank() }
-        when (urlList.size) {
+        return when (urlList.size) {
             //Without name and version
             0 -> {
-                val result = jsonParser.parse(jsonStr).asJsonObject.getAsJsonObject(ENTRIES).toString()
+                val result = jsonParser.parse(jsonStr).asJsonObject
+                    .getAsJsonObject(ENTRIES)
+                    .toString()
                 //index.yaml content maybe null
-                if (StringUtils.equals(result, EMPTY_CHART_OR_VERSION)
-                ) {
-                    return CHART_NOT_FOUND
-                }
-                return result
-                }
+                if (StringUtils.equals(result, EMPTY_CHART_OR_VERSION))  CHART_NOT_FOUND else result
+            }
             //query with name
             1 -> {
-                val result: String
-                try {
-                    result = jsonParser.parse(jsonStr).asJsonObject.getAsJsonObject(ENTRIES).getAsJsonArray(urlList[0]).toString()
+                val result = try {
+                    jsonParser.parse(jsonStr).asJsonObject
+                        .getAsJsonObject(ENTRIES)
+                        .getAsJsonArray(urlList[0])
+                        .toString()
                 } catch (nullPointer: NullPointerException) {
-                    return CHART_NOT_FOUND
+                    CHART_NOT_FOUND
                 }
-                if (StringUtils.equals(result, EMPTY_NAME_OR_VERSION)) {
-                    return CHART_NOT_FOUND
-                }
-                return result
+                if(StringUtils.equals(result, EMPTY_NAME_OR_VERSION))  CHART_NOT_FOUND else result
             }
-            //query with name and verison
+            //query with name and version
             2 -> {
-                val result: String
-                try {
-                    result = jsonParser.parse(jsonStr).asJsonObject.getAsJsonObject(ENTRIES)
+                val result = try {
+                    jsonParser.parse(jsonStr).asJsonObject.getAsJsonObject(ENTRIES)
                         .getAsJsonArray(urlList[0])
                         .filter { it.toString().contains("version\":\"${urlList[1]}") }
                         .toString()
                 } catch (ie: IllegalStateException) {
-                    return NO_CHART_NAME_FOUND
+                    NO_CHART_NAME_FOUND
                 }
-                if(StringUtils.equals(result, EMPTY_NAME_OR_VERSION)){
-                    return String.format(CHART_VERSION_NOT_FOUND, urlList[0],urlList[1])
-                }
-                return result
+                if(StringUtils.equals(result, EMPTY_NAME_OR_VERSION)) String.format(CHART_VERSION_NOT_FOUND, urlList[0],urlList[1]) else result
             }
             else -> {
-                return ERROR_NOT_FOUND
+                ERROR_NOT_FOUND
             }
         }
     }

@@ -19,6 +19,13 @@ import java.time.format.DateTimeFormatter
 internal class YamlUtilTest{
 
     @Test
+    fun appendContent2Yaml() {
+        val file = File("/Users/weaving/Downloads/index.yaml")
+        val yaml = Yaml()
+        val map = mapOf<String, String>()
+    }
+
+    @Test
     fun yaml2Json() {
         val file = File("/Users/weaving/Downloads/index-null.yaml")
         val yaml = Yaml()
