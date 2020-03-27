@@ -15,4 +15,9 @@ class ChartRepositoryResourceImpl : ChartRepositoryResource {
     override fun getIndexYaml(artifactInfo: HelmArtifactInfo) {
         chartRepositoryService.getIndexYaml(artifactInfo)
     }
+
+    override fun installTgz(artifactInfo: HelmArtifactInfo) {
+        chartRepositoryService.installTgz(artifactInfo)
+    }
+
 }

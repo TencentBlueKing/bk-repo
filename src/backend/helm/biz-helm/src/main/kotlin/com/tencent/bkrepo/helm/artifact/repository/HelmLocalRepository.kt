@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.util.HttpResponseUtils
@@ -20,6 +21,7 @@ import org.apache.commons.fileupload.util.Streams
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.io.File
 import java.io.FileWriter
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -50,7 +52,7 @@ class HelmLocalRepository : LocalRepository() {
 		val repositoryInfo = context.repositoryInfo
 		val projectId = repositoryInfo.projectId
 		val repoName = repositoryInfo.name
-		val fullPath = getNodeFullPath(context)
+		val fullPath = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
 		val exist = nodeResource.exist(projectId, repoName, fullPath)
 		if (!exist.data!!) {
 			//新建index-cache.yaml文件
@@ -75,6 +77,7 @@ class HelmLocalRepository : LocalRepository() {
         val artifactFile = ArtifactFileFactory.build()
         Streams.copy(tempFile.inputStream(),artifactFile.getOutputStream(),true)
         val uploadContext = ArtifactUploadContext(artifactFile)
+		uploadContext.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         this.upload(uploadContext)
     }
 
@@ -108,12 +111,34 @@ class HelmLocalRepository : LocalRepository() {
 				size = artifactFile.getSize(),
 				sha256 = sha256,
 				md5 = md5,
-				operator = context.userId
+				operator = context.userId,
+				overwrite = true
 		)
 	}
 
 	override fun getNodeFullPath(context: ArtifactDownloadContext): String {
-		return "$FILE_SEPARATOR$INDEX_CACHE_YAML"
+		return context.contextAttributes[FULL_PATH] as String
+	}
+
+	override fun search(context: ArtifactSearchContext): File? {
+		val fullPath = context.contextAttributes[FULL_PATH] as String
+		return try {
+			this.onSearch(context) ?: throw ArtifactNotFoundException("Artifact[$fullPath] does not exist")
+		} catch (exception: Exception) {
+			logger.error(exception.message ?: "search error")
+			null
+		}
+	}
+
+	private fun onSearch(context: ArtifactSearchContext): File? {
+		val repositoryInfo = context.repositoryInfo
+		val projectId = repositoryInfo.projectId
+		val repoName = repositoryInfo.name
+		val fullPath = context.contextAttributes[FULL_PATH] as String
+		val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
+
+		node.nodeInfo.takeIf { !it.folder } ?: return null
+		return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials) ?: return null
 	}
 
 	companion object {

@@ -11,4 +11,8 @@ interface ChartRepositoryResource {
     @ApiOperation("get index.yaml")
     @GetMapping("/{projectId}/{repoName}/index.yaml")
     fun getIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo)
+
+    @ApiOperation("retrieved when you run helm install chartmuseum/mychart")
+    @GetMapping("/{projectId}/{repoName}/charts/*.tgz")
+    fun installTgz(@ArtifactPathVariable artifactInfo: HelmArtifactInfo)
 }

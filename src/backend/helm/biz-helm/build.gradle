@@ -3,4 +3,5 @@ dependencies {
     api project(":common:common-job")
     api project(":common:common-artifact:artifact-service")
     compile group: 'org.yaml', name: 'snakeyaml', version: '1.23'
+    compile group: 'org.apache.commons', name: 'commons-compress', version: '1.18'
 }

@@ -49,9 +49,9 @@ class TimeTest {
 //		val zonedDateTime2 = ZonedDateTime.now(ZoneId.of("Asia/Shanghai"));
 //		System.out.println("\n"+zonedDateTime2);
 
-		val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss+08:00")
-		val date = LocalDateTime.now().format(format)
-		print(date)
+//		val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss+08:00")
+//		val date = LocalDateTime.now().format(format)
+//		print(date)
 
 //		println(ofInstant)
 
