@@ -110,6 +110,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
             try {
                 val fileWriter = FileWriter(cacheHtmlFile)
                 fileWriter.write(htmlContent)
+                fileWriter.close()
             } catch (ioe: IOException) {
                 logger.error("The remote url : ${remoteConfiguration.url}  can not reach!")
             }

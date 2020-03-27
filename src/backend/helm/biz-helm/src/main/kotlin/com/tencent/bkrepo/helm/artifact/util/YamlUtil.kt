@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.helm.artifact.util
 
 import com.google.gson.Gson
-import com.tencent.bkrepo.helm.NOT_FOUND_MES
+import com.tencent.bkrepo.helm.CHART_NOT_FOUND
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.yaml.snakeyaml.Yaml
@@ -45,7 +45,21 @@ object YamlUtil {
         } catch (ioe: IOException) {
             logger.error(ioe.message)
         }
-        return NOT_FOUND_MES
+        return CHART_NOT_FOUND
+    }
+
+    fun searchYaml(file: File): String {
+        val yaml = Yaml()
+        var yamlContent = mutableMapOf<String, Object>()
+        try {
+            val fis = FileInputStream(file)
+            yamlContent = yaml.load(fis)
+            val entries = yamlContent["entries"] as Map<String, Object>
+            return entries.toString()
+        } catch (ioe: IOException) {
+            logger.error(ioe.message)
+        }
+        return CHART_NOT_FOUND
     }
 
     fun searchYaml(file: File, name: String): String {
@@ -55,15 +69,18 @@ object YamlUtil {
             val fis = FileInputStream(file)
             yamlContent = yaml.load(fis)
             val entries = yamlContent["entries"] as Map<String, Object>
-            try {
-                return entries[name].toString()
-            } catch (typeCastException: TypeCastException) {
-                logger.error("can not found node named : $name")
+            if (name.isNotBlank()) {
+                try {
+                    return entries[name].toString()
+                } catch (typeCastException: TypeCastException) {
+                    logger.error("can not found node named : $name")
+                }
             }
+            return entries.toString()
         } catch (ioe: IOException) {
             logger.error(ioe.message)
         }
-        return NOT_FOUND_MES
+        return CHART_NOT_FOUND
     }
 
     private val logger: Logger = LoggerFactory.getLogger(YamlUtil::class.java)
