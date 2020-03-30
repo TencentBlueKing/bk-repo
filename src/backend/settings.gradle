@@ -68,4 +68,9 @@ include ":pypi:api-pypi"
 include ":pypi:biz-pypi"
 include ":pypi:boot-pypi"
 
+include ":helm"
+include ":helm:api-helm"
+include ":helm:biz-helm"
+include ":helm:boot-helm"
 
+include ":boot-assembly"
