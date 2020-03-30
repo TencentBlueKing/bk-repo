@@ -182,7 +182,7 @@ class HelmLocalRepository : LocalRepository() {
             if (nodeDetail == null) {
                 response.status = HttpStatus.SC_NOT_FOUND
             } else {
-                response.status = HttpStatus.SC_NOT_FOUND
+                response.status = HttpStatus.SC_OK
             }
         }
     }
