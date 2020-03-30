@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.event
+package com.tencent.bkrepo.common.stream
 
 import org.springframework.context.annotation.Configuration
 

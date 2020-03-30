@@ -38,7 +38,7 @@ class PermissionService @Autowired constructor(
 
     fun checkPermission(userId: String, type: ResourceType, action: PermissionAction, projectId: String, repoName: String? = null) {
         if (preCheck()) return
-        if(type == ResourceType.PROJECT) {
+        if (type == ResourceType.PROJECT) {
             checkProjectPermission(userId, type, action, projectId)
         } else {
             val repositoryInfo = queryRepositoryInfo(projectId, repoName!!)
@@ -68,7 +68,7 @@ class PermissionService @Autowired constructor(
         return if (!authProperties.enabled) {
             logger.debug("Auth disabled, skip checking permission")
             true
-        } else if(isPlatformUser()) {
+        } else if (isPlatformUser()) {
             logger.debug("Platform user, skip checking permission")
             true
         } else {

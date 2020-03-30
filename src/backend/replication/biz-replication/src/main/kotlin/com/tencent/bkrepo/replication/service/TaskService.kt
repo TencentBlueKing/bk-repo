@@ -3,10 +3,10 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.replication.api.DataReplicationService
+import com.tencent.bkrepo.replication.api.ReplicationClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.constant.ReplicationMessageCode
-import com.tencent.bkrepo.replication.job.ReplicaJobContext
+import com.tencent.bkrepo.replication.job.ReplicationContext
 import com.tencent.bkrepo.replication.model.TReplicationTask
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
@@ -16,16 +16,19 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicationTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
 import com.tencent.bkrepo.replication.repository.TaskRepository
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class TaskService @Autowired constructor(
+class TaskService(
     private val taskRepository: TaskRepository,
-    private val scheduleService: ScheduleService
+    private val scheduleService: ScheduleService,
+    private val mongoTemplate: MongoTemplate
 ) {
 
     fun testConnect(remoteClusterInfo: RemoteClusterInfo) {
@@ -59,12 +62,22 @@ class TaskService @Autowired constructor(
             logger.info("Create replica task success.")
             return convert(task)!!
         }
-
     }
-
 
     fun detail(id: String): ReplicationTaskInfo? {
         return taskRepository.findByIdOrNull(id)?.let { convert(it) }
+    }
+
+    fun listRelativeTask(type: ReplicationType, localProjectId: String? = null, localRepoName: String? = null): List<TReplicationTask> {
+        val criteria = Criteria().orOperator(
+            Criteria.where(TReplicationTask::localProjectId.name).`is`(null),
+            Criteria.where(TReplicationTask::localProjectId.name).`is`(localProjectId)
+        ).orOperator(
+            Criteria.where(TReplicationTask::localRepoName.name).`is`(null),
+            Criteria.where(TReplicationTask::localRepoName.name).`is`(localRepoName)
+        ).and(TReplicationTask::type.name).`is`(type)
+
+        return mongoTemplate.find(Query(criteria), TReplicationTask::class.java)
     }
 
     fun list(): List<ReplicationTaskInfo> {
@@ -116,16 +129,15 @@ class TaskService @Autowired constructor(
 
     private fun tryConnect(remoteClusterInfo: RemoteClusterInfo) {
         with(remoteClusterInfo) {
-            val replicationService = FeignClientFactory.create(DataReplicationService::class.java, this)
+            val replicationService = FeignClientFactory.create(ReplicationClient::class.java, this)
             try {
-                val authToken = ReplicaJobContext.encodeAuthToken(username, password)
+                val authToken = ReplicationContext.encodeAuthToken(username, password)
                 replicationService.ping(authToken)
             } catch (exception: Exception) {
                 logger.error("Connect remote cluster[${remoteClusterInfo.url}] failed.", exception)
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, exception.message ?: UNKNOWN)
             }
         }
-
     }
 
     private fun convert(task: TReplicationTask?): ReplicationTaskInfo? {
@@ -153,7 +165,6 @@ class TaskService @Autowired constructor(
             )
         }
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(TaskService::class.java)

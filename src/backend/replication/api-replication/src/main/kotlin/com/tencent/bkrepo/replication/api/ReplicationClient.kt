@@ -7,11 +7,11 @@ import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.constant.SERVICE_NAME
+import com.tencent.bkrepo.replication.pojo.request.ProjectReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.RepoReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.http.HttpHeaders
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam
 
 @RequestMapping("/replica")
 @FeignClient(SERVICE_NAME, contextId = "ReplicationService")
-interface DataReplicationService {
+interface ReplicationClient {
 
     @GetMapping("/ping")
     fun ping(@RequestHeader(HttpHeaders.AUTHORIZATION) token: String): Response<Void>
@@ -44,13 +44,13 @@ interface DataReplicationService {
     @PostMapping("/project")
     fun replicaProject(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        @RequestBody projectCreateRequest: ProjectCreateRequest
+        @RequestBody replicaRequest: ProjectReplicaRequest
     ): Response<ProjectInfo>
 
     @PostMapping("/repo")
-    fun replicaRepo(
+    fun replicaRepository(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        @RequestBody repoCreateRequest: RepoCreateRequest
+        @RequestBody repoReplicaRequest: RepoReplicaRequest
     ): Response<RepositoryInfo>
 
     @PostMapping("/user")
@@ -85,5 +85,4 @@ interface DataReplicationService {
         @RequestParam projectId: String,
         @RequestParam repoName: String? = null
     ): Response<List<Permission>>
-
 }

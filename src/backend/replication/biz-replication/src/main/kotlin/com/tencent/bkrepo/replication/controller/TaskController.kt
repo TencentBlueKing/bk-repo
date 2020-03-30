@@ -62,5 +62,4 @@ class TaskController @Autowired constructor(
         taskService.delete(id)
         return ResponseBuilder.success()
     }
-
 }

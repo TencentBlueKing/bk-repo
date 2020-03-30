@@ -18,9 +18,11 @@ import com.tencent.bkrepo.common.artifact.permission.Principal
 import com.tencent.bkrepo.common.artifact.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.replication.api.DataReplicationService
+import com.tencent.bkrepo.replication.api.ReplicationClient
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.pojo.request.NodeReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.ProjectReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.RepoReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.repository.api.NodeResource
@@ -40,7 +42,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @Principal(type = PrincipalType.ADMIN)
 @RestController
-class DataReplicationController : DataReplicationService {
+class ReplicationController : ReplicationClient {
 
     @Autowired
     private lateinit var projectResource: ProjectResource
@@ -74,19 +76,35 @@ class DataReplicationController : DataReplicationService {
         return nodeResource.exist(projectId, repoName, fullPath)
     }
 
-    override fun replicaProject(token: String, projectCreateRequest: ProjectCreateRequest): Response<ProjectInfo> {
-        with(projectCreateRequest) {
+    override fun replicaProject(token: String, replicaRequest: ProjectReplicaRequest): Response<ProjectInfo> {
+        with(replicaRequest) {
             val projectInfo = projectResource.query(name).data ?: run {
-                projectResource.create(this).data!!
+                val createRequest = ProjectCreateRequest(
+                    name = name,
+                    displayName = displayName,
+                    description = description,
+                    operator = userId
+                )
+                projectResource.create(createRequest).data!!
             }
             return ResponseBuilder.success(projectInfo)
         }
     }
 
-    override fun replicaRepo(token: String, repoCreateRequest: RepoCreateRequest): Response<RepositoryInfo> {
-        with(repoCreateRequest) {
+    override fun replicaRepository(token: String, replicaRequest: RepoReplicaRequest): Response<RepositoryInfo> {
+        with(replicaRequest) {
             val repositoryInfo = repositoryResource.detail(projectId, name).data ?: run {
-                repositoryResource.create(this).data!!
+                val createRequest = RepoCreateRequest(
+                    name = name,
+                    projectId = projectId,
+                    type = type,
+                    category = category,
+                    public = public,
+                    description = description,
+                    configuration = configuration,
+                    operator = userId
+                )
+                repositoryResource.create(createRequest).data!!
             }
             return ResponseBuilder.success(repositoryInfo)
         }
@@ -152,6 +170,9 @@ class DataReplicationController : DataReplicationService {
             if (sha256.isBlank()) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "sha256")
             }
+            if (md5.isBlank()) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "md5")
+            }
             // 保存文件
             val repoInfo = repositoryResource.detail(projectId, repoName).data!!
             storageService.store(sha256, file, repoInfo.storageCredentials)
@@ -172,5 +193,4 @@ class DataReplicationController : DataReplicationService {
             return nodeResource.create(request)
         }
     }
-
 }

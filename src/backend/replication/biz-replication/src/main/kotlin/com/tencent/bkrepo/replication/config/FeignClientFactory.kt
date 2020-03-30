@@ -37,7 +37,6 @@ object FeignClientFactory {
         } ?: defaultClient
     }
 
-
     private val builder = SpringContextUtils.getBean(Feign.Builder::class.java)
     private val loggerFactory = SpringContextUtils.getBean(FeignLoggerFactory::class.java)
     private val encoder = SpringContextUtils.getBean(Encoder::class.java)

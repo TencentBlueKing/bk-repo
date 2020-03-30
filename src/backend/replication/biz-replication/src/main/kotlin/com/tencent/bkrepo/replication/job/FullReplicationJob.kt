@@ -6,23 +6,25 @@ import com.tencent.bkrepo.auth.pojo.PermissionSet
 import com.tencent.bkrepo.auth.pojo.Role
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.constant.TASK_ID_KEY
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
+import com.tencent.bkrepo.replication.pojo.request.ActionType
+import com.tencent.bkrepo.replication.pojo.request.NodeReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.ProjectReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.RepoReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.replication.pojo.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.repository.TaskRepository
-import com.tencent.bkrepo.replication.service.NodeReplicationService
+import com.tencent.bkrepo.replication.service.ReplicationService
 import com.tencent.bkrepo.replication.service.RepoDataService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.quartz.DisallowConcurrentExecution
 import org.quartz.JobExecutionContext
@@ -46,7 +48,7 @@ class FullReplicationJob : QuartzJobBean() {
     private lateinit var repoDataService: RepoDataService
 
     @Autowired
-    private lateinit var nodeReplicationService: NodeReplicationService
+    private lateinit var replicationService: ReplicationService
 
     @Value("\${spring.application.version}")
     private var version: String = DEFAULT_VERSION
@@ -61,7 +63,7 @@ class FullReplicationJob : QuartzJobBean() {
 
         try {
             with(task.setting) {
-                val replicaContext = ReplicaJobContext(task)
+                val replicaContext = ReplicationContext(task)
                 // 更新状态
                 task.status = ReplicationStatus.REPLICATING
                 task.startTime = LocalDateTime.now()
@@ -89,16 +91,16 @@ class FullReplicationJob : QuartzJobBean() {
         }
     }
 
-    private fun checkVersion(context: ReplicaJobContext) {
+    private fun checkVersion(context: ReplicationContext) {
         with(context) {
-            val remoteVersion = dataReplicationService.version(authToken).data!!
+            val remoteVersion = replicationClient.version(authToken).data!!
             if (version != remoteVersion) {
                 logger.warn("The local cluster's version[$version] is different from remote cluster's version[$remoteVersion]")
             }
         }
     }
 
-    private fun prepare(context: ReplicaJobContext) {
+    private fun prepare(context: ReplicationContext) {
         with(context) {
             projectDetailList = repoDataService.listProject(task.localProjectId).map {
                 convertReplicationProject(it, task.remoteProjectId, task.remoteRepoName)
@@ -108,14 +110,14 @@ class FullReplicationJob : QuartzJobBean() {
                 task.replicationProgress.totalRepo += project.repoDetailList.size
                 project.repoDetailList.forEach { repo -> task.replicationProgress.totalNode += repo.fileCount }
             }
-
         }
     }
 
-    private fun replica(context: ReplicaJobContext) {
+    private fun replica(context: ReplicationContext) {
         context.projectDetailList.forEach {
             try {
                 context.currentProjectDetail = it
+                context.remoteProjectId = it.remoteProjectId
                 replicaProject(context)
                 context.task.replicationProgress.successProject += 1
             } catch (exception: Exception) {
@@ -128,16 +130,23 @@ class FullReplicationJob : QuartzJobBean() {
         }
     }
 
-    private fun replicaProject(context: ReplicaJobContext) {
+    private fun replicaProject(context: ReplicationContext) {
         with(context.currentProjectDetail) {
                 // 创建项目
-                createProject(context)
+                val replicaRequest = ProjectReplicaRequest(
+                    name = remoteProjectId,
+                    displayName = localProjectInfo.displayName,
+                    description = localProjectInfo.description,
+                    actionType = ActionType.CREATE_OR_UPDATE
+                )
+                replicationService.replicaProject(context, replicaRequest)
                 // 同步权限
                 replicaUserAndPermission(context)
                 // 同步仓库
                 this.repoDetailList.forEach {
                     try {
                         context.currentRepoDetail = it
+                        context.remoteRepoName = it.remoteRepoName
                         replicaRepo(context)
                         context.task.replicationProgress.successRepo += 1
                     } catch (exception: Exception) {
@@ -151,31 +160,36 @@ class FullReplicationJob : QuartzJobBean() {
         }
     }
 
-    private fun replicaRepo(context: ReplicaJobContext) {
+    private fun replicaRepo(context: ReplicationContext) {
         with(context.currentRepoDetail) {
             // 创建仓库
-            createRepo(context)
+            val replicaRequest = RepoReplicaRequest(
+                projectId = context.remoteProjectId,
+                name = context.remoteRepoName,
+                type = localRepoInfo.type,
+                category = localRepoInfo.category,
+                public = localRepoInfo.public,
+                description = localRepoInfo.description,
+                configuration = localRepoInfo.configuration
+            )
+            replicationService.replicaRepository(context, replicaRequest)
             // 同步权限
             replicaUserAndPermission(context, true)
             // 同步节点
             var page = 0
-            var fileNodeList = repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, "/", page, pageSize)
+            var fileNodeList = repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, ROOT, page, pageSize)
             while (fileNodeList.isNotEmpty()) {
-                fileNodeList.forEach {
-                    replicaNode(it, context)
-                }
+                fileNodeList.forEach { replicaNode(it, context) }
                 page += 1
-                fileNodeList = repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, "/", page, pageSize)
+                fileNodeList = repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, ROOT, page, pageSize)
             }
         }
     }
 
-    private fun replicaNode(node: NodeInfo, context: ReplicaJobContext) {
+    private fun replicaNode(node: NodeInfo, context: ReplicationContext) {
         with(context) {
-            val remoteProjectId = context.currentProjectDetail.remoteProjectId
-            val remoteRepoName = context.currentRepoDetail.remoteRepoName
             // 节点冲突检查
-            if (dataReplicationService.checkNodeExist(authToken, remoteProjectId, remoteRepoName, node.fullPath).data == true) {
+            if (replicationClient.checkNodeExist(authToken, remoteProjectId, remoteRepoName, node.fullPath).data == true) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> {
                         logger.warn("Node[$node] conflict, skip it.")
@@ -193,11 +207,18 @@ class FullReplicationJob : QuartzJobBean() {
                 // 查询元数据
                 val metadata = if (task.setting.includeMetadata) {
                     repoDataService.getMetadata(node)
-                } else null
-                // 查询文件
-                val file = repoDataService.getFile(node, currentRepoDetail.localRepoInfo)
+                } else emptyMap()
                 // 同步节点
-                nodeReplicationService.replicaNode(context, file, node, metadata)
+                val replicaRequest = NodeReplicaRequest(
+                    projectId = remoteProjectId,
+                    repoName = remoteRepoName,
+                    fullPath = node.fullPath,
+                    size = node.size,
+                    sha256 = node.sha256!!,
+                    md5 = node.md5!!,
+                    metadata = metadata
+                )
+                replicationService.replicaNode(context, replicaRequest)
                 task.replicationProgress.successNode += 1
             } catch (exception: Exception) {
                 logger.error("Replica node[$node] failed.", exception)
@@ -211,13 +232,13 @@ class FullReplicationJob : QuartzJobBean() {
         }
     }
 
-    private fun replicaUserAndPermission(context: ReplicaJobContext, isRepo: Boolean = false) {
+    private fun replicaUserAndPermission(context: ReplicationContext, isRepo: Boolean = false) {
         with(context) {
             if (task.setting.includePermission) {
                 return
             }
-            val remoteProjectId = currentProjectDetail.remoteProjectId
-            val remoteRepoName = if (isRepo) currentRepoDetail.remoteRepoName else null
+            val remoteProjectId = remoteProjectId
+            val remoteRepoName = if (isRepo) remoteRepoName else null
             val localProjectId = currentProjectDetail.localProjectInfo.name
             val localRepoName = if (isRepo) currentRepoDetail.localRepoInfo.name else null
 
@@ -246,7 +267,7 @@ class FullReplicationJob : QuartzJobBean() {
             // 同步权限数据
             val resourceType = if (isRepo) ResourceType.REPO else ResourceType.PROJECT
             val localPermissionList = repoDataService.listPermission(resourceType, remoteProjectId, remoteRepoName)
-            val remotePermissionList = dataReplicationService.listPermission(authToken, resourceType, localProjectId, localRepoName).data!!
+            val remotePermissionList = replicationClient.listPermission(authToken, resourceType, localProjectId, localRepoName).data!!
 
             localPermissionList.forEach { permission ->
                 // 过滤已存在的权限
@@ -263,34 +284,7 @@ class FullReplicationJob : QuartzJobBean() {
         }
     }
 
-    private fun createProject(context: ReplicaJobContext) {
-        with(context) {
-            val request = ProjectCreateRequest(
-                name = currentProjectDetail.remoteProjectId,
-                displayName = currentProjectDetail.localProjectInfo.displayName,
-                description = currentProjectDetail.localProjectInfo.description
-            )
-            dataReplicationService.replicaProject(authToken, request)
-        }
-    }
-
-    private fun createRepo(context: ReplicaJobContext) {
-        with(context) {
-            val request = RepoCreateRequest(
-                projectId = currentProjectDetail.remoteProjectId,
-                name = currentRepoDetail.remoteRepoName,
-                type = currentRepoDetail.localRepoInfo.type,
-                category = currentRepoDetail.localRepoInfo.category,
-                public = currentRepoDetail.localRepoInfo.public,
-                description = currentRepoDetail.localRepoInfo.description,
-                // 不同步仓库配置
-                configuration = LocalConfiguration()
-            )
-            dataReplicationService.replicaRepo(authToken, request)
-        }
-    }
-
-    private fun createUser(context: ReplicaJobContext, user: User) {
+    private fun createUser(context: ReplicationContext, user: User) {
         with(context) {
             val request = UserReplicaRequest(
                 userId = user.userId,
@@ -299,18 +293,18 @@ class FullReplicationJob : QuartzJobBean() {
                 admin = user.admin,
                 tokens = user.tokens
             )
-            dataReplicationService.replicaUser(authToken, request).data!!
+            replicationClient.replicaUser(authToken, request).data!!
         }
     }
 
-    private fun createUser(context: ReplicaJobContext, uid: String) {
+    private fun createUser(context: ReplicationContext, uid: String) {
         with(context) {
             val userInfo = repoDataService.getUserDetail(uid)!!
             createUser(this, userInfo)
         }
     }
 
-    private fun createRole(context: ReplicaJobContext, role: Role, projectId: String, repoName: String? = null): String {
+    private fun createRole(context: ReplicationContext, role: Role, projectId: String, repoName: String? = null): String {
         with(context) {
             val request = RoleReplicaRequest(
                 roleId = role.roleId,
@@ -320,17 +314,17 @@ class FullReplicationJob : QuartzJobBean() {
                 repoName = repoName,
                 admin = role.admin
             )
-            return dataReplicationService.replicaRole(authToken, request).data!!.roleId
+            return replicationClient.replicaRole(authToken, request).data!!.roleId
         }
     }
 
-    private fun createUserRoleRelationShip(context: ReplicaJobContext, remoteRoleId: String, userIdList: List<String>) {
+    private fun createUserRoleRelationShip(context: ReplicationContext, remoteRoleId: String, userIdList: List<String>) {
         with(context) {
-            dataReplicationService.replicaUserRoleRelationShip(authToken, remoteRoleId, userIdList)
+            replicationClient.replicaUserRoleRelationShip(authToken, remoteRoleId, userIdList)
         }
     }
 
-    private fun createPermission(context: ReplicaJobContext, permission: Permission, roleIdMap: Map<String, String>) {
+    private fun createPermission(context: ReplicationContext, permission: Permission, roleIdMap: Map<String, String>) {
         with(context) {
             // 查询角色对应id
             val roles = permission.roles.map {
@@ -349,7 +343,7 @@ class FullReplicationJob : QuartzJobBean() {
                 createBy = SYSTEM_USER,
                 updatedBy = SYSTEM_USER
             )
-            dataReplicationService.replicaPermission(authToken, request)
+            replicationClient.replicaPermission(authToken, request)
         }
     }
 

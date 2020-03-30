@@ -6,12 +6,8 @@ import com.netflix.loadbalancer.CompositePredicate
 import com.netflix.loadbalancer.PredicateBasedRule
 import com.netflix.loadbalancer.Server
 import com.netflix.loadbalancer.ZoneAvoidancePredicate
-import com.tencent.bkrepo.common.service.util.NetUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cloud.commons.util.InetUtils
-import org.springframework.cloud.consul.discovery.ConsulServer
-import java.net.InetAddress
 
 /**
  * 优先调用本机服务
@@ -27,7 +23,6 @@ class LocalPriorRouteRule : PredicateBasedRule() {
         val zonePredicate = ZoneAvoidancePredicate(this, null)
         val availabilityPredicate = AvailabilityPredicate(this, null)
         predicate = createCompositePredicate(zonePredicate, availabilityPredicate)
-
     }
 
     override fun getPredicate() = predicate

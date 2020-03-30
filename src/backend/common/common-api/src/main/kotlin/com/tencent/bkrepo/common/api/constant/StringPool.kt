@@ -14,5 +14,4 @@ object StringPool {
     const val MEDIA_TYPE_HTML = "text/html; charset=UTF-8"
 
     const val ROOT = SLASH
-
 }

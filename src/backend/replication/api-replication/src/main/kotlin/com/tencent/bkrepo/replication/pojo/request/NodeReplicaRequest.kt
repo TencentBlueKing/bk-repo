@@ -11,5 +11,6 @@ data class NodeReplicaRequest(
     val sha256: String,
     val md5: String,
     val metadata: Map<String, String> = mutableMapOf(),
-    val userId: String = SYSTEM_USER
-)
+    override val actionType: ActionType = ActionType.CREATE,
+    override val userId: String = SYSTEM_USER
+) : ReplicaRequest(actionType, userId)
