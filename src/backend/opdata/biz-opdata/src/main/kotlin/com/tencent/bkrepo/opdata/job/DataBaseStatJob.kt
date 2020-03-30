@@ -2,8 +2,8 @@ package com.tencent.bkrepo.opdata.job
 
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.config.InfluxDbConfig
-import com.tencent.bkrepo.opdata.model.NodeInfo
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.influxdb.dto.BatchPoints
 import org.influxdb.dto.Point
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -22,12 +22,16 @@ class DataBaseStatJob {
     @Autowired
     private lateinit var influxDbConfig: InfluxDbConfig
 
-    @Scheduled(cron = "*/2 * * * * ?")
+    @Scheduled(cron = "00 */2 * * * ?")
     @SchedulerLock(name = "DataBaseStatJob", lockAtMostFor = "PT1H")
     fun statDatabaseInfo() {
+        val inluxdDb = influxDbConfig.influxDbUtils().influxDB
+        val batchPoints = BatchPoints
+            .database("bkrepo")
+            .build()
+        val timeMillis = System.currentTimeMillis()
         for (i in 0..255) {
             val table = "node_" + i.toString()
-
             val query = Query(Criteria.where("folder").`is`(false))
             val result = mongoTemplate.find(query, MutableMap::class.java, table)
             var tableSize = 0L
@@ -37,14 +41,16 @@ class DataBaseStatJob {
                 tableSize += size
                 nodeNum++
             }
+
             val point = Point.measurement("nodeInfo")
-                .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-                .addField("size", tableSize)
+                .time(timeMillis, TimeUnit.MILLISECONDS)
+                .addField("size", tableSize / (1024 * 1024))
                 .addField("num", nodeNum)
-                .addField("table", table)
-                .build();
-            influxDbConfig.influxDbUtils().influxDB.write(point)
+                .tag("table", table)
+                .build()
+            batchPoints.point(point)
         }
+        inluxdDb.write(batchPoints)
     }
 
     companion object {
