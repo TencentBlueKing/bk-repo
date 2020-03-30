@@ -1,28 +1,55 @@
 package com.tencent.bkrepo.replication.job
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
-import com.tencent.bkrepo.replication.api.ReplicaResource
-import com.tencent.bkrepo.replication.model.TReplicaTask
+import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
+import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
+import com.tencent.bkrepo.replication.api.DataReplicationService
+import com.tencent.bkrepo.replication.config.FeignClientFactory
+import com.tencent.bkrepo.replication.model.TReplicationTask
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
+import okhttp3.OkHttpClient
 import org.springframework.util.Base64Utils
 
-class ReplicaJobContext(val task: TReplicaTask, val replicaResource: ReplicaResource) {
+class ReplicaJobContext(val task: TReplicationTask) {
     val authToken: String
-    lateinit var detailList: MutableList<ReplicationProjectDetail>
-    lateinit var projectDetail: ReplicationProjectDetail
-    lateinit var repoDetail: ReplicationRepoDetail
-    lateinit var remoteProject: ProjectInfo
-    lateinit var remoteRepo: RepositoryInfo
-    lateinit var selfProject: ProjectInfo
-    lateinit var selfRepo: RepositoryInfo
+    val normalizedUrl: String
+    val dataReplicationService: DataReplicationService
+    val httpClient: OkHttpClient
+    lateinit var projectDetailList: List<ReplicationProjectDetail>
+    lateinit var currentProjectDetail: ReplicationProjectDetail
+    lateinit var currentRepoDetail: ReplicationRepoDetail
+
     init {
         with(task.setting.remoteClusterInfo) {
-            val byteArray = ("$username:$password").toByteArray(Charsets.UTF_8)
+            authToken = encodeAuthToken(username, password)
+            dataReplicationService = FeignClientFactory.create(DataReplicationService::class.java, this)
+            httpClient = HttpClientBuilderFactory.create(certificate).addInterceptor(
+                BasicAuthInterceptor(username, password)
+            ).build()
+            normalizedUrl = normalizeUrl(this)
+        }
+    }
+
+
+    companion object {
+        fun encodeAuthToken(username: String, password: String): String {
+            val byteArray = ("$username$COLON$password").toByteArray(Charsets.UTF_8)
             val encodedValue = Base64Utils.encodeToString(byteArray)
-            authToken = "$BASIC_AUTH_HEADER_PREFIX $encodedValue"
+            return "$BASIC_AUTH_HEADER_PREFIX $encodedValue"
+        }
+
+        fun normalizeUrl(remoteClusterInfo: RemoteClusterInfo): String {
+            val normalizedUrl = remoteClusterInfo.url
+                .trim()
+                .trimEnd(StringPool.SLASH[0])
+                .removePrefix(StringPool.HTTP)
+                .removePrefix(StringPool.HTTPS)
+            val prefix = if (remoteClusterInfo.certificate == null) StringPool.HTTP else StringPool.HTTPS
+            return "$prefix$normalizedUrl"
         }
     }
 }

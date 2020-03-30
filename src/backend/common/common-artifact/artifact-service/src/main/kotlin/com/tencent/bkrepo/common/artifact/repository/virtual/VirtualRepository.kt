@@ -2,7 +2,7 @@ package com.tencent.bkrepo.common.artifact.repository.virtual
 
 import com.tencent.bkrepo.common.artifact.config.TRAVERSED_LIST
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
-import com.tencent.bkrepo.common.artifact.pojo.configuration.VirtualConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
