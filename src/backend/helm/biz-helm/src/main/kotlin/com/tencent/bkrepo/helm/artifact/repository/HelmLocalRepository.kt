@@ -153,6 +153,29 @@ class HelmLocalRepository : LocalRepository() {
 		nodeResource.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
 	}
 
+	fun searchJson(context: ArtifactSearchContext): String {
+		val artifactInfo = context.artifactInfo
+		val fullPath = INDEX_CACHE_YAML
+		with(artifactInfo) {
+			val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return CHART_NOT_FOUND
+			val indexYamlFile = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials) ?: return CHART_NOT_FOUND
+			return JsonUtil.searchJson(indexYamlFile, artifactUri)
+		}
+	}
+
+	fun isExists(context: ArtifactSearchContext) {
+		val artifactInfo =  context.artifactInfo
+		val response = HttpContextHolder.getResponse()
+		with(artifactInfo) {
+			val nodeDetail = nodeResource.detail(projectId, repoName, artifactUri).data
+			if (nodeDetail == null) {
+				response.status = 404
+			} else {
+				response.status = 200
+			}
+		}
+	}
+
 	companion object {
 		val logger: Logger = LoggerFactory.getLogger(HelmLocalRepository::class.java)
 	}
