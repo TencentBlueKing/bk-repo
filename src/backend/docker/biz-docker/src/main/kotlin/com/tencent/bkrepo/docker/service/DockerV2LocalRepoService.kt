@@ -284,13 +284,11 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             .sha256(digest.getDigestHex())
         var file = this.repo.download(context)
         val inputStreamResource = InputStreamResource(file.inputStream())
+        val contentType = DockerSchemaUtils.getManifestType(path.projectId, path.repoName, path.dockerRepo, this.repo)
         httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
         httpHeaders.set("Docker-Content-Digest", digest.toString())
-        httpHeaders.set(
-            "Content-Type",
-            DockerSchemaUtils.getManifestType(path.projectId, path.repoName, path.dockerRepo, this.repo)
-        )
-        logger.info("file result length {}", file.length())
+        httpHeaders.set("Content-Type", contentType)
+        logger.info("file result length {}， type {}", file.length(), contentType)
         return ResponseEntity.ok()
             .headers(httpHeaders)
             .contentLength(file.length())
