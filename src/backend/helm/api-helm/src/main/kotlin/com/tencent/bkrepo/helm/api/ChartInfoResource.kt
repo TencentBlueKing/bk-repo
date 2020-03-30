@@ -18,7 +18,7 @@ interface ChartInfoResource {
         artifactInfo: HelmArtifactInfo
     )
 
-    @RequestMapping(HelmArtifactInfo.CHARTS_LIST , method = [RequestMethod.HEAD])
+    @RequestMapping(HelmArtifactInfo.CHARTS_LIST, method = [RequestMethod.HEAD])
     fun exists(
         @ArtifactPathVariable
         artifactInfo: HelmArtifactInfo

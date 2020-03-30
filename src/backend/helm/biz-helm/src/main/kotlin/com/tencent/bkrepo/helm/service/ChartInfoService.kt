@@ -24,5 +24,4 @@ class ChartInfoService {
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         (repository as HelmLocalRepository).isExists(context)
     }
-
 }

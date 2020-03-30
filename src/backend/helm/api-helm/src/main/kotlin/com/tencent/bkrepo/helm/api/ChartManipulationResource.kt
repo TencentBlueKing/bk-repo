@@ -14,5 +14,5 @@ interface ChartManipulationResource {
     @ApiOperation("helm push")
     @PostMapping("/api/{projectId}/{repoName}/charts")
     @ResponseStatus(HttpStatus.CREATED)
-    fun upload(@ArtifactPathVariable artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String,Any>
+    fun upload(@ArtifactPathVariable artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String, Any>
 }

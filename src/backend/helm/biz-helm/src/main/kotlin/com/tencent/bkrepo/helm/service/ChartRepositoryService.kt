@@ -15,21 +15,21 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class ChartRepositoryService {
 
-	@Permission(ResourceType.REPO, PermissionAction.READ)
-	@Transactional(rollbackFor = [Throwable::class])
-	fun getIndexYaml(artifactInfo: HelmArtifactInfo) {
-		val context = ArtifactDownloadContext()
-		val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-		context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-		repository.download(context)
-	}
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Transactional(rollbackFor = [Throwable::class])
+    fun getIndexYaml(artifactInfo: HelmArtifactInfo) {
+        val context = ArtifactDownloadContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
+        repository.download(context)
+    }
 
-	@Permission(ResourceType.REPO, PermissionAction.READ)
-	@Transactional(rollbackFor = [Throwable::class])
-	fun installTgz(artifactInfo: HelmArtifactInfo) {
-		val context = ArtifactDownloadContext()
-		val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-		context.contextAttributes[FULL_PATH] = artifactInfo.artifactUri
-		repository.download(context)
-	}
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Transactional(rollbackFor = [Throwable::class])
+    fun installTgz(artifactInfo: HelmArtifactInfo) {
+        val context = ArtifactDownloadContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        context.contextAttributes[FULL_PATH] = artifactInfo.artifactUri
+        repository.download(context)
+    }
 }
