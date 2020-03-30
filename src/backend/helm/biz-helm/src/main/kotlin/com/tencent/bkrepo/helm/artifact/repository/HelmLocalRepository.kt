@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -16,6 +17,7 @@ import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.constants.INIT_STR
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
 import org.apache.commons.fileupload.util.Streams
 import org.slf4j.Logger
@@ -48,38 +50,38 @@ class HelmLocalRepository : LocalRepository() {
 	}
 
 	override fun onBeforeDownload(context: ArtifactDownloadContext) {
-		//检查index-cache.yaml文件是否存在，如果不存在则说明是添加仓库
+		// 检查index-cache.yaml文件是否存在，如果不存在则说明是添加仓库
 		val repositoryInfo = context.repositoryInfo
 		val projectId = repositoryInfo.projectId
 		val repoName = repositoryInfo.name
 		val fullPath = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
 		val exist = nodeResource.exist(projectId, repoName, fullPath)
 		if (!exist.data!!) {
-			//新建index-cache.yaml文件
+			// 新建index-cache.yaml文件
 			createIndexCacheYamlFile()
 		}
 	}
 
-	//创建cache-index.yaml文件并初始化
+	// 创建cache-index.yaml文件并初始化
 	private fun createIndexCacheYamlFile() {
 		val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss+08:00")
 		val initStr = String.format(INIT_STR, LocalDateTime.now().format(format))
 		val tempFile = createTempFile("index-cache", ".yaml")
 		val fw = FileWriter(tempFile)
 		try {
-            fw.write(initStr)
+			fw.write(initStr)
 		} finally {
-			//关闭临时文件
+			// 关闭临时文件
 			fw.flush()
 			fw.close()
 			tempFile.deleteOnExit()
 		}
-        val artifactFile = ArtifactFileFactory.build()
-        Streams.copy(tempFile.inputStream(),artifactFile.getOutputStream(),true)
-        val uploadContext = ArtifactUploadContext(artifactFile)
+		val artifactFile = ArtifactFileFactory.build()
+		Streams.copy(tempFile.inputStream(), artifactFile.getOutputStream(), true)
+		val uploadContext = ArtifactUploadContext(artifactFile)
 		uploadContext.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-        this.upload(uploadContext)
-    }
+		this.upload(uploadContext)
+	}
 
 	override fun onUploadValidate(context: ArtifactUploadContext) {
 		super.onUploadValidate(context)
@@ -93,7 +95,8 @@ class HelmLocalRepository : LocalRepository() {
 
 	override fun onUpload(context: ArtifactUploadContext) {
 		val nodeCreateRequest = getNodeCreateRequest(context)
-		storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile("chart") ?: context.getArtifactFile(), context.storageCredentials)
+		storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile("chart")
+				?: context.getArtifactFile(), context.storageCredentials)
 		nodeResource.create(nodeCreateRequest)
 	}
 
@@ -102,17 +105,17 @@ class HelmLocalRepository : LocalRepository() {
 		val artifactFile = context.getArtifactFile("chart") ?: context.getArtifactFile()
 		val sha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
 		val md5 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] as String
-
+		val fullPath = context.contextAttributes[FULL_PATH] as String
 		return NodeCreateRequest(
 				projectId = repositoryInfo.projectId,
 				repoName = repositoryInfo.name,
 				folder = false,
-				fullPath = context.contextAttributes[FULL_PATH] as String,
+				fullPath = fullPath,
 				size = artifactFile.getSize(),
 				sha256 = sha256,
 				md5 = md5,
 				operator = context.userId,
-				overwrite = true
+				overwrite = !fullPath.trim().endsWith(".tgz", true)
 		)
 	}
 
@@ -139,6 +142,15 @@ class HelmLocalRepository : LocalRepository() {
 
 		node.nodeInfo.takeIf { !it.folder } ?: return null
 		return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials) ?: return null
+	}
+
+	override fun remove(context: ArtifactRemoveContext) {
+		val repositoryInfo = context.repositoryInfo
+		val projectId = repositoryInfo.projectId
+		val repoName = repositoryInfo.name
+		val fullPath = context.contextAttributes[FULL_PATH] as String
+		val userId = context.userId
+		nodeResource.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
 	}
 
 	companion object {

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping
 
 @Api("chart 相关操作API")
 interface ChartManipulationResource {
-	@ApiOperation("helm push")
-	@PostMapping("/api/{projectId}/{repoName}/charts")
-	fun upload(@ArtifactPathVariable artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String, Boolean>
+    @ApiOperation("helm push")
+    @PostMapping("/api/{projectId}/{repoName}/charts")
+    fun upload(@ArtifactPathVariable artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String, Boolean>
 }

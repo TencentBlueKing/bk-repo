@@ -1,7 +1,10 @@
 package com.tencent.bkrepo.helm
 
+import com.tencent.bkrepo.helm.constants.INIT_STR
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
@@ -25,7 +28,7 @@ class TimeTest {
 	}
 
 	@Test
-	fun test(){
+	fun test() {
 //		dealDateFormat("2020-03-25T17:35:10+08:00")
 //		print(dealDateFormat("2020-03-25T10:53:21.594Z"))
 //		val date = LocalDateTime.parse("2017-02-03T12:30:30")
@@ -54,6 +57,20 @@ class TimeTest {
 //		print(date)
 
 //		println(ofInstant)
+
+//		val format = LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSSSSSSS"))
+//		System.err.println(format)
+		val of = ZonedDateTime.of(LocalDateTime.now(), ZoneId.systemDefault())
+		val format1 = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS+08:00").format(of)
+		System.err.println(format1)
+		System.err.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS+08:00")))
+
+		val format2 = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss+08:00")
+		val of1 = ZonedDateTime.of(LocalDateTime.now(), ZoneId.systemDefault())
+		val initStr = String.format(INIT_STR, format2.format(of1))
+		System.err.println(initStr)
+
+		System.err.println(String.format(INIT_STR, LocalDateTime.now().format(format2)))
 
 	}
 }

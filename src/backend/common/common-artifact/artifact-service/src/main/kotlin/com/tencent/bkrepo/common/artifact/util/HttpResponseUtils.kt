@@ -1,9 +1,7 @@
 package com.tencent.bkrepo.common.artifact.util
 
 import com.google.common.io.ByteStreams
-import com.tencent.bkrepo.common.artifact.config.BYTES
-import com.tencent.bkrepo.common.artifact.config.CONTENT_DISPOSITION_TEMPLATE
-import com.tencent.bkrepo.common.artifact.config.DEFAULT_MIME_TYPE
+import com.tencent.bkrepo.common.artifact.config.*
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
@@ -115,7 +113,14 @@ object HttpResponseUtils {
     }
 
     private fun determineMediaType(name: String): String {
-        return MimeMappings.DEFAULT.get(NodeUtils.getExtension(name)) ?: DEFAULT_MIME_TYPE
+        val extension = NodeUtils.getExtension(name)
+        if ("yaml" == extension){
+            return YAML_MIME_TYPE
+        }
+        if ("tgz" == extension){
+            return TGZ_MIME_TYPE
+        }
+        return MimeMappings.DEFAULT.get(extension) ?: DEFAULT_MIME_TYPE
     }
 
     private fun encodeDisposition(filename: String): String {

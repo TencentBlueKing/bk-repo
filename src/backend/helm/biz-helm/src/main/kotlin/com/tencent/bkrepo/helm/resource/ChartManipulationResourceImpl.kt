@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class ChartManipulationResourceImpl : ChartManipulationResource {
 
-	@Autowired
-	private lateinit var chartManipulationService: ChartManipulationService
+    @Autowired
+    private lateinit var chartManipulationService: ChartManipulationService
 
-	override fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String, Boolean> {
-		return chartManipulationService.upload(artifactInfo, artifactFileMap)
-	}
+    override fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String, Boolean> {
+        return chartManipulationService.upload(artifactInfo, artifactFileMap)
+    }
 }
