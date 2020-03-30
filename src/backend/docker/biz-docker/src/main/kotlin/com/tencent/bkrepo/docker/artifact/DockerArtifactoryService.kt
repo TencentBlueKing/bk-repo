@@ -210,7 +210,6 @@ class DockerArtifactoryService @Autowired constructor(
 
     // check path read permission
     fun canRead(path: DockerBasicPath): Boolean {
-        return true
         try {
             permissionService.checkPermission(
                 userId,
@@ -228,7 +227,6 @@ class DockerArtifactoryService @Autowired constructor(
 
     // check path write permission
     fun canWrite(path: DockerBasicPath): Boolean {
-        return true
         try {
             permissionService.checkPermission(
                 userId,
