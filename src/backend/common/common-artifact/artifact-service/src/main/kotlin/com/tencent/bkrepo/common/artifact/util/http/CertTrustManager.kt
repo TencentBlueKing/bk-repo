@@ -21,19 +21,11 @@ object CertTrustManager {
         override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
     }
     val trustAllHostname = HostnameVerifier { _, _ -> true }
-    val disableValidationSSLSocketFactory =
-        createSSLSocketFactory(
-            disableValidationTrustManager
-        )
+    val disableValidationSSLSocketFactory = createSSLSocketFactory(disableValidationTrustManager)
 
     fun createSSLSocketFactory(certString: String): SSLSocketFactory {
-        val trustManager =
-            createTrustManager(
-                certString
-            )
-        return createSSLSocketFactory(
-            trustManager
-        )
+        val trustManager = createTrustManager(certString)
+        return createSSLSocketFactory(trustManager)
     }
 
     fun createSSLSocketFactory(trustManager: TrustManager): SSLSocketFactory {

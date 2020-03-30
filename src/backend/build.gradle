@@ -137,8 +137,8 @@ subprojects {
             dependency "org.apache.skywalking:apm-toolkit-trace:$skywalkingVersion"
             dependency "net.javacrumbs.shedlock:shedlock-spring:$shedlockVersion"
             dependency "net.javacrumbs.shedlock:shedlock-provider-mongo:$shedlockVersion"
-            dependency "org.apache.hadoop:hadoop-client:$hdfsVersion"
-            dependency "org.apache.hadoop:hadoop-client:$hdfsVersion"
+            dependency "org.apache.hadoop:hadoop-hdfs:$hdfsVersion"
+            dependency "org.apache.hadoop:hadoop-common:$hdfsVersion"
             dependency "com.novemberain:quartz-mongodb:$quartzMongoVersion"
         }
 

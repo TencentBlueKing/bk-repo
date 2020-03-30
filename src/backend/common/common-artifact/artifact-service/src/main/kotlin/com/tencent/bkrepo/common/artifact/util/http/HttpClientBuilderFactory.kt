@@ -41,5 +41,4 @@ object HttpClientBuilderFactory {
         }
         return builder
     }
-
 }

@@ -2,13 +2,14 @@ package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.repository.dao.repository.ProjectRepository
 import com.tencent.bkrepo.repository.model.TProject
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.repository.ProjectRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -46,7 +47,7 @@ class ProjectService @Autowired constructor(
             val project = TProject(
                 name = name,
                 displayName = displayName,
-                description = description,
+                description = description ?: EMPTY,
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = operator,
@@ -72,8 +73,8 @@ class ProjectService @Autowired constructor(
     }
 
     private fun validateParameter(request: ProjectCreateRequest) {
-        request.takeIf { it.name.isNotBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "name")
-        request.takeIf { it.displayName.isNotBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "displayName")
+        request.takeIf { it.name.isNotBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::name.name)
+        request.takeIf { it.displayName.isNotBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::displayName.name)
     }
 
     companion object {

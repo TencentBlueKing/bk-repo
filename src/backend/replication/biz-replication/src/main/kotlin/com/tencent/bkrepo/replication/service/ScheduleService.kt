@@ -59,7 +59,6 @@ class ScheduleService @Autowired constructor(
         }
     }
 
-
     fun pauseJob(id: String) {
         scheduler.pauseJob(JobKey.jobKey(id, DEFAULT_GROUP_ID))
     }

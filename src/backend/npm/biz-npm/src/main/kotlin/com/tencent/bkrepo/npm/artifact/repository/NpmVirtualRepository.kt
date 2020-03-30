@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.npm.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.pojo.configuration.VirtualConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository

@@ -53,7 +53,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         val downloadUri = generateRemoteDownloadUrl(context)
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
-        return if(checkResponse(response)){
+        return if (checkResponse(response)) {
             response.body()!!.string()
         } else null
     }

@@ -31,9 +31,8 @@ class TaskController @Autowired constructor(
     }
 
     @PostMapping("/create")
-    fun create(@RequestAttribute userId: String, @RequestBody request: ReplicationTaskCreateRequest): Response<Void> {
-        taskService.create(userId, request)
-        return ResponseBuilder.success()
+    fun create(@RequestAttribute userId: String, @RequestBody request: ReplicationTaskCreateRequest): Response<ReplicationTaskInfo> {
+        return ResponseBuilder.success(taskService.create(userId, request))
     }
 
     @GetMapping("/list")
@@ -63,5 +62,4 @@ class TaskController @Autowired constructor(
         taskService.delete(id)
         return ResponseBuilder.success()
     }
-
 }
