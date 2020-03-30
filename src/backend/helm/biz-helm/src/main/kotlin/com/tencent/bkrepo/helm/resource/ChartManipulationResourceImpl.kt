@@ -13,7 +13,7 @@ class ChartManipulationResourceImpl : ChartManipulationResource {
     @Autowired
     private lateinit var chartManipulationService: ChartManipulationService
 
-    override fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String, Boolean> {
+    override fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String,Any> {
         return chartManipulationService.upload(artifactInfo, artifactFileMap)
     }
 }

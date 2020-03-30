@@ -33,7 +33,7 @@ class ChartManipulationService {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String, Boolean> {
+    fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String,Any> {
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = getFileFullPath(artifactFileMap)
