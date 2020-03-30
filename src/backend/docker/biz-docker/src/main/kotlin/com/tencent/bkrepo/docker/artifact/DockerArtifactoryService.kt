@@ -196,7 +196,10 @@ class DockerArtifactoryService @Autowired constructor(
 
     // get node  attribute
     fun getAttribute(projectId: String, repoName: String, fullPath: String, key: String): String? {
-        return metadataService.query(projectId, repoName, fullPath).data!!.get(key)
+        logger.info("getAttribute params :{}, {}, {}, {}", projectId, repoName, fullPath, key)
+        val result = metadataService.query(projectId, repoName, fullPath).data!!
+        logger.info("getAttribute result  :{}", result.toString())
+        return result.get(key)
     }
 
     // check node
