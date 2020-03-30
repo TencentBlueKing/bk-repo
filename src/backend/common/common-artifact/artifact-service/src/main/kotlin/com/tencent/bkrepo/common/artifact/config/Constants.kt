@@ -38,6 +38,9 @@ const val DEFAULT_MIME_TYPE = "application/octet-stream"
 const val CONTENT_DISPOSITION_TEMPLATE = "attachment;filename=\"%s\";filename*=UTF-8''%s"
 const val BYTES = "bytes="
 
+const val YAML_MIME_TYPE = "application/x-yaml"
+const val TGZ_MIME_TYPE = "application/x-tar"
+
 /**
  * 虚拟仓库相关
  */
