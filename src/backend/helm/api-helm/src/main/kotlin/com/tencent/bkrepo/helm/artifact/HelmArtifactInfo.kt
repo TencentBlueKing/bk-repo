@@ -6,4 +6,8 @@ class HelmArtifactInfo(
     projectId: String,
     repoName: String,
     artifactUri: String
-) : ArtifactInfo(projectId, repoName, artifactUri)
+) : ArtifactInfo(projectId, repoName, artifactUri) {
+    companion object {
+        const val CHARTS_LIST = "/{projectId}/{repoName}/api/charts/**"
+    }
+}
