@@ -212,7 +212,14 @@ class NodeService @Autowired constructor(
             metadata?.let { metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it)) }
             logger.info("Create node [$this] success.")
             // 发送事件
-            val event = NodeCreatedEvent(projectId, repoName, node.fullPath, node.size, node.sha256!!, node.md5!!)
+            val event = NodeCreatedEvent(
+                projectId,
+                repoName,
+                repo.category.name,
+                node.fullPath,
+                node.size,
+                node.sha256!!,
+                node.md5!!)
             publisher.publishEvent(event)
             return convert(node)!!
         }
