@@ -41,9 +41,6 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
     private lateinit var serviceUserResource: ServiceUserResource
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String {
-//        if (!authEnable ) {
-//            return ANONYMOUS_USER
-//        }
         if (request.requestURI.startsWith("/user")) {
             with(authCredentials as PlatformAuthCredentials) {
                 val appId = authService.checkPlatformAccount(accessKey, secretKey)
@@ -108,6 +105,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
             return PlatformAuthCredentials(parts[0], parts[1])
         }
         if (basicAuthHeader.isNullOrBlank()) {
+            logger.error("auth value is null and path is {}", request.requestURI)
             throw ClientAuthException("Authorization value is null")
         }
         if (!basicAuthHeader.startsWith("Bearer ")) {
@@ -142,6 +140,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
                     parts[1]
                 )
             } catch (exception: Exception) {
+                logger.error("auth value is not a valid schema")
                 throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
             }
         }

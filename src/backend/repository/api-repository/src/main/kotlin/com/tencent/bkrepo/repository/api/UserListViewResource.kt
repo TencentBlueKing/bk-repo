@@ -18,10 +18,10 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface UserListViewResource {
 
     @GetMapping(DEFAULT_MAPPING_URI)
-    fun listNodeView(@RequestAttribute userId: String, @ArtifactPathVariable artifactInfo: ArtifactInfo)
+    fun listNodeView(@ArtifactPathVariable artifactInfo: ArtifactInfo)
 
-    @GetMapping("/")
-    fun listProjectView(@RequestAttribute userId: String)
+    @GetMapping
+    fun listProjectView()
 
     @GetMapping("/{projectId}")
     fun listRepositoryView(@RequestAttribute userId: String, @PathVariable projectId: String)

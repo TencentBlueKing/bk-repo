@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.MEDIA_TYPE_HTML
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -11,6 +13,7 @@ import com.tencent.bkrepo.repository.pojo.list.ListViewObject
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
+import com.tencent.bkrepo.repository.pojo.project.ProjectListViewItem
 import com.tencent.bkrepo.repository.pojo.repo.RepoListViewItem
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.apache.commons.lang.StringEscapeUtils
@@ -34,20 +37,20 @@ class ListViewService @Autowired constructor(
             val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(
                 ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
             val response = HttpContextHolder.getResponse()
-            response.contentType = "text/html; charset=UTF-8"
+            response.contentType = MEDIA_TYPE_HTML
             if (nodeDetail.nodeInfo.folder) {
                 trailingSlash()
                 val nodeList = nodeService.list(artifactInfo.projectId, artifactInfo.repoName, artifactUri, includeFolder = true, deep = false)
                 val currentPath = computeCurrentPath(nodeDetail.nodeInfo)
                 val headerList = listOf(
                     HeaderItem("Name"),
-                    HeaderItem("Last modified"),
                     HeaderItem("Created by"),
+                    HeaderItem("Last modified"),
                     HeaderItem("Size")
                 )
                 val itemList = nodeList.map { NodeListViewItem.from(it) }.sorted()
-                val rowList = itemList.map { RowItem(listOf(it.name, it.lastModified, it.createdBy, it.size)) }
-                writePageContent(ListViewObject(currentPath, headerList, rowList, footer, true))
+                val rowList = itemList.map { RowItem(listOf(it.name, it.createdBy, it.lastModified,  it.size)) }
+                writePageContent(ListViewObject(currentPath, headerList, rowList, FOOTER, true))
             } else {
                 val context = ArtifactDownloadContext()
                 val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
@@ -56,66 +59,59 @@ class ListViewService @Autowired constructor(
         }
     }
 
-    fun listRepoView(projectId: String? = null) {
+    fun listRepoView(projectId: String) {
         trailingSlash()
-        val itemList = projectId?.run {
-            repositoryService.list(this).map { RepoListViewItem.from(it) }
-        } ?: run {
-            projectService.list().map { RepoListViewItem.from(it) }
-        }
-        val title = if (projectId == null) "Project" else "Repository[$projectId]"
+        val itemList = repositoryService.list(projectId).map { RepoListViewItem.from(it) }
+        val title = "Repository[$projectId]"
         val headerList = listOf(
             HeaderItem("Name"),
-            HeaderItem("Last modified"),
             HeaderItem("Created by"),
+            HeaderItem("Last modified"),
+            HeaderItem("Category"),
+            HeaderItem("Type"),
+            HeaderItem("Public")
+        )
+        val rowList = itemList.sorted().map {
+            RowItem(listOf(it.name, it.createdBy, it.lastModified,  it.category, it.type, it.public))
+        }
+        val listViewObject = ListViewObject(title, headerList, rowList, FOOTER, true)
+        writePageContent(listViewObject)
+    }
+
+    fun listProjectView() {
+        trailingSlash()
+        val itemList = projectService.list().map { ProjectListViewItem.from(it) }
+        val headerList = listOf(
+            HeaderItem("Name"),
+            HeaderItem("Created by"),
+            HeaderItem("Last modified"),
             HeaderItem("Sharding index")
         )
         val rowList = itemList.sorted().map {
-            RowItem(listOf(it.name, it.lastModified, it.createdBy, it.shardingIndex))
+            RowItem(listOf(it.name, it.createdBy, it.lastModified, it.shardingIndex))
         }
-        val backTo = projectId != null
-        val listViewObject = ListViewObject(title, headerList, rowList, footer, backTo)
+        val listViewObject = ListViewObject("Project", headerList, rowList, FOOTER, false)
         writePageContent(listViewObject)
     }
 
     private fun writePageContent(listViewObject: ListViewObject) {
-        val writer = HttpContextHolder.getResponse().writer
-        val headerContent = buildHeaderContent(listViewObject)
-        writer.println(
-            """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>Index of ${listViewObject.title}</title>
-            </head>
-            <body>
-                <h1>Index of ${listViewObject.title}</h1>
-                <hr/>
-                <pre>$headerContent</pre>
-                <hr/>
-                <pre>
-            """.trimIndent()
-        )
-        writeListContent(listViewObject, writer)
-        writer.println(
-            """
-                </pre>
-                <hr/>
-                <address style="font-size:small;">${listViewObject.footer}</address>
-            </body>
-            </html>
-            """.trimIndent()
-        )
+        with(listViewObject) {
+            val writer = HttpContextHolder.getResponse().writer
+            val headerContent = buildHeaderContent(this)
+            writer.println(FIRST_PART.format(title, title, headerContent).trimIndent())
+            writeListContent(this, writer)
+            writer.println(LAST_PART.trimIndent())
+        }
+
     }
 
     private fun writeListContent(listViewObject: ListViewObject, writer: PrintWriter) {
         with(listViewObject) {
             if (backTo) {
-                writer.println("""<a href="../">../</a>""")
+                writer.println(BACK_TO)
             }
             if (rowList.isEmpty()) {
-                writer.print("\nEmpty content.")
+                writer.print(EMPTY_CONTENT)
             }
             rowList.forEachIndexed { rowIndex, row ->
                 row.itemList.forEachIndexed { columnIndex, item ->
@@ -126,7 +122,7 @@ class ListViewService @Autowired constructor(
                     } else {
                         writer.print(item.padEnd(headerList[columnIndex].width!!))
                     }
-                    writer.print(" ".repeat(gap))
+                    writer.print(" ".repeat(GAP))
                 }
                 if (rowIndex != rowList.size -1) {
                     writer.println()
@@ -140,7 +136,7 @@ class ListViewService @Autowired constructor(
             val builder = StringBuilder()
             headerList.forEachIndexed { index, header ->
                 header.width = computeColumnWidth(header, rowList, index)
-                builder.append(header.name.padEnd(header.width!! + gap))
+                builder.append(header.name.padEnd(header.width!! + GAP))
             }
             return builder.toString()
         }
@@ -171,13 +167,37 @@ class ListViewService @Autowired constructor(
 
     private fun trailingSlash() {
         val url = HttpContextHolder.getRequest().requestURL.toString()
-        if (!url.endsWith("/")) {
+        if (!url.endsWith(StringPool.SLASH)) {
             HttpContextHolder.getResponse().sendRedirect("$url/")
         }
     }
 
     companion object {
-        private const val gap = 4
-        private const val footer = "BlueKing Repository"
+        private const val GAP = 4
+        private const val FOOTER = "BlueKing Repository"
+        private const val BACK_TO = """<a href="../">../</a>"""
+        private const val EMPTY_CONTENT = "\nEmpty content."
+        private const val FIRST_PART = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Index of %s</title>
+            </head>
+            <body>
+                <h1>Index of %s</h1>
+                <hr/>
+                <pre>%s</pre>
+                <hr/>
+                <pre>
+        """
+
+        private const val LAST_PART = """
+                </pre>
+                <hr/>
+                <address style="font-size:small;">$FOOTER</address>
+            </body>
+            </html>
+        """
     }
 }

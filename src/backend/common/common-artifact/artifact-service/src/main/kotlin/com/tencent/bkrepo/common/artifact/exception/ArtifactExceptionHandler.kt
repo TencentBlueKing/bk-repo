@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.exception
 
+import com.tencent.bkrepo.common.api.constant.StringPool.MEDIA_TYPE_JSON
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_VALUE
@@ -70,7 +71,7 @@ class ArtifactExceptionHandler {
         val responseObject = ResponseBuilder.fail(status.value(), exception.message)
         val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
         val response = HttpContextHolder.getResponse()
-        response.contentType = "application/json; charset=utf-8"
+        response.contentType = MEDIA_TYPE_JSON
         response.writer.println(responseString)
     }
 }

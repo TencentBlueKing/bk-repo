@@ -27,7 +27,6 @@ internal class NodeUtilsTest {
         assertEquals("/a/b", NodeUtils.parseFullPath("  /   a  /b/"))
 
         assertDoesNotThrow { NodeUtils.parseFullPath("/1/2/3/4/5/6/7/8/9/10") }
-        assertThrows<ErrorCodeException> { NodeUtils.parseFullPath("/1/2/3/4/5/6/7/8/9/10/11") }
         assertThrows<ErrorCodeException> { NodeUtils.parseFullPath("/../") }
         assertThrows<ErrorCodeException> { NodeUtils.parseFullPath("/./") }
         assertDoesNotThrow { NodeUtils.parseFullPath("/.1/") }
