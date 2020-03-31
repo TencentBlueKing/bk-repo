@@ -34,5 +34,9 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
 
     override fun getDefaultCredentials() = storageProperties.filesystem
     override fun onCreateClient(credentials: FileSystemCredentials) = FileSystemClient(credentials.path)
-    override fun getTempPath() = Paths.get(storageProperties.filesystem.path, "temp").toString()
+    override fun getTempPath() = Paths.get(storageProperties.filesystem.path, TEMP).toString()
+
+    companion object {
+        const val TEMP = "temp"
+    }
 }

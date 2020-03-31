@@ -4,6 +4,7 @@ import com.google.common.io.ByteStreams
 import com.tencent.bkrepo.common.api.constant.StringPool.MEDIA_TYPE_STREAM
 import com.tencent.bkrepo.common.artifact.config.BYTES
 import com.tencent.bkrepo.common.artifact.config.CONTENT_DISPOSITION_TEMPLATE
+import com.tencent.bkrepo.common.artifact.config.*
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
@@ -115,6 +116,13 @@ object HttpResponseUtils {
     }
 
     private fun determineMediaType(name: String): String {
+        val extension = NodeUtils.getExtension(name)
+        if ("yaml" == extension) {
+            return YAML_MIME_TYPE
+        }
+        if ("tgz" == extension) {
+            return TGZ_MIME_TYPE
+        }
         return MimeMappings.DEFAULT.get(NodeUtils.getExtension(name)) ?: MEDIA_TYPE_STREAM
     }
 
