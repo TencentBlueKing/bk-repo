@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.pypi.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
