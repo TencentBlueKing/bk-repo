@@ -215,7 +215,7 @@ class HelmLocalRepository : LocalRepository() {
             val rule:Rule? = when (urlList.size) {
                 // query with name
                 1 -> {
-                    val name = Rule.QueryRule("name", urlList[0])
+                    val name = Rule.QueryRule("metadata.name", urlList[0])
                     Rule.NestedRule(
                         mutableListOf(repoName, projectId, name),
                         Rule.NestedRule.RelationType.AND
@@ -223,8 +223,8 @@ class HelmLocalRepository : LocalRepository() {
                 }
                 // query with name and version
                 2 -> {
-                    val name = Rule.QueryRule("name", urlList[0])
-                    val version = Rule.QueryRule("version", urlList[1])
+                    val name = Rule.QueryRule("metadata.name", urlList[0])
+                    val version = Rule.QueryRule("metadata.version", urlList[1])
                     Rule.NestedRule(
                         mutableListOf(repoName, projectId, name, version),
                         Rule.NestedRule.RelationType.AND
@@ -234,17 +234,19 @@ class HelmLocalRepository : LocalRepository() {
                     null
                 }
             }
-            rule?.let {
+            if (rule != null) {
                 val queryModel = QueryModel(
-                page = PageLimit(0, 5),
-                sort = Sort(listOf("name"), Sort.Direction.ASC),
-                select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-                rule = it
+                    page = PageLimit(0, 5),
+                    sort = Sort(listOf("name"), Sort.Direction.ASC),
+                    select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
+                    rule = rule
                 )
                 val nodeList: List<Map<String, Any>>? = nodeResource.query(queryModel).data?.records
                 if (nodeList.isNullOrEmpty()) HttpStatus.SC_NOT_FOUND else HttpStatus.SC_OK
+            } else {
+                HttpStatus.SC_NOT_FOUND
             }
-            HttpStatus.SC_NOT_FOUND
+
         }
         response.status = status
     }
