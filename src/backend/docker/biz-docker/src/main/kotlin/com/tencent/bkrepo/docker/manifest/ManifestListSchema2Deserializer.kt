@@ -10,7 +10,7 @@ class ManifestListSchema2Deserializer {
 
         @Throws(IOException::class)
         fun deserialize(manifestBytes: ByteArray): ManifestListJson? {
-            val result = JsonUtil.readValue(manifestBytes, ManifestListJson::class.java) as ManifestListJson
+            val result = JsonUtil.readValue(manifestBytes, ManifestListJson::class.java)
             if (result != null && result.manifests != null && result.mediaType != null) {
                 return result
             } else {

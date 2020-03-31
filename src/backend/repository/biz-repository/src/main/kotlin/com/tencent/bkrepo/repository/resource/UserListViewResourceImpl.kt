@@ -24,13 +24,13 @@ class UserListViewResourceImpl @Autowired constructor(
 ) : UserListViewResource {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    override fun listNodeView(userId: String, artifactInfo: ArtifactInfo) {
+    override fun listNodeView(artifactInfo: ArtifactInfo) {
         listViewService.listNodeView(artifactInfo)
     }
 
     @Principal(type = PrincipalType.ADMIN)
-    override fun listProjectView(userId: String) {
-        listViewService.listRepoView()
+    override fun listProjectView() {
+        listViewService.listProjectView()
     }
 
     override fun listRepositoryView(userId: String, projectId: String) {

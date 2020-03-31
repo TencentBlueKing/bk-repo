@@ -4,8 +4,8 @@ items.find(
         "repo":"generic-local",
         "type":"file",
         "$or":[
-            {{"path":{{"$match": "bk-custom/{project}{path}/*"}}}},
-            {{"path":{{"$eq": "bk-custom/{project}{path}"}}}}
+            {{"path":{{"$match": "{repo}/{project}{path}/*"}}}},
+            {{"path":{{"$eq": "{repo}/{project}{path}"}}}}
         ]
     }}
 ).include("size","path","name","created_by")
@@ -38,25 +38,38 @@ jfrog_config = {
 bkrepo_config = {
     "dev": {
         "url": "http://dev.bkrepo.oa.com/",
-        "accessKey": "",
-        "secretKey": ""
+        "accessKey": "cb475f0b-0b2e-4b9b-9ab2-977385d37e45",
+        "secretKey": "6uS19b87YIU6vWNHiMoeCla6x3tsx8"
     },
     "prod": {
         "url": "http://bkrepo.oa.com/",
-        "accessKey": "",
-        "secretKey": ""
+        "accessKey": "cb475f0b0b2e4b9b9ab2977385d37e45",
+        "secretKey": "6uS19b87YIU6vWNHiMoeCla6x3tsx8"
     }
 }
 
 env = "prod"
 project = None
+bkrepo_repo = "custom"
+jfrog_repo = "bk-custom"
 
 
 def config(args):
-    global env, project
+    global env, project, bkrepo_repo, jfrog_repo
     env = args.env
     project = args.project
+    if args.repository == "custom":
+        jfrog_repo = "bk-custom"
+        bkrepo_repo = "custom"
+    elif args.repository == "pipeline":
+        jfrog_repo = "bk-archive"
+        bkrepo_repo = "pipeline"
 
+def jfrog_repo():
+    return jfrog_repo
+
+def bkrepo_repo():
+    return bkrepo_repo
 
 def jfrog_aql_url():
     return jfrog_config[env]["url"] + "api/search/aql"
@@ -69,7 +82,7 @@ def jfrog_aql_data(path=None, node=None):
         return jfrog_aql_node_template.format(path=path, name=name)
     else:
         path = normalized_path(path)
-        return jfrog_aql_path_template.format(project=project, path=path)
+        return jfrog_aql_path_template.format(repo=jfrog_repo, project=project, path=path)
 
 
 def normalized_path(path):
@@ -95,21 +108,21 @@ def jfrog_download_url(path, name):
 def bkrepo_auth():
     return bkrepo_config[env]["accessKey"], bkrepo_config[env]["secretKey"] 
 
-    
+
 def bkrepo_query_url(full_path):
-    return bkrepo_config[env]["url"] + 'api/repository/api/node/{}/custom/{}'.format(project, full_path)
+    return bkrepo_config[env]["url"] + 'repository/api/node/{}/{}/{}'.format(project, bkrepo_repo, full_path)
 
 
 def bkrepo_upload_url(full_path):
-    return bkrepo_config[env]["url"] + 'generic/{}/custom/{}'.format(project, full_path)
+    return bkrepo_config[env]["url"] + 'generic/{}/{}/{}'.format(project, bkrepo_repo, full_path)
 
 
 def bkrepo_project_create_url():
-    return bkrepo_config[env]["url"] + 'api/repository/api/project'
+    return bkrepo_config[env]["url"] + 'repository/api/project'
 
 
 def bkrepo_repo_create_url():
-    return bkrepo_config[env]["url"] + 'api/repository/api/repo'
+    return bkrepo_config[env]["url"] + 'repository/api/repo'
 
 
 def bkrepo_project_create_data():
@@ -126,7 +139,7 @@ def bkrepo_repo_create_data(name):
         "name": name,
         "category": "LOCAL",
         "type": "GENERIC",
-        "public": True,
+        "public": False,
         "configuration": {"type": "local"},
         "description": ""
     }

@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.artifact.permission.PrincipalAspect
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMapMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoMethodArgumentResolver
+import com.tencent.bkrepo.common.artifact.webhook.WebHookService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -88,4 +89,7 @@ class ArtifactAutoConfiguration {
 
     @Bean
     fun artifactEventListener() = ArtifactEventListener()
+
+    @Bean
+    fun webHookService() = WebHookService()
 }

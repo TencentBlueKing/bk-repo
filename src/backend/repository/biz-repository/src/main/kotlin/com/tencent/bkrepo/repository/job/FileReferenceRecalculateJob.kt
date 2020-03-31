@@ -6,7 +6,7 @@ import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.repository.RepoRepository
+import com.tencent.bkrepo.repository.dao.repository.RepoRepository
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.beans.factory.annotation.Autowired

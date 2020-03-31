@@ -10,12 +10,14 @@ import base64
 import sys
 from config import *
 
-reload(sys)
-sys.setdefaultencoding("utf8")
+if(sys.version_info.major < 3):
+    reload(sys)
+    sys.setdefaultencoding("utf8")
+
 parser = configparser.ConfigParser()
 
 class BkrepoAuth(requests.auth.AuthBase):
-    def __init__(self, bk_auth, uid="admin"):
+    def __init__(self, bk_auth, uid="system"):
         self.access_key, self.secret_key = bk_auth
         self.uid = uid
 
@@ -26,13 +28,13 @@ class BkrepoAuth(requests.auth.AuthBase):
         return r
     
     def base64encode(self, bytes_or_str):
-        if sys.version_info[0] >= 3 and isinstance(bytes_or_str, str):
+        if sys.version_info.major >= 3 and isinstance(bytes_or_str, str):
             input_bytes = bytes_or_str.encode('utf8')
         else:
             input_bytes = bytes_or_str
 
         output_bytes = base64.b64encode(input_bytes)
-        if sys.version_info[0] >= 3:
+        if sys.version_info.major >= 3:
             return output_bytes.decode('ascii')
         else:
             return output_bytes
@@ -42,10 +44,11 @@ def parse_args():
     parser.add_argument("-p", "--project", required=True, dest="project")
     parser.add_argument("-e", "--environment", default="prod", choices=["dev", "prod"], dest="env")
     parser.add_argument("-m", "--migration", action='store_true', dest="migration", help='migration data')
-    parser.add_argument("-o", "--overwrite", action='store_true', dest="overwrite")
+    parser.add_argument("-o", "--overwrite", action='store_true', dest="overwrite", help='overwrite node')
+    parser.add_argument("-i", "--init", action='store_true', dest="init", help='init bkrepo project and repos')
     parser.add_argument("-f", "--file", dest="file", help='migration specific node')
-    parser.add_argument("-i", "--init", action='store_true', default=True, dest="init", help='init bkrepo project and repos')
-    parser.add_argument("-u", "--user", dest="user", default="admin", help='bkrepo user')
+    parser.add_argument("-u", "--user", dest="user", default="system", help='bkrepo user')
+    parser.add_argument("-r", "--repository", dest="repository", choices=["custom", "pipeline"], help='repository')
     
     return parser.parse_args()
 
@@ -55,7 +58,7 @@ def remove_prefix(text, prefix):
 
 
 def run(args):
-    log_filename = "logs/{}.log".format(args.project)
+    log_filename = "logs/{}-{}.log".format(args.project, args.repository)
     logging.basicConfig(
         level=logging.INFO,
         filename=log_filename,
@@ -72,6 +75,7 @@ def run(args):
     
     if args.migration:
         migration()
+
 
 def init_project():
     url = bkrepo_project_create_url()
@@ -194,7 +198,7 @@ def upload_bkrepo_file(node, jfrog_response, properties):
 
 
 def migrate_node(node, current, total):
-    path = remove_prefix(node["path"], "bk-custom/{}".format(args.project))
+    path = remove_prefix(node["path"], "{}/{}".format(jfrog_repo(), args.project))
     node["normalized_full_path"] = "{}/{}".format(path, node["name"])
     jfrog_response = None
     try:
@@ -215,7 +219,7 @@ def migrate_node(node, current, total):
 
 
 def migration():
-    logging.info("Start migration from jfrog [bk-custom/%s] to bkrepo [%s/custom]", args.project, args.project)
+    logging.info("Start migration from jfrog [%s/%s] to bkrepo [%s/%s]", jfrog_repo(), args.project, args.project, bkrepo_repo())
     migration_count = 0
     start_time = time.time()
     jfrog_nodes = list_jfrog_node()
