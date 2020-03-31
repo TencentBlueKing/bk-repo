@@ -43,7 +43,7 @@ class HelmLocalRepository : LocalRepository() {
             this.onDownloadValidate(context)
             this.onBeforeDownload(context)
             val file =
-                    this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] does not exist")
+                this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] does not exist")
             HttpResponseUtils.response(determineFileName(context), file)
             logger.info("User[$userId] download artifact[$artifactUri] success")
             this.onDownloadSuccess(context, file)
@@ -97,7 +97,8 @@ class HelmLocalRepository : LocalRepository() {
         super.onUploadValidate(context)
         context.artifactFileMap.entries.forEach { (name, file) ->
             if (name == "chart") {
-                context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] = FileDigestUtils.fileSha256(file.getInputStream())
+                context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] =
+                    FileDigestUtils.fileSha256(file.getInputStream())
                 context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] = FileDigestUtils.fileMd5(file.getInputStream())
             }
         }
@@ -105,8 +106,10 @@ class HelmLocalRepository : LocalRepository() {
 
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
-        storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile("chart")
-                ?: context.getArtifactFile(), context.storageCredentials)
+        storageService.store(
+            nodeCreateRequest.sha256!!, context.getArtifactFile("chart")
+                ?: context.getArtifactFile(), context.storageCredentials
+        )
         nodeResource.create(nodeCreateRequest)
     }
 
@@ -117,16 +120,31 @@ class HelmLocalRepository : LocalRepository() {
         val md5 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] as String
         val fullPath = context.contextAttributes[FULL_PATH] as String
         return NodeCreateRequest(
-                projectId = repositoryInfo.projectId,
-                repoName = repositoryInfo.name,
-                folder = false,
-                fullPath = fullPath,
-                size = artifactFile.getSize(),
-                sha256 = sha256,
-                md5 = md5,
-                operator = context.userId,
-                overwrite = !fullPath.trim().endsWith(".tgz", true)
+            projectId = repositoryInfo.projectId,
+            repoName = repositoryInfo.name,
+            folder = false,
+            fullPath = fullPath,
+            size = artifactFile.getSize(),
+            sha256 = sha256,
+            md5 = md5,
+            operator = context.userId,
+            metadata = parseMetaData(fullPath),
+            overwrite = isOverwrite(fullPath)
         )
+    }
+
+    private fun parseMetaData(fullPath: String): Map<String, String>? {
+        if (isOverwrite(fullPath)) {
+            return emptyMap()
+        }
+        val substring = fullPath.trimStart('/').substring(0, fullPath.lastIndexOf('.') - 1)
+        val name = substring.substringBeforeLast('-')
+        val version = substring.substringAfterLast('-')
+        return mapOf("name" to name, "version" to version)
+    }
+
+    private fun isOverwrite(fullPath: String): Boolean {
+        return !fullPath.trim().endsWith(".tgz", true)
     }
 
     override fun getNodeFullPath(context: ArtifactDownloadContext): String {
@@ -169,7 +187,7 @@ class HelmLocalRepository : LocalRepository() {
         with(artifactInfo) {
             val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return CHART_NOT_FOUND
             val indexYamlFile = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
-                    ?: return CHART_NOT_FOUND
+                ?: return CHART_NOT_FOUND
             return JsonUtil.searchJson(indexYamlFile, artifactUri)
         }
     }

@@ -3,13 +3,11 @@ package com.tencent.bkrepo.helm.utils
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
-import org.apache.commons.io.IOUtils
 import org.apache.commons.lang.StringUtils
 import java.io.File
 import java.io.FileInputStream
-import java.io.InputStream
-import java.io.OutputStream
 import java.io.FileOutputStream
+import java.io.InputStream
 
 object PackDecompressorUtils {
     private const val BUFFER_SIZE = 2048
@@ -50,16 +48,13 @@ object PackDecompressorUtils {
                 } else { // 是文件
                     val tmpFile = File(destDir + File.separator + entry!!.name)
                     createDirectory(tmpFile.parent + File.separator, null) // 创建输出目录
-                    var out: OutputStream? = null
-                    try {
-                        out = FileOutputStream(tmpFile)
+                    //var out: OutputStream? = null
+                    FileOutputStream(tmpFile).use {
                         var length = 0
                         val b = ByteArray(2048)
                         while (({ length = tarIn.read(b); length }()) != -1) {
-                            out!!.write(b, 0, length)
+                            it.write(b, 0, length)
                         }
-                    } finally {
-                        IOUtils.closeQuietly(out)
                     }
                 }
             }
@@ -67,7 +62,7 @@ object PackDecompressorUtils {
             e.printStackTrace()
             throw e
         } finally {
-            IOUtils.closeQuietly(tarIn)
+            tarIn.close()
         }
     }
 
