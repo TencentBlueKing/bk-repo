@@ -42,7 +42,7 @@ class ChartManipulationService {
             freshIndexYaml(artifactFileMap)
         } catch (e: Exception) {
             val removeContext = ArtifactRemoveContext()
-            context.contextAttributes[FULL_PATH] = getFileFullPath(artifactFileMap)
+            removeContext.contextAttributes[FULL_PATH] = getFileFullPath(artifactFileMap)
             repository.remove(removeContext)
             return UPLOAD_ERROR_MAP
         }
@@ -91,7 +91,7 @@ class ChartManipulationService {
     }
 
     private fun getUnTgzFile(artifactFileMap: ArtifactFileMap, tempDir: String): File {
-        val name = getFileFullPath(artifactFileMap).trimStart('/').split('-')[0]
+        val name = getFileFullPath(artifactFileMap).trimStart('/').substringBeforeLast('-')
         return File("$tempDir$name${FILE_SEPARATOR}Chart.yaml")
     }
 
