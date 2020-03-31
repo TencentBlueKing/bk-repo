@@ -20,13 +20,13 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
-import com.tencent.bkrepo.repository.service.QueryHelper.nodeDeleteUpdate
-import com.tencent.bkrepo.repository.service.QueryHelper.nodeListCriteria
-import com.tencent.bkrepo.repository.service.QueryHelper.nodeListQuery
-import com.tencent.bkrepo.repository.service.QueryHelper.nodePageQuery
-import com.tencent.bkrepo.repository.service.QueryHelper.nodePathUpdate
-import com.tencent.bkrepo.repository.service.QueryHelper.nodeQuery
-import com.tencent.bkrepo.repository.service.QueryHelper.nodeSearchQuery
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeDeleteUpdate
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeListCriteria
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeListQuery
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePageQuery
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePathUpdate
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeQuery
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeSearchQuery
 import com.tencent.bkrepo.repository.util.NodeUtils.combineFullPath
 import com.tencent.bkrepo.repository.util.NodeUtils.combinePath
 import com.tencent.bkrepo.repository.util.NodeUtils.escapeRegex
@@ -212,7 +212,14 @@ class NodeService @Autowired constructor(
             metadata?.let { metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it)) }
             logger.info("Create node [$this] success.")
             // 发送事件
-            val event = NodeCreatedEvent(projectId, repoName, node.fullPath, node.size, node.sha256!!, node.md5!!)
+            val event = NodeCreatedEvent(
+                projectId,
+                repoName,
+                repo.category.name,
+                node.fullPath,
+                node.size,
+                node.sha256!!,
+                node.md5!!)
             publisher.publishEvent(event)
             return convert(node)!!
         }
