@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.File
-import java.io.FileNotFoundException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -43,11 +42,12 @@ class ChartManipulationService {
         repository.upload(context)
         try {
             freshIndexYaml(artifactFileMap)
-        } catch (e: Exception) {
+        } catch (exception: Exception) {
             val removeContext = ArtifactRemoveContext()
             removeContext.contextAttributes[FULL_PATH] = getFileFullPath(artifactFileMap)
             repository.remove(removeContext)
-            throw HelmIndexFreshFailException("fresh $INDEX_CACHE_YAML file failed")
+            logger.error("fresh $INDEX_CACHE_YAML file failed")
+            throw HelmIndexFreshFailException(exception.message!!)
         }
         return UPLOAD_SUCCESS_MAP
     }
@@ -78,6 +78,9 @@ class ChartManipulationService {
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         val indexFile = repository.search(context) as File
+
+
+
         logger.info("search $INDEX_CACHE_YAML success!")
         val indexEntity = YamlUtils.getObject<IndexEntity>(indexFile)
         updateChartEntity(chartEntity, artifactFileMap)
@@ -106,10 +109,12 @@ class ChartManipulationService {
     private fun getUnTgzFile(artifactFileMap: ArtifactFileMap, tempDir: String): File {
         try {
             val name = getFileFullPath(artifactFileMap).trimStart('/').substringBeforeLast('-')
-            return File("$tempDir$name${FILE_SEPARATOR}Chart.yaml")
-        } catch (e: FileNotFoundException) {
-            logger.error(e.message)
-            throw HelmIndexFreshFailException("file Chart.yaml nou found")
+            val filePath = "$tempDir/$name${FILE_SEPARATOR}Chart.yaml"
+            logger.info("unTgz Chart.yaml file path : $filePath")
+            return File(filePath)
+        } catch (e: Exception) {
+            logger.error("get unTgz file error : " + e.message)
+            throw HelmIndexFreshFailException("file Chart.yaml not found")
         }
     }
 
