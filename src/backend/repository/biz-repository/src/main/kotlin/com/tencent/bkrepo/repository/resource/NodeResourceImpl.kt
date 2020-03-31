@@ -14,7 +14,9 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.NodeService
+import com.tencent.bkrepo.repository.service.ShareService
 import com.tencent.bkrepo.repository.service.query.NodeQueryService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -28,7 +30,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class NodeResourceImpl @Autowired constructor(
     private val nodeService: NodeService,
-    private val nodeQueryService: NodeQueryService
+    private val nodeQueryService: NodeQueryService,
+    private val shareService: ShareService
 ) : NodeResource {
 
     override fun detail(projectId: String, repoName: String, repoType: String, fullPath: String): Response<NodeDetail?> {
@@ -55,9 +58,8 @@ class NodeResourceImpl @Autowired constructor(
         return ResponseBuilder.success(nodeService.search(nodeSearchRequest))
     }
 
-    override fun create(nodeCreateRequest: NodeCreateRequest): Response<Void> {
-        nodeService.create(nodeCreateRequest)
-        return ResponseBuilder.success()
+    override fun create(nodeCreateRequest: NodeCreateRequest): Response<NodeInfo> {
+        return ResponseBuilder.success(nodeService.create(nodeCreateRequest))
     }
 
     override fun rename(nodeRenameRequest: NodeRenameRequest): Response<Void> {
@@ -86,6 +88,10 @@ class NodeResourceImpl @Autowired constructor(
 
     override fun countFileNode(projectId: String, repoName: String, path: String): Response<Long> {
         return ResponseBuilder.success(nodeService.countFileNode(projectId, repoName, path))
+    }
+
+    override fun listShareRecord(projectId: String, repoName: String, fullPath: String): Response<List<ShareRecordInfo>> {
+        return ResponseBuilder.success(shareService.list(projectId, repoName, fullPath))
     }
 
     override fun query(queryModel: QueryModel): Response<Page<Map<String, Any>>> {

@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletRequest
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.docker.model.DockerBasicPath
 
 @RestController
 class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) : User {
@@ -23,7 +24,7 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
     ): Response<String> {
         dockerRepo.userId = UserUtil.getContextUserId(userId)
         val imageName = PathUtil.userArtifactName(request, projectId, repoName, tag)
-        val result = dockerRepo.getManifestString(projectId, repoName, imageName, tag)
+        val result = dockerRepo.getManifestString(DockerBasicPath(projectId, repoName, imageName), tag)
         return ResponseBuilder.success(result)
     }
 

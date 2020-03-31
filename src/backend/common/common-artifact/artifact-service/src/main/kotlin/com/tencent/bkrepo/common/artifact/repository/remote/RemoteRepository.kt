@@ -1,16 +1,16 @@
 package com.tencent.bkrepo.common.artifact.repository.remote
 
-import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.PROXY_AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.pojo.configuration.ProxyConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.configuration.RemoteCredentialsConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.ProxyConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCredentialsConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
-import com.tencent.bkrepo.common.artifact.repository.http.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
+import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.api.NodeResource
@@ -18,6 +18,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import okhttp3.Authenticator
 import okhttp3.Credentials
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -52,7 +53,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         val downloadUri = generateRemoteDownloadUrl(context)
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
-        return if(checkResponse(response)){
+        return if (checkResponse(response)) {
             response.body()!!.string()
         } else null
     }
@@ -145,7 +146,7 @@ abstract class RemoteRepository : AbstractArtifactRepository {
         builder.connectTimeout(configuration.networkConfiguration.connectTimeout, TimeUnit.MILLISECONDS)
         builder.proxy(createProxy(configuration.networkConfiguration.proxy))
         builder.proxyAuthenticator(createProxyAuthenticator(configuration.networkConfiguration.proxy))
-        builder.authenticator(createAuthenticator(configuration.credentialsConfiguration))
+        createBasicAuthInteceptor(configuration.credentialsConfiguration)?.let { builder.addInterceptor(it) }
         return builder.build()
     }
 
@@ -175,13 +176,13 @@ abstract class RemoteRepository : AbstractArtifactRepository {
     /**
      * 创建身份认证
      */
-    open fun createAuthenticator(configuration: RemoteCredentialsConfiguration?): Authenticator {
+    open fun createBasicAuthInteceptor(configuration: RemoteCredentialsConfiguration?): Interceptor? {
         return configuration?.let {
-            Authenticator { _, response ->
-                val credential = Credentials.basic(configuration.username, configuration.password)
-                response.request().newBuilder().header(AUTHORIZATION, credential).build()
-            }
-        } ?: Authenticator.NONE
+            return BasicAuthInterceptor(
+                it.username,
+                it.password
+            )
+        }
     }
 
     /**

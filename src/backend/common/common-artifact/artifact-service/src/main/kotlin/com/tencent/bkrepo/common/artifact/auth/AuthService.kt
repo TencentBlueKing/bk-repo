@@ -34,7 +34,7 @@ class AuthService @Autowired constructor(
     }
 
     private fun preCheck(): Boolean {
-        if(!authProperties.enabled) {
+        if (!authProperties.enabled) {
             logger.debug("Auth disabled, skip authenticate.")
             return true
         }

@@ -34,7 +34,6 @@ const val ATTRIBUTE_SHA256MAP = "artifact.sha256"
 const val ATTRIBUTE_OCTET_STREAM_SHA256 = "artifact.sha256.octet-stream"
 const val ATTRIBUTE_MD5MAP = "artifact.md5"
 const val ATTRIBUTE_OCTET_STREAM_MD5 = "artifact.md5.octet-stream"
-const val DEFAULT_MIME_TYPE = "application/octet-stream"
 const val CONTENT_DISPOSITION_TEMPLATE = "attachment;filename=\"%s\";filename*=UTF-8''%s"
 const val BYTES = "bytes="
 
