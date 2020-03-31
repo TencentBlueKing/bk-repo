@@ -165,7 +165,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         if (matched == null) {
             return DockerV2Errors.manifestUnknown(digest.toString())
         } else {
-            return this.buildManifestResponse(path, digest)
+            return this.buildManifestResponse(path, path.dockerRepo, digest)
         }
     }
 
@@ -202,7 +202,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             if (manifest == null) {
                 return DockerV2Errors.manifestUnknown(manifestPath)
             } else {
-                return this.buildManifestResponse(path, DockerDigest("sh256:${manifest.nodeInfo.sha256}"))
+                return this.buildManifestResponse(path, manifestPath, DockerDigest("sh256:${manifest.nodeInfo.sha256}"))
             }
         }
     }
@@ -278,19 +278,21 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             .body(inputStreamResource)
     }
 
-    private fun buildManifestResponse(path: DockerBasicPath, digest: DockerDigest): ResponseEntity<Any> {
+    private fun buildManifestResponse(
+        path: DockerBasicPath,
+        manifestPath: String,
+        digest: DockerDigest
+    ): ResponseEntity<Any> {
         var context = DownloadContext(path.projectId, path.repoName, path.dockerRepo).projectId(path.projectId)
             .repoName(path.repoName)
             .sha256(digest.getDigestHex())
         var file = this.repo.download(context)
         val inputStreamResource = InputStreamResource(file.inputStream())
+        val contentType = DockerSchemaUtils.getManifestType(path.projectId, path.repoName, manifestPath, this.repo)
         httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
         httpHeaders.set("Docker-Content-Digest", digest.toString())
-        httpHeaders.set(
-            "Content-Type",
-            DockerSchemaUtils.getManifestType(path.projectId, path.repoName, path.dockerRepo, this.repo)
-        )
-        logger.info("file result length {}", file.length())
+        httpHeaders.set("Content-Type", contentType)
+        logger.info("file result length {}， type {}", file.length(), contentType)
         return ResponseEntity.ok()
             .headers(httpHeaders)
             .contentLength(file.length())
