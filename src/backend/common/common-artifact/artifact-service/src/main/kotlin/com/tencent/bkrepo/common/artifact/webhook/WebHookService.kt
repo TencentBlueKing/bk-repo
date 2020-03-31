@@ -48,5 +48,4 @@ class WebHookService {
     companion object {
         private val logger = LoggerFactory.getLogger(WebHookService::class.java)
     }
-
 }

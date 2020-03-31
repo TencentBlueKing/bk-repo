@@ -18,7 +18,7 @@ data class ReplicationTaskInfo(
     val type: ReplicationType,
     val setting: ReplicationSetting,
     val status: ReplicationStatus,
-    val replicationProgress: ReplicationProgress? = null,
+    val replicationProgress: ReplicationProgress,
     val startTime: String? = null,
     val endTime: String? = null,
     val errorReason: String? = null

@@ -71,6 +71,5 @@ open class PlatformClientAuthHandler : ClientAuthHandler {
 
     companion object {
         private val logger = LoggerFactory.getLogger(PlatformClientAuthHandler::class.java)
-
     }
 }

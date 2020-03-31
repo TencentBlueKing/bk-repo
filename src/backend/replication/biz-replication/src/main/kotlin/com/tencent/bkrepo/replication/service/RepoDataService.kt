@@ -31,7 +31,7 @@ class RepoDataService @Autowired constructor(
     private val roleResource: ServiceRoleResource,
     private val userResource: ServiceUserResource,
     private val storageService: StorageService
-){
+) {
 
     fun listProject(projectId: String? = null): List<ProjectInfo> {
         return if (projectId == null) {
@@ -53,7 +53,7 @@ class RepoDataService @Autowired constructor(
         return nodeResource.countFileNode(repositoryInfo.projectId, repositoryInfo.name, ROOT).data!!
     }
 
-    fun listFileNode(projectId: String, repoName: String, path: String = ROOT, page: Int = 0,size: Int = 100): List<NodeInfo> {
+    fun listFileNode(projectId: String, repoName: String, path: String = ROOT, page: Int = 0, size: Int = 100): List<NodeInfo> {
         return nodeResource.page(projectId, repoName, page, size, path, includeFolder = false, deep = true).data!!.records
     }
 
@@ -61,8 +61,8 @@ class RepoDataService @Autowired constructor(
         return metadataResource.query(nodeInfo.projectId, nodeInfo.repoName, nodeInfo.fullPath).data!!
     }
 
-    fun getFile(nodeInfo: NodeInfo, repoInfo: RepositoryInfo): File {
-        return storageService.load(nodeInfo.sha256!!, repoInfo.storageCredentials)!!
+    fun getFile(sha256: String, repoInfo: RepositoryInfo): File {
+        return storageService.load(sha256, repoInfo.storageCredentials)!!
     }
 
     fun listRole(projectId: String, repoName: String?): List<Role> {
@@ -81,5 +81,4 @@ class RepoDataService @Autowired constructor(
     fun getUserDetail(uid: String): User? {
         return userResource.detail(uid).data
     }
-
 }

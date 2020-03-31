@@ -1,7 +1,6 @@
 spring:
   application:
     name: replication
-    version: 0.7
   cloud:
     consul:
       discovery:
