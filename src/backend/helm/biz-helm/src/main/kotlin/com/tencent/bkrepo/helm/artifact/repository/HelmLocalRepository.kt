@@ -24,6 +24,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
 import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.lang.StringUtils
+import org.apache.http.HttpStatus
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -197,9 +198,9 @@ class HelmLocalRepository : LocalRepository() {
         with(artifactInfo) {
             val nodeDetail = nodeResource.detail(projectId, repoName, artifactUri).data
             if (nodeDetail == null) {
-                response.status = 404
+                response.status = HttpStatus.SC_NOT_FOUND
             } else {
-                response.status = 200
+                response.status = HttpStatus.SC_OK
             }
         }
     }
