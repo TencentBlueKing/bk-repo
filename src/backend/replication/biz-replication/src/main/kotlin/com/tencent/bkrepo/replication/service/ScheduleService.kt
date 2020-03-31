@@ -2,9 +2,8 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
 import com.tencent.bkrepo.replication.constant.TASK_ID_KEY
-import com.tencent.bkrepo.replication.job.FullReplicaJob
-import com.tencent.bkrepo.replication.model.TReplicaTask
-import com.tencent.bkrepo.replication.pojo.ReplicationType
+import com.tencent.bkrepo.replication.job.FullReplicationJob
+import com.tencent.bkrepo.replication.model.TReplicationTask
 import org.quartz.CronScheduleBuilder
 import org.quartz.JobBuilder
 import org.quartz.JobKey
@@ -21,24 +20,21 @@ import java.util.Date
 class ScheduleService @Autowired constructor(
     private val scheduler: Scheduler
 ) {
-    fun createJob(task: TReplicaTask) {
-        when (task.type) {
-            ReplicationType.FULL -> createFullReplicaJob(task)
-            ReplicationType.INCREMENTAL -> createIncrementalReplicaJob(task)
-        }
+    fun createJob(task: TReplicationTask) {
+        createFullReplicaJob(task)
     }
 
-    private fun createFullReplicaJob(task: TReplicaTask) {
-        val jobDetail = JobBuilder.newJob(FullReplicaJob::class.java)
+    private fun createFullReplicaJob(task: TReplicationTask) {
+        val jobDetail = JobBuilder.newJob(FullReplicationJob::class.java)
             .withIdentity(task.id, DEFAULT_GROUP_ID)
             .usingJobData(TASK_ID_KEY, task.id)
             .build()
         val trigger = createTrigger(task)
         scheduler.scheduleJob(jobDetail, trigger)
-        logger.info("Create full replica job success!")
+        logger.info("Create full replication job success!")
     }
 
-    private fun createTrigger(task: TReplicaTask): Trigger {
+    private fun createTrigger(task: TReplicationTask): Trigger {
         with(task.setting.executionPlan) {
             return when {
                 executeImmediately -> {
@@ -61,10 +57,6 @@ class ScheduleService @Autowired constructor(
                 }
             }
         }
-    }
-
-    private fun createIncrementalReplicaJob(task: TReplicaTask) {
-        TODO("IncrementalReplicaJob")
     }
 
     fun pauseJob(id: String) {

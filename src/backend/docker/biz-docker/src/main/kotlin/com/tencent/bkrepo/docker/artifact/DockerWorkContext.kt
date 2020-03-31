@@ -29,7 +29,7 @@ class DockerWorkContext() {
         return true
     }
 
-    fun cleanup(repoId: String, uploadsPath: String) {
+    fun cleanup(repoId: String, path: String) {
         return
     }
 
