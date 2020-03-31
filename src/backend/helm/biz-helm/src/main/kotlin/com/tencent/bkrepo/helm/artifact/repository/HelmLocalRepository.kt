@@ -18,16 +18,10 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.helm.constants.CHART_NOT_FOUND
-import com.tencent.bkrepo.helm.constants.CHART_VERSION_NOT_FOUND
-import com.tencent.bkrepo.helm.constants.EMPTY_CHART_OR_VERSION
-import com.tencent.bkrepo.helm.constants.EMPTY_NAME_OR_VERSION
-import com.tencent.bkrepo.helm.constants.ENTRIES
-import com.tencent.bkrepo.helm.constants.ERROR_NOT_FOUND
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.constants.INIT_STR
-import com.tencent.bkrepo.helm.constants.NO_CHART_NAME_FOUND
 import com.tencent.bkrepo.helm.utils.JsonUtil
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -187,7 +181,7 @@ class HelmLocalRepository : LocalRepository() {
     fun isExists(context: ArtifactSearchContext) {
         val artifactInfo = context.artifactInfo
         val response = HttpContextHolder.getResponse()
-        with(artifactInfo) {
+        val status: Int = with(artifactInfo) {
             val projectId = Rule.QueryRule("projectId", projectId)
             val repoName = Rule.QueryRule("repoName", repoName)
             val urlList = artifactUri.removePrefix("/").split("/").filter { it.isNotBlank() }
@@ -215,17 +209,17 @@ class HelmLocalRepository : LocalRepository() {
             }
             rule?.let {
                 val queryModel = QueryModel(
-
                 page = PageLimit(0, 5),
                 sort = Sort(listOf("name"), Sort.Direction.ASC),
                 select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
                 rule = it
-                )if
+                )
                 val nodeList: List<Map<String, Any>>? = nodeResource.query(queryModel).data?.records
-                (nodeList.isNullOrEmpty()) HttpStatus.SC_NOT_FOUND
+                if (nodeList.isNullOrEmpty()) HttpStatus.SC_NOT_FOUND else HttpStatus.SC_OK
             }
-
+            HttpStatus.SC_NOT_FOUND
         }
+        response.status = status
     }
 
      companion object {
