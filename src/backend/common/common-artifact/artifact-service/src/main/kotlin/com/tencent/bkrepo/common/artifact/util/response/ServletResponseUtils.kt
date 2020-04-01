@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.artifact.config.TGZ_MIME_TYPE
 import com.tencent.bkrepo.common.artifact.config.YAML_MIME_TYPE
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.util.NodeUtils
+import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
 import org.springframework.web.util.UriUtils
@@ -25,6 +26,7 @@ import javax.servlet.http.HttpServletResponse
  */
 object ServletResponseUtils {
 
+    private val logger = LoggerFactory.getLogger(ServletResponseUtils::class.java)
     private val rangePatternRegex = Regex("^bytes=\\d*-\\d*(,\\d*-\\d*)*$")
 
     private const val BYTERANGES_BOUNDARY = "BYTERANGES_BOUNDRY"
@@ -53,12 +55,13 @@ object ServletResponseUtils {
         response.setHeader(HttpHeaders.ETAG, eTag)
         response.setDateHeader(HttpHeaders.LAST_MODIFIED, file.lastModified())
         response.characterEncoding = StandardCharsets.UTF_8.name()
-        val rangeList = try {
+        val rangeList: List<Range> = try {
             resolveRanges(request, file, eTag)
-        } catch (e: Exception) {
+        } catch (exception: Exception) {
             response.setHeader(HttpHeaders.CONTENT_RANGE,"bytes */${file.length()}")
-            response.sendError(HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE)
-            emptyList()
+            response.status = HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE
+            logger.warn("Range response failed: range header is invalid.")
+            return
         }
         when {
             rangeList.isEmpty() -> {
@@ -79,7 +82,7 @@ object ServletResponseUtils {
             val length = file.length()
             val range = Range(length)
             response.contentType = mimeType
-            response.setHeader(HttpHeaders.CONTENT_LENGTH, length.toString())
+            response.setHeader(HttpHeaders.CONTENT_LENGTH, range.getLength().toString())
             response.setHeader(HttpHeaders.CONTENT_RANGE, getRangeHeader(range))
             copyRange(it, output, range)
             output.flush()
@@ -89,10 +92,9 @@ object ServletResponseUtils {
     private fun responseSingleRange(file: File, response: HttpServletResponse, mimeType: String, range: Range) {
         RandomAccessFile(file, "r").use {
             val output = response.outputStream
-            val length = file.length()
             response.status = HttpServletResponse.SC_PARTIAL_CONTENT
             response.contentType = mimeType
-            response.setHeader(HttpHeaders.CONTENT_LENGTH, length.toString())
+            response.setHeader(HttpHeaders.CONTENT_LENGTH, range.getLength().toString())
             response.setHeader(HttpHeaders.CONTENT_RANGE, getRangeHeader(range))
             copyRange(it, output, range)
             output.flush()
