@@ -11,7 +11,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.util.HttpResponseUtils
+import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -125,7 +125,7 @@ class NpmLocalRepository : LocalRepository() {
             val file =
                 this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] does not exist")
             val name = NodeUtils.getName(getNodeFullPath(context))
-            HttpResponseUtils.response(name, file)
+            ServletResponseUtils.response(name, file)
             logger.info("User[$userId] download artifact[$artifactUri] success")
             this.onDownloadSuccess(context, file)
         } catch (validateException: ArtifactValidateException) {

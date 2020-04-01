@@ -39,6 +39,7 @@ const val BYTES = "bytes="
 
 const val YAML_MIME_TYPE = "application/x-yaml"
 const val TGZ_MIME_TYPE = "application/x-tar"
+const val STREAM_MIME_TYPE = "application/octet-stream"
 
 /**
  * 虚拟仓库相关

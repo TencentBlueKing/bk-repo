@@ -26,7 +26,7 @@ open class BasicClientAuthHandler : ClientAuthHandler {
     private lateinit var authService: AuthService
 
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
-        val basicAuthHeader = request.getHeader(AUTHORIZATION) ?: StringPool.EMPTY
+        val basicAuthHeader = request.getHeader(AUTHORIZATION).orEmpty()
         return if (basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) {
             try {
                 val encodedCredentials = basicAuthHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)

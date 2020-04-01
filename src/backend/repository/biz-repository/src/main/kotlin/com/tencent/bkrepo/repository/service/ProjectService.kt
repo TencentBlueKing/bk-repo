@@ -2,7 +2,6 @@ package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
-import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -47,7 +46,7 @@ class ProjectService @Autowired constructor(
             val project = TProject(
                 name = name,
                 displayName = displayName,
-                description = description ?: EMPTY,
+                description = description.orEmpty(),
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = operator,

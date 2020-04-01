@@ -26,19 +26,18 @@ object HttpClientBuilderFactory {
     }
 
     fun create(certificate: String? = null, neverReadTimeout: Boolean = false): OkHttpClient.Builder {
-        val builder = defaultClient.newBuilder()
-        certificate?.let {
-            val trustManager =
-                CertTrustManager.createTrustManager(it)
-            val sslSocketFactory =
-                CertTrustManager.createSSLSocketFactory(
-                    trustManager
-                )
-            builder.sslSocketFactory(sslSocketFactory, trustManager)
-        }
-        if (neverReadTimeout) {
-            builder.readTimeout(0, TimeUnit.MILLISECONDS)
-        }
-        return builder
+        return defaultClient.newBuilder()
+            .apply {
+                certificate?.let {
+                    val trustManager = CertTrustManager.createTrustManager(it)
+                    val sslSocketFactory = CertTrustManager.createSSLSocketFactory(trustManager)
+                    sslSocketFactory(sslSocketFactory, trustManager)
+                }
+            }.apply {
+                if (neverReadTimeout) {
+                    readTimeout(0, TimeUnit.MILLISECONDS)
+                }
+            }
+
     }
 }
