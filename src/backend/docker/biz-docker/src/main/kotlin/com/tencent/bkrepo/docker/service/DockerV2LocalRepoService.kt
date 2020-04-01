@@ -373,7 +373,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         )
         val manifestType = ManifestType.from(mediaType)
         val manifestPath = buildManifestPathFromType(path.dockerRepo, tag, manifestType)
-        logger.info("manifest path {} .", manifestPath)
+        logger.info("upload manifest path {}", manifestPath)
         stream.use {
             val digest = this.processUploadedManifestType(
                 path,
@@ -866,7 +866,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
     ): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, projectId, repoName)
         logger.info("patch upload blob {}", uuid)
-        val blobPath = "$dockerRepo/_uploads/$uuid"
+        // val blobPath = "$dockerRepo/_uploads/$uuid"
         val response = this.repo.writeAppend(uuid, artifactFile)
         val location = this.getDockerURI(repoName, "$projectId/$repoName/$dockerRepo/blobs/uploads/$uuid")
         return ResponseEntity.status(202).header("Content-Length", "0")

@@ -166,6 +166,15 @@ class HelmLocalRepository : LocalRepository() {
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
+
+        if (fullPath.contains(INDEX_CACHE_YAML)){
+            val indexFilePath = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
+            val exist = nodeResource.exist(projectId, repoName, indexFilePath)
+            if (!exist.data!!) {
+                // 新建index-cache.yaml文件
+                createIndexCacheYamlFile()
+            }
+        }
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
 
         node.nodeInfo.takeIf { !it.folder } ?: return null

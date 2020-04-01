@@ -58,32 +58,28 @@ class DockerSchemaUtils {
         ): ByteArray {
             try {
                 val manifest = JsonUtil.readTree(manifestBytes)
-                if (manifest != null) {
-                    val digest = manifest.get("config").get("digest").asText()
-                    val manifestConfigFilename = DockerDigest(digest).filename()
-                    val manifestConfigFile = DockerUtils.getManifestConfigBlob(
-                        repo,
-                        manifestConfigFilename,
+                val digest = manifest.get("config").get("digest").asText()
+                val manifestConfigFilename = DockerDigest(digest).filename()
+                val manifestConfigFile = DockerUtils.getManifestConfigBlob(
+                    repo,
+                    manifestConfigFilename,
+                    projectId,
+                    repoName,
+                    dockerRepoPath,
+                    tag
+                )
+                logger.info("fetch manifest config file {}", manifestConfigFile!!.sha256)
+                val manifestStream = repo.readGlobal(
+                    DownloadContext(
                         projectId,
                         repoName,
-                        dockerRepoPath,
-                        tag
-                    )
-                    logger.info("fetch manifest config file {}", manifestConfigFile!!.sha256)
-                    if (manifestConfigFile != null) {
-                        val manifestStream = repo.readGlobal(
-                            DownloadContext(
-                                projectId,
-                                repoName,
-                                manifestConfigFile.path
-                            ).sha256(manifestConfigFile.sha256!!)
-                        )
-                        manifestStream.use {
-                            var bytes = IOUtils.toByteArray(it)
-                            logger.info("config blob data size {}", bytes.size)
-                            return bytes
-                        }
-                    }
+                        manifestConfigFile.path
+                    ).sha256(manifestConfigFile.sha256!!)
+                )
+                manifestStream.use {
+                    var bytes = IOUtils.toByteArray(it)
+                    logger.info("config blob data size {}", bytes.size)
+                    return bytes
                 }
             } catch (ioException: IOException) {
                 logger.error("Error fetching manifest schema2: " + ioException.message, ioException)
