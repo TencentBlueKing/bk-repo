@@ -1,30 +1,30 @@
 package com.tencent.bkrepo.repository.listener
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.stream.event.node.NodeEvent
-import com.tencent.bkrepo.common.stream.producer.StreamProducer
+import com.tencent.bkrepo.common.stream.message.node.NodeCreatedMessage
+import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
 @Component
-class NodeEventListener(
-    private val streamProducer: StreamProducer
-) {
+class NodeEventListener: AbstractEventListener() {
 
-    @EventListener(NodeEvent::class)
-    fun listen(event: NodeEvent) {
+    @EventListener(NodeCreatedEvent::class)
+    fun listen(event: NodeCreatedEvent) {
         logEvent(event)
-        sendEventStream(event)
-    }
-
-    fun logEvent(event: NodeEvent) {
-        // TODO: 审计日志
-    }
-
-    fun sendEventStream(event: NodeEvent) {
-        // TODO: 发送事件
-        if (event.repoCategory == RepositoryCategory.LOCAL.name) {
-            streamProducer.sendEvent(event)
+        if (event.repository.category == RepositoryCategory.LOCAL && !event.node.folder) {
+            val message = with(event.node) {
+                 NodeCreatedMessage(
+                     projectId = projectId,
+                     repoName = repoName,
+                     fullPath = fullPath,
+                     size = size,
+                     sha256 = sha256!!,
+                     md5 = md5!!
+                 )
+            }
+            sendMessage(message)
         }
     }
+
 }

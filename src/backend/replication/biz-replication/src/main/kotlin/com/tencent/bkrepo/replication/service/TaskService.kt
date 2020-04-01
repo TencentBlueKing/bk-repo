@@ -69,13 +69,16 @@ class TaskService(
     }
 
     fun listRelativeTask(type: ReplicationType, localProjectId: String? = null, localRepoName: String? = null): List<TReplicationTask> {
-        val criteria = Criteria().orOperator(
-            Criteria.where(TReplicationTask::localProjectId.name).`is`(null),
+        val criteria = Criteria.where(TReplicationTask::includeAllProject.name).`is`(true)
+            .and(TReplicationTask::type.name).`is`(type)
+        if (localProjectId != null && localRepoName == null) {
             Criteria.where(TReplicationTask::localProjectId.name).`is`(localProjectId)
-        ).orOperator(
-            Criteria.where(TReplicationTask::localRepoName.name).`is`(null),
-            Criteria.where(TReplicationTask::localRepoName.name).`is`(localRepoName)
-        ).and(TReplicationTask::type.name).`is`(type)
+                .apply { criteria.orOperator(this) }
+        } else if (localProjectId != null && localRepoName != null) {
+            Criteria.where(TReplicationTask::localProjectId.name).`is`(localProjectId)
+                .and(TReplicationTask::localRepoName.name).`is`(localProjectId)
+                .apply { criteria.orOperator(this) }
+        }
 
         return mongoTemplate.find(Query(criteria), TReplicationTask::class.java)
     }

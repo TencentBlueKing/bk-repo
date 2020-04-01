@@ -12,6 +12,7 @@ import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.Request
 import okhttp3.RequestBody
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
@@ -63,5 +64,7 @@ class ReplicationService(
 
     companion object {
         private val MEDIA_TYPE_STREAM = MediaType.parse(StringPool.MEDIA_TYPE_STREAM)
+
+        private val logger = LoggerFactory.getLogger(ReplicationService::class.java)
     }
 }

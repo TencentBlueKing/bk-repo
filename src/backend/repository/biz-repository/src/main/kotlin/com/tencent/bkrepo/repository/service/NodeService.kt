@@ -5,8 +5,8 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.stream.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -212,14 +212,7 @@ class NodeService @Autowired constructor(
             metadata?.let { metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it)) }
             logger.info("Create node [$this] success.")
             // 发送事件
-            val event = NodeCreatedEvent(
-                projectId,
-                repoName,
-                repo.category.name,
-                node.fullPath,
-                node.size,
-                node.sha256!!,
-                node.md5!!)
+            val event = NodeCreatedEvent(repo, node)
             publisher.publishEvent(event)
             return convert(node)!!
         }

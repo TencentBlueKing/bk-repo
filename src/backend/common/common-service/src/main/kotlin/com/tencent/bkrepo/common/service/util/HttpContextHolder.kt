@@ -1,9 +1,11 @@
 package com.tencent.bkrepo.common.service.util
 
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import com.tencent.bkrepo.common.api.constant.StringPool
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
+import java.util.StringTokenizer
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 /**
  *
@@ -17,5 +19,12 @@ object HttpContextHolder {
 
     fun getResponse(): HttpServletResponse {
         return (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes).response!!
+    }
+
+    fun getClientAddress(): String {
+        return (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request?.let {
+            val header = it.getHeader("X-Forwarded-For")
+            if (header.isNullOrBlank()) it.remoteAddr else StringTokenizer(header, ",").nextToken()
+        } ?: StringPool.UNKNOWN
     }
 }

@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.replication.stream
 
-import com.tencent.bkrepo.common.stream.event.IEvent
-import com.tencent.bkrepo.common.stream.sink.EventSink
+import com.tencent.bkrepo.common.stream.message.IMessage
+import com.tencent.bkrepo.common.stream.sink.MessageSink
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.stream.annotation.EnableBinding
 import org.springframework.cloud.stream.annotation.StreamListener
@@ -9,15 +9,15 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
 @Component
-@EnableBinding(EventSink::class)
+@EnableBinding(MessageSink::class)
 class StreamConsumer(
     private val publisher: ApplicationEventPublisher
 ) {
 
-    @StreamListener(EventSink.INPUT)
-    fun process(event: IEvent) {
-        logger.info("Receive [$event] from stream success.")
-        publisher.publishEvent(event)
+    @StreamListener(MessageSink.INPUT)
+    fun process(message: IMessage) {
+        logger.info("Receive [$message] from stream success.")
+        publisher.publishEvent(message)
     }
 
     companion object {

@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.replication.stream.handler
 
-import com.tencent.bkrepo.common.stream.event.node.NodeCreatedEvent
+import com.tencent.bkrepo.common.stream.message.node.NodeCreatedMessage
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import com.tencent.bkrepo.replication.pojo.request.NodeReplicaRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
@@ -14,19 +14,19 @@ class NodeCreatedEventHandler(
     private val taskService: TaskService,
     private val replicationService: ReplicationService
 ) {
-    @EventListener(NodeCreatedEvent::class)
-    fun handle(event: NodeCreatedEvent) {
-        val taskList = taskService.listRelativeTask(ReplicationType.INCREMENTAL, event.projectId, event.repoName)
+    @EventListener(NodeCreatedMessage::class)
+    fun handle(message: NodeCreatedMessage) {
+        val taskList = taskService.listRelativeTask(ReplicationType.INCREMENTAL, message.projectId, message.repoName)
         taskList.forEach {
             val context = ReplicationContext(it)
             // 同步节点
             val replicaRequest = NodeReplicaRequest(
-                projectId = it.remoteProjectId ?: it.localProjectId ?: event.projectId,
-                repoName = it.remoteRepoName ?: it.localRepoName ?: event.repoName,
-                fullPath = event.fullPath,
-                size = event.size,
-                sha256 = event.sha256,
-                md5 = event.md5
+                projectId = it.remoteProjectId ?: it.localProjectId ?: message.projectId,
+                repoName = it.remoteRepoName ?: it.localRepoName ?: message.repoName,
+                fullPath = message.fullPath,
+                size = message.size,
+                sha256 = message.sha256,
+                md5 = message.md5
             )
             replicationService.replicaNode(context, replicaRequest)
         }
