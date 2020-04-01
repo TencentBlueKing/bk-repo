@@ -30,7 +30,7 @@ class DockerManifestSyncer() {
 
         while (manifestInfo.hasNext()) {
             val blobInfo = manifestInfo.next()
-            log.info(" docker digest {}", blobInfo.digest)
+            log.info("sync docker digest {}", blobInfo.digest)
             if (blobInfo.digest != null && !this.isForeignLayer(blobInfo)) {
                 val blobDigest = DockerDigest(blobInfo.digest!!)
                 val blobFilename = blobDigest.filename()
