@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.util
 
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
@@ -76,11 +76,25 @@ object QueryHelper {
     }
 
     fun nodeListQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Query {
-        return Query.query(nodeListCriteria(projectId, repoName, path, includeFolder, deep)).with(Sort.by(TNode::fullPath.name))
+        return Query.query(
+            nodeListCriteria(
+                projectId,
+                repoName,
+                path,
+                includeFolder,
+                deep
+            )
+        ).with(Sort.by(TNode::fullPath.name))
     }
 
     fun nodePageQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean, page: Int, size: Int): Query {
-        return nodeListQuery(projectId, repoName, path, includeFolder, deep).with(PageRequest.of(page, size))
+        return nodeListQuery(
+            projectId,
+            repoName,
+            path,
+            includeFolder,
+            deep
+        ).with(PageRequest.of(page, size))
     }
 
     fun nodePathUpdate(path: String, name: String, operator: String): Update {
@@ -100,7 +114,8 @@ object QueryHelper {
     }
 
     fun nodeDeleteUpdate(operator: String): Update {
-        return update(operator).set(TNode::deleted.name, LocalDateTime.now())
+        return update(operator)
+            .set(TNode::deleted.name, LocalDateTime.now())
     }
 
     fun nodeMetadataQuery(projectId: String, repoName: String, fullPath: String, key: String): Query {
