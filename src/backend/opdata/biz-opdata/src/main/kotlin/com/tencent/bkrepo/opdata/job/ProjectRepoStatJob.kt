@@ -52,7 +52,7 @@ class ProjectRepoStatJob {
             val table = "node_" + (projectId.hashCode() and 255).toString()
 
             repos.forEach {
-                val repoName = it.name
+                val repoName = it
                 val query = Query(
                     Criteria.where("folder").`is`(false)
                         .and("projectId").`is`(projectId)
