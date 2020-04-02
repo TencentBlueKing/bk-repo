@@ -41,7 +41,7 @@ class ProjectRepoStatJob {
         }
         val timeMillis = System.currentTimeMillis()
         val batchPoints = BatchPoints
-            .database("bkrepo")
+            .database(influxDbConfig.database)
             .build()
         val projects = projectModel.getProjectList()
         projects.forEach {

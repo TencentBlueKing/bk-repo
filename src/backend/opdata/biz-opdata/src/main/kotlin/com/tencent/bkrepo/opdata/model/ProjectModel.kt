@@ -21,8 +21,7 @@ class ProjectModel @Autowired constructor(
         results.forEach {
             val name = it.get("name") as String
             val displayName = it.get("displayName") as String
-            data.add(ProjectInfo(name, displayName, "", "", "", "",""))
-
+            data.add(ProjectInfo(name, displayName, "", "", "", "", ""))
         }
         return data
     }
