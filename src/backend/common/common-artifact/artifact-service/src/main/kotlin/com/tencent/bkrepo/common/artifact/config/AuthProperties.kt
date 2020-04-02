@@ -17,6 +17,3 @@ class AuthProperties {
         var expireSeconds: Long = -1
     }
 }
-
-
-
