@@ -6,7 +6,8 @@ import com.tencent.bkrepo.common.stream.message.MessageType
 data class NodeDeletedMessage(
     val projectId: String,
     val repoName: String,
-    val fullPath: String
+    val fullPath: String,
+    val operator: String
 ) : IMessage {
     override fun getMessageType() = MessageType.NODE_DELETED
 }

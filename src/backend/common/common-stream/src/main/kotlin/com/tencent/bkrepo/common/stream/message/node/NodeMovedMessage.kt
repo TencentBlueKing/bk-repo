@@ -10,7 +10,8 @@ data class NodeMovedMessage(
     val destProjectId: String,
     val destRepoName: String,
     val destFullPath: String,
-    val overwrite: Boolean
+    val overwrite: Boolean,
+    val operator: String
 ) : IMessage {
     override fun getMessageType() = MessageType.NODE_MOVED
 }

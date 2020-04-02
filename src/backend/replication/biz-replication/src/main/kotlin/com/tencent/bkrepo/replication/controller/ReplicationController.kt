@@ -29,7 +29,11 @@ import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.ProjectResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
@@ -76,7 +80,7 @@ class ReplicationController : ReplicationClient {
         return nodeResource.exist(projectId, repoName, fullPath)
     }
 
-    override fun replicaProject(token: String, replicaRequest: ProjectReplicaRequest): Response<ProjectInfo> {
+    override fun replicaProject(token: String, projectReplicaRequest: ProjectReplicaRequest): Response<ProjectInfo> {
         with(replicaRequest) {
             val projectInfo = projectResource.query(name).data ?: run {
                 val createRequest = ProjectCreateRequest(
@@ -192,5 +196,21 @@ class ReplicationController : ReplicationClient {
             )
             return nodeResource.create(request)
         }
+    }
+
+    override fun replicaNodeRenameRequest(token: String, nodeRenameRequest: NodeRenameRequest): Response<Void> {
+        return nodeResource.rename(nodeRenameRequest)
+    }
+
+    override fun replicaNodeCopyRequest(token: String, nodeCopyRequest: NodeCopyRequest): Response<Void> {
+        return nodeResource.copy(nodeCopyRequest)
+    }
+
+    override fun replicaNodeMovedRequest(token: String, nodeMoveRequest: NodeMoveRequest): Response<Void> {
+        return nodeResource.move(nodeMoveRequest)
+    }
+
+    override fun replicaNodeDeleteRequest(token: String, nodeDeleteRequest: NodeDeleteRequest): Response<Void> {
+        return nodeResource.delete(nodeDeleteRequest)
     }
 }

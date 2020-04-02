@@ -7,7 +7,8 @@ data class NodeRenamedMessage(
     val projectId: String,
     val repoName: String,
     val fullPath: String,
-    val newFullPath: String
+    val newFullPath: String,
+    val operator: String
 ) : IMessage {
     override fun getMessageType() = MessageType.NODE_RENAMED
 }

@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.auth
+package com.tencent.bkrepo.common.artifact.auth.core
 
 /**
  * 匿名用户

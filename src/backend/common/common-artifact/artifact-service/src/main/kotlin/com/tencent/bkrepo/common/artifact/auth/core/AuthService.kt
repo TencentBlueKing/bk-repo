@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.auth
+package com.tencent.bkrepo.common.artifact.auth.core
 
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
@@ -15,11 +15,13 @@ import org.springframework.stereotype.Component
  * @date: 2020/2/13
  */
 @Component
-class AuthService @Autowired constructor(
-    private val serviceUserResource: ServiceUserResource,
-    private val serviceAccountResource: ServiceAccountResource,
-    private val authProperties: AuthProperties
-) {
+class AuthService {
+    @Autowired
+    private lateinit var serviceUserResource: ServiceUserResource
+    @Autowired
+    private lateinit var serviceAccountResource: ServiceAccountResource
+    @Autowired
+    private lateinit var authProperties: AuthProperties
 
     fun checkUserAccount(uid: String, token: String): String {
         if (preCheck()) return uid

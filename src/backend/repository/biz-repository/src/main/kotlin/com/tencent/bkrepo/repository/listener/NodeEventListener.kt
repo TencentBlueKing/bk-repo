@@ -21,14 +21,17 @@ class NodeEventListener: AbstractEventListener() {
     @EventListener(NodeCreatedEvent::class)
     fun handle(event: NodeCreatedEvent) {
         event.apply {
-            NodeCreatedMessage(
-                projectId = node.projectId,
-                repoName = node.repoName,
-                fullPath = node.fullPath,
-                size = node.size,
-                sha256 = node.sha256!!,
-                md5 = node.md5!!
-            ).apply { sendMessage(this) }
+            if (!event.node.folder) {
+                NodeCreatedMessage(
+                    projectId = node.projectId,
+                    repoName = node.repoName,
+                    fullPath = node.fullPath,
+                    size = node.size,
+                    sha256 = node.sha256!!,
+                    md5 = node.md5!!,
+                    operator = operator
+                ).apply { sendMessage(this) }
+            }
         }.also { logEvent(it) }
     }
 
@@ -40,7 +43,8 @@ class NodeEventListener: AbstractEventListener() {
                 projectId = node.projectId,
                 repoName = node.repoName,
                 fullPath = node.fullPath,
-                newFullPath = newFullPath
+                newFullPath = newFullPath,
+                operator = operator
             ).apply { sendMessage(this) }
         }.also { logEvent(it) }
     }
@@ -56,7 +60,8 @@ class NodeEventListener: AbstractEventListener() {
                 destProjectId = destProjectId,
                 destRepoName = destRepoName,
                 destFullPath = destFullPath,
-                overwrite = overwrite
+                overwrite = overwrite,
+                operator = operator
             ).apply { sendMessage(this) }
         }.also { logEvent(it) }
     }
@@ -72,7 +77,8 @@ class NodeEventListener: AbstractEventListener() {
                 destProjectId = destProjectId,
                 destRepoName = destRepoName,
                 destFullPath = destFullPath,
-                overwrite = overwrite
+                overwrite = overwrite,
+                operator = operator
             ).apply { sendMessage(this) }
         }.also { logEvent(it) }
     }
@@ -84,7 +90,8 @@ class NodeEventListener: AbstractEventListener() {
             NodeDeletedMessage(
                 projectId = node.projectId,
                 repoName = node.repoName,
-                fullPath = node.fullPath
+                fullPath = node.fullPath,
+                operator = operator
             ).apply { sendMessage(this) }
         }.also { logEvent(it) }
     }

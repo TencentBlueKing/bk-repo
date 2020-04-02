@@ -25,12 +25,16 @@ import org.springframework.stereotype.Component
  * @date: 2019-10-18
  */
 @Component
-class PermissionService @Autowired constructor(
-    private val repositoryResource: RepositoryResource,
-    private val permissionResource: ServicePermissionResource,
-    private val userResource: ServiceUserResource,
-    private val authProperties: AuthProperties
-) {
+class PermissionService {
+    @Autowired
+    private lateinit var repositoryResource: RepositoryResource
+    @Autowired
+    private lateinit var permissionResource: ServicePermissionResource
+    @Autowired
+    private lateinit var userResource: ServiceUserResource
+    @Autowired
+    private lateinit var authProperties: AuthProperties
+
     fun checkPermission(userId: String, type: ResourceType, action: PermissionAction, repositoryInfo: RepositoryInfo) {
         if (preCheck()) return
         checkRepoPermission(userId, type, action, repositoryInfo)

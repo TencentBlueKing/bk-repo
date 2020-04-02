@@ -6,10 +6,10 @@ import com.tencent.bkrepo.common.api.constant.APP_KEY
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.artifact.auth.AnonymousCredentials
-import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
-import com.tencent.bkrepo.common.artifact.auth.AuthService
-import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
+import com.tencent.bkrepo.common.artifact.auth.core.AnonymousCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.AuthService
+import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.PLATFORM_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
@@ -26,7 +26,8 @@ import javax.servlet.http.HttpServletRequest
  * @date: 2019/11/25
  */
 @Order(Ordered.LOWEST_PRECEDENCE)
-open class PlatformClientAuthHandler : ClientAuthHandler {
+open class PlatformClientAuthHandler :
+    ClientAuthHandler {
 
     @Autowired
     private lateinit var serviceUserResource: ServiceUserResource

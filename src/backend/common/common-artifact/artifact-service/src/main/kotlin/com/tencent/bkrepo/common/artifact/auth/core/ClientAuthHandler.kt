@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.auth
+package com.tencent.bkrepo.common.artifact.auth.core
 
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import javax.servlet.http.HttpServletRequest

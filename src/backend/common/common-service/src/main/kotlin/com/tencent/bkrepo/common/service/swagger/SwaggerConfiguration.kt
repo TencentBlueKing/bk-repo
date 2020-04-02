@@ -11,7 +11,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2
 
 @EnableSwagger2
 @ConditionalOnProperty(value = ["swagger.enabled"], matchIfMissing = true)
-class SwaggerAutoConfiguration {
+class SwaggerConfiguration {
 
     @Bean
     fun api(): Docket {

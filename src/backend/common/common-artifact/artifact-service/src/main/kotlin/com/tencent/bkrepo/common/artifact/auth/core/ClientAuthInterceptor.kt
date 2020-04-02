@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.auth
+package com.tencent.bkrepo.common.artifact.auth.core
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY

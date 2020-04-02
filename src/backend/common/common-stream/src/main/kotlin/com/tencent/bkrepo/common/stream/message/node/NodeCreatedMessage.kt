@@ -9,7 +9,8 @@ data class NodeCreatedMessage(
     val fullPath: String,
     val size: Long,
     val sha256: String,
-    val md5: String
+    val md5: String,
+    val operator: String
 ) : IMessage {
     override fun getMessageType() = MessageType.NODE_CREATED
 }

@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.artifact.auth.jwt
 
-import com.tencent.bkrepo.common.artifact.auth.AnonymousCredentials
-import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
-import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
+import com.tencent.bkrepo.common.artifact.auth.core.AnonymousCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.BEARER_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException

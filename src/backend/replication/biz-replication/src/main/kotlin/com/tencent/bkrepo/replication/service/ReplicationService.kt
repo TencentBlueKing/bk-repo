@@ -6,6 +6,10 @@ import com.tencent.bkrepo.replication.job.ReplicationContext
 import com.tencent.bkrepo.replication.pojo.request.NodeReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.ProjectReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RepoReplicaRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import okhttp3.MediaType
@@ -59,6 +63,30 @@ class ReplicationService(
                 val responseString = response.body()?.string() ?: UNKNOWN
                 throw RuntimeException("Failed to replica node, response message: $responseString")
             }
+        }
+    }
+
+    fun replicaNodeRenameRequest(context: ReplicationContext, nodeRenameRequest: NodeRenameRequest) {
+        with(context) {
+            replicationClient.replicaNodeRenameRequest(authToken, nodeRenameRequest)
+        }
+    }
+
+    fun replicaNodeCopyRequest(context: ReplicationContext, nodeCopyRequest: NodeCopyRequest) {
+        with(context) {
+            replicationClient.replicaNodeCopyRequest(authToken, nodeCopyRequest)
+        }
+    }
+
+    fun replicaNodeMovedRequest(context: ReplicationContext, nodeMoveRequest: NodeMoveRequest) {
+        with(context) {
+            replicationClient.replicaNodeMovedRequest(authToken, nodeMoveRequest)
+        }
+    }
+
+    fun replicaNodeDeleteRequest(context: ReplicationContext, nodeDeleteRequest: NodeDeleteRequest) {
+        with(context) {
+            replicationClient.replicaNodeDeleteRequest(authToken, nodeDeleteRequest)
         }
     }
 

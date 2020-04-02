@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.artifact.event
 
-import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.webhook.WebHookService
 import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
 import org.slf4j.LoggerFactory
@@ -14,8 +13,6 @@ import org.springframework.context.event.EventListener
  * @date: 2020/1/8
  */
 class ArtifactEventListener {
-
-    private val httpClient = HttpClientBuilderFactory.create().build()
 
     @Autowired
     private lateinit var webHookService: WebHookService

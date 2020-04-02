@@ -11,6 +11,10 @@ import com.tencent.bkrepo.replication.pojo.request.ProjectReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RepoReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.cloud.openfeign.FeignClient
@@ -44,7 +48,7 @@ interface ReplicationClient {
     @PostMapping("/project")
     fun replicaProject(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        @RequestBody replicaRequest: ProjectReplicaRequest
+        @RequestBody projectReplicaRequest: ProjectReplicaRequest
     ): Response<ProjectInfo>
 
     @PostMapping("/repo")
@@ -85,4 +89,28 @@ interface ReplicationClient {
         @RequestParam projectId: String,
         @RequestParam repoName: String? = null
     ): Response<List<Permission>>
+
+    @PostMapping("/node/rename")
+    fun replicaNodeRenameRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody nodeRenameRequest: NodeRenameRequest
+    ): Response<Void>
+
+    @PostMapping("/node/copy")
+    fun replicaNodeCopyRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody nodeCopyRequest: NodeCopyRequest
+    ): Response<Void>
+
+    @PostMapping("/node/move")
+    fun replicaNodeMovedRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody nodeMoveRequest: NodeMoveRequest
+    ): Response<Void>
+
+    @PostMapping("/node/delete")
+    fun replicaNodeDeleteRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody nodeDeleteRequest: NodeDeleteRequest
+    ): Response<Void>
 }
