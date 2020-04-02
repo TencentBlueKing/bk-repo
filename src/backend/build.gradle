@@ -18,6 +18,7 @@ buildscript {
         shedlockVersion = "4.1.0"
         hdfsVersion = "2.6.0"
         quartzMongoVersion = "2.1.0"
+        jjwtVersion = "0.11.1"
     }
 
     repositories {
@@ -140,6 +141,8 @@ subprojects {
             dependency "org.apache.hadoop:hadoop-hdfs:$hdfsVersion"
             dependency "org.apache.hadoop:hadoop-common:$hdfsVersion"
             dependency "com.novemberain:quartz-mongodb:$quartzMongoVersion"
+            dependency "io.jsonwebtoken:jjwt-api:$jjwtVersion"
+            dependency "io.jsonwebtoken:jjwt-impl:$jjwtVersion"
         }
 
     }
