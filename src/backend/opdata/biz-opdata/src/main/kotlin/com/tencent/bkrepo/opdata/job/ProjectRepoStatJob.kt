@@ -30,7 +30,7 @@ class ProjectRepoStatJob {
     @Autowired
     private lateinit var influxDbConfig: InfluxDbConfig
 
-    @Scheduled(cron = "00 */10 * * * ?")
+    @Scheduled(cron = "00 15 */1 * * ?")
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT1H")
     fun statProjectRepoSize() {
         logger.info("start to stat project metrics")
