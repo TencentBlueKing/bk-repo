@@ -16,4 +16,8 @@ class ChartManipulationResourceImpl : ChartManipulationResource {
     override fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String, Any> {
         return chartManipulationService.upload(artifactInfo, artifactFileMap)
     }
+
+    override fun delete(artifactInfo: HelmArtifactInfo): Map<String, Any> {
+        return chartManipulationService.delete(artifactInfo)
+    }
 }

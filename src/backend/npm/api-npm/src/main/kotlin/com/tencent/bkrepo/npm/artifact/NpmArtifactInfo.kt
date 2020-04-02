@@ -32,7 +32,7 @@ class NpmArtifactInfo(
         const val NPM_PACKAGE_VERSION_INFO_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}/{version}"
 
         const val NPM_PACKAGE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}/-/*.tgz"
-        const val NPM_PACKAGE_SCOPE_SIMPLE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{scope}/{pkgName}/-/*.tgz"
+        const val NPM_PACKAGE_SCOPE_SIMPLE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{scope}/{pkgName}/-/{scope}/*.tgz"
 
         // search
         const val NPM_PACKAGE_SEARCH_MAPPING_URI = "/{projectId}/{repoName}/-/v1/search"
