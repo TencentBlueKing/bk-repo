@@ -68,17 +68,16 @@ class TaskService(
         return taskRepository.findByIdOrNull(id)?.let { convert(it) }
     }
 
-    fun listRelativeTask(type: ReplicationType, localProjectId: String? = null, localRepoName: String? = null): List<TReplicationTask> {
-        val criteria = Criteria.where(TReplicationTask::includeAllProject.name).`is`(true)
-            .and(TReplicationTask::type.name).`is`(type)
-        if (localProjectId != null && localRepoName == null) {
-            Criteria.where(TReplicationTask::localProjectId.name).`is`(localProjectId)
-                .apply { criteria.orOperator(this) }
-        } else if (localProjectId != null && localRepoName != null) {
-            Criteria.where(TReplicationTask::localProjectId.name).`is`(localProjectId)
-                .and(TReplicationTask::localRepoName.name).`is`(localProjectId)
-                .apply { criteria.orOperator(this) }
-        }
+    fun listRelativeTask(type: ReplicationType, localProjectId: String, localRepoName: String): List<TReplicationTask> {
+        val typeCriteria = Criteria.where(TReplicationTask::type.name).`is`(type)
+        val includeAllCriteria = Criteria.where(TReplicationTask::includeAllProject.name).`is`(true)
+        val repoCriteria = Criteria.where(TReplicationTask::localProjectId.name).`is`(localProjectId)
+            .orOperator(
+                Criteria.where(TReplicationTask::localRepoName.name).`is`(localRepoName),
+                Criteria.where(TReplicationTask::localRepoName.name).`is`(null)
+            )
+        val detailCriteria = Criteria().orOperator(includeAllCriteria, repoCriteria)
+        val criteria = Criteria().andOperator(typeCriteria, detailCriteria)
 
         return mongoTemplate.find(Query(criteria), TReplicationTask::class.java)
     }
@@ -126,14 +125,16 @@ class TaskService(
             if (!includeAllProject && localProjectId == null) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, request::localProjectId.name)
             }
-            tryConnect(setting.remoteClusterInfo)
+            if (validateConnectivity) {
+                tryConnect(setting.remoteClusterInfo)
+            }
         }
     }
 
     private fun tryConnect(remoteClusterInfo: RemoteClusterInfo) {
         with(remoteClusterInfo) {
-            val replicationService = FeignClientFactory.create(ReplicationClient::class.java, this)
             try {
+                val replicationService = FeignClientFactory.create(ReplicationClient::class.java, this)
                 val authToken = ReplicationContext.encodeAuthToken(username, password)
                 replicationService.ping(authToken)
             } catch (exception: Exception) {

@@ -1,30 +1,91 @@
 package com.tencent.bkrepo.repository.listener
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.stream.message.node.NodeCopiedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeCreatedMessage
+import com.tencent.bkrepo.common.stream.message.node.NodeDeletedMessage
+import com.tencent.bkrepo.common.stream.message.node.NodeMovedMessage
+import com.tencent.bkrepo.common.stream.message.node.NodeRenamedMessage
+import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeDeletedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeMovedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeRenamedEvent
 import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
 class NodeEventListener: AbstractEventListener() {
 
+    @Async
     @EventListener(NodeCreatedEvent::class)
-    fun listen(event: NodeCreatedEvent) {
-        logEvent(event)
-        if (event.repository.category == RepositoryCategory.LOCAL && !event.node.folder) {
-            val message = with(event.node) {
-                 NodeCreatedMessage(
-                     projectId = projectId,
-                     repoName = repoName,
-                     fullPath = fullPath,
-                     size = size,
-                     sha256 = sha256!!,
-                     md5 = md5!!
-                 )
-            }
-            sendMessage(message)
-        }
+    fun handle(event: NodeCreatedEvent) {
+        event.apply {
+            NodeCreatedMessage(
+                projectId = node.projectId,
+                repoName = node.repoName,
+                fullPath = node.fullPath,
+                size = node.size,
+                sha256 = node.sha256!!,
+                md5 = node.md5!!
+            ).apply { sendMessage(this) }
+        }.also { logEvent(it) }
     }
 
+    @Async
+    @EventListener(NodeRenamedEvent::class)
+    fun handle(event: NodeRenamedEvent) {
+        event.apply {
+            NodeRenamedMessage(
+                projectId = node.projectId,
+                repoName = node.repoName,
+                fullPath = node.fullPath,
+                newFullPath = newFullPath
+            ).apply { sendMessage(this) }
+        }.also { logEvent(it) }
+    }
+
+    @Async
+    @EventListener(NodeMovedEvent::class)
+    fun handle(event: NodeMovedEvent) {
+        event.apply {
+            NodeMovedMessage(
+                srcProjectId = node.projectId,
+                srcRepoName = node.repoName,
+                srcFullPath = node.fullPath,
+                destProjectId = destProjectId,
+                destRepoName = destRepoName,
+                destFullPath = destFullPath,
+                overwrite = overwrite
+            ).apply { sendMessage(this) }
+        }.also { logEvent(it) }
+    }
+
+    @Async
+    @EventListener(NodeCopiedEvent::class)
+    fun handle(event: NodeCopiedEvent) {
+        event.apply {
+            NodeCopiedMessage(
+                srcProjectId = node.projectId,
+                srcRepoName = node.repoName,
+                srcFullPath = node.fullPath,
+                destProjectId = destProjectId,
+                destRepoName = destRepoName,
+                destFullPath = destFullPath,
+                overwrite = overwrite
+            ).apply { sendMessage(this) }
+        }.also { logEvent(it) }
+    }
+
+    @Async
+    @EventListener(NodeDeletedEvent::class)
+    fun handle(event: NodeDeletedEvent) {
+        event.apply {
+            NodeDeletedMessage(
+                projectId = node.projectId,
+                repoName = node.repoName,
+                fullPath = node.fullPath
+            ).apply { sendMessage(this) }
+        }.also { logEvent(it) }
+    }
 }

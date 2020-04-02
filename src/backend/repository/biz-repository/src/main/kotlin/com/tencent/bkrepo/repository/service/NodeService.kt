@@ -6,7 +6,10 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeMovedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -212,8 +215,7 @@ class NodeService @Autowired constructor(
             metadata?.let { metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it)) }
             logger.info("Create node [$this] success.")
             // 发送事件
-            val event = NodeCreatedEvent(repo, node)
-            publisher.publishEvent(event)
+            publisher.publishEvent(NodeCreatedEvent(node, operator))
             return convert(node)!!
         }
     }
@@ -225,16 +227,17 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun rename(renameRequest: NodeRenameRequest) {
-        val projectId = renameRequest.projectId
-        val repoName = renameRequest.repoName
-        val fullPath = formatFullPath(renameRequest.fullPath)
-        val newFullPath = formatFullPath(renameRequest.newFullPath)
+        with(renameRequest) {
+            val fullPath = formatFullPath(this.fullPath)
+            val newFullPath = formatFullPath(this.newFullPath)
 
-        repositoryService.checkRepository(projectId, repoName)
-        val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-        doRename(node, newFullPath, renameRequest.operator)
+            val repo = repositoryService.checkRepository(projectId, repoName)
+            val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            doRename(node, newFullPath, operator)
+            logger.info("Rename node [$renameRequest] success.")
+            publisher.publishEvent(NodeRenamedEvent(node, operator, newFullPath))
+        }
 
-        logger.info("Rename node [$renameRequest] success.")
     }
 
     /**
@@ -428,6 +431,12 @@ class NodeService @Autowired constructor(
             }
 
             logger.info("[${request.getOperateName()}] node success: [$this]")
+            val event = if (request is NodeMoveRequest) {
+                NodeMovedEvent(srcNode, operator, destProjectId, destRepoName, destFullPath, overwrite)
+            } else {
+                NodeCopiedEvent(srcNode, operator, destProjectId, destRepoName, destFullPath, overwrite)
+            }
+            publisher.publishEvent(event)
         }
     }
 

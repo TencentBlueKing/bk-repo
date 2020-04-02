@@ -21,12 +21,11 @@ abstract class AbstractEventListener {
             resourceKey = event.getResourceKey(),
             operateType = event.getOperateType(),
             userId = event.getUserId(),
-            clientAddress = event.getClientAddress(),
-            description = event.getDescription()
+            clientAddress = event.clientAddress,
+            description = event.toString()
         )
         operateLogRepository.save(log)
     }
-
 
     fun sendMessage(message: IMessage) = streamProducer.sendMessage(message)
 }

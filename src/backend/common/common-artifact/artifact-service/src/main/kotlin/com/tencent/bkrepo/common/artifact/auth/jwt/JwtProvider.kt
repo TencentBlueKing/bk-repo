@@ -6,11 +6,13 @@ import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jws
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
-import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.nio.charset.StandardCharsets
 import java.util.Date
+import javax.annotation.PostConstruct
+import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
 
 @Component
 class JwtProvider {
@@ -18,7 +20,13 @@ class JwtProvider {
     @Autowired
     private lateinit var authProperties: AuthProperties
 
-    private val secretKey = Keys.hmacShaKeyFor(authProperties.jwt.secretKey.toByteArray(StandardCharsets.UTF_8))
+    private lateinit var secretKey: SecretKey
+
+    @PostConstruct
+    fun init() {
+        val byteArray = authProperties.jwt.secretKey.toByteArray(StandardCharsets.UTF_8)
+        secretKey = SecretKeySpec(byteArray, 0, byteArray.size, "AES")
+    }
 
     fun generateToken(userId: String, claims: Map<String, Any>): String {
         val now = Date()
