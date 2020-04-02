@@ -16,13 +16,7 @@ class ProjectModel @Autowired constructor(
     }
 
     fun getProjectList(): List<ProjectInfo> {
-        val results = mongoTemplate.findAll(MutableMap::class.java, "project")
-        var data = mutableListOf<ProjectInfo>()
-        results.forEach {
-            val name = it.get("name") as String
-            val displayName = it.get("displayName") as String
-            data.add(ProjectInfo(name, displayName, "", "", "", "", ""))
-        }
-        return data
+        val results = mongoTemplate.findAll(ProjectInfo::class.java, "project")
+        return results
     }
 }
