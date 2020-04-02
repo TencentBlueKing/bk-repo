@@ -14,39 +14,36 @@ class InfluxDbUtils(
     private val retentionPolicy: String
 
     // database instance
-    public var influxDB: InfluxDB
+    private var influxDB: InfluxDB? = null
 
     /**
      * connect database
      *
      * @return influxDb实例
      */
-    private fun influxDbBuild(): InfluxDB {
-        if (influxDB == null) {
-            influxDB = InfluxDBFactory.connect(url, userName, password)
-        }
-
+    public fun getInstance(): InfluxDB? {
         try {
-            // val result = influxDB!!.query(Query("SHOW DATABASES")) as List<String>
-            // influxDB!!.query(Query("CREATE DATABASE", database))
-            influxDB.setDatabase(database)
+            if (null == influxDB) {
+                influxDB = InfluxDBFactory.connect(url, userName, password)
+                if (!influxDB!!.databaseExists(database)) {
+                    influxDB!!.createDatabase(database)
+                    influxDB!!.setDatabase(database)
+                }
+                influxDB!!.setRetentionPolicy(retentionPolicy)
+                influxDB!!.setLogLevel(InfluxDB.LogLevel.BASIC)
+            }
         } catch (e: Exception) {
-            logger.error("create influx db failed, error: {}", e.message)
-        } finally {
-            influxDB.setRetentionPolicy(retentionPolicy)
+            logger.error("create influxdb failed, error: {}", e.message)
+            return null
         }
-        influxDB!!.setLogLevel(InfluxDB.LogLevel.BASIC)
         return influxDB
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(InfluxDbUtils::class.java)
-        // 数据保存策略
-        var policyNamePix = "logRetentionPolicy_"
     }
 
     init {
         this.retentionPolicy = if (retentionPolicy == null || "" == retentionPolicy) "autogen" else retentionPolicy
-        influxDB = influxDbBuild()
     }
 }

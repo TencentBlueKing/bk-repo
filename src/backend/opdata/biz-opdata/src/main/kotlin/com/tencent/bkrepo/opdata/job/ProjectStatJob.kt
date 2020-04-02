@@ -30,7 +30,7 @@ class ProjectStatJob {
     @Scheduled(cron = "00 15 * * * ?")
     @SchedulerLock(name = "ProjectStatJob", lockAtMostFor = "PT1H")
     fun statProjectRepoSize() {
-        logger.info("start to stat project metrics")
+        logger.info("start to stat node table metrics")
         val projects = projectModel.getProjectList()
         var result = mutableListOf<TProjectMetrics>()
         projects.forEach {
