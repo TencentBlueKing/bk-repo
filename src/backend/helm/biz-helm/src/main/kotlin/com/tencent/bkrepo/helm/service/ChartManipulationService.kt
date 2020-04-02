@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.helm.service
 
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonParser
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
@@ -12,6 +15,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.constants.DELETE_SUCCESS_MAP
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.UPLOAD_SUCCESS_MAP
@@ -78,9 +82,6 @@ class ChartManipulationService {
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         val indexFile = repository.search(context) as File
-
-
-
         logger.info("search $INDEX_CACHE_YAML success!")
         val indexEntity = YamlUtils.getObject<IndexEntity>(indexFile)
         updateChartEntity(chartEntity, artifactFileMap)
@@ -121,6 +122,52 @@ class ChartManipulationService {
     private fun getFileFullPath(artifactFileMap: ArtifactFileMap): String {
         val fileName = (artifactFileMap["chart"] as MultipartArtifactFile).getOriginalFilename()
         return FILE_SEPARATOR + fileName.substringAfterLast('/')
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    @Transactional(rollbackFor = [Throwable::class])
+    fun delete(artifactInfo: HelmArtifactInfo): Map<String, Any> {
+        val chartInfo = getChartInfo(artifactInfo)
+        val context = ArtifactRemoveContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        context.contextAttributes[FULL_PATH] = "/${chartInfo.first}-${chartInfo.second}.tgz"
+        repository.remove(context)
+        freshIndexYaml(chartInfo)
+        return DELETE_SUCCESS_MAP
+    }
+
+    private fun getChartInfo(artifactInfo: HelmArtifactInfo): Pair<String, String> {
+        val artifactUri = artifactInfo.artifactUri.trimStart('/')
+        val name = artifactUri.substringBeforeLast('/')
+        val version = artifactUri.substringAfterLast('/')
+        return Pair(name, version)
+    }
+
+    private fun freshIndexYaml(chartInfo: Pair<String, String>) {
+        val context = ArtifactSearchContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
+        val indexFile = repository.search(context) as File
+        logger.info("helm search $INDEX_CACHE_YAML for delete chart success!")
+        val indexMap = YamlUtils.getObject<Map<String,Any>>(indexFile)
+        val gson: Gson = GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
+        val asJsonObject = JsonParser().parse(gson.toJson(indexMap)).asJsonObject
+        val indexEntity = gson.fromJson(asJsonObject, IndexEntity::class.java)
+        indexEntity.entries?.let {
+            if (it[chartInfo.first]?.size == 1 && chartInfo.second == it[chartInfo.first]?.get(0)?.version) {
+                it.remove(chartInfo.first)
+            } else {
+                run stop@{
+                    it[chartInfo.first]?.forEachIndexed { index, chartEntity ->
+                        if (chartInfo.second == chartEntity.version) {
+                            it[chartInfo.first]?.removeAt(index)
+                            return@stop
+                        }
+                    }
+                }
+            }
+        }
+        uploadIndexYaml(indexEntity)
     }
 
     companion object {

@@ -18,6 +18,7 @@ import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.constants.INIT_STR
+import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.utils.JsonUtil
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -167,7 +168,7 @@ class HelmLocalRepository : LocalRepository() {
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
 
-        if (fullPath.contains(INDEX_CACHE_YAML)){
+        if (fullPath.contains(INDEX_CACHE_YAML)) {
             val indexFilePath = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
             val exist = nodeResource.exist(projectId, repoName, indexFilePath)
             if (!exist.data!!) {
@@ -187,6 +188,10 @@ class HelmLocalRepository : LocalRepository() {
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
         val userId = context.userId
+        val isExist = nodeResource.exist(projectId, repoName, fullPath).data!!
+        if (!isExist) {
+            throw HelmFileAlreadyExistsException("remove $fullPath: no such file or directory")
+        }
         nodeResource.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
     }
 
