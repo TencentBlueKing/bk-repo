@@ -19,8 +19,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 class HelmExceptionHandler {
     @ExceptionHandler(HelmIndexFreshFailException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handlerNpmClientAuthException(exception: HelmIndexFreshFailException) {
+    fun handlerHelmIndexFreshFailException(exception: HelmIndexFreshFailException) {
         response(HttpStatus.INTERNAL_SERVER_ERROR, exception)
+    }
+
+    @ExceptionHandler(HelmFileAlreadyExistsException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handlerHelmFileAlreadyExistsException(exception: HelmFileAlreadyExistsException){
+        val responseObject = mapOf("error" to exception.message)
+        val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
+        val response = HttpContextHolder.getResponse()
+        response.contentType = "application/json; charset=utf-8"
+        response.writer.println(responseString)
     }
 
     private fun response(status: HttpStatus, exception: HelmException) {
