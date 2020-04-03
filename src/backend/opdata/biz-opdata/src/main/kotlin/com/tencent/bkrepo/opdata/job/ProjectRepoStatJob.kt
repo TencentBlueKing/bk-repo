@@ -30,7 +30,7 @@ class ProjectRepoStatJob {
     @Autowired
     private lateinit var influxDbConfig: InfluxDbConfig
 
-    @Scheduled(cron = "00 15 */1 * * ?")
+    @Scheduled(cron = "00 */10 * * * ?")
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT1H")
     fun statProjectRepoSize() {
         logger.info("start to stat project metrics")
@@ -45,13 +45,13 @@ class ProjectRepoStatJob {
             .build()
         val projects = projectModel.getProjectList()
         projects.forEach {
-            var repoCapSize = 0L
-            var repoNodeNum = 0L
             val projectId = it.name
             val repos = repoModel.getRepoListByProjectId(it.name)
             val table = "node_" + (projectId.hashCode() and 255).toString()
 
             repos.forEach {
+                var repoSize = 0L
+                var nodeNum = 0L
                 val repoName = it
                 val query = Query(
                     Criteria.where("folder").`is`(false)
@@ -59,20 +59,16 @@ class ProjectRepoStatJob {
                         .and("repoName").`is`(repoName)
                 )
                 val results = mongoTemplate.find(query, MutableMap::class.java, table)
-                var repoSize = 0L
-                var nodeNum = 0L
                 results.forEach {
                     val size = it.get("size") as Long
                     repoSize += size
                     nodeNum++
                 }
-                repoCapSize += repoSize
-                repoNodeNum += nodeNum
-                if (repoCapSize != 0L && repoNodeNum != 0L) {
+                if (repoSize != 0L && nodeNum != 0L) {
                     val point = Point.measurement("repoInfo")
                         .time(timeMillis, TimeUnit.MILLISECONDS)
-                        .addField("size", repoCapSize / (1024 * 1024 * 1024))
-                        .addField("num", repoNodeNum)
+                        .addField("size", repoSize / (1024 * 1024 * 1024))
+                        .addField("num", nodeNum)
                         .tag("projectId", projectId)
                         .tag("repoName", repoName)
                         .tag("table", table)
