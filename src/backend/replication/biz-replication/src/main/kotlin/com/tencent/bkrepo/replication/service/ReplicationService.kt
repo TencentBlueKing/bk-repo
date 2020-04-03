@@ -3,9 +3,6 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.replication.job.ReplicationContext
-import com.tencent.bkrepo.replication.pojo.request.NodeReplicaRequest
-import com.tencent.bkrepo.replication.pojo.request.ProjectReplicaRequest
-import com.tencent.bkrepo.replication.pojo.request.RepoReplicaRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
@@ -14,11 +11,9 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.Request
@@ -29,22 +24,22 @@ import org.springframework.stereotype.Service
 class ReplicationService(
     val repoDataService: RepoDataService
 ) {
-    fun replicaFile(context: ReplicationContext, repoReplicaRequest: NodeReplicaRequest) {
+    fun replicaFile(context: ReplicationContext, request: NodeCreateRequest) {
         with(context) {
             // 查询文件
-            val file = repoDataService.getFile(repoReplicaRequest.sha256, currentRepoDetail.localRepoInfo)
+            val file = repoDataService.getFile(request.sha256!!, currentRepoDetail.localRepoInfo)
             val fileRequestBody = RequestBody.create(MEDIA_TYPE_STREAM, file)
             val builder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", file.name, fileRequestBody)
-                .addFormDataPart("projectId", repoReplicaRequest.projectId)
-                .addFormDataPart("repoName", repoReplicaRequest.repoName)
-                .addFormDataPart("fullPath", repoReplicaRequest.fullPath)
-                .addFormDataPart("size", repoReplicaRequest.size.toString())
-                .addFormDataPart("sha256", repoReplicaRequest.sha256)
-                .addFormDataPart("md5", repoReplicaRequest.md5)
-                .addFormDataPart("userId", repoReplicaRequest.userId)
-            repoReplicaRequest.metadata.forEach { (key, value) ->
+                .addFormDataPart("projectId", request.projectId)
+                .addFormDataPart("repoName", request.repoName)
+                .addFormDataPart("fullPath", request.fullPath)
+                .addFormDataPart("size", request.size.toString())
+                .addFormDataPart("sha256", request.sha256!!)
+                .addFormDataPart("md5", request.md5!!)
+                .addFormDataPart("userId", request.operator)
+            request.metadata?.forEach { (key, value) ->
                 builder.addFormDataPart("metadata[$key]", value)
             }
             val requestBody = builder.build()
@@ -60,33 +55,12 @@ class ReplicationService(
         }
     }
 
-    fun replicaRepository(context: ReplicationContext, repoReplicaRequest: RepoReplicaRequest): RepositoryInfo {
-        with(context) {
-            return replicationClient.replicaRepository(authToken, repoReplicaRequest).data!!
-        }
-    }
-
-    fun replicaProject(context: ReplicationContext, projectReplicaRequest: ProjectReplicaRequest): ProjectInfo {
-        with(context) {
-            return replicationClient.replicaProject(authToken, projectReplicaRequest).data!!
-        }
-    }
-
     fun replicaNodeCreateRequest(context: ReplicationContext, request: NodeCreateRequest) {
         with(context) {
             if (request.folder) {
                 replicationClient.replicaNodeCreateRequest(authToken, request)
             } else {
-                NodeReplicaRequest(
-                    projectId = request.projectId,
-                    repoName = request.repoName,
-                    fullPath = request.fullPath,
-                    expires = request.expires,
-                    size = request.size!!,
-                    sha256 = request.sha256!!,
-                    md5 = request.md5!!,
-                    userId = request.operator
-                ).apply { replicaFile(context, this) }
+                replicaFile(context, request)
             }
         }
     }

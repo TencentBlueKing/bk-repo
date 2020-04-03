@@ -16,7 +16,7 @@ class StreamConsumer(
 
     @StreamListener(MessageSink.INPUT)
     fun process(message: IMessage) {
-        logger.info("Receive [$message] from stream success.")
+        logger.info("Receive stream message[$message].")
         publisher.publishEvent(message)
     }
 

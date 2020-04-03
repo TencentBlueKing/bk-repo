@@ -11,10 +11,6 @@ import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.constant.TASK_ID_KEY
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
-import com.tencent.bkrepo.replication.pojo.request.ActionType
-import com.tencent.bkrepo.replication.pojo.request.NodeReplicaRequest
-import com.tencent.bkrepo.replication.pojo.request.ProjectReplicaRequest
-import com.tencent.bkrepo.replication.pojo.request.RepoReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.replication.pojo.setting.ConflictStrategy
@@ -24,7 +20,10 @@ import com.tencent.bkrepo.replication.service.ReplicationService
 import com.tencent.bkrepo.replication.service.RepoDataService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.quartz.DisallowConcurrentExecution
 import org.quartz.JobExecutionContext
@@ -74,7 +73,7 @@ class FullReplicationJob : QuartzJobBean() {
                 // 更新task
                 taskRepository.save(task)
                 // 开始同步
-                replica(replicaContext)
+                startReplica(replicaContext)
                 // 更新状态
                 task.status = ReplicationStatus.SUCCESS
             }
@@ -113,7 +112,7 @@ class FullReplicationJob : QuartzJobBean() {
         }
     }
 
-    private fun replica(context: ReplicationContext) {
+    private fun startReplica(context: ReplicationContext) {
         context.projectDetailList.forEach {
             try {
                 context.currentProjectDetail = it
@@ -133,13 +132,13 @@ class FullReplicationJob : QuartzJobBean() {
     private fun replicaProject(context: ReplicationContext) {
         with(context.currentProjectDetail) {
                 // 创建项目
-                val replicaRequest = ProjectReplicaRequest(
+                val request = ProjectCreateRequest(
                     name = remoteProjectId,
                     displayName = localProjectInfo.displayName,
                     description = localProjectInfo.description,
-                    actionType = ActionType.CREATE_OR_UPDATE
+                    operator = localProjectInfo.createdBy
                 )
-                replicationService.replicaProject(context, replicaRequest)
+                replicationService.replicaProjectCreateRequest(context, request)
                 // 同步权限
                 replicaUserAndPermission(context)
                 // 同步仓库
@@ -163,16 +162,17 @@ class FullReplicationJob : QuartzJobBean() {
     private fun replicaRepo(context: ReplicationContext) {
         with(context.currentRepoDetail) {
             // 创建仓库
-            val replicaRequest = RepoReplicaRequest(
+            val replicaRequest = RepoCreateRequest(
                 projectId = context.remoteProjectId,
                 name = context.remoteRepoName,
                 type = localRepoInfo.type,
                 category = localRepoInfo.category,
                 public = localRepoInfo.public,
                 description = localRepoInfo.description,
-                configuration = localRepoInfo.configuration
+                configuration = localRepoInfo.configuration,
+                operator = localRepoInfo.createdBy
             )
-            replicationService.replicaRepository(context, replicaRequest)
+            replicationService.replicaRepoCreateRequest(context, replicaRequest)
             // 同步权限
             replicaUserAndPermission(context, true)
             // 同步节点
@@ -202,21 +202,23 @@ class FullReplicationJob : QuartzJobBean() {
                     ConflictStrategy.FAST_FAIL -> throw RuntimeException("Node[$node] conflict.")
                 }
             }
-            // 同步节点
             try {
                 // 查询元数据
                 val metadata = if (task.setting.includeMetadata) {
                     repoDataService.getMetadata(node)
                 } else emptyMap()
                 // 同步节点
-                val replicaRequest = NodeReplicaRequest(
+                val replicaRequest = NodeCreateRequest(
                     projectId = remoteProjectId,
                     repoName = remoteRepoName,
                     fullPath = node.fullPath,
+                    folder = node.folder,
+                    overwrite = true,
                     size = node.size,
                     sha256 = node.sha256!!,
                     md5 = node.md5!!,
-                    metadata = metadata
+                    metadata = metadata,
+                    operator = node.createdBy
                 )
                 replicationService.replicaFile(context, replicaRequest)
                 task.replicationProgress.successNode += 1

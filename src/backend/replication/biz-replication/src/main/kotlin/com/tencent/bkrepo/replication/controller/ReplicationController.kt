@@ -172,7 +172,7 @@ class ReplicationController : ReplicationClient {
     }
 
     @PostMapping("/file", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun replicaNode(fileMap: ArtifactFileMap, nodeReplicaRequest: NodeReplicaRequest): Response<NodeInfo> {
+    fun replicaFile(fileMap: ArtifactFileMap, nodeReplicaRequest: NodeReplicaRequest): Response<NodeInfo> {
         with(nodeReplicaRequest) {
             val file = fileMap["file"]!!
             // 校验
