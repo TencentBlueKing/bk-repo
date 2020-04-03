@@ -20,6 +20,6 @@ class MatchHandler : MongoQueryRuleHandler {
     override fun handle(rule: Rule.QueryRule): Criteria {
         val escapedValue = MongoEscapeUtils.escapeRegexExceptWildcard(rule.value.toString())
         val regexPattern = escapedValue.replace("*", ".*")
-        return Criteria.where(rule.field).regex(regexPattern)
+        return Criteria.where(rule.field).regex("^$regexPattern$")
     }
 }
