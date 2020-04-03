@@ -18,7 +18,7 @@ import java.io.File
  * @date: 2019/12/26
  */
 @Suppress("UNCHECKED_CAST")
-abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : FileStorage {
+abstract class AbstractFileStorage<Credentials : StorageCredentials, Client: Any> : FileStorage {
 
     @Autowired
     protected lateinit var storageProperties: StorageProperties
@@ -33,8 +33,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         CacheBuilder.newBuilder().maximumSize(storageProperties.maxClientPoolSize).build(cacheLoader)
     }
 
-    @Suppress("LeakingThis")
-    val defaultClient: Client = onCreateClient(getDefaultCredentials() as Credentials)
+    lateinit var defaultClient: Client
 
     override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
         val client = getClient(storageCredentials)
@@ -64,6 +63,9 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
 
     private fun getClient(storageCredentials: StorageCredentials): Client {
         return if (storageCredentials == getDefaultCredentials()) {
+            if (this::defaultClient.isInitialized) {
+                defaultClient = onCreateClient(storageCredentials as Credentials)
+            }
             defaultClient
         } else {
             clientCache.get(storageCredentials as Credentials)
