@@ -11,5 +11,6 @@ data class StoreFailureEvent(
     val path: String,
     val filename: String,
     val fileLocation: String,
-    val storageCredentials: StorageCredentials
+    val storageCredentials: StorageCredentials,
+    val exception: Exception
 )
