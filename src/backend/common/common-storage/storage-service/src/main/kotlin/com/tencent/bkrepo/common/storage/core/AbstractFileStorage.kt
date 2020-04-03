@@ -34,7 +34,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     val defaultClient: Client by lazy {
-        onCreateClient(storageProperties as Credentials)
+        onCreateClient(getDefaultCredentials() as Credentials)
     }
 
     override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
