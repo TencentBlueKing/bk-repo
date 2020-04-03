@@ -11,11 +11,19 @@ import com.tencent.bkrepo.replication.pojo.request.ProjectReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RepoReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.http.HttpHeaders
@@ -28,7 +36,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @RequestMapping("/replica")
-@FeignClient(SERVICE_NAME, contextId = "ReplicationService")
+@FeignClient(SERVICE_NAME, contextId = "ReplicationClient")
 interface ReplicationClient {
 
     @GetMapping("/ping")
@@ -90,6 +98,12 @@ interface ReplicationClient {
         @RequestParam repoName: String? = null
     ): Response<List<Permission>>
 
+    @PostMapping("/node/create")
+    fun replicaNodeCreateRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody nodeCreateRequest: NodeCreateRequest
+    ): Response<NodeInfo>
+
     @PostMapping("/node/rename")
     fun replicaNodeRenameRequest(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
@@ -103,7 +117,7 @@ interface ReplicationClient {
     ): Response<Void>
 
     @PostMapping("/node/move")
-    fun replicaNodeMovedRequest(
+    fun replicaNodeMoveRequest(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
         @RequestBody nodeMoveRequest: NodeMoveRequest
     ): Response<Void>
@@ -112,5 +126,41 @@ interface ReplicationClient {
     fun replicaNodeDeleteRequest(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
         @RequestBody nodeDeleteRequest: NodeDeleteRequest
+    ): Response<Void>
+
+    @PostMapping("/repo/create")
+    fun replicaRepoCreateRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody request: RepoCreateRequest
+    ): Response<RepositoryInfo>
+
+    @PostMapping("/repo/update")
+    fun replicaRepoUpdateRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody request: RepoUpdateRequest
+    ): Response<Void>
+
+    @PostMapping("/reop/delete")
+    fun replicaRepoDeleteRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody request: RepoDeleteRequest
+    ): Response<Void>
+
+    @PostMapping("/project/create")
+    fun replicaProjectCreateRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody request: ProjectCreateRequest
+    ): Response<ProjectInfo>
+
+    @PostMapping("/metadata/save")
+    fun replicaMetadataSaveRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody request: MetadataSaveRequest
+    ): Response<Void>
+
+    @PostMapping("/metadata/delete")
+    fun replicaMetadataDeleteRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody request: MetadataDeleteRequest
     ): Response<Void>
 }

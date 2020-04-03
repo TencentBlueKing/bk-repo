@@ -20,9 +20,9 @@ abstract class AbstractEventListener {
             resourceType = event.getResourceType(),
             resourceKey = event.getResourceKey(),
             operateType = event.getOperateType(),
-            userId = event.getUserId(),
-            clientAddress = event.clientAddress,
-            description = event.toString()
+            description = event.toString(),
+            userId = event.userId,
+            clientAddress = event.clientAddress
         )
         operateLogRepository.save(log)
     }

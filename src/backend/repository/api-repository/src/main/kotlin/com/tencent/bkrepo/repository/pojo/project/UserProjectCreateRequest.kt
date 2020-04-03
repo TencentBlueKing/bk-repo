@@ -6,9 +6,9 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("创建项目请求")
 data class UserProjectCreateRequest(
     @ApiModelProperty("项目名")
-    val name: String,
+    override val name: String,
     @ApiModelProperty("显示名")
     val displayName: String,
     @ApiModelProperty("描述")
     val description: String
-)
+) : ProjectRequest

@@ -211,7 +211,7 @@ class NodeService(
             )
             return node.apply { doCreate(this, repo) }
                 .also { metadataService.save(MetadataSaveRequest(it.projectId, it.repoName, it.fullPath, metadata)) }
-                .also { publishEvent(NodeCreatedEvent(it, it.createdBy)) }
+                .also { publishEvent(NodeCreatedEvent(createRequest)) }
                 .also { logger.info("Create node [$createRequest] success.") }
                 .let { convert(it)!! }
         }
@@ -232,9 +232,7 @@ class NodeService(
             lastModifiedBy = operator,
             lastModifiedDate = LocalDateTime.now()
         )
-        rootNode.apply { doCreate(this) }
-            .also { publishEvent(NodeCreatedEvent(it, operator)) }
-            .also { logger.info("Create node [$it] success.") }
+        rootNode.apply { doCreate(this) }.also { logger.info("Create node [$it] success.") }
     }
 
     /**
@@ -248,10 +246,10 @@ class NodeService(
             val fullPath = formatFullPath(this.fullPath)
             val newFullPath = formatFullPath(this.newFullPath)
 
-            val repo = repositoryService.checkRepository(projectId, repoName)
+            repositoryService.checkRepository(projectId, repoName)
             val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             doRename(node, newFullPath, operator)
-            publishEvent(NodeRenamedEvent(node, operator, newFullPath))
+            publishEvent(NodeRenamedEvent(renameRequest))
             logger.info("Rename node [$renameRequest] success.")
         }
     }
@@ -445,14 +443,13 @@ class NodeService(
                 mkdirs(destProjectId, destRepoName, destPath, operator)
                 moveOrCopyNode(srcNode, destRepository, destPath, destName, request, operator)
             }
-
-            logger.info("[${request.getOperateName()}] node success: [$this]")
-            val event = if (request is NodeMoveRequest) {
-                NodeMovedEvent(srcNode, operator, destProjectId, destRepoName, destFullPath, overwrite)
-            } else {
-                NodeCopiedEvent(srcNode, operator, destProjectId, destRepoName, destFullPath, overwrite)
+            // event
+            if (request is NodeMoveRequest) {
+                publishEvent(NodeMovedEvent(request))
+            } else if (request is NodeCopyRequest) {
+                publishEvent(NodeCopiedEvent(request))
             }
-            publishEvent(event)
+            logger.info("[${request.getOperateName()}] node success: [$this]")
         }
     }
 

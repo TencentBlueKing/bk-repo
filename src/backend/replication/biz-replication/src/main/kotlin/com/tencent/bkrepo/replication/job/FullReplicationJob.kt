@@ -218,7 +218,7 @@ class FullReplicationJob : QuartzJobBean() {
                     md5 = node.md5!!,
                     metadata = metadata
                 )
-                replicationService.replicaNode(context, replicaRequest)
+                replicationService.replicaFile(context, replicaRequest)
                 task.replicationProgress.successNode += 1
             } catch (exception: Exception) {
                 logger.error("Replica node[$node] failed.", exception)

@@ -48,8 +48,8 @@ class ProjectService(
             )
             return projectRepository.insert(project)
                 .also { createProjectManager(it.name, it.createdBy) }
-                .also { publishEvent(ProjectCreatedEvent(it, it.createdBy)) }
-                .also { logger.info("Create project [$it] success.") }
+                .also { publishEvent(ProjectCreatedEvent(request)) }
+                .also { logger.info("Create project [$request] success.") }
                 .let { convert(it)!! }
         }
     }

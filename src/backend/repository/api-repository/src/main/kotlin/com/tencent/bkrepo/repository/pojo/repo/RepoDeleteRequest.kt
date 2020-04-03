@@ -6,9 +6,9 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("更新删除请求")
 data class RepoDeleteRequest(
     @ApiModelProperty("所属项目id", required = true)
-    val projectId: String,
+    override val projectId: String,
     @ApiModelProperty("仓库名称", required = true)
-    val name: String,
+    override val name: String,
     @ApiModelProperty("操作用户", required = true)
     val operator: String
-)
+): RepoRequest

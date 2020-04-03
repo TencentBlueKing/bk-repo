@@ -2,8 +2,6 @@ package com.tencent.bkrepo.common.stream.message
 
 object MessageType {
     const val PROJECT_CREATED = "project-created"
-    const val PROJECT_UPDATED = "project-updated"
-    const val PROJECT_DELETED = "project-deleted"
 
     const val REPO_CREATED = "repo-created"
     const val REPO_UPDATED = "repo-updated"
@@ -16,6 +14,6 @@ object MessageType {
     const val NODE_COPIED = "node-copied"
     const val NODE_MOVED = "node-moved"
 
-    const val METADATA_CREATED = "metadata-created"
-    const val METADATA_UPDATED = "metadata-updated"
+    const val METADATA_SAVED = "metadata-saved"
+    const val METADATA_DELETED = "metadata-deleted"
 }

@@ -2,15 +2,8 @@ package com.tencent.bkrepo.common.stream.message.node
 
 import com.tencent.bkrepo.common.stream.message.IMessage
 import com.tencent.bkrepo.common.stream.message.MessageType
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 
-data class NodeCreatedMessage(
-    val projectId: String,
-    val repoName: String,
-    val fullPath: String,
-    val size: Long,
-    val sha256: String,
-    val md5: String,
-    val operator: String
-) : IMessage {
+data class NodeCreatedMessage(val request: NodeCreateRequest) : IMessage {
     override fun getMessageType() = MessageType.NODE_CREATED
 }

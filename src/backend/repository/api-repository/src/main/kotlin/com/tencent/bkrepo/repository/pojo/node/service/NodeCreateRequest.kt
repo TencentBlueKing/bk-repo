@@ -35,7 +35,7 @@ data class NodeCreateRequest(
     @ApiModelProperty("元数据信息")
     val metadata: Map<String, String>? = null,
 
-    @ApiModelProperty("创建者")
+    @ApiModelProperty("操作用户")
     override val operator: String = SYSTEM_USER
 
 ) : NodeRequest, ServiceRequest

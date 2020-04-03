@@ -1,11 +1,8 @@
 package com.tencent.bkrepo.repository.listener.event.node
 
-import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.log.OperateType
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 
-data class NodeDeletedEvent(
-    override val node: TNode,
-    override val operator: String
-) : NodeEvent(node, operator) {
+data class NodeDeletedEvent(val request: NodeDeleteRequest) : NodeEvent(request, request.operator) {
     override fun getOperateType() = OperateType.DELETE
 }

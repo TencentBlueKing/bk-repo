@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.repository.pojo.metadata
 
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -19,5 +21,7 @@ data class MetadataSaveRequest(
     @ApiModelProperty("节点完整路径", required = true)
     override val fullPath: String,
     @ApiModelProperty("元数据key-value数据", required = true)
-    val metadata: Map<String, String>? = null
-) : NodeRequest
+    val metadata: Map<String, String>? = null,
+    @ApiModelProperty("操作用户")
+    override val operator: String = SYSTEM_USER
+) : NodeRequest, ServiceRequest

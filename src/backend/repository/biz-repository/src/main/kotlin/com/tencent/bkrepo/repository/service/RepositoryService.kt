@@ -10,6 +10,8 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.repository.RepoRepository
 import com.tencent.bkrepo.repository.listener.event.repo.RepoCreatedEvent
+import com.tencent.bkrepo.repository.listener.event.repo.RepoDeletedEvent
+import com.tencent.bkrepo.repository.listener.event.repo.RepoUpdatedEvent
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -105,8 +107,8 @@ class RepositoryService(
             return repoRepository.insert(repository)
                 .also { nodeService.createRootNode(it.projectId, it.name, it.createdBy) }
                 .also { createRepoManager(it.projectId, it.name, it.createdBy) }
-                .also { publishEvent(RepoCreatedEvent(it, it.createdBy)) }
-                .also { logger.info("Create repository [$it] success.") }
+                .also { publishEvent(RepoCreatedEvent(repoCreateRequest)) }
+                .also { logger.info("Create repository [$repoCreateRequest] success.") }
                 .let { convert(repository)!! }
         }
     }
@@ -122,7 +124,8 @@ class RepositoryService(
             repository.lastModifiedDate = LocalDateTime.now()
             configuration?.let { repository.configuration = objectMapper.writeValueAsString(configuration) }
             repoRepository.save(repository)
-        }.also { logger.info("Update repository[$it] success.") }
+        }.also { publishEvent(RepoUpdatedEvent(it)) }
+            .also { logger.info("Update repository[$it] success.") }
     }
 
     /**
@@ -132,10 +135,11 @@ class RepositoryService(
     fun delete(repoDeleteRequest: RepoDeleteRequest) {
         repoDeleteRequest.apply {
             val repository = checkRepository(projectId, name)
-            nodeService.countFileNode(projectId, name).takeIf { it > 0 } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_CONTAINS_FILE)
+            nodeService.countFileNode(projectId, name).takeIf { it == 0L } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_CONTAINS_FILE)
             nodeService.deleteByPath(projectId, name, ROOT_PATH, SYSTEM_USER, false)
             repoRepository.delete(repository)
-        }.also { logger.info("Delete repository [$it] success.") }
+        }.also { publishEvent(RepoDeletedEvent(it)) }
+            .also { logger.info("Delete repository [$it] success.") }
     }
 
     /**
