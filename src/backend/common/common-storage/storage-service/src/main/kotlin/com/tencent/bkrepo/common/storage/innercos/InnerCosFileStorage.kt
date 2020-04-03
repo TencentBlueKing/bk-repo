@@ -32,7 +32,7 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
         LinkedBlockingQueue(10000), ThreadFactoryBuilder().setNameFormat("inner-cos-uploader-pool-%d").build(),
         ThreadPoolExecutor.AbortPolicy())
 
-    private val defaultTransferManager = createTransferManager(defaultClient!!)
+    private val defaultTransferManager = createTransferManager(getClient(getDefaultCredentials()))
 
     override fun store(path: String, filename: String, file: File, client: InnerCosClient) {
         val transferManager = getTransferManager(client)

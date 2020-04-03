@@ -61,7 +61,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client: Any
         publisher.publishEvent(event)
     }
 
-    private fun getClient(storageCredentials: StorageCredentials): Client {
+    fun getClient(storageCredentials: StorageCredentials): Client {
         return if (storageCredentials == getDefaultCredentials()) {
             if (defaultClient == null) {
                 defaultClient = onCreateClient(storageCredentials as Credentials)
