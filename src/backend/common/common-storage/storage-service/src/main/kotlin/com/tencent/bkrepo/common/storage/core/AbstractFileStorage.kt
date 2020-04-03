@@ -33,7 +33,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client: Any
         CacheBuilder.newBuilder().maximumSize(storageProperties.maxClientPoolSize).build(cacheLoader)
     }
 
-    lateinit var defaultClient: Client
+    var defaultClient: Client? = null
 
     override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
         val client = getClient(storageCredentials)
@@ -63,10 +63,10 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client: Any
 
     private fun getClient(storageCredentials: StorageCredentials): Client {
         return if (storageCredentials == getDefaultCredentials()) {
-            if (this::defaultClient.isInitialized) {
+            if (defaultClient == null) {
                 defaultClient = onCreateClient(storageCredentials as Credentials)
             }
-            defaultClient
+            defaultClient!!
         } else {
             clientCache.get(storageCredentials as Credentials)
         }
