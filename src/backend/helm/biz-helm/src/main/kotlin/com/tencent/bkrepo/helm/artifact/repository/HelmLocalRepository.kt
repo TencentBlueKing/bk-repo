@@ -11,6 +11,10 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.util.HttpResponseUtils
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.helm.constants.CHART_NOT_FOUND
@@ -18,6 +22,7 @@ import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.constants.INIT_STR
+import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.utils.JsonUtil
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -166,6 +171,15 @@ class HelmLocalRepository : LocalRepository() {
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
+
+        if (fullPath.contains(INDEX_CACHE_YAML)) {
+            val indexFilePath = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
+            val exist = nodeResource.exist(projectId, repoName, indexFilePath)
+            if (!exist.data!!) {
+                // 新建index-cache.yaml文件
+                createIndexCacheYamlFile()
+            }
+        }
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
 
         node.nodeInfo.takeIf { !it.folder } ?: return null
@@ -178,6 +192,10 @@ class HelmLocalRepository : LocalRepository() {
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
         val userId = context.userId
+        val isExist = nodeResource.exist(projectId, repoName, fullPath).data!!
+        if (!isExist) {
+            throw HelmFileAlreadyExistsException("remove $fullPath: no such file or directory")
+        }
         nodeResource.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
     }
 
@@ -195,17 +213,50 @@ class HelmLocalRepository : LocalRepository() {
     fun isExists(context: ArtifactSearchContext) {
         val artifactInfo = context.artifactInfo
         val response = HttpContextHolder.getResponse()
-        with(artifactInfo) {
-            val nodeDetail = nodeResource.detail(projectId, repoName, artifactUri).data
-            if (nodeDetail == null) {
-                response.status = HttpStatus.SC_NOT_FOUND
-            } else {
-                response.status = HttpStatus.SC_OK
+        val status: Int = with(artifactInfo) {
+            val projectId = Rule.QueryRule("projectId", projectId)
+            val repoName = Rule.QueryRule("repoName", repoName)
+            val urlList = artifactUri.removePrefix("/").split("/").filter { it.isNotBlank() }
+            val rule:Rule? = when (urlList.size) {
+                // query with name
+                1 -> {
+                    val name = Rule.QueryRule("metadata.name", urlList[0])
+                    Rule.NestedRule(
+                        mutableListOf(repoName, projectId, name),
+                        Rule.NestedRule.RelationType.AND
+                    )
+                }
+                // query with name and version
+                2 -> {
+                    val name = Rule.QueryRule("metadata.name", urlList[0])
+                    val version = Rule.QueryRule("metadata.version", urlList[1])
+                    Rule.NestedRule(
+                        mutableListOf(repoName, projectId, name, version),
+                        Rule.NestedRule.RelationType.AND
+                    )
+                }
+                else -> {
+                    null
+                }
             }
+            if (rule != null) {
+                val queryModel = QueryModel(
+                    page = PageLimit(0, 5),
+                    sort = Sort(listOf("name"), Sort.Direction.ASC),
+                    select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
+                    rule = rule
+                )
+                val nodeList: List<Map<String, Any>>? = nodeResource.query(queryModel).data?.records
+                if (nodeList.isNullOrEmpty()) HttpStatus.SC_NOT_FOUND else HttpStatus.SC_OK
+            } else {
+                HttpStatus.SC_NOT_FOUND
+            }
+
         }
+        response.status = status
     }
 
-    companion object {
+     companion object {
         val logger: Logger = LoggerFactory.getLogger(HelmLocalRepository::class.java)
     }
 }

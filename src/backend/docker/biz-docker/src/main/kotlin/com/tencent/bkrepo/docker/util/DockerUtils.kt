@@ -83,6 +83,7 @@ abstract class DockerUtils {
             blobFilename: String,
             searchPolicy: DockerSearchBlobPolicy
         ): Artifact? {
+            logger.info("get globally : {}, {} ,{} ", repo.toString(), blobFilename, searchPolicy.toString())
             return null
         }
 
@@ -114,9 +115,9 @@ abstract class DockerUtils {
         ): Artifact? {
             val configPath = Joiner.on("/").join(dockerRepo, tag, blobFilename)
             // search blob in the repo first
-            logger.info("search manifest config blob in: '{}'", configPath)
+            logger.info("search manifest config blob in: {}", configPath)
             if (repo.exists(projectId, repoName, configPath)) {
-                logger.info("manifest config blob found in: '{}'", configPath)
+                logger.info("manifest config blob found in: {}", configPath)
                 val config = repo.artifact(projectId, repoName, configPath)
                 if (repo.getWorkContextC().isBlobReadable(config!!)) {
                     return config
@@ -135,7 +136,7 @@ abstract class DockerUtils {
             blobFilename: String
         ): Artifact? {
             val tempBlobPath = "/$dockerRepo/_uploads/$blobFilename"
-            logger.info("search blob in temp path'{}'", tempBlobPath)
+            logger.info("search blob in temp path {}", tempBlobPath)
             var blob: Artifact?
             if (repo.exists(projectId, repoName, tempBlobPath)) {
                 logger.info("blob found in: '{}'", tempBlobPath)

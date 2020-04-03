@@ -16,6 +16,9 @@ const val FULL_PATH = "full_path"
 val UPLOAD_SUCCESS_MAP = mapOf("saved" to true)
 val UPLOAD_ERROR_MAP = mapOf("saved" to false)
 
+// remove success map
+val DELETE_SUCCESS_MAP = mapOf("deleted" to true)
+
 // 定义返回代码片段
 const val CHART_NOT_FOUND = "{\n    \"error\": \"chart not found\"\n}"
 const val NO_CHART_NAME_FOUND = "{\n    \"error\": \"no chart name found\"\n}"

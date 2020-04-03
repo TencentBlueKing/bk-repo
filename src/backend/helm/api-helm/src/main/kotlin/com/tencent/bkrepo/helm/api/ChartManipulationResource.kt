@@ -6,6 +6,7 @@ import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 
@@ -15,4 +16,8 @@ interface ChartManipulationResource {
     @PostMapping("/api/{projectId}/{repoName}/charts")
     @ResponseStatus(HttpStatus.CREATED)
     fun upload(@ArtifactPathVariable artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String, Any>
+
+    @ApiOperation("delete chart")
+    @DeleteMapping("/{projectId}/{repoName}/api/charts/*/*")
+    fun delete(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Map<String, Any>
 }
