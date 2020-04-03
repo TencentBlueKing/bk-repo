@@ -11,7 +11,6 @@ import com.tencent.bkrepo.repository.model.TShareRecord
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -27,7 +26,7 @@ import java.util.UUID
  * @date: 2019/11/12
  */
 @Service
-class ShareService @Autowired constructor(
+class ShareService(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
     private val mongoTemplate: MongoTemplate

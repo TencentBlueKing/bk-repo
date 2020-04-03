@@ -8,7 +8,6 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.service.util.QueryHelper
 import com.tencent.bkrepo.repository.util.NodeUtils.formatFullPath
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Service
  * @date: 2019-10-14
  */
 @Service
-class MetadataService @Autowired constructor(
+class MetadataService(
     private val repositoryService: RepositoryService,
     private val nodeDao: NodeDao
 ) {
@@ -34,11 +33,12 @@ class MetadataService @Autowired constructor(
         val projectId = request.projectId
         val repoName = request.repoName
         val fullPath = formatFullPath(request.fullPath)
-        repositoryService.checkRepository(projectId, repoName)
-
-        val metadataList = convert(request.metadata)
-        metadataList.forEach { doSave(projectId, repoName, fullPath, it) }
-        logger.info("Save metadata [$request] success.")
+        if (!request.metadata.isNullOrEmpty()) {
+            repositoryService.checkRepository(projectId, repoName)
+            val metadataList = convert(request.metadata)
+            metadataList.forEach { doSave(projectId, repoName, fullPath, it) }
+            logger.info("Save metadata [$request] success.")
+        }
     }
 
     fun delete(request: MetadataDeleteRequest) {

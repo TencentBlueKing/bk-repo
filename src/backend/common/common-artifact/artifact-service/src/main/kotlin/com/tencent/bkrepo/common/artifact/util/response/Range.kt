@@ -8,7 +8,7 @@ class Range(val total: Long, start: Long? = 0, end: Long? = total - 1) {
         if (start == null) {
             // -y
             this.start = total - end!!
-            this.end = total -1
+            this.end = total - 1
         } else if (end == null || end > total - 1) {
             // x-
             this.start = start

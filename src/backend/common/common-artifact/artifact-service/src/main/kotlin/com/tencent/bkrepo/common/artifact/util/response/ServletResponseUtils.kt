@@ -58,7 +58,7 @@ object ServletResponseUtils {
         val rangeList: List<Range> = try {
             resolveRanges(request, file, eTag)
         } catch (exception: Exception) {
-            response.setHeader(HttpHeaders.CONTENT_RANGE,"bytes */${file.length()}")
+            response.setHeader(HttpHeaders.CONTENT_RANGE, "bytes */${file.length()}")
             response.status = HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE
             logger.warn("Range response failed: range header is invalid.")
             return
@@ -193,5 +193,4 @@ object ServletResponseUtils {
             "W/\"$contentLength-$lastModified\""
         } else null
     }
-
 }

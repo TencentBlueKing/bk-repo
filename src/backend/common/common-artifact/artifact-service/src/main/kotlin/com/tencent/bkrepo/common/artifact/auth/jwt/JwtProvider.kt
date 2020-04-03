@@ -49,5 +49,4 @@ class JwtProvider {
             throw RuntimeException("Invalid token.")
         }
     }
-
 }

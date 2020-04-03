@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -30,6 +31,8 @@ import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePageQuery
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePathUpdate
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeQuery
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeSearchQuery
+import com.tencent.bkrepo.repository.util.NodeUtils
+import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 import com.tencent.bkrepo.repository.util.NodeUtils.combineFullPath
 import com.tencent.bkrepo.repository.util.NodeUtils.combinePath
 import com.tencent.bkrepo.repository.util.NodeUtils.escapeRegex
@@ -40,8 +43,6 @@ import com.tencent.bkrepo.repository.util.NodeUtils.getParentPath
 import com.tencent.bkrepo.repository.util.NodeUtils.isRootPath
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
@@ -58,13 +59,12 @@ import java.time.format.DateTimeFormatter
  * @date: 2019-09-20
  */
 @Service
-class NodeService @Autowired constructor(
+class NodeService(
     private val repositoryService: RepositoryService,
     private val fileReferenceService: FileReferenceService,
     private val metadataService: MetadataService,
-    private val nodeDao: NodeDao,
-    private val publisher: ApplicationEventPublisher
-) {
+    private val nodeDao: NodeDao
+) : AbstractService() {
 
     /**
      * 查询节点详情
@@ -108,7 +108,7 @@ class NodeService @Autowired constructor(
     /**
      * 查询文件节点数量
      */
-    fun countFileNode(projectId: String, repoName: String, path: String): Long {
+    fun countFileNode(projectId: String, repoName: String, path: String = ROOT_PATH): Long {
         repositoryService.checkRepository(projectId, repoName)
         val formattedPath = formatPath(path)
         val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = false, deep = true)
@@ -209,15 +209,32 @@ class NodeService @Autowired constructor(
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
-            // 保存节点
-            doCreate(node, repo)
-            // 保存元数据
-            metadata?.let { metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it)) }
-            logger.info("Create node [$this] success.")
-            // 发送事件
-            publisher.publishEvent(NodeCreatedEvent(node, operator))
-            return convert(node)!!
+            return node.apply { doCreate(this, repo) }
+                .also { metadataService.save(MetadataSaveRequest(it.projectId, it.repoName, it.fullPath, metadata)) }
+                .also { publishEvent(NodeCreatedEvent(it, it.createdBy)) }
+                .also { logger.info("Create node [$createRequest] success.") }
+                .let { convert(it)!! }
         }
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    fun createRootNode(projectId: String, repoName: String, operator: String) {
+        val rootNode = TNode(
+            projectId = projectId,
+            repoName = repoName,
+            folder = true,
+            path = NodeUtils.FILE_SEPARATOR,
+            name = StringPool.EMPTY,
+            fullPath = NodeUtils.FILE_SEPARATOR,
+            size = 0,
+            createdBy = operator,
+            createdDate = LocalDateTime.now(),
+            lastModifiedBy = operator,
+            lastModifiedDate = LocalDateTime.now()
+        )
+        rootNode.apply { doCreate(this) }
+            .also { publishEvent(NodeCreatedEvent(it, operator)) }
+            .also { logger.info("Create node [$it] success.") }
     }
 
     /**
@@ -234,10 +251,9 @@ class NodeService @Autowired constructor(
             val repo = repositoryService.checkRepository(projectId, repoName)
             val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             doRename(node, newFullPath, operator)
+            publishEvent(NodeRenamedEvent(node, operator, newFullPath))
             logger.info("Rename node [$renameRequest] success.")
-            publisher.publishEvent(NodeRenamedEvent(node, operator, newFullPath))
         }
-
     }
 
     /**
@@ -436,7 +452,7 @@ class NodeService @Autowired constructor(
             } else {
                 NodeCopiedEvent(srcNode, operator, destProjectId, destRepoName, destFullPath, overwrite)
             }
-            publisher.publishEvent(event)
+            publishEvent(event)
         }
     }
 

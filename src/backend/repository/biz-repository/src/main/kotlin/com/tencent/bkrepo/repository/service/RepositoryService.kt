@@ -1,7 +1,5 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.auth.api.ServiceRoleResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.JsonUtils
@@ -9,19 +7,19 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.dao.repository.RepoRepository
+import com.tencent.bkrepo.repository.listener.event.repo.RepoCreatedEvent
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.repository.dao.repository.RepoRepository
-import com.tencent.bkrepo.repository.util.NodeUtils
+import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
@@ -36,17 +34,26 @@ import java.time.format.DateTimeFormatter
  * @date: 2019-09-20
  */
 @Service
-class RepositoryService @Autowired constructor(
+class RepositoryService(
     private val repoRepository: RepoRepository,
-    private val projectService: ProjectService,
-    private val roleResource: ServiceRoleResource,
-    private val userResource: ServiceUserResource,
-    private val nodeDao: NodeDao,
-    private val mongoTemplate: MongoTemplate
-) {
+    private val projectService: ProjectService
+) : AbstractService() {
+
+    @Autowired
+    private lateinit var nodeService: NodeService
 
     fun detail(projectId: String, name: String, type: String? = null): RepositoryInfo? {
         return convert(queryRepository(projectId, name, type))
+    }
+
+    fun queryRepository(projectId: String, name: String, type: String? = null): TRepository? {
+        if (projectId.isBlank() || name.isBlank()) return null
+
+        val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId).and(TRepository::name.name).`is`(name)
+        if (!type.isNullOrBlank()) {
+            criteria.and(TRepository::type.name).`is`(type)
+        }
+        return mongoTemplate.findOne(Query(criteria), TRepository::class.java)
     }
 
     fun list(projectId: String): List<RepositoryInfo> {
@@ -75,10 +82,10 @@ class RepositoryService @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun create(repoCreateRequest: RepoCreateRequest) : RepositoryInfo {
+    fun create(repoCreateRequest: RepoCreateRequest): RepositoryInfo {
         with(repoCreateRequest) {
-            this.takeUnless { exist(it.projectId, it.name) } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, repoCreateRequest.name)
             projectService.checkProject(projectId)
+            if (exist(projectId, name)) throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
             // 创建仓库
             val repository = TRepository(
                 name = name,
@@ -94,69 +101,45 @@ class RepositoryService @Autowired constructor(
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
-            repoRepository.insert(repository)
-            // 创建root节点
-            val rootNode = TNode(
-                projectId = projectId,
-                repoName = name,
-                folder = true,
-                path = NodeUtils.FILE_SEPARATOR,
-                name = "",
-                fullPath = NodeUtils.FILE_SEPARATOR,
-                size = 0,
-                createdBy = operator,
-                createdDate = LocalDateTime.now(),
-                lastModifiedBy = operator,
-                lastModifiedDate = LocalDateTime.now()
-            )
-            nodeDao.save(rootNode)
-            // 创建角色权限
-            val roleId = roleResource.createRepoManage(projectId, name).data!!
-            userResource.addUserRole(operator, roleId)
-            logger.info("Create repository [$repoCreateRequest] success.")
-            return convert(repository)!!
+
+            return repoRepository.insert(repository)
+                .also { nodeService.createRootNode(it.projectId, it.name, it.createdBy) }
+                .also { createRepoManager(it.projectId, it.name, it.createdBy) }
+                .also { publishEvent(RepoCreatedEvent(it, it.createdBy)) }
+                .also { logger.info("Create repository [$it] success.") }
+                .let { convert(repository)!! }
         }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     fun update(repoUpdateRequest: RepoUpdateRequest) {
-        val projectId = repoUpdateRequest.projectId
-        val name = repoUpdateRequest.name
-        val repository = queryRepository(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
-
-        with(repoUpdateRequest) {
-            category?.let { repository.category = it }
-            public?.let { repository.public = it }
-            configuration?.let { repository.configuration = objectMapper.writeValueAsString(configuration) }
-            description?.let { repository.description = it }
-            repository.lastModifiedBy = repoUpdateRequest.operator
+        repoUpdateRequest.apply {
+            val repository = checkRepository(projectId, name)
+            repository.category = category ?: repository.category
+            repository.public = public ?: repository.public
+            repository.description = description ?: repository.description
+            repository.lastModifiedBy = operator
             repository.lastModifiedDate = LocalDateTime.now()
-        }
-
-        logger.info("Update repository [$projectId/$name] [$repoUpdateRequest] success.")
-        repoRepository.save(repository)
+            configuration?.let { repository.configuration = objectMapper.writeValueAsString(configuration) }
+            repoRepository.save(repository)
+        }.also { logger.info("Update repository[$it] success.") }
     }
 
     /**
-     * 用于测试的函数，不对外提供
+     * 删除仓库，需要保证文件已经被删除
      */
     @Transactional(rollbackFor = [Throwable::class])
-    fun delete(projectId: String, name: String) {
-        val repository = queryRepository(projectId, name) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
-
-        repoRepository.deleteById(repository.id!!)
-        nodeDao.remove(Query(Criteria
-            .where(TNode::projectId.name)
-            .`is`(repository.projectId)
-            .and(TNode::repoName.name).`is`(repository.name)
-        ))
-
-        logger.info("Delete repository [$projectId/$name] success.")
+    fun delete(repoDeleteRequest: RepoDeleteRequest) {
+        repoDeleteRequest.apply {
+            val repository = checkRepository(projectId, name)
+            nodeService.countFileNode(projectId, name).takeIf { it > 0 } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_CONTAINS_FILE)
+            nodeService.deleteByPath(projectId, name, ROOT_PATH, SYSTEM_USER, false)
+            repoRepository.delete(repository)
+        }.also { logger.info("Delete repository [$it] success.") }
     }
 
     /**
      * 检查仓库是否存在，不存在则抛异常
-     * 首先检查项目是否存在，再检查仓库
      */
     fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
         return queryRepository(projectId, repoName, repoType) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
@@ -167,16 +150,6 @@ class RepositoryService @Autowired constructor(
         query.fields().exclude(TRepository::storageCredentials.name)
 
         return query
-    }
-
-    fun queryRepository(projectId: String, name: String, type: String? = null): TRepository? {
-        if (projectId.isBlank() || name.isBlank()) return null
-
-        val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId).and(TRepository::name.name).`is`(name)
-        if (!type.isNullOrBlank()) {
-            criteria.and(TRepository::type.name).`is`(type)
-        }
-        return mongoTemplate.findOne(Query(criteria), TRepository::class.java)
     }
 
     companion object {

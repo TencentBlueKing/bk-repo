@@ -1,17 +1,14 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.auth.api.ServiceRoleResource
-import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.repository.dao.repository.ProjectRepository
+import com.tencent.bkrepo.repository.listener.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.repository.model.TProject
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
@@ -19,12 +16,9 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class ProjectService @Autowired constructor(
-    private val projectRepository: ProjectRepository,
-    private val roleResource: ServiceRoleResource,
-    private val userResource: ServiceUserResource,
-    private val mongoTemplate: MongoTemplate
-) {
+class ProjectService(
+    private val projectRepository: ProjectRepository
+) : AbstractService() {
     fun query(name: String): ProjectInfo? {
         return convert(queryProject(name))
     }
@@ -52,11 +46,11 @@ class ProjectService @Autowired constructor(
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
-            projectRepository.insert(project)
-            val roleId = roleResource.createProjectManage(name).data!!
-            userResource.addUserRole(operator, roleId)
-            logger.info("Create project [$request] success.")
-            return convert(project)!!
+            return projectRepository.insert(project)
+                .also { createProjectManager(it.name, it.createdBy) }
+                .also { publishEvent(ProjectCreatedEvent(it, it.createdBy)) }
+                .also { logger.info("Create project [$it] success.") }
+                .let { convert(it)!! }
         }
     }
 

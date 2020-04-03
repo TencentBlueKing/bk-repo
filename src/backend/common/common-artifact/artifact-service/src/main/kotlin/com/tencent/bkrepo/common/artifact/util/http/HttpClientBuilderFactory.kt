@@ -38,6 +38,5 @@ object HttpClientBuilderFactory {
                     readTimeout(0, TimeUnit.MILLISECONDS)
                 }
             }
-
     }
 }

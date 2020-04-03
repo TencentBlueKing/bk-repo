@@ -7,8 +7,7 @@ import com.tencent.bkrepo.repository.pojo.log.ResourceType
 abstract class NodeEvent(
     open val node: TNode,
     open val operator: String
-): IEvent() {
+) : IEvent(operator) {
     override fun getResourceType() = ResourceType.NODE
     override fun getResourceKey() = "/${node.projectId}/${node.repoName}${node.fullPath}"
-    override fun getUserId() = operator
 }

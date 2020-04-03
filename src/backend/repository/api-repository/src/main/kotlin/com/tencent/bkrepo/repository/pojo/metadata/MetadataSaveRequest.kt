@@ -19,6 +19,5 @@ data class MetadataSaveRequest(
     @ApiModelProperty("节点完整路径", required = true)
     override val fullPath: String,
     @ApiModelProperty("元数据key-value数据", required = true)
-    val metadata: Map<String, String>
-
+    val metadata: Map<String, String>? = null
 ) : NodeRequest
