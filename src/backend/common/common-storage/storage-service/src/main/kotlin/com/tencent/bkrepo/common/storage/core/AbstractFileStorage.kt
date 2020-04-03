@@ -6,10 +6,10 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.constant.SYSTEM_ERROR_LOGGER_NAME
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
-import java.io.File
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
+import java.io.File
 
 /**
  * 文件存储接口
@@ -17,6 +17,7 @@ import org.springframework.context.ApplicationEventPublisher
  * @author: carrypan
  * @date: 2019/12/26
  */
+@Suppress("UNCHECKED_CAST")
 abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : FileStorage {
 
     @Autowired
@@ -31,6 +32,9 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         }
         CacheBuilder.newBuilder().maximumSize(storageProperties.maxClientPoolSize).build(cacheLoader)
     }
+
+    @Suppress("LeakingThis")
+    val defaultClient: Client = onCreateClient(getDefaultCredentials() as Credentials)
 
     override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
         val client = getClient(storageCredentials)
@@ -58,9 +62,12 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         publisher.publishEvent(event)
     }
 
-    @Suppress("UNCHECKED_CAST")
-    fun getClient(storageCredentials: StorageCredentials): Client {
-        return clientCache.get(storageCredentials as Credentials)
+    private fun getClient(storageCredentials: StorageCredentials): Client {
+        return if (storageCredentials == getDefaultCredentials()) {
+            defaultClient
+        } else {
+            clientCache.get(storageCredentials as Credentials)
+        }
     }
 
     private fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
