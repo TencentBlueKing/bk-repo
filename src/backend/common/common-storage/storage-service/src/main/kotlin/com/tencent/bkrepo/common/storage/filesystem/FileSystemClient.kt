@@ -35,11 +35,11 @@ class FileSystemClient(private val root: String) {
         return filePath.toFile()
     }
 
-    fun store(dir: String, filename: String, inputStream: InputStream, length: Long): File {
+    fun store(dir: String, filename: String, inputStream: InputStream, length: Long, overwrite: Boolean = false): File {
         val filePath = Paths.get(this.root, dir, filename)
         createDirectories(filePath.parent)
         val file = filePath.toFile()
-        if (!Files.exists(filePath)) {
+        if (overwrite || !Files.exists(filePath)) {
             FileLockExecutor.executeInLock(inputStream) { input ->
                 FileLockExecutor.executeInLock(file) { output ->
                     output.transferFrom(input, 0, length)
@@ -78,6 +78,7 @@ class FileSystemClient(private val root: String) {
         val file = filePath.toFile()
         FileLockExecutor.executeInLock(inputStream) { input ->
             FileLockExecutor.executeInLock(file) { output ->
+                output.position(output.size())
                 output.transferFrom(input, output.size(), length)
             }
         }
@@ -118,6 +119,7 @@ class FileSystemClient(private val root: String) {
         FileLockExecutor.executeInLock(outputFile) { output ->
             fileList.forEach { file ->
                 FileLockExecutor.executeInLock(file.inputStream()) { input ->
+                    output.position(outputFile.length())
                     output.transferFrom(input, outputFile.length(), file.length())
                 }
             }

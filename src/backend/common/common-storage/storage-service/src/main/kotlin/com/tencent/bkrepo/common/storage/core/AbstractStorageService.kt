@@ -176,10 +176,10 @@ abstract class AbstractStorageService : StorageService {
 
     override fun storeBlock(blockId: String, sequence: Int, digest: String, artifactFile: ArtifactFile) {
         try {
-            tempFileClient.store(blockId, "$sequence$BLOCK_SUFFIX", artifactFile.getInputStream(), artifactFile.getSize())
+            tempFileClient.store(blockId, "$sequence$BLOCK_SUFFIX", artifactFile.getInputStream(), artifactFile.getSize(), true)
             val byteArray = digest.toByteArray()
             val byteInputStream = ByteArrayInputStream(byteArray)
-            tempFileClient.store(blockId, "$sequence$SHA256_SUFFIX", byteInputStream, byteArray.size.toLong())
+            tempFileClient.store(blockId, "$sequence$SHA256_SUFFIX", byteInputStream, byteArray.size.toLong(), true)
             logger.debug("Success to store block [$blockId/$sequence].")
         } catch (exception: Exception) {
             logger.error("Failed to store block [$blockId/$sequence].", exception)
