@@ -25,7 +25,7 @@ class HelmExceptionHandler {
 
     @ExceptionHandler(HelmFileAlreadyExistsException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun handlerHelmFileAlreadyExistsException(exception: HelmFileAlreadyExistsException){
+    fun handlerHelmFileAlreadyExistsException(exception: HelmFileAlreadyExistsException) {
         val responseObject = mapOf("error" to exception.message)
         val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
         val response = HttpContextHolder.getResponse()

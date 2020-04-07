@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.helm.utils
 
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
 import com.tencent.bkrepo.helm.constants.CHART_NOT_FOUND
 import com.tencent.bkrepo.helm.constants.CHART_VERSION_NOT_FOUND
@@ -12,6 +14,13 @@ import org.apache.commons.lang.StringUtils
 import java.io.File
 
 object JsonUtil {
+    val gson: Gson =
+        GsonBuilder().setPrettyPrinting().disableHtmlEscaping().setDateFormat("yyyy-MM-dd HH:mm:ss.sss'Z'").create()
+
+    fun <T> gsonToBean(gsonString: String, cls: Class<T>): T {
+        return gson.fromJson(gsonString, cls)
+    }
+
     fun searchJson(indexYamlFile: File, urls: String): String {
         val jsonParser = JsonParser()
         val jsonStr = YamlUtils.yaml2Json(indexYamlFile)

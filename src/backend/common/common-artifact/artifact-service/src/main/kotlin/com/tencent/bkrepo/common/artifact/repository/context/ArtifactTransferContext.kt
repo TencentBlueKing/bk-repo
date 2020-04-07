@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.context
 
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.config.ARTIFACT_INFO_KEY
@@ -27,7 +28,7 @@ open class ArtifactTransferContext(repo: RepositoryInfo? = null) {
     var contextAttributes: MutableMap<String, Any>
 
     init {
-        this.userId = request.getAttribute(USER_KEY) as String
+        this.userId = request.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
         this.artifactInfo = request.getAttribute(ARTIFACT_INFO_KEY) as ArtifactInfo
         this.repositoryInfo = repo ?: request.getAttribute(REPO_KEY) as RepositoryInfo
         this.storageCredentials = repositoryInfo.storageCredentials
