@@ -31,8 +31,12 @@ class ResolverConfiguration {
     fun commonsMultipartResolver(): CommonsMultipartResolver {
         val multipartResolver = CommonsMultipartResolver()
         // 通用制品库文件大小范围不固定，因此不做大小限制
-        multipartResolver.setMaxUploadSize(-1)
-        multipartResolver.setMaxUploadSizePerFile(-1)
+        multipartResolver.setMaxUploadSize(UNLIMITED)
+        multipartResolver.setMaxUploadSizePerFile(UNLIMITED)
         return multipartResolver
+    }
+
+    companion object {
+        private const val UNLIMITED = -1L
     }
 }

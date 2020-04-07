@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
  * @author: carrypan
  * @date: 2019/12/5
  */
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
 @RestControllerAdvice
 class ArtifactExceptionHandler {
 
