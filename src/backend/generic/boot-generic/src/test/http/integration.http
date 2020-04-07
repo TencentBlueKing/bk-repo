@@ -4,7 +4,7 @@ Authorization: Basic {{username}} {{password}}
 X-BKREPO-OVERWRITE: true
 X-BKREPO-META-key: value
 
-Hello, World!!!
+Hello, World!!!!
 
 > {%
     client.test('Request executed successfully', function() {
@@ -19,7 +19,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
     client.test('Request executed successfully', function() {
         client.assert(response.status === 200, 'Response status is not 200');
-        client.assert(response.body === 'Hello, World!!!', 'Response status is invalid');
+        client.assert(response.body === 'Hello, World!!!!', 'Response status is invalid');
     });
 %}
 
@@ -42,9 +42,19 @@ X-BKREPO-OVERWRITE: true
 PUT http://{{host}}/{{project}}/generic-local/block.txt
 Authorization: Basic {{username}} {{password}}
 X-BKREPO-UPLOAD-ID: {{uploadId}}
+X-BKREPO-OVERWRITE: true
 X-BKREPO-SEQUENCE: 1
 
 11111
+
+### 上传第一个分块，覆盖第一次
+PUT http://{{host}}/{{project}}/generic-local/block.txt
+Authorization: Basic {{username}} {{password}}
+X-BKREPO-UPLOAD-ID: {{uploadId}}
+X-BKREPO-OVERWRITE: true
+X-BKREPO-SEQUENCE: 1
+
+111111
 
 > {%
     client.test('Request executed successfully', function() {
@@ -58,7 +68,7 @@ Authorization: Basic {{username}} {{password}}
 X-BKREPO-UPLOAD-ID: {{uploadId}}
 X-BKREPO-SEQUENCE: 2
 
-22222
+222222
 
 > {%
     client.test('Request executed successfully', function() {
@@ -84,7 +94,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
     client.test('Request executed successfully', function() {
         client.assert(response.status === 200, 'Response status is not 200');
-        client.assert(response.body === '1111122222', 'Response content invalid');
+        client.assert(response.body === '111111222222', 'Response content invalid');
     });
 %}
 

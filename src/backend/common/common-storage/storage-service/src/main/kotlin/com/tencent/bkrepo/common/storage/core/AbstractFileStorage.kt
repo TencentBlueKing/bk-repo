@@ -3,13 +3,11 @@ package com.tencent.bkrepo.common.storage.core
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
-import com.tencent.bkrepo.common.api.constant.SYSTEM_ERROR_LOGGER_NAME
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
-import java.io.File
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
+import java.io.File
 
 /**
  * 文件存储接口
@@ -17,6 +15,7 @@ import org.springframework.context.ApplicationEventPublisher
  * @author: carrypan
  * @date: 2019/12/26
  */
+@Suppress("UNCHECKED_CAST")
 abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : FileStorage {
 
     @Autowired
@@ -30,6 +29,10 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
             override fun load(credentials: Credentials): Client = onCreateClient(credentials)
         }
         CacheBuilder.newBuilder().maximumSize(storageProperties.maxClientPoolSize).build(cacheLoader)
+    }
+
+    val defaultClient: Client by lazy {
+        onCreateClient(getDefaultCredentials() as Credentials)
     }
 
     override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
@@ -53,14 +56,16 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     override fun recover(exception: Exception, path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
-        logger.error("Failed to store file[$filename] on [$storageCredentials].", exception)
-        val event = StoreFailureEvent(path, filename, file.absolutePath, storageCredentials)
+        val event = StoreFailureEvent(path, filename, file.absolutePath, storageCredentials, exception)
         publisher.publishEvent(event)
     }
 
-    @Suppress("UNCHECKED_CAST")
-    fun getClient(storageCredentials: StorageCredentials): Client {
-        return clientCache.get(storageCredentials as Credentials)
+    private fun getClient(storageCredentials: StorageCredentials): Client {
+        return if (storageCredentials == getDefaultCredentials()) {
+            defaultClient
+        } else {
+            clientCache.get(storageCredentials as Credentials)
+        }
     }
 
     private fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
@@ -72,8 +77,4 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     abstract fun load(path: String, filename: String, received: File, client: Client): File?
     abstract fun delete(path: String, filename: String, client: Client)
     abstract fun exist(path: String, filename: String, client: Client): Boolean
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(SYSTEM_ERROR_LOGGER_NAME)
-    }
 }
