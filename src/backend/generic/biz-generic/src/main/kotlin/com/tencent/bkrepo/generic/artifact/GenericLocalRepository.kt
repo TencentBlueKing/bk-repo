@@ -94,5 +94,4 @@ class GenericLocalRepository : LocalRepository() {
         }
         return metadata
     }
-
 }
