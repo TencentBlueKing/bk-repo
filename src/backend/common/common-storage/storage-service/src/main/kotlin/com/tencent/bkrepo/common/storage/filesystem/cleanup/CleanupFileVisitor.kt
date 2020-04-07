@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.storage.filesystem.cleanup
 
+import com.tencent.bkrepo.common.storage.filesystem.FileLockExecutor
 import java.io.IOException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
@@ -23,7 +24,9 @@ class CleanupFileVisitor(
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
         if (isExpired(attributes, expireDays)) {
             val size = attributes.size()
-            Files.deleteIfExists(filePath)
+            FileLockExecutor.executeInLock(filePath.toFile()) {
+                Files.delete(filePath)
+            }
             cleanupResult.fileCount += 1
             cleanupResult.size += size
         }
@@ -33,7 +36,7 @@ class CleanupFileVisitor(
     @Throws(IOException::class)
     override fun postVisitDirectory(dirPath: Path, exc: IOException?): FileVisitResult {
         if (!Files.isSameFile(rootPath, dirPath) && !Files.list(dirPath).iterator().hasNext()) {
-            Files.deleteIfExists(dirPath)
+            Files.delete(dirPath)
             cleanupResult.folderCount += 1
         }
         return FileVisitResult.CONTINUE

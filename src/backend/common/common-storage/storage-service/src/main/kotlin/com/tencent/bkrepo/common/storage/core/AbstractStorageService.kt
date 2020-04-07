@@ -12,6 +12,7 @@ import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.charset.Charset
 import java.util.UUID
@@ -132,7 +133,7 @@ abstract class AbstractStorageService : StorageService {
 
     override fun append(appendId: String, artifactFile: ArtifactFile): Long {
         try {
-            val length = tempFileClient.append(CURRENT_PATH, appendId, artifactFile.getInputStream())
+            val length = tempFileClient.append(CURRENT_PATH, appendId, artifactFile.getInputStream(), artifactFile.getSize())
             logger.info("Success to append file [$appendId].")
             return length
         } catch (exception: Exception) {
@@ -173,10 +174,18 @@ abstract class AbstractStorageService : StorageService {
         }
     }
 
-    override fun storeBlock(blockId: String, sequence: Int, digest: String, artifactFile: ArtifactFile) {
+    override fun storeBlock(
+        blockId: String,
+        sequence: Int,
+        digest: String,
+        artifactFile: ArtifactFile,
+        overwrite: Boolean
+    ) {
         try {
-            tempFileClient.store(blockId, "$sequence$BLOCK_SUFFIX", artifactFile.getInputStream())
-            tempFileClient.store(blockId, "$sequence$SHA256_SUFFIX", digest.byteInputStream())
+            tempFileClient.store(blockId, "$sequence$BLOCK_SUFFIX", artifactFile.getInputStream(), artifactFile.getSize(), overwrite)
+            val byteArray = digest.toByteArray()
+            val byteInputStream = ByteArrayInputStream(byteArray)
+            tempFileClient.store(blockId, "$sequence$SHA256_SUFFIX", byteInputStream, byteArray.size.toLong(), overwrite)
             logger.debug("Success to store block [$blockId/$sequence].")
         } catch (exception: Exception) {
             logger.error("Failed to store block [$blockId/$sequence].", exception)
@@ -198,9 +207,12 @@ abstract class AbstractStorageService : StorageService {
             }
             val mergedFile = tempFileClient.mergeFiles(blockFileList, tempFileClient.touch(blockId, MERGED_FILENAME))
             return storeFile(mergedFile, credentials)
+        } catch (storageException: StorageException) {
+            logger.error("Failed to combine block id [$blockId] on [$credentials]: ${storageException.messageCode}")
+            throw storageException
         } catch (exception: Exception) {
             logger.error("Failed to combine block id [$blockId] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.orEmpty())
         }
     }
 

@@ -24,12 +24,12 @@ class CacheStorageService : AbstractStorageService() {
     private val cacheClient: FileSystemClient by lazy { FileSystemClient(storageProperties.cache.path) }
 
     override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
-        val cachedFile = cacheClient.store(path, filename, artifactFile.getInputStream())
+        val cachedFile = cacheClient.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize())
         fileStorage.store(path, filename, cachedFile, credentials)
     }
 
     override fun doStore(path: String, filename: String, file: File, credentials: StorageCredentials) {
-        val cachedFile = cacheClient.store(path, filename, file.inputStream())
+        val cachedFile = cacheClient.store(path, filename, file.inputStream(), file.length())
         fileStorage.store(path, filename, cachedFile, credentials)
     }
 

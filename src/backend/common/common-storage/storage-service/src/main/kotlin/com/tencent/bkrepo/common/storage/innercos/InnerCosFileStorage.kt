@@ -28,24 +28,26 @@ import java.util.concurrent.TimeUnit
  */
 open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerCosClient>() {
 
-    private val executor = ThreadPoolExecutor(128, 1024, 10L, TimeUnit.SECONDS,
-        LinkedBlockingQueue(8192), ThreadFactoryBuilder().setNameFormat("inner-cos-storage-uploader-pool-%d").build(),
+    private val executor = ThreadPoolExecutor(100, 2000, 60L, TimeUnit.SECONDS,
+        LinkedBlockingQueue(10000), ThreadFactoryBuilder().setNameFormat("inner-cos-uploader-pool-%d").build(),
         ThreadPoolExecutor.AbortPolicy())
 
+    private var defaultTransferManager: TransferManager? = null
+
     override fun store(path: String, filename: String, file: File, client: InnerCosClient) {
-        val transferManager = createTransferManager(client.cosClient)
+        val transferManager = getTransferManager(client)
         val putObjectRequest = PutObjectRequest(client.bucketName, filename, file)
         val upload = transferManager.upload(putObjectRequest)
         upload.waitForCompletion()
-        transferManager.shutdownNow()
+        shutdownTransferManager(transferManager)
     }
 
     override fun load(path: String, filename: String, received: File, client: InnerCosClient): File? {
-        val transferManager = createTransferManager(client.cosClient)
+        val transferManager = getTransferManager(client)
         val getObjectRequest = GetObjectRequest(client.bucketName, filename)
         val download = transferManager.download(getObjectRequest, received)
         download.waitForCompletion()
-        transferManager.shutdownNow()
+        shutdownTransferManager(transferManager)
         return received
     }
 
@@ -68,23 +70,46 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
         require(credentials.region.isNotBlank())
         require(credentials.bucket.isNotBlank())
         val basicCOSCredentials = BasicCOSCredentials(credentials.secretId, credentials.secretKey)
-        val clientConfig = ClientConfig(Region(credentials.region))
+        val clientConfig = ClientConfig().apply {
+            region = Region(credentials.region)
+            signExpired = 3600 * 24 * 7 // second
+            socketTimeout = 60 * 1000 // millsSecond
+            maxConnectionsCount = 2048
+        }
         if (credentials.modId != null && credentials.cmdId != null) {
             // 开启cl5
             val cl5Info = CL5Info(credentials.modId!!, credentials.cmdId!!, credentials.timeout)
             clientConfig.endpointResolver = CL5EndpointResolver(cl5Info)
         }
-        return InnerCosClient(credentials.bucket, COSClient(basicCOSCredentials, clientConfig))
+        val cosClient = COSClient(basicCOSCredentials, clientConfig)
+        return InnerCosClient(credentials.bucket, cosClient)
     }
 
     override fun getDefaultCredentials() = storageProperties.innercos
 
-    private fun createTransferManager(cosClient: COSClient): TransferManager {
-        val transferManager = TransferManager(cosClient, executor, false)
+    private fun getTransferManager(innerCosClient: InnerCosClient): TransferManager {
+        return if (innerCosClient == defaultClient) {
+            if (defaultTransferManager == null) {
+                defaultTransferManager = createTransferManager(defaultClient)
+            }
+            defaultTransferManager!!
+        } else {
+            createTransferManager(innerCosClient)
+        }
+    }
+
+    private fun createTransferManager(innerCosClient: InnerCosClient): TransferManager {
+        val transferManager = TransferManager(innerCosClient.cosClient, executor, true)
         transferManager.configuration = TransferManagerConfiguration().apply {
             multipartUploadThreshold = 20L * MB
             minimumUploadPartSize = 10L * MB
         }
         return transferManager
+    }
+
+    private fun shutdownTransferManager(transferManager: TransferManager) {
+        if (transferManager != defaultTransferManager) {
+            transferManager.shutdownNow(false)
+        }
     }
 }
