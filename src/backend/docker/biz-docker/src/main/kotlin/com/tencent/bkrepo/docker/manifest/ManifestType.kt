@@ -41,8 +41,7 @@ enum class ManifestType private constructor(private val mediaType: String) {
             if (schemaVersionNode != null) {
                 val schemaVersion = schemaVersionNode.intValue()
                 if (schemaVersion == 1) {
-                    val signatures = manifest.get("signatures") ?: return Schema1
-
+/*                    val signatures = manifest.get("signatures") ?: return Schema1*/
                     return Schema1Signed
                 }
             }

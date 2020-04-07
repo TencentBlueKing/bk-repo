@@ -4,5 +4,4 @@ dependencies {
     api project(":common:common-artifact:artifact-service")
     api project(":common:common-mongo")
     compile group: 'org.influxdb', name: 'influxdb-java', version: '2.17'
-    compile group: 'io.micrometer', name: 'micrometer-registry-influx', version: '1.4.0'
 }

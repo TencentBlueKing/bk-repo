@@ -12,9 +12,9 @@ class InfluxDbConfig {
     @Value("\${spring.influx.password:''}")
     private val password: String? = null
     @Value("\${spring.influx.database:''}")
-    private val database: String? = null
+    public val database: String? = null
 
     fun influxDbUtils(): InfluxDbUtils {
-        return InfluxDbUtils(userName, password, influxDBUrl, database, "")
+        return InfluxDbUtils(userName, password, influxDBUrl, database, "100day")
     }
 }
