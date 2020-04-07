@@ -42,6 +42,16 @@ X-BKREPO-OVERWRITE: true
 PUT http://{{host}}/{{project}}/generic-local/block.txt
 Authorization: Basic {{username}} {{password}}
 X-BKREPO-UPLOAD-ID: {{uploadId}}
+X-BKREPO-OVERWRITE: true
+X-BKREPO-SEQUENCE: 1
+
+111111
+
+### 上传第一个分块，覆盖第一次
+PUT http://{{host}}/{{project}}/generic-local/block.txt
+Authorization: Basic {{username}} {{password}}
+X-BKREPO-UPLOAD-ID: {{uploadId}}
+X-BKREPO-OVERWRITE: true
 X-BKREPO-SEQUENCE: 1
 
 11111

@@ -82,7 +82,13 @@ interface StorageService {
      * 存储分块文件
      * blockId: 分块存储id
      */
-    fun storeBlock(blockId: String, sequence: Int, digest: String, artifactFile: ArtifactFile)
+    fun storeBlock(
+        blockId: String,
+        sequence: Int,
+        digest: String,
+        artifactFile: ArtifactFile,
+        overwrite: Boolean
+    )
 
     /**
      * 合并分块文件

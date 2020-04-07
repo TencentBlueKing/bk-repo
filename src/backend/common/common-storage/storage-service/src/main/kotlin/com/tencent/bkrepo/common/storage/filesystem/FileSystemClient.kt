@@ -38,8 +38,12 @@ class FileSystemClient(private val root: String) {
     fun store(dir: String, filename: String, inputStream: InputStream, length: Long, overwrite: Boolean = false): File {
         val filePath = Paths.get(this.root, dir, filename)
         createDirectories(filePath.parent)
+        if (overwrite) {
+            Files.deleteIfExists(filePath)
+        }
         val file = filePath.toFile()
-        if (overwrite || !Files.exists(filePath)) {
+        if (!Files.exists(filePath)) {
+            file.createNewFile()
             FileLockExecutor.executeInLock(inputStream) { input ->
                 FileLockExecutor.executeInLock(file) { output ->
                     output.transferFrom(input, 0, length)

@@ -174,12 +174,18 @@ abstract class AbstractStorageService : StorageService {
         }
     }
 
-    override fun storeBlock(blockId: String, sequence: Int, digest: String, artifactFile: ArtifactFile) {
+    override fun storeBlock(
+        blockId: String,
+        sequence: Int,
+        digest: String,
+        artifactFile: ArtifactFile,
+        overwrite: Boolean
+    ) {
         try {
-            tempFileClient.store(blockId, "$sequence$BLOCK_SUFFIX", artifactFile.getInputStream(), artifactFile.getSize(), true)
+            tempFileClient.store(blockId, "$sequence$BLOCK_SUFFIX", artifactFile.getInputStream(), artifactFile.getSize(), overwrite)
             val byteArray = digest.toByteArray()
             val byteInputStream = ByteArrayInputStream(byteArray)
-            tempFileClient.store(blockId, "$sequence$SHA256_SUFFIX", byteInputStream, byteArray.size.toLong(), true)
+            tempFileClient.store(blockId, "$sequence$SHA256_SUFFIX", byteInputStream, byteArray.size.toLong(), overwrite)
             logger.debug("Success to store block [$blockId/$sequence].")
         } catch (exception: Exception) {
             logger.error("Failed to store block [$blockId/$sequence].", exception)
@@ -201,9 +207,12 @@ abstract class AbstractStorageService : StorageService {
             }
             val mergedFile = tempFileClient.mergeFiles(blockFileList, tempFileClient.touch(blockId, MERGED_FILENAME))
             return storeFile(mergedFile, credentials)
+        } catch (storageException: StorageException) {
+            logger.error("Failed to combine block id [$blockId] on [$credentials]: ${storageException.messageCode}")
+            throw storageException
         } catch (exception: Exception) {
             logger.error("Failed to combine block id [$blockId] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.orEmpty())
         }
     }
 
