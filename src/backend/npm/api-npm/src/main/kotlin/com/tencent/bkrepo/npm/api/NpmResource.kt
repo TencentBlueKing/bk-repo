@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.npm.api
 
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_DIST_TAG_ADD_MAPPING_URI
@@ -14,25 +13,30 @@ import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PKG_PUBLISH
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_SCOPE_PACKAGE_VERSION_INFO_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_SCOPE_PKG_PUBLISH_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_UNPUBLISH_MAPPING_URI
+import com.tencent.bkrepo.npm.pojo.NpmDeleteResponse
+import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.ResponseStatus
 
 @Api("npm接口定义")
 interface NpmResource {
     @ApiOperation("publish package")
     @PutMapping(NPM_PKG_PUBLISH_MAPPING_URI, NPM_SCOPE_PKG_PUBLISH_MAPPING_URI)
+    @ResponseStatus(HttpStatus.CREATED)
     fun publish(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
         @RequestBody body: String
-    ): Response<Void>
+    ): NpmSuccessResponse
 
     @ApiOperation("search package.json info")
     @GetMapping(
@@ -49,7 +53,7 @@ interface NpmResource {
 
     @ApiOperation("unpublish package")
     @DeleteMapping(NPM_UNPUBLISH_MAPPING_URI)
-    fun unpublish(@RequestAttribute userId: String, @ArtifactPathVariable artifactInfo: NpmArtifactInfo): Response<Void>
+    fun unpublish(@RequestAttribute userId: String, @ArtifactPathVariable artifactInfo: NpmArtifactInfo): NpmDeleteResponse
 
     @ApiOperation("npm search")
     @GetMapping(NPM_PACKAGE_SEARCH_MAPPING_URI)
@@ -61,7 +65,7 @@ interface NpmResource {
 
     @ApiOperation("npm dist-tag add")
     @PutMapping(NPM_PACKAGE_DIST_TAG_ADD_MAPPING_URI)
-    fun addDistTags(@ArtifactPathVariable artifactInfo: NpmArtifactInfo, @RequestBody body: String): Map<String, String>
+    fun addDistTags(@ArtifactPathVariable artifactInfo: NpmArtifactInfo, @RequestBody body: String): NpmSuccessResponse
 
     @ApiOperation("npm dist-tag rm")
     @DeleteMapping(NPM_PACKAGE_DIST_TAG_ADD_MAPPING_URI)

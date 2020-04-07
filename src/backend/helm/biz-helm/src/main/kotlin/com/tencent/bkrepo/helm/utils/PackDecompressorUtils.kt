@@ -51,7 +51,7 @@ object PackDecompressorUtils {
                 } else { // 是文件
                     val tmpFile = File(destDir + File.separator + entry!!.name)
                     createDirectory(tmpFile.parent + File.separator, null) // 创建输出目录
-                    //var out: OutputStream? = null
+                    // var out: OutputStream? = null
                     FileOutputStream(tmpFile).use {
                         var length = 0
                         val b = ByteArray(2048)
