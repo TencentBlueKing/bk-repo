@@ -217,7 +217,7 @@ class HelmLocalRepository : LocalRepository() {
             val projectId = Rule.QueryRule("projectId", projectId)
             val repoName = Rule.QueryRule("repoName", repoName)
             val urlList = artifactUri.removePrefix("/").split("/").filter { it.isNotBlank() }
-            val rule:Rule? = when (urlList.size) {
+            val rule: Rule? = when (urlList.size) {
                 // query with name
                 1 -> {
                     val name = Rule.QueryRule("metadata.name", urlList[0])
@@ -251,7 +251,6 @@ class HelmLocalRepository : LocalRepository() {
             } else {
                 HttpStatus.SC_NOT_FOUND
             }
-
         }
         response.status = status
     }

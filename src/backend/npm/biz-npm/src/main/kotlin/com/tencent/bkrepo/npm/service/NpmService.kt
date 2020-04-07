@@ -44,11 +44,14 @@ import com.tencent.bkrepo.npm.constants.REV
 import com.tencent.bkrepo.npm.constants.REV_VALUE
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SHASUM
-import com.tencent.bkrepo.npm.constants.SUCCESS_MAP
 import com.tencent.bkrepo.npm.constants.TIME
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
+import com.tencent.bkrepo.npm.exception.NpmArtifactExistException
+import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
+import com.tencent.bkrepo.npm.pojo.NpmDeleteResponse
 import com.tencent.bkrepo.npm.pojo.NpmMetaData
+import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.GsonUtils
@@ -71,11 +74,11 @@ class NpmService @Autowired constructor(
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    fun publish(userId: String, artifactInfo: NpmArtifactInfo, body: String) {
+    fun publish(userId: String, artifactInfo: NpmArtifactInfo, body: String): NpmSuccessResponse {
         body.takeIf { StringUtils.isNotBlank(it) } ?: throw ArtifactNotFoundException("request body not found!")
         val jsonObj = JsonParser().parse(body).asJsonObject
         val artifactFileMap = ArtifactFileMap()
-        if (jsonObj.has(ATTACHMENTS)) {
+        return if (jsonObj.has(ATTACHMENTS)) {
             val attributesMap = mutableMapOf<String, Any>()
             buildTgzFile(artifactFileMap, jsonObj, attributesMap)
             buildPkgVersionFile(artifactFileMap, jsonObj, attributesMap)
@@ -84,8 +87,10 @@ class NpmService @Autowired constructor(
             context.contextAttributes = attributesMap
             val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
             repository.upload(context)
+            NpmSuccessResponse.createEntitySuccess()
         } else {
             unPublishOperation(artifactInfo, jsonObj)
+            NpmSuccessResponse.updatePkgSuccess()
         }
     }
 
@@ -116,7 +121,12 @@ class NpmService @Autowired constructor(
         var pkgInfo = searchPackageInfo(artifactInfo) ?: JsonObject()
         val leastJsonObject = jsonObj.getAsJsonObject(VERSIONS)
 
-        // 第一次上传
+        val distTags = getDistTags(jsonObj)!!
+        if (pkgInfo.size() > 0 && pkgInfo.getAsJsonObject(VERSIONS).has(distTags.second)) {
+            throw NpmArtifactExistException("cannot modify pre-existing version: ${distTags.second}.")
+        }
+
+        // first upload
         val timeMap = if (pkgInfo.size() == 0) pkgInfo else pkgInfo.getAsJsonObject(TIME)!!
         if (pkgInfo.size() == 0) {
             jsonObj.addProperty(REV, REV_VALUE)
@@ -124,7 +134,6 @@ class NpmService @Autowired constructor(
             timeMap.add(CREATED, GsonUtils.gson.toJsonTree(Date()))
         }
 
-        val distTags = getDistTags(jsonObj)!!
         pkgInfo.getAsJsonObject(VERSIONS).add(distTags.second, leastJsonObject.getAsJsonObject(distTags.second))
         pkgInfo.getAsJsonObject(DISTTAGS).addProperty(distTags.first, distTags.second)
         timeMap.add(distTags.second, GsonUtils.gson.toJsonTree(Date()))
@@ -242,9 +251,9 @@ class NpmService @Autowired constructor(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    fun unpublish(userId: String, artifactInfo: NpmArtifactInfo) {
+    fun unpublish(userId: String, artifactInfo: NpmArtifactInfo): NpmDeleteResponse {
         val fullPathList = mutableListOf<String>()
-        val pkgInfo = searchPackageInfo(artifactInfo)!!
+        val pkgInfo = searchPackageInfo(artifactInfo) ?: throw NpmArtifactNotFoundException("document not found")
         val name = pkgInfo[NAME].asString
         pkgInfo.getAsJsonObject(VERSIONS).keySet().forEach { version ->
             fullPathList.add(String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version))
@@ -255,6 +264,7 @@ class NpmService @Autowired constructor(
         context.contextAttributes[NPM_FILE_FULL_PATH] = fullPathList
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.remove(context)
+        return NpmDeleteResponse(true, name, REV_VALUE)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
@@ -278,7 +288,7 @@ class NpmService @Autowired constructor(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    fun addDistTags(artifactInfo: NpmArtifactInfo, body: String): Map<String, String> {
+    fun addDistTags(artifactInfo: NpmArtifactInfo, body: String): NpmSuccessResponse {
         val context = ArtifactSearchContext()
         val uriInfo = artifactInfo.artifactUri.split(DISTTAGS)
         val name = uriInfo[0].trimStart('/').trimEnd('/')
@@ -296,7 +306,7 @@ class NpmService @Autowired constructor(
         val uploadContext = ArtifactUploadContext(artifactFile)
         uploadContext.contextAttributes[OCTET_STREAM + "_full_path"] = String.format(NPM_PKG_FULL_PATH, name)
         repository.upload(uploadContext)
-        return SUCCESS_MAP
+        return NpmSuccessResponse.createTagSuccess()
     }
 
     fun deleteDistTags(artifactInfo: NpmArtifactInfo) {

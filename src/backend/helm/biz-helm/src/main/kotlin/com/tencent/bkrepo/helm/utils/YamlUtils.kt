@@ -1,10 +1,12 @@
 package com.tencent.bkrepo.helm.utils
 
 import com.google.gson.Gson
-import com.tencent.bkrepo.helm.pojo.ChartEntity
 import com.tencent.bkrepo.helm.pojo.IndexEntity
 import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.constructor.Constructor
+import org.yaml.snakeyaml.introspector.BeanAccess
+import org.yaml.snakeyaml.introspector.PropertyUtils
 import org.yaml.snakeyaml.nodes.Tag
 import org.yaml.snakeyaml.representer.Representer
 import java.io.File
@@ -21,8 +23,15 @@ object YamlUtils {
 
         val representer = Representer()
         representer.addClassTag(IndexEntity::class.java, Tag.MAP)
-        representer.addClassTag(ChartEntity::class.java, Tag.MAP)
-        return Yaml(representer, dumperOptions)
+
+        val constructor = Constructor()
+        val propertyUtils = PropertyUtils()
+        propertyUtils.setBeanAccess(BeanAccess.FIELD)
+        propertyUtils.isSkipMissingProperties = true
+        propertyUtils.isAllowReadOnlyProperties = true
+        constructor.propertyUtils = propertyUtils
+
+        return Yaml(constructor, representer, dumperOptions)
     }
 
     @Throws(Exception::class)
@@ -35,7 +44,7 @@ object YamlUtils {
     }
 
     fun yaml2Json(file: File): String {
-        var loaded = mutableMapOf<String, Object>()
+        var loaded = mutableMapOf<String, Any>()
         try {
             val fis = FileInputStream(file)
             loaded = getYaml().load(fis)
