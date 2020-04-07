@@ -8,13 +8,15 @@ class InfluxDbUtils(
     private val userName: String?,
     private val password: String?,
     private val url: String?,
-    var database: String?,
-    retentionPolicy: String?
+    private val database: String?,
+    private val retentionPolicy: String?
 ) {
-    private val retentionPolicy: String
 
     // database instance
     private var influxDB: InfluxDB? = null
+
+//    // policy
+//    private var retentionPolicy: String? = null
 
     /**
      * connect database
@@ -41,9 +43,5 @@ class InfluxDbUtils(
 
     companion object {
         private val logger = LoggerFactory.getLogger(InfluxDbUtils::class.java)
-    }
-
-    init {
-        this.retentionPolicy = if (retentionPolicy == null || "" == retentionPolicy) "autogen" else retentionPolicy
     }
 }

@@ -15,6 +15,6 @@ class InfluxDbConfig {
     public val database: String? = null
 
     fun influxDbUtils(): InfluxDbUtils {
-        return InfluxDbUtils(userName, password, influxDBUrl, database, "")
+        return InfluxDbUtils(userName, password, influxDBUrl, database, "100day")
     }
 }
