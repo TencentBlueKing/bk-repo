@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.npm.auth
 
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.artifact.auth.AnonymousCredentials
-import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
-import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
+import com.tencent.bkrepo.common.artifact.auth.core.AnonymousCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.npm.exception.NpmClientAuthException
 import com.tencent.bkrepo.npm.jwt.JwtUtils

@@ -31,7 +31,7 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: ExternalErrorCodeException): Response<Void> {
         logException(exception, "[${exception.methodKey}][${exception.errorCode}]${exception.errorMessage}")
-        return ResponseBuilder.fail(exception.errorCode, exception.errorMessage ?: "")
+        return ResponseBuilder.fail(exception.errorCode, exception.errorMessage.orEmpty())
     }
 
     @ExceptionHandler(ErrorCodeException::class)
@@ -85,7 +85,7 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: MissingKotlinParameterException): Response<Void> {
         val messageCode = CommonMessageCode.PARAMETER_MISSING
-        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, arrayOf(exception.parameter.name ?: ""))
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, arrayOf(exception.parameter.name.orEmpty()))
         logException(exception, "[${messageCode.getCode()}]$errorMessage")
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
     }

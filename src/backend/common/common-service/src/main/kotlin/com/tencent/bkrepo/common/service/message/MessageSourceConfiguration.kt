@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.service.message
 import org.springframework.context.MessageSource
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.nio.charset.StandardCharsets
 
 @Configuration
 class MessageSourceConfiguration {
@@ -17,7 +18,7 @@ class MessageSourceConfiguration {
     fun messageSource(): MessageSource {
         val messageSource = PathMatchingResourceBundleMessageSource()
         messageSource.setBasename("classpath*:i18n/messages")
-        messageSource.setDefaultEncoding("UTF-8")
+        messageSource.setDefaultEncoding(StandardCharsets.UTF_8.name())
         messageSource.setUseCodeAsDefaultMessage(true)
         return messageSource
     }

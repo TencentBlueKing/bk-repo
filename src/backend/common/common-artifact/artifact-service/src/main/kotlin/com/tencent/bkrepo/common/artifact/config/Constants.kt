@@ -25,6 +25,7 @@ const val BASIC_AUTH_HEADER_PREFIX = "Basic "
 const val BASIC_AUTH_RESPONSE_HEADER = "WWW-Authenticate"
 const val BASIC_AUTH_RESPONSE_VALUE = "Basic realm=\"Authentication Required\""
 const val PLATFORM_AUTH_HEADER_PREFIX = "Platform "
+const val BEARER_AUTH_HEADER_PREFIX = "Bearer "
 
 /**
  * 构件传输相关
@@ -39,6 +40,7 @@ const val BYTES = "bytes="
 
 const val YAML_MIME_TYPE = "application/x-yaml"
 const val TGZ_MIME_TYPE = "application/x-tar"
+const val STREAM_MIME_TYPE = "application/octet-stream"
 
 /**
  * 虚拟仓库相关

@@ -10,7 +10,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.util.HttpResponseUtils
+import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
@@ -49,7 +49,7 @@ class HelmLocalRepository : LocalRepository() {
             this.onBeforeDownload(context)
             val file =
                 this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] does not exist")
-            HttpResponseUtils.response(determineFileName(context), file)
+            ServletResponseUtils.response(determineFileName(context), file)
             logger.info("User[$userId] download artifact[$artifactUri] success")
             this.onDownloadSuccess(context, file)
         } catch (validateException: ArtifactValidateException) {

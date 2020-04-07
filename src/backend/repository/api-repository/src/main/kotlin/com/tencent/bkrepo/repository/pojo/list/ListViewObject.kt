@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.list
 
-data class ListViewObject (
+data class ListViewObject(
     val title: String,
     val headerList: List<HeaderItem>,
     val rowList: List<RowItem>,

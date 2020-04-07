@@ -6,7 +6,7 @@ package com.tencent.bkrepo.repository.pojo.node
  * @author: carrypan
  * @date: 2019/11/8
  */
-interface CrossRepoNodeRequest {
+interface CrossRepoNodeRequest: NodeRequest {
     val srcProjectId: String
     val srcRepoName: String
     val srcFullPath: String
@@ -16,4 +16,11 @@ interface CrossRepoNodeRequest {
     val overwrite: Boolean
 
     fun getOperateName(): String
+
+    override val projectId
+        get() = srcProjectId
+    override val repoName: String
+        get() = srcRepoName
+    override val fullPath: String
+        get() = srcFullPath
 }

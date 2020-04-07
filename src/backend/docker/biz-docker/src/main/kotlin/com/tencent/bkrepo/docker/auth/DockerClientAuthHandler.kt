@@ -5,9 +5,9 @@ import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.common.api.constant.APP_KEY
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
-import com.tencent.bkrepo.common.artifact.auth.AuthService
-import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
+import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.AuthService
+import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.auth.basic.BasicAuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.platform.PlatformAuthCredentials
 import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
@@ -26,7 +26,8 @@ import javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
 import javax.ws.rs.core.MediaType
 
 @Component
-class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAuthHandler {
+class DockerClientAuthHandler(val userResource: ServiceUserResource) :
+    ClientAuthHandler {
 
     @Value("\${auth.url}")
     private var authUrl: String = ""

@@ -16,9 +16,9 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("创建仓库请求")
 data class UserRepoCreateRequest(
     @ApiModelProperty("所属项目id", required = true)
-    val projectId: String,
+    override val projectId: String,
     @ApiModelProperty("仓库名称", required = true)
-    val name: String,
+    override val name: String,
     @ApiModelProperty("仓库类型", required = true)
     val type: RepositoryType,
     @ApiModelProperty("仓库类别", required = true)
@@ -31,4 +31,4 @@ data class UserRepoCreateRequest(
     val configuration: RepositoryConfiguration,
     @ApiModelProperty("存储身份信息", required = false)
     var storageCredentials: StorageCredentials? = null
-)
+): RepoRequest

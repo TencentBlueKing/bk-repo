@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.opdata.auth
 
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
-import com.tencent.bkrepo.common.artifact.auth.AnonymousCredentials
-import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.AnonymousCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.basic.BasicAuthCredentials
-import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
+import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException

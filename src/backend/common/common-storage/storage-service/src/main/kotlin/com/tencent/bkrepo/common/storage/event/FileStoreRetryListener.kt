@@ -13,7 +13,7 @@ import org.springframework.retry.listener.RetryListenerSupport
  */
 class FileStoreRetryListener : RetryListenerSupport() {
     override fun <T : Any, E : Throwable> onError(context: RetryContext, callback: RetryCallback<T, E>, throwable: Throwable) {
-        logger.warn("Retryable method [${context.getAttribute(RetryContext.NAME)}] threw [${context.retryCount}]th exception {$throwable}")
+        logger.warn("Retryable method [${context.getAttribute(RetryContext.NAME)}] threw [${context.retryCount}]th exception 【$throwable】")
     }
 
     companion object {
