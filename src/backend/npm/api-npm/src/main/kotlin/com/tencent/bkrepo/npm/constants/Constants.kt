@@ -1,7 +1,5 @@
 package com.tencent.bkrepo.npm.constants
 
-const val BKREPO_PREFIX = "X-BKREPO-"
-
 const val APPLICATION_OCTET_STEAM = "mime_type"
 
 /**
@@ -35,5 +33,4 @@ const val SEARCH_REQUEST = "search_request"
 
 // constants map
 val ERROR_MAP = mapOf("error" to "not_found", "reason" to "document not found")
-val SUCCESS_MAP = mapOf(Pair("ok", "created new tag"))
 val SEARCH_MAP = mapOf(Pair("objects", emptyList<Void>()))
