@@ -1,17 +1,14 @@
 package com.tencent.bkrepo.common.storage.filesystem
 
-import com.google.common.io.ByteStreams
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import com.tencent.bkrepo.common.storage.util.FileMergeUtils
+import org.apache.commons.io.FileUtils
 import java.io.File
-import java.io.FileOutputStream
+import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
-import org.apache.commons.io.FileUtils
 
 /**
  * 本地文件存储客户端
@@ -28,21 +25,39 @@ class FileSystemClient(private val root: String) {
     fun touch(dir: String, filename: String): File {
         val filePath = Paths.get(this.root, dir, filename)
         createDirectories(filePath.parent)
-        return Files.createFile(filePath).toFile()
-    }
-
-    fun store(dir: String, filename: String, inputStream: InputStream, overwrite: Boolean = true): File {
-        val filePath = Paths.get(this.root, dir, filename)
-        createDirectories(filePath.parent)
-        if (overwrite || !Files.exists(filePath)) {
-            inputStream.use { Files.copy(it, filePath, StandardCopyOption.REPLACE_EXISTING) }
+        if (!Files.exists(filePath)) {
+            try {
+                Files.createFile(filePath)
+            } catch (exception: java.nio.file.FileAlreadyExistsException) {
+                // ignore
+            }
         }
         return filePath.toFile()
     }
 
+    fun store(dir: String, filename: String, inputStream: InputStream, length: Long, overwrite: Boolean = false): File {
+        val filePath = Paths.get(this.root, dir, filename)
+        createDirectories(filePath.parent)
+        val file = filePath.toFile()
+        if (overwrite || !Files.exists(filePath)) {
+            FileLockExecutor.executeInLock(inputStream) { input ->
+                FileLockExecutor.executeInLock(file) { output ->
+                    output.transferFrom(input, 0, length)
+                }
+            }
+        }
+        return file
+    }
+
     fun delete(dir: String, filename: String) {
         val filePath = Paths.get(this.root, dir, filename)
-        if (Files.isRegularFile(filePath)) Files.delete(filePath)
+        if (Files.isRegularFile(filePath)) {
+            FileLockExecutor.executeInLock(filePath.toFile()) {
+                Files.delete(filePath)
+            }
+        } else {
+            throw IllegalArgumentException("[$filePath] is not a regular file.")
+        }
     }
 
     fun load(dir: String, filename: String): File? {
@@ -55,13 +70,17 @@ class FileSystemClient(private val root: String) {
         return Files.isRegularFile(filePath)
     }
 
-    fun append(dir: String, filename: String, inputStream: InputStream): Long {
+    fun append(dir: String, filename: String, inputStream: InputStream, length: Long): Long {
         val filePath = Paths.get(this.root, dir, filename)
         if (!Files.isRegularFile(filePath)) {
-            throw IllegalArgumentException("Append file does not exist.")
+            throw IllegalArgumentException("[$filePath] is not a regular file.")
         }
-        FileOutputStream(filePath.toFile(), true).use { output ->
-            inputStream.use { input -> ByteStreams.copy(input, output) }
+        val file = filePath.toFile()
+        FileLockExecutor.executeInLock(inputStream) { input ->
+            FileLockExecutor.executeInLock(file) { output ->
+                output.position(output.size())
+                output.transferFrom(input, output.size(), length)
+            }
         }
         return Files.size(filePath)
     }
@@ -74,8 +93,12 @@ class FileSystemClient(private val root: String) {
     }
 
     fun deleteDirectory(dir: String, name: String) {
-        val directory = File(this.root, dir)
-        FileUtils.deleteDirectory(File(directory, name))
+        val filePath = Paths.get(this.root, dir, name)
+        if (Files.isDirectory(filePath)) {
+            Files.delete(filePath)
+        } else {
+            throw IllegalArgumentException("[$filePath] is not a directory.")
+        }
     }
 
     fun checkDirectory(dir: String): Boolean {
@@ -87,7 +110,20 @@ class FileSystemClient(private val root: String) {
     }
 
     fun mergeFiles(fileList: List<File>, outputFile: File): File {
-        FileMergeUtils.mergeFiles(fileList, outputFile)
+        if (!outputFile.exists()) {
+            if (!outputFile.createNewFile()) {
+                throw IOException("Failed to create file [$outputFile]!")
+            }
+        }
+
+        FileLockExecutor.executeInLock(outputFile) { output ->
+            fileList.forEach { file ->
+                FileLockExecutor.executeInLock(file.inputStream()) { input ->
+                    output.position(outputFile.length())
+                    output.transferFrom(input, outputFile.length(), file.length())
+                }
+            }
+        }
         return outputFile
     }
 
