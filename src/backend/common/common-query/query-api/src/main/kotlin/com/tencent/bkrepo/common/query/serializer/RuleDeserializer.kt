@@ -26,12 +26,12 @@ class RuleDeserializer : JsonDeserializer<Rule>() {
         val node = mapper.readTree<JsonNode>(parser)
         try {
             return if (node["relation"] != null) {
-                val relation = Rule.NestedRule.RelationType.valueOf(node["relation"].asText())
+                val relation = Rule.NestedRule.RelationType.lookup(node["relation"].asText())
                 val rules = mapper.readValue<MutableList<Rule>>(node["rules"].toString())
 
                 Rule.NestedRule(rules, relation)
             } else {
-                val operation = OperationType.valueOf(node["operation"].asText())
+                val operation = OperationType.lookup(node["operation"].asText())
                 val field = node["field"].asText()
 
                 val value = if (operation.valueType != Void::class) {
