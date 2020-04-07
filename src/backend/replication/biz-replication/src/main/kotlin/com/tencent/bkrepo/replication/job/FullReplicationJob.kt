@@ -59,7 +59,9 @@ class FullReplicationJob : QuartzJobBean() {
             logger.error("Task[$taskId] does not exist.")
             return
         }
-
+        if (task.status == ReplicationStatus.PAUSED) {
+            logger.info("Task[$taskId] status paused, skip task.")
+        }
         try {
             with(task.setting) {
                 val replicaContext = ReplicationContext(task)
