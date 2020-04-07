@@ -8,7 +8,7 @@ import io.swagger.annotations.ApiModelProperty
 data class NpmAuthResponse<out T>(
     @ApiModelProperty("返回状态")
     val ok: Boolean,
-    @ApiModelProperty("错误信息")
+    @ApiModelProperty("用户ID")
     val id: String? = null,
     @ApiModelProperty("数据")
     @JsonInclude(JsonInclude.Include.NON_NULL)
