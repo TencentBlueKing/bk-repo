@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.npm.resource
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.npm.api.NpmResource
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.constants.ERROR_MAP
+import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
+import com.tencent.bkrepo.npm.pojo.NpmDeleteResponse
+import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.service.NpmService
 import com.tencent.bkrepo.npm.utils.GsonUtils
@@ -17,23 +17,22 @@ class NpmResourceImpl : NpmResource {
     @Autowired
     private lateinit var npmService: NpmService
 
-    override fun publish(userId: String, artifactInfo: NpmArtifactInfo, body: String): Response<Void> {
-        npmService.publish(userId, artifactInfo, body)
-        return ResponseBuilder.success()
+    override fun publish(userId: String, artifactInfo: NpmArtifactInfo, body: String): NpmSuccessResponse {
+        return npmService.publish(userId, artifactInfo, body)
     }
 
     override fun searchPackageInfo(artifactInfo: NpmArtifactInfo): Map<String, Any> {
         val fileInfo = npmService.searchPackageInfo(artifactInfo)
-        return fileInfo?.let { GsonUtils.gsonToMaps<Any>(it) } ?: ERROR_MAP
+        return fileInfo?.let { GsonUtils.gsonToMaps<Any>(it) }
+            ?: throw NpmArtifactNotFoundException("document not found")
     }
 
     override fun download(artifactInfo: NpmArtifactInfo) {
         npmService.download(artifactInfo)
     }
 
-    override fun unpublish(userId: String, artifactInfo: NpmArtifactInfo): Response<Void> {
-        npmService.unpublish(userId, artifactInfo)
-        return ResponseBuilder.success()
+    override fun unpublish(userId: String, artifactInfo: NpmArtifactInfo): NpmDeleteResponse {
+        return npmService.unpublish(userId, artifactInfo)
     }
 
     override fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): Map<String, Any> {
@@ -44,7 +43,7 @@ class NpmResourceImpl : NpmResource {
         return npmService.getDistTagsInfo(artifactInfo)
     }
 
-    override fun addDistTags(artifactInfo: NpmArtifactInfo, body: String): Map<String, String> {
+    override fun addDistTags(artifactInfo: NpmArtifactInfo, body: String): NpmSuccessResponse {
         return npmService.addDistTags(artifactInfo, body)
     }
 
