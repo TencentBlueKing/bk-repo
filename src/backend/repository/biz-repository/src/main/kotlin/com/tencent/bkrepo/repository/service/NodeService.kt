@@ -43,6 +43,7 @@ import com.tencent.bkrepo.repository.util.NodeUtils.getParentPath
 import com.tencent.bkrepo.repository.util.NodeUtils.isRootPath
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
@@ -59,12 +60,19 @@ import java.time.format.DateTimeFormatter
  * @date: 2019-09-20
  */
 @Service
-class NodeService(
-    private val repositoryService: RepositoryService,
-    private val fileReferenceService: FileReferenceService,
-    private val metadataService: MetadataService,
-    private val nodeDao: NodeDao
-) : AbstractService() {
+class NodeService: AbstractService() {
+
+    @Autowired
+    private lateinit var nodeDao: NodeDao
+
+    @Autowired
+    private lateinit var repositoryService: RepositoryService
+
+    @Autowired
+    private lateinit var fileReferenceService: FileReferenceService
+
+    @Autowired
+    private lateinit var metadataService: MetadataService
 
     /**
      * 查询节点详情

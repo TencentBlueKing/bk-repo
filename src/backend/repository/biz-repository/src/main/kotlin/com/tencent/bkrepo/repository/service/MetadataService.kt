@@ -26,6 +26,7 @@ class MetadataService(
     private val repositoryService: RepositoryService,
     private val nodeDao: NodeDao
 ) : AbstractService() {
+
     fun query(projectId: String, repoName: String, fullPath: String): Map<String, String> {
         repositoryService.checkRepository(projectId, repoName)
         return convert(nodeDao.findOne(QueryHelper.nodeQuery(projectId, repoName, fullPath, withDetail = true))?.metadata)
