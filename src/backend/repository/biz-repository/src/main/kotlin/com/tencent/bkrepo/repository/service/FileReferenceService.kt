@@ -6,6 +6,7 @@ import com.tencent.bkrepo.repository.model.TFileReference
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
@@ -17,10 +18,13 @@ import org.springframework.stereotype.Service
  * @date: 2019/11/12
  */
 @Service
-class FileReferenceService(
-    private val fileReferenceDao: FileReferenceDao,
-    private val repositoryService: RepositoryService
-) {
+class FileReferenceService {
+
+    @Autowired
+    private lateinit var fileReferenceDao: FileReferenceDao
+
+    @Autowired
+    private lateinit var repositoryService: RepositoryService
 
     fun increment(node: TNode, repository: TRepository? = null): Boolean {
         return if (validateParameter(node)) {

@@ -36,13 +36,16 @@ import java.time.format.DateTimeFormatter
  * @date: 2019-09-20
  */
 @Service
-class RepositoryService(
-    private val repoRepository: RepoRepository,
-    private val projectService: ProjectService
-) : AbstractService() {
+class RepositoryService: AbstractService() {
+
+    @Autowired
+    private lateinit var repoRepository: RepoRepository
 
     @Autowired
     private lateinit var nodeService: NodeService
+
+    @Autowired
+    private lateinit var projectService: ProjectService
 
     fun detail(projectId: String, name: String, type: String? = null): RepositoryInfo? {
         return convert(queryRepository(projectId, name, type))

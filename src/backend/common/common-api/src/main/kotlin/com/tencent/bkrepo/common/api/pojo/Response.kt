@@ -23,6 +23,6 @@ data class Response<out T>(
 
     @JsonIgnore
     fun isNotOk(): Boolean {
-        return code != CommonMessageCode.SUCCESS.getCode()
+        return !isOk()
     }
 }

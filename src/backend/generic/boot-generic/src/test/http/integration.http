@@ -45,7 +45,7 @@ X-BKREPO-UPLOAD-ID: {{uploadId}}
 X-BKREPO-OVERWRITE: true
 X-BKREPO-SEQUENCE: 1
 
-11111
+111111
 
 ### 上传第一个分块，覆盖第一次
 PUT http://{{host}}/{{project}}/generic-local/block.txt
@@ -54,7 +54,7 @@ X-BKREPO-UPLOAD-ID: {{uploadId}}
 X-BKREPO-OVERWRITE: true
 X-BKREPO-SEQUENCE: 1
 
-111111
+11111
 
 > {%
     client.test('Request executed successfully', function() {
@@ -68,7 +68,7 @@ Authorization: Basic {{username}} {{password}}
 X-BKREPO-UPLOAD-ID: {{uploadId}}
 X-BKREPO-SEQUENCE: 2
 
-222222
+22222
 
 > {%
     client.test('Request executed successfully', function() {
@@ -94,7 +94,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
     client.test('Request executed successfully', function() {
         client.assert(response.status === 200, 'Response status is not 200');
-        client.assert(response.body === '111111222222', 'Response content invalid');
+        client.assert(response.body === '1111122222', 'Response content invalid');
     });
 %}
 
@@ -107,7 +107,7 @@ Range: bytes=0-1
     client.test('Request executed successfully', function() {
         client.assert(response.status === 206, 'Response status is not 206');
         client.assert(response.headers.valueOf("Content-Range") === 'bytes 0-1/10', 'Response content invalid');
-        client.assert(response.body === '1', 'Response content invalid');
+        client.assert(response.body === '11', 'Response content invalid');
     });
 %}
 
