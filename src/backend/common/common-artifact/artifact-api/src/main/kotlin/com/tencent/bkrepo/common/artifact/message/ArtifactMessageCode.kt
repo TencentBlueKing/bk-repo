@@ -21,7 +21,6 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     NODE_CONFLICT("artifact.node.conflict"),
     NODE_LIST_TOO_LARGE("artifact.node.list.too-large");
 
-
     override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key
     override fun getModuleCode() = 10

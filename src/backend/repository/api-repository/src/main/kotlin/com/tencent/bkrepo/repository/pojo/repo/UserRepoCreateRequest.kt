@@ -31,4 +31,4 @@ data class UserRepoCreateRequest(
     val configuration: RepositoryConfiguration,
     @ApiModelProperty("存储身份信息", required = false)
     var storageCredentials: StorageCredentials? = null
-): RepoRequest
+) : RepoRequest

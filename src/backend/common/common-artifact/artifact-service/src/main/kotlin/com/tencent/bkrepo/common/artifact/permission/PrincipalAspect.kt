@@ -43,7 +43,7 @@ class PrincipalAspect {
             permissionCheckHandler.onPermissionCheckSuccess()
             point.proceed()
         } catch (exception: PermissionCheckException) {
-            logger.info("User[$userId] check principal [$principal] failed.")
+            logger.warn("User[$userId] check principal [$principal] failed.")
             permissionCheckHandler.onPermissionCheckFailed(exception)
             null
         }

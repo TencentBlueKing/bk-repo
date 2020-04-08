@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class ProjectMessageHandler: AbstractMessageHandler() {
+class ProjectMessageHandler : AbstractMessageHandler() {
     @Async
     @EventListener(ProjectCreatedMessage::class)
     fun handle(message: ProjectCreatedMessage) {

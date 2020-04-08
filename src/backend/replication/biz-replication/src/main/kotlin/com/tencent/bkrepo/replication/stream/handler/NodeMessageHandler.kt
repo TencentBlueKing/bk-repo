@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class NodeMessageHandler: AbstractMessageHandler() {
+class NodeMessageHandler : AbstractMessageHandler() {
     @Async
     @EventListener(NodeCreatedMessage::class)
     fun handle(message: NodeCreatedMessage) {
@@ -81,5 +81,4 @@ class NodeMessageHandler: AbstractMessageHandler() {
             }
         }
     }
-
 }

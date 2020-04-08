@@ -6,7 +6,7 @@ package com.tencent.bkrepo.repository.pojo.node
  * @author: carrypan
  * @date: 2019/11/8
  */
-interface CrossRepoNodeRequest: NodeRequest {
+interface CrossRepoNodeRequest : NodeRequest {
     val srcProjectId: String
     val srcRepoName: String
     val srcFullPath: String
