@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.model.TFileReference
 import com.tencent.bkrepo.repository.model.TNode
@@ -30,7 +29,7 @@ class FileReferenceService {
         return if (validateParameter(node)) {
             val repo = repository ?: repositoryService.queryRepository(node.projectId, node.repoName)
             if (repo == null) {
-                LoggerHolder.sysErrorLogger.warn("Failed to decrement reference of node [$node], repository not found.")
+                logger.error("Failed to decrement reference of node [$node], repository not found.")
                 return false
             }
             return increment(node.sha256!!, repo.storageCredentials)
@@ -41,7 +40,7 @@ class FileReferenceService {
         return if (validateParameter(node)) {
             val repo = repository ?: repositoryService.queryRepository(node.projectId, node.repoName)
             if (repo == null) {
-                LoggerHolder.sysErrorLogger.warn("Failed to decrement reference of node [$node], repository not found.")
+                logger.error("Failed to decrement reference of node [$node], repository not found.")
                 return false
             }
             return decrement(node.sha256!!, repo.storageCredentials)
@@ -66,7 +65,7 @@ class FileReferenceService {
 
     private fun decrement(sha256: String, storageCredentials: String?): Boolean {
         val fileReference = query(sha256, storageCredentials) ?: run {
-            LoggerHolder.sysErrorLogger.warn("Failed to decrement reference of file [$sha256] on storageCredentials [$storageCredentials]: sha256 reference not found, create new one.")
+            logger.error("Failed to decrement reference of file [$sha256] on storageCredentials [$storageCredentials]: sha256 reference not found, create new one.")
             createNewReference(sha256, storageCredentials)
         }
         return if (fileReference.count >= 1) {
@@ -75,7 +74,7 @@ class FileReferenceService {
             logger.info("Decrement references of file [$sha256] on storageCredentials [$storageCredentials].")
             true
         } else {
-            LoggerHolder.sysErrorLogger.warn("Failed to decrement reference of file [$sha256] on storageCredentials [$storageCredentials]: sha256 reference is 0.")
+            logger.error("Failed to decrement reference of file [$sha256] on storageCredentials [$storageCredentials]: sha256 reference is 0.")
             false
         }
     }

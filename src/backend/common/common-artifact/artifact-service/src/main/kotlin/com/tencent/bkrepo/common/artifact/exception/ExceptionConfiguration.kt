@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.artifact.exception
 
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.exception.handler.ArtifactExceptionHandler
+import com.tencent.bkrepo.common.artifact.exception.handler.DefaultArtifactExceptionHandler
 import com.tencent.bkrepo.common.artifact.exception.response.ArtifactExceptionResponseAdvice
 import com.tencent.bkrepo.common.artifact.exception.response.ExceptionResponseTranslator
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -13,7 +13,7 @@ import org.springframework.http.server.ServerHttpResponse
 
 @Configuration
 @Import(
-    ArtifactExceptionHandler::class,
+    DefaultArtifactExceptionHandler::class,
     ArtifactExceptionResponseAdvice::class)
 class ExceptionConfiguration {
 

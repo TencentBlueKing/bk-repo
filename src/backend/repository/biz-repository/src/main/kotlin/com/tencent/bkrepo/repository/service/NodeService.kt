@@ -60,7 +60,7 @@ import java.time.format.DateTimeFormatter
  * @date: 2019-09-20
  */
 @Service
-class NodeService: AbstractService() {
+class NodeService : AbstractService() {
 
     @Autowired
     private lateinit var nodeDao: NodeDao

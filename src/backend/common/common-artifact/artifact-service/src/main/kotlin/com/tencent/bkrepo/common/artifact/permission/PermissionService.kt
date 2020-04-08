@@ -8,6 +8,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.APP_KEY
 import com.tencent.bkrepo.common.artifact.config.AuthProperties
+import com.tencent.bkrepo.common.artifact.config.PERMISSION_PROMPT
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
@@ -56,14 +57,14 @@ class PermissionService {
             return
         }
         // 匿名用户，提示登录
-        if (userId == ANONYMOUS_USER) throw ClientAuthException("Authentication required")
+        if (userId == ANONYMOUS_USER) throw ClientAuthException()
         if (principalType == PrincipalType.ADMIN) {
             if (!isAdminUser(userId)) {
-                throw PermissionCheckException("Access Forbidden")
+                throw PermissionCheckException(PERMISSION_PROMPT)
             }
         } else if (principalType == PrincipalType.PLATFORM) {
             if (!isPlatformUser() && !isAdminUser(userId)) {
-                throw PermissionCheckException("Access Forbidden")
+                throw PermissionCheckException(PERMISSION_PROMPT)
             }
         }
     }
@@ -89,7 +90,7 @@ class PermissionService {
         // public仓库且为READ操作，直接跳过
         if (type == ResourceType.REPO && action == PermissionAction.READ && repositoryInfo.public) return
         // 匿名用户，提示登录
-        if (userId == ANONYMOUS_USER) throw ClientAuthException("Authentication required")
+        if (userId == ANONYMOUS_USER) throw ClientAuthException()
         // auth 校验
         with(repositoryInfo) {
             val checkRequest = CheckPermissionRequest(userId, type, action, projectId, name)

@@ -36,7 +36,7 @@ import java.time.format.DateTimeFormatter
  * @date: 2019-09-20
  */
 @Service
-class RepositoryService: AbstractService() {
+class RepositoryService : AbstractService() {
 
     @Autowired
     private lateinit var repoRepository: RepoRepository

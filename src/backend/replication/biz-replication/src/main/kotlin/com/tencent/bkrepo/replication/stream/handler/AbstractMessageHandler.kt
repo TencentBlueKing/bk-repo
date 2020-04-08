@@ -14,7 +14,6 @@ abstract class AbstractMessageHandler {
     @Autowired
     lateinit var replicationService: ReplicationService
 
-
     fun getRelativeTaskList(projectId: String, repoName: String? = null): List<TReplicationTask> {
         return taskService.listRelativeTask(ReplicationType.INCREMENTAL, projectId, repoName)
     }

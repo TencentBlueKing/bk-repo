@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class RepoMessageHandler: AbstractMessageHandler(){
+class RepoMessageHandler : AbstractMessageHandler() {
     @Async
     @EventListener(RepoCreatedMessage::class)
     fun handle(message: RepoCreatedMessage) {

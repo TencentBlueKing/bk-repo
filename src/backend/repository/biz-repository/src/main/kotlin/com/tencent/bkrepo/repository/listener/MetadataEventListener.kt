@@ -22,5 +22,4 @@ class MetadataEventListener : AbstractEventListener() {
     fun handle(event: MetadataDeletedEvent) {
         event.apply { sendMessage(MetadataDeletedMessage(request)) }.also { logEvent(it) }
     }
-
 }

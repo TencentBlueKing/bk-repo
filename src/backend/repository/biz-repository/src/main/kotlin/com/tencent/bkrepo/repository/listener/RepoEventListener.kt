@@ -30,5 +30,4 @@ class RepoEventListener : AbstractEventListener() {
     fun handle(event: RepoDeletedEvent) {
         event.apply { sendMessage(RepoDeletedMessage(request)) }.also { logEvent(it) }
     }
-
 }

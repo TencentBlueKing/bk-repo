@@ -20,13 +20,18 @@ const val REPO_NAME = "repoName"
  * 认证相关
  */
 const val AUTHORIZATION = "Authorization"
+const val AUTHORIZATION_PROMPT = "Authentication Required"
 const val PROXY_AUTHORIZATION = "Proxy-Authorization"
 const val BASIC_AUTH_HEADER_PREFIX = "Basic "
 const val BASIC_AUTH_RESPONSE_HEADER = "WWW-Authenticate"
-const val BASIC_AUTH_RESPONSE_VALUE = "Basic realm=\"Authentication Required\""
+const val BASIC_AUTH_RESPONSE_VALUE = "Basic realm=\"$AUTHORIZATION_PROMPT\""
 const val PLATFORM_AUTH_HEADER_PREFIX = "Platform "
 const val BEARER_AUTH_HEADER_PREFIX = "Bearer "
 
+/**
+ * 权限相关
+ */
+const val PERMISSION_PROMPT = "Access Forbidden"
 /**
  * 构件传输相关
  */

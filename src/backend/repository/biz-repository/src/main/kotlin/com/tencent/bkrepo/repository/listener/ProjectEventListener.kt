@@ -14,5 +14,4 @@ class ProjectEventListener : AbstractEventListener() {
     fun handle(event: ProjectCreatedEvent) {
         event.apply { sendMessage(ProjectCreatedMessage(request)) }.also { logEvent(it) }
     }
-
 }

@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
+import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
@@ -26,7 +27,7 @@ import java.util.UUID
 abstract class AbstractStorageService : StorageService {
 
     @Autowired
-    private lateinit var fileLocator: FileLocator
+    protected lateinit var fileLocator: FileLocator
 
     @Autowired
     protected lateinit var fileStorage: FileStorage
@@ -246,6 +247,14 @@ abstract class AbstractStorageService : StorageService {
         return tempFileClient.cleanUp(storageProperties.cache.expireDays)
     }
 
+    override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
+        return SynchronizeResult()
+    }
+
+    protected fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
+        return storageCredentials ?: fileStorage.getDefaultCredentials()
+    }
+
     private fun storeFile(file: File, credentials: StorageCredentials): FileInfo {
         val sha256 = FileDigestUtils.fileSha256(file)
         val md5 = FileDigestUtils.fileMd5(file)
@@ -264,10 +273,6 @@ abstract class AbstractStorageService : StorageService {
 
     private fun generateUniqueId(): String {
         return UUID.randomUUID().toString().replace("-", "").toLowerCase()
-    }
-
-    private fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
-        return storageCredentials ?: fileStorage.getDefaultCredentials()
     }
 
     protected abstract fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials)

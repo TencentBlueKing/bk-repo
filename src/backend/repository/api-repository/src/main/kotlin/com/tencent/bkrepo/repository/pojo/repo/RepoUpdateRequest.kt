@@ -28,4 +28,4 @@ data class RepoUpdateRequest(
 
     @ApiModelProperty("操作用户", required = true)
     val operator: String
-): RepoRequest
+) : RepoRequest
