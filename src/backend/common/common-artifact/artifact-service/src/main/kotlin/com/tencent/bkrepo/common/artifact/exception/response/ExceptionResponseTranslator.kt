@@ -8,9 +8,5 @@ interface ExceptionResponseTranslator {
     /**
      * 转换异常消息响应体
      */
-    fun translate(
-        payload: Response<*>,
-        request: ServerHttpRequest,
-        response: ServerHttpResponse
-    ): Any
+    fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any
 }
