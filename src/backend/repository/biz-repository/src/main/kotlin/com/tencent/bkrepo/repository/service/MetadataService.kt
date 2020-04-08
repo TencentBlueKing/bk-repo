@@ -10,6 +10,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.service.util.QueryHelper
 import com.tencent.bkrepo.repository.util.NodeUtils.formatFullPath
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -23,10 +24,13 @@ import org.springframework.transaction.annotation.Transactional
  * @date: 2019-10-14
  */
 @Service
-class MetadataService(
-    private val repositoryService: RepositoryService,
-    private val nodeDao: NodeDao
-) : AbstractService() {
+class MetadataService: AbstractService() {
+
+    @Autowired
+    private lateinit var repositoryService: RepositoryService
+
+    @Autowired
+    private lateinit var nodeDao: NodeDao
 
     fun query(projectId: String, repoName: String, fullPath: String): Map<String, String> {
         repositoryService.checkRepository(projectId, repoName)
