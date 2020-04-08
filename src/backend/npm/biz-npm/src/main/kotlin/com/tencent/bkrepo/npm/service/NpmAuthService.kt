@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
-class AuthService {
+class NpmAuthService {
 
     @Autowired
     private lateinit var serviceUserResource: ServiceUserResource
@@ -69,6 +69,6 @@ class AuthService {
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(AuthService::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(NpmAuthService::class.java)
     }
 }
