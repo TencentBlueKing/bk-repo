@@ -14,6 +14,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.ShareService
@@ -64,6 +65,11 @@ class NodeResourceImpl @Autowired constructor(
 
     override fun rename(nodeRenameRequest: NodeRenameRequest): Response<Void> {
         nodeService.rename(nodeRenameRequest)
+        return ResponseBuilder.success()
+    }
+
+    override fun update(nodeUpdateRequest: NodeUpdateRequest): Response<Void> {
+        nodeService.update(nodeUpdateRequest)
         return ResponseBuilder.success()
     }
 

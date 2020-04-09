@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.stream.message.node.NodeCreatedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeDeletedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeMovedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeRenamedMessage
+import com.tencent.bkrepo.common.stream.message.node.NodeUpdatedMessage
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
@@ -36,6 +37,20 @@ class NodeMessageHandler : AbstractMessageHandler() {
                     projectId = getRemoteProjectId(it, projectId),
                     repoName = getRemoteRepoName(it, repoName)
                 ).apply { replicationService.replicaNodeRenameRequest(context, this) }
+            }
+        }
+    }
+
+    @Async
+    @EventListener(NodeUpdatedMessage::class)
+    fun handle(message: NodeUpdatedMessage) {
+        with(message.request) {
+            getRelativeTaskList(projectId, repoName).forEach {
+                val context = ReplicationContext(it)
+                this.copy(
+                    projectId = getRemoteProjectId(it, projectId),
+                    repoName = getRemoteRepoName(it, repoName)
+                ).apply { replicationService.replicaNodeUpdateRequest(context, this) }
             }
         }
     }

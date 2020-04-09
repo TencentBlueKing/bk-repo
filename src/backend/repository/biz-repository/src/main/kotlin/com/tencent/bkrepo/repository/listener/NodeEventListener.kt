@@ -5,11 +5,13 @@ import com.tencent.bkrepo.common.stream.message.node.NodeCreatedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeDeletedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeMovedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeRenamedMessage
+import com.tencent.bkrepo.common.stream.message.node.NodeUpdatedMessage
 import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeDeletedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeMovedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeRenamedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeUpdatedEvent
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
@@ -27,6 +29,12 @@ class NodeEventListener : AbstractEventListener() {
     @EventListener(NodeRenamedEvent::class)
     fun handle(event: NodeRenamedEvent) {
         event.apply { sendMessage(NodeRenamedMessage(request)) }.also { logEvent(it) }
+    }
+
+    @Async
+    @EventListener(NodeUpdatedEvent::class)
+    fun handle(event: NodeUpdatedEvent) {
+        event.apply { sendMessage(NodeUpdatedMessage(request)) }.also { logEvent(it) }
     }
 
     @Async

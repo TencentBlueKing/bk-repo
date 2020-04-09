@@ -37,6 +37,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
@@ -212,6 +213,10 @@ class ReplicationController : ReplicationClient {
 
     override fun replicaNodeRenameRequest(token: String, nodeRenameRequest: NodeRenameRequest): Response<Void> {
         return nodeResource.rename(nodeRenameRequest)
+    }
+
+    override fun replicaNodeUpdateRequest(token: String, nodeUpdateRequest: NodeUpdateRequest): Response<Void> {
+        return nodeResource.update(nodeUpdateRequest)
     }
 
     override fun replicaNodeCopyRequest(token: String, nodeCopyRequest: NodeCopyRequest): Response<Void> {
