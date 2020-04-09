@@ -22,5 +22,5 @@ data class TRole(
     val name: String,
     val projectId: String,
     val repoName: String? = null,
-    val admin: Boolean? = false
+    val admin: Boolean = false
 )

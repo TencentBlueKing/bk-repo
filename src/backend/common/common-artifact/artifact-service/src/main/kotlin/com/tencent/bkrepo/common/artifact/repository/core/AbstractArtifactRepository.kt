@@ -14,7 +14,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.util.HttpResponseUtils
+import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
@@ -29,14 +29,10 @@ import java.io.File
 interface AbstractArtifactRepository : ArtifactRepository {
 
     override fun upload(context: ArtifactUploadContext) {
-        val artifactUri = context.artifactInfo.getFullUri()
-        val userId = context.userId
-
         try {
             this.onUploadValidate(context)
             this.onBeforeUpload(context)
             this.onUpload(context)
-            logger.info("User[$userId] upload artifact[$artifactUri] success")
             this.onUploadSuccess(context)
         } catch (validateException: ArtifactValidateException) {
             this.onValidateFailed(context, validateException)
@@ -46,16 +42,12 @@ interface AbstractArtifactRepository : ArtifactRepository {
     }
 
     override fun download(context: ArtifactDownloadContext) {
-        val artifactUri = context.artifactInfo.getFullUri()
-        val userId = context.userId
-
         try {
             this.onDownloadValidate(context)
             this.onBeforeDownload(context)
-            val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] not found")
+            val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo.getFullUri()}] not found")
             val name = NodeUtils.getName(context.artifactInfo.artifactUri)
-            HttpResponseUtils.response(name, file)
-            logger.info("User[$userId] download artifact[$artifactUri] success")
+            ServletResponseUtils.response(name, file)
             this.onDownloadSuccess(context, file)
         } catch (validateException: ArtifactValidateException) {
             this.onValidateFailed(context, validateException)
@@ -64,11 +56,11 @@ interface AbstractArtifactRepository : ArtifactRepository {
         }
     }
 
-    override fun search(context: ArtifactSearchContext): File? {
+    override fun search(context: ArtifactSearchContext): Any? {
         throw UnsupportedMethodException()
     }
 
-    override fun list(context: ArtifactListContext) {
+    override fun list(context: ArtifactListContext): Any? {
         throw UnsupportedMethodException()
     }
 
@@ -111,7 +103,11 @@ interface AbstractArtifactRepository : ArtifactRepository {
     /**
      * 上传成功回调
      */
-    fun onUploadSuccess(context: ArtifactUploadContext) {}
+    fun onUploadSuccess(context: ArtifactUploadContext) {
+        val artifactUri = context.artifactInfo.getFullUri()
+        val userId = context.userId
+        logger.info("User[$userId] upload artifact[$artifactUri] success")
+    }
 
     /**
      * 上传失败回调
@@ -143,7 +139,11 @@ interface AbstractArtifactRepository : ArtifactRepository {
     /**
      * 下载成功回调
      */
-    fun onDownloadSuccess(context: ArtifactDownloadContext, file: File) {}
+    fun onDownloadSuccess(context: ArtifactDownloadContext, file: File) {
+        val artifactUri = context.artifactInfo.getFullUri()
+        val userId = context.userId
+        logger.info("User[$userId] download artifact[$artifactUri] success")
+    }
 
     /**
      * 下载失败回调

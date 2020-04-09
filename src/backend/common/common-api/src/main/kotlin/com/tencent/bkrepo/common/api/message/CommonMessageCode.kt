@@ -13,6 +13,7 @@ enum class CommonMessageCode(private val businessCode: Int, private val key: Str
     PERMISSION_DENIED(9, "system.permission.denied"),
     SERVICE_CIRCUIT_BREAKER(10, "system.service.circuit-breaker"),
     SERVICE_CALL_ERROR(11, "system.service.call-error"),
+    HEADER_MISSING(12, "system.header.missing"),
     SUCCESS(0, "success") { override fun getCode() = 0 };
 
     override fun getBusinessCode() = businessCode

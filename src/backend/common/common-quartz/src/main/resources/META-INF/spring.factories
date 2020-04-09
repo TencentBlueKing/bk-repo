@@ -1,0 +1,4 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
+  com.tencent.bkrepo.common.quartz.QuartzEnvironmentPostProcessor
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  com.tencent.bkrepo.common.quartz.QuartzConfiguration

@@ -13,6 +13,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -53,6 +54,13 @@ interface UserNodeResource {
     fun delete(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
+    ): Response<Void>
+
+    @ApiOperation("更新节点")
+    @PostMapping("/update")
+    fun update(
+        @RequestAttribute userId: String,
+        @RequestBody request: UserNodeUpdateRequest
     ): Response<Void>
 
     @ApiOperation("重命名节点")

@@ -19,6 +19,11 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
+    override fun listUser(rids: List<String>): Response<List<User>> {
+        val result = userService.listUser(rids)
+        return ResponseBuilder.success(result)
+    }
+
     override fun deleteById(uid: String): Response<Boolean> {
         userService.deleteById(uid)
         return ResponseBuilder.success(true)
@@ -43,18 +48,23 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
-    override fun addUserRolePatch(rid: String, request: List<String>): Response<Boolean> {
+    override fun addUserRoleBatch(rid: String, request: List<String>): Response<Boolean> {
         userService.addUserToRoleBatch(request, rid)
         return ResponseBuilder.success(true)
     }
 
-    override fun deleteUserRolePatch(rid: String, request: List<String>): Response<Boolean> {
+    override fun deleteUserRoleBatch(rid: String, request: List<String>): Response<Boolean> {
         userService.removeUserFromRoleBatch(request, rid)
         return ResponseBuilder.success(true)
     }
 
     override fun createToken(uid: String): Response<User?> {
         val result = userService.createToken(uid)
+        return ResponseBuilder.success(result)
+    }
+
+    override fun addUserToken(uid: String, token: String): Response<User?> {
+        val result = userService.addUserToken(uid, token)
         return ResponseBuilder.success(result)
     }
 

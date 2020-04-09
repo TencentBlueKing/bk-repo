@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.RepositoryService
@@ -37,9 +38,8 @@ class RepositoryResourceImpl @Autowired constructor(
         return ResponseBuilder.success(repositoryService.page(projectId, page, size))
     }
 
-    override fun create(repoCreateRequest: RepoCreateRequest): Response<Void> {
-        repositoryService.create(repoCreateRequest)
-        return ResponseBuilder.success()
+    override fun create(repoCreateRequest: RepoCreateRequest): Response<RepositoryInfo> {
+        return ResponseBuilder.success(repositoryService.create(repoCreateRequest))
     }
 
     override fun update(repoUpdateRequest: RepoUpdateRequest): Response<Void> {
@@ -47,8 +47,8 @@ class RepositoryResourceImpl @Autowired constructor(
         return ResponseBuilder.success()
     }
 
-    override fun delete(projectId: String, name: String): Response<Void> {
-        repositoryService.delete(projectId, name)
+    override fun delete(repoDeleteRequest: RepoDeleteRequest): Response<Void> {
+        repositoryService.delete(repoDeleteRequest)
         return ResponseBuilder.success()
     }
 }

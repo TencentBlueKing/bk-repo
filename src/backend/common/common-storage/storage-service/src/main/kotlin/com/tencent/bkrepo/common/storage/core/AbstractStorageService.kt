@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
+import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
@@ -26,7 +27,7 @@ import java.util.UUID
 abstract class AbstractStorageService : StorageService {
 
     @Autowired
-    private lateinit var fileLocator: FileLocator
+    protected lateinit var fileLocator: FileLocator
 
     @Autowired
     protected lateinit var fileStorage: FileStorage
@@ -174,12 +175,18 @@ abstract class AbstractStorageService : StorageService {
         }
     }
 
-    override fun storeBlock(blockId: String, sequence: Int, digest: String, artifactFile: ArtifactFile) {
+    override fun storeBlock(
+        blockId: String,
+        sequence: Int,
+        digest: String,
+        artifactFile: ArtifactFile,
+        overwrite: Boolean
+    ) {
         try {
-            tempFileClient.store(blockId, "$sequence$BLOCK_SUFFIX", artifactFile.getInputStream(), artifactFile.getSize(), true)
+            tempFileClient.store(blockId, "$sequence$BLOCK_SUFFIX", artifactFile.getInputStream(), artifactFile.getSize(), overwrite)
             val byteArray = digest.toByteArray()
             val byteInputStream = ByteArrayInputStream(byteArray)
-            tempFileClient.store(blockId, "$sequence$SHA256_SUFFIX", byteInputStream, byteArray.size.toLong(), true)
+            tempFileClient.store(blockId, "$sequence$SHA256_SUFFIX", byteInputStream, byteArray.size.toLong(), overwrite)
             logger.debug("Success to store block [$blockId/$sequence].")
         } catch (exception: Exception) {
             logger.error("Failed to store block [$blockId/$sequence].", exception)
@@ -201,9 +208,12 @@ abstract class AbstractStorageService : StorageService {
             }
             val mergedFile = tempFileClient.mergeFiles(blockFileList, tempFileClient.touch(blockId, MERGED_FILENAME))
             return storeFile(mergedFile, credentials)
+        } catch (storageException: StorageException) {
+            logger.error("Failed to combine block id [$blockId] on [$credentials]: ${storageException.messageCode}")
+            throw storageException
         } catch (exception: Exception) {
             logger.error("Failed to combine block id [$blockId] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.orEmpty())
         }
     }
 
@@ -237,9 +247,17 @@ abstract class AbstractStorageService : StorageService {
         return tempFileClient.cleanUp(storageProperties.cache.expireDays)
     }
 
+    override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
+        return SynchronizeResult()
+    }
+
+    protected fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
+        return storageCredentials ?: fileStorage.getDefaultCredentials()
+    }
+
     private fun storeFile(file: File, credentials: StorageCredentials): FileInfo {
-        val sha256 = FileDigestUtils.fileSha256(file.inputStream())
-        val md5 = FileDigestUtils.fileMd5(file.inputStream())
+        val sha256 = FileDigestUtils.fileSha256(file)
+        val md5 = FileDigestUtils.fileMd5(file)
         val size = file.length()
         val fileInfo = FileInfo(sha256, md5, size)
         val path = fileLocator.locate(sha256)
@@ -255,10 +273,6 @@ abstract class AbstractStorageService : StorageService {
 
     private fun generateUniqueId(): String {
         return UUID.randomUUID().toString().replace("-", "").toLowerCase()
-    }
-
-    private fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
-        return storageCredentials ?: fileStorage.getDefaultCredentials()
     }
 
     protected abstract fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials)

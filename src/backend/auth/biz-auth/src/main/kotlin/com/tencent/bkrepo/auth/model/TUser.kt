@@ -15,11 +15,11 @@ import org.springframework.data.mongodb.core.mapping.Document
     CompoundIndex(name = "roles_idx", def = "{'roles': 1}", background = true)
 )
 data class TUser(
-    val userId: String? = null,
+    val userId: String,
     val name: String,
     val pwd: String,
-    val admin: Boolean? = false,
-    val locked: Boolean? = false,
-    val tokens: List<Token>? = emptyList(),
-    val roles: List<String>? = emptyList()
+    val admin: Boolean = false,
+    val locked: Boolean = false,
+    val tokens: List<Token> = emptyList(),
+    val roles: List<String> = emptyList()
 )

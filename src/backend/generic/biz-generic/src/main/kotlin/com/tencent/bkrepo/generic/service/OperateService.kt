@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.generic.service
 
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -24,13 +23,13 @@ class OperateService(
     private val permissionService: PermissionService
 ) {
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
-        permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName))
+        permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName)
         return nodeResource.list(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
     }
 
     fun searchFile(userId: String, request: FileSearchRequest): Page<FileInfo> {
         request.repoNameList.forEach {
-            permissionService.checkPermission(CheckPermissionRequest(userId, ResourceType.REPO, PermissionAction.READ, request.projectId, it))
+            permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, request.projectId, it)
         }
 
         val searchRequest = with(request) {

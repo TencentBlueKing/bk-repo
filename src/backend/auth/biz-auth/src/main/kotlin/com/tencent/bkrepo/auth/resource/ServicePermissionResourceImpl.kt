@@ -41,8 +41,8 @@ class ServicePermissionResourceImpl @Autowired constructor(
         return ResponseBuilder.success(permissionService.checkPermission(request))
     }
 
-    override fun listPermission(resourceType: ResourceType?, projectId: String?): Response<List<Permission>> {
-        return ResponseBuilder.success(permissionService.listPermission(resourceType, projectId))
+    override fun listPermission(resourceType: ResourceType?, projectId: String?, repoName: String?): Response<List<Permission>> {
+        return ResponseBuilder.success(permissionService.listPermission(resourceType, projectId, repoName))
     }
 
     override fun deletePermission(id: String): Response<Boolean> {

@@ -37,7 +37,10 @@ class SimpleStorageService : AbstractStorageService() {
 
     override fun doLoad(path: String, filename: String, credentials: StorageCredentials): File? {
         val tempArtifactFile = ArtifactFileFactory.build(0)
-        return fileStorage.load(path, filename, tempArtifactFile.getTempFile(), credentials)
+        return fileStorage.load(path, filename, tempArtifactFile.getTempFile(), credentials) ?: run {
+            tempArtifactFile.delete()
+            null
+        }
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {

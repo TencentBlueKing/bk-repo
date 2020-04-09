@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -16,9 +17,9 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("创建仓库请求")
 data class RepoCreateRequest(
     @ApiModelProperty("所属项目id", required = true)
-    val projectId: String,
+    override val projectId: String,
     @ApiModelProperty("仓库名称", required = true)
-    val name: String,
+    override val name: String,
     @ApiModelProperty("仓库类型", required = true)
     val type: RepositoryType,
     @ApiModelProperty("仓库类别", required = true)
@@ -32,7 +33,7 @@ data class RepoCreateRequest(
     @ApiModelProperty("存储身份信息", required = false)
     var storageCredentials: StorageCredentials? = null,
 
-    @ApiModelProperty("操作用户", required = true)
-    val operator: String
+    @ApiModelProperty("操作用户", required = false)
+    val operator: String = SYSTEM_USER
 
-)
+) : RepoRequest

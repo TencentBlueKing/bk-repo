@@ -8,7 +8,7 @@ import io.swagger.annotations.ApiModelProperty
 data class Role(
     val id: String? = null,
     @ApiModelProperty("角色ID")
-    val roleId: String? = null,
+    val roleId: String,
     @ApiModelProperty("角色类型")
     val type: RoleType,
     @ApiModelProperty("角色名")
@@ -18,5 +18,5 @@ data class Role(
     @ApiModelProperty("仓库名称")
     val repoName: String? = null,
     @ApiModelProperty("管理员")
-    val admin: Boolean? = false
+    val admin: Boolean = false
 )

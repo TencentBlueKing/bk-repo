@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.model.TFileReference
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -37,7 +38,7 @@ class FileReferenceCleanupJob {
         var fileMissingCount = 0L
         val startTimeMillis = System.currentTimeMillis()
         val query = Query.query(Criteria.where(TFileReference::count.name).`is`(0))
-        for (sequence in 0 until TFileReference.SHARDING_COUNT) {
+        for (sequence in 0 until SHARDING_COUNT) {
             val collectionName = fileReferenceDao.parseSequenceToCollectionName(sequence)
             val zeroReferenceList = fileReferenceDao.determineMongoTemplate().find(query, TFileReference::class.java, collectionName)
             zeroReferenceList.forEach {

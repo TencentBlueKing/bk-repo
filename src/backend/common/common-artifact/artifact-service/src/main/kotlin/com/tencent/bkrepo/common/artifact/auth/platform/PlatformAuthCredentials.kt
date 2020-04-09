@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.artifact.auth.platform
 
-import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
 
 /**
  * 平台账号

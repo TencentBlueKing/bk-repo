@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.artifact.repository.local
 
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
+import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
@@ -10,6 +11,7 @@ import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import java.io.File
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 
 /**
  *
@@ -23,6 +25,9 @@ abstract class LocalRepository : AbstractArtifactRepository {
 
     @Autowired
     lateinit var storageService: StorageService
+
+    @Autowired
+    lateinit var publisher: ApplicationEventPublisher
 
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
@@ -68,5 +73,10 @@ abstract class LocalRepository : AbstractArtifactRepository {
             md5 = md5,
             operator = context.userId
         )
+    }
+
+    override fun onUploadSuccess(context: ArtifactUploadContext) {
+        super.onUploadSuccess(context)
+        publisher.publishEvent(ArtifactUploadedEvent(context))
     }
 }

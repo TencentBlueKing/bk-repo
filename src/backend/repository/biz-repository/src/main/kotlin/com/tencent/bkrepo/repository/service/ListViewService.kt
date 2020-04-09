@@ -1,17 +1,24 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.MEDIA_TYPE_HTML
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.pojo.list.HeaderItem
+import com.tencent.bkrepo.repository.pojo.list.ListViewObject
+import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
+import com.tencent.bkrepo.repository.pojo.project.ProjectListViewItem
+import com.tencent.bkrepo.repository.pojo.repo.RepoListViewItem
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.apache.commons.lang.StringEscapeUtils
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.io.PrintWriter
 
 /**
  *
@@ -19,20 +26,30 @@ import org.springframework.stereotype.Service
  * @date: 2019/12/22
  */
 @Service
-class ListViewService @Autowired constructor(
+class ListViewService(
+    private val projectService: ProjectService,
+    private val repositoryService: RepositoryService,
     private val nodeService: NodeService
 ) {
-    fun listView(artifactInfo: ArtifactInfo) {
+    fun listNodeView(artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
             val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(
                 ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
             val response = HttpContextHolder.getResponse()
-            response.contentType = "text/html; charset=UTF-8"
+            response.contentType = MEDIA_TYPE_HTML
             if (nodeDetail.nodeInfo.folder) {
                 trailingSlash()
                 val nodeList = nodeService.list(artifactInfo.projectId, artifactInfo.repoName, artifactUri, includeFolder = true, deep = false)
-                val pageContent = buildPageContent(nodeList, nodeDetail.nodeInfo)
-                response.writer.print(pageContent)
+                val currentPath = computeCurrentPath(nodeDetail.nodeInfo)
+                val headerList = listOf(
+                    HeaderItem("Name"),
+                    HeaderItem("Created by"),
+                    HeaderItem("Last modified"),
+                    HeaderItem("Size")
+                )
+                val itemList = nodeList.map { NodeListViewItem.from(it) }.sorted()
+                val rowList = itemList.map { RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size)) }
+                writePageContent(ListViewObject(currentPath, headerList, rowList, FOOTER, true))
             } else {
                 val context = ArtifactDownloadContext()
                 val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
@@ -41,48 +58,86 @@ class ListViewService @Autowired constructor(
         }
     }
 
-    private fun buildPageContent(nodeList: List<NodeInfo>, currentNode: NodeInfo): String {
-        val currentPath = computeCurrentPath(currentNode)
-        val nameColumnWidth = computeNameColumnWidth(nodeList)
-        val itemList = nodeList.map { NodeListViewItem.from(it) }.sorted()
-        val listContent = buildListContent(itemList, currentNode, nameColumnWidth)
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>Index of $currentPath</title>
-            </head>
-            <body>
-                <h1>Index of $currentPath</h1>
-                <pre>${"Name".padEnd(nameColumnWidth)}Last modified       Size</pre>
-                <hr/>
-                <pre>$listContent</pre>
-                <hr/>
-                <address style="font-size:small;">BlueKing Repository</address>
-            </body>
-            </html>
-        """.trimIndent()
+    fun listRepoView(projectId: String) {
+        trailingSlash()
+        val itemList = repositoryService.list(projectId).map { RepoListViewItem.from(it) }
+        val title = "Repository[$projectId]"
+        val headerList = listOf(
+            HeaderItem("Name"),
+            HeaderItem("Created by"),
+            HeaderItem("Last modified"),
+            HeaderItem("Category"),
+            HeaderItem("Type"),
+            HeaderItem("Public")
+        )
+        val rowList = itemList.sorted().map {
+            RowItem(listOf(it.name, it.createdBy, it.lastModified, it.category, it.type, it.public))
+        }
+        val listViewObject = ListViewObject(title, headerList, rowList, FOOTER, true)
+        writePageContent(listViewObject)
     }
 
-    private fun buildListContent(itemList: List<NodeListViewItem>, currentNode: NodeInfo, nameColumnWidth: Int): String {
-        val builder = StringBuilder()
-        if (!NodeUtils.isRootPath(currentNode.fullPath)) {
-            builder.append("""<a href="../">../</a>""")
-            builder.append("\n")
+    fun listProjectView() {
+        trailingSlash()
+        val itemList = projectService.list().map { ProjectListViewItem.from(it) }
+        val headerList = listOf(
+            HeaderItem("Name"),
+            HeaderItem("Created by"),
+            HeaderItem("Last modified"),
+            HeaderItem("Sharding index")
+        )
+        val rowList = itemList.sorted().map {
+            RowItem(listOf(it.name, it.createdBy, it.lastModified, it.shardingIndex))
         }
-        if (itemList.isEmpty()) {
-            builder.append("The directory is empty.")
+        val listViewObject = ListViewObject("Project", headerList, rowList, FOOTER, false)
+        writePageContent(listViewObject)
+    }
+
+    private fun writePageContent(listViewObject: ListViewObject) {
+        with(listViewObject) {
+            val writer = HttpContextHolder.getResponse().writer
+            val headerContent = buildHeaderContent(this)
+            writer.println(FIRST_PART.format(title, title, headerContent).trimIndent())
+            writeListContent(this, writer)
+            writer.println(LAST_PART.trimIndent())
         }
-        for (item in itemList) {
-            builder.append("""<a href="${item.name}">${StringEscapeUtils.escapeXml(item.name)}</a>""")
-            builder.append(" ".repeat(nameColumnWidth - item.name.length))
-            builder.append(item.lastModifiedDate)
-            builder.append("    ")
-            builder.append(item.size)
-            builder.append("\n")
+    }
+
+    private fun writeListContent(listViewObject: ListViewObject, writer: PrintWriter) {
+        with(listViewObject) {
+            if (backTo) {
+                writer.println(BACK_TO)
+            }
+            if (rowList.isEmpty()) {
+                writer.print(EMPTY_CONTENT)
+            }
+            rowList.forEachIndexed { rowIndex, row ->
+                row.itemList.forEachIndexed { columnIndex, item ->
+                    if (columnIndex == 0) {
+                        val escapedItem = StringEscapeUtils.escapeXml(item)
+                        writer.print("""<a href="$item">$escapedItem</a>""")
+                        writer.print(" ".repeat(headerList[columnIndex].width!! - item.length))
+                    } else {
+                        writer.print(item.padEnd(headerList[columnIndex].width!!))
+                    }
+                    writer.print(" ".repeat(GAP))
+                }
+                if (rowIndex != rowList.size - 1) {
+                    writer.println()
+                }
+            }
         }
-        return builder.toString()
+    }
+
+    private fun buildHeaderContent(listViewObject: ListViewObject): String {
+        with(listViewObject) {
+            val builder = StringBuilder()
+            headerList.forEachIndexed { index, header ->
+                header.width = computeColumnWidth(header, rowList, index)
+                builder.append(header.name.padEnd(header.width!! + GAP))
+            }
+            return builder.toString()
+        }
     }
 
     private fun computeCurrentPath(currentNode: NodeInfo): String {
@@ -98,15 +153,49 @@ class ListViewService @Autowired constructor(
         return builder.toString()
     }
 
-    private fun computeNameColumnWidth(nodeList: List<NodeInfo>): Int {
-        val maxNameLength = nodeList.maxBy { it.name.length }?.name?.length ?: 0
-        return maxNameLength + 4
+    private fun computeColumnWidth(header: HeaderItem, rowList: List<RowItem>, index: Int): Int {
+        var maxLength = header.name.length
+        rowList.forEach {
+            if (it.itemList[index].length > maxLength) {
+                maxLength = it.itemList[index].length
+            }
+        }
+        return maxLength
     }
 
     private fun trailingSlash() {
         val url = HttpContextHolder.getRequest().requestURL.toString()
-        if (!url.endsWith("/")) {
+        if (!url.endsWith(StringPool.SLASH)) {
             HttpContextHolder.getResponse().sendRedirect("$url/")
         }
+    }
+
+    companion object {
+        private const val GAP = 4
+        private const val FOOTER = "BlueKing Repository"
+        private const val BACK_TO = """<a href="../">../</a>"""
+        private const val EMPTY_CONTENT = "\nEmpty content."
+        private const val FIRST_PART = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Index of %s</title>
+            </head>
+            <body>
+                <h1>Index of %s</h1>
+                <hr/>
+                <pre>%s</pre>
+                <hr/>
+                <pre>
+        """
+
+        private const val LAST_PART = """
+                </pre>
+                <hr/>
+                <address style="font-size:small;">$FOOTER</address>
+            </body>
+            </html>
+        """
     }
 }

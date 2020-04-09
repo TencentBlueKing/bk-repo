@@ -8,5 +8,7 @@ data class NpmMetaData(
     val keywords: JsonArray,
     val name: String,
     val version: String,
+    val maintainers: JsonArray,
+
     val deprecated: String?
 )

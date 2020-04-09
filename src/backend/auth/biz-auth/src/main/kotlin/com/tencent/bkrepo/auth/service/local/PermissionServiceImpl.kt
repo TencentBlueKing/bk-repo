@@ -40,13 +40,16 @@ class PermissionServiceImpl @Autowired constructor(
         return true
     }
 
-    override fun listPermission(resourceType: ResourceType?, projectId: String?): List<Permission> {
-        return if (resourceType == null && projectId == null) {
+    override fun listPermission(resourceType: ResourceType?, projectId: String?, repoName: String?): List<Permission> {
+        if (resourceType == null && projectId == null && repoName == null) {
             return permissionRepository.findAll().map { transfer(it) }
         } else if (projectId == null && resourceType != null) {
             return permissionRepository.findByResourceType(resourceType).map { transfer(it) }
         } else if (projectId != null && resourceType != null) {
             return permissionRepository.findByResourceTypeAndProjectId(resourceType, projectId).map { transfer(it) }
+        } else if (projectId != null && resourceType != null && repoName != null) {
+            return permissionRepository.findByResourceTypeAndProjectIdAndRepos(resourceType, projectId, repoName)
+                .map { transfer(it) }
         } else {
             return emptyList()
         }
@@ -72,7 +75,11 @@ class PermissionServiceImpl @Autowired constructor(
 
     override fun createPermission(request: CreatePermissionRequest): Boolean {
         // todo check request
-        val permission = permissionRepository.findOneByPermNameAndProjectIdAndResourceType(request.permName, request.projectId, request.resourceType)
+        val permission = permissionRepository.findOneByPermNameAndProjectIdAndResourceType(
+            request.permName,
+            request.projectId,
+            request.resourceType
+        )
         if (permission != null) {
             logger.warn("create permission  [${request.permName} , ${request.projectId}, ${request.resourceType}  ]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_PERMNAME)
@@ -100,7 +107,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateIncludePath(id: String, path: List<String>): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("update permission includePath [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
@@ -117,7 +124,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateExcludePath(id: String, path: List<String>): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("update permission excludePath [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
@@ -134,7 +141,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateRepoPermission(id: String, repos: List<String>): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("update permission repos [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
@@ -151,24 +158,28 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateUserPermission(id: String, uid: String, actions: List<PermissionAction>): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("add user permission  [$id] , user [$uid] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
         }
 
-        val user = userRepository.findOneByUserId(uid)
+        val user = userRepository.findFirstByUserId(uid)
         if (user == null) {
             logger.warn("add user permission  [$id] , user [$uid]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
-        val userQuery = Query.query(Criteria.where("_id").`is`(id)
-            .and("users.id").`is`(uid))
+        val userQuery = Query.query(
+            Criteria.where("_id").`is`(id)
+                .and("users.id").`is`(uid)
+        )
         val userResult = mongoTemplate.findOne(userQuery, TPermission::class.java)
         if (userResult != null) {
-            val query = Query.query(Criteria.where("_id").`is`(id)
-                .and("users._id").`is`(uid))
+            val query = Query.query(
+                Criteria.where("_id").`is`(id)
+                    .and("users._id").`is`(uid)
+            )
             val update = Update()
             update.set("users.$.action", actions)
             val result = mongoTemplate.updateFirst(query, update, TPermission::class.java)
@@ -191,7 +202,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun removeUserPermission(id: String, uid: String): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("remove user permission  [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
@@ -210,20 +221,22 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateRolePermission(id: String, rid: String, actions: List<PermissionAction>): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("add role permission  [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
         }
 
-        val role = roleRepository.findOneById(rid)
+        val role = roleRepository.findFirstById(rid)
         if (role == null) {
             logger.warn("add role permission  role [$rid]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         }
 
-        val roleQuery = Query.query(Criteria.where("_id").`is`(id)
-            .and("roles.id").`is`(rid))
+        val roleQuery = Query.query(
+            Criteria.where("_id").`is`(id)
+                .and("roles.id").`is`(rid)
+        )
         val roleResult = mongoTemplate.findOne(roleQuery, TPermission::class.java)
         if (roleResult != null) {
             logger.warn("add role permission [$id] role [$rid]   exist.")
@@ -242,7 +255,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun removeRolePermission(id: String, rid: String): Boolean {
-        val permission = permissionRepository.findOneById(id)
+        val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("remove role permission  [$id]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_NOT_EXIST)
@@ -261,17 +274,19 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-        val user = userRepository.findOneByUserId(request.uid)
+        val user = userRepository.findFirstByUserId(request.uid)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        if (user.admin!!) return true
+        if (user.admin) {
+            return true
+        }
         val roles = user.roles
 
         // check project admin
-        if (roles != null && request.projectId != null && request.resourceType == ResourceType.PROJECT) {
+        if (!roles.isEmpty() && request.projectId != null && request.resourceType == ResourceType.PROJECT) {
             roles.forEach {
-                val role = roleRepository.findOneByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
+                val role = roleRepository.findFirstByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
                 if (role != null) {
-                    if (role.admin!! == true) {
+                    if (role.admin == true) {
                         return true
                     }
                 }
@@ -279,11 +294,16 @@ class PermissionServiceImpl @Autowired constructor(
         }
 
         // check repo admin
-        if (roles != null && request.projectId != null && request.resourceType == ResourceType.REPO) {
+        if (!roles.isEmpty() && request.projectId != null && request.resourceType == ResourceType.REPO) {
             roles.forEach {
-                val role = roleRepository.findOneByIdAndProjectIdAndTypeAndRepoName(it, request.projectId!!, RoleType.REPO, request.repoName!!)
+                val role = roleRepository.findFirstByIdAndProjectIdAndTypeAndRepoName(
+                    it,
+                    request.projectId!!,
+                    RoleType.REPO,
+                    request.repoName!!
+                )
                 if (role != null) {
-                    if (role.admin!! == true) {
+                    if (role.admin == true) {
                         return true
                     }
                 }
@@ -292,8 +312,10 @@ class PermissionServiceImpl @Autowired constructor(
 
         // check repo permission
         val criteria = Criteria()
-        var criteriac = criteria.orOperator(Criteria.where("users._id").`is`(request.uid).and("users.action").`is`(request.action.toString()),
-            Criteria.where("roles._id").`in`(roles).and("users.action").`is`(request.action.toString()))
+        var criteriac = criteria.orOperator(
+            Criteria.where("users._id").`is`(request.uid).and("users.action").`is`(request.action.toString()),
+            Criteria.where("roles._id").`in`(roles).and("users.action").`is`(request.action.toString())
+        )
             .and("resourceType").`is`(request.resourceType.toString())
         if (request.resourceType != ResourceType.SYSTEM) {
             criteriac = criteriac.and("projectId").`is`(request.projectId)

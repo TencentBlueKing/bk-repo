@@ -5,9 +5,12 @@ import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
+import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
+import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
+import java.nio.file.Path
 import java.nio.file.Paths
 
 /**
@@ -20,6 +23,8 @@ class CacheStorageService : AbstractStorageService() {
 
     @Autowired
     private lateinit var storageProperties: StorageProperties
+
+    private val tempPath: Path by lazy { Paths.get(storageProperties.cache.path, temp) }
 
     private val cacheClient: FileSystemClient by lazy { FileSystemClient(storageProperties.cache.path) }
 
@@ -36,7 +41,10 @@ class CacheStorageService : AbstractStorageService() {
     override fun doLoad(path: String, filename: String, credentials: StorageCredentials): File? {
         return cacheClient.load(path, filename) ?: run {
             val cachedFile = cacheClient.touch(path, filename)
-            fileStorage.load(path, filename, cachedFile, credentials)
+            fileStorage.load(path, filename, cachedFile, credentials) ?: run {
+                cachedFile.deleteOnExit()
+                null
+            }
         }
     }
 
@@ -55,10 +63,21 @@ class CacheStorageService : AbstractStorageService() {
     }
 
     override fun getTempPath(): String? {
-        return Paths.get(storageProperties.cache.path, "temp").toString()
+        return tempPath.toString()
     }
 
     override fun cleanUp(): CleanupResult {
         return cacheClient.cleanUp(storageProperties.cache.expireDays)
+    }
+
+    override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        val visitor = FileSynchronizeVisitor(tempPath, fileLocator, fileStorage, credentials)
+        cacheClient.walk(visitor)
+        return visitor.checkResult
+    }
+
+    companion object {
+        const val temp = "temp"
     }
 }

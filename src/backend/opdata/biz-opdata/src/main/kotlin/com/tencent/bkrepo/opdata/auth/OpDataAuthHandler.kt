@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.opdata.auth
 
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
-import com.tencent.bkrepo.common.artifact.auth.AnonymousCredentials
-import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.AnonymousCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.basic.BasicAuthCredentials
-import com.tencent.bkrepo.common.artifact.auth.ClientAuthHandler
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER
+import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
+import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import java.util.Base64
@@ -25,7 +25,7 @@ open class OpDataAuthHandler : ClientAuthHandler {
     private lateinit var serviceAccountResource: ServiceAccountResource
 
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
-        val basicAuthHeader = request.getHeader(BASIC_AUTH_HEADER)
+        val basicAuthHeader = request.getHeader(AUTHORIZATION)
         if (basicAuthHeader.isNullOrBlank()) return AnonymousCredentials()
 
         try {

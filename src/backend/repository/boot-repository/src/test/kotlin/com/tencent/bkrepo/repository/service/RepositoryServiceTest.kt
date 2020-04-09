@@ -3,9 +3,11 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.pojo.configuration.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -38,12 +40,16 @@ internal class RepositoryServiceTest @Autowired constructor(
 
     @BeforeEach
     fun setUp() {
-        repositoryService.list(projectId).forEach { repositoryService.delete(projectId, it.name) }
+        repositoryService.list(projectId).forEach {
+            repositoryService.delete(RepoDeleteRequest(projectId, it.name, SYSTEM_USER))
+        }
     }
 
     @AfterEach
     fun tearDown() {
-        repositoryService.list(projectId).forEach { repositoryService.delete(projectId, it.name) }
+        repositoryService.list(projectId).forEach {
+            repositoryService.delete(RepoDeleteRequest(projectId, it.name, SYSTEM_USER))
+        }
     }
 
     @Test
@@ -88,7 +94,7 @@ internal class RepositoryServiceTest @Autowired constructor(
         assertFalse(repositoryService.exist(projectId, ""))
         assertFalse(repositoryService.exist("", repoName))
 
-        repositoryService.delete(projectId, repoName)
+        repositoryService.delete(RepoDeleteRequest(projectId, repoName, SYSTEM_USER))
         assertFalse(repositoryService.exist(projectId, repoName))
     }
 
@@ -144,11 +150,11 @@ internal class RepositoryServiceTest @Autowired constructor(
     fun deleteById() {
         repositoryService.create(createRequest("test1"))
         repositoryService.create(createRequest("test2"))
-        repositoryService.delete(projectId, "test1")
+        repositoryService.delete(RepoDeleteRequest(projectId, "test1", SYSTEM_USER))
         assertNull(repositoryService.detail(projectId, "test1"))
 
-        assertThrows<ErrorCodeException> { repositoryService.delete(projectId, "") }
-        assertThrows<ErrorCodeException> { repositoryService.delete(projectId, "test1") }
+        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(projectId, "", SYSTEM_USER)) }
+        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(projectId, "test1", SYSTEM_USER)) }
 
         assertNotNull(repositoryService.detail(projectId, "test2"))
     }

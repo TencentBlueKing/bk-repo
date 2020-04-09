@@ -3,8 +3,6 @@ package com.tencent.bkrepo.common.mongo.dao.sharding
 import com.mongodb.BasicDBList
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
-import java.lang.reflect.Field
-import javax.annotation.PostConstruct
 import org.apache.commons.lang3.reflect.FieldUtils
 import org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation
 import org.bson.Document
@@ -13,7 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.annotation.AnnotationUtils
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
+import org.springframework.data.mongodb.core.index.IndexDefinition
 import org.springframework.data.mongodb.core.query.Query
+import java.lang.reflect.Field
+import javax.annotation.PostConstruct
 
 /**
  * mongodb 支持分表的数据访问层抽象类
@@ -60,16 +61,33 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     private fun ensureIndex() {
         val start = System.currentTimeMillis()
         val indexDefinitions = MongoIndexResolver.resolveIndexFor(classType)
-        for (i in 1..shardingCount) {
-            indexDefinitions.forEach {
+        val nonexistentIndexDefinitions = filterExistedIndex(indexDefinitions)
+        nonexistentIndexDefinitions.forEach {
+            for (i in 1..shardingCount) {
                 val mongoTemplate = determineMongoTemplate()
                 val collectionName = parseSequenceToCollectionName(i - 1)
-                mongoTemplate.indexOps(collectionName).ensureIndex(it) }
+                mongoTemplate.indexOps(collectionName).ensureIndex(it)
+            }
         }
+
         val indexCount = shardingCount * indexDefinitions.size
         val consume = System.currentTimeMillis() - start
 
         logger.info("ensure [$indexCount] index for sharding collection [$collectionName], consume [$consume] ms totally")
+    }
+
+    private fun filterExistedIndex(indexDefinitions: List<IndexDefinition>): List<IndexDefinition> {
+        val mongoTemplate = determineMongoTemplate()
+        val collectionName = parseSequenceToCollectionName(0)
+        val indexInfoList = mongoTemplate.indexOps(collectionName).indexInfo
+        val indexNameList = indexInfoList.map { index -> index.name }
+        return indexDefinitions.filter { index ->
+            val indexOptions = index.indexOptions
+            if (indexOptions.contains("name")) {
+                val indexName = indexOptions.getString("name")
+                !indexNameList.contains(indexName)
+            } else true
+        }
     }
 
     private fun shardingCountFor(i: Int): Int {
