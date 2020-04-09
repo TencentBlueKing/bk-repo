@@ -11,6 +11,7 @@ import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeMovedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeRenamedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeUpdatedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -24,7 +25,9 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeDeleteUpdate
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeExpireDateUpdate
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeListCriteria
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeListQuery
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePageQuery
@@ -250,15 +253,36 @@ class NodeService : AbstractService() {
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun rename(renameRequest: NodeRenameRequest) {
-        with(renameRequest) {
+        renameRequest.apply {
             val fullPath = formatFullPath(this.fullPath)
             val newFullPath = formatFullPath(this.newFullPath)
 
             repositoryService.checkRepository(projectId, repoName)
             val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             doRename(node, newFullPath, operator)
-            publishEvent(NodeRenamedEvent(renameRequest))
-            logger.info("Rename node [$renameRequest] success.")
+        }.also {
+            publishEvent(NodeRenamedEvent(it))
+        }.also {
+            logger.info("Rename node [$it] success.")
+        }
+    }
+
+    /**
+     * 更新节点
+     */
+    @Transactional(rollbackFor = [Throwable::class])
+    fun update(updateRequest: NodeUpdateRequest) {
+        updateRequest.apply {
+            val fullPath = formatFullPath(this.fullPath)
+            repositoryService.checkRepository(projectId, repoName)
+            val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
+            val selfUpdate = nodeExpireDateUpdate(parseExpireDate(expires), operator)
+            nodeDao.updateFirst(selfQuery, selfUpdate)
+        }.also {
+            publishEvent(NodeUpdatedEvent(it))
+        }.also {
+            logger.info("Rename node [$it] success.")
         }
     }
 

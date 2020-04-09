@@ -19,6 +19,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
@@ -110,6 +111,12 @@ interface ReplicationClient {
         @RequestBody nodeRenameRequest: NodeRenameRequest
     ): Response<Void>
 
+    @PostMapping("/node/update")
+    fun replicaNodeUpdateRequest(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody nodeUpdateRequest: NodeUpdateRequest
+    ): Response<Void>
+
     @PostMapping("/node/copy")
     fun replicaNodeCopyRequest(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
@@ -140,7 +147,7 @@ interface ReplicationClient {
         @RequestBody request: RepoUpdateRequest
     ): Response<Void>
 
-    @PostMapping("/reop/delete")
+    @PostMapping("/repo/delete")
     fun replicaRepoDeleteRequest(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
         @RequestBody request: RepoDeleteRequest
