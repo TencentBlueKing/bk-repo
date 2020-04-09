@@ -1,5 +1,6 @@
 .DS_Store
 .idea
+.gradle
 bin/
 docs/node_modules
 docs/_book
@@ -19,5 +20,3 @@ frontend/*/yarn-error.log*
 frontend/*/package-lock.json
 node_modules/
 *.log
-
-data/
