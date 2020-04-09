@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -9,15 +10,14 @@ import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.repository.model.TShareRecord
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.UUID
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 /**
  * 文件分享 service
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service
  * @date: 2019/11/12
  */
 @Service
-class ShareService @Autowired constructor(
+class ShareService(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
     private val mongoTemplate: MongoTemplate
@@ -75,6 +75,15 @@ class ShareService @Autowired constructor(
         }
     }
 
+    fun list(projectId: String, repoName: String, fullPath: String): List<ShareRecordInfo> {
+        val query = Query.query(
+            Criteria.where(TShareRecord::projectId.name).`is`(projectId)
+            .and(TShareRecord::repoName.name).`is`(repoName)
+            .and(TShareRecord::fullPath.name).`is`(fullPath)
+        )
+        return mongoTemplate.find(query, TShareRecord::class.java).map { convert(it) }
+    }
+
     private fun checkNode(projectId: String, repoName: String, fullPath: String) {
         repositoryService.checkRepository(projectId, repoName)
         val node = nodeService.detail(projectId, repoName, fullPath)
@@ -87,7 +96,7 @@ class ShareService @Autowired constructor(
         private val logger = LoggerFactory.getLogger(ShareService::class.java)
 
         private fun generateToken(): String {
-            return UUID.randomUUID().toString().replace("-", "").toLowerCase()
+            return UUID.randomUUID().toString().replace(StringPool.DASH, StringPool.EMPTY).toLowerCase()
         }
 
         private fun generateShareUrl(shareRecord: TShareRecord): String {

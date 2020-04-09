@@ -13,10 +13,17 @@ interface PermissionCheckHandler {
 
     /**
      * 进行权限校验
-     * 校验不通过跑PermissionCheckException异常
+     * 校验不通过抛PermissionCheckException异常
      */
     @Throws(PermissionCheckException::class)
     fun onPermissionCheck(userId: String, permission: Permission, artifactInfo: ArtifactInfo, repositoryInfo: RepositoryInfo)
+
+    /**
+     * 进行身份校验
+     * 校验不通过抛PermissionCheckException异常
+     */
+    @Throws(PermissionCheckException::class)
+    fun onPrincipalCheck(userId: String, principal: Principal)
 
     /**
      * 认证成功回调

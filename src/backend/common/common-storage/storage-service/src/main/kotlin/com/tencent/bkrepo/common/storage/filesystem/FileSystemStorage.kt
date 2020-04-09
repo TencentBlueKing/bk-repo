@@ -18,7 +18,14 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
     }
 
     override fun load(path: String, filename: String, received: File, client: FileSystemClient): File? {
-        return client.load(path, filename)
+        return client.load(path, filename)?.run {
+            FileLockExecutor.executeInLock(this.inputStream()) { input ->
+                FileLockExecutor.executeInLock(received) { output ->
+                    client.transfer(input, output, this.length())
+                }
+            }
+            received
+        }
     }
 
     override fun delete(path: String, filename: String, client: FileSystemClient) {
@@ -31,5 +38,9 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
 
     override fun getDefaultCredentials() = storageProperties.filesystem
     override fun onCreateClient(credentials: FileSystemCredentials) = FileSystemClient(credentials.path)
-    override fun getTempPath() = Paths.get(storageProperties.filesystem.path, "temp").toString()
+    override fun getTempPath() = Paths.get(storageProperties.filesystem.path, TEMP).toString()
+
+    companion object {
+        const val TEMP = "temp"
+    }
 }

@@ -8,13 +8,14 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.common.service.log.LoggerHolder.logException
+import com.tencent.bkrepo.common.service.log.LoggerHolder.logBusinessException
+import com.tencent.bkrepo.common.service.log.LoggerHolder.logSystemException
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpRequestMethodNotSupportedException
+import org.springframework.web.bind.MissingRequestHeaderException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -29,15 +30,15 @@ class GlobalExceptionHandler {
     @ExceptionHandler(ExternalErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: ExternalErrorCodeException): Response<Void> {
-        logException(exception, "[${exception.methodKey}][${exception.errorCode}]${exception.errorMessage}")
-        return ResponseBuilder.fail(exception.errorCode, exception.errorMessage ?: "")
+        logBusinessException(exception, "[${exception.methodKey}][${exception.errorCode}]${exception.errorMessage}")
+        return ResponseBuilder.fail(exception.errorCode, exception.errorMessage.orEmpty())
     }
 
     @ExceptionHandler(ErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: ErrorCodeException): Response<Void> {
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
-        logException(exception, "[${exception.messageCode.getCode()}]$errorMessage")
+        logBusinessException(exception, "[${exception.messageCode.getCode()}]$errorMessage")
         return ResponseBuilder.fail(exception.messageCode.getCode(), errorMessage)
     }
 
@@ -49,7 +50,7 @@ class GlobalExceptionHandler {
     fun handleException(exception: MissingServletRequestParameterException): Response<Void> {
         val messageCode = CommonMessageCode.PARAMETER_MISSING
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, arrayOf(exception.parameterName))
-        logException(exception, "[${messageCode.getCode()}]$errorMessage")
+        logBusinessException(exception, "[${messageCode.getCode()}]$errorMessage")
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
     }
 
@@ -61,7 +62,19 @@ class GlobalExceptionHandler {
     fun handleException(exception: HttpMessageNotReadableException): Response<Void> {
         val messageCode = CommonMessageCode.REQUEST_CONTENT_INVALID
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
-        logException(exception, "[${messageCode.getCode()}]$errorMessage")
+        logBusinessException(exception, "[${messageCode.getCode()}]$errorMessage")
+        return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
+    }
+
+    /**
+     * header参数异常
+     */
+    @ExceptionHandler(MissingRequestHeaderException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleException(exception: MissingRequestHeaderException): Response<Void> {
+        val messageCode = CommonMessageCode.HEADER_MISSING
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, arrayOf(exception.headerName))
+        logBusinessException(exception, "[${messageCode.getCode()}]$errorMessage")
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
     }
 
@@ -72,8 +85,8 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: MissingKotlinParameterException): Response<Void> {
         val messageCode = CommonMessageCode.PARAMETER_MISSING
-        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, arrayOf(exception.parameter.name ?: ""))
-        logException(exception, "[${messageCode.getCode()}]$errorMessage")
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, arrayOf(exception.parameter.name.orEmpty()))
+        logBusinessException(exception, "[${messageCode.getCode()}]$errorMessage")
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
     }
 
@@ -82,7 +95,7 @@ class GlobalExceptionHandler {
     fun handleException(exception: HttpRequestMethodNotSupportedException): Response<Void> {
         val messageCode = CommonMessageCode.OPERATION_UNSUPPORTED
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
-        logException(exception, "[${messageCode.getCode()}]$errorMessage")
+        logBusinessException(exception, "[${messageCode.getCode()}]$errorMessage")
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
     }
 
@@ -98,14 +111,14 @@ class GlobalExceptionHandler {
         } else if (exception.failureType == FailureType.SHORTCIRCUIT) {
             messageCode = CommonMessageCode.SERVICE_CIRCUIT_BREAKER
         }
-        logException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage", LoggerHolder.sysErrorLogger)
+        logSystemException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage")
         return response(messageCode)
     }
 
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: Exception): Response<Void> {
-        logException(exception, exception.message, LoggerHolder.sysErrorLogger, true)
+        logSystemException(exception)
         return response(CommonMessageCode.SYSTEM_ERROR)
     }
 

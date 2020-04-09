@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import java.io.File
@@ -82,7 +83,13 @@ interface StorageService {
      * 存储分块文件
      * blockId: 分块存储id
      */
-    fun storeBlock(blockId: String, sequence: Int, digest: String, artifactFile: ArtifactFile)
+    fun storeBlock(
+        blockId: String,
+        sequence: Int,
+        digest: String,
+        artifactFile: ArtifactFile,
+        overwrite: Boolean
+    )
 
     /**
      * 合并分块文件
@@ -99,4 +106,9 @@ interface StorageService {
      * 手动补偿上传文件
      */
     fun manualRetry(digest: String, storageCredentials: StorageCredentials? = null)
+
+    /**
+     * 检验缓存文件一致性
+     */
+    fun synchronizeFile(storageCredentials: StorageCredentials? = null): SynchronizeResult
 }

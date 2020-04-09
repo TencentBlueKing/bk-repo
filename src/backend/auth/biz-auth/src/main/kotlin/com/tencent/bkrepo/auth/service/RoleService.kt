@@ -10,7 +10,11 @@ interface RoleService {
 
     fun deleteRoleByid(id: String): Boolean
 
-    fun listRoleByProject(type: RoleType?, projectId: String?): List<Role>
+    fun listRoleByProject(type: RoleType?, projectId: String?, repoName: String?): List<Role>
 
-    fun detail(rid: String): Role?
+    fun detail(id: String): Role?
+
+    fun detail(rid: String, projectId: String): Role?
+
+    fun detail(rid: String, projectId: String, repoName: String): Role?
 }

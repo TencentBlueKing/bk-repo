@@ -69,6 +69,14 @@ class FileSystemClientTest {
     }
 
     @Test
+    fun storeOverwrite() {
+        fileSystemClient.store("/", outputFileName, "0123456789".byteInputStream(), 10, true)
+        fileSystemClient.store("/", outputFileName, "0123456789abc".byteInputStream(), 13, true)
+        val file = fileSystemClient.load("/", outputFileName)!!
+        assertEquals("0123456789abc", file.readText())
+    }
+
+    @Test
     fun delete() {
         fileSystemClient.store("/", outputFileName, "0123456789".byteInputStream(), 10)
         assertTrue(fileSystemClient.exist("/", outputFileName))

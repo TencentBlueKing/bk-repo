@@ -29,5 +29,5 @@ interface ProjectResource {
 
     @ApiOperation("创建项目")
     @PostMapping
-    fun create(@RequestBody request: ProjectCreateRequest): Response<Void>
+    fun create(@RequestBody request: ProjectCreateRequest): Response<ProjectInfo>
 }

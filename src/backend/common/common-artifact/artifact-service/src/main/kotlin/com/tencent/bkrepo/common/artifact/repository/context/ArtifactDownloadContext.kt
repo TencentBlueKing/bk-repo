@@ -7,14 +7,4 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
  * @author: carrypan
  * @date: 2019/11/26
  */
-class ArtifactDownloadContext(repo: RepositoryInfo? = null) : ArtifactTransferContext(repo) {
-
-    fun copy(repositoryInfo: RepositoryInfo): ArtifactDownloadContext {
-        val context = ArtifactDownloadContext()
-        context.repositoryInfo = repositoryInfo
-        context.storageCredentials = repositoryInfo.storageCredentials
-        context.repositoryConfiguration = repositoryInfo.configuration
-        context.contextAttributes = contextAttributes
-        return context
-    }
-}
+class ArtifactDownloadContext(repo: RepositoryInfo? = null) : ArtifactTransferContext(repo)

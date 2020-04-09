@@ -2,10 +2,9 @@ package com.tencent.bkrepo.common.service.log
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.API_LOGGER_NAME
-import com.tencent.bkrepo.common.api.constant.BUSINESS_ERROR_LOGGER_NAME
+import com.tencent.bkrepo.common.api.constant.EXCEPTION_LOGGER_NAME
 import com.tencent.bkrepo.common.api.constant.JOB_LOGGER_NAME
 import com.tencent.bkrepo.common.api.constant.MS_REQUEST_KEY
-import com.tencent.bkrepo.common.api.constant.SYSTEM_ERROR_LOGGER_NAME
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -20,32 +19,39 @@ import javax.servlet.http.HttpServletRequest
  */
 object LoggerHolder {
     /**
-     * 系统错误logger
+     * 异常logger
      */
-    val sysErrorLogger: Logger = LoggerFactory.getLogger(SYSTEM_ERROR_LOGGER_NAME)
+    val exceptionLogger: Logger = LoggerFactory.getLogger(EXCEPTION_LOGGER_NAME)
+
     /**
-     * 业务错误logger
-     */
-    val bizErrorLogger: Logger = LoggerFactory.getLogger(BUSINESS_ERROR_LOGGER_NAME)
-    /**
-     * 定时任务logger
+     * API logger
      */
     val jobLogger: Logger = LoggerFactory.getLogger(JOB_LOGGER_NAME)
+
     /**
      * API logger
      */
     val apiLogger: Logger = LoggerFactory.getLogger(API_LOGGER_NAME)
 
-    fun logException(exception: Exception, message: String? = "", logger: Logger = bizErrorLogger, logDetail: Boolean = false) {
+    fun logBusinessException(exception: Exception, message: String? = null) {
+        logException(exception, message, false)
+    }
+
+    fun logSystemException(exception: Exception, message: String? = null) {
+        logException(exception, message, true)
+    }
+
+    private fun logException(exception: Exception, message: String?, systemError: Boolean) {
         val request = (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request
         val userId = request?.getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val accessChannel = determineAccessChannel(request)
         val uri = request?.requestURI
-        val fullMessage = "User[$userId] access [$uri] by [$accessChannel] failed[${exception.javaClass.simpleName}]: $message"
-        if (logDetail) {
-            logger.error(fullMessage, exception)
+        val exceptionMessage = message ?: exception.message.orEmpty()
+        val fullMessage = "User[$userId] access [$uri] by [$accessChannel] failed[${exception.javaClass.simpleName}]: $exceptionMessage"
+        if (systemError) {
+            exceptionLogger.error(fullMessage, exception)
         } else {
-            logger.error(fullMessage)
+            exceptionLogger.warn(fullMessage)
         }
     }
 

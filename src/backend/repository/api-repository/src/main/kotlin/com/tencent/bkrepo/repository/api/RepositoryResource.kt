@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import io.swagger.annotations.Api
@@ -71,7 +72,7 @@ interface RepositoryResource {
     @PostMapping
     fun create(
         @RequestBody repoCreateRequest: RepoCreateRequest
-    ): Response<Void>
+    ): Response<RepositoryInfo>
 
     @ApiOperation("修改仓库")
     @PutMapping
@@ -80,11 +81,8 @@ interface RepositoryResource {
     ): Response<Void>
 
     @ApiOperation("删除仓库")
-    @DeleteMapping("/{projectId}/{name}")
+    @DeleteMapping
     fun delete(
-        @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
-        @PathVariable name: String
+        @RequestBody repoDeleteRequest: RepoDeleteRequest
     ): Response<Void>
 }

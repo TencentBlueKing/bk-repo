@@ -3,7 +3,7 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.pojo.configuration.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -665,6 +665,27 @@ internal class NodeServiceTest @Autowired constructor(
         assertTrue(nodeService.exist(projectId, repoName, "/ab/c/d/1.txt"))
         assertTrue(nodeService.exist(projectId, repoName, "/ab/c/d/e/2.txt"))
 
+    }
+
+    @Test
+    @DisplayName("拷贝文件 -> 存在的目录")
+    fun copyFileToExistPathTest() {
+        nodeService.create(createRequest("/a/1.txt", false))
+        nodeService.create(createRequest("/b", true))
+
+        val copyRequest = NodeCopyRequest(
+            srcProjectId = projectId,
+            srcRepoName = repoName,
+            srcFullPath = "/a/1.txt",
+            destFullPath = "/b/",
+            operator = operator,
+            overwrite = true
+        )
+        nodeService.copy(copyRequest)
+
+        assertTrue(nodeService.detail(projectId, repoName, "/b")?.nodeInfo?.folder == true)
+        assertTrue(nodeService.detail(projectId, repoName, "/b/1.txt")?.nodeInfo?.folder == false)
+        nodeService.list(projectId, repoName, "/", true, deep = true).forEach { println(it) }
     }
 
     @Test

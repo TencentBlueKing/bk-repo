@@ -10,7 +10,6 @@ class UploadContext {
     var path: String = ""
     var content: InputStream? = null
     var contentLength: Long = 0
-    var sha1: String = ""
     var sha256: String = ""
     var md5: String = ""
     var projectId: String = ""
@@ -45,11 +44,6 @@ class UploadContext {
         return this
     }
 
-    fun sha1(sha1: String): UploadContext {
-        this.sha1 = sha1
-        return this
-    }
-
     fun sha256(sha256: String): UploadContext {
         this.sha256 = sha256
         return this
@@ -67,19 +61,6 @@ class UploadContext {
 
     fun repoName(repoName: String): UploadContext {
         this.repoName = repoName
-        return this
-    }
-
-    fun use(repoName: String): UploadContext {
-        this.repoName = repoName
-        return this
-    }
-
-    fun header(key: String?, value: String?): UploadContext {
-        if (key != null && value != null) {
-            this.requestHeaders[key] = value
-        }
-
         return this
     }
 

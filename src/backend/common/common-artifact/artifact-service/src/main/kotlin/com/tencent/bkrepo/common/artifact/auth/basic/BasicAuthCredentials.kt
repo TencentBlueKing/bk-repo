@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.artifact.auth.basic
 
-import com.tencent.bkrepo.common.artifact.auth.AuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
 
 /**
  * Http Basic认证账号

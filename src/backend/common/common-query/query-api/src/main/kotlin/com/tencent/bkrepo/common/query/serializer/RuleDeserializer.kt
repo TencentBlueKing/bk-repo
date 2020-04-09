@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.exception.QueryModelException
 import com.tencent.bkrepo.common.query.model.Rule
@@ -36,12 +37,12 @@ class RuleDeserializer : JsonDeserializer<Rule>() {
 
                 val value = if (operation.valueType != Void::class) {
                     mapper.readValue(node["value"].toString(), operation.valueType.java)
-                } else ""
+                } else StringPool.EMPTY
 
                 Rule.QueryRule(field, value, operation)
             }
         } catch (exception: Exception) {
-            throw QueryModelException("failed to resolve rule.", exception)
+            throw QueryModelException("Failed to resolve rule.", exception)
         }
     }
 }

@@ -67,7 +67,7 @@ object JwtUtils {
             throw NpmTokenIllegalException("token is expired")
         } catch (e: Exception) {
             // token 校验失败, 抛出Token验证非法异常
-            throw NpmTokenIllegalException("bad props auth token")
+            throw NpmTokenIllegalException("bad props auth token:\nbasictoken=$token")
         }
     }
 

@@ -32,13 +32,13 @@ class GenericLocalRepository : LocalRepository() {
         // 校验sha256
         val calculatedSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
         val uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256)
-        if (uploadSha256 != null && calculatedSha256 != uploadSha256) {
+        if (uploadSha256 != null && !calculatedSha256.equals(uploadSha256, true)) {
             throw ArtifactValidateException("File sha256 validate failed.")
         }
         // 校验md5
         val calculatedMd5 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] as String
         val uploadMd5 = HeaderUtils.getHeader(HEADER_MD5)
-        if (uploadMd5 != null && calculatedMd5 != calculatedMd5) {
+        if (uploadMd5 != null && !calculatedMd5.equals(calculatedMd5, true)) {
             throw ArtifactValidateException("File md5 validate failed.")
         }
     }
@@ -65,7 +65,8 @@ class GenericLocalRepository : LocalRepository() {
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         }
         val calculatedSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
-        storageService.storeBlock(uploadId, sequence, calculatedSha256, context.getArtifactFile())
+        val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
+        storageService.storeBlock(uploadId, sequence, calculatedSha256, context.getArtifactFile(), overwrite)
     }
 
     override fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
@@ -93,5 +94,4 @@ class GenericLocalRepository : LocalRepository() {
         }
         return metadata
     }
-
 }

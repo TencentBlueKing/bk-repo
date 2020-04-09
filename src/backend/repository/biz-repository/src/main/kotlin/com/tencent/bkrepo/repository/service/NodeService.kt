@@ -1,11 +1,17 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeMovedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeRenamedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeUpdatedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -19,13 +25,17 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
-import com.tencent.bkrepo.repository.service.QueryHelper.nodeDeleteUpdate
-import com.tencent.bkrepo.repository.service.QueryHelper.nodeListCriteria
-import com.tencent.bkrepo.repository.service.QueryHelper.nodeListQuery
-import com.tencent.bkrepo.repository.service.QueryHelper.nodePageQuery
-import com.tencent.bkrepo.repository.service.QueryHelper.nodePathUpdate
-import com.tencent.bkrepo.repository.service.QueryHelper.nodeQuery
-import com.tencent.bkrepo.repository.service.QueryHelper.nodeSearchQuery
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeDeleteUpdate
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeExpireDateUpdate
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeListCriteria
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeListQuery
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePageQuery
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePathUpdate
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeQuery
+import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeSearchQuery
+import com.tencent.bkrepo.repository.util.NodeUtils
+import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 import com.tencent.bkrepo.repository.util.NodeUtils.combineFullPath
 import com.tencent.bkrepo.repository.util.NodeUtils.combinePath
 import com.tencent.bkrepo.repository.util.NodeUtils.escapeRegex
@@ -35,8 +45,6 @@ import com.tencent.bkrepo.repository.util.NodeUtils.getName
 import com.tencent.bkrepo.repository.util.NodeUtils.getParentPath
 import com.tencent.bkrepo.repository.util.NodeUtils.isRootPath
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -45,6 +53,8 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * 节点service
@@ -53,12 +63,19 @@ import org.springframework.transaction.annotation.Transactional
  * @date: 2019-09-20
  */
 @Service
-class NodeService @Autowired constructor(
-    private val repositoryService: RepositoryService,
-    private val fileReferenceService: FileReferenceService,
-    private val metadataService: MetadataService,
-    private val nodeDao: NodeDao
-) {
+class NodeService : AbstractService() {
+
+    @Autowired
+    private lateinit var nodeDao: NodeDao
+
+    @Autowired
+    private lateinit var repositoryService: RepositoryService
+
+    @Autowired
+    private lateinit var fileReferenceService: FileReferenceService
+
+    @Autowired
+    private lateinit var metadataService: MetadataService
 
     /**
      * 查询节点详情
@@ -89,14 +106,24 @@ class NodeService @Autowired constructor(
 
         val aggregation = Aggregation.newAggregation(
                 Aggregation.match(criteria),
-                Aggregation.group().sum("size").`as`("size")
+                Aggregation.group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
         )
         val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
         val size = if (aggregateResult.mappedResults.size > 0) {
-            aggregateResult.mappedResults[0]["size"] as? Long ?: 0
+            aggregateResult.mappedResults[0][NodeSizeInfo::size.name] as? Long ?: 0
         } else 0
 
         return NodeSizeInfo(subNodeCount = count, size = size)
+    }
+
+    /**
+     * 查询文件节点数量
+     */
+    fun countFileNode(projectId: String, repoName: String, path: String = ROOT_PATH): Long {
+        repositoryService.checkRepository(projectId, repoName)
+        val formattedPath = formatPath(path)
+        val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = false, deep = true)
+        return nodeDao.count(query)
     }
 
     /**
@@ -157,7 +184,7 @@ class NodeService @Autowired constructor(
      * 创建节点，返回id
      */
     @Transactional(rollbackFor = [Throwable::class])
-    fun create(createRequest: NodeCreateRequest) {
+    fun create(createRequest: NodeCreateRequest): NodeInfo {
         with(createRequest) {
             this.takeIf { folder || !sha256.isNullOrBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
             this.takeIf { folder || !md5.isNullOrBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::md5.name)
@@ -193,12 +220,30 @@ class NodeService @Autowired constructor(
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
-            // 保存节点
-            doCreate(node, repo)
-            // 保存元数据
-            metadata?.let { metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, it)) }
-            logger.info("Create node [$this] success.")
+            return node.apply { doCreate(this, repo) }
+                .also { metadataService.save(MetadataSaveRequest(it.projectId, it.repoName, it.fullPath, metadata)) }
+                .also { publishEvent(NodeCreatedEvent(createRequest)) }
+                .also { logger.info("Create node [$createRequest] success.") }
+                .let { convert(it)!! }
         }
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    fun createRootNode(projectId: String, repoName: String, operator: String) {
+        val rootNode = TNode(
+            projectId = projectId,
+            repoName = repoName,
+            folder = true,
+            path = NodeUtils.FILE_SEPARATOR,
+            name = StringPool.EMPTY,
+            fullPath = NodeUtils.FILE_SEPARATOR,
+            size = 0,
+            createdBy = operator,
+            createdDate = LocalDateTime.now(),
+            lastModifiedBy = operator,
+            lastModifiedDate = LocalDateTime.now()
+        )
+        rootNode.apply { doCreate(this) }.also { logger.info("Create node [$it] success.") }
     }
 
     /**
@@ -208,16 +253,37 @@ class NodeService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun rename(renameRequest: NodeRenameRequest) {
-        val projectId = renameRequest.projectId
-        val repoName = renameRequest.repoName
-        val fullPath = formatFullPath(renameRequest.fullPath)
-        val newFullPath = formatFullPath(renameRequest.newFullPath)
+        renameRequest.apply {
+            val fullPath = formatFullPath(this.fullPath)
+            val newFullPath = formatFullPath(this.newFullPath)
 
-        repositoryService.checkRepository(projectId, repoName)
-        val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-        doRename(node, newFullPath, renameRequest.operator)
+            repositoryService.checkRepository(projectId, repoName)
+            val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            doRename(node, newFullPath, operator)
+        }.also {
+            publishEvent(NodeRenamedEvent(it))
+        }.also {
+            logger.info("Rename node [$it] success.")
+        }
+    }
 
-        logger.info("Rename node [$renameRequest] success.")
+    /**
+     * 更新节点
+     */
+    @Transactional(rollbackFor = [Throwable::class])
+    fun update(updateRequest: NodeUpdateRequest) {
+        updateRequest.apply {
+            val fullPath = formatFullPath(this.fullPath)
+            repositoryService.checkRepository(projectId, repoName)
+            val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
+            val selfUpdate = nodeExpireDateUpdate(parseExpireDate(expires), operator)
+            nodeDao.updateFirst(selfQuery, selfUpdate)
+        }.also {
+            publishEvent(NodeUpdatedEvent(it))
+        }.also {
+            logger.info("Rename node [$it] success.")
+        }
     }
 
     /**
@@ -409,7 +475,12 @@ class NodeService @Autowired constructor(
                 mkdirs(destProjectId, destRepoName, destPath, operator)
                 moveOrCopyNode(srcNode, destRepository, destPath, destName, request, operator)
             }
-
+            // event
+            if (request is NodeMoveRequest) {
+                publishEvent(NodeMovedEvent(request))
+            } else if (request is NodeCopyRequest) {
+                publishEvent(NodeCopiedEvent(request))
+            }
             logger.info("[${request.getOperateName()}] node success: [$this]")
         }
     }

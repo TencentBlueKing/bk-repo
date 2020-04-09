@@ -6,6 +6,9 @@ import org.apache.commons.io.FileUtils
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.nio.channels.FileChannel
+import java.nio.channels.ReadableByteChannel
+import java.nio.file.FileVisitor
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -35,14 +38,18 @@ class FileSystemClient(private val root: String) {
         return filePath.toFile()
     }
 
-    fun store(dir: String, filename: String, inputStream: InputStream, length: Long, overwrite: Boolean = false): File {
+    fun store(dir: String, filename: String, inputStream: InputStream, size: Long, overwrite: Boolean = false): File {
         val filePath = Paths.get(this.root, dir, filename)
         createDirectories(filePath.parent)
+        if (overwrite) {
+            Files.deleteIfExists(filePath)
+        }
         val file = filePath.toFile()
-        if (overwrite || !Files.exists(filePath)) {
+        if (!Files.exists(filePath)) {
+            file.createNewFile()
             FileLockExecutor.executeInLock(inputStream) { input ->
                 FileLockExecutor.executeInLock(file) { output ->
-                    output.transferFrom(input, 0, length)
+                    transfer(input, output, size)
                 }
             }
         }
@@ -70,7 +77,7 @@ class FileSystemClient(private val root: String) {
         return Files.isRegularFile(filePath)
     }
 
-    fun append(dir: String, filename: String, inputStream: InputStream, length: Long): Long {
+    fun append(dir: String, filename: String, inputStream: InputStream, size: Long): Long {
         val filePath = Paths.get(this.root, dir, filename)
         if (!Files.isRegularFile(filePath)) {
             throw IllegalArgumentException("[$filePath] is not a regular file.")
@@ -78,8 +85,7 @@ class FileSystemClient(private val root: String) {
         val file = filePath.toFile()
         FileLockExecutor.executeInLock(inputStream) { input ->
             FileLockExecutor.executeInLock(file) { output ->
-                output.position(output.size())
-                output.transferFrom(input, output.size(), length)
+                transfer(input, output, size, true)
             }
         }
         return Files.size(filePath)
@@ -119,12 +125,19 @@ class FileSystemClient(private val root: String) {
         FileLockExecutor.executeInLock(outputFile) { output ->
             fileList.forEach { file ->
                 FileLockExecutor.executeInLock(file.inputStream()) { input ->
-                    output.position(outputFile.length())
-                    output.transferFrom(input, outputFile.length(), file.length())
+                    transfer(input, output, file.length(), true)
                 }
             }
         }
         return outputFile
+    }
+
+    /**
+     * 遍历文件
+     */
+    fun walk(visitor: FileVisitor<in Path>) {
+        val rootPath = Paths.get(root)
+        Files.walkFileTree(rootPath, visitor)
     }
 
     /**
@@ -141,9 +154,38 @@ class FileSystemClient(private val root: String) {
         }
     }
 
+    fun transfer(input: ReadableByteChannel, output: FileChannel, size: Long, append: Boolean = false) {
+        val startPosition: Long = if (append) output.size() else 0L
+        var bytesCopied: Long
+        var totalCopied = 0L
+        var count: Long
+        while (totalCopied < size) {
+            val remain = size - totalCopied
+            count = if (remain > FILE_COPY_BUFFER_SIZE) FILE_COPY_BUFFER_SIZE else remain
+            bytesCopied = output.transferFrom(input, startPosition + totalCopied, count)
+            if (bytesCopied == 0L) { // can happen if file is truncated after caching the size
+                break
+            }
+            totalCopied += bytesCopied
+        }
+        if (totalCopied != size) {
+            throw IOException("Failed to copy full contents. Expected length: $size, Actual: $totalCopied")
+        }
+    }
+
     private fun createDirectories(path: Path) {
         if (!Files.exists(path)) {
             Files.createDirectories(path)
         }
+    }
+
+    companion object {
+        /**
+         * OpenJdk中FileChannelImpl.java限定了单次传输大小:
+         * private static final long MAPPED_TRANSFER_SIZE = 8L*1024L*1024L;
+         *
+         * 防止不同jdk版本的不同实现，这里限定一下大小
+         */
+        private const val FILE_COPY_BUFFER_SIZE = 64 * 1024 * 1024L
     }
 }
