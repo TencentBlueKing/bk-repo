@@ -12,6 +12,7 @@ class HelmArtifactInfo(
 
         // helm upload
         const val HELM_PUSH_URL = "/api/{projectId}/{repoName}/charts"
+        const val HELM_PUSH_PROV_URL = "/api/{projectId}/{repoName}/prov"
 
         // chart delete
         const val CHART_DELETE_URL = "/{projectId}/{repoName}/api/charts/*/*"
@@ -20,5 +21,7 @@ class HelmArtifactInfo(
         const val HELM_INDEX_YAML_URL = "/{projectId}/{repoName}/index.yaml"
         // chart install
         const val HELM_INSTALL_URL = "/{projectId}/{repoName}/charts/*.tgz"
+        // chart prov install
+        const val HELM_PROV_INSTALL_URL = "/{projectId}/{repoName}/charts/*.prov"
     }
 }

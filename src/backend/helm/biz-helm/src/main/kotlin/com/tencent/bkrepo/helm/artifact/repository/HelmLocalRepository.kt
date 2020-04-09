@@ -1,7 +1,8 @@
 package com.tencent.bkrepo.helm.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
+import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
+import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
+import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
@@ -16,13 +17,13 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.helm.constants.CHART_NOT_FOUND
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.constants.INIT_STR
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
+import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.utils.JsonUtil
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -94,36 +95,53 @@ class HelmLocalRepository : LocalRepository() {
         val artifactFile = ArtifactFileFactory.build()
         Streams.copy(tempFile.inputStream(), artifactFile.getOutputStream(), true)
         val uploadContext = ArtifactUploadContext(artifactFile)
-        uploadContext.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
+        uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         this.upload(uploadContext)
     }
 
-    override fun onUploadValidate(context: ArtifactUploadContext) {
-        super.onUploadValidate(context)
-        context.artifactFileMap.entries.forEach { (name, file) ->
-            if (name == "chart") {
-                context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] =
-                    FileDigestUtils.fileSha256(file.getInputStream())
-                context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] = FileDigestUtils.fileMd5(file.getInputStream())
+    override fun onBeforeUpload(context: ArtifactUploadContext) {
+        val repositoryInfo = context.repositoryInfo
+        val projectId = repositoryInfo.projectId
+        val repoName = repositoryInfo.name
+        context.artifactFileMap.entries.forEach { (name, _) ->
+            val fullPath = context.contextAttributes[name + "_full_path"] as String
+            val isExist = nodeResource.exist(projectId, repoName, fullPath).data!!
+            if (isExist && !isOverwrite(fullPath)) {
+                throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
             }
         }
     }
 
+    // override fun onUploadValidate(context: ArtifactUploadContext) {
+    //     super.onUploadValidate(context)
+    //     context.artifactFileMap.entries.forEach { (name, file) ->
+    //         if (name == "chart") {
+    //             context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] =
+    //                 FileDigestUtils.fileSha256(file.getInputStream())
+    //             context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] = FileDigestUtils.fileMd5(file.getInputStream())
+    //         }
+    //     }
+    // }
+
     override fun onUpload(context: ArtifactUploadContext) {
-        val nodeCreateRequest = getNodeCreateRequest(context)
-        storageService.store(
-            nodeCreateRequest.sha256!!, context.getArtifactFile("chart")
-                ?: context.getArtifactFile(), context.storageCredentials
-        )
-        nodeResource.create(nodeCreateRequest)
+        context.artifactFileMap.entries.forEach { (name, _) ->
+            val nodeCreateRequest = getNodeCreateRequest(name, context)
+            storageService.store(
+                nodeCreateRequest.sha256!!, context.getArtifactFile(name)
+                    ?: context.getArtifactFile(), context.storageCredentials
+            )
+            nodeResource.create(nodeCreateRequest)
+        }
     }
 
-    override fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
+    private fun getNodeCreateRequest(name: String, context: ArtifactUploadContext): NodeCreateRequest {
         val repositoryInfo = context.repositoryInfo
-        val artifactFile = context.getArtifactFile("chart") ?: context.getArtifactFile()
-        val sha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
-        val md5 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] as String
-        val fullPath = context.contextAttributes[FULL_PATH] as String
+        val artifactFile = context.getArtifactFile(name) ?: context.getArtifactFile()
+        val fileSha256Map = context.contextAttributes[ATTRIBUTE_SHA256MAP] as Map<*, *>
+        val fileMd5Map = context.contextAttributes[ATTRIBUTE_MD5MAP] as Map<*, *>
+        val sha256 = fileSha256Map[name] as String
+        val md5 = fileMd5Map[name] as String
+        val fullPath = context.contextAttributes[name + "_full_path"] as String
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
             repoName = repositoryInfo.name,
@@ -139,7 +157,7 @@ class HelmLocalRepository : LocalRepository() {
     }
 
     private fun parseMetaData(fullPath: String): Map<String, String>? {
-        if (isOverwrite(fullPath)) {
+        if (isOverwrite(fullPath) || !fullPath.endsWith(".tgz")) {
             return emptyMap()
         }
         val substring = fullPath.trimStart('/').substring(0, fullPath.lastIndexOf('.') - 1)
@@ -149,7 +167,7 @@ class HelmLocalRepository : LocalRepository() {
     }
 
     private fun isOverwrite(fullPath: String): Boolean {
-        return !fullPath.trim().endsWith(".tgz", true)
+        return !(fullPath.trim().endsWith(".tgz", true) || fullPath.trim().endsWith(".prov", true))
     }
 
     override fun getNodeFullPath(context: ArtifactDownloadContext): String {
@@ -194,7 +212,7 @@ class HelmLocalRepository : LocalRepository() {
         val userId = context.userId
         val isExist = nodeResource.exist(projectId, repoName, fullPath).data!!
         if (!isExist) {
-            throw HelmFileAlreadyExistsException("remove $fullPath: no such file or directory")
+            throw HelmFileNotFoundException("remove $fullPath: no such file or directory")
         }
         nodeResource.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
     }
@@ -255,7 +273,7 @@ class HelmLocalRepository : LocalRepository() {
         response.status = status
     }
 
-     companion object {
+    companion object {
         val logger: Logger = LoggerFactory.getLogger(HelmLocalRepository::class.java)
     }
 }

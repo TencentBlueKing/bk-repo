@@ -10,7 +10,7 @@ val INIT_MAP = mapOf("apiVersion" to "v1", "entries" to "{}", "generated" to Loc
 
 const val INIT_STR = "apiVersion: v1\nentries: {}\ngenerated: \"%s\"\nserverInfo: {}\n"
 
-const val FULL_PATH = "full_path"
+const val FULL_PATH = "_full_path"
 
 // upload success map
 val UPLOAD_SUCCESS_MAP = mapOf("saved" to true)
