@@ -762,7 +762,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         if (protocolHeaders == null || protocolHeaders.isEmpty()) {
             return "http"
         }
-        if (protocolHeaders != null && !protocolHeaders.isEmpty()) {
+        if (!protocolHeaders.isEmpty()) {
             return protocolHeaders.iterator().next() as String
         } else {
             logger.debug("X-Forwarded-Proto does not exist, return https.")
