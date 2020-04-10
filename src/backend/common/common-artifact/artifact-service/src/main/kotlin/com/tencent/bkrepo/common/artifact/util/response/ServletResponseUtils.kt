@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.artifact.util.response
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
 import com.tencent.bkrepo.common.artifact.config.BYTES
 import com.tencent.bkrepo.common.artifact.config.CONTENT_DISPOSITION_TEMPLATE
+import com.tencent.bkrepo.common.artifact.config.ICO_MIME_TYPE
 import com.tencent.bkrepo.common.artifact.config.STREAM_MIME_TYPE
 import com.tencent.bkrepo.common.artifact.config.TGZ_MIME_TYPE
 import com.tencent.bkrepo.common.artifact.config.YAML_MIME_TYPE
@@ -39,6 +40,7 @@ object ServletResponseUtils {
     private val mimeMappings = MimeMappings(MimeMappings.DEFAULT).apply {
         add("yaml", YAML_MIME_TYPE)
         add("tgz", TGZ_MIME_TYPE)
+        add("ico", ICO_MIME_TYPE)
     }
 
     fun response(filename: String, file: File) {
