@@ -7,9 +7,9 @@ import com.tencent.bkrepo.common.artifact.config.ICO_MIME_TYPE
 import com.tencent.bkrepo.common.artifact.config.STREAM_MIME_TYPE
 import com.tencent.bkrepo.common.artifact.config.TGZ_MIME_TYPE
 import com.tencent.bkrepo.common.artifact.config.YAML_MIME_TYPE
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.util.NodeUtils
-import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
 import org.springframework.web.util.UriUtils
@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletResponse
  */
 object ServletResponseUtils {
 
-    private val logger = LoggerFactory.getLogger(ServletResponseUtils::class.java)
     private val rangePatternRegex = Regex("^bytes=\\d*-\\d*(,\\d*-\\d*)*$")
 
     private const val BYTERANGES_BOUNDARY = "BYTERANGES_BOUNDRY"
@@ -62,18 +61,26 @@ object ServletResponseUtils {
         } catch (exception: Exception) {
             response.setHeader(HttpHeaders.CONTENT_RANGE, "bytes */${file.length()}")
             response.status = HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE
-            logger.warn("Range response failed: range header is invalid.")
+            LoggerHolder.logBusinessException(exception, "Range response failed: range header is invalid.")
             return
         }
-        when {
-            rangeList.isEmpty() -> {
-                responseFullFile(file, response, mimeType)
+        try {
+            when {
+                rangeList.isEmpty() -> {
+                    responseFullFile(file, response, mimeType)
+                }
+                rangeList.size == 1 -> {
+                    responseSingleRange(file, response, mimeType, rangeList[0])
+                }
+                else -> {
+                    responseMultiRange(file, response, mimeType, rangeList)
+                }
             }
-            rangeList.size == 1 -> {
-                responseSingleRange(file, response, mimeType, rangeList[0])
-            }
-            else -> {
-                responseMultiRange(file, response, mimeType, rangeList)
+        } catch (exception: Exception) {
+            if (exception.message.orEmpty().contains("Connection reset by peer")) {
+                LoggerHolder.logBusinessException(exception, "Stream response failed: download abort by client.")
+            } else {
+                throw exception
             }
         }
     }
