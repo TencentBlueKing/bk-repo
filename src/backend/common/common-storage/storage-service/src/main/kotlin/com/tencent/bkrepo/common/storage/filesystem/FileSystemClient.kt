@@ -1,17 +1,16 @@
 package com.tencent.bkrepo.common.storage.filesystem
 
-import com.google.common.io.ByteStreams
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import com.tencent.bkrepo.common.storage.util.FileMergeUtils
 import org.apache.commons.io.FileUtils
 import java.io.File
-import java.io.FileOutputStream
+import java.io.IOException
 import java.io.InputStream
+import java.nio.channels.FileChannel
+import java.nio.channels.ReadableByteChannel
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
 
 /**
  * 本地文件存储客户端
@@ -28,21 +27,43 @@ class FileSystemClient(private val root: String) {
     fun touch(dir: String, filename: String): File {
         val filePath = Paths.get(this.root, dir, filename)
         createDirectories(filePath.parent)
-        return Files.createFile(filePath).toFile()
-    }
-
-    fun store(dir: String, filename: String, inputStream: InputStream, overwrite: Boolean = true): File {
-        val filePath = Paths.get(this.root, dir, filename)
-        createDirectories(filePath.parent)
-        if (overwrite || !Files.exists(filePath)) {
-            inputStream.use { Files.copy(it, filePath, StandardCopyOption.REPLACE_EXISTING) }
+        if (!Files.exists(filePath)) {
+            try {
+                Files.createFile(filePath)
+            } catch (exception: java.nio.file.FileAlreadyExistsException) {
+                // ignore
+            }
         }
         return filePath.toFile()
     }
 
+    fun store(dir: String, filename: String, inputStream: InputStream, size: Long, overwrite: Boolean = false): File {
+        val filePath = Paths.get(this.root, dir, filename)
+        createDirectories(filePath.parent)
+        if (overwrite) {
+            Files.deleteIfExists(filePath)
+        }
+        val file = filePath.toFile()
+        if (!Files.exists(filePath)) {
+            file.createNewFile()
+            FileLockExecutor.executeInLock(inputStream) { input ->
+                FileLockExecutor.executeInLock(file) { output ->
+                    transfer(input, output, size)
+                }
+            }
+        }
+        return file
+    }
+
     fun delete(dir: String, filename: String) {
         val filePath = Paths.get(this.root, dir, filename)
-        if (Files.isRegularFile(filePath)) Files.delete(filePath)
+        if (Files.isRegularFile(filePath)) {
+            FileLockExecutor.executeInLock(filePath.toFile()) {
+                Files.delete(filePath)
+            }
+        } else {
+            throw IllegalArgumentException("[$filePath] is not a regular file.")
+        }
     }
 
     fun load(dir: String, filename: String): File? {
@@ -55,13 +76,16 @@ class FileSystemClient(private val root: String) {
         return Files.isRegularFile(filePath)
     }
 
-    fun append(dir: String, filename: String, inputStream: InputStream): Long {
+    fun append(dir: String, filename: String, inputStream: InputStream, size: Long): Long {
         val filePath = Paths.get(this.root, dir, filename)
         if (!Files.isRegularFile(filePath)) {
-            throw IllegalArgumentException("Append file does not exist.")
+            throw IllegalArgumentException("[$filePath] is not a regular file.")
         }
-        FileOutputStream(filePath.toFile(), true).use { output ->
-            inputStream.use { input -> ByteStreams.copy(input, output) }
+        val file = filePath.toFile()
+        FileLockExecutor.executeInLock(inputStream) { input ->
+            FileLockExecutor.executeInLock(file) { output ->
+                transfer(input, output, size, true)
+            }
         }
         return Files.size(filePath)
     }
@@ -74,8 +98,12 @@ class FileSystemClient(private val root: String) {
     }
 
     fun deleteDirectory(dir: String, name: String) {
-        val directory = File(this.root, dir)
-        FileUtils.deleteDirectory(File(directory, name))
+        val filePath = Paths.get(this.root, dir, name)
+        if (Files.isDirectory(filePath)) {
+            Files.delete(filePath)
+        } else {
+            throw IllegalArgumentException("[$filePath] is not a directory.")
+        }
     }
 
     fun checkDirectory(dir: String): Boolean {
@@ -87,7 +115,19 @@ class FileSystemClient(private val root: String) {
     }
 
     fun mergeFiles(fileList: List<File>, outputFile: File): File {
-        FileMergeUtils.mergeFiles(fileList, outputFile)
+        if (!outputFile.exists()) {
+            if (!outputFile.createNewFile()) {
+                throw IOException("Failed to create file [$outputFile]!")
+            }
+        }
+
+        FileLockExecutor.executeInLock(outputFile) { output ->
+            fileList.forEach { file ->
+                FileLockExecutor.executeInLock(file.inputStream()) { input ->
+                    transfer(input, output, file.length(), true)
+                }
+            }
+        }
         return outputFile
     }
 
@@ -105,6 +145,25 @@ class FileSystemClient(private val root: String) {
         }
     }
 
+    fun transfer(input: ReadableByteChannel, output: FileChannel, size: Long, append: Boolean = false) {
+        val startPosition: Long = if (append) output.size() else 0L
+        var bytesCopied: Long
+        var totalCopied = 0L
+        var count: Long
+        while (totalCopied < size) {
+            val remain = size - totalCopied
+            count = if (remain > FILE_COPY_BUFFER_SIZE) FILE_COPY_BUFFER_SIZE else remain
+            bytesCopied = output.transferFrom(input, startPosition + totalCopied, count)
+            if (bytesCopied == 0L) { // can happen if file is truncated after caching the size
+                break
+            }
+            totalCopied += bytesCopied
+        }
+        if (totalCopied != size) {
+            throw IOException("Failed to copy full contents. Expected length: $size, Actual: $totalCopied")
+        }
+    }
+
     private fun createDirectories(path: Path) {
         if (!Files.exists(path)) {
             Files.createDirectories(path)
@@ -112,6 +171,12 @@ class FileSystemClient(private val root: String) {
     }
 
     companion object {
-        fun copy(src: File, dest: File) = FileUtils.copyFile(src, dest)
+        /**
+         * OpenJdk中FileChannelImpl.java限定了单次传输大小:
+         * private static final long MAPPED_TRANSFER_SIZE = 8L*1024L*1024L;
+         *
+         * 防止不同jdk版本的不同实现，这里限定一下大小
+         */
+        private const val FILE_COPY_BUFFER_SIZE = 64 * 1024 * 1024L
     }
 }

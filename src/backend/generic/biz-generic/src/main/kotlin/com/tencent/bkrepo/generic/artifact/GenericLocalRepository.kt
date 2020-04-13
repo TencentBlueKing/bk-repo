@@ -65,7 +65,8 @@ class GenericLocalRepository : LocalRepository() {
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         }
         val calculatedSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
-        storageService.storeBlock(uploadId, sequence, calculatedSha256, context.getArtifactFile())
+        val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
+        storageService.storeBlock(uploadId, sequence, calculatedSha256, context.getArtifactFile(), overwrite)
     }
 
     override fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
@@ -93,5 +94,4 @@ class GenericLocalRepository : LocalRepository() {
         }
         return metadata
     }
-
 }

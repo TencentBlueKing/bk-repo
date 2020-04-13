@@ -14,12 +14,16 @@ import java.nio.file.Paths
 open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSystemClient>() {
 
     override fun store(path: String, filename: String, file: File, client: FileSystemClient) {
-        client.store(path, filename, file.inputStream(), true)
+        client.store(path, filename, file.inputStream(), file.length())
     }
 
     override fun load(path: String, filename: String, received: File, client: FileSystemClient): File? {
         return client.load(path, filename)?.run {
-            FileSystemClient.copy(this, received)
+            FileLockExecutor.executeInLock(this.inputStream()) { input ->
+                FileLockExecutor.executeInLock(received) { output ->
+                    client.transfer(input, output, this.length())
+                }
+            }
             received
         }
     }

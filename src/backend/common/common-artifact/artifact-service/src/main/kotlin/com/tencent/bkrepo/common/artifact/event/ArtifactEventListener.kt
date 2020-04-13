@@ -2,8 +2,8 @@ package com.tencent.bkrepo.common.artifact.event
 
 import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.webhook.WebHookService
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.event.EventListener
 
@@ -22,7 +22,9 @@ class ArtifactEventListener {
 
     @EventListener(StoreFailureEvent::class)
     fun listen(event: StoreFailureEvent) {
-        logger.error("Receive event[$event]")
+        event.apply {
+            LoggerHolder.sysErrorLogger.error("[StoreFailureEvent]failed to store file[$filename] on [$storageCredentials].", exception)
+        }
     }
 
     @EventListener(ArtifactUploadedEvent::class)
@@ -38,9 +40,5 @@ class ArtifactEventListener {
     @EventListener(ArtifactUpdatedEvent::class)
     fun listen(event: ArtifactUpdatedEvent) {
         webHookService.hook(event.context, event.type)
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactEventListener::class.java)
     }
 }
