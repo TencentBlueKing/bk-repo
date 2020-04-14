@@ -12,13 +12,13 @@ import org.slf4j.LoggerFactory
 
 class ManifestSchema1Deserializer {
     companion object {
-        private val log = LoggerFactory.getLogger(ManifestSchema1Deserializer::class.java)
+        private val logger = LoggerFactory.getLogger(ManifestSchema1Deserializer::class.java)
 
         fun deserialize(manifestBytes: ByteArray, digest: DockerDigest): ManifestMetadata {
             try {
                 return applyAttributesFromContent(manifestBytes, digest)
             } catch (exception: IOException) {
-                log.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
+                logger.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
                 throw RuntimeException(exception)
             }
         }
