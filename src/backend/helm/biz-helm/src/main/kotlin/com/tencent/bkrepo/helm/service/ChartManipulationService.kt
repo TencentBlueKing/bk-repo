@@ -3,7 +3,9 @@ package com.tencent.bkrepo.helm.service
 import com.google.gson.JsonParser
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
+import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.file.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.permission.Permission
@@ -13,11 +15,11 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
-import com.tencent.bkrepo.helm.constants.DELETE_SUCCESS_MAP
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
-import com.tencent.bkrepo.helm.constants.UPLOAD_SUCCESS_MAP
+import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.exception.HelmIndexFreshFailException
+import com.tencent.bkrepo.helm.pojo.HelmSuccessResponse
 import com.tencent.bkrepo.helm.pojo.IndexEntity
 import com.tencent.bkrepo.helm.utils.JsonUtil.gson
 import com.tencent.bkrepo.helm.utils.PackDecompressorUtils
@@ -37,21 +39,51 @@ class ChartManipulationService {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): Map<String, Any> {
+    fun uploadProv(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): HelmSuccessResponse {
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        context.contextAttributes[FULL_PATH] = getFileFullPath(artifactFileMap)
+        context.contextAttributes = getContextAttrMap(artifactFileMap)
+        if (!artifactFileMap.keys.contains("prov")) throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
         repository.upload(context)
-        try {
-            freshIndexYamlForPush(artifactFileMap)
-        } catch (exception: HelmIndexFreshFailException) {
-            targetFileRollback(artifactFileMap)
-            throw HelmIndexFreshFailException(exception.message)
-        } catch (exception: Exception) {
-            targetFileRollback(artifactFileMap)
-            throw HelmIndexFreshFailException("fresh $INDEX_CACHE_YAML file failed, file push failed")
+        return HelmSuccessResponse.pushSuccess()
+    }
+
+    fun getContextAttrMap(artifactFileMap: ArtifactFileMap): MutableMap<String, Any> {
+        val attributesMap = mutableMapOf<String, Any>()
+        artifactFileMap.entries.forEach { (name, file) ->
+            if (name != "chart" && name != "prov") {
+                throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
+            }
+            attributesMap[name + "_full_path"] = getFileFullPath(file)
         }
-        return UPLOAD_SUCCESS_MAP
+        return attributesMap
+    }
+
+    private fun getFileFullPath(artifactFile: ArtifactFile): String {
+        val multipartArtifactFile = artifactFile as MultipartArtifactFile
+        val fileName = multipartArtifactFile.getOriginalFilename()
+        return FILE_SEPARATOR + fileName.substringAfterLast('/')
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    @Transactional(rollbackFor = [Throwable::class])
+    fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): HelmSuccessResponse {
+        val context = ArtifactUploadContext(artifactFileMap)
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        context.contextAttributes = getContextAttrMap(artifactFileMap)
+        repository.upload(context)
+        if (artifactFileMap.keys.contains("chart")) {
+            try {
+                freshIndexYamlForPush(artifactFileMap)
+            } catch (exception: HelmIndexFreshFailException) {
+                targetFileRollback(artifactFileMap)
+                throw HelmIndexFreshFailException(exception.message)
+            } catch (exception: Exception) {
+                targetFileRollback(artifactFileMap)
+                throw HelmIndexFreshFailException("fresh $INDEX_CACHE_YAML file failed, file push failed")
+            }
+        }
+        return HelmSuccessResponse.pushSuccess()
     }
 
     private fun targetFileRollback(artifactFileMap: ArtifactFileMap) {
@@ -77,7 +109,7 @@ class ChartManipulationService {
         val artifactFile = ArtifactFileFactory.build()
         Streams.copy(YamlUtils.transEntity2File(indexEntity).byteInputStream(), artifactFile.getOutputStream(), true)
         val uploadContext = ArtifactUploadContext(artifactFile)
-        uploadContext.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
+        uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         val uploadRepository = RepositoryHolder.getRepository(uploadContext.repositoryInfo.category)
         uploadRepository.upload(uploadContext)
         logger.info("fresh $INDEX_CACHE_YAML success!")
@@ -112,7 +144,7 @@ class ChartManipulationService {
         chartMap: MutableMap<String, Any>,
         artifactFileMap: ArtifactFileMap
     ) {
-        chartMap["urls"] = listOf("charts${getFileFullPath(artifactFileMap)}")
+        chartMap["urls"] = listOf("charts/${getFileName(artifactFileMap)}")
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS+08:00")
         chartMap["created"] = LocalDateTime.now().format(format)
         chartMap["digest"] = artifactFileMap["chart"]?.getInputStream()?.let { FileDigestUtils.fileSha256(it) }!!
@@ -120,7 +152,7 @@ class ChartManipulationService {
 
     private fun getUnTgzFile(artifactFileMap: ArtifactFileMap, tempDir: String): File {
         try {
-            val name = getFileFullPath(artifactFileMap).trimStart('/').substringBeforeLast('-')
+            val name = getFileName(artifactFileMap).substringBeforeLast('-')
             val filePath = "$tempDir/$name${FILE_SEPARATOR}Chart.yaml"
             logger.info("unTgz Chart.yaml file path : $filePath")
             return File(filePath)
@@ -131,7 +163,9 @@ class ChartManipulationService {
     }
 
     private fun getFileFullPath(artifactFileMap: ArtifactFileMap): String {
-        val fileName = (artifactFileMap["chart"] as MultipartArtifactFile).getOriginalFilename()
+        val multipartArtifactFile = artifactFileMap["chart"] as? MultipartArtifactFile
+            ?: throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
+        val fileName = multipartArtifactFile.getOriginalFilename()
         return FILE_SEPARATOR + fileName.substringAfterLast('/')
     }
 
@@ -141,14 +175,14 @@ class ChartManipulationService {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    fun delete(artifactInfo: HelmArtifactInfo): Map<String, Any> {
+    fun delete(artifactInfo: HelmArtifactInfo): HelmSuccessResponse {
         val chartInfo = getChartInfo(artifactInfo)
         val context = ArtifactRemoveContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = "/${chartInfo.first}-${chartInfo.second}.tgz"
         repository.remove(context)
         freshIndexYamlForRemove(chartInfo)
-        return DELETE_SUCCESS_MAP
+        return HelmSuccessResponse.deleteSuccess()
     }
 
     private fun getChartInfo(artifactInfo: HelmArtifactInfo): Pair<String, String> {
@@ -159,14 +193,6 @@ class ChartManipulationService {
     }
 
     private fun freshIndexYamlForRemove(chartInfo: Pair<String, String>) {
-        // val context = ArtifactSearchContext()
-        // val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        // context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-        // val indexFile = repository.search(context) as File
-        // logger.info("helm search $INDEX_CACHE_YAML for delete chart success!")
-        // val indexMap = YamlUtils.getObject<Map<String, Any>>(indexFile)
-        // val indexJson = JsonParser().parse(gson.toJson(indexMap)).asJsonObject
-        // val indexEntity = gson.fromJson(indexJson, IndexEntity::class.java)
         val indexEntity = getOriginalIndexYaml()
         indexEntity.entries.let {
             if (it[chartInfo.first]?.size == 1 && chartInfo.second == it[chartInfo.first]?.get(0)?.get("version") as String) {

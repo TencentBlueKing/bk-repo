@@ -41,6 +41,13 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun listPermission(resourceType: ResourceType?, projectId: String?, repoName: String?): List<Permission> {
+        logger.info(
+            "list  permission resourceType : {}, projectId: {}, repoName: {}",
+            resourceType.toString(),
+            projectId,
+            repoName
+        )
+
         if (resourceType == null && projectId == null && repoName == null) {
             return permissionRepository.findAll().map { transfer(it) }
         } else if (projectId == null && resourceType != null) {
@@ -74,6 +81,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun createPermission(request: CreatePermissionRequest): Boolean {
+        logger.info("create  permission request : {}", request.toString())
         // todo check request
         val permission = permissionRepository.findOneByPermNameAndProjectIdAndResourceType(
             request.permName,
@@ -107,6 +115,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateIncludePath(id: String, path: List<String>): Boolean {
+        logger.info("update include path id : {} ,path :{}", id, path.toString())
         val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("update permission includePath [$id]  not exist.")
@@ -124,6 +133,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateExcludePath(id: String, path: List<String>): Boolean {
+        logger.info("update exclude path id : {} ,path :{}", id, path.toString())
         val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("update permission excludePath [$id]  not exist.")
@@ -141,6 +151,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateRepoPermission(id: String, repos: List<String>): Boolean {
+        logger.info("update repo permission  id : {} ,repos : {}", id, repos.toString())
         val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("update permission repos [$id]  not exist.")
@@ -158,6 +169,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateUserPermission(id: String, uid: String, actions: List<PermissionAction>): Boolean {
+        logger.info("update user permission  id : {} ,uid : {}, actions: {} ", id, uid, actions.toString())
         val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("add user permission  [$id] , user [$uid] not exist.")
@@ -202,6 +214,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun removeUserPermission(id: String, uid: String): Boolean {
+        logger.info("remove user permission  id : {} ,uid : {} ", id, uid)
         val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("remove user permission  [$id]  not exist.")
@@ -221,6 +234,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun updateRolePermission(id: String, rid: String, actions: List<PermissionAction>): Boolean {
+        logger.info("update role permission  id : {} ,rid : {}, actions: {} ", id, rid, actions.toString())
         val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("add role permission  [$id]  not exist.")
@@ -255,6 +269,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun removeRolePermission(id: String, rid: String): Boolean {
+        logger.info("remove role permission  id : {} ,rid : {} ", id, rid)
         val permission = permissionRepository.findFirstById(id)
         if (permission == null) {
             logger.warn("remove role permission  [$id]  not exist.")
@@ -274,6 +289,7 @@ class PermissionServiceImpl @Autowired constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
+        logger.info("check permission  request : {} ", request.toString())
         val user = userRepository.findFirstByUserId(request.uid)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         if (user.admin) {

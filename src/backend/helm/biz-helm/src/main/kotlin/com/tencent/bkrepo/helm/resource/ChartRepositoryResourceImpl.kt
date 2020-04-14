@@ -19,4 +19,8 @@ class ChartRepositoryResourceImpl : ChartRepositoryResource {
     override fun installTgz(artifactInfo: HelmArtifactInfo) {
         chartRepositoryService.installTgz(artifactInfo)
     }
+
+    override fun installProv(artifactInfo: HelmArtifactInfo) {
+        chartRepositoryService.installTgz(artifactInfo)
+    }
 }
