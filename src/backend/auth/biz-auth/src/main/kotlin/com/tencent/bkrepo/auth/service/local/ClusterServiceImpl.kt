@@ -26,6 +26,7 @@ class ClusterServiceImpl @Autowired constructor(
 ) : ClusterService {
 
     override fun addCluster(request: AddClusterRequest): Boolean {
+        logger.info("add  cluster  request : {} ", request.toString())
         val cluster = clusterRepository.findOneByClusterId(request.clusterId)
         if (cluster != null) {
             logger.warn("add cluster [${request.clusterId}]  is exist.")
@@ -45,6 +46,7 @@ class ClusterServiceImpl @Autowired constructor(
     }
 
     override fun ping(clusterId: String): Boolean {
+        logger.info("ping  cluster ")
         try {
             val cluster = clusterRepository.findOneByClusterId(clusterId)
             if (cluster == null) {
@@ -65,6 +67,7 @@ class ClusterServiceImpl @Autowired constructor(
     }
 
     override fun delete(clusterId: String): Boolean {
+        logger.info("delete  cluster clusterId : {}", clusterId)
         val result = clusterRepository.deleteByClusterId(clusterId)
         if (result == 0L) {
             logger.warn("delete cluster [$clusterId]  not exist.")
@@ -74,6 +77,7 @@ class ClusterServiceImpl @Autowired constructor(
     }
 
     override fun updateCluster(clusterId: String, request: UpdateClusterRequest): Boolean {
+        logger.info("update  cluster clusterId : {} , request :{}", clusterId, request.toString())
         val cluster = clusterRepository.findOneByClusterId(clusterId)
         if (cluster == null) {
             logger.warn("update cluster [$clusterId]  not exist.")
@@ -103,10 +107,12 @@ class ClusterServiceImpl @Autowired constructor(
     }
 
     override fun listCluster(): List<Cluster> {
+        logger.info("list  cluster ")
         return clusterRepository.findAllBy().map { transfer(it) }
     }
 
     private fun setClusterCredentialStatus(clusterId: String, status: Boolean): Boolean {
+        logger.info("set  cluster credential status clusterId: {}, status: {}", clusterId, status)
         val query = Query()
         query.addCriteria(Criteria.where(TCluster::clusterId.name).`is`(clusterId))
         val update = Update()
