@@ -1,0 +1,5 @@
+spring.cloudstream:
+  default-binder: noop
+  binders:
+    noop:
+      type: noop
