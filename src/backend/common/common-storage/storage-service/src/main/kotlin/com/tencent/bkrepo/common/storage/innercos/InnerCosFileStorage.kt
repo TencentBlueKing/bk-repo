@@ -99,17 +99,17 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
     }
 
     private fun createTransferManager(innerCosClient: InnerCosClient): TransferManager {
-        val transferManager = TransferManager(innerCosClient.cosClient, executor, true)
+        val transferManager = TransferManager(innerCosClient.cosClient, executor, false)
         transferManager.configuration = TransferManagerConfiguration().apply {
-            multipartUploadThreshold = 20L * MB
-            minimumUploadPartSize = 10L * MB
+            multipartUploadThreshold = 10L * MB
+            minimumUploadPartSize = 5L * MB
         }
         return transferManager
     }
 
     private fun shutdownTransferManager(transferManager: TransferManager) {
         if (transferManager != defaultTransferManager) {
-            transferManager.shutdownNow(false)
+            transferManager.shutdownNow(true)
         }
     }
 }
