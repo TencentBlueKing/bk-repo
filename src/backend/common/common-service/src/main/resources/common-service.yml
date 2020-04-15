@@ -27,5 +27,3 @@ logging.config: classpath:logback-config.xml
 
 auth.enabled: true
 swagger.enabled: false
-
-hello.content: Hello, Service!
