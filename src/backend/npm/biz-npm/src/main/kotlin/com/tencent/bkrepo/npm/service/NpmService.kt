@@ -283,13 +283,14 @@ class NpmService @Autowired constructor(
         context.contextAttributes = attributesMap
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.upload(context)
+        logger.info("update package $name success!")
         return NpmSuccessResponse.updatePkgSuccess()
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun unPublishPkgWithVersion(artifactInfo: NpmArtifactInfo): NpmDeleteResponse {
         val fullPathList = mutableListOf<String>()
-        val artifactUri = artifactInfo.artifactUri.substringBeforeLast("/-rev").trimStart('/')
+        val artifactUri = artifactInfo.artifactUri.substringAfterLast("/-/").substringBeforeLast("/-rev")
         val pkgName = artifactUri.substringBeforeLast('-')
         fullPathList.add("/$pkgName/-/$artifactUri")
         fullPathList.add("/.npm/$pkgName/${artifactUri.replace(".tgz", ".json")}")
@@ -297,6 +298,7 @@ class NpmService @Autowired constructor(
         context.contextAttributes[NPM_FILE_FULL_PATH] = fullPathList
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.remove(context)
+        logger.info("delete package $artifactUri success")
         return NpmDeleteResponse(true, artifactUri, REV_VALUE)
     }
 
