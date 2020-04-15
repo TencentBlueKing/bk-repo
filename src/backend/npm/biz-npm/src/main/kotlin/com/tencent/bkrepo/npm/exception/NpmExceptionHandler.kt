@@ -5,7 +5,6 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_VALUE
-import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionHandler
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.pojo.AuthFailInfo
@@ -111,6 +110,6 @@ class NpmExceptionHandler {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactExceptionHandler::class.java)
+        private val logger = LoggerFactory.getLogger(NpmExceptionHandler::class.java)
     }
 }

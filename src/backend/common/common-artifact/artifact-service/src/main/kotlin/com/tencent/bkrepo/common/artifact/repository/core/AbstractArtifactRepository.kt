@@ -14,7 +14,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.util.HttpResponseUtils
+import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
@@ -47,7 +47,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
             this.onBeforeDownload(context)
             val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo.getFullUri()}] not found")
             val name = NodeUtils.getName(context.artifactInfo.artifactUri)
-            HttpResponseUtils.response(name, file)
+            ServletResponseUtils.response(name, file)
             this.onDownloadSuccess(context, file)
         } catch (validateException: ArtifactValidateException) {
             this.onValidateFailed(context, validateException)

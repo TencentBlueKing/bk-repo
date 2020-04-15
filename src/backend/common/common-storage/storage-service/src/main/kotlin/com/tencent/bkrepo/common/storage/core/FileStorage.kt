@@ -20,10 +20,11 @@ interface FileStorage {
     fun load(path: String, filename: String, received: File, storageCredentials: StorageCredentials): File?
     fun delete(path: String, filename: String, storageCredentials: StorageCredentials)
     fun exist(path: String, filename: String, storageCredentials: StorageCredentials): Boolean
-
     fun getDefaultCredentials(): StorageCredentials
-    fun getTempPath(): String = System.getProperty("java.io.tmpdir")
 
+    fun getTempPath(): String = System.getProperty("java.io.tmpdir")
     @Recover
     fun recover(exception: Exception, path: String, filename: String, file: File, storageCredentials: StorageCredentials)
+
+    fun synchronizeStore(path: String, filename: String, file: File, storageCredentials: StorageCredentials) = store(path, filename, file, storageCredentials)
 }

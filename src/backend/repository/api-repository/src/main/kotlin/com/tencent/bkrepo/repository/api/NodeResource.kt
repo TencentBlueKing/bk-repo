@@ -13,6 +13,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -125,6 +126,12 @@ interface NodeResource {
         @RequestBody nodeRenameRequest: NodeRenameRequest
     ): Response<Void>
 
+    @ApiOperation("更新节点")
+    @PutMapping("/update")
+    fun update(
+        @RequestBody nodeUpdateRequest: NodeUpdateRequest
+    ): Response<Void>
+
     @ApiOperation("移动节点")
     @PutMapping("/move")
     fun move(
@@ -179,5 +186,4 @@ interface NodeResource {
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
     fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any>>>
-
 }

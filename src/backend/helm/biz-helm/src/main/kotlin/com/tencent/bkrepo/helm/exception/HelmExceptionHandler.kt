@@ -3,7 +3,6 @@ package com.tencent.bkrepo.helm.exception
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionHandler
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.pojo.HelmErrorResponse
@@ -65,6 +64,6 @@ class HelmExceptionHandler {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactExceptionHandler::class.java)
+        private val logger = LoggerFactory.getLogger(HelmExceptionHandler::class.java)
     }
 }

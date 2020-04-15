@@ -21,9 +21,11 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.query.NodeQueryService
 import org.springframework.beans.factory.annotation.Autowired
@@ -76,6 +78,21 @@ class UserNodeResourceImpl @Autowired constructor(
                 operator = userId
             )
             nodeService.delete(deleteRequest)
+            return ResponseBuilder.success()
+        }
+    }
+
+    override fun update(userId: String, request: UserNodeUpdateRequest): Response<Void> {
+        with(request) {
+            permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
+            val updateRequest = NodeUpdateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                expires = expires,
+                operator = userId
+            )
+            nodeService.update(updateRequest)
             return ResponseBuilder.success()
         }
     }

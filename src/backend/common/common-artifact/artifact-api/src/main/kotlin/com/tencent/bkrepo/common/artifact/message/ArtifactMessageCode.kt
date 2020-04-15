@@ -9,18 +9,19 @@ import com.tencent.bkrepo.common.api.message.MessageCode
  * @date: 2019-10-11
  */
 
-enum class ArtifactMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
-    PROJECT_NOT_FOUND(1, "artifact.project.notfound"),
-    PROJECT_EXISTED(2, "artifact.project.existed"),
-    REPOSITORY_NOT_FOUND(3, "artifact.repository.notfound"),
-    REPOSITORY_EXISTED(4, "artifact.repository.existed"),
-    NODE_NOT_FOUND(5, "artifact.node.notfound"),
-    NODE_PATH_INVALID(6, "artifact.node.path.invalid"),
-    NODE_EXISTED(7, "artifact.node.existed"),
-    NODE_CONFLICT(8, "artifact.node.conflict"),
-    NODE_LIST_TOO_LARGE(9, "artifact.node.list.too-large");
+enum class ArtifactMessageCode(private val key: String) : MessageCode {
+    PROJECT_NOT_FOUND("artifact.project.notfound"),
+    PROJECT_EXISTED("artifact.project.existed"),
+    REPOSITORY_NOT_FOUND("artifact.repository.notfound"),
+    REPOSITORY_EXISTED("artifact.repository.existed"),
+    REPOSITORY_CONTAINS_FILE("artifact.repository.contains-file"),
+    NODE_NOT_FOUND("artifact.node.notfound"),
+    NODE_PATH_INVALID("artifact.node.path.invalid"),
+    NODE_EXISTED("artifact.node.existed"),
+    NODE_CONFLICT("artifact.node.conflict"),
+    NODE_LIST_TOO_LARGE("artifact.node.list.too-large");
 
-    override fun getBusinessCode() = businessCode
+    override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key
     override fun getModuleCode() = 10
 }

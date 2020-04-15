@@ -25,21 +25,21 @@ class DockerManifestSyncer() {
         path: DockerBasicPath,
         tag: String
     ): Boolean {
-        log.info("start to sync docker repository blobs")
+        logger.info("start to sync docker repository blobs")
         val manifestInfo = info.blobsInfo.iterator()
 
         while (manifestInfo.hasNext()) {
             val blobInfo = manifestInfo.next()
-            log.info("sync docker digest {}", blobInfo.digest)
+            logger.info("sync docker digest {}", blobInfo.digest)
             if (blobInfo.digest != null && !this.isForeignLayer(blobInfo)) {
                 val blobDigest = DockerDigest(blobInfo.digest!!)
                 val blobFilename = blobDigest.filename()
-                log.info(" blob file name digest {}", blobFilename)
+                logger.info(" blob file name digest {}", blobFilename)
                 val tempBlobPath = "/${path.dockerRepo}/_uploads/$blobFilename"
                 val finalBlobPath = "/${path.dockerRepo}/$tag/$blobFilename"
                 if (!repo.exists(path.projectId, path.repoName, finalBlobPath)) {
                     if (DockerSchemaUtils.isEmptyBlob(blobDigest)) {
-                        log.debug(
+                        logger.debug(
                             "found empty layer {} in manifest for image {} ,create blob in path {}",
                             blobFilename,
                             path.dockerRepo,
@@ -57,7 +57,7 @@ class DockerManifestSyncer() {
                     } else if (repo.exists(path.projectId, path.repoName, tempBlobPath)) {
                         this.moveBlobFromTempDir(repo, path.projectId, path.repoName, tempBlobPath, finalBlobPath)
                     } else {
-                        log.debug("blob temp file '{}' doesn't exist in temp, try other tags", tempBlobPath)
+                        logger.debug("blob temp file '{}' doesn't exist in temp, try other tags", tempBlobPath)
                         val targetPath = "/${path.dockerRepo}/$tag/$blobFilename"
                         if (!this.copyBlobFromFirstReadableDockerRepo(
                                 repo,
@@ -68,17 +68,17 @@ class DockerManifestSyncer() {
                                 targetPath
                             )
                         ) {
-                            log.error("could not find temp blob '{}'", tempBlobPath)
+                            logger.error("could not find temp blob '{}'", tempBlobPath)
                             return false
                         }
-                        log.debug("blob {} copy to {}", blobDigest.filename(), finalBlobPath)
+                        logger.debug("blob {} copy to {}", blobDigest.filename(), finalBlobPath)
                     }
                 }
             }
         }
 
         // this.removeUnreferencedBlobs(repo, "$dockerRepo/$tag", info)
-        log.debug("finish synv docker repository blobs")
+        logger.debug("finish synv docker repository blobs")
         return true
     }
 
@@ -109,7 +109,7 @@ class DockerManifestSyncer() {
         blobFilename: String
     ): Boolean {
         if (!StringUtils.equals(sourcePath, targetPath)) {
-            log.info("found {} in path {}, copy over to {}", blobFilename, sourcePath, targetPath)
+            logger.info("found {} in path {}, copy over to {}", blobFilename, sourcePath, targetPath)
             return repo.copy(projectId, repoName, sourcePath, targetPath)
         }
         return false
@@ -122,11 +122,11 @@ class DockerManifestSyncer() {
         tempBlobPath: String,
         finalBlobPath: String
     ) {
-        log.info("move temp blob from '{}' to '{}'", tempBlobPath, finalBlobPath)
+        logger.info("move temp blob from '{}' to '{}'", tempBlobPath, finalBlobPath)
         repo.move(projectId, repoName, tempBlobPath, finalBlobPath)
     }
 
     companion object {
-        private val log = LoggerFactory.getLogger(DockerManifestSyncer::class.java)
+        private val logger = LoggerFactory.getLogger(DockerManifestSyncer::class.java)
     }
 }

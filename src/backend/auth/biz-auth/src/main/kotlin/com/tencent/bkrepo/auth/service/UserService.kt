@@ -25,7 +25,7 @@ interface UserService {
 
     fun createToken(userId: String): User?
 
-    fun addUserToken(uid: String, token: String): User?
+    fun addUserToken(userId: String, token: String): User?
 
     fun removeToken(userId: String, token: String): User?
 

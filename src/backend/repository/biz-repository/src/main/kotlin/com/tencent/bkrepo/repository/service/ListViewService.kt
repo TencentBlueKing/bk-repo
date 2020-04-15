@@ -17,7 +17,6 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectListViewItem
 import com.tencent.bkrepo.repository.pojo.repo.RepoListViewItem
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.apache.commons.lang.StringEscapeUtils
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.PrintWriter
 
@@ -27,7 +26,7 @@ import java.io.PrintWriter
  * @date: 2019/12/22
  */
 @Service
-class ListViewService @Autowired constructor(
+class ListViewService(
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService
@@ -49,7 +48,7 @@ class ListViewService @Autowired constructor(
                     HeaderItem("Size")
                 )
                 val itemList = nodeList.map { NodeListViewItem.from(it) }.sorted()
-                val rowList = itemList.map { RowItem(listOf(it.name, it.createdBy, it.lastModified,  it.size)) }
+                val rowList = itemList.map { RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size)) }
                 writePageContent(ListViewObject(currentPath, headerList, rowList, FOOTER, true))
             } else {
                 val context = ArtifactDownloadContext()
@@ -72,7 +71,7 @@ class ListViewService @Autowired constructor(
             HeaderItem("Public")
         )
         val rowList = itemList.sorted().map {
-            RowItem(listOf(it.name, it.createdBy, it.lastModified,  it.category, it.type, it.public))
+            RowItem(listOf(it.name, it.createdBy, it.lastModified, it.category, it.type, it.public))
         }
         val listViewObject = ListViewObject(title, headerList, rowList, FOOTER, true)
         writePageContent(listViewObject)
@@ -102,7 +101,6 @@ class ListViewService @Autowired constructor(
             writeListContent(this, writer)
             writer.println(LAST_PART.trimIndent())
         }
-
     }
 
     private fun writeListContent(listViewObject: ListViewObject, writer: PrintWriter) {
@@ -124,7 +122,7 @@ class ListViewService @Autowired constructor(
                     }
                     writer.print(" ".repeat(GAP))
                 }
-                if (rowIndex != rowList.size -1) {
+                if (rowIndex != rowList.size - 1) {
                     writer.println()
                 }
             }
