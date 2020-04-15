@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.api.constant
 
 object StringPool {
     const val EMPTY = ""
+    const val DOT = "."
     const val SLASH = "/"
     const val COLON = ":"
     const val DASH = "-"
