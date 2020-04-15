@@ -267,6 +267,39 @@ class NpmService @Autowired constructor(
         return NpmDeleteResponse(true, name, REV_VALUE)
     }
 
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    fun updatePkg(artifactInfo: NpmArtifactInfo, body: String): NpmSuccessResponse {
+        val attributesMap = mutableMapOf<String, Any>()
+        body.takeIf { StringUtils.isNotBlank(it) } ?: throw ArtifactNotFoundException("request body not found!")
+        val jsonObj = JsonParser().parse(body).asJsonObject
+        val name = jsonObj.get(NAME).asString
+        attributesMap[NPM_PKG_JSON_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
+
+        val artifactFileMap = ArtifactFileMap()
+        val pkgFile = ArtifactFileFactory.build()
+        Streams.copy(GsonUtils.gson.toJson(jsonObj).byteInputStream(), pkgFile.getOutputStream(), true)
+        artifactFileMap[NPM_PACKAGE_JSON_FILE] = pkgFile
+        val context = ArtifactUploadContext(artifactFileMap)
+        context.contextAttributes = attributesMap
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        repository.upload(context)
+        return NpmSuccessResponse.updatePkgSuccess()
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    fun unPublishPkgWithVersion(artifactInfo: NpmArtifactInfo): NpmDeleteResponse {
+        val fullPathList = mutableListOf<String>()
+        val artifactUri = artifactInfo.artifactUri.substringBeforeLast("/-rev").trimStart('/')
+        val pkgName = artifactUri.substringBeforeLast('-')
+        fullPathList.add("/$pkgName/-/$artifactUri")
+        fullPathList.add("/.npm/$pkgName/${artifactUri.replace(".tgz", ".json")}")
+        val context = ArtifactRemoveContext()
+        context.contextAttributes[NPM_FILE_FULL_PATH] = fullPathList
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        repository.remove(context)
+        return NpmDeleteResponse(true, artifactUri, REV_VALUE)
+    }
+
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): Map<String, Any> {
         val context = ArtifactListContext()
