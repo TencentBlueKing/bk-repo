@@ -56,7 +56,7 @@ class AuthService {
         val bearerAuthHeader = request.getHeader(BEARER_AUTH_HEADER)
         if (!bearerAuthHeader.startsWith(BEARER_AUTH_HEADER_PREFIX)) throw NpmClientAuthException("Authorization value [$bearerAuthHeader] is not a valid scheme")
         val token = bearerAuthHeader.removePrefix(BEARER_AUTH_HEADER_PREFIX)
-        //获取不到说明token异常，直接报错
+        // 获取不到说明token异常，直接报错
         JwtUtils.getUserName(token)
         return NpmAuthResponse.success()
     }
