@@ -13,6 +13,9 @@ import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PKG_PUBLISH
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_SCOPE_PACKAGE_VERSION_INFO_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_SCOPE_PKG_PUBLISH_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_UNPUBLISH_MAPPING_URI
+import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_UNPUBLISH_SCOPE_MAPPING_URI
+import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_UNPUBLISH_VERSION_MAPPING_URI
+import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_UNPUBLISH_VERSION_SCOPE_MAPPING_URI
 import com.tencent.bkrepo.npm.pojo.NpmDeleteResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
@@ -52,8 +55,16 @@ interface NpmResource {
     fun download(@ArtifactPathVariable artifactInfo: NpmArtifactInfo)
 
     @ApiOperation("unpublish package")
-    @DeleteMapping(NPM_UNPUBLISH_MAPPING_URI)
+    @DeleteMapping(NPM_UNPUBLISH_MAPPING_URI, NPM_UNPUBLISH_SCOPE_MAPPING_URI)
     fun unpublish(@RequestAttribute userId: String, @ArtifactPathVariable artifactInfo: NpmArtifactInfo): NpmDeleteResponse
+
+    @ApiOperation("update package")
+    @PutMapping(NPM_UNPUBLISH_MAPPING_URI, NPM_UNPUBLISH_SCOPE_MAPPING_URI)
+    fun updatePkg(@ArtifactPathVariable artifactInfo: NpmArtifactInfo, @RequestBody body: String): NpmSuccessResponse
+
+    @ApiOperation("unpublish version package")
+    @DeleteMapping(NPM_UNPUBLISH_VERSION_MAPPING_URI, NPM_UNPUBLISH_VERSION_SCOPE_MAPPING_URI)
+    fun unPublishPkgWithVersion(@ArtifactPathVariable artifactInfo: NpmArtifactInfo): NpmDeleteResponse
 
     @ApiOperation("npm search")
     @GetMapping(NPM_PACKAGE_SEARCH_MAPPING_URI)
