@@ -13,14 +13,14 @@ import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.LoggerFactory
 
 object DockerManifestDigester {
-    private val log = LoggerFactory.getLogger(DockerManifestDigester::class.java)
+    private val logger = LoggerFactory.getLogger(DockerManifestDigester::class.java)
 
     @Throws(IOException::class)
     fun calc(jsonBytes: ByteArray): DockerDigest? {
         val manifest = mapper().readTree(jsonBytes)
         val schemaVersion = manifest.get("schemaVersion")
         if (schemaVersion == null) {
-            log.error("Unable to determine the schema version of the manifest")
+            logger.error("Unable to determine the schema version of the manifest")
             return null
         } else {
             val schema = schemaVersion.asInt()
@@ -29,7 +29,7 @@ object DockerManifestDigester {
                 digest = schema1Digest(jsonBytes, manifest)
             } else {
                 if (schema != 2) {
-                    log.error("Unknown schema version '{}' for manifest file", schema)
+                    logger.warn("unknown schema version '{}' for manifest file", schema)
                     return null
                 }
 

@@ -30,6 +30,7 @@ class AccountServiceImpl @Autowired constructor(
 ) : AccountService {
 
     override fun createAccount(request: CreateAccountRequest): Account? {
+        logger.info("create  account  request : {}", request.toString())
         val account = accountRepository.findOneByAppId(request.appId)
         if (account != null) {
             logger.warn("create account [${request.appId}]  is exist.")
@@ -56,10 +57,12 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun listAccount(): List<Account> {
+        logger.info("list  account ")
         return accountRepository.findAllBy().map { transfer(it) }
     }
 
     override fun deleteAccount(appId: String): Boolean {
+        logger.info("delete  account appId : {}", appId)
         val result = accountRepository.deleteByAppId(appId)
         if (result == 0L) {
             logger.warn("delete account [$appId]  not exist.")
@@ -69,6 +72,7 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun updateAccountStatus(appId: String, locked: Boolean): Boolean {
+        logger.info("update  account appId : {} , locked : {}", appId, locked)
         val account = accountRepository.findOneByAppId(appId)
         if (account == null) {
             logger.warn("update account [$appId]  not exist.")
@@ -87,6 +91,7 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun createCredential(appId: String): List<CredentialSet> {
+        logger.info("create  credential appId : {} ", appId)
         val account = accountRepository.findOneByAppId(appId)
         if (account == null) {
             logger.warn("account [$appId]  not exist.")
@@ -110,6 +115,7 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun listCredentials(appId: String): List<CredentialSet> {
+        logger.info("list  credential appId : {} ", appId)
         val account = accountRepository.findOneByAppId(appId)
         if (account == null) {
             logger.warn("update account [$appId]  not exist.")
@@ -119,6 +125,7 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun deleteCredential(appId: String, accessKey: String): List<CredentialSet> {
+        logger.info("delete  credential appId : {} , accessKey: {} ", appId, accessKey)
         val account = accountRepository.findOneByAppId(appId)
         if (account == null) {
             logger.warn("appId [$appId]  not exist.")
@@ -136,6 +143,12 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun updateCredentialStatus(appId: String, accessKey: String, status: CredentialStatus): Boolean {
+        logger.info(
+            "update  credential status appId : {} , accessKey: {},status :{} ",
+            appId,
+            accessKey,
+            status.toString()
+        )
         val account = accountRepository.findOneByAppId(appId)
         if (account == null) {
             logger.warn("update account status  [$appId]  not exist.")
@@ -162,6 +175,7 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun checkCredential(accessKey: String, secretKey: String): String? {
+        logger.info("check  credential  accessKey : {} , secretKey: {}", accessKey, secretKey)
         val query = Query.query(
             Criteria.where("credentials.secretKey").`is`(secretKey)
                 .and("credentials.accessKey").`is`(accessKey)

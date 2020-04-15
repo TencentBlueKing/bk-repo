@@ -19,7 +19,7 @@ Authorization: Basic {{username}} {{password}}
 > {%
     client.test('Request executed successfully', function() {
         client.assert(response.status === 200, 'Response status is not 200');
-        client.assert(response.body === 'Hello, World!!!!', 'Response status is invalid');
+        client.assert(response.body === 'Hello, World!!!!', 'Response content invalid');
     });
 %}
 
@@ -106,7 +106,7 @@ Range: bytes=0-1
 > {%
     client.test('Request executed successfully', function() {
         client.assert(response.status === 206, 'Response status is not 206');
-        client.assert(response.headers.valueOf("Content-Range") === 'bytes 0-1/10', 'Response content invalid');
+        client.assert(response.headers.valueOf("Content-Range") === 'bytes 0-1/10', 'Response Content-Range invalid');
         client.assert(response.body === '11', 'Response content invalid');
     });
 %}
@@ -119,7 +119,7 @@ Range: bytes=2-
 > {%
     client.test('Request executed successfully', function() {
         client.assert(response.status === 206, 'Response status is not 206');
-        client.assert(response.headers.valueOf("Content-Range") === 'bytes 2-9/10', 'Response content invalid');
+        client.assert(response.headers.valueOf("Content-Range") === 'bytes 2-9/10', 'Response Content-Range invalid');
         client.assert(response.body === '11122222', 'Response content invalid');
     });
 %}
@@ -132,7 +132,7 @@ Range: bytes=-2
 > {%
     client.test('Request executed successfully', function() {
         client.assert(response.status === 206, 'Response status is not 206');
-        client.assert(response.headers.valueOf("Content-Range") === 'bytes 8-9/10', 'Response content invalid');
+        client.assert(response.headers.valueOf("Content-Range") === 'bytes 8-9/10', 'Response Content-Range invalid');
         client.assert(response.body === '22', 'Response content invalid');
     });
 %}
