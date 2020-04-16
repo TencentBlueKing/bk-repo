@@ -44,7 +44,7 @@ class DockerArtifactoryService @Autowired constructor(
     private val permissionService: PermissionService
 ) {
 
-    protected lateinit var context: DockerWorkContext
+    private lateinit var context: DockerWorkContext
 
     lateinit var userId: String
 
@@ -57,8 +57,7 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
     fun writeAppend(uuid: String, artifactFile: ArtifactFile): Long {
-        val result = this.storageService.append(uuid, artifactFile)
-        return result
+        return this.storageService.append(uuid, artifactFile)
     }
 
     fun readGlobal(context: DownloadContext): InputStream {
@@ -69,6 +68,7 @@ class DockerArtifactoryService @Autowired constructor(
         }
         // get content from storage
         val file = storageService.load(context.sha256, repository.storageCredentials) ?: kotlin.run {
+            logger.error("user [$userId] load data from  storage  [${context.name}] failed: [${context.projectId},${context.repoName}] failed")
             throw DockerFileReadFailedException(context.repoName)
         }
         logger.info("load file sha256 {}, length {}", context.sha256, file.length())
@@ -92,7 +92,7 @@ class DockerArtifactoryService @Autowired constructor(
         }
         // load file from storage
         var file = storageService.load(context.sha256, repository.storageCredentials) ?: run {
-            logger.warn("user [$userId]  download file  [$context.path] failed: [$context.repoName] not found")
+            logger.error("user [$userId]  load data from storage  [$context.path] failed: [$context.repoName] ")
             throw DockerRepoNotFoundException(context.repoName)
         }
         return file
@@ -124,7 +124,7 @@ class DockerArtifactoryService @Autowired constructor(
             storageService.store(context.sha256, context.artifactFile!!, repository.storageCredentials)
             logger.info("user[$userId]  upload file [$context.path] success")
         } else {
-            logger.warn("user[$userId]  upload file [$context.path] failed: [${result.code}, ${result.message}]")
+            logger.error("user[$userId]  upload file [$context.path] failed: [${result.code}, ${result.message}]")
             throw DockerFileSaveFailedException(context.path)
         }
         return ResponseEntity.ok().body("ok")
@@ -189,22 +189,28 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
     // set node  attribute
-    fun setAttributes(projectId: String, repoName: String, path: String, keyValueMap: Map<String, String>) {
-        metadataService.save(MetadataSaveRequest(projectId, repoName, path, keyValueMap))
+    fun setAttributes(projectId: String, repoName: String, path: String, data: Map<String, String>) {
+        logger.info("set attributes request {},{},{}", projectId, repoName, path, data.toString())
+        metadataService.save(MetadataSaveRequest(projectId, repoName, path, data))
     }
 
     // get node  attribute
     fun getAttribute(projectId: String, repoName: String, fullPath: String, key: String): String? {
-        logger.info("getAttribute params :{}, {}, {}, {}", projectId, repoName, fullPath, key)
         val result = metadataService.query(projectId, repoName, fullPath).data!!
-        logger.info("getAttribute result  :{}", result.toString())
+        logger.info(
+            "getAttribute params :{}, {}, {}, {} ,result:{}",
+            projectId,
+            repoName,
+            fullPath,
+            key,
+            result.toString()
+        )
         return result.get(key)
     }
 
     // check node
     fun exists(projectId: String, repoName: String, dockerRepo: String): Boolean {
-        val result = nodeResource.exist(projectId, repoName, dockerRepo).data ?: return false
-        return result
+        return nodeResource.exist(projectId, repoName, dockerRepo).data ?: return false
     }
 
     // check path read permission
@@ -219,7 +225,7 @@ class DockerArtifactoryService @Autowired constructor(
             )
             return true
         } catch (e: PermissionCheckException) {
-            logger.error("user: {} ,check read permission fail {},{}", userId, path.projectId, path.repoName)
+            logger.warn("user: {} ,check read permission fail {},{}", userId, path.projectId, path.repoName)
             return false
         }
     }
@@ -244,7 +250,7 @@ class DockerArtifactoryService @Autowired constructor(
     // construct artifact object
     fun artifact(projectId: String, repoName: String, fullPath: String): Artifact? {
         val nodes = nodeResource.detail(projectId, repoName, fullPath).data ?: run {
-            logger.error("get  artifact detail failed: $projectId, $repoName, $fullPath found no artifact")
+            logger.warn("get  artifact detail failed: $projectId, $repoName, $fullPath found no artifact")
             return null
         }
         if (nodes.nodeInfo.sha256 == null) {
@@ -260,7 +266,7 @@ class DockerArtifactoryService @Autowired constructor(
         // get node info
         var fullPath = "/${path.dockerRepo}/$fileName"
         val nodes = nodeResource.detail(path.projectId, path.repoName, fullPath).data ?: run {
-            logger.warn("get  artifact detail failed: ${path.projectId}, ${path.repoName}, $fullPath found no node")
+            logger.warn("get artifact detail failed: ${path.projectId}, ${path.repoName}, $fullPath found no node")
             return null
         }
         return nodes
@@ -352,7 +358,7 @@ class DockerArtifactoryService @Autowired constructor(
             rule = rule
         )
         val result = nodeResource.query(queryModel).data ?: run {
-            logger.error("find artifacts failed:  $fileName found no node")
+            logger.warn("find artifacts failed:  $fileName found no node")
             return emptyList()
         }
         return result.records
@@ -362,7 +368,7 @@ class DockerArtifactoryService @Autowired constructor(
     fun findManifest(projectId: String, repoName: String, manifestPath: String): NodeDetail? {
         // query node info
         val nodes = nodeResource.detail(projectId, repoName, manifestPath).data ?: run {
-            logger.error("find manifest failed: $projectId, $repoName, $manifestPath found no node")
+            logger.warn("find manifest failed: $projectId, $repoName, $manifestPath found no node")
             return null
         }
         return nodes
