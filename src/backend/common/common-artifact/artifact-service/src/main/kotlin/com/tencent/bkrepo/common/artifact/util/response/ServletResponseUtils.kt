@@ -76,11 +76,19 @@ object ServletResponseUtils {
                     responseMultiRange(file, response, mimeType, rangeList)
                 }
             }
+            response.flushBuffer()
         } catch (exception: Exception) {
-            if (exception.message.orEmpty().contains("Connection reset by peer")) {
-                LoggerHolder.logBusinessException(exception, "Stream response failed: download abort by client.")
-            } else {
-                throw exception
+            val message = exception.message.orEmpty()
+            when {
+                message.contains("Connection reset by peer") -> {
+                    LoggerHolder.logBusinessException(exception, "Stream response failed[Connection reset by peer]")
+                }
+                message.contains("Broken pipe") -> {
+                    LoggerHolder.logBusinessException(exception, "Stream response failed[Broken pipe]")
+                }
+                else -> {
+                    throw exception
+                }
             }
         }
     }
@@ -146,6 +154,7 @@ object ServletResponseUtils {
             output.write(buffer, 0, read)
             totalRead += read.toLong()
             bytesToRead = (length - totalRead).coerceAtMost(BUFFER_SIZE.toLong()).toInt()
+            Thread.sleep(100)
         }
     }
 
