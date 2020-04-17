@@ -35,8 +35,12 @@ class NpmArtifactInfo(
         const val NPM_PACKAGE_INFO_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}"
         const val NPM_PACKAGE_VERSION_INFO_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}/{version}"
 
+        // npm https://registry.npmjs.org/
         const val NPM_PACKAGE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}/-/*.tgz"
-        const val NPM_PACKAGE_SCOPE_SIMPLE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{scope}/{pkgName}/-/{scope}/*.tgz"
+        const val NPM_PACKAGE_SCOPE_SIMPLE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{scope}/{pkgName}/-/*.tgz"
+        // cnpm https://registry.npm.taobao.org/
+        const val NPM_PACKAGE_TGZ_CNPM_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}/download/*.tgz"
+        const val NPM_PACKAGE_SCOPE_SIMPLE_TGZ_CNPM_MAPPING_URI = "/{projectId}/{repoName}/{scope}/{pkgName}/download/{scope}/*.tgz"
 
         // search
         const val NPM_PACKAGE_SEARCH_MAPPING_URI = "/{projectId}/{repoName}/-/v1/search"

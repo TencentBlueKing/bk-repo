@@ -51,6 +51,7 @@ import com.tencent.bkrepo.npm.exception.NpmArtifactExistException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.pojo.NpmDeleteResponse
 import com.tencent.bkrepo.npm.pojo.NpmMetaData
+import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
@@ -303,11 +304,11 @@ class NpmService @Autowired constructor(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): Map<String, Any> {
+    fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): NpmSearchResponse {
         val context = ArtifactListContext()
         context.contextAttributes[SEARCH_REQUEST] = searchRequest
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        return repository.list(context) as Map<String, Any>
+        return repository.list(context) as NpmSearchResponse
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)

@@ -18,9 +18,10 @@ import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_FULL_PATH
-import com.tencent.bkrepo.npm.constants.SEARCH_MAP
+import com.tencent.bkrepo.npm.constants.OBJECTS
 import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.VERSIONS
+import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import okhttp3.Request
@@ -240,16 +241,15 @@ class NpmRemoteRepository : RemoteRepository() {
         )
     }
 
-    override fun list(context: ArtifactListContext): Map<String, Any> {
-        // val searchRequest = context.contextAttributes[SEARCH_REQUEST] as MetadataSearchRequest
+    override fun list(context: ArtifactListContext): NpmSearchResponse {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val httpClient = createHttpClient(remoteConfiguration)
         val downloadUri = generateRemoteDownloadUrl(context)
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
         return if (checkResponse(response)) {
-            GsonUtils.gsonToMaps<Any>(response.body()!!.string()) ?: SEARCH_MAP
-        } else SEARCH_MAP
+            NpmSearchResponse(GsonUtils.gsonToMaps<Any>(response.body()!!.string())?.get(OBJECTS) as MutableList<Map<String, Any>>)
+        } else NpmSearchResponse()
     }
 
     companion object {
