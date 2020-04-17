@@ -13,10 +13,12 @@ feign:
     request.enabled: true
     response.enabled: true
 
-hystrix.command.default.execution.isolation:
-  strategy: SEMAPHORE
-  semaphore.maxConcurrentRequests: 100
-  thread.timeoutInMilliseconds: 20000
+hystrix:
+  metrics.enabled: true
+  command.default.execution.isolation:
+    strategy: SEMAPHORE
+    semaphore.maxConcurrentRequests: 100
+    thread.timeoutInMilliseconds: 20000
 
 ribbon:
   ReadTimeout: 15000
@@ -27,3 +29,10 @@ logging.config: classpath:logback-config.xml
 
 auth.enabled: true
 swagger.enabled: false
+
+management.endpoints.web.exposure.include: *
+management.endpoint.health.show-details: always
+management.endpoint.health.consul: always
+management.endpoint.shutdown.enabled: true
+management.endpoint.pause.enabled: true
+management.endpoint.restart.enabled: true

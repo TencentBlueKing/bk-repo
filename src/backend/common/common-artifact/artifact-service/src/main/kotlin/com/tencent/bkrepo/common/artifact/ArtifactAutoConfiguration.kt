@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.artifact
 import com.tencent.bkrepo.common.artifact.auth.AuthConfiguration
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventListener
 import com.tencent.bkrepo.common.artifact.exception.ExceptionConfiguration
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.PermissionConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.ResolverConfiguration
 import com.tencent.bkrepo.common.artifact.webhook.WebHookService
@@ -25,7 +26,8 @@ import org.springframework.core.Ordered
     AuthConfiguration::class,
     PermissionConfiguration::class,
     ResolverConfiguration::class,
-    ExceptionConfiguration::class
+    ExceptionConfiguration::class,
+    ArtifactMetricsConfiguration::class
 )
 class ArtifactAutoConfiguration {
 
