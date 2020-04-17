@@ -21,11 +21,12 @@ class NpmArtifactInfoResolver : ArtifactInfoResolver {
         val uri = URLDecoder.decode(request.requestURI, "utf-8")
 
         val pathElements = LinkedList<String>()
-        val stringTokenizer = StringTokenizer(uri, "/")
+        val stringTokenizer = StringTokenizer(uri.substringBefore("/-rev"), "/")
+        // val stringTokenizer = StringTokenizer(uri, "/")
         while (stringTokenizer.hasMoreTokens()) {
             pathElements.add(stringTokenizer.nextToken())
         }
-        if (pathElements.size < 3) {
+        if (pathElements.size < 2) {
             logger.debug(
                 "Cannot build NpmArtifactInfo from '{}'. The pkgName are unreadable.",
                 uri

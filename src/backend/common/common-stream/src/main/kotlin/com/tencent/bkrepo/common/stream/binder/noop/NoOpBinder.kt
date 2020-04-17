@@ -14,7 +14,9 @@ class NoOpBinder : Binder<MessageChannel, ConsumerProperties, ProducerProperties
         producerProperties: ProducerProperties
     ): Binding<MessageChannel> {
         (outboundBindTarget as SubscribableChannel).subscribe { }
-        return Binding<MessageChannel> { }
+        return Binding<MessageChannel> {
+            fun isInput() = true
+        }
     }
 
     override fun bindConsumer(
@@ -23,6 +25,8 @@ class NoOpBinder : Binder<MessageChannel, ConsumerProperties, ProducerProperties
         inboundBindTarget: MessageChannel,
         consumerProperties: ConsumerProperties
     ): Binding<MessageChannel> {
-        return Binding<MessageChannel> { }
+        return Binding<MessageChannel> {
+            fun isInput() = false
+        }
     }
 }
