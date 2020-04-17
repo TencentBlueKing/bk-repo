@@ -28,6 +28,11 @@ jfrog_config = {
         "username": "",
         "password": ""
     },
+    "test": {
+        "url": "http://dev.artifactory.oa.com/",
+        "username": "",
+        "password": ""
+    },
     "prod": {
         "url": "http://bk.artifactory.oa.com/",
         "username": "",
@@ -38,13 +43,18 @@ jfrog_config = {
 bkrepo_config = {
     "dev": {
         "url": "http://dev.bkrepo.oa.com/",
-        "accessKey": "cb475f0b-0b2e-4b9b-9ab2-977385d37e45",
-        "secretKey": "6uS19b87YIU6vWNHiMoeCla6x3tsx8"
+        "accessKey": "",
+        "secretKey": ""
+    },
+    "test": {
+        "url": "http://test.bkrepo.oa.com/",
+        "accessKey": "",
+        "secretKey": ""
     },
     "prod": {
         "url": "http://bkrepo.oa.com/",
-        "accessKey": "cb475f0b0b2e4b9b9ab2977385d37e45",
-        "secretKey": "6uS19b87YIU6vWNHiMoeCla6x3tsx8"
+        "accessKey": "",
+        "secretKey": ""
     }
 }
 

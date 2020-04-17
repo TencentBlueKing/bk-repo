@@ -83,21 +83,18 @@ open class MongoQueryBuilder {
 
     fun resolveRule(rule: Rule): Criteria {
         // interceptor
-        var newRule = rule
         if (rule !is Rule.FixedRule) {
             for (interceptor in queryRuleInterceptorList) {
-                if (interceptor.match(newRule)) {
-                    newRule = interceptor.intercept(newRule, this)
+                if (interceptor.match(rule)) {
+                    return interceptor.intercept(rule, this)
                 }
             }
-        } else {
-            newRule = rule.wrapperRule
         }
-
-        return when (newRule) {
-            is Rule.NestedRule -> resolveNestedRule(newRule)
-            is Rule.QueryRule -> resolveQueryRule(newRule)
-            is Rule.FixedRule -> resolveFixedRule(newRule)
+        // resolve
+        return when (rule) {
+            is Rule.NestedRule -> resolveNestedRule(rule)
+            is Rule.QueryRule -> resolveQueryRule(rule)
+            is Rule.FixedRule -> resolveFixedRule(rule)
         }
     }
 

@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit
  * @author: carrypan
  * @date: 2019/11/26
  */
-abstract class RemoteRepository : AbstractArtifactRepository {
+abstract class RemoteRepository : AbstractArtifactRepository() {
 
     @Autowired
     lateinit var nodeResource: NodeResource

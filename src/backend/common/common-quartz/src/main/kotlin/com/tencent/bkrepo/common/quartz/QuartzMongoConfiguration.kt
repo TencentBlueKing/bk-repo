@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.quartz.SchedulerFactoryBeanCustomi
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.PropertySource
 import org.springframework.scheduling.quartz.SchedulerFactoryBean
 
 @Configuration
@@ -18,6 +19,7 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean
     MongoProperties::class
 )
 @ConditionalOnProperty(prefix = "spring.quartz", name = ["mongo"], matchIfMissing = true, havingValue = "true")
+@PropertySource("classpath:common-quartz.yml")
 class QuartzMongoConfiguration {
 
     @Bean
