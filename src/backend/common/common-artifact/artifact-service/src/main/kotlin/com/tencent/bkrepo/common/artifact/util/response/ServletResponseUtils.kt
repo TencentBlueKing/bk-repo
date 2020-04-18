@@ -154,7 +154,6 @@ object ServletResponseUtils {
             output.write(buffer, 0, read)
             totalRead += read.toLong()
             bytesToRead = (length - totalRead).coerceAtMost(BUFFER_SIZE.toLong()).toInt()
-            Thread.sleep(100)
         }
     }
 
