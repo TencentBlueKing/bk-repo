@@ -13,3 +13,4 @@ spring:
         format: YAML
         data-key: data
         profileSeparator: '::'
+      host: dev.bkrepo
