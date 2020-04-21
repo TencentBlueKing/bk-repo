@@ -23,6 +23,10 @@ include ":common:common-artifact"
 include ":common:common-artifact:artifact-api"
 include ":common:common-artifact:artifact-service"
 
+include ":common:common-notify"
+include ":common:common-notify:notify-api"
+include ":common:common-notify:notify-service"
+
 include ":repository"
 include ":repository:api-repository"
 include ":repository:biz-repository"

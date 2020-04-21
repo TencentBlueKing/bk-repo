@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.notify.api.NotifyService
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
@@ -77,6 +78,9 @@ class NodeService : AbstractService() {
     @Autowired
     private lateinit var metadataService: MetadataService
 
+    @Autowired
+    private lateinit var notifyService: NotifyService
+
     /**
      * 查询节点详情
      */
@@ -95,7 +99,7 @@ class NodeService : AbstractService() {
 
         val formattedFullPath = formatFullPath(fullPath)
         val node = queryNode(projectId, repoName, formattedFullPath)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, formattedFullPath)
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, formattedFullPath)
         // 节点为文件直接返回
         if (!node.folder) {
             return NodeSizeInfo(subNodeCount = 0, size = node.size)
@@ -105,8 +109,8 @@ class NodeService : AbstractService() {
         val count = nodeDao.count(Query(criteria))
 
         val aggregation = Aggregation.newAggregation(
-                Aggregation.match(criteria),
-                Aggregation.group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
+            Aggregation.match(criteria),
+            Aggregation.group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
         )
         val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
         val size = if (aggregateResult.mappedResults.size > 0) {
@@ -265,6 +269,7 @@ class NodeService : AbstractService() {
         }.also {
             logger.info("Rename node [$it] success.")
         }
+        notifyService.sendWechat(listOf("necrohuang"), "test wechat")
     }
 
     /**
@@ -366,8 +371,8 @@ class NodeService : AbstractService() {
         val escapedPath = escapeRegex(formattedPath)
         val query = nodeQuery(projectId, repoName)
         query.addCriteria(Criteria().orOperator(
-                Criteria.where(TNode::fullPath.name).regex("^$escapedPath"),
-                Criteria.where(TNode::fullPath.name).`is`(formattedFullPath)
+            Criteria.where(TNode::fullPath.name).regex("^$escapedPath"),
+            Criteria.where(TNode::fullPath.name).`is`(formattedFullPath)
         ))
         if (soft) {
             // 软删除
@@ -396,19 +401,19 @@ class NodeService : AbstractService() {
             val name = getName(path)
             path.takeUnless { isRootPath(it) }?.run { mkdirs(projectId, repoName, parentPath, createdBy) }
             val node = TNode(
-                    folder = true,
-                    path = parentPath,
-                    name = name,
-                    fullPath = combineFullPath(parentPath, name),
-                    size = 0,
-                    expireDate = null,
-                    metadata = emptyList(),
-                    projectId = projectId,
-                    repoName = repoName,
-                    createdBy = createdBy,
-                    createdDate = LocalDateTime.now(),
-                    lastModifiedBy = createdBy,
-                    lastModifiedDate = LocalDateTime.now()
+                folder = true,
+                path = parentPath,
+                name = name,
+                fullPath = combineFullPath(parentPath, name),
+                size = 0,
+                expireDate = null,
+                metadata = emptyList(),
+                projectId = projectId,
+                repoName = repoName,
+                createdBy = createdBy,
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = createdBy,
+                lastModifiedDate = LocalDateTime.now()
             )
             doCreate(node, null)
         }
