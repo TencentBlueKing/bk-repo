@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.composer.api
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.composer.artifact.ComposerArtifactInfo
 import com.tencent.bkrepo.composer.artifact.ComposerArtifactInfo.Companion.COMPOSER_DEPLOY
@@ -31,6 +32,6 @@ interface ComposerResource {
 
     @ApiOperation("deploy")
     @PutMapping(COMPOSER_DEPLOY, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
-    fun deploy(@ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo, file: ArtifactFile)
+    fun deploy(@ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo, file: ArtifactFileMap)
 
 }

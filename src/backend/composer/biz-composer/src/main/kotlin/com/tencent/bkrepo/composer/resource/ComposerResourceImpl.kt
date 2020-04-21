@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.composer.resource
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.composer.api.ComposerResource
 import com.tencent.bkrepo.composer.artifact.ComposerArtifactInfo
 import com.tencent.bkrepo.composer.service.ComposerService
@@ -24,9 +25,7 @@ class ComposerResourceImpl(
         TODO("Not yet implemented")
     }
 
-    override fun deploy(composerArtifactInfo: ComposerArtifactInfo, file: ArtifactFile) {
+    override fun deploy(composerArtifactInfo: ComposerArtifactInfo, file: ArtifactFileMap) {
         composerService.deploy(composerArtifactInfo, file)
     }
-
-
 }

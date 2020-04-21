@@ -4,7 +4,7 @@ import java.util.regex.Pattern
 
 object UriUtil {
     fun getUriArgs(uri: String): HashMap<String, String>? {
-        val regex = "^([a-zA-Z0-9]+)-([\\d.]+?).(tar|zip|tar.gz)$"
+        val regex = "^([a-zA-Z0-9]+)-([\\d.]+?).(tar|zip|tar.gz|tgz)$"
         val matcher = Pattern.compile(regex).matcher(uri)
         while (matcher.find()) {
             return hashMapOf("filename" to matcher.group(1),
@@ -18,10 +18,7 @@ object UriUtil {
         return uri.removeSuffix(".tar.gz")
                 .removeSuffix("zip")
                 .removeSuffix("tar")
-    }
-
-    fun getFileType(uri: String) {
-
+                .removeSuffix("tgz")
     }
 
     fun getJarPath(): String {

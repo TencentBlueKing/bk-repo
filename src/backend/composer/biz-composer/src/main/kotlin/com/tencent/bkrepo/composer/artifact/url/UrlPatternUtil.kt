@@ -10,6 +10,8 @@ object UrlPatternUtil {
     fun fileUpload(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest
     ): ComposerArtifactInfo{
         //get uploadFile : name, version
+        //todo 忽略用户设定的参数，直接从流中获取信息，如何获取上传文件的压缩类型。解压后才能获取json的信息。
+        val artifactUri = request.requestURI.split("/")[3]
         val inputStream = request.inputStream
         UriUtil.getUriArgs(artifactUri.removePrefix("/").removeSuffix("/"))?.let { args ->
             args["format"]?.let { DecompressUtil.getComposerJson(inputStream, it) }

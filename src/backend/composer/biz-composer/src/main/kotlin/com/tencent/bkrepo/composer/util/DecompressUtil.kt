@@ -81,6 +81,9 @@ object DecompressUtil {
             "tar.gz" -> {
                 getTgzComposerJson(inputStream)
             }
+            "tgz" -> {
+                getTgzComposerJson(inputStream)
+            }
             else -> {
                 "can not support compress format!"
             }
@@ -172,11 +175,11 @@ object DecompressUtil {
     private val logger = LoggerFactory.getLogger(DecompressUtil::class.java)
 }
 
-//fun main() {
+fun main() {
 ////    ZipFile("/Users/weaving/Downloads/jetbrains-agent-latest.zip") unZipTo "/Users/weaving/Downloads/"
 ////    ZipInputStream(FileInputStream("/Users/weaving/Downloads/jetbrains-agent-latest.zip")) unZipTo "/Users/weaving/Downloads/"
 ////    ZipInputStream(FileInputStream("/Users/weaving/Downloads/monolog-2.0.2.zip")) unZipTo "/Users/weaving/Downloads/"
-//    print(DecompressUtil.getTgzComposerJson(FileInputStream("/Users/weaving/Downloads/monolog-2.1.0.tar.gz")))
+    print(DecompressUtil.getTgzComposerJson(FileInputStream("/Users/weaving/Downloads/monolog-2.1.0.tar.gz")))
 //    print(DecompressUtil.getTarComposerJson(FileInputStream("/Users/weaving/Downloads/monolog-2.0.7.tar")))
 //    print(DecompressUtil.getZipComposerJson(FileInputStream("/Users/weaving/Downloads/monolog-2.0.2.zip")))
-//}
+}

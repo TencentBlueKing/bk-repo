@@ -16,7 +16,7 @@ class ComposerArtifactInfo(
     val metadata: Map<String, String>?
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
-        const val COMPOSER_DEPLOY = "/{projectId}/{repoName}/{fileName}/**"
+        const val COMPOSER_DEPLOY = "/{projectId}/{repoName}/{artifactUri}"
         const val COMPOSER_INSTALL = "/{projectId}/{repoName}/**"
         const val COMPOSER_PACKAGES = "/{projectId}/{repoName}/packages.json"
         const val COMPOSER_SEARCH = "/{projectId}/{repoName}/search.json?q={query}&type={type}"
