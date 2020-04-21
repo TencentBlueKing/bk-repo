@@ -1,5 +1,5 @@
 ### 上传文件
-PUT http://{{host}}/{{project}}/generic-local/test.txt
+PUT http://{{genericHost}}/{{project}}/{{repo}}/test.txt
 Authorization: Basic {{username}} {{password}}
 X-BKREPO-OVERWRITE: true
 X-BKREPO-META-key: value
@@ -13,7 +13,7 @@ Hello, World!!!!
 %}
 
 ### 下载文件
-GET http://{{host}}/{{project}}/generic-local/test.txt
+GET http://{{genericHost}}/{{project}}/{{repo}}/test.txt
 Authorization: Basic {{username}} {{password}}
 
 > {%
@@ -26,7 +26,7 @@ Authorization: Basic {{username}} {{password}}
 ###
 
 ### 分块上传文件, 获取uploadId
-POST http://{{host}}/block/{{project}}/generic-local/block.txt
+POST http://{{genericHost}}/block/{{project}}/{{repo}}/block.txt
 Authorization: Basic {{username}} {{password}}
 Content-Type: application/json
 X-BKREPO-OVERWRITE: true
@@ -39,7 +39,7 @@ X-BKREPO-OVERWRITE: true
 %}
 
 ### 上传第一个分块
-PUT http://{{host}}/{{project}}/generic-local/block.txt
+PUT http://{{genericHost}}/{{project}}/{{repo}}/block.txt
 Authorization: Basic {{username}} {{password}}
 X-BKREPO-UPLOAD-ID: {{uploadId}}
 X-BKREPO-OVERWRITE: true
@@ -48,7 +48,7 @@ X-BKREPO-SEQUENCE: 1
 111111
 
 ### 上传第一个分块，覆盖第一次
-PUT http://{{host}}/{{project}}/generic-local/block.txt
+PUT http://{{genericHost}}/{{project}}/{{repo}}/block.txt
 Authorization: Basic {{username}} {{password}}
 X-BKREPO-UPLOAD-ID: {{uploadId}}
 X-BKREPO-OVERWRITE: true
@@ -63,7 +63,7 @@ X-BKREPO-SEQUENCE: 1
 %}
 
 ### 上传第二个分块
-PUT http://{{host}}/{{project}}/generic-local/block.txt
+PUT http://{{genericHost}}/{{project}}/{{repo}}/block.txt
 Authorization: Basic {{username}} {{password}}
 X-BKREPO-UPLOAD-ID: {{uploadId}}
 X-BKREPO-SEQUENCE: 2
@@ -77,7 +77,7 @@ X-BKREPO-SEQUENCE: 2
 %}
 
 ### 完成分块上传
-PUT http://{{host}}/block/{{project}}/generic-local/block.txt
+PUT http://{{genericHost}}/block/{{project}}/{{repo}}/block.txt
 Authorization: Basic {{username}} {{password}}
 X-BKREPO-UPLOAD-ID: {{uploadId}}
 
@@ -88,7 +88,7 @@ X-BKREPO-UPLOAD-ID: {{uploadId}}
 %}
 
 ### 下载文件
-GET http://{{host}}/{{project}}/generic-local/block.txt
+GET http://{{genericHost}}/{{project}}/{{repo}}/block.txt
 Authorization: Basic {{username}} {{password}}
 
 > {%
@@ -99,7 +99,7 @@ Authorization: Basic {{username}} {{password}}
 %}
 
 ### 断点续传 0-1
-GET http://{{host}}/{{project}}/generic-local/block.txt
+GET http://{{genericHost}}/{{project}}/{{repo}}/block.txt
 Authorization: Basic {{username}} {{password}}
 Range: bytes=0-1
 
@@ -112,7 +112,7 @@ Range: bytes=0-1
 %}
 
 ### 断点续传 2-
-GET http://{{host}}/{{project}}/generic-local/block.txt
+GET http://{{genericHost}}/{{project}}/{{repo}}/block.txt
 Authorization: Basic {{username}} {{password}}
 Range: bytes=2-
 
@@ -125,7 +125,7 @@ Range: bytes=2-
 %}
 
 ### 断点续传 -2
-GET http://{{host}}/{{project}}/generic-local/block.txt
+GET http://{{genericHost}}/{{project}}/{{repo}}/block.txt
 Authorization: Basic {{username}} {{password}}
 Range: bytes=-2
 

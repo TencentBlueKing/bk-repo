@@ -1,0 +1,16 @@
+### 节点相关接口
+### 查询节点详情
+http://{{repositoryHost}}/api/node/{{project}}/{{repo}}/test.txt
+Authorization: Basic {{username}} {{password}}
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+        client.assert(response.body.code === 0, 'Response data code is not 0');
+        client.assert(response.body.data.nodeInfo.fullPath === "/test.txt" , 'Response data content invalid!');
+    });
+%}
+
+###
+
+
