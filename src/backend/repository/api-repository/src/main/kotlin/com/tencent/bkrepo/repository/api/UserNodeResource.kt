@@ -9,7 +9,6 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
@@ -101,13 +100,6 @@ interface UserNodeResource {
         @ApiParam("是否深度查询文件", required = false, defaultValue = "false")
         @RequestParam deep: Boolean = false
     ): Response<List<NodeInfo>>
-
-    @ApiOperation("搜索文件")
-    @PostMapping("/search")
-    fun search(
-        @RequestAttribute userId: String,
-        @RequestBody searchRequest: NodeSearchRequest
-    ): Response<Page<NodeInfo>>
 
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
