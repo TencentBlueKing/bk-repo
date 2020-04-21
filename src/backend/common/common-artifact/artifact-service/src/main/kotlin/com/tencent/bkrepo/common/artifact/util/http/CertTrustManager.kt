@@ -29,8 +29,7 @@ object CertTrustManager {
     }
 
     fun createSSLSocketFactory(trustManager: TrustManager): SSLSocketFactory {
-        val sslContext = SSLContext.getInstance(TLS)
-        sslContext.init(null, arrayOf(trustManager), null)
+        val sslContext = SSLContext.getInstance(TLS).apply { init(null, arrayOf(trustManager), null) }
         return sslContext.socketFactory
     }
 
@@ -39,13 +38,12 @@ object CertTrustManager {
         val certificateFactory = CertificateFactory.getInstance(X509)
         val certificateList = certificateFactory.generateCertificates(certInputStream)
         require(!certificateList.isEmpty()) { "Expected non-empty set of trusted certificates." }
-        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
-        keyStore.load(null, null)
+        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType()).apply { load(null, null) }
         certificateList.forEachIndexed { index, certificate ->
             keyStore.setCertificateEntry(index.toString(), certificate)
         }
-        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-        trustManagerFactory.init(keyStore)
+        val algorithm = TrustManagerFactory.getDefaultAlgorithm()
+        val trustManagerFactory = TrustManagerFactory.getInstance(algorithm).apply { init(keyStore) }
         val trustManagers = trustManagerFactory.trustManagers
         check(!(trustManagers.size != 1 || trustManagers[0] !is X509TrustManager)) {
             "Unexpected default trust managers:" + trustManagers.toList()

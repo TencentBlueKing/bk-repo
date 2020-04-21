@@ -28,6 +28,5 @@ data class RepoListViewItem(
                 return RepoListViewItem(normalizedName, lastModified, createdBy, category.name, type.name, public.toString())
             }
         }
-
     }
 }

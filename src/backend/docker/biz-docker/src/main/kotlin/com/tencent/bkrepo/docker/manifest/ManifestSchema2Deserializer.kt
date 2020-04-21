@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
 
 class ManifestSchema2Deserializer {
     companion object {
-        private val log = LoggerFactory.getLogger(ManifestSchema2Deserializer::class.java)
+        private val logger = LoggerFactory.getLogger(ManifestSchema2Deserializer::class.java)
         private val CIRCUIT_BREAKER_THRESHOLD = 5000
 
         fun deserialize(manifestBytes: ByteArray, jsonBytes: ByteArray, dockerRepo: String, tag: String, digest: DockerDigest): ManifestMetadata {
@@ -25,7 +25,7 @@ class ManifestSchema2Deserializer {
                 manifestMetadata.tagInfo.digest = digest
                 return applyAttributesFromContent(manifestBytes, jsonBytes, manifestMetadata)
             } catch (exception: IOException) {
-                log.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
+                logger.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
                 throw RuntimeException(exception)
             }
         }
@@ -100,7 +100,7 @@ class ManifestSchema2Deserializer {
 
         private fun breakeCircuit(manifestBytes: ByteArray, jsonBytes: ByteArray, reason: String) {
             val msg = "ManifestSchema2Deserializer CIRCUIT BREAKER: " + reason + " breaking operation.\nManifest: " + String(manifestBytes, StandardCharsets.UTF_8) + "\njsonBytes:" + String(jsonBytes, StandardCharsets.UTF_8)
-            log.error(msg)
+            logger.error(msg)
             throw IllegalArgumentException("Circuit Breaker Threshold Reached, Breaking Operation. see log output for manifest details.")
         }
 

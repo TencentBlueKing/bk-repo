@@ -82,7 +82,7 @@ class DockerSchemaUtils {
                     return bytes
                 }
             } catch (ioException: IOException) {
-                logger.error("Error fetching manifest schema2: " + ioException.message, ioException)
+                logger.error("error fetching manifest schema2: " + ioException.message, ioException)
             }
 
             return ByteArray(0)

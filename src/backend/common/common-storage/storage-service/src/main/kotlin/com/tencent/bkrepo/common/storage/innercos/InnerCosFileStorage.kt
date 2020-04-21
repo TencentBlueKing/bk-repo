@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.storage.innercos
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.cos.COSClient
@@ -15,10 +14,10 @@ import com.tencent.cos.model.PutObjectRequest
 import com.tencent.cos.region.Region
 import com.tencent.cos.transfer.TransferManager
 import com.tencent.cos.transfer.TransferManagerConfiguration
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.Executor
+import javax.annotation.Resource
 
 /**
  * 内部cos文件存储实现类
@@ -28,9 +27,8 @@ import java.util.concurrent.TimeUnit
  */
 open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerCosClient>() {
 
-    private val executor = ThreadPoolExecutor(100, 2000, 60L, TimeUnit.SECONDS,
-        LinkedBlockingQueue(10000), ThreadFactoryBuilder().setNameFormat("inner-cos-uploader-pool-%d").build(),
-        ThreadPoolExecutor.AbortPolicy())
+    @Resource
+    private lateinit var taskAsyncExecutor: Executor
 
     private var defaultTransferManager: TransferManager? = null
 
@@ -99,17 +97,18 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
     }
 
     private fun createTransferManager(innerCosClient: InnerCosClient): TransferManager {
-        val transferManager = TransferManager(innerCosClient.cosClient, executor, true)
+        val executorService = (taskAsyncExecutor as ThreadPoolTaskExecutor).threadPoolExecutor
+        val transferManager = TransferManager(innerCosClient.cosClient, executorService, false)
         transferManager.configuration = TransferManagerConfiguration().apply {
-            multipartUploadThreshold = 20L * MB
-            minimumUploadPartSize = 10L * MB
+            multipartUploadThreshold = 10L * MB
+            minimumUploadPartSize = 5L * MB
         }
         return transferManager
     }
 
     private fun shutdownTransferManager(transferManager: TransferManager) {
         if (transferManager != defaultTransferManager) {
-            transferManager.shutdownNow(false)
+            transferManager.shutdownNow(true)
         }
     }
 }

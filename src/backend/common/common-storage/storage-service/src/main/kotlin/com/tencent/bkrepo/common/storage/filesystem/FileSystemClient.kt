@@ -8,6 +8,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.nio.channels.FileChannel
 import java.nio.channels.ReadableByteChannel
+import java.nio.file.FileVisitor
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -129,6 +130,14 @@ class FileSystemClient(private val root: String) {
             }
         }
         return outputFile
+    }
+
+    /**
+     * 遍历文件
+     */
+    fun walk(visitor: FileVisitor<in Path>) {
+        val rootPath = Paths.get(root)
+        Files.walkFileTree(rootPath, visitor)
     }
 
     /**

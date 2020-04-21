@@ -1,0 +1,13 @@
+spring.quartz:
+  mongo: true
+  startupDelay: 30s
+  overwriteExistingJobs: true
+  schedulerName: replica-scheduler
+  properties.org.quartz:
+    threadPool.threadCount: 10
+    scheduler.instanceId:  AUTO
+    jobStore:
+      isClustered: true
+      collectionPrefix: replica
+      clusterCheckinInterval: 10000
+      jobDataAsBase64: false

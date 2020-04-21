@@ -22,9 +22,10 @@ import org.springframework.web.bind.annotation.RestController
  * @date: 2019-10-18
  */
 @RestController
-class UserMetadataResourceImpl @Autowired constructor(
-    private val metadataService: MetadataService
-) : UserMetadataResource {
+class UserMetadataResourceImpl : UserMetadataResource {
+
+    @Autowired
+    private lateinit var metadataService: MetadataService
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     override fun query(userId: String, artifactInfo: ArtifactInfo): Response<Map<String, String>> {

@@ -2,17 +2,13 @@ package com.tencent.bkrepo.docker.context
 
 import com.google.common.collect.Maps
 import java.io.InputStream
-import org.springframework.http.HttpHeaders
 
 class DownloadContext(projectId: String, repoName: String, path: String) {
-    private var skipStatsUpdate = false
     private val requestHeaders = Maps.newHashMap<String, String>()
 
     var name: String = ""
     var content: InputStream? = null
-    var contentLength: Long = 0
     var sha256: String = ""
-    var md5: String = ""
     var projectId: String = ""
     var repoName: String = ""
     var fullPath: String = ""
@@ -49,30 +45,5 @@ class DownloadContext(projectId: String, repoName: String, path: String) {
         }
 
         return this
-    }
-
-    fun headers(httpHeaders: HttpHeaders?): DownloadContext {
-        if (!httpHeaders.isNullOrEmpty()) {
-            val multiMap = httpHeaders.toMap()
-            val headerKeys = multiMap.keys.iterator()
-
-            while (headerKeys.hasNext()) {
-                val key = headerKeys.next() as String
-                val requestHeader = multiMap[key] as kotlin.collections.List<*>
-                if (requestHeader.size >= 1) {
-                    this.header(key, requestHeader[0] as String)
-                }
-            }
-        }
-
-        return this
-    }
-
-    fun isSkipStatsUpdate(): Boolean {
-        return this.skipStatsUpdate
-    }
-
-    fun setSkipStatsUpdate(skipStatsUpdate: Boolean) {
-        this.skipStatsUpdate = skipStatsUpdate
     }
 }

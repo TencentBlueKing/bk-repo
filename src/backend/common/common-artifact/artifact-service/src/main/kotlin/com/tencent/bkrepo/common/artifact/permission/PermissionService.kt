@@ -8,6 +8,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.APP_KEY
 import com.tencent.bkrepo.common.artifact.config.AuthProperties
+import com.tencent.bkrepo.common.artifact.config.PERMISSION_PROMPT
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
@@ -25,12 +26,16 @@ import org.springframework.stereotype.Component
  * @date: 2019-10-18
  */
 @Component
-class PermissionService @Autowired constructor(
-    private val repositoryResource: RepositoryResource,
-    private val permissionResource: ServicePermissionResource,
-    private val userResource: ServiceUserResource,
-    private val authProperties: AuthProperties
-) {
+class PermissionService {
+    @Autowired
+    private lateinit var repositoryResource: RepositoryResource
+    @Autowired
+    private lateinit var permissionResource: ServicePermissionResource
+    @Autowired
+    private lateinit var userResource: ServiceUserResource
+    @Autowired
+    private lateinit var authProperties: AuthProperties
+
     fun checkPermission(userId: String, type: ResourceType, action: PermissionAction, repositoryInfo: RepositoryInfo) {
         if (preCheck()) return
         checkRepoPermission(userId, type, action, repositoryInfo)
@@ -52,14 +57,14 @@ class PermissionService @Autowired constructor(
             return
         }
         // 匿名用户，提示登录
-        if (userId == ANONYMOUS_USER) throw ClientAuthException("Authentication required")
+        if (userId == ANONYMOUS_USER) throw ClientAuthException()
         if (principalType == PrincipalType.ADMIN) {
             if (!isAdminUser(userId)) {
-                throw PermissionCheckException("Access Forbidden")
+                throw PermissionCheckException(PERMISSION_PROMPT)
             }
         } else if (principalType == PrincipalType.PLATFORM) {
             if (!isPlatformUser() && !isAdminUser(userId)) {
-                throw PermissionCheckException("Access Forbidden")
+                throw PermissionCheckException(PERMISSION_PROMPT)
             }
         }
     }
@@ -85,7 +90,7 @@ class PermissionService @Autowired constructor(
         // public仓库且为READ操作，直接跳过
         if (type == ResourceType.REPO && action == PermissionAction.READ && repositoryInfo.public) return
         // 匿名用户，提示登录
-        if (userId == ANONYMOUS_USER) throw ClientAuthException("Authentication required")
+        if (userId == ANONYMOUS_USER) throw ClientAuthException()
         // auth 校验
         with(repositoryInfo) {
             val checkRequest = CheckPermissionRequest(userId, type, action, projectId, name)

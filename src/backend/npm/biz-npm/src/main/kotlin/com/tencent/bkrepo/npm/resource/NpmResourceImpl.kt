@@ -35,6 +35,14 @@ class NpmResourceImpl : NpmResource {
         return npmService.unpublish(userId, artifactInfo)
     }
 
+    override fun updatePkg(artifactInfo: NpmArtifactInfo, body: String): NpmSuccessResponse {
+        return npmService.updatePkg(artifactInfo, body)
+    }
+
+    override fun unPublishPkgWithVersion(artifactInfo: NpmArtifactInfo): NpmDeleteResponse {
+        return npmService.unPublishPkgWithVersion(artifactInfo)
+    }
+
     override fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): Map<String, Any> {
         return npmService.search(artifactInfo, searchRequest)
     }

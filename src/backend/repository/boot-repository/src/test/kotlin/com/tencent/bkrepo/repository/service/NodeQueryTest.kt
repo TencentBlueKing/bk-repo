@@ -92,6 +92,7 @@ internal class NodeQueryTest @Autowired constructor(
         nodeService.create(createRequest("/a/b/1.txt", false, metadata = mapOf("key1" to "1", "key2" to "2")))
         nodeService.create(createRequest("/a/b/2.txt", false, metadata = mapOf("key1" to "11", "key2" to "2")))
         nodeService.create(createRequest("/a/b/3.txt", false, metadata = mapOf("key1" to "22")))
+        nodeService.create(createRequest("/a/b/4.txt", false, metadata = mapOf("key1" to "2", "key2" to "1")))
 
         val projectId = Rule.QueryRule("projectId", projectId)
         val repoName = Rule.QueryRule("repoName", repoName)
@@ -106,6 +107,7 @@ internal class NodeQueryTest @Autowired constructor(
         )
 
         val result = nodeQueryService.userQuery(operator, queryModel)
+        println(result)
         Assertions.assertEquals(1, result.count)
         Assertions.assertEquals(1, result.records.size)
         val node = result.records[0]
@@ -121,6 +123,7 @@ internal class NodeQueryTest @Autowired constructor(
         nodeService.create(createRequest("/a/b/1.txt", false, metadata = mapOf("key" to "1")))
         nodeService.create(createRequest("/a/b/2.txt", false, metadata = mapOf("key" to "11")))
         nodeService.create(createRequest("/a/b/3.txt", false, metadata = mapOf("key" to "22")))
+        nodeService.create(createRequest("/a/b/4.txt", false, metadata = mapOf("key" to "22", "key1" to "1")))
 
         val projectId = Rule.QueryRule("projectId", projectId)
         val repoName = Rule.QueryRule("repoName", repoName)

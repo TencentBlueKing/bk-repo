@@ -7,4 +7,6 @@ dependencies {
 
     api "commons-fileupload:commons-fileupload"
     api "org.springframework.boot:spring-boot-starter-aop"
+    api 'io.jsonwebtoken:jjwt-api'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl'
 }

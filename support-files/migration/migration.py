@@ -42,7 +42,7 @@ class BkrepoAuth(requests.auth.AuthBase):
 def parse_args():
     parser = argparse.ArgumentParser(description="Migration data from Jfrog to BKRepo.")
     parser.add_argument("-p", "--project", required=True, dest="project")
-    parser.add_argument("-e", "--environment", default="prod", choices=["dev", "prod"], dest="env")
+    parser.add_argument("-e", "--environment", default="prod", choices=["dev", "test", "prod"], dest="env")
     parser.add_argument("-m", "--migration", action='store_true', dest="migration", help='migration data')
     parser.add_argument("-o", "--overwrite", action='store_true', dest="overwrite", help='overwrite node')
     parser.add_argument("-i", "--init", action='store_true', dest="init", help='init bkrepo project and repos')

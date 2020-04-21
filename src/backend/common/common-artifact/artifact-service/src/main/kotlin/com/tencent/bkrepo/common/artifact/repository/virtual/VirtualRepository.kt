@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired
  * @author: carrypan
  * @date: 2019/11/26
  */
-abstract class VirtualRepository : AbstractArtifactRepository {
+abstract class VirtualRepository : AbstractArtifactRepository() {
 
     @Autowired
     lateinit var repositoryResource: RepositoryResource

@@ -33,6 +33,7 @@ class UserServiceImpl @Autowired constructor(
 ) : UserService {
     override fun createUser(request: CreateUserRequest): Boolean {
         // todo 校验
+        logger.info("create user request : {}", request.toString())
         val user = userRepository.findFirstByUserId(request.userId)
         if (user != null) {
             logger.warn("create user [${request.userId}]  is exist.")
@@ -57,6 +58,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun listUser(rids: List<String>): List<User> {
+        logger.info("list user rids : {}", rids.toString())
         if (rids.isEmpty()) {
             return userRepository.findAll().map { transfer(it) }
         } else {
@@ -65,6 +67,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun deleteById(userId: String): Boolean {
+        logger.info("delete user userId : {}", userId)
         val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
@@ -75,6 +78,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun addUserToRole(userId: String, roleId: String): User? {
+        logger.info("add user to role userId : {}, roleId : {}", userId, roleId)
         // check user
         val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
@@ -98,6 +102,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun addUserToRoleBatch(IdList: List<String>, roleId: String): Boolean {
+        logger.info("add user to role batch userId : {}, roleId : {}", IdList.toString(), roleId)
         IdList.forEach {
             // check user
             val user = userRepository.findFirstByUserId(it)
@@ -126,6 +131,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun removeUserFromRole(userId: String, roleId: String): User? {
+        logger.info("remove user from role userId : {}, roleId : {}", userId, roleId)
         // check user
         val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
@@ -149,6 +155,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun removeUserFromRoleBatch(IdList: List<String>, roleId: String): Boolean {
+        logger.info("remove user from role  batch userId : {}, roleId : {}", IdList.toString(), roleId)
         IdList.forEach {
             val user = userRepository.findFirstByUserId(it)
             if (user == null) {
@@ -176,6 +183,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun updateUserById(userId: String, request: UpdateUserRequest): Boolean {
+        logger.info("update user userId : {}, request : {}", userId, request.toString())
         val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
@@ -203,6 +211,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun createToken(userId: String): User? {
+        logger.info("create token userId : {}", userId)
         val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
@@ -219,6 +228,7 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun addUserToken(userId: String, token: String): User? {
+        logger.info("add user token userId : {} ,token : {}", userId, token)
         val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
@@ -227,13 +237,14 @@ class UserServiceImpl @Autowired constructor(
 
         val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
         val update = Update()
-        val token = Token(id = token, createdAt = LocalDateTime.now(), expiredAt = LocalDateTime.now().plusYears(2))
-        update.addToSet(TUser::tokens.name, token)
+        val userToken = Token(id = token, createdAt = LocalDateTime.now(), expiredAt = LocalDateTime.now().plusYears(2))
+        update.addToSet(TUser::tokens.name, userToken)
         mongoTemplate.upsert(query, update, TUser::class.java)
         return getUserById(userId)
     }
 
     override fun removeToken(userId: String, token: String): User? {
+        logger.info("remove token userId : {} ,token : {}", userId, token)
         val user = userRepository.findFirstByUserId(userId)
         if (user == null) {
             logger.warn("user [$userId]  not exist.")
@@ -250,11 +261,13 @@ class UserServiceImpl @Autowired constructor(
     }
 
     override fun getUserById(userId: String): User? {
+        logger.info("get user userId : {} ", userId)
         val user = userRepository.findFirstByUserId(userId) ?: return null
         return transfer(user)
     }
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
+        logger.info("find user userId : {}, pwd : {} ", userId, pwd)
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
         val criteria = Criteria()
         criteria.orOperator(Criteria.where(TUser::pwd.name).`is`(hashPwd), Criteria.where("tokens.id").`is`(pwd))

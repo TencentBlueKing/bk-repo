@@ -10,5 +10,6 @@ data class ReplicationTaskCreateRequest(
     val localRepoName: String? = null,
     val remoteProjectId: String? = null,
     val remoteRepoName: String? = null,
-    val setting: ReplicationSetting
+    val setting: ReplicationSetting,
+    val validateConnectivity: Boolean = true
 )

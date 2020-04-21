@@ -8,16 +8,18 @@ import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.util.HttpResponseUtils
+import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
 
 /**
@@ -26,7 +28,10 @@ import java.io.File
  * @author: carrypan
  * @date: 2019/11/27
  */
-interface AbstractArtifactRepository : ArtifactRepository {
+abstract class AbstractArtifactRepository : ArtifactRepository {
+
+    @Autowired
+    lateinit var artifactMetrics: ArtifactMetrics
 
     override fun upload(context: ArtifactUploadContext) {
         try {
@@ -38,6 +43,8 @@ interface AbstractArtifactRepository : ArtifactRepository {
             this.onValidateFailed(context, validateException)
         } catch (exception: Exception) {
             this.onUploadFailed(context, exception)
+        } finally {
+            this.onUploadFinished(context)
         }
     }
 
@@ -47,12 +54,14 @@ interface AbstractArtifactRepository : ArtifactRepository {
             this.onBeforeDownload(context)
             val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo.getFullUri()}] not found")
             val name = NodeUtils.getName(context.artifactInfo.artifactUri)
-            HttpResponseUtils.response(name, file)
+            ServletResponseUtils.response(name, file)
             this.onDownloadSuccess(context, file)
         } catch (validateException: ArtifactValidateException) {
             this.onValidateFailed(context, validateException)
         } catch (exception: Exception) {
             this.onDownloadFailed(context, exception)
+        } finally {
+            this.onDownloadFinished(context)
         }
     }
 
@@ -72,7 +81,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
      * 验证构件
      */
     @Throws(ArtifactValidateException::class)
-    fun onUploadValidate(context: ArtifactUploadContext) {
+    open fun onUploadValidate(context: ArtifactUploadContext) {
         val sha256Map = mutableMapOf<String, String>()
         val md5Map = mutableMapOf<String, String>()
         // 计算sha256和md5
@@ -91,19 +100,21 @@ interface AbstractArtifactRepository : ArtifactRepository {
     /**
      * 上传前回调
      */
-    fun onBeforeUpload(context: ArtifactUploadContext) {}
+    open fun onBeforeUpload(context: ArtifactUploadContext) {
+        artifactMetrics.uploadCount.incrementAndGet()
+    }
 
     /**
      * 上传构件
      */
-    fun onUpload(context: ArtifactUploadContext) {
+    open fun onUpload(context: ArtifactUploadContext) {
         throw UnsupportedMethodException()
     }
 
     /**
      * 上传成功回调
      */
-    fun onUploadSuccess(context: ArtifactUploadContext) {
+    open fun onUploadSuccess(context: ArtifactUploadContext) {
         val artifactUri = context.artifactInfo.getFullUri()
         val userId = context.userId
         logger.info("User[$userId] upload artifact[$artifactUri] success")
@@ -112,7 +123,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
     /**
      * 上传失败回调
      */
-    fun onUploadFailed(context: ArtifactUploadContext, exception: Exception) {
+    open fun onUploadFailed(context: ArtifactUploadContext, exception: Exception) {
         // 默认向上抛异常，由全局异常处理器处理
         throw exception
     }
@@ -121,25 +132,27 @@ interface AbstractArtifactRepository : ArtifactRepository {
      * 下载验证
      */
     @Throws(ArtifactValidateException::class)
-    fun onDownloadValidate(context: ArtifactDownloadContext) {
+    open fun onDownloadValidate(context: ArtifactDownloadContext) {
     }
 
     /**
      * 下载前回调
      */
-    fun onBeforeDownload(context: ArtifactDownloadContext) {}
+    open fun onBeforeDownload(context: ArtifactDownloadContext) {
+        artifactMetrics.downloadCount.incrementAndGet()
+    }
 
     /**
      * 下载构件
      */
-    fun onDownload(context: ArtifactDownloadContext): File? {
+    open fun onDownload(context: ArtifactDownloadContext): File? {
         throw UnsupportedMethodException()
     }
 
     /**
      * 下载成功回调
      */
-    fun onDownloadSuccess(context: ArtifactDownloadContext, file: File) {
+    open fun onDownloadSuccess(context: ArtifactDownloadContext, file: File) {
         val artifactUri = context.artifactInfo.getFullUri()
         val userId = context.userId
         logger.info("User[$userId] download artifact[$artifactUri] success")
@@ -148,7 +161,7 @@ interface AbstractArtifactRepository : ArtifactRepository {
     /**
      * 下载失败回调
      */
-    fun onDownloadFailed(context: ArtifactDownloadContext, exception: Exception) {
+    open fun onDownloadFailed(context: ArtifactDownloadContext, exception: Exception) {
         // 默认向上抛异常，由全局异常处理器处理
         throw exception
     }
@@ -156,9 +169,23 @@ interface AbstractArtifactRepository : ArtifactRepository {
     /**
      * 验证失败回调
      */
-    fun onValidateFailed(context: ArtifactTransferContext, validateException: ArtifactValidateException) {
+    open fun onValidateFailed(context: ArtifactTransferContext, validateException: ArtifactValidateException) {
         // 默认向上抛异常，由全局异常处理器处理
         throw validateException
+    }
+
+    /**
+     * 上传结束回调
+     */
+    open fun onUploadFinished(context: ArtifactUploadContext) {
+        artifactMetrics.uploadCount.decrementAndGet()
+    }
+
+    /**
+     * 下载结束回调
+     */
+    open fun onDownloadFinished(context: ArtifactDownloadContext) {
+        artifactMetrics.downloadCount.decrementAndGet()
     }
 
     companion object {

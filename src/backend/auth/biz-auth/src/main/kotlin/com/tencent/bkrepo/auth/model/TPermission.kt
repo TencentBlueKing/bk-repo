@@ -22,6 +22,7 @@ import org.springframework.data.mongodb.core.mapping.Document
     CompoundIndex(name = "roles_id_idx", def = "{'roles.id': 1}", background = true),
     CompoundIndex(name = "roles_action_idx", def = "{'roles.action': 1}", background = true)
 )
+
 data class TPermission(
     val id: String? = null,
     var resourceType: ResourceType,
