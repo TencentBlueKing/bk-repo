@@ -56,7 +56,7 @@ object QueryHelper {
             .apply {
                 // 强制使用fullPath索引，否则mongodb会使用path索引，不能达到最优索引
                 if (deep) {
-                    this.withHint(TNode.FULL_PATH_IDX)
+                    this.withHint(TNode.FULL_PATH_IDX_DEF)
                 }
             }
     }
