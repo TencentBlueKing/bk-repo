@@ -1,7 +1,6 @@
 dependencies {
-    implementation project(":common:common-api")
-    implementation project(":common:common-notify:notify-api")
-    implementation "org.springframework.boot:spring-boot-starter"
+    api project(":common:common-notify:notify-api")
+    api "org.springframework.boot:spring-boot-starter"
     api "com.squareup.okhttp3:okhttp"
 }
 
