@@ -3,6 +3,9 @@ package com.tencent.bkrepo.repository.model
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import com.tencent.bkrepo.repository.model.TNode.Companion.FULL_PATH_IDX
+import com.tencent.bkrepo.repository.model.TNode.Companion.METADATA_IDX
+import com.tencent.bkrepo.repository.model.TNode.Companion.PATH_IDX
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
@@ -15,9 +18,9 @@ import java.time.LocalDateTime
  */
 @ShardingDocument("node")
 @CompoundIndexes(
-    CompoundIndex(name = "projectId_repoName_fullPath_idx", def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'deleted': 1}", unique = true, background = true),
-    CompoundIndex(name = "projectId_repoName_path_idx", def = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}", background = true),
-    CompoundIndex(name = "metadata_idx", def = "{'metadata.key': 1, 'metadata.value': 1}", background = true)
+    CompoundIndex(name = FULL_PATH_IDX, def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'deleted': 1}", unique = true, background = true),
+    CompoundIndex(name = PATH_IDX, def = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}", background = true),
+    CompoundIndex(name = METADATA_IDX, def = "{'metadata.key': 1, 'metadata.value': 1}", background = true)
 )
 data class TNode(
     var id: String? = null,
@@ -40,4 +43,10 @@ data class TNode(
     @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,
     var repoName: String
-)
+) {
+    companion object {
+        const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
+        const val PATH_IDX = "projectId_repoName_path_idx"
+        const val METADATA_IDX = "metadata_idx"
+    }
+}

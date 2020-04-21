@@ -68,8 +68,11 @@ object QueryHelper {
                 .and(TNode::deleted.name).`is`(null)
                 .and(TNode::name.name).ne(StringPool.EMPTY)
 
-        if (deep) criteria.and(TNode::fullPath.name).regex("^$escapedPath")
-        else criteria.and(TNode::path.name).`is`(formattedPath)
+        if (deep) {
+            criteria.and(TNode::fullPath.name).regex("^$escapedPath")
+        } else {
+            criteria.and(TNode::path.name).`is`(formattedPath)
+        }
 
         if (!includeFolder) { criteria.and(TNode::folder.name).`is`(false) }
 
@@ -77,25 +80,19 @@ object QueryHelper {
     }
 
     fun nodeListQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Query {
-        return Query.query(
-            nodeListCriteria(
-                projectId,
-                repoName,
-                path,
-                includeFolder,
-                deep
-            )
-        ).with(Sort.by(TNode::fullPath.name))
+        return Query.query(nodeListCriteria(projectId, repoName, path, includeFolder, deep))
+            .with(Sort.by(TNode::fullPath.name))
+            .apply {
+                // 强制使用fullPath索引，否则mongodb会使用path索引，不能达到最优索引
+                if (deep) {
+                    this.withHint(TNode.FULL_PATH_IDX)
+                }
+            }
     }
 
     fun nodePageQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean, page: Int, size: Int): Query {
-        return nodeListQuery(
-            projectId,
-            repoName,
-            path,
-            includeFolder,
-            deep
-        ).with(PageRequest.of(page, size))
+        return nodeListQuery(projectId, repoName, path, includeFolder, deep)
+            .with(PageRequest.of(page, size))
     }
 
     fun nodePathUpdate(path: String, name: String, operator: String): Update {
@@ -111,27 +108,9 @@ object QueryHelper {
         }
     }
 
-    fun nodeRepoUpdate(projectId: String, repoName: String, path: String, name: String, operator: String): Update {
-        return update(operator)
-                .set(TNode::projectId.name, projectId)
-                .set(TNode::repoName.name, repoName)
-                .set(TNode::path.name, path)
-                .set(TNode::name.name, name)
-                .set(TNode::fullPath.name, path + name)
-    }
-
     fun nodeDeleteUpdate(operator: String): Update {
         return update(operator)
             .set(TNode::deleted.name, LocalDateTime.now())
-    }
-
-    fun nodeMetadataQuery(projectId: String, repoName: String, fullPath: String, key: String): Query {
-        return Query(Criteria.where(TNode::projectId.name).`is`(projectId)
-            .and(TNode::repoName.name).`is`(repoName)
-            .and(TNode::fullPath.name).`is`(fullPath)
-            .and(TNode::deleted.name).`is`(null)
-            .and("metadata.key").`is`(key)
-        )
     }
 
     private fun update(operator: String): Update {

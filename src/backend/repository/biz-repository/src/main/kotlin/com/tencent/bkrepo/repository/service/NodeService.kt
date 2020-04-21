@@ -14,7 +14,6 @@ import com.tencent.bkrepo.repository.listener.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeUpdatedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -73,9 +72,6 @@ class NodeService : AbstractService() {
 
     @Autowired
     private lateinit var fileReferenceService: FileReferenceService
-
-    @Autowired
-    private lateinit var metadataService: MetadataService
 
     /**
      * 查询节点详情
@@ -214,14 +210,13 @@ class NodeService : AbstractService() {
                 md5 = if (folder) null else md5,
                 projectId = projectId,
                 repoName = repoName,
-                metadata = emptyList(),
+                metadata = MetadataService.convert(metadata),
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
             return node.apply { doCreate(this, repo) }
-                .also { metadataService.save(MetadataSaveRequest(it.projectId, it.repoName, it.fullPath, metadata)) }
                 .also { publishEvent(NodeCreatedEvent(createRequest)) }
                 .also { logger.info("Create node [$createRequest] success.") }
                 .let { convert(it)!! }
