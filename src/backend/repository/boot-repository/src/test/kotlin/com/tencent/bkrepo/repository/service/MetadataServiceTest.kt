@@ -32,6 +32,8 @@ class MetadataServiceTest @Autowired constructor(
     private val operator = "system"
     private var repoName = "unit-test"
 
+    private val defaultMetadata = mapOf("key1" to "value1", "key2" to "value2")
+
     @BeforeEach
     fun setUp() {
         if(!repositoryService.exist(projectId, repoName)) {
@@ -57,87 +59,64 @@ class MetadataServiceTest @Autowired constructor(
 
     @Test
     fun createTest() {
-        val metadata = mutableMapOf<String, String>()
-        metadata["name"] = "c.txt"
-        metadata["createdBy"] = "system"
+        val node = nodeService.create(createRequest())
+        Assertions.assertEquals(0, metadataService.query(projectId, repoName, node.fullPath).size)
+        metadataService.save(MetadataSaveRequest(projectId, repoName, node.fullPath, defaultMetadata))
+        val dbMetadata = metadataService.query(projectId, repoName, node.fullPath)
+        Assertions.assertEquals(2, dbMetadata.size)
+        Assertions.assertEquals("value1", dbMetadata["key1"])
+        Assertions.assertEquals("value2", dbMetadata["key2"])
+    }
 
-        val createRequest = NodeCreateRequest(
+    @Test
+    fun saveEmptyTest() {
+        val node = nodeService.create(createRequest(defaultMetadata))
+        // update with empty key list
+        metadataService.save(MetadataSaveRequest(projectId, repoName, node.fullPath, mutableMapOf()))
+
+        val dbMetadata = metadataService.query(projectId, repoName, node.fullPath)
+        Assertions.assertEquals("value1", dbMetadata["key1"])
+        Assertions.assertEquals("value2", dbMetadata["key2"])
+    }
+    
+    @Test
+    fun updateTest() {
+        val node = nodeService.create(createRequest(defaultMetadata))
+        // update
+        val newMetadata = mapOf("key1" to "value1", "key2" to "value22", "key3" to "value3")
+        metadataService.save(MetadataSaveRequest(projectId, repoName, node.fullPath, newMetadata))
+
+        val dbMetadata = metadataService.query(projectId, repoName, node.fullPath)
+        Assertions.assertEquals(3, dbMetadata.size)
+        Assertions.assertEquals("value1", dbMetadata["key1"])
+        Assertions.assertEquals("value22", dbMetadata["key2"])
+        Assertions.assertEquals("value3", dbMetadata["key3"])
+    }
+
+    @Test
+    fun deleteTest() {
+        val metadata = mapOf("key1" to "value1", "key2" to "value2", "key3" to "value3")
+        val node = nodeService.create(createRequest(metadata))
+        // delete
+        metadataService.delete(MetadataDeleteRequest(projectId, repoName,node.fullPath, setOf("key1", "key2", "key0")))
+
+        val dbMetadata = metadataService.query(projectId, repoName, node.fullPath)
+        Assertions.assertEquals(1, dbMetadata.size)
+        Assertions.assertEquals("value3", dbMetadata["key3"])
+    }
+
+    private fun createRequest(metadata: Map<String, String> = emptyMap()): NodeCreateRequest {
+        return NodeCreateRequest(
             projectId = projectId,
             repoName = repoName,
             folder = false,
-            fullPath = "/a/b/c.txt",
+            fullPath = "/1.txt",
             expires = 0,
             overwrite = false,
             size = 1,
             sha256 = "sha256",
             md5 = "md5",
             metadata = metadata,
-            operator = operator
-        )
-        
-        nodeService.create(createRequest)
-
-        val dbMetadata = metadataService.query(projectId, repoName, "/a/b/c.txt")
-        Assertions.assertEquals(2, dbMetadata.size)
-        Assertions.assertEquals("c.txt", dbMetadata["name"])
-        Assertions.assertEquals("system", dbMetadata["createdBy"])
-    }
-    
-    @Test
-    fun saveTest() {
-        nodeService.create(createRequest())
-        Assertions.assertEquals(0, metadataService.query(projectId, repoName, "/a/b/c.txt").size)
-
-        val metadata = mutableMapOf<String, String>()
-        metadata["name"] = "c.txt"
-        metadata["createdBy"] = "system"
-        metadataService.save(MetadataSaveRequest(projectId, repoName,"a/b/c.txt", metadata))
-
-        var dbMetadata = metadataService.query(projectId, repoName, "/a/b/c.txt")
-        Assertions.assertEquals(2, dbMetadata.size)
-        Assertions.assertEquals("c.txt", dbMetadata["name"])
-        Assertions.assertEquals("system", dbMetadata["createdBy"])
-
-        metadata["size"] = "0"
-        metadata["createdBy"] = "admin"
-        metadataService.save(MetadataSaveRequest(projectId, repoName, "a/b/c.txt", metadata))
-
-        dbMetadata = metadataService.query(projectId, repoName, "/a/b/c.txt")
-        Assertions.assertEquals(3, dbMetadata.size)
-        Assertions.assertEquals("c.txt", dbMetadata["name"])
-        Assertions.assertEquals("admin", dbMetadata["createdBy"])
-        Assertions.assertEquals("0", dbMetadata["size"])
-    }
-
-    @Test
-    fun deleteTest() {
-        nodeService.create(createRequest())
-        Assertions.assertEquals(0, metadataService.query(projectId, repoName, "/a/b/c.txt").size)
-
-        val metadata = mutableMapOf<String, String>()
-        metadata["name"] = "c.txt"
-        metadata["createdBy"] = "system"
-        metadata["size"] = "0"
-        metadataService.save(MetadataSaveRequest(projectId, repoName, "a/b/c.txt", metadata))
-
-        metadataService.delete(MetadataDeleteRequest(projectId, repoName,"a/b/c.txt", setOf("name", "createdBy")))
-
-        val dbMetadata = metadataService.query(projectId, repoName, "/a/b/c.txt")
-        Assertions.assertEquals(1, dbMetadata.size)
-        Assertions.assertEquals("0", dbMetadata["size"])
-    }
-
-    private fun createRequest(): NodeCreateRequest {
-        return NodeCreateRequest(
-            projectId = projectId,
-            repoName = repoName,
-            folder = false,
-            fullPath = "/a/b/c.txt",
-            expires = 0,
-            overwrite = false,
-            size = 1,
-            sha256 = "sha256",
-            md5 = "md5",
             operator = operator
         )
     }
