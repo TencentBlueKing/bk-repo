@@ -12,7 +12,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import io.swagger.annotations.Api
@@ -106,12 +105,6 @@ interface NodeResource {
         @RequestParam includeFolder: Boolean = true,
         @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
         @RequestParam deep: Boolean = false
-    ): Response<Page<NodeInfo>>
-
-    @ApiOperation("搜索节点")
-    @PostMapping("/search")
-    fun search(
-        @RequestBody nodeSearchRequest: NodeSearchRequest
     ): Response<Page<NodeInfo>>
 
     @ApiOperation("创建节点")
