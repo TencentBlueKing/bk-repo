@@ -13,7 +13,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.NodeService
@@ -53,10 +52,6 @@ class NodeResourceImpl @Autowired constructor(
 
     override fun page(projectId: String, repoName: String, page: Int, size: Int, path: String, includeFolder: Boolean, deep: Boolean): Response<Page<NodeInfo>> {
         return ResponseBuilder.success(nodeService.page(projectId, repoName, path, page, size, includeFolder, deep))
-    }
-
-    override fun search(nodeSearchRequest: NodeSearchRequest): Response<Page<NodeInfo>> {
-        return ResponseBuilder.success(nodeService.search(nodeSearchRequest))
     }
 
     override fun create(nodeCreateRequest: NodeCreateRequest): Response<NodeInfo> {

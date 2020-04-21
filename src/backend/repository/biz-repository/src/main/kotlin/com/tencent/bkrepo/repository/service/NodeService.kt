@@ -23,7 +23,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeDeleteUpdate
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeExpireDateUpdate
@@ -32,7 +31,6 @@ import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeListQuery
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePageQuery
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePathUpdate
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeQuery
-import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeSearchQuery
 import com.tencent.bkrepo.repository.util.NodeUtils
 import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 import com.tencent.bkrepo.repository.util.NodeUtils.combineFullPath
@@ -147,23 +145,6 @@ class NodeService : AbstractService() {
         val count = nodeDao.count(query)
 
         return Page(page, size, count, listData)
-    }
-
-    /**
-     * 搜索节点
-     */
-    fun search(searchRequest: NodeSearchRequest): Page<NodeInfo> {
-        searchRequest.page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
-        searchRequest.size.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
-        searchRequest.repoNameList.takeIf { it.isNotEmpty() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoNameList")
-        searchRequest.repoNameList.forEach { repositoryService.checkRepository(searchRequest.projectId, it) }
-
-        val query = nodeSearchQuery(searchRequest)
-
-        val listData = nodeDao.find(query).map { convert(it)!! }
-        val count = nodeDao.count(query)
-
-        return Page(searchRequest.page, searchRequest.size, count, listData)
     }
 
     /**

@@ -2,7 +2,6 @@ package com.tencent.bkrepo.repository.service.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -30,34 +29,6 @@ object QueryHelper {
         if (!withDetail) { query.fields().exclude(TNode::metadata.name) }
 
         return query
-    }
-
-    fun nodeSearchQuery(searchRequest: NodeSearchRequest): Query {
-        return with(searchRequest) {
-            val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
-                    .and(TNode::repoName.name).`in`(repoNameList)
-                    .and(TNode::deleted.name).`is`(null)
-                    .and(TNode::name.name).ne(StringPool.EMPTY)
-
-            // 路径匹配
-            val fullPathCriteriaList = pathPattern.map {
-                val escapedPath = NodeUtils.escapeRegex(NodeUtils.formatPath(it))
-                Criteria.where(TNode::fullPath.name).regex("^$escapedPath")
-            }
-            if (fullPathCriteriaList.isNotEmpty()) {
-                criteria.orOperator(*fullPathCriteriaList.toTypedArray())
-            }
-            // 元数据匹配
-            val metadataCriteriaList = metadataCondition.filter { it.key.isNotBlank() }.map { (key, value) ->
-                Criteria.where("metadata.key").`is`(key)
-                .and("metadata.value").`is`(value)
-            }
-            if (metadataCriteriaList.isNotEmpty()) {
-                criteria.andOperator(*metadataCriteriaList.toTypedArray())
-            }
-
-            Query(criteria).with(PageRequest.of(page, size)).with(Sort.by(TNode::fullPath.name))
-        }
     }
 
     fun nodeListCriteria(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Criteria {
