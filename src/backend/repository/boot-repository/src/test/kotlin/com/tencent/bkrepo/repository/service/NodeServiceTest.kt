@@ -9,7 +9,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -134,43 +133,6 @@ internal class NodeServiceTest @Autowired constructor(
         assertEquals(size, page.count)
         assertEquals(0, page.page)
         assertEquals(20, page.pageSize)
-    }
-
-    @Test
-    @DisplayName("搜索测试")
-    fun searchTest() {
-        val size = 11L
-        val metadata = mutableMapOf<String, String>()
-        repeat(size.toInt()) { i ->
-            run {
-                metadata["key"] = i.toString()
-                val createRequest = createRequest("/a/b/$i.txt", false, metadata = metadata)
-                nodeService.create(createRequest)
-            }
-        }
-
-        repeat(size.toInt()) { i ->
-            run {
-                metadata["key"] = i.toString()
-                val createRequest = createRequest("/a/c/$i.txt", false, metadata = metadata)
-                nodeService.create(createRequest)
-            }
-        }
-
-        val metadataCondition = mutableMapOf<String, String>()
-        metadataCondition["key"] = "1"
-        val searchRequest = NodeSearchRequest(
-            projectId,
-            listOf(repoName),
-            listOf("/a/b", "/a/c"),
-            metadataCondition,
-            0,
-            10
-        )
-
-        val page = nodeService.search(searchRequest)
-        assertEquals(2, page.records.size)
-        assertEquals(2, page.count)
     }
 
     @Test
