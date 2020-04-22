@@ -16,8 +16,6 @@ const val REPO_MANAGE_NAME = "仓库管理员"
 
 const val DEFAULT_PASSWORD = "blueking"
 
-const val EMPTY_APPID = ""
-
 const val AUTHORIZATION = "Authorization"
 
 const val AUTH_FAILED_RESPONSE =
