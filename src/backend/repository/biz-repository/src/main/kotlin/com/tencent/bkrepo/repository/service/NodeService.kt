@@ -14,7 +14,6 @@ import com.tencent.bkrepo.repository.listener.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeUpdatedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -24,7 +23,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeDeleteUpdate
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeExpireDateUpdate
@@ -33,7 +31,6 @@ import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeListQuery
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePageQuery
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePathUpdate
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeQuery
-import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeSearchQuery
 import com.tencent.bkrepo.repository.util.NodeUtils
 import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 import com.tencent.bkrepo.repository.util.NodeUtils.combineFullPath
@@ -73,9 +70,6 @@ class NodeService : AbstractService() {
 
     @Autowired
     private lateinit var fileReferenceService: FileReferenceService
-
-    @Autowired
-    private lateinit var metadataService: MetadataService
 
     /**
      * 查询节点详情
@@ -154,23 +148,6 @@ class NodeService : AbstractService() {
     }
 
     /**
-     * 搜索节点
-     */
-    fun search(searchRequest: NodeSearchRequest): Page<NodeInfo> {
-        searchRequest.page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
-        searchRequest.size.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
-        searchRequest.repoNameList.takeIf { it.isNotEmpty() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoNameList")
-        searchRequest.repoNameList.forEach { repositoryService.checkRepository(searchRequest.projectId, it) }
-
-        val query = nodeSearchQuery(searchRequest)
-
-        val listData = nodeDao.find(query).map { convert(it)!! }
-        val count = nodeDao.count(query)
-
-        return Page(searchRequest.page, searchRequest.size, count, listData)
-    }
-
-    /**
      * 判断节点是否存在
      */
     fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
@@ -214,14 +191,13 @@ class NodeService : AbstractService() {
                 md5 = if (folder) null else md5,
                 projectId = projectId,
                 repoName = repoName,
-                metadata = emptyList(),
+                metadata = MetadataService.convert(metadata),
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
             return node.apply { doCreate(this, repo) }
-                .also { metadataService.save(MetadataSaveRequest(it.projectId, it.repoName, it.fullPath, metadata)) }
                 .also { publishEvent(NodeCreatedEvent(createRequest)) }
                 .also { logger.info("Create node [$createRequest] success.") }
                 .let { convert(it)!! }

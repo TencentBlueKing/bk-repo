@@ -20,7 +20,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
@@ -167,15 +166,6 @@ class UserNodeResourceImpl @Autowired constructor(
         with(artifactInfo) {
             return ResponseBuilder.success(nodeService.list(projectId, repoName, artifactUri, includeFolder, deep))
         }
-    }
-
-    override fun search(userId: String, searchRequest: NodeSearchRequest): Response<Page<NodeInfo>> {
-        with(searchRequest) {
-            repoNameList.forEach {
-                permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, searchRequest.projectId, it)
-            }
-        }
-        return ResponseBuilder.success(nodeService.search(searchRequest))
     }
 
     override fun query(userId: String, queryModel: QueryModel): Response<Page<Map<String, Any>>> {

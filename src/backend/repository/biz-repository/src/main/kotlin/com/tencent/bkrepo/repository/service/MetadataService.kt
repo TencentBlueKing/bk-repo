@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.listener.event.metadata.MetadataDeletedEvent
 import com.tencent.bkrepo.repository.listener.event.metadata.MetadataSavedEvent
@@ -40,11 +42,18 @@ class MetadataService: AbstractService() {
     @Transactional(rollbackFor = [Throwable::class])
     fun save(request: MetadataSaveRequest) {
         request.apply {
-            val fullPath = formatFullPath(fullPath)
             if (!metadata.isNullOrEmpty()) {
                 repositoryService.checkRepository(projectId, repoName)
-                val metadataList = convert(metadata)
-                metadataList.forEach { doSave(projectId, repoName, fullPath, it) }
+                val fullPath = formatFullPath(fullPath)
+                nodeDao.findOne(QueryHelper.nodeQuery(projectId, repoName, fullPath, withDetail = true))?.let { node ->
+                    val originalMetadata = convert(node.metadata).toMutableMap()
+                    metadata!!.forEach { (key, value) -> originalMetadata[key] = value }
+                    node.metadata = convert(originalMetadata)
+                    nodeDao.save(node)
+                } ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            } else {
+                logger.info("Metadata key list is empty, skip saving[$this]")
+                return
             }
         }.also {
             publishEvent(MetadataSavedEvent(it))
@@ -56,8 +65,8 @@ class MetadataService: AbstractService() {
     @Transactional(rollbackFor = [Throwable::class])
     fun delete(request: MetadataDeleteRequest) {
         request.apply {
-            val fullPath = formatFullPath(request.fullPath)
-            this.takeIf { keyList.isNotEmpty() }?.run {
+            if (keyList.isNotEmpty()) {
+                val fullPath = formatFullPath(request.fullPath)
                 repositoryService.checkRepository(projectId, repoName)
                 val query = QueryHelper.nodeQuery(projectId, repoName, fullPath)
                 val update = Update().pull(
@@ -65,24 +74,15 @@ class MetadataService: AbstractService() {
                     Query.query(Criteria.where(TMetadata::key.name).`in`(keyList))
                 )
                 nodeDao.updateMulti(query, update)
-            }.also {
-                publishEvent(MetadataDeletedEvent(this))
-            }.also {
-                logger.info("Delete metadata [$this] success.")
+            } else {
+                logger.info("Metadata key list is empty, skip deleting[$this]")
+                return
             }
+        }.also {
+            publishEvent(MetadataDeletedEvent(it))
+        }.also {
+            logger.info("Delete metadata [$it] success.")
         }
-    }
-
-    private fun doSave(projectId: String, repoName: String, fullPath: String, metadata: TMetadata) {
-        var query = QueryHelper.nodeMetadataQuery(projectId, repoName, fullPath, metadata.key)
-        val update = if (nodeDao.exists(query)) {
-            Update().set("metadata.$.value", metadata.value)
-        } else {
-            query = QueryHelper.nodeQuery(projectId, repoName, fullPath)
-            Update().addToSet(TNode::metadata.name, metadata)
-        }
-
-        nodeDao.updateFirst(query, update)
     }
 
     companion object {
