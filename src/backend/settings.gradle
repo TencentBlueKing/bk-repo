@@ -73,4 +73,9 @@ include ":helm:api-helm"
 include ":helm:biz-helm"
 include ":helm:boot-helm"
 
+include ":composer"
+include ":composer:api-composer"
+include ":composer:biz-composer"
+include ":composer:boot-composer"
+
 include ":boot-assembly"
