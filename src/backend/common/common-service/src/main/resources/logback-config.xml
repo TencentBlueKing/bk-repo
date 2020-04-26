@@ -38,6 +38,9 @@
             <maxHistory>30</maxHistory>
             <maxFileSize>1GB</maxFileSize>
         </rollingPolicy>
+        <encoder>
+            <pattern>%m%n</pattern>
+        </encoder>
     </appender>
 
     <appender name="api_log" class="ch.qos.logback.core.rolling.RollingFileAppender">

@@ -4,9 +4,6 @@ import io.undertow.Undertow
 import io.undertow.UndertowOptions
 import io.undertow.server.handlers.accesslog.AccessLogHandler
 import io.undertow.server.handlers.accesslog.AccessLogReceiver
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.autoconfigure.web.ServerProperties
 import org.springframework.boot.web.embedded.undertow.UndertowBuilderCustomizer
 import org.springframework.boot.web.embedded.undertow.UndertowDeploymentInfoCustomizer
 import org.springframework.boot.web.embedded.undertow.UndertowServletWebServerFactory
@@ -14,14 +11,10 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.boot.web.server.WebServerFactoryCustomizer as WebServerFactoryCustomizer1
 
 @Configuration
-@ConditionalOnProperty(value = ["server.undertow.accesslog.enabled"], matchIfMissing = true)
 class AccessLogWebServerCustomizer: WebServerFactoryCustomizer1<UndertowServletWebServerFactory> {
 
-    @Autowired
-    lateinit var serverProperties: ServerProperties
-
     override fun customize(factory: UndertowServletWebServerFactory) {
-        val pattern = serverProperties.undertow.accesslog.pattern
+        val pattern = "%h %l %u %t \"%r\" %s %b \"%{i,Referer}\" \"%{i,User-Agent}\" %D ms"
 
         if (logRequestProcessingTiming(pattern)) {
             factory.addBuilderCustomizers(UndertowBuilderCustomizer { builder ->
