@@ -38,6 +38,11 @@
             <maxHistory>30</maxHistory>
             <maxFileSize>1GB</maxFileSize>
         </rollingPolicy>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${logging.file.pattern}</pattern>
+            </layout>
+        </encoder>
     </appender>
 
     <appender name="api_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
