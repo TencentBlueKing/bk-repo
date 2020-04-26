@@ -31,6 +31,15 @@
         </encoder>
     </appender>
 
+    <appender name="access_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logging.access.file}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${logging.access.file}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <maxFileSize>1GB</maxFileSize>
+        </rollingPolicy>
+    </appender>
+
     <appender name="api_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${logging.api.file}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -101,11 +110,12 @@
         <logger name="ApiLogger" level="INFO" additivity="false">
             <appender-ref ref="api_log"/>
         </logger>
-
         <logger name="JobLogger" level="INFO" additivity="false">
             <appender-ref ref="job_log"/>
         </logger>
-
+        <logger name="AccessLogger" level="INFO" additivity="false">
+            <appender-ref ref="access_log"/>
+        </logger>
         <root level="INFO">
             <appender-ref ref="app_log"/>
             <appender-ref ref="error_log"/>
