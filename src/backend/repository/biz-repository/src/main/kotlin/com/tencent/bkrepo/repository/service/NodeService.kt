@@ -72,8 +72,8 @@ class NodeService : AbstractService() {
     @Autowired
     private lateinit var fileReferenceService: FileReferenceService
 
-    @Autowired
-    private lateinit var notifyService: NotifyService
+//    @Autowired
+//    private lateinit var notifyService: NotifyService
 
     /**
      * 查询节点详情
@@ -245,7 +245,7 @@ class NodeService : AbstractService() {
         }.also {
             logger.info("Rename node [$it] success.")
         }
-        notifyService.sendWechat(listOf("necrohuang"), "test wechat")
+        // notifyService.sendWechat(listOf("necrohuang"), "test wechat")
     }
 
     /**
