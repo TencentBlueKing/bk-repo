@@ -5,16 +5,16 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
-import com.tencent.bkrepo.npm.constants.SEARCH_MAP
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
+import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
 class NpmVirtualRepository : VirtualRepository() {
-    override fun list(context: ArtifactListContext): Map<String, Any> {
-        val list = mutableListOf<Map<String, Any>>()
+    override fun list(context: ArtifactListContext): NpmSearchResponse {
+        val list = mutableListOf<NpmSearchResponse>()
         val searchRequest = context.contextAttributes[SEARCH_REQUEST] as MetadataSearchRequest
         val artifactInfo = context.artifactInfo
         val virtualConfiguration = context.repositoryConfiguration as VirtualConfiguration
@@ -31,7 +31,7 @@ class NpmVirtualRepository : VirtualRepository() {
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactListContext
                 repository.list(subContext)?.let { map ->
-                    list.add(map as Map<String, Any>)
+                    list.add(map as NpmSearchResponse)
                 }
             } catch (exception: Exception) {
                 logger.warn("list Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
@@ -40,20 +40,20 @@ class NpmVirtualRepository : VirtualRepository() {
         return recordMap(list, searchRequest)
     }
 
-    private fun recordMap(list: List<Map<String, Any>>, searchRequest: MetadataSearchRequest): Map<String, Any> {
-        if (list.isNullOrEmpty()) return SEARCH_MAP
+    private fun recordMap(list: List<NpmSearchResponse>, searchRequest: MetadataSearchRequest): NpmSearchResponse {
+        if (list.isNullOrEmpty()) return NpmSearchResponse()
         val size = searchRequest.size
-        val firstList = list[0]["objects"] as List<Any>
-        val secondList = list[1]["objects"] as List<Any>
-        if (firstList.isNullOrEmpty() && secondList.isNullOrEmpty()) return SEARCH_MAP
+        val firstList = list[0].objects
+        val secondList = list[1].objects
+        if (firstList.isNullOrEmpty() && secondList.isNullOrEmpty()) return NpmSearchResponse()
         return if (firstList.size >= size) {
-            mapOf("objects" to firstList.subList(0, size))
+            NpmSearchResponse(objects = firstList.subList(0, size))
         } else {
-            (firstList as MutableList<Any>).addAll(secondList)
+            firstList.addAll(secondList)
             if (firstList.size > size) {
-                mapOf("objects" to firstList.subList(0, size))
+                NpmSearchResponse(objects = firstList.subList(0, size))
             } else {
-                mapOf("objects" to firstList)
+                NpmSearchResponse(objects = firstList)
             }
         }
     }

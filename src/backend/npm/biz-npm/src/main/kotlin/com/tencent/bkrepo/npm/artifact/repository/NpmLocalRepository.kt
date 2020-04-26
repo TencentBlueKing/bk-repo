@@ -33,12 +33,11 @@ import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_METADATA
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
-import com.tencent.bkrepo.npm.constants.OBJECTS
 import com.tencent.bkrepo.npm.constants.PACKAGE
-import com.tencent.bkrepo.npm.constants.SEARCH_MAP
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
+import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
@@ -195,7 +194,10 @@ class NpmLocalRepository : LocalRepository() {
                         .data
                 metadataInfo?.forEach { (key, value) ->
                     if (StringUtils.isNotBlank(value)) versions.getAsJsonObject(it).addProperty(key, value)
-                    if (key == KEYWORDS || key == MAINTAINERS) versions.getAsJsonObject(it).add(key, GsonUtils.stringToArray(value))
+                    if (key == KEYWORDS || key == MAINTAINERS) versions.getAsJsonObject(it).add(
+                        key,
+                        GsonUtils.stringToArray(value)
+                    )
                 }
             }
         }
@@ -213,7 +215,7 @@ class NpmLocalRepository : LocalRepository() {
         }
     }
 
-    override fun list(context: ArtifactListContext): Map<String, Any> {
+    override fun list(context: ArtifactListContext): NpmSearchResponse {
         val searchRequest = context.contextAttributes[SEARCH_REQUEST] as MetadataSearchRequest
         val projectId = Rule.QueryRule("projectId", context.repositoryInfo.projectId)
         val repoName = Rule.QueryRule("repoName", context.repositoryInfo.name)
@@ -236,14 +238,13 @@ class NpmLocalRepository : LocalRepository() {
             rule = rule
         )
         val result = nodeResource.query(queryModel)
-        val data = result.data ?: return SEARCH_MAP
+        val data = result.data ?: return NpmSearchResponse()
         return transferRecords(data.records)
     }
 
-    private fun transferRecords(records: List<Map<String, Any>>): Map<String, Any> {
-        val returnInfo = mutableMapOf<String, List<Map<String, Any>>>()
+    private fun transferRecords(records: List<Map<String, Any>>): NpmSearchResponse {
         val listInfo = mutableListOf<Map<String, Any>>()
-        if (records.isNullOrEmpty()) return SEARCH_MAP
+        if (records.isNullOrEmpty()) return NpmSearchResponse()
         records.forEach {
             val packageInfo = mutableMapOf<String, Any>()
             val metadataInfo = mutableMapOf<String, Any?>()
@@ -259,8 +260,7 @@ class NpmLocalRepository : LocalRepository() {
             packageInfo[PACKAGE] = metadataInfo
             listInfo.add(packageInfo)
         }
-        returnInfo[OBJECTS] = listInfo
-        return returnInfo
+        return NpmSearchResponse(listInfo)
     }
 
     private fun parseJsonArrayToList(jsonArray: String?): List<Map<String, Any>> {
