@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.service.log
 
+import com.tencent.bkrepo.common.api.constant.ACCESS_LOGGER_NAME
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.API_LOGGER_NAME
 import com.tencent.bkrepo.common.api.constant.EXCEPTION_LOGGER_NAME
@@ -24,7 +25,7 @@ object LoggerHolder {
     val exceptionLogger: Logger = LoggerFactory.getLogger(EXCEPTION_LOGGER_NAME)
 
     /**
-     * API logger
+     * Job logger
      */
     val jobLogger: Logger = LoggerFactory.getLogger(JOB_LOGGER_NAME)
 
@@ -32,6 +33,11 @@ object LoggerHolder {
      * API logger
      */
     val apiLogger: Logger = LoggerFactory.getLogger(API_LOGGER_NAME)
+
+    /**
+     * Access logger
+     */
+    val accessLogger: Logger = LoggerFactory.getLogger(ACCESS_LOGGER_NAME)
 
     fun logBusinessException(exception: Exception, message: String? = null) {
         logException(exception, message, false)
