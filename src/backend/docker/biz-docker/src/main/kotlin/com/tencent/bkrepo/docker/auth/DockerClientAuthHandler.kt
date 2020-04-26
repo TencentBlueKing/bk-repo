@@ -56,10 +56,11 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
         }
         val token = (authCredentials as JwtAuthCredentials).token
         if (JwtUtil.verifyToken(token) == false) {
+            logger.info("auth token failed {} ", token)
             throw ClientAuthException("auth failed")
         }
         val userName = JwtUtil.getUserName(token)
-        logger.debug("auth token {} ,user {}", token, userName)
+        logger.info("auth token {} ,user {}", token, userName)
         return userName
     }
 
@@ -67,7 +68,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
         if (serviceUserResource.detail(userId).data == null) {
             val request = CreateUserRequest(userId = userId, name = userId)
             serviceUserResource.createUser(request)
-            logger.info("Create user [$request] success.")
+            logger.info("create user request: {} success.", request.toString())
         }
     }
 
@@ -106,16 +107,18 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
             return PlatformAuthCredentials(parts[0], parts[1])
         }
         if (basicAuthHeader.isNullOrBlank()) {
-            logger.error("auth value is null and path is {}", request.requestURI)
+            logger.warn("auth value is null and path is {}", request.requestURI)
             throw ClientAuthException("Authorization value is null")
         }
         if (!basicAuthHeader.startsWith("Bearer ")) {
+            logger.warn("parse uri failed {}", basicAuthHeader)
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
         try {
             val token = basicAuthHeader.removePrefix("Bearer ")
             return JwtAuthCredentials(token)
         } catch (exception: Exception) {
+            logger.warn("Authorization value {} is not a valid scheme", basicAuthHeader)
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
     }
@@ -141,7 +144,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
                     parts[1]
                 )
             } catch (exception: Exception) {
-                logger.error("auth value is not a valid schema")
+                logger.warn("auth value is not a valid schema")
                 throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
             }
         }

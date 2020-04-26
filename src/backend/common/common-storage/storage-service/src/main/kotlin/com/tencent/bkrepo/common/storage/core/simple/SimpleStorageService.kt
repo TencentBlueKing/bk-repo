@@ -28,11 +28,11 @@ class SimpleStorageService : AbstractStorageService() {
         } else {
             artifactFile.getTempFile()
         }
-        fileStorage.store(path, filename, file, credentials)
+        fileStorage.synchronizeStore(path, filename, file, credentials)
     }
 
     override fun doStore(path: String, filename: String, file: File, credentials: StorageCredentials) {
-        fileStorage.store(path, filename, file, credentials)
+        fileStorage.synchronizeStore(path, filename, file, credentials)
     }
 
     override fun doLoad(path: String, filename: String, credentials: StorageCredentials): File? {
