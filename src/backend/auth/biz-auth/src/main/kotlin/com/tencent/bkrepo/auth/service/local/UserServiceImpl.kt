@@ -5,6 +5,7 @@ import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.Token
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
@@ -51,9 +52,48 @@ class UserServiceImpl @Autowired constructor(
                 admin = request.admin,
                 locked = false,
                 tokens = emptyList(),
-                roles = emptyList()
+                roles = emptyList(),
+                asstUsers = request.asstUsers,
+                group = request.group
             )
         )
+        return true
+    }
+
+    override fun createUserToProject(request: CreateUserToProjectRequest): Boolean {
+        // todo 校验
+        logger.info("create user to project request : {}", request.toString())
+        val user = userRepository.findFirstByUserId(request.userId)
+
+        // user not exist, create user
+        if (user == null) {
+            var pwd: String = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
+            if (request.pwd != null) {
+                pwd = DataDigestUtils.md5FromStr(request.pwd!!)
+            }
+            userRepository.insert(
+                TUser(
+                    userId = request.userId,
+                    name = request.name,
+                    pwd = pwd,
+                    admin = request.admin,
+                    locked = false,
+                    tokens = emptyList(),
+                    roles = emptyList(),
+                    asstUsers = request.asstUsers,
+                    group = request.group
+                )
+            )
+        }
+
+        val query = Query()
+        query.addCriteria(Criteria.where("name").`is`(request.projectId))
+        val result = mongoTemplate.count(query, "project")
+        if (result == 0L) {
+            logger.warn("user [${request.projectId}]  not exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_PROJECT_NOT_EXIST)
+        }
+
         return true
     }
 
