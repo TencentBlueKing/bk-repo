@@ -40,6 +40,9 @@ class UserServiceImpl @Autowired constructor(
             logger.warn("create user [${request.userId}]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
         }
+        if (request.group == true && request.asstUsers.size == 0) {
+            throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
+        }
         var pwd: String = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
         if (request.pwd != null) {
             pwd = DataDigestUtils.md5FromStr(request.pwd!!)
@@ -67,6 +70,9 @@ class UserServiceImpl @Autowired constructor(
 
         // user not exist, create user
         if (user == null) {
+            if (request.group == true && request.asstUsers.size == 0) {
+                throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
+            }
             var pwd: String = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
             if (request.pwd != null) {
                 pwd = DataDigestUtils.md5FromStr(request.pwd!!)
