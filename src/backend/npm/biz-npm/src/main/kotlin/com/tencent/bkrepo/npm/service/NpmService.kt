@@ -15,6 +15,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.APPLICATION_OCTET_STEAM
 import com.tencent.bkrepo.npm.constants.ATTACHMENTS
@@ -162,7 +163,6 @@ class NpmService @Autowired constructor(
         attributesMap: MutableMap<String, Any>
     ) {
         val distTags = getDistTags(jsonObj)!!
-        // val version = jsonObj.getAsJsonObject(DISTTAGS).get(LATEST).asString
         val name = jsonObj.get(NAME).asString
         val versionJsonObj = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(distTags.second)
         val packageJsonWithVersionFile = ArtifactFileFactory.build()
@@ -245,8 +245,8 @@ class NpmService @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     fun download(artifactInfo: NpmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        context.contextAttributes[NPM_FILE_FULL_PATH] =
-            "/${artifactInfo.scope}/${artifactInfo.pkgName}/-/${artifactInfo.scope}/${artifactInfo.artifactUri}"
+        val requestURI = HttpContextHolder.getRequest().requestURI
+        context.contextAttributes[NPM_FILE_FULL_PATH] = requestURI.substringAfterLast(artifactInfo.repoName)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.download(context)
     }

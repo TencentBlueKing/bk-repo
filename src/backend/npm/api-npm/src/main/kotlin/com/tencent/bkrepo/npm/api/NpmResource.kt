@@ -5,10 +5,7 @@ import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_DIST_TAG_ADD_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_DIST_TAG_INFO_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_INFO_MAPPING_URI
-import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_SCOPE_SIMPLE_TGZ_CNPM_MAPPING_URI
-import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_SCOPE_SIMPLE_TGZ_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_SEARCH_MAPPING_URI
-import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_TGZ_CNPM_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_TGZ_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_VERSION_INFO_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PKG_PUBLISH_MAPPING_URI
@@ -54,7 +51,7 @@ interface NpmResource {
     fun searchPackageInfo(@ArtifactPathVariable artifactInfo: NpmArtifactInfo): Map<String, Any>
 
     @ApiOperation("install tgz file")
-    @GetMapping(value = [NPM_PACKAGE_TGZ_MAPPING_URI, NPM_PACKAGE_SCOPE_SIMPLE_TGZ_MAPPING_URI, NPM_PACKAGE_TGZ_CNPM_MAPPING_URI, NPM_PACKAGE_SCOPE_SIMPLE_TGZ_CNPM_MAPPING_URI])
+    @GetMapping(NPM_PACKAGE_TGZ_MAPPING_URI)
     fun download(@ArtifactPathVariable artifactInfo: NpmArtifactInfo)
 
     @ApiOperation("unpublish package")

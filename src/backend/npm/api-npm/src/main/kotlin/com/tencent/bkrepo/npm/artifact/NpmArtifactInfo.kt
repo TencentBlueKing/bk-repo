@@ -21,6 +21,7 @@ class NpmArtifactInfo(
     )
 
     companion object {
+        // publish package
         const val NPM_PKG_PUBLISH_MAPPING_URI = "/{projectId}/{repoName}/*"
         const val NPM_SCOPE_PKG_PUBLISH_MAPPING_URI = "/{projectId}/{repoName}/*/*"
 
@@ -36,11 +37,7 @@ class NpmArtifactInfo(
         const val NPM_PACKAGE_VERSION_INFO_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}/{version}"
 
         // npm https://registry.npmjs.org/
-        const val NPM_PACKAGE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}/-/*.tgz"
-        const val NPM_PACKAGE_SCOPE_SIMPLE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/{scope}/{pkgName}/-/*.tgz"
-        // cnpm https://registry.npm.taobao.org/
-        const val NPM_PACKAGE_TGZ_CNPM_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}/download/*.tgz"
-        const val NPM_PACKAGE_SCOPE_SIMPLE_TGZ_CNPM_MAPPING_URI = "/{projectId}/{repoName}/{scope}/{pkgName}/download/{scope}/*.tgz"
+        const val NPM_PACKAGE_TGZ_MAPPING_URI = "/{projectId}/{repoName}/**/*.tgz"
 
         // search
         const val NPM_PACKAGE_SEARCH_MAPPING_URI = "/{projectId}/{repoName}/-/v1/search"
