@@ -2,7 +2,6 @@ package com.tencent.bkrepo.common.service.feign
 
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import feign.Logger
 import feign.RequestInterceptor
 import org.springframework.cloud.openfeign.EnableFeignClients
 import org.springframework.context.annotation.Bean
@@ -33,9 +32,6 @@ class ClientConfiguration {
             }
         }
     }
-
-    @Bean
-    fun logger(): Logger = FeignApiLogger()
 
     @Bean
     fun errorCodeDecoder() = ErrorCodeDecoder()

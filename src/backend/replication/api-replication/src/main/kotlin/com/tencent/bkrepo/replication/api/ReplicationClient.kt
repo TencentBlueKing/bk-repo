@@ -7,8 +7,6 @@ import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.constant.SERVICE_NAME
-import com.tencent.bkrepo.replication.pojo.request.ProjectReplicaRequest
-import com.tencent.bkrepo.replication.pojo.request.RepoReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -53,18 +51,6 @@ interface ReplicationClient {
         @RequestParam repoName: String,
         @RequestParam fullPath: String
     ): Response<Boolean>
-
-    @PostMapping("/project")
-    fun replicaProject(
-        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        @RequestBody projectReplicaRequest: ProjectReplicaRequest
-    ): Response<ProjectInfo>
-
-    @PostMapping("/repo")
-    fun replicaRepository(
-        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        @RequestBody repoReplicaRequest: RepoReplicaRequest
-    ): Response<RepositoryInfo>
 
     @PostMapping("/user")
     fun replicaUser(
