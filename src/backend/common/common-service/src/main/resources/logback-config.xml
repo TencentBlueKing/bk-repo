@@ -5,7 +5,6 @@
     <springProperty scope="context" name="application.name" source="spring.application.name" defaultValue="application"/>
 
     <property name="logging.app.file" value="${logging.path}/${application.name}.log"/>
-    <property name="logging.api.file" value="${logging.path}/${application.name}-api.log"/>
     <property name="logging.job.file" value="${logging.path}/${application.name}-job.log"/>
     <property name="logging.error.file" value="${logging.path}/${application.name}-error.log"/>
     <property name="logging.access.file" value="${logging.path}/${application.name}-access.log"/>
@@ -40,20 +39,6 @@
         </rollingPolicy>
         <encoder>
             <pattern>%m%n</pattern>
-        </encoder>
-    </appender>
-
-    <appender name="api_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${logging.api.file}</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${logging.api.file}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
-            <maxHistory>30</maxHistory>
-            <maxFileSize>1GB</maxFileSize>
-        </rollingPolicy>
-        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
-                <pattern>${logging.file.pattern}</pattern>
-            </layout>
         </encoder>
     </appender>
 
@@ -110,9 +95,6 @@
     </springProfile>
 
     <springProfile name="dev, test, prod">
-        <logger name="ApiLogger" level="INFO" additivity="false">
-            <appender-ref ref="api_log"/>
-        </logger>
         <logger name="JobLogger" level="INFO" additivity="false">
             <appender-ref ref="job_log"/>
         </logger>
