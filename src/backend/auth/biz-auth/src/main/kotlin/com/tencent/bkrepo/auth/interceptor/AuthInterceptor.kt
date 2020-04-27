@@ -32,7 +32,6 @@ class AuthInterceptor : HandlerInterceptor {
             }
             val encodedCredentials = basicAuthHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
-            println(decodedHeader)
             val parts = decodedHeader.split(StringPool.COLON)
             require(parts.size == 2)
             accountService.checkCredential(parts[0], parts[1]) ?: run {
