@@ -100,28 +100,20 @@ class HelmLocalRepository : LocalRepository() {
     }
 
     override fun onBeforeUpload(context: ArtifactUploadContext) {
+        // 判断是否是强制上传
+        val isForce = context.request.getParameter("force")?.let { true } ?: false
+        context.contextAttributes["force"] = isForce
         val repositoryInfo = context.repositoryInfo
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         context.artifactFileMap.entries.forEach { (name, _) ->
             val fullPath = context.contextAttributes[name + "_full_path"] as String
             val isExist = nodeResource.exist(projectId, repoName, fullPath).data!!
-            if (isExist && !isOverwrite(fullPath)) {
+            if (isExist && !isOverwrite(fullPath, isForce)) {
                 throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
             }
         }
     }
-
-    // override fun onUploadValidate(context: ArtifactUploadContext) {
-    //     super.onUploadValidate(context)
-    //     context.artifactFileMap.entries.forEach { (name, file) ->
-    //         if (name == "chart") {
-    //             context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] =
-    //                 FileDigestUtils.fileSha256(file.getInputStream())
-    //             context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] = FileDigestUtils.fileMd5(file.getInputStream())
-    //         }
-    //     }
-    // }
 
     override fun onUpload(context: ArtifactUploadContext) {
         context.artifactFileMap.entries.forEach { (name, _) ->
@@ -142,6 +134,7 @@ class HelmLocalRepository : LocalRepository() {
         val sha256 = fileSha256Map[name] as String
         val md5 = fileMd5Map[name] as String
         val fullPath = context.contextAttributes[name + "_full_path"] as String
+        val isForce = context.contextAttributes["force"] as Boolean
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
             repoName = repositoryInfo.name,
@@ -151,13 +144,13 @@ class HelmLocalRepository : LocalRepository() {
             sha256 = sha256,
             md5 = md5,
             operator = context.userId,
-            metadata = parseMetaData(fullPath),
-            overwrite = isOverwrite(fullPath)
+            metadata = parseMetaData(fullPath, isForce),
+            overwrite = isOverwrite(fullPath, isForce)
         )
     }
 
-    private fun parseMetaData(fullPath: String): Map<String, String>? {
-        if (isOverwrite(fullPath) || !fullPath.endsWith(".tgz")) {
+    private fun parseMetaData(fullPath: String, isForce: Boolean): Map<String, String>? {
+        if (isOverwrite(fullPath, isForce) || !fullPath.endsWith(".tgz")) {
             return emptyMap()
         }
         val substring = fullPath.trimStart('/').substring(0, fullPath.lastIndexOf('.') - 1)
@@ -166,8 +159,8 @@ class HelmLocalRepository : LocalRepository() {
         return mapOf("name" to name, "version" to version)
     }
 
-    private fun isOverwrite(fullPath: String): Boolean {
-        return !(fullPath.trim().endsWith(".tgz", true) || fullPath.trim().endsWith(".prov", true))
+    private fun isOverwrite(fullPath: String, isForce: Boolean): Boolean {
+        return isForce || !(fullPath.trim().endsWith(".tgz", true) || fullPath.trim().endsWith(".prov", true))
     }
 
     override fun getNodeFullPath(context: ArtifactDownloadContext): String {
