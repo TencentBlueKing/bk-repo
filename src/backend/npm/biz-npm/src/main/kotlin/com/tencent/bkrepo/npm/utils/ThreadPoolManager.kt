@@ -1,8 +1,7 @@
 package com.tencent.bkrepo.npm.utils
 
-import java.util.concurrent.ArrayBlockingQueue
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.Callable
-import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -23,14 +22,28 @@ object ThreadPoolManager {
     /**
      * 非核心线程闲置时超时1s
      */
-    private const val KEEP_ALIVE = 1L
+    private const val KEEP_ALIVE = 60
 
-    private val executor: ThreadPoolExecutor by lazy {
-        ThreadPoolExecutor(
-            CORE_POOL_SIZE, MAXIMUM_POOL_SIZE,
-            KEEP_ALIVE, TimeUnit.SECONDS, ArrayBlockingQueue<Runnable>(30),
-            Executors.defaultThreadFactory(), ThreadPoolExecutor.AbortPolicy()
-        )
+    // private val executor: ThreadPoolExecutor by lazy {
+    //     ThreadPoolExecutor(
+    //         CORE_POOL_SIZE, MAXIMUM_POOL_SIZE,
+    //         KEEP_ALIVE, TimeUnit.SECONDS, ArrayBlockingQueue<Runnable>(30),
+    //         Executors.defaultThreadFactory(), ThreadPoolExecutor.AbortPolicy()
+    //     )
+    // }
+
+    private val asyncExecutor: ThreadPoolTaskExecutor by lazy {
+        val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
+        threadPoolTaskExecutor.corePoolSize = CORE_POOL_SIZE
+        threadPoolTaskExecutor.maxPoolSize = MAXIMUM_POOL_SIZE
+        threadPoolTaskExecutor.setQueueCapacity(20000)
+        threadPoolTaskExecutor.keepAliveSeconds = KEEP_ALIVE
+        threadPoolTaskExecutor.setThreadNamePrefix("data-migration-async-executor-")
+        threadPoolTaskExecutor.setRejectedExecutionHandler(ThreadPoolExecutor.CallerRunsPolicy())
+        threadPoolTaskExecutor.setWaitForTasksToCompleteOnShutdown(true)
+        threadPoolTaskExecutor.setAwaitTerminationSeconds(5 * 60)
+        threadPoolTaskExecutor.initialize()
+        threadPoolTaskExecutor
     }
 
     /**
@@ -39,7 +52,7 @@ object ThreadPoolManager {
      */
     fun execute(r: Runnable) {
         // 把一个任务丢到了线程池中
-        executor.execute(r)
+        asyncExecutor.execute(r)
     }
 
     /**
@@ -49,7 +62,7 @@ object ThreadPoolManager {
      */
     fun <T> submit(r: Callable<T>): Future<T> {
         // 把一个任务丢到了线程池中
-        return executor.submit(r)
+        return asyncExecutor.submit(r)
     }
 
     /**
@@ -67,7 +80,7 @@ object ThreadPoolManager {
         val resultList = mutableListOf<T>()
         val futureList = mutableListOf<Future<T>>()
         callableList.forEach { callable ->
-            val future: Future<T> = executor.submit(callable)
+            val future: Future<T> = asyncExecutor.submit(callable)
             futureList.add(future)
         }
         futureList.forEach { future ->
@@ -86,6 +99,6 @@ object ThreadPoolManager {
      * @param r
      */
     fun cancel(r: Runnable?) {
-        r?.let { executor.queue.remove(r) }
+        r?.let { asyncExecutor.threadPoolExecutor.queue.remove(r) }
     }
 }

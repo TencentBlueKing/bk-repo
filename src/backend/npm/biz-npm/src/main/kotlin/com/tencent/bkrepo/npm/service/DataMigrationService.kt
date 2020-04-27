@@ -35,6 +35,9 @@ class DataMigrationService {
     @Value("\${npm.client.registry: ''}")
     private val registry: String = StringPool.EMPTY
 
+    @Value("\${npm.package.count: 100}")
+    private val count: Int = 100
+
     private val okHttpClient: OkHttpClient by lazy { HttpClientBuilderFactory.create().build() }
 
     private var totalDataSet = mutableSetOf<String>()
@@ -69,7 +72,7 @@ class DataMigrationService {
         return dataMigration(artifactInfo)
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     fun dataMigration(artifactInfo: NpmArtifactInfo): NpmDataMigrationResponse<String> {
         totalDataSet.removeAll(successSet)
@@ -77,7 +80,7 @@ class DataMigrationService {
         errorSet.clear()
         logger.info("npm total pkgName size : ${totalDataSet.size}")
         val start = System.currentTimeMillis()
-        val list = split(totalDataSet, 300)
+        val list = split(totalDataSet, count)
         val callableList: MutableList<Callable<Set<String>>> = mutableListOf()
         list.forEach {
             callableList.add(Callable {
