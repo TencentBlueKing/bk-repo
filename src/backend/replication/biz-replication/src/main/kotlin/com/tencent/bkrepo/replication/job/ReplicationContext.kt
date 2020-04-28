@@ -29,7 +29,7 @@ class ReplicationContext(val task: TReplicationTask) {
         with(task.setting.remoteClusterInfo) {
             authToken = encodeAuthToken(username, password)
             replicationClient = FeignClientFactory.create(ReplicationClient::class.java, this)
-            httpClient = HttpClientBuilderFactory.create(certificate).addInterceptor(
+            httpClient = HttpClientBuilderFactory.create(certificate, true).addInterceptor(
                 BasicAuthInterceptor(username, password)
             ).build()
             normalizedUrl = normalizeUrl(this)

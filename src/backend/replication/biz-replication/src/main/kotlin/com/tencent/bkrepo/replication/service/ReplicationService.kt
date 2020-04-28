@@ -2,6 +2,8 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
+import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
+import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -29,6 +31,9 @@ class ReplicationService(
         with(context) {
             // 查询文件
             val file = repoDataService.getFile(request.sha256!!, currentRepoDetail.localRepoInfo)
+            if (file.length() != request.size) {
+                throw RuntimeException("File size ${file.length()} does not match node size ${request.size.toString()}")
+            }
             val fileRequestBody = RequestBody.create(MEDIA_TYPE_STREAM, file)
             val builder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)

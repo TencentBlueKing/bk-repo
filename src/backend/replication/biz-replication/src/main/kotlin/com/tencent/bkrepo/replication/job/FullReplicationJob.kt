@@ -60,7 +60,7 @@ class FullReplicationJob : QuartzJobBean() {
             return
         }
         if (task.status == ReplicationStatus.PAUSED) {
-            logger.info("Task[$taskId] status paused, skip task.")
+            logger.info("Task[$taskId] status is paused, skip task.")
         }
         try {
             with(task.setting) {
@@ -88,7 +88,7 @@ class FullReplicationJob : QuartzJobBean() {
             task.endTime = LocalDateTime.now()
             taskRepository.save(task)
             val consumeSeconds = Duration.between(task.startTime!!, task.endTime!!).seconds
-            logger.info("Replica task[$taskId] is finished[${task.status}], reason[${task.errorReason}], consume [$consumeSeconds]s.")
+            logger.info("Replica task[$taskId] finished[${task.status}], reason[${task.errorReason}], consume [$consumeSeconds]s.")
         }
     }
 
