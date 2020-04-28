@@ -312,14 +312,22 @@ class PermissionServiceImpl @Autowired constructor(
         // check repo admin
         if (!roles.isEmpty() && request.projectId != null && request.resourceType == ResourceType.REPO) {
             roles.forEach {
-                val role = roleRepository.findFirstByIdAndProjectIdAndTypeAndRepoName(
+                // check project admin first
+                val pRole = roleRepository.findFirstByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
+                if (pRole != null) {
+                    if (pRole.admin == true) {
+                        return true
+                    }
+                }
+                // check repo admin then
+                val rRole = roleRepository.findFirstByIdAndProjectIdAndTypeAndRepoName(
                     it,
                     request.projectId!!,
                     RoleType.REPO,
                     request.repoName!!
                 )
-                if (role != null) {
-                    if (role.admin == true) {
+                if (rRole != null) {
+                    if (rRole.admin == true) {
                         return true
                     }
                 }

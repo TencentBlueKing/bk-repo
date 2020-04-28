@@ -166,10 +166,12 @@ class NodeService : AbstractService() {
     @Transactional(rollbackFor = [Throwable::class])
     fun create(createRequest: NodeCreateRequest): NodeInfo {
         with(createRequest) {
+            logger.info("Receive node create request[$createRequest]")
             this.takeIf { folder || !sha256.isNullOrBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
             this.takeIf { folder || !md5.isNullOrBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::md5.name)
             val fullPath = parseFullPath(fullPath)
             val repo = repositoryService.checkRepository(projectId, repoName)
+            logger.info("Check repository success.")
             // 路径唯一性校验
             queryNode(projectId, repoName, fullPath)?.let {
                 if (!overwrite) {
@@ -180,8 +182,10 @@ class NodeService : AbstractService() {
                     deleteByPath(projectId, repoName, fullPath, operator)
                 }
             }
+            logger.info("Query node success.")
             // 判断父目录是否存在，不存在先创建
             mkdirs(projectId, repoName, getParentPath(fullPath), operator)
+            logger.info("Mkdir success.")
             // 创建节点
             val node = TNode(
                 folder = folder,

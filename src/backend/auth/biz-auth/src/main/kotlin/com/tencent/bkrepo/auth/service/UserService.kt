@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 
@@ -8,6 +9,8 @@ interface UserService {
     fun getUserById(userId: String): User?
 
     fun createUser(request: CreateUserRequest): Boolean
+
+    fun createUserToProject(request: CreateUserToProjectRequest): Boolean
 
     fun listUser(rids: List<String>): List<User>
 

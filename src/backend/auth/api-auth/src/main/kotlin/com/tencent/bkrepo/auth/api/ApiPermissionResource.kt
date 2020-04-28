@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api(tags = ["API_PERMISSION"], description = "服务-权限接口")
+@Api(tags = ["API_PERMISSION"], description = "用户-权限接口")
 @FeignClient(SERVICE_NAME, contextId = "ApiPermissionResource")
 @RequestMapping("/api/permission")
 interface ApiPermissionResource {

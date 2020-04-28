@@ -18,5 +18,9 @@ data class User(
     @ApiModelProperty("用户token")
     val tokens: List<Token> = emptyList(),
     @ApiModelProperty("所属角色")
-    val roles: List<String> = emptyList()
+    val roles: List<String> = emptyList(),
+    @ApiModelProperty("关联用户")
+    val asstUsers: List<String> = emptyList(),
+    @ApiModelProperty("群组账号")
+    val group: Boolean = false
 )
