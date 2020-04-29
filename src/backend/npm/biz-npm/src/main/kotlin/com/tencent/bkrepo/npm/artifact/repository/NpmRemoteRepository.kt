@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.npm.constants.DIST
@@ -26,6 +27,7 @@ import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.util.NodeUtils
 import okhttp3.Request
 import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.lang.StringUtils
@@ -42,8 +44,8 @@ class NpmRemoteRepository : RemoteRepository() {
 
     override fun download(context: ArtifactDownloadContext) {
         val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo.getFullUri()}] not found")
-        // val name = NodeUtils.getName(context.artifactInfo.artifactUri)
-        // ServletResponseUtils.response(name, file)
+        val name = NodeUtils.getName(context.artifactInfo.artifactUri)
+        ServletResponseUtils.response(name, file)
         super.onDownloadSuccess(context, file)
     }
 
