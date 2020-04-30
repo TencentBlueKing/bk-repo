@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.lang.Exception
 
-
 object JsonUtil {
 
     /**
@@ -44,18 +43,18 @@ object JsonUtil {
     fun String.wrapperPackageJson(host: String): String {
         val jsonObject = JsonParser().parse(this).asJsonObject
         val searchObject = jsonObject.get("search").asString?.let {
-            jsonObject.addProperty("search", "$host${it}")
+            jsonObject.addProperty("search", "$host$it")
         }
         val providersUrlObject = jsonObject.get("providers-lazy-url").asString?.let {
-            jsonObject.addProperty("providers-lazy-url", "$host${it}")
+            jsonObject.addProperty("providers-lazy-url", "$host$it")
         }
         return GsonBuilder().create().toJson(jsonObject)
     }
 
     /**
      *  add new version to %package%.json
-     * @param versionJson  exists %package%.json
-     * @param uploadFileJson  new version json content
+     * @param versionJson exists %package%.json
+     * @param uploadFileJson new version json content
      * @param name
      * @param version
      */
@@ -66,6 +65,4 @@ object JsonUtil {
         nameParam.add(version, JsonParser().parse(uploadFileJson))
         return jsonObject
     }
-
 }
-

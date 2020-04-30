@@ -5,6 +5,6 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import org.springframework.stereotype.Component
 
 @Component
-class ComposerArtifactConfiguration : ArtifactConfiguration{
+class ComposerArtifactConfiguration : ArtifactConfiguration {
     override fun getRepositoryType() = RepositoryType.COMPOSER
 }

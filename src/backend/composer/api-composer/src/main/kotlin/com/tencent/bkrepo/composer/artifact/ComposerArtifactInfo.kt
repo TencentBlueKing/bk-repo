@@ -1,8 +1,6 @@
 package com.tencent.bkrepo.composer.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import java.io.BufferedInputStream
-import java.io.InputStream
 
 /**
  * 预先提取压缩包中composer.json中的信息
