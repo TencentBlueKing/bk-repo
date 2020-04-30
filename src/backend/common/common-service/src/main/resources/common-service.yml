@@ -1,6 +1,9 @@
 jasypt.encryptor.password: bkrepo
 spring.mvc.favicon.enabled: false
 
+server.undertow.accesslog.enabled: false
+server.undertow.accesslog.pattern: "%h %l %u %t \"%r\" %s %b \"%{i, Referer}\" \"%{i, User-Agent}\" %D ms"
+
 feign:
   okhttp.enabled: true
   httpclient.enabled: false

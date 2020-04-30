@@ -35,4 +35,4 @@ const val MS_AUTH_HEADER_UID: String = "X-BKREPO-MS-UID"
  */
 const val EXCEPTION_LOGGER_NAME = "ExceptionLogger"
 const val JOB_LOGGER_NAME = "JobLogger"
-const val API_LOGGER_NAME = "ApiLogger"
+const val ACCESS_LOGGER_NAME = "AccessLogger"
