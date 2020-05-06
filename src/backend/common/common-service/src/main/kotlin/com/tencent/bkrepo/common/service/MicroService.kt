@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.service
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.cloud.client.SpringCloudApplication
 
-@SpringBootApplication
+@SpringCloudApplication
 annotation class MicroService
