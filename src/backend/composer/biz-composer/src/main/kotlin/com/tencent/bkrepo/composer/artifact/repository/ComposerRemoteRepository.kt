@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.composer.artifact.repository
 
-import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -10,7 +9,6 @@ import com.tencent.bkrepo.composer.INIT_PACKAGES
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperPackageJson
 import okhttp3.Request
 import org.springframework.stereotype.Component
-import java.net.URL
 
 @Component
 class ComposerRemoteRepository: RemoteRepository(), ComposerRepository{
