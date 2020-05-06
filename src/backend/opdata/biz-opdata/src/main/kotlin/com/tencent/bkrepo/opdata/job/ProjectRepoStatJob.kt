@@ -53,6 +53,7 @@ class ProjectRepoStatJob {
                 val repoName = it
                 val result = nodeModel.getNodeSize(projectId, repoName)
                 if (repoSize != 0L && nodeNum != 0L) {
+                    logger.info("project :{},repo:{},size:{},num:{}", projectId, repoName, result.size, result.num)
                     val point = Point.measurement("repoInfo")
                         .time(timeMillis, TimeUnit.MILLISECONDS)
                         .addField("size", result.size / (1024 * 1024 * 1024))
