@@ -17,6 +17,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
+import com.tencent.bkrepo.npm.async.NpmDependentHandler
 import com.tencent.bkrepo.npm.constants.APPLICATION_OCTET_STEAM
 import com.tencent.bkrepo.npm.constants.ATTACHMENTS
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
@@ -54,6 +55,7 @@ import com.tencent.bkrepo.npm.pojo.NpmDeleteResponse
 import com.tencent.bkrepo.npm.pojo.NpmMetaData
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
+import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.GsonUtils
@@ -71,6 +73,7 @@ import java.util.Date
 
 @Service
 class NpmService @Autowired constructor(
+    private val npmDependentHandler: NpmDependentHandler,
     private val metadataResource: MetadataResource
 ) {
 
@@ -89,6 +92,7 @@ class NpmService @Autowired constructor(
             context.contextAttributes = attributesMap
             val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
             repository.upload(context)
+            npmDependentHandler.updatePkgDepts(userId, artifactInfo, jsonObj, NpmOperationAction.PUBLISH)
             NpmSuccessResponse.createEntitySuccess()
         } else {
             unPublishOperation(artifactInfo, jsonObj)
@@ -265,6 +269,7 @@ class NpmService @Autowired constructor(
         context.contextAttributes[NPM_FILE_FULL_PATH] = fullPathList
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.remove(context)
+        npmDependentHandler.updatePkgDepts(userId, artifactInfo, pkgInfo, NpmOperationAction.UNPUBLISH)
         return NpmDeleteResponse(true, name, REV_VALUE)
     }
 
