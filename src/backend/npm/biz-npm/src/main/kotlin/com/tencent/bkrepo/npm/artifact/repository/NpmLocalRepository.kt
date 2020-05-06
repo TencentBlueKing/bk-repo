@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.npm.artifact.repository
 
 import com.google.gson.JsonObject
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
@@ -23,6 +24,7 @@ import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.AUTHOR
 import com.tencent.bkrepo.npm.constants.DATE
 import com.tencent.bkrepo.npm.constants.DESCRIPTION
+import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.ID
 import com.tencent.bkrepo.npm.constants.KEYWORDS
 import com.tencent.bkrepo.npm.constants.LAST_MODIFIED_DATE
@@ -35,6 +37,7 @@ import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PACKAGE
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
+import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
@@ -48,6 +51,7 @@ import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import java.io.File
@@ -57,6 +61,9 @@ class NpmLocalRepository : LocalRepository() {
 
     @Autowired
     lateinit var metadataResource: MetadataResource
+
+    @Value("\${npm.tarball.prefix}")
+    private val tarballPrefix: String = StringPool.SLASH
 
     override fun onUploadValidate(context: ArtifactUploadContext) {
         super.onUploadValidate(context)
@@ -172,6 +179,8 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     private fun getPkgInfo(context: ArtifactSearchContext, file: File): JsonObject {
+        val projectId = context.artifactInfo.projectId
+        val repoName = context.artifactInfo.repoName
         val fileJson = GsonUtils.transferFileToJson(file)
         val containsVersion = fileJson[ID].asString.substring(1).contains('@')
         if (containsVersion) {
@@ -184,6 +193,10 @@ class NpmLocalRepository : LocalRepository() {
                 if (StringUtils.isNotBlank(value)) fileJson.addProperty(key, value)
                 if (key == KEYWORDS || key == MAINTAINERS) fileJson.add(key, GsonUtils.stringToArray(value))
             }
+            val oldTarball = fileJson.getAsJsonObject(DIST)[TARBALL].asString
+            val prefix = oldTarball.split(name)[0].trimEnd('/')
+            val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/').plus("/$projectId").plus("/$repoName"))
+            fileJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
         } else {
             val name = fileJson.get(NAME).asString
             val versions = fileJson.getAsJsonObject(VERSIONS)
@@ -199,6 +212,11 @@ class NpmLocalRepository : LocalRepository() {
                         GsonUtils.stringToArray(value)
                     )
                 }
+                val versionObject = versions.getAsJsonObject(it)
+                val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
+                val prefix = oldTarball.split(name)[0].trimEnd('/')
+                val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/').plus("/$projectId").plus("/$repoName"))
+                versionObject.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
             }
         }
         return fileJson

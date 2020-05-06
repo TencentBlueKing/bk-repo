@@ -14,6 +14,7 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import com.tencent.bkrepo.npm.async.NpmDependentHandler
 import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.ID
 import com.tencent.bkrepo.npm.constants.NAME
@@ -25,6 +26,7 @@ import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.exception.NpmArgumentResolverException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
+import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
@@ -33,6 +35,8 @@ import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.File
 import java.time.Duration
@@ -42,8 +46,15 @@ import java.time.format.DateTimeFormatter
 @Component
 class NpmRemoteRepository : RemoteRepository() {
 
+    @Value("\${npm.tarball.prefix}")
+    private val tarballPrefix: String = StringPool.SLASH
+
+    @Autowired
+    private lateinit var npmDependentHandler: NpmDependentHandler
+
     override fun download(context: ArtifactDownloadContext) {
-        val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo.getFullUri()}] not found")
+        val file = this.onDownload(context)
+            ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo.getFullUri()}] not found")
         val name = NodeUtils.getName(context.artifactInfo.artifactUri)
         ServletResponseUtils.response(name, file)
         super.onDownloadSuccess(context, file)
@@ -113,7 +124,8 @@ class NpmRemoteRepository : RemoteRepository() {
         val request = Request.Builder().url(searchUri).build()
         val response = httpClient.newCall(request).execute()
         if (checkResponse(response)) {
-            val file = response.body()?.let { createTempFile(it) } ?: throw NpmArtifactNotFoundException("file $tgzFullPath download failed.")
+            val file = response.body()?.let { createTempFile(it) }
+                ?: throw NpmArtifactNotFoundException("file $tgzFullPath download failed.")
             val jsonFile = transFileToJson(context, file)
             val versionFile = jsonFile.getAsJsonObject(VERSIONS).getAsJsonObject(pkgInfo.third)
             val artifactFile = ArtifactFileFactory.build(0)
@@ -122,6 +134,13 @@ class NpmRemoteRepository : RemoteRepository() {
             context.contextAttributes[NPM_FILE_FULL_PATH] =
                 String.format(NPM_PKG_VERSION_FULL_PATH, name, name, pkgInfo.third)
             putArtifactCache(context, artifactFile.getTempFile())
+            // npm dependent，数据迁移的时候需要
+            npmDependentHandler.updatePkgDepts(
+                context.userId,
+                context.artifactInfo,
+                jsonFile,
+                NpmOperationAction.PUBLISH
+            )
         }
     }
 
@@ -161,13 +180,16 @@ class NpmRemoteRepository : RemoteRepository() {
     }
 
     private fun transFileToJson(context: ArtifactTransferContext, file: File): JsonObject {
+        val projectId = context.artifactInfo.projectId
+        val repoName = context.artifactInfo.repoName
         val pkgJson = GsonUtils.transferFileToJson(file)
         val name = pkgJson.get(NAME).asString
         val id = pkgJson[ID].asString
         if (id.substring(1).contains('@')) {
             val oldTarball = pkgJson.getAsJsonObject(DIST)[TARBALL].asString
             val prefix = oldTarball.split(name)[0].trimEnd('/')
-            val newTarball = oldTarball.replace(prefix, getTarballPrefix(context))
+            val newTarball =
+                oldTarball.replace(prefix, tarballPrefix.trimEnd('/').plus("/$projectId").plus("/$repoName"))
             pkgJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
         } else {
             val versions = pkgJson.getAsJsonObject(VERSIONS)
@@ -175,7 +197,8 @@ class NpmRemoteRepository : RemoteRepository() {
                 val versionObject = versions.getAsJsonObject(it)
                 val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
                 val prefix = oldTarball.split(name)[0].trimEnd('/')
-                val newTarball = oldTarball.replace(prefix, getTarballPrefix(context))
+                val newTarball =
+                    oldTarball.replace(prefix, tarballPrefix.trimEnd('/').plus("/$projectId").plus("/$repoName"))
                 versionObject.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
             }
         }
