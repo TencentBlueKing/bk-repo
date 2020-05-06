@@ -2,15 +2,13 @@ package com.tencent.bkrepo.opdata.job
 
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.config.InfluxDbConfig
+import com.tencent.bkrepo.opdata.model.NodeModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
 import com.tencent.bkrepo.opdata.model.RepoModel
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.influxdb.dto.BatchPoints
 import org.influxdb.dto.Point
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
@@ -19,7 +17,7 @@ import java.util.concurrent.TimeUnit
 class ProjectRepoStatJob {
 
     @Autowired
-    private lateinit var mongoTemplate: MongoTemplate
+    private lateinit var nodeModel: NodeModel
 
     @Autowired
     private lateinit var projectModel: ProjectModel
@@ -53,22 +51,12 @@ class ProjectRepoStatJob {
                 var repoSize = 0L
                 var nodeNum = 0L
                 val repoName = it
-                val query = Query(
-                    Criteria.where("folder").`is`(false)
-                        .and("projectId").`is`(projectId)
-                        .and("repoName").`is`(repoName)
-                )
-                val results = mongoTemplate.find(query, MutableMap::class.java, table)
-                results.forEach {
-                    val size = it.get("size") as Long
-                    repoSize += size
-                    nodeNum++
-                }
+                val result = nodeModel.getNodeSize(projectId, repoName)
                 if (repoSize != 0L && nodeNum != 0L) {
                     val point = Point.measurement("repoInfo")
                         .time(timeMillis, TimeUnit.MILLISECONDS)
-                        .addField("size", repoSize / (1024 * 1024 * 1024))
-                        .addField("num", nodeNum)
+                        .addField("size", result.size / (1024 * 1024 * 1024))
+                        .addField("num", result.num)
                         .tag("projectId", projectId)
                         .tag("repoName", repoName)
                         .tag("table", table)
