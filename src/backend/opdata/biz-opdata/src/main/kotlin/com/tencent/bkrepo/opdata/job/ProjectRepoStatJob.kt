@@ -52,6 +52,7 @@ class ProjectRepoStatJob {
                 var nodeNum = 0L
                 val repoName = it
                 val result = nodeModel.getNodeSize(projectId, repoName)
+                logger.info("project :{},repo:{}, node size result:{}", projectId, repoName, result)
                 if (repoSize != 0L && nodeNum != 0L) {
                     logger.info("project :{},repo:{},size:{},num:{}", projectId, repoName, result.size, result.num)
                     val point = Point.measurement("repoInfo")
