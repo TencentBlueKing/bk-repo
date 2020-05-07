@@ -28,7 +28,7 @@ class ProjectRepoStatJob {
     @Autowired
     private lateinit var influxDbConfig: InfluxDbConfig
 
-    @Scheduled(cron = "00 00 */1 * * ?")
+    @Scheduled(cron = "00 30 */1 * * ?")
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT1H")
     fun statProjectRepoSize() {
         logger.info("start to stat project metrics")
@@ -48,12 +48,9 @@ class ProjectRepoStatJob {
             val table = "node_" + (projectId.hashCode() and 255).toString()
 
             repos.forEach {
-                var repoSize = 0L
-                var nodeNum = 0L
                 val repoName = it
                 val result = nodeModel.getNodeSize(projectId, repoName)
-                logger.info("project :{},repo:{}, node size result:{}", projectId, repoName, result)
-                if (repoSize != 0L && nodeNum != 0L) {
+                if (result.size != 0L && result.num != 0L) {
                     logger.info("project :{},repo:{},size:{},num:{}", projectId, repoName, result.size, result.num)
                     val point = Point.measurement("repoInfo")
                         .time(timeMillis, TimeUnit.MILLISECONDS)
@@ -69,7 +66,6 @@ class ProjectRepoStatJob {
         }
         inluxdDb.write(batchPoints)
         inluxdDb.close()
-        inluxdDb = null
     }
 
     companion object {
