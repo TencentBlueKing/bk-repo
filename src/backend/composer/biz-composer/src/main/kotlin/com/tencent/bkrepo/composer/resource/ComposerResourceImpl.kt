@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ComposerResourceImpl(
-        @Autowired
-        private val composerService: ComposerService
-): ComposerResource{
+    @Autowired
+    private val composerService: ComposerService
+) : ComposerResource {
     override fun installRequire(composerArtifactInfo: ComposerArtifactInfo) {
         composerService.installRequire(composerArtifactInfo)
     }
@@ -28,7 +28,7 @@ class ComposerResourceImpl(
         val response = HttpContextHolder.getResponse()
         response.contentType = "application/json; charset=UTF-8"
         if (composerService.getJson(composerArtifactInfo) != null) {
-            response.writer.print (composerService.getJson(composerArtifactInfo))
+            response.writer.print(composerService.getJson(composerArtifactInfo))
         } else {
             response.status = HttpStatus.SC_NOT_FOUND
         }

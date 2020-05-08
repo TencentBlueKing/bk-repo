@@ -10,11 +10,11 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.composer.artifact.ComposerArtifactInfo
 import com.tencent.bkrepo.composer.artifact.repository.ComposerLocalRepository
+import com.tencent.bkrepo.composer.artifact.repository.ComposerRepository
 import org.springframework.stereotype.Service
 
 @Service
 class ComposerService {
-
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun installRequire(composerArtifactInfo: ComposerArtifactInfo) {
@@ -27,14 +27,14 @@ class ComposerService {
     fun getJson(composerArtifactInfo: ComposerArtifactInfo): String? {
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        return (repository as ComposerLocalRepository).getJson(context)
+        return (repository as ComposerRepository).getJson(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun packages(composerArtifactInfo: ComposerArtifactInfo): String? {
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        return (repository as ComposerLocalRepository).packages(context)
+        return (repository as ComposerRepository).packages(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)

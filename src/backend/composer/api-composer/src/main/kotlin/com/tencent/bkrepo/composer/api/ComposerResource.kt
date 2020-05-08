@@ -18,7 +18,8 @@ interface ComposerResource {
 
     @ApiOperation("install")
     @GetMapping(COMPOSER_INSTALL)
-    fun installRequire(@ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo
+    fun installRequire(
+        @ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo
     )
 
     @ApiOperation("packages.json")
@@ -29,9 +30,7 @@ interface ComposerResource {
     @GetMapping(COMPOSER_JSON, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
     fun getJson(@ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo)
 
-
     @ApiOperation("deploy")
     @PutMapping(COMPOSER_DEPLOY, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
     fun deploy(@ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo, file: ArtifactFile)
-
 }

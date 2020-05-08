@@ -28,7 +28,7 @@ import java.io.InputStreamReader
 import java.io.File
 
 @Component
-class ComposerLocalRepository: LocalRepository() {
+class ComposerLocalRepository : LocalRepository(),ComposerRepository {
 
     /**
      * Composer节点创建请求
@@ -57,10 +57,12 @@ class ComposerLocalRepository: LocalRepository() {
         )
     }
 
-    fun getJsonNodeCreateRequest(context: ArtifactUploadContext,
-                                 artifactFile: ArtifactFile,
-    fullPath: String,
-    fileName: String): NodeCreateRequest {
+    fun getJsonNodeCreateRequest(
+        context: ArtifactUploadContext,
+        artifactFile: ArtifactFile,
+        fullPath: String,
+        fileName: String
+    ): NodeCreateRequest {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         val artifactFile = artifactFile
@@ -106,7 +108,7 @@ class ComposerLocalRepository: LocalRepository() {
     override fun onUpload(context: ArtifactUploadContext) {
         with(context.artifactInfo as ComposerArtifactInfo) {
 
-            //store compress file
+            // store compress file
             val nodeCreateRequest = getCompressNodeCreateRequest(context)
             nodeResource.create(nodeCreateRequest)
             context.artifactFileMap["octet-stream"]?.let {
@@ -119,15 +121,15 @@ class ComposerLocalRepository: LocalRepository() {
                 val packageName = paramsMap["packageName"]
                 val version = paramsMap["version"]
                 val json = paramsMap["json"]
-                //query "/p/%package%.json" node ,if not exists create it.
+                // query "/p/%package%.json" node ,if not exists create it.
                 val pArtifactUri = "/p/$packageName.json"
                 json?.let { json -> packageName?.let { packageName -> version?.let { version ->
                     val jsonFile = ArtifactFileFactory.build()
-                    val resultJson = if(nodeResource.detail(projectId, repoName, pArtifactUri).data == null) {
+                    val resultJson = if (nodeResource.detail(projectId, repoName, pArtifactUri).data == null) {
                         JsonUtil.addComposerVersion(String.format(COMPOSER_VERSION_INIT, packageName), json, packageName, version)
-                    }else{
-                        //if "/p/%package%.json" is Exists
-                        //load version jsonFile
+                    } else {
+                        // if "/p/%package%.json" is Exists
+                        // load version jsonFile
                         val existsJsonFile = with(context.artifactInfo) {
                             val jsonNode = nodeResource.detail(projectId, repoName, "/p/$packageName.json").data ?: return
                             jsonNode.nodeInfo.takeIf { !it.folder } ?: return
@@ -136,14 +138,14 @@ class ComposerLocalRepository: LocalRepository() {
 
                         val existsJson = StringBuilder("").let { stringBuilder ->
                             BufferedReader(InputStreamReader(FileInputStream(existsJsonFile))).use { bufferedReader ->
-                                while(bufferedReader.readLine().also { it?.let {
+                                while (bufferedReader.readLine().also { it?.let {
                                             stringBuilder.append(it)
-                                        }} != null);
+                                        } } != null){}
                             }
                             stringBuilder.toString()
                         }
 
-                        //update "/p/%package%.json" 。override by default
+                        // update "/p/%package%.json" 。override by default
                         JsonUtil.addComposerVersion(existsJson, json, packageName, version)
                     }
                     ArtifactUploadContext(jsonFile).let { jsonUploadContext ->
@@ -174,7 +176,7 @@ class ComposerLocalRepository: LocalRepository() {
         }
     }
 
-    fun getJson(context: ArtifactSearchContext): String? {
+    override fun getJson(context: ArtifactSearchContext): String? {
         with(context.artifactInfo as ComposerArtifactInfo) {
             if (artifactUri.matches(Regex("^/p/(.*)\\.json$"))) {
                 val request = HttpContextHolder.getRequest()
@@ -185,9 +187,9 @@ class ComposerLocalRepository: LocalRepository() {
                     storageService.load(resultNode.nodeInfo.sha256!!, context.storageCredentials)?.let {
                         StringBuilder("").let { stringBuilder ->
                             BufferedReader(InputStreamReader(FileInputStream(it))).use { bufferedReader ->
-                                while(bufferedReader.readLine().also { it?.let {
+                                while (bufferedReader.readLine().also { it?.let {
                                             stringBuilder.append(it)
-                                        }} != null);
+                                        } } != null){}
                             }
                             return stringBuilder.toString().wrapperJson(host, packageName)
                         }
@@ -198,11 +200,11 @@ class ComposerLocalRepository: LocalRepository() {
         return null
     }
 
-    fun packages(context: ArtifactSearchContext): String? {
+    override fun packages(context: ArtifactSearchContext): String? {
         with(context.artifactInfo) {
             val request = HttpContextHolder.getRequest()
             val host = "http://${request.remoteHost}:${request.serverPort}/$projectId/$repoName"
-            while(nodeResource.detail(projectId, repoName, artifactUri).data == null) {
+            while (nodeResource.detail(projectId, repoName, artifactUri).data == null) {
                 val artifactFile = ArtifactFileFactory.build()
                 val artifactUploadContext = ArtifactUploadContext(artifactFile)
                 ByteArrayInputStream(INIT_PACKAGES.toByteArray()).use {
@@ -220,9 +222,9 @@ class ComposerLocalRepository: LocalRepository() {
                 storageService.load(resultNode.nodeInfo.sha256!!, context.storageCredentials)?.let {
                     StringBuilder("").let { stringBuilder ->
                         BufferedReader(InputStreamReader(FileInputStream(it))).use { bufferedReader ->
-                            while(bufferedReader.readLine().also { it?.let {
+                            while (bufferedReader.readLine().also { it?.let {
                                         stringBuilder.append(it)
-                                    }} != null);
+                                    } } != null){}
                         }
                         return stringBuilder.toString().wrapperPackageJson(host)
                     }
@@ -231,6 +233,4 @@ class ComposerLocalRepository: LocalRepository() {
         }
         return null
     }
-
-
 }
