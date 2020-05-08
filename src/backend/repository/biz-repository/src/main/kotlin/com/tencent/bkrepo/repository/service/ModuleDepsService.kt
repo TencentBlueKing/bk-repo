@@ -104,8 +104,10 @@ class ModuleDepsService : AbstractService() {
                 createList.add(moduleDeps)
             }
         }
-        moduleDepsRepository.insert(createList)
-        logger.info("batch insert module deps, size: [${createList.size}] success.")
+        if(createList.isNotEmpty()){
+            moduleDepsRepository.insert(createList)
+            logger.info("batch insert module deps, size: [${createList.size}] success.")
+        }
     }
 
     private fun exist(projectId: String, repoName: String, name: String?, deps: String): Boolean {

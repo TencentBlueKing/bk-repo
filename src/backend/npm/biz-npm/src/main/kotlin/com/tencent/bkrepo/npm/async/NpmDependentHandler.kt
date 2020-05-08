@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.npm.constants.DEPENDENCIES
 import com.tencent.bkrepo.npm.constants.DISTTAGS
+import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
@@ -12,7 +13,6 @@ import com.tencent.bkrepo.repository.pojo.module.deps.service.DepsCreateRequest
 import com.tencent.bkrepo.repository.pojo.module.deps.service.DepsDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
@@ -21,7 +21,7 @@ class NpmDependentHandler {
     @Autowired
     private lateinit var moduleDepsResource: ModuleDepsResource
 
-    @Async
+    // @Async
     fun updatePkgDepts(userId: String, artifactInfo: ArtifactInfo, jsonObj: JsonObject, action: NpmOperationAction) {
         logger.info("updatePkgDependent current Thread : [${Thread.currentThread().name}]")
 
@@ -36,7 +36,7 @@ class NpmDependentHandler {
                 doDependentWithUnPublish(userId, artifactInfo, versionJsonData)
             }
             NpmOperationAction.MIGRATION -> {
-                doDependentWithMigration(userId, artifactInfo, jsonObj)
+                doDependentWithPublish(userId, artifactInfo, versionJsonData)
             }
             else -> {
                 logger.warn("don't find operation action [${action.name}].")
@@ -117,6 +117,9 @@ class NpmDependentHandler {
 
     private fun getDistTags(jsonObj: JsonObject): Pair<String, String>? {
         val distTags = jsonObj.getAsJsonObject(DISTTAGS)
+        if (distTags.has(LATEST)) {
+            return Pair(LATEST, distTags[LATEST].asString)
+        }
         distTags.entrySet().forEach {
             return Pair(it.key, it.value.asString)
         }
