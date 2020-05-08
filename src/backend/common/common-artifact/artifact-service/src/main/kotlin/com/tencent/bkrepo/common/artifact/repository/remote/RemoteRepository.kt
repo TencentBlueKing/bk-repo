@@ -69,6 +69,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val response = httpClient.newCall(request).execute()
         return if (checkResponse(response)) {
             val file = createTempFile(response.body()!!)
+            response.body()?.close()
             putArtifactCache(context, file)
             file
         } else null

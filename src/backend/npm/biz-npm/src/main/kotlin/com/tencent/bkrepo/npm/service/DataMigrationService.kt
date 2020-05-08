@@ -48,7 +48,8 @@ class DataMigrationService {
         if (totalDataSet.isNullOrEmpty() && StringUtils.isNotEmpty(url)) {
             val request = Request.Builder().url(url).get().build()
             val response = okHttpClient.newCall(request).execute()
-            totalDataSet = response.body()!!.byteStream().let { GsonUtils.transferInputStreamToJson(it) }.keySet()
+            totalDataSet = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }.keySet()
+            response.body()?.close()
         }
     }
 
@@ -108,9 +109,9 @@ class DataMigrationService {
             try {
                 val request = Request.Builder().url(registry.trimEnd('/').plus("/$pkgName")).get().build()
                 val response = okHttpClient.newCall(request).execute()
-                val searchPackageInfo = response.body()!!.byteStream().let { GsonUtils.transferInputStreamToJson(it) }
+                val searchPackageInfo = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }
                 installTgzFile(searchPackageInfo)
-                response.body()!!.close()
+                response.body()?.close()
                 successSet.add(pkgName)
             } catch (exception: Exception) {
                 logger.warn("failed to install $pkgName.json file", exception)

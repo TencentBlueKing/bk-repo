@@ -35,6 +35,9 @@ class NpmDependentHandler {
             NpmOperationAction.UNPUBLISH -> {
                 doDependentWithUnPublish(userId, artifactInfo, versionJsonData)
             }
+            NpmOperationAction.MIGRATION -> {
+                doDependentWithMigration(userId, artifactInfo, jsonObj)
+            }
             else -> {
                 logger.warn("don't find operation action [${action.name}].")
             }
@@ -60,8 +63,10 @@ class NpmDependentHandler {
                     )
                 }
             }
-            moduleDepsResource.batchCreate(createList)
-            logger.info("publish dependent for [$name] success.")
+            if (createList.isNotEmpty()) {
+                moduleDepsResource.batchCreate(createList)
+                logger.info("publish dependent for [$name] success.")
+            }
         }
     }
 
@@ -76,6 +81,38 @@ class NpmDependentHandler {
             )
         )
         logger.info("unPublish dependent for [$name] success.")
+    }
+
+    private fun doDependentWithMigration(userId: String, artifactInfo: ArtifactInfo, jsonData: JsonObject) {
+        val name = jsonData[NAME].asString
+        val versionsJsonData = jsonData.getAsJsonObject(VERSIONS)
+        val createList = mutableListOf<DepsCreateRequest>()
+        val deptsSet = mutableSetOf<String>()
+        versionsJsonData.keySet().forEach { version ->
+            val versionJsonData = versionsJsonData.getAsJsonObject(version)
+            if (versionJsonData.has(DEPENDENCIES)) {
+                val dependenciesSet = versionJsonData.getAsJsonObject(DEPENDENCIES).keySet()
+                if (dependenciesSet.isNotEmpty()) {
+                    deptsSet.addAll(dependenciesSet)
+                }
+            }
+        }
+        deptsSet.forEach {
+            createList.add(
+                DepsCreateRequest(
+                    projectId = artifactInfo.projectId,
+                    repoName = artifactInfo.repoName,
+                    name = it,
+                    deps = name,
+                    overwrite = true,
+                    operator = userId
+                )
+            )
+        }
+        if (createList.isNotEmpty()) {
+            moduleDepsResource.batchCreate(createList)
+            logger.info("migration dependent for [$name] success.")
+        }
     }
 
     private fun getDistTags(jsonObj: JsonObject): Pair<String, String>? {
