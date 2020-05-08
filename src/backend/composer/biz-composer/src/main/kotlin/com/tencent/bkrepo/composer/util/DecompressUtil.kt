@@ -39,15 +39,15 @@ object DecompressUtil {
     }
 
     @Throws(Exception::class)
-    fun InputStream.wrapperJson(uri: String): Map<String, String>?{
+    fun InputStream.wrapperJson(uri: String): Map<String, String>? {
         UriUtil.getUriArgs(uri)?.let { args ->
             args["format"]?.let { format ->
-                this.getComposerJson(format).let{ json ->
+                this.getComposerJson(format).let { json ->
                     JsonParser().parse(json).asJsonObject.let {
                         it.addProperty("uid", UUID.randomUUID().toString())
                         val distObject = JsonObject()
-                        distObject.addProperty("type",format)
-                        distObject.addProperty("url","direct-dists$uri")
+                        distObject.addProperty("type", format)
+                        distObject.addProperty("url", "direct-dists$uri")
                         it.add("dist", distObject)
                         it.addProperty("type", "library")
                         return mapOf("packageName" to (json jsonValue "name"),
@@ -90,10 +90,10 @@ object DecompressUtil {
                                     return stringBuilder.toString()
                                 }
                             }
-                        } != null);
+                        } != null){}
             } catch (ise: IllegalStateException) {
                 if (ise.message != "it must not be null") {
-                }else{
+                } else {
                     logger.error(ise.message)
                 }
             }
@@ -108,7 +108,7 @@ object DecompressUtil {
     infix fun ZipFile.unZipTo(destDir: String) {
         try {
             for (entry in entries()) {
-                //判断是否为文件夹
+                // 判断是否为文件夹
                 if (entry.isDirectory) {
                     File("$destDir/${entry.name}").mkdirs()
                 } else {
