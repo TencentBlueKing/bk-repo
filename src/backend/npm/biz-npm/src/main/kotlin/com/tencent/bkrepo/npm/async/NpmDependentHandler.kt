@@ -65,8 +65,8 @@ class NpmDependentHandler {
             }
             if (createList.isNotEmpty()) {
                 moduleDepsResource.batchCreate(createList)
-                logger.info("publish dependent for [$name] success.")
             }
+            logger.info("publish dependent for package: [$name], size: [${createList.size}] success.")
         }
     }
 
@@ -111,8 +111,8 @@ class NpmDependentHandler {
         }
         if (createList.isNotEmpty()) {
             moduleDepsResource.batchCreate(createList)
-            logger.info("migration dependent for [$name] success.")
         }
+        logger.info("migration dependent for package: [$name], size: [${createList.size}] success.")
     }
 
     private fun getDistTags(jsonObj: JsonObject): Pair<String, String>? {
