@@ -1,17 +1,18 @@
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.npm.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.repository.dao.repository.ModuleDepsRepository
-import com.tencent.bkrepo.repository.model.TModuleDeps
-import com.tencent.bkrepo.repository.pojo.module.deps.ModuleDepsInfo
-import com.tencent.bkrepo.repository.pojo.module.deps.service.DepsCreateRequest
-import com.tencent.bkrepo.repository.pojo.module.deps.service.DepsDeleteRequest
+import com.tencent.bkrepo.npm.dao.repository.ModuleDepsRepository
+import com.tencent.bkrepo.npm.model.TModuleDeps
+import com.tencent.bkrepo.npm.pojo.module.des.ModuleDepsInfo
+import com.tencent.bkrepo.npm.pojo.module.des.service.DepsCreateRequest
+import com.tencent.bkrepo.npm.pojo.module.des.service.DepsDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -21,12 +22,15 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class ModuleDepsService : AbstractService() {
+class ModuleDepsService {
     @Autowired
     private lateinit var moduleDepsRepository: ModuleDepsRepository
 
     @Autowired
-    private lateinit var repositoryService: RepositoryService
+    private lateinit var mongoTemplate: MongoTemplate
+
+    // @Autowired
+    // private lateinit var repositoryService: RepositoryService
 
     /**
      * 创建依赖关系
@@ -42,7 +46,7 @@ class ModuleDepsService : AbstractService() {
                 CommonMessageCode.PARAMETER_MISSING,
                 this::deps.name
             )
-            repositoryService.checkRepository(projectId, repoName)
+            // repositoryService.checkRepository(projectId, repoName)
             if (exist(projectId, repoName, name, deps)) {
                 if (!overwrite) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, name)
@@ -80,7 +84,7 @@ class ModuleDepsService : AbstractService() {
                     CommonMessageCode.PARAMETER_MISSING,
                     this::deps.name
                 )
-                repositoryService.checkRepository(projectId, repoName)
+                // repositoryService.checkRepository(projectId, repoName)
                 if (exist(projectId, repoName, name, deps)) {
                     if (!overwrite) {
                         throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, name)
@@ -104,7 +108,7 @@ class ModuleDepsService : AbstractService() {
                 createList.add(moduleDeps)
             }
         }
-        if(createList.isNotEmpty()){
+        if (createList.isNotEmpty()) {
             moduleDepsRepository.insert(createList)
             logger.info("batch insert module deps, size: [${createList.size}] success.")
         }
@@ -127,7 +131,7 @@ class ModuleDepsService : AbstractService() {
                 CommonMessageCode.PARAMETER_MISSING,
                 this::name.name
             )
-            repositoryService.checkRepository(projectId, repoName)
+            // repositoryService.checkRepository(projectId, repoName)
             if (!exist(projectId, repoName, name, deps)) throw ErrorCodeException(
                 ArtifactMessageCode.NODE_EXISTED,
                 deps
@@ -144,7 +148,7 @@ class ModuleDepsService : AbstractService() {
 
     fun deleteAllByName(depsDeleteRequest: DepsDeleteRequest, soft: Boolean = true) {
         with(depsDeleteRequest) {
-            repositoryService.checkRepository(projectId, repoName)
+            // repositoryService.checkRepository(projectId, repoName)
             if (!exist(projectId, repoName, name, deps)) throw ErrorCodeException(
                 ArtifactMessageCode.NODE_EXISTED,
                 deps
@@ -178,10 +182,11 @@ class ModuleDepsService : AbstractService() {
     }
 
     fun find(projectId: String, repoName: String, name: String, deps: String): ModuleDepsInfo {
-        repositoryService.checkRepository(projectId, repoName)
+        // repositoryService.checkRepository(projectId, repoName)
         val criteria =
             Criteria.where(TModuleDeps::projectId.name).`is`(projectId).and(TModuleDeps::repoName.name).`is`(repoName)
-                .and(TModuleDeps::name.name).`is`(name).and(TModuleDeps::deps.name).`is`(deps).and(TModuleDeps::deleted.name).`is`(null)
+                .and(TModuleDeps::name.name).`is`(name).and(TModuleDeps::deps.name).`is`(deps)
+                .and(TModuleDeps::deleted.name).`is`(null)
         if (mongoTemplate.count(Query.query(criteria), TModuleDeps::class.java) >= THRESHOLD) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
         }
@@ -189,7 +194,7 @@ class ModuleDepsService : AbstractService() {
     }
 
     fun list(projectId: String, repoName: String, name: String): List<ModuleDepsInfo> {
-        repositoryService.checkRepository(projectId, repoName)
+        // repositoryService.checkRepository(projectId, repoName)
         val criteria =
             Criteria.where(TModuleDeps::projectId.name).`is`(projectId).and(TModuleDeps::repoName.name).`is`(repoName)
                 .and(TModuleDeps::name.name).`is`(name).and(TModuleDeps::deleted.name).`is`(null)
@@ -203,7 +208,7 @@ class ModuleDepsService : AbstractService() {
     fun page(projectId: String, repoName: String, page: Int, size: Int, name: String): Page<ModuleDepsInfo> {
         page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
         size.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
-        repositoryService.checkRepository(projectId, repoName)
+        // repositoryService.checkRepository(projectId, repoName)
         val criteria =
             Criteria.where(TModuleDeps::projectId.name).`is`(projectId).and(TModuleDeps::repoName.name).`is`(repoName)
                 .and(TModuleDeps::name.name).`is`(name).and(TModuleDeps::deleted.name).`is`(null)

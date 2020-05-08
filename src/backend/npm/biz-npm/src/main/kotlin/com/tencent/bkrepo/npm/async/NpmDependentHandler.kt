@@ -8,9 +8,9 @@ import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
-import com.tencent.bkrepo.repository.api.ModuleDepsResource
-import com.tencent.bkrepo.repository.pojo.module.deps.service.DepsCreateRequest
-import com.tencent.bkrepo.repository.pojo.module.deps.service.DepsDeleteRequest
+import com.tencent.bkrepo.npm.pojo.module.des.service.DepsCreateRequest
+import com.tencent.bkrepo.npm.pojo.module.des.service.DepsDeleteRequest
+import com.tencent.bkrepo.npm.service.ModuleDepsService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component
 class NpmDependentHandler {
 
     @Autowired
-    private lateinit var moduleDepsResource: ModuleDepsResource
+    private lateinit var moduleDepsService: ModuleDepsService
 
     // @Async
     fun updatePkgDepts(userId: String, artifactInfo: ArtifactInfo, jsonObj: JsonObject, action: NpmOperationAction) {
@@ -64,7 +64,7 @@ class NpmDependentHandler {
                 }
             }
             if (createList.isNotEmpty()) {
-                moduleDepsResource.batchCreate(createList)
+                moduleDepsService.batchCreate(createList)
             }
             logger.info("publish dependent for package: [$name], size: [${createList.size}] success.")
         }
@@ -72,7 +72,7 @@ class NpmDependentHandler {
 
     private fun doDependentWithUnPublish(userId: String, artifactInfo: ArtifactInfo, versionJsonData: JsonObject) {
         val name = versionJsonData[NAME].asString
-        moduleDepsResource.deleteAllByName(
+        moduleDepsService.deleteAllByName(
             DepsDeleteRequest(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
@@ -110,7 +110,7 @@ class NpmDependentHandler {
             )
         }
         if (createList.isNotEmpty()) {
-            moduleDepsResource.batchCreate(createList)
+            moduleDepsService.batchCreate(createList)
         }
         logger.info("migration dependent for package: [$name], size: [${createList.size}] success.")
     }

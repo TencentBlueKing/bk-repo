@@ -1,6 +1,5 @@
-package com.tencent.bkrepo.repository.pojo.module.deps.service
+package com.tencent.bkrepo.npm.pojo.module.des.service
 
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -15,7 +14,7 @@ data class DepsCreateRequest(
     @ApiModelProperty("被依赖资源名称", required = true)
     val deps: String,
     @ApiModelProperty("操作用户", required = false)
-    val operator: String = SYSTEM_USER,
+    val operator: String = "system",
     @ApiModelProperty("是否覆盖", required = false)
     val overwrite: Boolean = false
 )

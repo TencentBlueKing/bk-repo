@@ -1,13 +1,13 @@
-package com.tencent.bkrepo.repository.resource
+package com.tencent.bkrepo.npm.resource
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.ModuleDepsResource
-import com.tencent.bkrepo.repository.pojo.module.deps.ModuleDepsInfo
-import com.tencent.bkrepo.repository.pojo.module.deps.service.DepsCreateRequest
-import com.tencent.bkrepo.repository.pojo.module.deps.service.DepsDeleteRequest
-import com.tencent.bkrepo.repository.service.ModuleDepsService
+import com.tencent.bkrepo.npm.api.ModuleDepsResource
+import com.tencent.bkrepo.npm.pojo.module.des.service.DepsCreateRequest
+import com.tencent.bkrepo.npm.pojo.module.des.service.DepsDeleteRequest
+import com.tencent.bkrepo.npm.pojo.module.des.ModuleDepsInfo
+import com.tencent.bkrepo.npm.service.ModuleDepsService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
