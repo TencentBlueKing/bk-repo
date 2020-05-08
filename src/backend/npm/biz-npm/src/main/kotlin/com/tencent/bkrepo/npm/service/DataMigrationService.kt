@@ -15,12 +15,14 @@ import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.ThreadPoolManager
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.util.concurrent.Callable
@@ -106,16 +108,20 @@ class DataMigrationService {
     fun doDataMigration(artifactInfo: NpmArtifactInfo, data: Set<String>) {
         logger.info("current Thread : ${Thread.currentThread().name}")
         data.forEach { pkgName ->
+            var response: Response? = null
             try {
-                val request = Request.Builder().url(registry.trimEnd('/').plus("/$pkgName")).get().build()
-                val response = okHttpClient.newCall(request).execute()
+                val request = Request.Builder().url(registry.trimEnd('/').plus("/$pkgName")).header("isMigration", "true").get().build()
+                response = okHttpClient.newCall(request).execute()
                 val searchPackageInfo = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }
-                installTgzFile(searchPackageInfo)
-                response.body()?.close()
+                if (checkResponse(response)) {
+                    installTgzFile(searchPackageInfo)
+                }
                 successSet.add(pkgName)
             } catch (exception: Exception) {
-                logger.warn("failed to install $pkgName.json file", exception)
+                logger.error("failed to install [$pkgName.json] file", exception)
                 errorSet.add(pkgName)
+            } finally {
+                response?.body()?.close()
             }
         }
     }
@@ -123,9 +129,17 @@ class DataMigrationService {
     fun installTgzFile(jsonObject: JsonObject) {
         val versions = jsonObject.getAsJsonObject(VERSIONS)
         versions.keySet().forEach { version ->
-            val tarball = versions.getAsJsonObject(version).getAsJsonObject(DIST).get("tarball").asString
-            val request = Request.Builder().url(tarball).get().build()
-            okHttpClient.newCall(request).execute()
+            var tarball: String? = null
+            var response: Response? = null
+            try {
+                tarball = versions.getAsJsonObject(version).getAsJsonObject(DIST).get("tarball").asString
+                val request = Request.Builder().url(tarball).header("isMigration", "true").get().build()
+                response = okHttpClient.newCall(request).execute()
+            } catch (exception: IOException) {
+                logger.error("http send [$tarball]  throw Exception", exception)
+            } finally {
+                response?.body()?.close()
+            }
         }
     }
 
@@ -159,6 +173,14 @@ class DataMigrationService {
             }
         }
         return resultList
+    }
+
+    fun checkResponse(response: Response): Boolean {
+        if (!response.isSuccessful) {
+            logger.warn("Download file from remote failed: [${response.code()}]")
+            return false
+        }
+        return true
     }
 
     companion object {
