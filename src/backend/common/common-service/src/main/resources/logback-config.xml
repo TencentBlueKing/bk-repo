@@ -29,6 +29,12 @@
             </layout>
         </encoder>
     </appender>
+    <appender name="async_app_log" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="app_log" />
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+    </appender>
 
     <appender name="access_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${logging.access.file}</file>
@@ -40,6 +46,12 @@
         <encoder>
             <pattern>%m%n</pattern>
         </encoder>
+    </appender>
+    <appender name="async_access_log" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="access_log" />
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
     </appender>
 
     <appender name="job_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -53,6 +65,10 @@
                 <pattern>${logging.file.pattern}</pattern>
             </layout>
         </encoder>
+    </appender>
+    <appender name="async_job_log" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="job_log" />
+        <discardingThreshold>0</discardingThreshold>
     </appender>
 
     <appender name="error_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -72,6 +88,12 @@
             <onMatch>ACCEPT</onMatch>
             <onMismatch>DENY</onMismatch>
         </filter>
+    </appender>
+    <appender name="async_error_log" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="error_log" />
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>false</neverBlock>
     </appender>
 
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
@@ -96,14 +118,14 @@
 
     <springProfile name="dev, test, prod">
         <logger name="JobLogger" level="INFO" additivity="false">
-            <appender-ref ref="job_log"/>
+            <appender-ref ref="async_job_log"/>
         </logger>
         <logger name="AccessLogger" level="INFO" additivity="false">
-            <appender-ref ref="access_log"/>
+            <appender-ref ref="async_access_log"/>
         </logger>
         <root level="INFO">
-            <appender-ref ref="app_log"/>
-            <appender-ref ref="error_log"/>
+            <appender-ref ref="async_app_log"/>
+            <appender-ref ref="async_error_log"/>
         </root>
     </springProfile>
 
