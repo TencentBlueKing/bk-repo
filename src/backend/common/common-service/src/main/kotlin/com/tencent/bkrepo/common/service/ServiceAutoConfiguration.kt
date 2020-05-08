@@ -8,7 +8,7 @@ import com.tencent.bkrepo.common.service.feign.ClientConfiguration
 import com.tencent.bkrepo.common.service.feign.FeignFilterRequestMappingHandlerMapping
 import com.tencent.bkrepo.common.service.log.AccessLogWebServerCustomizer
 import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
-import com.tencent.bkrepo.common.service.ribbon.RibbonRouteRuleConfiguration
+import com.tencent.bkrepo.common.service.ribbon.RibbonGrayConfiguration
 import com.tencent.bkrepo.common.service.swagger.SwaggerConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
@@ -34,7 +34,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
     AsyncConfiguration::class,
     MessageSourceConfiguration::class,
     ClientConfiguration::class,
-    RibbonRouteRuleConfiguration::class,
+    RibbonGrayConfiguration::class,
     AccessLogWebServerCustomizer::class
 )
 class ServiceAutoConfiguration {

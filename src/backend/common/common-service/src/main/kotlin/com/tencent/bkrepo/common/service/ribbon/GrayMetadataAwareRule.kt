@@ -5,24 +5,21 @@ import com.netflix.loadbalancer.AvailabilityPredicate
 import com.netflix.loadbalancer.CompositePredicate
 import com.netflix.loadbalancer.PredicateBasedRule
 import com.netflix.loadbalancer.Server
-import com.netflix.loadbalancer.ZoneAvoidancePredicate
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import org.springframework.cloud.commons.util.InetUtils
+import org.springframework.cloud.client.serviceregistry.Registration
 
-/**
- * 优先调用本机服务
- */
-class LocalPriorRouteRule : PredicateBasedRule() {
+class GrayMetadataAwareRule : PredicateBasedRule() {
+
+    private val properties: RibbonGrayProperties = SpringContextUtils.getBean(RibbonGrayProperties::class.java)
 
     private val predicate: AbstractServerPredicate
 
-    private val localHost: String = SpringContextUtils.getBean(InetUtils::class.java).findFirstNonLoopbackHostInfo().ipAddress
+    private val localHost: String = SpringContextUtils.getBean(Registration::class.java).host
 
     init {
-
-        val zonePredicate = ZoneAvoidancePredicate(this, null)
+        val metadataAwarePredicate = GrayMetadataAwarePredicate(properties)
         val availabilityPredicate = AvailabilityPredicate(this, null)
-        predicate = createCompositePredicate(zonePredicate, availabilityPredicate)
+        predicate = createCompositePredicate(metadataAwarePredicate, availabilityPredicate)
     }
 
     override fun getPredicate() = predicate
@@ -33,6 +30,9 @@ class LocalPriorRouteRule : PredicateBasedRule() {
     }
 
     private fun filterServers(serverList: List<Server>): List<Server> {
+        if (!properties.localPrior) {
+            return serverList
+        }
         for (server in serverList) {
             if (server.host == localHost) {
                 return listOf(server)
