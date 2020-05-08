@@ -1,15 +1,13 @@
-package com.tencent.bkrepo.repository.api
+package com.tencent.bkrepo.npm.api
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.constant.SERVICE_NAME
-import com.tencent.bkrepo.repository.pojo.module.deps.ModuleDepsInfo
-import com.tencent.bkrepo.repository.pojo.module.deps.service.DepsCreateRequest
-import com.tencent.bkrepo.repository.pojo.module.deps.service.DepsDeleteRequest
+import com.tencent.bkrepo.npm.pojo.module.des.service.DepsCreateRequest
+import com.tencent.bkrepo.npm.pojo.module.des.service.DepsDeleteRequest
+import com.tencent.bkrepo.npm.pojo.module.des.ModuleDepsInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
-import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -19,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Api("包依赖信息接口")
-@FeignClient(SERVICE_NAME, contextId = "ModuleDepsResource")
 @RequestMapping("/service/module/deps")
 interface ModuleDepsResource {
     @ApiOperation("创建资源依赖关系")

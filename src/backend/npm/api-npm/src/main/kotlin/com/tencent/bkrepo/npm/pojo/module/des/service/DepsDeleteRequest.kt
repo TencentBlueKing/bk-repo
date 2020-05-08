@@ -1,6 +1,5 @@
-package com.tencent.bkrepo.repository.pojo.module.deps.service
+package com.tencent.bkrepo.npm.pojo.module.des.service
 
-import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -15,5 +14,5 @@ data class DepsDeleteRequest(
     @ApiModelProperty("被依赖资源名称", required = true)
     val deps: String,
     @ApiModelProperty("操作用户", required = true)
-    override val operator: String
-) : ServiceRequest
+    val operator: String
+)
