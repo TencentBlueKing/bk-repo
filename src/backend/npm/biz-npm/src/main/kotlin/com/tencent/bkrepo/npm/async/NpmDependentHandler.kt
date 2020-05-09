@@ -23,7 +23,7 @@ class NpmDependentHandler {
 
     // @Async
     fun updatePkgDepts(userId: String, artifactInfo: ArtifactInfo, jsonObj: JsonObject, action: NpmOperationAction) {
-        logger.info("updatePkgDependent current Thread : [${Thread.currentThread().name}]")
+        // logger.info("updatePkgDependent current Thread : [${Thread.currentThread().name}]")
 
         val distTags = getDistTags(jsonObj)!!
         val versionJsonData = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(distTags.second)
