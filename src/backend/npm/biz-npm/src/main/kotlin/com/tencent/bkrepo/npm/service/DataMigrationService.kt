@@ -39,6 +39,7 @@ import java.io.InputStreamReader
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.Callable
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.stream.Collectors
 
@@ -60,7 +61,9 @@ class DataMigrationService {
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
 
-    private val okHttpClient: OkHttpClient by lazy { HttpClientBuilderFactory.create().build() }
+    private val okHttpClient: OkHttpClient by lazy {
+        HttpClientBuilderFactory.create().readTimeout(60L, TimeUnit.SECONDS).build()
+    }
 
     private var totalDataSet = mutableSetOf<String>()
     private val successSet = mutableSetOf<String>()
@@ -68,10 +71,17 @@ class DataMigrationService {
 
     private final fun initTotalDataSetByUrl() {
         if (totalDataSet.isNullOrEmpty() && StringUtils.isNotEmpty(url)) {
-            val request = Request.Builder().url(url).get().build()
-            val response = okHttpClient.newCall(request).execute()
-            totalDataSet = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }.keySet()
-            response.body()?.close()
+            var response: Response? = null
+            try {
+                val request = Request.Builder().url(url).get().build()
+                val response = okHttpClient.newCall(request).execute()
+                totalDataSet = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }.keySet()
+            } catch (exception: Exception) {
+                logger.error("http send [$url] for get package name data failed, {}", exception.message)
+                throw exception
+            } finally {
+                response?.body()?.close()
+            }
         }
     }
 
@@ -150,7 +160,7 @@ class DataMigrationService {
                 }
                 logger.info("npm package name: [$pkgName] migration success!")
                 successSet.add(pkgName)
-                if(successSet.size % 10 == 0){
+                if (successSet.size % 10 == 0) {
                     logger.info("progress rate : successRate:[${successSet.size}/${totalDataSet.size}], failRate[${errorSet.size}/${totalDataSet.size}]")
                 }
             } catch (exception: Exception) {
@@ -256,7 +266,8 @@ class DataMigrationService {
     fun find(projectId: String, repoName: String, counter: Int): MigrationErrorDataInfo? {
         // repositoryService.checkRepository(projectId, repoName)
         val criteria =
-            Criteria.where(TMigrationErrorData::projectId.name).`is`(projectId).and(TMigrationErrorData::repoName.name).`is`(repoName)
+            Criteria.where(TMigrationErrorData::projectId.name).`is`(projectId).and(TMigrationErrorData::repoName.name)
+                .`is`(repoName)
                 .and(TMigrationErrorData::counter.name).`is`(counter).and(TMigrationErrorData::deleted.name).`is`(null)
         return mongoTemplate.findOne(Query.query(criteria), TMigrationErrorData::class.java)?.let { convert(it)!! }
     }
