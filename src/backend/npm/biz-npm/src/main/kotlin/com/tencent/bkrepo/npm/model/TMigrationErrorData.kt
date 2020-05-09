@@ -1,24 +1,25 @@
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.npm.model
 
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("module_deps")
+@Document("migration_error_data")
 @CompoundIndexes(
     CompoundIndex(
-        name = "projectId_repoName_name_deps_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'name': 1, 'deps': 1, 'deleted': 1}",
-        background = true
+        name = "projectId_repoName_error_data_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'counter': 1, 'errorData': 1, 'deleted': 1}",
+        background = true,
+        unique = true
     )
 )
-data class TModuleDeps(
+data class TMigrationErrorData(
     var id: String? = null,
-    // module name
-    var name: String,
-    // which module depend on this module
-    var deps: String,
+    // 同步次数计数器
+    var counter: Int,
+    // 错误数据
+    var errorData: String,
     var projectId: String,
     var repoName: String,
     var createdBy: String,

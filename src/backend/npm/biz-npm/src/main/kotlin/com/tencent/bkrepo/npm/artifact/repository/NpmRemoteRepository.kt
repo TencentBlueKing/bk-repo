@@ -159,6 +159,7 @@ class NpmRemoteRepository : RemoteRepository() {
             }
         } catch (exception: Exception) {
             logger.info("http send [$searchUri] failed, ", exception)
+            throw exception
         } finally {
             if (response != null) {
                 response.body()?.close()
@@ -193,13 +194,22 @@ class NpmRemoteRepository : RemoteRepository() {
         val httpClient = createHttpClient(remoteConfiguration)
         val searchUri = generateRemoteSearchUrl(context)
         val request = Request.Builder().url(searchUri).build()
-        val response = httpClient.newCall(request).execute()
-        return if (checkResponse(response)) {
-            val file = createTempFile(response.body()!!)
-            response.body()?.close()
-            putArtifactCache(context, file)
-            transFileToJson(context, file)
-        } else null
+        var response: Response? = null
+        return try {
+            response = httpClient.newCall(request).execute()
+            if (checkResponse(response)) {
+                val file = createTempFile(response.body()!!)
+                putArtifactCache(context, file)
+                transFileToJson(context, file)
+            } else null
+        } catch (exception: Exception) {
+            logger.info("http send [$searchUri] failed, ", exception)
+            throw exception
+        } finally {
+            if (response != null) {
+                response.body()?.close()
+            }
+        }
     }
 
     private fun transFileToJson(context: ArtifactTransferContext, file: File): JsonObject {
