@@ -214,8 +214,6 @@ class NpmRemoteRepository : RemoteRepository() {
 
     private fun transFileToJson(context: ArtifactTransferContext, file: File): JsonObject {
         val isMigration = context.request.getHeader("isMigration") == "true"
-        val projectId = context.artifactInfo.projectId
-        val repoName = context.artifactInfo.repoName
         val pkgJson = GsonUtils.transferFileToJson(file)
         val name = pkgJson.get(NAME).asString
         val id = pkgJson[ID].asString
@@ -225,7 +223,7 @@ class NpmRemoteRepository : RemoteRepository() {
             val newTarball = if (isMigration) {
                 oldTarball.replace(prefix, registry.trimEnd('/'))
             } else {
-                oldTarball.replace(prefix, tarballPrefix.trimEnd('/').plus("/$projectId").plus("/$repoName"))
+                oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
             }
             pkgJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
         } else {
@@ -237,7 +235,7 @@ class NpmRemoteRepository : RemoteRepository() {
                 val newTarball = if (isMigration) {
                     oldTarball.replace(prefix, registry.trimEnd('/'))
                 } else {
-                    oldTarball.replace(prefix, tarballPrefix.trimEnd('/').plus("/$projectId").plus("/$repoName"))
+                    oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
                 }
                 versionObject.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
             }

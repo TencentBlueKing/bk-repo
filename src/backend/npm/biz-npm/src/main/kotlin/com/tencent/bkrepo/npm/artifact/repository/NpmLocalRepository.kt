@@ -179,8 +179,6 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     private fun getPkgInfo(context: ArtifactSearchContext, file: File): JsonObject {
-        val projectId = context.artifactInfo.projectId
-        val repoName = context.artifactInfo.repoName
         val fileJson = GsonUtils.transferFileToJson(file)
         val containsVersion = fileJson[ID].asString.substring(1).contains('@')
         if (containsVersion) {
@@ -195,7 +193,7 @@ class NpmLocalRepository : LocalRepository() {
             }
             val oldTarball = fileJson.getAsJsonObject(DIST)[TARBALL].asString
             val prefix = oldTarball.split(name)[0].trimEnd('/')
-            val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/').plus("/$projectId").plus("/$repoName"))
+            val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
             fileJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
         } else {
             val name = fileJson.get(NAME).asString
@@ -215,7 +213,7 @@ class NpmLocalRepository : LocalRepository() {
                 val versionObject = versions.getAsJsonObject(it)
                 val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
                 val prefix = oldTarball.split(name)[0].trimEnd('/')
-                val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/').plus("/$projectId").plus("/$repoName"))
+                val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
                 versionObject.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
             }
         }
