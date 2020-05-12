@@ -25,6 +25,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 class NpmExceptionHandler {
+    @ExceptionHandler(NpmArgumentResolverException::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handlerNpmArgumentResolverException(exception: NpmArgumentResolverException) {
+        val fail = NpmAuthResponse.fail(exception.message)
+        npmResponse(fail, exception)
+    }
 
     @ExceptionHandler(ClientAuthException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
