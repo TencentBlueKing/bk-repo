@@ -6,13 +6,13 @@ import com.tencent.bkrepo.common.service.auth.MicroServiceAuthInterceptor
 import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
 import com.tencent.bkrepo.common.service.feign.ClientConfiguration
 import com.tencent.bkrepo.common.service.feign.FeignFilterRequestMappingHandlerMapping
+import com.tencent.bkrepo.common.service.log.AccessLogWebServerCustomizer
 import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
-import com.tencent.bkrepo.common.service.ribbon.RibbonRouteRuleConfiguration
+import com.tencent.bkrepo.common.service.ribbon.RibbonGrayConfiguration
 import com.tencent.bkrepo.common.service.swagger.SwaggerConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -24,10 +24,9 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
-@PropertySource("classpath:common-service.yml")
+@PropertySource("classpath:common-service.properties")
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnWebApplication
-@EnableDiscoveryClient
 @EnableAsync
 @Import(
     SwaggerConfiguration::class,
@@ -35,7 +34,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
     AsyncConfiguration::class,
     MessageSourceConfiguration::class,
     ClientConfiguration::class,
-    RibbonRouteRuleConfiguration::class
+    RibbonGrayConfiguration::class,
+    AccessLogWebServerCustomizer::class
 )
 class ServiceAutoConfiguration {
 

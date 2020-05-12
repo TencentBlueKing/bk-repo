@@ -34,7 +34,7 @@ class RoleServiceImpl @Autowired constructor(
 
         if (role != null) {
             logger.warn("create role [${request.roleId} , ${request.projectId} ]  is exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_DUP_RID)
+            return role.id
         }
 
         val result = roleRepository.insert(

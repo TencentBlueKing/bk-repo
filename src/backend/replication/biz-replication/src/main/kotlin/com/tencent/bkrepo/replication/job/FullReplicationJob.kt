@@ -60,7 +60,7 @@ class FullReplicationJob : QuartzJobBean() {
             return
         }
         if (task.status == ReplicationStatus.PAUSED) {
-            logger.info("Task[$taskId] status paused, skip task.")
+            logger.info("Task[$taskId] status is paused, skip task.")
         }
         try {
             with(task.setting) {
@@ -88,7 +88,7 @@ class FullReplicationJob : QuartzJobBean() {
             task.endTime = LocalDateTime.now()
             taskRepository.save(task)
             val consumeSeconds = Duration.between(task.startTime!!, task.endTime!!).seconds
-            logger.info("Replica task[$taskId] is finished[${task.status}], reason[${task.errorReason}], consume [$consumeSeconds]s.")
+            logger.info("Replica task[$taskId] finished[${task.status}], reason[${task.errorReason}], consume [$consumeSeconds]s.")
         }
     }
 
@@ -104,7 +104,7 @@ class FullReplicationJob : QuartzJobBean() {
     private fun prepare(context: ReplicationContext) {
         with(context) {
             projectDetailList = repoDataService.listProject(task.localProjectId).map {
-                convertReplicationProject(it, task.remoteProjectId, task.remoteRepoName)
+                convertReplicationProject(it, task.localRepoName, task.remoteProjectId, task.remoteRepoName)
             }
             task.replicationProgress.totalProject = projectDetailList.size
             projectDetailList.forEach { project ->

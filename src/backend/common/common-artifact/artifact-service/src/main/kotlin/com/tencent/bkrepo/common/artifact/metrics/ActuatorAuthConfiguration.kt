@@ -18,11 +18,12 @@ import java.util.ArrayList
 class ActuatorAuthConfiguration {
 
     @Bean
-    fun webEndpointServletHandlerMapping (
+    fun webEndpointServletHandlerMapping(
         webEndpointsSupplier: WebEndpointsSupplier,
         servletEndpointsSupplier: ServletEndpointsSupplier,
         controllerEndpointsSupplier: ControllerEndpointsSupplier,
-        endpointMediaTypes: EndpointMediaTypes?, corsProperties: CorsEndpointProperties,
+        endpointMediaTypes: EndpointMediaTypes?,
+        corsProperties: CorsEndpointProperties,
         webEndpointProperties: WebEndpointProperties
     ): WebMvcEndpointHandlerMapping? {
         val allEndpoints: MutableList<ExposableEndpoint<*>> = ArrayList()

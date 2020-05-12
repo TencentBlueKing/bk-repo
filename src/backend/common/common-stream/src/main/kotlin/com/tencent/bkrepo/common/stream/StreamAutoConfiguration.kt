@@ -4,5 +4,5 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.PropertySource
 
 @Configuration
-@PropertySource("classpath:common-stream.yml")
+@PropertySource("classpath:common-stream.properties")
 class StreamAutoConfiguration

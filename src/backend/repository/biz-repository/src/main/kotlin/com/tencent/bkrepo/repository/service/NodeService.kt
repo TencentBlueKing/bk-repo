@@ -14,7 +14,6 @@ import com.tencent.bkrepo.repository.listener.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeUpdatedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -24,7 +23,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeSearchRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeDeleteUpdate
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeExpireDateUpdate
@@ -33,7 +31,6 @@ import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeListQuery
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePageQuery
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePathUpdate
 import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeQuery
-import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeSearchQuery
 import com.tencent.bkrepo.repository.util.NodeUtils
 import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 import com.tencent.bkrepo.repository.util.NodeUtils.combineFullPath
@@ -74,8 +71,8 @@ class NodeService : AbstractService() {
     @Autowired
     private lateinit var fileReferenceService: FileReferenceService
 
-    @Autowired
-    private lateinit var metadataService: MetadataService
+//    @Autowired
+//    private lateinit var notifyService: NotifyService
 
     /**
      * 查询节点详情
@@ -95,7 +92,7 @@ class NodeService : AbstractService() {
 
         val formattedFullPath = formatFullPath(fullPath)
         val node = queryNode(projectId, repoName, formattedFullPath)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, formattedFullPath)
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, formattedFullPath)
         // 节点为文件直接返回
         if (!node.folder) {
             return NodeSizeInfo(subNodeCount = 0, size = node.size)
@@ -105,8 +102,8 @@ class NodeService : AbstractService() {
         val count = nodeDao.count(Query(criteria))
 
         val aggregation = Aggregation.newAggregation(
-                Aggregation.match(criteria),
-                Aggregation.group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
+            Aggregation.match(criteria),
+            Aggregation.group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
         )
         val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
         val size = if (aggregateResult.mappedResults.size > 0) {
@@ -154,23 +151,6 @@ class NodeService : AbstractService() {
     }
 
     /**
-     * 搜索节点
-     */
-    fun search(searchRequest: NodeSearchRequest): Page<NodeInfo> {
-        searchRequest.page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
-        searchRequest.size.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
-        searchRequest.repoNameList.takeIf { it.isNotEmpty() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoNameList")
-        searchRequest.repoNameList.forEach { repositoryService.checkRepository(searchRequest.projectId, it) }
-
-        val query = nodeSearchQuery(searchRequest)
-
-        val listData = nodeDao.find(query).map { convert(it)!! }
-        val count = nodeDao.count(query)
-
-        return Page(searchRequest.page, searchRequest.size, count, listData)
-    }
-
-    /**
      * 判断节点是否存在
      */
     fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
@@ -186,10 +166,12 @@ class NodeService : AbstractService() {
     @Transactional(rollbackFor = [Throwable::class])
     fun create(createRequest: NodeCreateRequest): NodeInfo {
         with(createRequest) {
+            logger.info("Receive node create request[$createRequest]")
             this.takeIf { folder || !sha256.isNullOrBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
             this.takeIf { folder || !md5.isNullOrBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::md5.name)
             val fullPath = parseFullPath(fullPath)
             val repo = repositoryService.checkRepository(projectId, repoName)
+            logger.info("Check repository success.")
             // 路径唯一性校验
             queryNode(projectId, repoName, fullPath)?.let {
                 if (!overwrite) {
@@ -200,8 +182,10 @@ class NodeService : AbstractService() {
                     deleteByPath(projectId, repoName, fullPath, operator)
                 }
             }
+            logger.info("Query node success.")
             // 判断父目录是否存在，不存在先创建
             mkdirs(projectId, repoName, getParentPath(fullPath), operator)
+            logger.info("Mkdir success.")
             // 创建节点
             val node = TNode(
                 folder = folder,
@@ -214,14 +198,13 @@ class NodeService : AbstractService() {
                 md5 = if (folder) null else md5,
                 projectId = projectId,
                 repoName = repoName,
-                metadata = emptyList(),
+                metadata = MetadataService.convert(metadata),
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
             return node.apply { doCreate(this, repo) }
-                .also { metadataService.save(MetadataSaveRequest(it.projectId, it.repoName, it.fullPath, metadata)) }
                 .also { publishEvent(NodeCreatedEvent(createRequest)) }
                 .also { logger.info("Create node [$createRequest] success.") }
                 .let { convert(it)!! }
@@ -265,6 +248,7 @@ class NodeService : AbstractService() {
         }.also {
             logger.info("Rename node [$it] success.")
         }
+        // notifyService.sendWechat(listOf("necrohuang"), "test wechat")
     }
 
     /**
@@ -366,8 +350,8 @@ class NodeService : AbstractService() {
         val escapedPath = escapeRegex(formattedPath)
         val query = nodeQuery(projectId, repoName)
         query.addCriteria(Criteria().orOperator(
-                Criteria.where(TNode::fullPath.name).regex("^$escapedPath"),
-                Criteria.where(TNode::fullPath.name).`is`(formattedFullPath)
+            Criteria.where(TNode::fullPath.name).regex("^$escapedPath"),
+            Criteria.where(TNode::fullPath.name).`is`(formattedFullPath)
         ))
         if (soft) {
             // 软删除
@@ -396,19 +380,19 @@ class NodeService : AbstractService() {
             val name = getName(path)
             path.takeUnless { isRootPath(it) }?.run { mkdirs(projectId, repoName, parentPath, createdBy) }
             val node = TNode(
-                    folder = true,
-                    path = parentPath,
-                    name = name,
-                    fullPath = combineFullPath(parentPath, name),
-                    size = 0,
-                    expireDate = null,
-                    metadata = emptyList(),
-                    projectId = projectId,
-                    repoName = repoName,
-                    createdBy = createdBy,
-                    createdDate = LocalDateTime.now(),
-                    lastModifiedBy = createdBy,
-                    lastModifiedDate = LocalDateTime.now()
+                folder = true,
+                path = parentPath,
+                name = name,
+                fullPath = combineFullPath(parentPath, name),
+                size = 0,
+                expireDate = null,
+                metadata = emptyList(),
+                projectId = projectId,
+                repoName = repoName,
+                createdBy = createdBy,
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = createdBy,
+                lastModifiedDate = LocalDateTime.now()
             )
             doCreate(node, null)
         }
