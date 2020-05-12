@@ -69,9 +69,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import java.io.File
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -82,9 +79,6 @@ class NpmLocalRepository : LocalRepository() {
 
     @Value("\${npm.migration.remote.proxy.registry}")
     private val registry: String = StringPool.EMPTY
-
-    @Value("\${npm.migration.cache.period.minutes : 1440}")
-    private val cachePeriodMinutes: Int = 24 * 60
 
     @Value("\${npm.tarball.prefix}")
     private val tarballPrefix: String = StringPool.SLASH
@@ -376,13 +370,9 @@ class NpmLocalRepository : LocalRepository() {
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data ?: return null
         if (node.nodeInfo.folder) return null
-        val createdDate = LocalDateTime.parse(node.nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
-        val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
-        return if (age <= cachePeriodMinutes) {
-            val file = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
-            file?.let { logger.debug("Cached remote artifact[$fullPath] is hit") }
-            file
-        } else null
+        val file = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
+        file?.let { logger.debug("Cached remote artifact[$fullPath] is hit") }
+        return file
     }
 
     private fun putVersionArtifact(context: ArtifactMigrateContext, file: File) {
