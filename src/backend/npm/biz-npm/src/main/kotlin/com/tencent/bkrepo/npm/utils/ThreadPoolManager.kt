@@ -25,14 +25,6 @@ object ThreadPoolManager {
      */
     private const val KEEP_ALIVE = 60
 
-    // private val executor: ThreadPoolExecutor by lazy {
-    //     ThreadPoolExecutor(
-    //         CORE_POOL_SIZE, MAXIMUM_POOL_SIZE,
-    //         KEEP_ALIVE, TimeUnit.SECONDS, ArrayBlockingQueue<Runnable>(30),
-    //         Executors.defaultThreadFactory(), ThreadPoolExecutor.AbortPolicy()
-    //     )
-    // }
-
     private val asyncExecutor: ThreadPoolTaskExecutor by lazy {
         val threadPoolTaskExecutor = ThreadPoolTaskExecutor()
         threadPoolTaskExecutor.corePoolSize = CORE_POOL_SIZE
