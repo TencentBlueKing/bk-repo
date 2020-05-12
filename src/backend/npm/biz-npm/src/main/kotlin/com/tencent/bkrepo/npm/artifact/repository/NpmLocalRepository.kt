@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.npm.artifact.repository
 
 import com.google.gson.JsonObject
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
@@ -23,6 +24,7 @@ import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.AUTHOR
 import com.tencent.bkrepo.npm.constants.DATE
 import com.tencent.bkrepo.npm.constants.DESCRIPTION
+import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.ID
 import com.tencent.bkrepo.npm.constants.KEYWORDS
 import com.tencent.bkrepo.npm.constants.LAST_MODIFIED_DATE
@@ -33,12 +35,12 @@ import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_METADATA
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
-import com.tencent.bkrepo.npm.constants.OBJECTS
 import com.tencent.bkrepo.npm.constants.PACKAGE
-import com.tencent.bkrepo.npm.constants.SEARCH_MAP
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
+import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
+import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
@@ -49,6 +51,7 @@ import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import java.io.File
@@ -58,6 +61,9 @@ class NpmLocalRepository : LocalRepository() {
 
     @Autowired
     lateinit var metadataResource: MetadataResource
+
+    @Value("\${npm.tarball.prefix}")
+    private val tarballPrefix: String = StringPool.SLASH
 
     override fun onUploadValidate(context: ArtifactUploadContext) {
         super.onUploadValidate(context)
@@ -185,6 +191,10 @@ class NpmLocalRepository : LocalRepository() {
                 if (StringUtils.isNotBlank(value)) fileJson.addProperty(key, value)
                 if (key == KEYWORDS || key == MAINTAINERS) fileJson.add(key, GsonUtils.stringToArray(value))
             }
+            val oldTarball = fileJson.getAsJsonObject(DIST)[TARBALL].asString
+            val prefix = oldTarball.split(name)[0].trimEnd('/')
+            val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
+            fileJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
         } else {
             val name = fileJson.get(NAME).asString
             val versions = fileJson.getAsJsonObject(VERSIONS)
@@ -195,8 +205,16 @@ class NpmLocalRepository : LocalRepository() {
                         .data
                 metadataInfo?.forEach { (key, value) ->
                     if (StringUtils.isNotBlank(value)) versions.getAsJsonObject(it).addProperty(key, value)
-                    if (key == KEYWORDS || key == MAINTAINERS) versions.getAsJsonObject(it).add(key, GsonUtils.stringToArray(value))
+                    if (key == KEYWORDS || key == MAINTAINERS) versions.getAsJsonObject(it).add(
+                        key,
+                        GsonUtils.stringToArray(value)
+                    )
                 }
+                val versionObject = versions.getAsJsonObject(it)
+                val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
+                val prefix = oldTarball.split(name)[0].trimEnd('/')
+                val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
+                versionObject.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
             }
         }
         return fileJson
@@ -213,7 +231,7 @@ class NpmLocalRepository : LocalRepository() {
         }
     }
 
-    override fun list(context: ArtifactListContext): Map<String, Any> {
+    override fun list(context: ArtifactListContext): NpmSearchResponse {
         val searchRequest = context.contextAttributes[SEARCH_REQUEST] as MetadataSearchRequest
         val projectId = Rule.QueryRule("projectId", context.repositoryInfo.projectId)
         val repoName = Rule.QueryRule("repoName", context.repositoryInfo.name)
@@ -236,14 +254,13 @@ class NpmLocalRepository : LocalRepository() {
             rule = rule
         )
         val result = nodeResource.query(queryModel)
-        val data = result.data ?: return SEARCH_MAP
+        val data = result.data ?: return NpmSearchResponse()
         return transferRecords(data.records)
     }
 
-    private fun transferRecords(records: List<Map<String, Any>>): Map<String, Any> {
-        val returnInfo = mutableMapOf<String, List<Map<String, Any>>>()
+    private fun transferRecords(records: List<Map<String, Any>>): NpmSearchResponse {
         val listInfo = mutableListOf<Map<String, Any>>()
-        if (records.isNullOrEmpty()) return SEARCH_MAP
+        if (records.isNullOrEmpty()) return NpmSearchResponse()
         records.forEach {
             val packageInfo = mutableMapOf<String, Any>()
             val metadataInfo = mutableMapOf<String, Any?>()
@@ -259,8 +276,7 @@ class NpmLocalRepository : LocalRepository() {
             packageInfo[PACKAGE] = metadataInfo
             listInfo.add(packageInfo)
         }
-        returnInfo[OBJECTS] = listInfo
-        return returnInfo
+        return NpmSearchResponse(listInfo)
     }
 
     private fun parseJsonArrayToList(jsonArray: String?): List<Map<String, Any>> {

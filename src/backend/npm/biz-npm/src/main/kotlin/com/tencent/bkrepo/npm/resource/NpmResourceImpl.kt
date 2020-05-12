@@ -4,6 +4,7 @@ import com.tencent.bkrepo.npm.api.NpmResource
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.pojo.NpmDeleteResponse
+import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.service.NpmService
@@ -43,7 +44,7 @@ class NpmResourceImpl : NpmResource {
         return npmService.unPublishPkgWithVersion(artifactInfo)
     }
 
-    override fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): Map<String, Any> {
+    override fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): NpmSearchResponse {
         return npmService.search(artifactInfo, searchRequest)
     }
 
