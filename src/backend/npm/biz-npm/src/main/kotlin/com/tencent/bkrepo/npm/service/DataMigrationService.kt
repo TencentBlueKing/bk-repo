@@ -20,7 +20,6 @@ import com.tencent.bkrepo.npm.pojo.NpmDataMigrationResponse
 import com.tencent.bkrepo.npm.pojo.migration.MigrationErrorDataInfo
 import com.tencent.bkrepo.npm.pojo.migration.service.MigrationErrorDataCreateRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
-import com.tencent.bkrepo.npm.utils.ThreadPoolManager
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -33,6 +32,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
@@ -41,6 +41,7 @@ import java.io.InputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.Callable
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
@@ -52,6 +53,9 @@ class DataMigrationService {
 
     @Value("\${npm.migration.package.count: 100}")
     private val count: Int = 100
+
+    @Autowired
+    private lateinit var asyncExecutor: ThreadPoolTaskExecutor
 
     @Autowired
     private lateinit var migrationErrorDataRepository: MigrationErrorDataRepository
@@ -103,7 +107,6 @@ class DataMigrationService {
         } else {
             initTotalDataSetByFile()
         }
-
         return dataMigration(artifactInfo, useErrorData)
     }
 
@@ -129,7 +132,7 @@ class DataMigrationService {
 
         successSet.clear()
         errorSet.clear()
-        logger.info("npm total pkgName size : ${totalDataSet.size}")
+        logger.info("npm data migration pkgName size : [${totalDataSet.size}]")
         val start = System.currentTimeMillis()
         val list = split(totalDataSet, count)
         val callableList: MutableList<Callable<Set<String>>> = mutableListOf()
@@ -139,9 +142,8 @@ class DataMigrationService {
                 doDataMigration(artifactInfo, it.toSet())
                 errorSet
             })
-            // doDataMigration(artifactInfo, it.toSet())
         }
-        val resultList = ThreadPoolManager.execute(callableList)
+        val resultList = submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
         logger.info("npm history data migration, total size[${totalDataSet.size}], success[${successSet.size}], fail[${errorSet.size}], elapse [${elapseTimeMillis / 1000}] s totally")
         val collect = resultList.stream().flatMap { set -> set.stream() }.collect(Collectors.toSet())
@@ -221,6 +223,36 @@ class DataMigrationService {
             return false
         }
         return true
+    }
+
+    /**
+     *
+     * 执行一组有返回值的任务
+     * @param callableList 任务列表
+     * @param timeout 任务超时时间，单位毫秒
+     * @param <T>
+     * @return
+     */
+    fun <T> submit(callableList: List<Callable<T>>, timeout: Long = 10L): List<T> {
+        if (callableList.isEmpty()) {
+            return emptyList()
+        }
+        val resultList = mutableListOf<T>()
+        val futureList = mutableListOf<Future<T>>()
+        callableList.forEach { callable ->
+            val future: Future<T> = asyncExecutor.submit(callable)
+            futureList.add(future)
+        }
+        futureList.forEach { future ->
+            try {
+                val result: T = future.get(timeout, TimeUnit.HOURS)
+                result?.let { resultList.add(it) }
+            } catch (e: Exception) {
+                logger.error("get async task result error : {}", e.message)
+                throw e
+            }
+        }
+        return resultList
     }
 
     private fun insertErrorData(artifactInfo: NpmArtifactInfo, collect: Set<String>) {
