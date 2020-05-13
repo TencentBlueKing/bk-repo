@@ -11,7 +11,7 @@ object ThreadPoolManager {
      * 根据cpu的数量动态的配置核心线程数和最大线程数
      */
     // private val CPU_COUNT = Runtime.getRuntime().availableProcessors()
-    private val CPU_COUNT = 4
+    private val CPU_COUNT = 1
     /**
      * 核心线程数 = CPU核心数 + 1
      */
