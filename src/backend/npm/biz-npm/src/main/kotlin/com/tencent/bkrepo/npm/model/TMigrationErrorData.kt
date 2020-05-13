@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 @CompoundIndexes(
     CompoundIndex(
         name = "projectId_repoName_error_data_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'counter': 1, 'errorData': 1, 'deleted': 1}",
+        def = "{'projectId': 1, 'repoName': 1, 'counter': 1, 'deleted': 1}",
         background = true,
         unique = true
     )

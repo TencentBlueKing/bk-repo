@@ -2,16 +2,21 @@ package com.tencent.bkrepo.npm.artifact.repository
 
 import com.google.gson.JsonObject
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
+import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -19,6 +24,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import com.tencent.bkrepo.npm.async.NpmDependentHandler
 import com.tencent.bkrepo.npm.constants.APPLICATION_OCTET_STEAM
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.AUTHOR
@@ -35,18 +41,26 @@ import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_METADATA
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
+import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PACKAGE
+import com.tencent.bkrepo.npm.constants.PKG_NAME
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
+import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
+import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -55,6 +69,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 @Component
 class NpmLocalRepository : LocalRepository() {
@@ -62,8 +77,18 @@ class NpmLocalRepository : LocalRepository() {
     @Autowired
     lateinit var metadataResource: MetadataResource
 
+    @Value("\${npm.migration.remote.proxy.registry}")
+    private val registry: String = StringPool.EMPTY
+
     @Value("\${npm.tarball.prefix}")
     private val tarballPrefix: String = StringPool.SLASH
+
+    @Autowired
+    private lateinit var npmDependentHandler: NpmDependentHandler
+
+    private val okHttpClient: OkHttpClient by lazy {
+        HttpClientBuilderFactory.create().readTimeout(60L, TimeUnit.SECONDS).build()
+    }
 
     override fun onUploadValidate(context: ArtifactUploadContext) {
         super.onUploadValidate(context)
@@ -281,6 +306,141 @@ class NpmLocalRepository : LocalRepository() {
 
     private fun parseJsonArrayToList(jsonArray: String?): List<Map<String, Any>> {
         return jsonArray?.let { GsonUtils.gsonToList<Map<String, Any>>(it) } ?: emptyList()
+    }
+
+    override fun migrate(context: ArtifactMigrateContext) {
+        val pkgJsonFile = searchPkgJson(context)
+        installTgzFile(context, pkgJsonFile)
+    }
+
+    private fun installTgzFile(context: ArtifactMigrateContext, jsonObject: JsonObject) {
+        val versions = jsonObject.getAsJsonObject(VERSIONS)
+        versions.keySet().forEach { version ->
+            var response: Response? = null
+            var tgzFilePath: String? = null
+            try {
+                val tarball = versions.getAsJsonObject(version).getAsJsonObject(DIST).get(TARBALL).asString
+                tgzFilePath = tarball.substringAfterLast(registry)
+                context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
+                // hit cache continue
+                getCacheArtifact(context)?.let {
+                    return@forEach
+                }
+                val request = Request.Builder().url(tarball).get().build()
+                response = okHttpClient.newCall(request).execute()
+                if (checkResponse(response)) {
+                    val file = createTempFile(response.body()!!)
+                    putArtifact(context, file)
+                }
+            } catch (exception: Exception) {
+                logger.error("put tgz File [$tgzFilePath] failed : ", exception)
+                throw exception
+            } finally {
+                response?.body()?.close()
+            }
+        }
+    }
+
+    private fun searchPkgJson(context: ArtifactMigrateContext): JsonObject {
+        getCacheArtifact(context)?.let {
+            return GsonUtils.transferFileToJson(it)
+        }
+        val pkgName = context.contextAttributes[PKG_NAME] as String
+        val url = registry.trim('/') + '/' + pkgName
+        var response: Response? = null
+        return try {
+            val request = Request.Builder().url(url).get().build()
+            response = okHttpClient.newCall(request).execute()
+            if (checkResponse(response)) {
+                val file = createTempFile(response.body()!!)
+                putArtifact(context, file)
+                putVersionArtifact(context, file)
+                GsonUtils.transferFileToJson(file)
+            } else throw ArtifactNotFoundException("download from remote for [$pkgName] failed.")
+        } catch (exception: Exception) {
+            logger.error("http send [$url] for search [$pkgName.json] file failed, {}", exception.message)
+            throw exception
+        } finally {
+            response?.body()?.close()
+        }
+    }
+
+    private fun getCacheArtifact(context: ArtifactTransferContext): File? {
+        val repositoryInfo = context.repositoryInfo
+        val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
+        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data ?: return null
+        if (node.nodeInfo.folder) return null
+        val file = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
+        file?.let { logger.debug("Cached remote artifact[$fullPath] is hit") }
+        return file
+    }
+
+    private fun putVersionArtifact(context: ArtifactMigrateContext, file: File) {
+        val jsonFile = GsonUtils.transferFileToJson(file)
+        val name = jsonFile[NAME].asString
+        val versionsFile = jsonFile.getAsJsonObject(VERSIONS)
+        versionsFile.keySet().forEach { version ->
+            val versionFile = versionsFile.getAsJsonObject(version)
+            val artifactFile = ArtifactFileFactory.build()
+            GsonUtils.gsonToInputStream(versionFile).use { input ->
+                artifactFile.getOutputStream().use { output ->
+                    Streams.copy(input, output, true)
+                }
+            }
+            context.contextAttributes[NPM_FILE_FULL_PATH] =
+                String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
+            val nodeCreateRequest = getNodeCreateRequest(context, artifactFile)
+            nodeResource.create(nodeCreateRequest)
+            storageService.store(nodeCreateRequest.sha256!!, artifactFile, context.storageCredentials)
+        }
+        // 添加依赖
+        npmDependentHandler.updatePkgDepts(context.userId, context.artifactInfo, jsonFile, NpmOperationAction.MIGRATION)
+    }
+
+    private fun putArtifact(context: ArtifactMigrateContext, file: File) {
+        val pkgFile = ArtifactFileFactory.build()
+        Streams.copy(file.inputStream(), pkgFile.getOutputStream(), true)
+        val nodeCreateRequest = getNodeCreateRequest(context, pkgFile)
+        nodeResource.create(nodeCreateRequest)
+        storageService.store(nodeCreateRequest.sha256!!, pkgFile, context.storageCredentials)
+    }
+
+    private fun getNodeCreateRequest(context: ArtifactTransferContext, file: ArtifactFile): NodeCreateRequest {
+        val repositoryInfo = context.repositoryInfo
+        val sha256 = FileDigestUtils.fileSha256(listOf(file.getInputStream()))
+        val md5 = FileDigestUtils.fileMd5(listOf(file.getInputStream()))
+        return NodeCreateRequest(
+            projectId = repositoryInfo.projectId,
+            repoName = repositoryInfo.name,
+            folder = false,
+            fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String,
+            size = file.getSize(),
+            sha256 = sha256,
+            md5 = md5,
+            overwrite = true,
+            operator = context.userId
+        )
+    }
+
+    /**
+     * 创建临时文件并将响应体写入文件
+     */
+    protected fun createTempFile(body: ResponseBody): File {
+        // set threshold = 0, guarantee any data will be written to file rather than memory cache
+        val artifactFile = ArtifactFileFactory.build(0)
+        Streams.copy(body.byteStream(), artifactFile.getOutputStream(), true)
+        return artifactFile.getTempFile()
+    }
+
+    /**
+     * 检查下载响应
+     */
+    private fun checkResponse(response: Response): Boolean {
+        if (!response.isSuccessful) {
+            logger.warn("Download file from remote failed: [${response.code()}]")
+            return false
+        }
+        return true
     }
 
     companion object {
