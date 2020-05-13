@@ -77,7 +77,7 @@ class NpmLocalRepository : LocalRepository() {
     @Autowired
     lateinit var metadataResource: MetadataResource
 
-    @Value("\${npm.migration.remote.proxy.registry}")
+    @Value("\${npm.migration.remote.registry}")
     private val registry: String = StringPool.EMPTY
 
     @Value("\${npm.tarball.prefix}")
