@@ -6,13 +6,14 @@ import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_PACKAGES_MAPPING_URI
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_ROOT_POST_URI
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo.Companion.PYPI_SIMPLE_MAPPING_INSTALL_URI
+import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
+import io.swagger.annotations.ApiOperation
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 
 /**
- *
  * @author: carrypan
  * @date: 2019/12/4
  */
@@ -53,4 +54,9 @@ interface PypiResource {
      */
     @GetMapping(PYPI_PACKAGES_MAPPING_URI)
     fun packages(@ArtifactPathVariable artifactInfo: PypiArtifactInfo)
+
+    @ApiOperation("数据迁移接口")
+    @GetMapping(PypiArtifactInfo.PYPI_ROOT_MIGRATE_URL)
+    fun migrateByUrl(@ArtifactPathVariable pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String>
+
 }

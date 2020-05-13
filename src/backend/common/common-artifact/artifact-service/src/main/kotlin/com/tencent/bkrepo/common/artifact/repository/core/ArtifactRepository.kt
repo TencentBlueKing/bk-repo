@@ -42,5 +42,5 @@ interface ArtifactRepository {
     /**
      * 仓库数据迁移
      */
-    fun migrate(context: ArtifactMigrateContext)
+    fun migrate(context: ArtifactMigrateContext):Any?
 }

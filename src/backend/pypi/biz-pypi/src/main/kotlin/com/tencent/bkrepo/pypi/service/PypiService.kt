@@ -4,13 +4,10 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.permission.Permission
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.*
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.repository.PypiRepository
+import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
 import org.springframework.stereotype.Service
 
 /**
@@ -53,5 +50,12 @@ class PypiService {
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.upload(context)
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    fun migrate(pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
+        val context = ArtifactMigrateContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        return (repository.migrate(context) as PypiMigrateResponse<String>)
     }
 }
