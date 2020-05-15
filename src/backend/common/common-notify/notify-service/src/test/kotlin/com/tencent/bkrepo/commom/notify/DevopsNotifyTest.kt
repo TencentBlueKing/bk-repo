@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.commom.notify
 
 import com.tencent.bkrepo.common.notify.service.DevopsNotify
+import jdk.nashorn.internal.ir.annotations.Ignore
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test
 internal class NodeUtilsTest {
     private var devopsServer = "http://dev.devops.oa.com"
 
+    @Ignore
     @Test
     fun sendEmail() {
         DevopsNotify(devopsServer).sendMail(
@@ -18,6 +20,7 @@ internal class NodeUtilsTest {
         )
     }
 
+    @Ignore
     @Test
     fun sendSms() {
         DevopsNotify(devopsServer).sendSms(
@@ -26,6 +29,7 @@ internal class NodeUtilsTest {
         )
     }
 
+    @Ignore
     @Test
     fun sendWework() {
         DevopsNotify(devopsServer).sendWework(
@@ -35,6 +39,7 @@ internal class NodeUtilsTest {
         )
     }
 
+    @Ignore
     @Test
     fun sendWechat() {
         DevopsNotify(devopsServer).sendWechat(
