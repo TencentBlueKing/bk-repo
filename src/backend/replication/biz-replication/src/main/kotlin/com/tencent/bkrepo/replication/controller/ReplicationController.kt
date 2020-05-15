@@ -21,8 +21,6 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.replication.api.ReplicationClient
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.pojo.request.NodeReplicaRequest
-import com.tencent.bkrepo.replication.pojo.request.ProjectReplicaRequest
-import com.tencent.bkrepo.replication.pojo.request.RepoReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.repository.api.MetadataResource
@@ -87,40 +85,6 @@ class ReplicationController : ReplicationClient {
 
     override fun checkNodeExist(token: String, projectId: String, repoName: String, fullPath: String): Response<Boolean> {
         return nodeResource.exist(projectId, repoName, fullPath)
-    }
-
-    override fun replicaProject(token: String, projectReplicaRequest: ProjectReplicaRequest): Response<ProjectInfo> {
-        with(projectReplicaRequest) {
-            val projectInfo = projectResource.query(name).data ?: run {
-                val createRequest = ProjectCreateRequest(
-                    name = name,
-                    displayName = displayName,
-                    description = description,
-                    operator = userId
-                )
-                projectResource.create(createRequest).data!!
-            }
-            return ResponseBuilder.success(projectInfo)
-        }
-    }
-
-    override fun replicaRepository(token: String, repoReplicaRequest: RepoReplicaRequest): Response<RepositoryInfo> {
-        with(repoReplicaRequest) {
-            val repositoryInfo = repositoryResource.detail(projectId, name).data ?: run {
-                val createRequest = RepoCreateRequest(
-                    name = name,
-                    projectId = projectId,
-                    type = type,
-                    category = category,
-                    public = public,
-                    description = description,
-                    configuration = configuration,
-                    operator = userId
-                )
-                repositoryResource.create(createRequest).data!!
-            }
-            return ResponseBuilder.success(repositoryInfo)
-        }
     }
 
     override fun replicaUser(token: String, userReplicaRequest: UserReplicaRequest): Response<User> {
@@ -232,7 +196,7 @@ class ReplicationController : ReplicationClient {
     }
 
     override fun replicaRepoCreateRequest(token: String, request: RepoCreateRequest): Response<RepositoryInfo> {
-        return repositoryResource.create(request)
+        return  repositoryResource.detail(request.projectId, request.name).data?.let { ResponseBuilder.success(it) } ?: repositoryResource.create(request)
     }
 
     override fun replicaRepoUpdateRequest(token: String, request: RepoUpdateRequest): Response<Void> {
@@ -244,7 +208,7 @@ class ReplicationController : ReplicationClient {
     }
 
     override fun replicaProjectCreateRequest(token: String, request: ProjectCreateRequest): Response<ProjectInfo> {
-        return projectResource.create(request)
+        return projectResource.query(request.name).data?.let { ResponseBuilder.success(it) } ?: projectResource.create(request)
     }
 
     override fun replicaMetadataSaveRequest(token: String, request: MetadataSaveRequest): Response<Void> {

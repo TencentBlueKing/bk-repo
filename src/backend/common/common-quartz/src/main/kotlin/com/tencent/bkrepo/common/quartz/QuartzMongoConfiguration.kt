@@ -19,7 +19,7 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean
     MongoProperties::class
 )
 @ConditionalOnProperty(prefix = "spring.quartz", name = ["mongo"], matchIfMissing = true, havingValue = "true")
-@PropertySource("classpath:common-quartz.yml")
+@PropertySource("classpath:common-quartz.properties")
 class QuartzMongoConfiguration {
 
     @Bean
