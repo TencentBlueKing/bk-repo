@@ -25,9 +25,11 @@ import com.tencent.bkrepo.helm.utils.JsonUtil.gson
 import com.tencent.bkrepo.helm.utils.PackDecompressorUtils
 import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
+import com.tencent.bkrepo.repository.util.NodeUtils.formatFullPath
 import org.apache.commons.fileupload.util.Streams
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.File
@@ -36,6 +38,9 @@ import java.time.format.DateTimeFormatter
 
 @Service
 class ChartManipulationService {
+
+    @Value("\${helm.registry.domain: ''}")
+    private lateinit var domain: String
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
@@ -74,7 +79,7 @@ class ChartManipulationService {
         repository.upload(context)
         if (artifactFileMap.keys.contains("chart")) {
             try {
-                freshIndexYamlForPush(artifactFileMap)
+                freshIndexYamlForPush(artifactInfo, artifactFileMap)
             } catch (exception: HelmIndexFreshFailException) {
                 targetFileRollback(artifactFileMap)
                 throw HelmIndexFreshFailException(exception.message)
@@ -94,14 +99,14 @@ class ChartManipulationService {
         logger.error("fresh file $INDEX_CACHE_YAML failed")
     }
 
-    private fun freshIndexYamlForPush(artifactFileMap: ArtifactFileMap) {
+    private fun freshIndexYamlForPush(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap) {
         val inputStream = (artifactFileMap["chart"] as MultipartArtifactFile).getInputStream()
         val tempDir = System.getProperty("java.io.tmpdir")
         PackDecompressorUtils.unTarGZ(inputStream, tempDir)
         logger.info("file " + getFileName(artifactFileMap) + " unTar success!")
         val file = getUnTgzFile(artifactFileMap, tempDir)
         val chartMap = YamlUtils.getObject<MutableMap<String, Any>>(file)
-        val indexEntity = getIndexYamlFile(chartMap, artifactFileMap)
+        val indexEntity = getIndexYamlFile(artifactInfo, chartMap, artifactFileMap)
         uploadIndexYaml(indexEntity)
     }
 
@@ -115,9 +120,9 @@ class ChartManipulationService {
         logger.info("fresh $INDEX_CACHE_YAML success!")
     }
 
-    private fun getIndexYamlFile(chartMap: MutableMap<String, Any>, artifactFileMap: ArtifactFileMap): IndexEntity {
+    private fun getIndexYamlFile(artifactInfo: HelmArtifactInfo, chartMap: MutableMap<String, Any>, artifactFileMap: ArtifactFileMap): IndexEntity {
         val indexEntity = getOriginalIndexYaml()
-        updateChartMap(chartMap, artifactFileMap)
+        updateChartMap(artifactInfo, chartMap, artifactFileMap)
         val chartName = chartMap["name"] as String
         val isFirstChart = indexEntity.entries.containsKey(chartName)
         indexEntity.entries.let {
@@ -141,11 +146,16 @@ class ChartManipulationService {
     }
 
     private fun updateChartMap(
+        artifactInfo: HelmArtifactInfo,
         chartMap: MutableMap<String, Any>,
         artifactFileMap: ArtifactFileMap
     ) {
-        chartMap["urls"] = listOf("charts/${getFileName(artifactFileMap)}")
-        val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS+08:00")
+        chartMap["urls"] = listOf(
+            domain.trimEnd('/') + formatFullPath(
+                "${artifactInfo.projectId}/${artifactInfo.repoName}/charts/${getFileName(artifactFileMap)}"
+            )
+        )
+        val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS+08:00")
         chartMap["created"] = LocalDateTime.now().format(format)
         chartMap["digest"] = artifactFileMap["chart"]?.getInputStream()?.let { FileDigestUtils.fileSha256(it) }!!
     }
