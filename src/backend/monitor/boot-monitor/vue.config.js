@@ -2,7 +2,7 @@ const {resolve} = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
-  outputDir: './src/main/resources/META-INF/spring-boot-admin-server-ui/extensions',
+  outputDir: './src/main/resources/META-INF/spring-boot-admin-server-ui/extensions/monitor',
   chainWebpack: config => {
     config.entryPoints.delete('app');
     config.entry('monitor').add('./src/main/frontend/index.js');
@@ -36,7 +36,7 @@ module.exports = {
     plugins: [
       new CopyPlugin([{
         from: resolve(__dirname, './src/main/frontend/routes.txt'),
-        to: resolve(__dirname, './src/main/resources/META-INF/spring-boot-admin-server-ui/extensions'),
+        to: resolve(__dirname, './src/main/resources/META-INF/spring-boot-admin-server-ui/extensions/monitor'),
         toType: 'dir',
         ignore: ['*.scss']
       }])
