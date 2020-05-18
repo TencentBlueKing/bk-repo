@@ -205,7 +205,7 @@ class HelmLocalRepository : LocalRepository() {
         val userId = context.userId
         val isExist = nodeResource.exist(projectId, repoName, fullPath).data!!
         if (!isExist) {
-            throw HelmFileNotFoundException("remove $fullPath: no such file or directory")
+            throw HelmFileNotFoundException("remove $fullPath failed: no such file or directory")
         }
         nodeResource.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
     }
