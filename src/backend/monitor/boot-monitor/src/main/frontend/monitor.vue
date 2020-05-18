@@ -55,7 +55,7 @@ export default {
 
   methods: {
     async getConfig() {
-      return await axios.get("/monitor/config")
+      return await axios.get("monitor/config")
     }
   }
   
