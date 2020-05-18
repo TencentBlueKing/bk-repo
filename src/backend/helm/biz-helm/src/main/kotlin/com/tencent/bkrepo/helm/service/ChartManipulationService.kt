@@ -108,6 +108,7 @@ class ChartManipulationService {
         val chartMap = YamlUtils.getObject<MutableMap<String, Any>>(file)
         val indexEntity = getIndexYamlFile(artifactInfo, chartMap, artifactFileMap)
         uploadIndexYaml(indexEntity)
+        logger.info("fresh index.yaml for push [${chartMap["name"]}-${chartMap["version"]}.tgz] success!")
     }
 
     private fun uploadIndexYaml(indexEntity: IndexEntity) {
@@ -117,10 +118,13 @@ class ChartManipulationService {
         uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         val uploadRepository = RepositoryHolder.getRepository(uploadContext.repositoryInfo.category)
         uploadRepository.upload(uploadContext)
-        logger.info("fresh $INDEX_CACHE_YAML success!")
     }
 
-    private fun getIndexYamlFile(artifactInfo: HelmArtifactInfo, chartMap: MutableMap<String, Any>, artifactFileMap: ArtifactFileMap): IndexEntity {
+    private fun getIndexYamlFile(
+        artifactInfo: HelmArtifactInfo,
+        chartMap: MutableMap<String, Any>,
+        artifactFileMap: ArtifactFileMap
+    ): IndexEntity {
         val indexEntity = getOriginalIndexYaml()
         updateChartMap(artifactInfo, chartMap, artifactFileMap)
         val chartName = chartMap["name"] as String
@@ -189,8 +193,10 @@ class ChartManipulationService {
         val chartInfo = getChartInfo(artifactInfo)
         val context = ArtifactRemoveContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        context.contextAttributes[FULL_PATH] = "/${chartInfo.first}-${chartInfo.second}.tgz"
+        val fullPath = "/${chartInfo.first}-${chartInfo.second}.tgz"
+        context.contextAttributes[FULL_PATH] = fullPath
         repository.remove(context)
+        logger.info("remove artifact [$fullPath] success!")
         freshIndexYamlForRemove(chartInfo)
         return HelmSuccessResponse.deleteSuccess()
     }
@@ -203,22 +209,28 @@ class ChartManipulationService {
     }
 
     private fun freshIndexYamlForRemove(chartInfo: Pair<String, String>) {
-        val indexEntity = getOriginalIndexYaml()
-        indexEntity.entries.let {
-            if (it[chartInfo.first]?.size == 1 && chartInfo.second == it[chartInfo.first]?.get(0)?.get("version") as String) {
-                it.remove(chartInfo.first)
-            } else {
-                run stop@{
-                    it[chartInfo.first]?.forEachIndexed { index, chartMap ->
-                        if (chartInfo.second == chartMap["version"] as String) {
-                            it[chartInfo.first]?.removeAt(index)
-                            return@stop
+        try {
+            val indexEntity = getOriginalIndexYaml()
+            indexEntity.entries.let {
+                if (it[chartInfo.first]?.size == 1 && chartInfo.second == it[chartInfo.first]?.get(0)?.get("version") as String) {
+                    it.remove(chartInfo.first)
+                } else {
+                    run stop@{
+                        it[chartInfo.first]?.forEachIndexed { index, chartMap ->
+                            if (chartInfo.second == chartMap["version"] as String) {
+                                it[chartInfo.first]?.removeAt(index)
+                                return@stop
+                            }
                         }
                     }
                 }
             }
+            uploadIndexYaml(indexEntity)
+            logger.info("fresh index.yaml for delete [${chartInfo.first}-${chartInfo.second}.tgz] success!")
+        } catch (exception: Exception) {
+            logger.error("fresh index.yaml for delete [${chartInfo.first}-${chartInfo.second}.tgz] failed, ${exception.message}")
+            throw exception
         }
-        uploadIndexYaml(indexEntity)
     }
 
     companion object {
