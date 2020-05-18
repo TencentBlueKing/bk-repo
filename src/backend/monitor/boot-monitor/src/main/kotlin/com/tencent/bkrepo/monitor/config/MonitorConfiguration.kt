@@ -38,7 +38,6 @@ class MonitorConfiguration {
     var username: String? = null
     var password: String? = null
 
-
     @PostConstruct
     fun customObjectMapper() {
         /**
@@ -73,5 +72,4 @@ class MonitorConfiguration {
         val url = URL(it.serviceUrl)
         InstanceId.of("${url.host}-${url.port}")
     }
-
 }
