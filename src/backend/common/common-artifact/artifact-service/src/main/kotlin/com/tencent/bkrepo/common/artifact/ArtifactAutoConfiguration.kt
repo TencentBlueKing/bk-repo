@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.artifact
 import com.tencent.bkrepo.common.artifact.auth.AuthConfiguration
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventListener
 import com.tencent.bkrepo.common.artifact.exception.ExceptionConfiguration
+import com.tencent.bkrepo.common.artifact.health.ArtifactHealhConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.PermissionConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.ResolverConfiguration
@@ -27,7 +28,8 @@ import org.springframework.core.Ordered
     PermissionConfiguration::class,
     ResolverConfiguration::class,
     ExceptionConfiguration::class,
-    ArtifactMetricsConfiguration::class
+    ArtifactMetricsConfiguration::class,
+    ArtifactHealhConfiguration::class
 )
 class ArtifactAutoConfiguration {
 

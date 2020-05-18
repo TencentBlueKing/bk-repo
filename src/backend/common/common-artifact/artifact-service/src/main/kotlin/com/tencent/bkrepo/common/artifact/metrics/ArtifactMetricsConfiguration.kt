@@ -22,7 +22,7 @@ class ArtifactMetricsConfiguration {
     fun metricsCommonTags(): MeterRegistryCustomizer<MeterRegistry> {
         return MeterRegistryCustomizer { registry: MeterRegistry ->
             registry.config().commonTags("service", registration.serviceId)
-                .commonTags("instance", "${registration.host}-${registration.port}")
+                .commonTags("instance", "${registration.host}-${registration.instanceId}")
         }
     }
 }

@@ -1,0 +1,20 @@
+dependencies {
+    api project(":common:common-service")
+    api "de.codecentric:spring-boot-admin-starter-server:2.1.6"
+}
+
+task npmInstall(type: Exec) {
+    commandLine 'npm', 'install'
+}
+
+task npmBuild(type: Exec) {
+    commandLine 'npm', 'run', 'build'
+}
+
+npmBuild {
+    dependsOn npmInstall
+}
+
+build {
+    dependsOn npmBuild
+}

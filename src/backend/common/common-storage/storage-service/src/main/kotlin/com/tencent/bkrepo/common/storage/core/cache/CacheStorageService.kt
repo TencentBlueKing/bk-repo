@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import org.apache.commons.lang.RandomStringUtils
 import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
 import java.nio.file.Path
@@ -75,6 +76,35 @@ class CacheStorageService : AbstractStorageService() {
         val visitor = FileSynchronizeVisitor(tempPath, fileLocator, fileStorage, credentials)
         cacheClient.walk(visitor)
         return visitor.checkResult
+    }
+
+    override fun doCheckHealth(credentials: StorageCredentials) {
+        val path = "health-check"
+        val filename = System.nanoTime().toString()
+        val randomSize = 10
+
+        val content = RandomStringUtils.randomAlphabetic(randomSize)
+        var receiveFile: File? = null
+        try {
+            receiveFile = File.createTempFile(path, filename)
+            // 写文件
+            val file = cacheClient.store(path, filename, content.byteInputStream(), randomSize.toLong(), true)
+            fileStorage.synchronizeStore(path, filename, file, credentials)
+            // 读文件
+            val cachedFile = cacheClient.load(path, filename)
+            fileStorage.load(path, filename, receiveFile, credentials)
+            assert(cachedFile != null) { "Failed to load cached file." }
+            assert(receiveFile != null) { "Failed to load file." }
+            assert(content == receiveFile!!.readText()) {"File content inconsistent."}
+            assert(content == cachedFile!!.readText()) {"File content inconsistent."}
+            // 删除文件
+            cacheClient.delete(path, filename)
+            fileStorage.delete(path, filename, credentials)
+        } catch (exception: Exception) {
+            throw exception
+        } finally {
+            receiveFile?.deleteOnExit()
+        }
     }
 
     companion object {
