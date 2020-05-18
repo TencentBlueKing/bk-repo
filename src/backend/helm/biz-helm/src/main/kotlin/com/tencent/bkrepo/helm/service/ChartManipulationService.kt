@@ -3,7 +3,6 @@ package com.tencent.bkrepo.helm.service
 import com.google.gson.JsonParser
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
@@ -55,19 +54,25 @@ class ChartManipulationService {
 
     fun getContextAttrMap(artifactFileMap: ArtifactFileMap): MutableMap<String, Any> {
         val attributesMap = mutableMapOf<String, Any>()
-        artifactFileMap.entries.forEach { (name, file) ->
+        val chartFile = getChartFile(artifactFileMap)
+        artifactFileMap.entries.forEach { (name, _) ->
             if (name != "chart" && name != "prov") {
                 throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
             }
-            attributesMap[name + "_full_path"] = getFileFullPath(file)
+            attributesMap[name + "_full_path"] = getFileFullPath(chartFile, name)
         }
         return attributesMap
     }
 
-    private fun getFileFullPath(artifactFile: ArtifactFile): String {
-        val multipartArtifactFile = artifactFile as MultipartArtifactFile
-        val fileName = multipartArtifactFile.getOriginalFilename()
-        return FILE_SEPARATOR + fileName.substringAfterLast('/')
+    private fun getFileFullPath(chartFile: Map<String, Any>, name: String): String {
+        val chartName = chartFile["name"] as String
+        val chartVersion = chartFile["version"] as String
+        val fullPath = "$FILE_SEPARATOR$chartName-$chartVersion.tgz"
+        return if ("chart" == name) {
+            fullPath
+        } else {
+            "$fullPath.prov"
+        }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -100,21 +105,24 @@ class ChartManipulationService {
     }
 
     private fun freshIndexYamlForPush(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap) {
-        val inputStream = (artifactFileMap["chart"] as MultipartArtifactFile).getInputStream()
-        val tempDir = System.getProperty("java.io.tmpdir")
-        PackDecompressorUtils.unTarGZ(inputStream, tempDir)
-        logger.info("file " + getFileName(artifactFileMap) + " unTar success!")
-        val file = getUnTgzFile(artifactFileMap, tempDir)
-        val chartMap = YamlUtils.getObject<MutableMap<String, Any>>(file)
+        val chartMap = getChartFile(artifactFileMap)
         val indexEntity = getIndexYamlFile(artifactInfo, chartMap, artifactFileMap)
         uploadIndexYaml(indexEntity)
         logger.info("fresh index.yaml for push [${chartMap["name"]}-${chartMap["version"]}.tgz] success!")
     }
 
+    private fun getChartFile(artifactFileMap: ArtifactFileMap): MutableMap<String, Any> {
+        val inputStream = (artifactFileMap["chart"] as MultipartArtifactFile).getInputStream()
+        val tempDir = System.getProperty("java.io.tmpdir")
+        PackDecompressorUtils.unTarGZ(inputStream, tempDir)
+        logger.info("file " + getFileName(artifactFileMap) + " unTar success!")
+        val file = getUnTgzFile(artifactFileMap, tempDir)
+        return YamlUtils.getObject(file)
+    }
+
     private fun uploadIndexYaml(indexEntity: IndexEntity) {
         val artifactFile = ArtifactFileFactory.build()
         Streams.copy(YamlUtils.transEntity2File(indexEntity).byteInputStream(), artifactFile.getOutputStream(), true)
-        logger.info("*** upload file size: [${artifactFile.getSize()}]")
         val uploadContext = ArtifactUploadContext(artifactFile)
         uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         val uploadRepository = RepositoryHolder.getRepository(uploadContext.repositoryInfo.category)
@@ -145,7 +153,7 @@ class ChartManipulationService {
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         val indexFile = repository.search(context) as File
-        logger.info("*** search $INDEX_CACHE_YAML success, original file size : [${indexFile.length()}]!")
+        logger.info("search original $INDEX_CACHE_YAML success, original file length : [${indexFile.length()}]!")
         val indexMap = YamlUtils.getObject<Map<String, Any>>(indexFile)
         return gson.fromJson(JsonParser().parse(gson.toJson(indexMap)).asJsonObject, IndexEntity::class.java)
     }
@@ -166,15 +174,15 @@ class ChartManipulationService {
     }
 
     private fun getUnTgzFile(artifactFileMap: ArtifactFileMap, tempDir: String): File {
-        try {
-            val name = getFileName(artifactFileMap).substringBeforeLast('-')
-            val filePath = "$tempDir/$name${FILE_SEPARATOR}Chart.yaml"
-            logger.info("unTgz Chart.yaml file path : $filePath")
-            return File(filePath)
-        } catch (e: Exception) {
-            logger.error("get unTgz file error : " + e.message)
-            throw HelmIndexFreshFailException("file Chart.yaml not found")
+        val name = getFileName(artifactFileMap).substringBeforeLast('-')
+        val filePath = "$tempDir/$name${FILE_SEPARATOR}Chart.yaml"
+        logger.info("unTgz Chart.yaml file path : $filePath")
+        val file = File(filePath)
+        if (!file.exists()) {
+            logger.error("get unTgz file error : Chart.yaml not found, error Path: $name${FILE_SEPARATOR}Chart.yaml")
+            throw HelmIndexFreshFailException("file Chart.yaml not found，error Path: $name${FILE_SEPARATOR}Chart.yaml")
         }
+        return file
     }
 
     private fun getFileFullPath(artifactFileMap: ArtifactFileMap): String {
@@ -214,10 +222,8 @@ class ChartManipulationService {
             val indexEntity = getOriginalIndexYaml()
             indexEntity.entries.let {
                 if (it[chartInfo.first]?.size == 1 && chartInfo.second == it[chartInfo.first]?.get(0)?.get("version") as String) {
-                    logger.info("*** [${chartInfo.first}] in original index.yaml contains only one version.")
                     it.remove(chartInfo.first)
                 } else {
-                    logger.info("*** [${chartInfo.first}] in original index.yaml contains [${it[chartInfo.first]?.size}] versions.")
                     run stop@{
                         it[chartInfo.first]?.forEachIndexed { index, chartMap ->
                             if (chartInfo.second == chartMap["version"] as String) {
@@ -228,9 +234,6 @@ class ChartManipulationService {
                     }
                 }
             }
-            logger.info(
-                "*** ${chartInfo.first} in new index.yaml contains [${indexEntity.entries[chartInfo.first]?.size ?: 0}] versions."
-            )
             uploadIndexYaml(indexEntity)
             logger.info("fresh index.yaml for delete [${chartInfo.first}-${chartInfo.second}.tgz] success!")
         } catch (exception: Exception) {
