@@ -118,6 +118,7 @@ class HelmLocalRepository : LocalRepository() {
     override fun onUpload(context: ArtifactUploadContext) {
         context.artifactFileMap.entries.forEach { (name, _) ->
             val nodeCreateRequest = getNodeCreateRequest(name, context)
+            logger.info("*** nodeCreateRequest => [$nodeCreateRequest]")
             storageService.store(
                 nodeCreateRequest.sha256!!, context.getArtifactFile(name)
                     ?: context.getArtifactFile(), context.storageCredentials
