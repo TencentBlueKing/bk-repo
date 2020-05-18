@@ -114,6 +114,7 @@ class ChartManipulationService {
     private fun uploadIndexYaml(indexEntity: IndexEntity) {
         val artifactFile = ArtifactFileFactory.build()
         Streams.copy(YamlUtils.transEntity2File(indexEntity).byteInputStream(), artifactFile.getOutputStream(), true)
+        logger.info("*** upload file size: [${artifactFile.getSize()}]")
         val uploadContext = ArtifactUploadContext(artifactFile)
         uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         val uploadRepository = RepositoryHolder.getRepository(uploadContext.repositoryInfo.category)
@@ -144,7 +145,7 @@ class ChartManipulationService {
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         val indexFile = repository.search(context) as File
-        logger.info("search $INDEX_CACHE_YAML success!")
+        logger.info("*** search $INDEX_CACHE_YAML success, original file size : [${indexFile.length()}]!")
         val indexMap = YamlUtils.getObject<Map<String, Any>>(indexFile)
         return gson.fromJson(JsonParser().parse(gson.toJson(indexMap)).asJsonObject, IndexEntity::class.java)
     }
@@ -213,8 +214,10 @@ class ChartManipulationService {
             val indexEntity = getOriginalIndexYaml()
             indexEntity.entries.let {
                 if (it[chartInfo.first]?.size == 1 && chartInfo.second == it[chartInfo.first]?.get(0)?.get("version") as String) {
+                    logger.info("*** [${chartInfo.first}] in original index.yaml contains only one version.")
                     it.remove(chartInfo.first)
                 } else {
+                    logger.info("*** [${chartInfo.first}] in original index.yaml contains [${it[chartInfo.first]?.size}] versions.")
                     run stop@{
                         it[chartInfo.first]?.forEachIndexed { index, chartMap ->
                             if (chartInfo.second == chartMap["version"] as String) {
@@ -225,6 +228,9 @@ class ChartManipulationService {
                     }
                 }
             }
+            logger.info(
+                "*** ${chartInfo.first} in new index.yaml contains [${indexEntity.entries[chartInfo.first]?.size ?: 0}] versions."
+            )
             uploadIndexYaml(indexEntity)
             logger.info("fresh index.yaml for delete [${chartInfo.first}-${chartInfo.second}.tgz] success!")
         } catch (exception: Exception) {
