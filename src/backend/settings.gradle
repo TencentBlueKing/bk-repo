@@ -42,6 +42,9 @@ include ":opdata:api-opdata"
 include ":opdata:biz-opdata"
 include ":opdata:boot-opdata"
 
+include ":monitor"
+include ":monitor:boot-monitor"
+
 include ":replication"
 include ":replication:api-replication"
 include ":replication:biz-replication"
@@ -81,5 +84,3 @@ include ":composer"
 include ":composer:api-composer"
 include ":composer:biz-composer"
 include ":composer:boot-composer"
-
-include ":boot-assembly"

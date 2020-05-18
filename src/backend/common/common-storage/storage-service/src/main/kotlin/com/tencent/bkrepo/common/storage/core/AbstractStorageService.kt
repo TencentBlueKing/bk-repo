@@ -251,6 +251,10 @@ abstract class AbstractStorageService : StorageService {
         return SynchronizeResult()
     }
 
+    override fun checkHealth(storageCredentials: StorageCredentials?) {
+        return doCheckHealth(getCredentialsOrDefault(storageCredentials))
+    }
+
     protected fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
         return storageCredentials ?: fileStorage.getDefaultCredentials()
     }
@@ -281,6 +285,7 @@ abstract class AbstractStorageService : StorageService {
     protected abstract fun doDelete(path: String, filename: String, credentials: StorageCredentials)
     protected abstract fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean
     protected abstract fun doManualRetry(path: String, filename: String, credentials: StorageCredentials)
+    protected abstract fun doCheckHealth(credentials: StorageCredentials)
     open fun getTempPath(): String? = null
 
     companion object {

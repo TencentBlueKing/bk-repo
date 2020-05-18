@@ -111,4 +111,9 @@ interface StorageService {
      * 检验缓存文件一致性
      */
     fun synchronizeFile(storageCredentials: StorageCredentials? = null): SynchronizeResult
+
+    /**
+     * 健康检查
+     */
+    fun checkHealth(storageCredentials: StorageCredentials? = null)
 }
