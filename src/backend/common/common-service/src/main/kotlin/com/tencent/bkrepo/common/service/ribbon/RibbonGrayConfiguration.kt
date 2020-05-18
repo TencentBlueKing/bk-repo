@@ -11,13 +11,13 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Scope
 
 @Configuration
-@ConditionalOnProperty(value = ["ribbon.route.rule.enabled"])
+@ConditionalOnProperty(value = ["ribbon.gray.enabled"])
 @AutoConfigureBefore(RibbonClientConfiguration::class)
-@EnableConfigurationProperties(RibbonRouteRuleProperties::class)
-class RibbonRouteRuleConfiguration {
+@EnableConfigurationProperties(RibbonGrayProperties::class)
+class RibbonGrayConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-    fun localPriorRule(properties: RibbonRouteRuleProperties) = LocalPriorRouteRule()
+    fun grayMetadataAwareRule() = GrayMetadataAwareRule()
 }
