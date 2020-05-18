@@ -14,9 +14,8 @@ monitor:
     async.task.active.count: "generic,repository"
     async.task.queue.size: "generic,repository"
   health:
-    mongo: "repository, auth"
-    storage: "generic"
-    hystrix: "*"
+    mongo: "repository"
+    hystrix: "generic"
   export:
     influx:
       enabled: false
