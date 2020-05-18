@@ -38,6 +38,9 @@ include ":opdata:api-opdata"
 include ":opdata:biz-opdata"
 include ":opdata:boot-opdata"
 
+include ":monitor"
+include ":monitor:boot-monitor"
+
 include ":replication"
 include ":replication:api-replication"
 include ":replication:biz-replication"
@@ -72,5 +75,3 @@ include ":helm"
 include ":helm:api-helm"
 include ":helm:biz-helm"
 include ":helm:boot-helm"
-
-include ":boot-assembly"

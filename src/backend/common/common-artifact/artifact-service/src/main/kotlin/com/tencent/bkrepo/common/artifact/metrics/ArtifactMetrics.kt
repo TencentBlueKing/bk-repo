@@ -18,19 +18,19 @@ class ArtifactMetrics: MeterBinder {
 
     override fun bindTo(meterRegistry: MeterRegistry) {
         Gauge.builder(ARTIFACT_UPLOADING_COUNT, uploadCount, { it.get().toDouble() })
-            .description("当前正在上传的构件数量")
+            .description(ARTIFACT_UPLOADING_COUNT_DESC)
             .register(meterRegistry)
 
         Gauge.builder(ARTIFACT_DOWNLOADING_COUNT, downloadCount, { it.get().toDouble() })
-            .description("当前正在下载的构件数量")
+            .description(ARTIFACT_DOWNLOADING_COUNT_DESC)
             .register(meterRegistry)
 
         Gauge.builder(ASYNC_TASK_ACTIVE_COUNT, taskAsyncExecutor.threadPoolExecutor, { it.activeCount.toDouble() })
-            .description("当前异步任务进行数量")
+            .description(ASYNC_TASK_ACTIVE_COUNT_DESC)
             .register(meterRegistry)
 
         Gauge.builder(ASYNC_TASK_QUEUE_SIZE, taskAsyncExecutor.threadPoolExecutor, { it.queue.size.toDouble() })
-            .description("当前异步任务队列大小")
+            .description(ASYNC_TASK_QUEUE_SIZE_DESC)
             .register(meterRegistry)
     }
 }
