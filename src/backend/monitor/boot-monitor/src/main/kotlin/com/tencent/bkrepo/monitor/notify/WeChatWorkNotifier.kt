@@ -23,7 +23,7 @@ class WeChatWorkNotifier(
 
     private val restTemplate = RestTemplate()
 
-    var apiUrl = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="
+    var url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="
     var key: String? = null
     var chatId: String? = null
     var visibleToUser: String? = null
@@ -58,7 +58,7 @@ class WeChatWorkNotifier(
     }
 
     private fun buildUrl(): String {
-        return apiUrl + key
+        return url + key
     }
 
     companion object {
