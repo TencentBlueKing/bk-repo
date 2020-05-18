@@ -7,14 +7,8 @@ task npmInstall(type: Exec) {
     commandLine 'npm', 'install'
 }
 
-task npmBuild(type: Exec) {
+task npmBuild(type: Exec, dependsOn: npmInstall) {
     commandLine 'npm', 'run', 'build'
 }
 
-npmBuild {
-    dependsOn npmInstall
-}
-
-build {
-    dependsOn npmBuild
-}
+compileKotlin.dependsOn(npmBuild)
