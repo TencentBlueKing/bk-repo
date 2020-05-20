@@ -1,6 +1,0 @@
-async:
-  corePoolSize: 100
-  maxPoolSize: 2000
-  queueCapacity: 20000
-  keepAliveSeconds: 60
-  threadNamePrefix: artifact-async-executor-

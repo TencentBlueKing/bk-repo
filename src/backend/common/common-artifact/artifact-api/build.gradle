@@ -2,5 +2,4 @@ dependencies {
     implementation project(":common:common-api")
     compileOnly "commons-fileupload:commons-fileupload"
     compileOnly "javax.servlet:javax.servlet-api"
-    compileOnly "org.springframework:spring-web"
 }

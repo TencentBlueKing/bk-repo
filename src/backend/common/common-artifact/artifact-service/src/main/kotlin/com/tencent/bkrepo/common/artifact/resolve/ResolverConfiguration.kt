@@ -2,9 +2,12 @@ package com.tencent.bkrepo.common.artifact.resolve
 
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMapMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMethodArgumentResolver
+import com.tencent.bkrepo.common.artifact.resolve.file.UploadConfigElement
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoMethodArgumentResolver
+import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.io.FileSystemResource
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.multipart.commons.CommonsMultipartResolver
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
@@ -28,15 +31,14 @@ class ResolverConfiguration {
      * springboot默认使用的是Servlet3+ StandardMultipartFile
      */
     @Bean(name = ["multipartResolver"])
-    fun commonsMultipartResolver(): CommonsMultipartResolver {
+    fun commonsMultipartResolver(multipartProperties: MultipartProperties): CommonsMultipartResolver {
+        val config = UploadConfigElement(multipartProperties)
         val multipartResolver = CommonsMultipartResolver()
-        // 通用制品库文件大小范围不固定，因此不做大小限制
-        multipartResolver.setMaxUploadSize(UNLIMITED)
-        multipartResolver.setMaxUploadSizePerFile(UNLIMITED)
+        multipartResolver.setMaxUploadSize(config.maxRequestSize)
+        multipartResolver.setMaxUploadSizePerFile(config.maxFileSize)
+        multipartResolver.setUploadTempDir(FileSystemResource(config.location))
+        multipartResolver.setResolveLazily(config.resolveLazily)
+        multipartResolver.setMaxInMemorySize(config.fileSizeThreshold)
         return multipartResolver
-    }
-
-    companion object {
-        private const val UNLIMITED = -1L
     }
 }

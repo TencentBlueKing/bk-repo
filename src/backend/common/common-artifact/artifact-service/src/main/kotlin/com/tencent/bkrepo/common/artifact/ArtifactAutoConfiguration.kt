@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.PropertySource
 import org.springframework.core.Ordered
 
 /**
@@ -23,6 +24,7 @@ import org.springframework.core.Ordered
 @Configuration
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnWebApplication
+@PropertySource("classpath:common-artifact.properties")
 @Import(
     AuthConfiguration::class,
     PermissionConfiguration::class,
