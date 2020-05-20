@@ -12,5 +12,5 @@ data class NotifyProperties(
      * 蓝盾服务器地址
      */
     @NestedConfigurationProperty
-    var devopsServer: String = "http://dev.devops.oa.com"
+    var devopsServer: String = ""
 )
