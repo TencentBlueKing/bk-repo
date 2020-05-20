@@ -78,7 +78,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         throw UnsupportedMethodException()
     }
 
-    override fun migrate(context: ArtifactMigrateContext):Any? {
+    override fun migrate(context: ArtifactMigrateContext) {
         throw UnsupportedMethodException()
     }
 

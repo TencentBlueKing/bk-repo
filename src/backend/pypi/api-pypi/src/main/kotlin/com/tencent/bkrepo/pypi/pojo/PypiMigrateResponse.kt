@@ -12,7 +12,9 @@ data class PypiMigrateResponse<T>(
         @ApiModelProperty("迁移失败数量")
         val failCount: Int = 0,
         @ApiModelProperty("耗时 单位s")
-        val elapseTimeSeconds: Long = 0L,
+        val elapseTimeSeconds: Long = 0,
         @ApiModelProperty("迁移失败数据")
-        val failSet: Set<T?> = emptySet()
+        val failSet: Set<T?> = emptySet(),
+        @ApiModelProperty("记录写入时间")
+        val taskFinishedTime: String = ""
 )

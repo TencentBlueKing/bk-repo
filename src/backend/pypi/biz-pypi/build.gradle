@@ -1,6 +1,7 @@
 dependencies {
     api project(":common:common-artifact:artifact-service")
     api project(":pypi:api-pypi")
+    api project(":common:common-job")
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-xml"
     implementation "org.jsoup:jsoup:1.13.1"
     implementation"org.apache.commons:commons-compress:1.18"

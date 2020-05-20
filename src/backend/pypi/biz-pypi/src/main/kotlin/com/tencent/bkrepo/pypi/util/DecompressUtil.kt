@@ -57,7 +57,7 @@ object DecompressUtil {
 
     @Throws(Exception::class)
     fun getTgzPkgInfo(inputStream: InputStream): Map<String, String> {
-        val propStr = getPkgInfo(TarArchiveInputStream(GZIPInputStream(inputStream)), "PKG-INFO")
+        val propStr = getPkgInfo(TarArchiveInputStream(GZIPInputStream(inputStream, 512)), "PKG-INFO")
         return propStr.propInfo()
     }
 
@@ -77,9 +77,9 @@ object DecompressUtil {
                             zipEntry?.let {
                                 if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == file) {
                                     var length: Int
-                                    val bytes = kotlin.ByteArray(2048)
+                                    val bytes = ByteArray(2048)
                                     while ((tarInputStream.read(bytes).also { length = it }) != -1) {
-                                        stringBuilder.append(kotlin.text.String(bytes, 0, length))
+                                        stringBuilder.append(String(bytes, 0, length))
                                     }
                                     return stringBuilder.toString()
                                 }

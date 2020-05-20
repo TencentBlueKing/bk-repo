@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.pypi.artifact.repository
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
@@ -16,6 +17,9 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.pypi.artifact.model.MigrateDataCreateNode
+import com.tencent.bkrepo.pypi.artifact.model.MigrateDataInfo
+import com.tencent.bkrepo.pypi.artifact.model.TMigrateData
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
 import com.tencent.bkrepo.pypi.exception.PypiMigrateReject
@@ -27,14 +31,23 @@ import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
 import com.tencent.bkrepo.pypi.util.HttpUtil.downloadUrlHttpClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.apache.commons.fileupload.util.Streams
 import org.jsoup.nodes.Element
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Primary
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.repository.MongoRepository
 import java.io.File
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.lang.Exception
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -47,6 +60,12 @@ import java.util.concurrent.TimeUnit
 @Component
 @Primary
 class PypiLocalRepository : LocalRepository(), PypiRepository {
+
+    @Autowired
+    private lateinit var mongoTemplate: MongoTemplate
+
+    @Autowired
+    private lateinit var migrateDataRepository: MigrateDataRepository
 
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
@@ -262,55 +281,122 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     @org.springframework.beans.factory.annotation.Value("\${limitPackages}")
     private lateinit var limitPackages: String
 
-
     private val failSet = mutableSetOf<String>()
 
-    override fun migrate(context: ArtifactMigrateContext): PypiMigrateResponse<String> {
+    fun migrateResult(context: ArtifactMigrateContext): PypiMigrateResponse<String> {
+        with(context.artifactInfo) {
+            val migrateDataInfo = findMigrateResult(projectId, repoName)
+            migrateDataInfo?.let {
+                 return PypiMigrateResponse(migrateDataInfo.description,
+                        migrateDataInfo.filesNum,
+                migrateDataInfo.filesNum-migrateDataInfo.errorData.size,
+                        migrateDataInfo.errorData.size,
+                        migrateDataInfo.elapseTimeSeconds,
+                        migrateDataInfo.errorData as Set<String>,
+                        migrateDataInfo.createdDate)
+            }
+            return PypiMigrateResponse("未找到数据迁移记录，如果已经调用迁移接口{migrate/url},请稍后查询" )
+        }
+    }
+
+    fun findMigrateResult(projectId: String, repoName: String): MigrateDataInfo? {
+        val criteria =
+                Criteria.where(TMigrateData::projectId.name).`is`(projectId).and(TMigrateData::repoName.name)
+                        .`is`(repoName)
+        val query = Query.query(criteria).with(org.springframework.data.domain.Sort(org.springframework.data.domain.Sort.Direction.DESC, TMigrateData::lastModifiedDate.name)).limit(0)
+        return mongoTemplate.findOne(query, TMigrateData::class.java)?.let { convert(it) }
+    }
+
+    fun migrateData(context: ArtifactMigrateContext): PypiMigrateResponse<String>{
+        val job = GlobalScope.launch {
+            migrate(context)
+        }
+        job.start()
+        return migrateResult(context)
+    }
+
+    override fun migrate(context: ArtifactMigrateContext) {
         val verifiedUrl = beforeMigrate()
 
-        var successCount = 0
-
-        var failCount = 0
-
-
+        var totalCount: Int
         val cpuCore = cpuCore()
-
-        val threadPool = ThreadPoolExecutor(cpuCore, cpuCore*3, 20, TimeUnit.SECONDS,
+        val threadPool = ThreadPoolExecutor(cpuCore, cpuCore*2, 15, TimeUnit.SECONDS,
                 LinkedBlockingQueue(),
                 ThreadFactoryBuilder().setNameFormat("pypiRepo-migrate-thread-%d").build(),
                 PypiMigrateReject() )
 
         //获取所有的包,开始计时
         val start = System.currentTimeMillis()
-        verifiedUrl.htmlHrefs().let { simpleHrefs ->
+        verifiedUrl.htmlHrefs(limitPackages.toInt()).let { simpleHrefs->
+            totalCount = migrateUrl.sumTasks(simpleHrefs)
             for (e in simpleHrefs) {
                 //每一个包所包含的文件列表
                 e.text()?.let { packageName ->
                     "$verifiedUrl/$packageName".htmlHrefs().let { filenodes ->
                         for (filenode in filenodes) {
                             threadPool.submit( Runnable {
-                                migrateUpload(context, filenode, verifiedUrl, packageName)?.let { failCount++ }
+                                migrateUpload(context, filenode, verifiedUrl, packageName)
                             })
                         }
                     }
                 }
             }
         }
+
+        threadPool.shutdown()
+        while(!threadPool.awaitTermination(2, TimeUnit.SECONDS)){}
         val end = System.currentTimeMillis()
         val elapseTimeSeconds = (end-start)/1000
-        return PypiMigrateResponse(
-                "$migrateUrl migrate result",
-                migrateUrl.sumTasks(),
-                0,
-                failCount,
-                elapseTimeSeconds,
-                failSet
-        )
-
+        insertMigrateData(context.artifactInfo.projectId,
+                context.artifactInfo.repoName,
+                failSet,
+                limitPackages.toInt(),
+                totalCount,
+                elapseTimeSeconds)
     }
 
-    fun migrateUpload(context: ArtifactMigrateContext, filenode: Element, verifiedUrl: String, packageName: String): String? {
-        return try {
+    private fun insertMigrateData(projectId: String,
+                                  repoName: String,
+                                  collect: Set<String>,
+                                  packagesName: Int,
+                                  filesNum: Int,
+                                  elapseTimeSeconds: Long
+    ) {
+        val dataCreateRequest = MigrateDataCreateNode(
+                projectId = projectId,
+                repoName = repoName,
+                errorData = jacksonObjectMapper().writeValueAsString(collect),
+                packagesNum = packagesName,
+                filesNum = filesNum,
+                elapseTimeSeconds = elapseTimeSeconds,
+                description = "最近一次任务 {$migrateUrl} 迁移结果如下，请注意检查迁移完成时间"
+        )
+        create(dataCreateRequest)
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    fun create(dataCreateRequest: MigrateDataCreateNode) {
+        with(dataCreateRequest) {
+            val errorData = TMigrateData(
+                    projectId = projectId,
+                    repoName = repoName,
+                    errorData = errorData,
+                    createdBy = createdBy,
+                    createdDate = java.time.LocalDateTime.now(),
+                    lastModifiedBy = createdBy,
+                    lastModifiedDate = java.time.LocalDateTime.now(),
+                    packagesNum = packagesNum,
+                    filesNum = filesNum,
+                    elapseTimeSeconds = elapseTimeSeconds,
+                    description = description
+            )
+            migrateDataRepository.insert(errorData)
+                    .also { logger.info("Create migration error data [$dataCreateRequest] success.") }
+        }
+    }
+
+    fun migrateUpload(context: ArtifactMigrateContext, filenode: Element, verifiedUrl: String, packageName: String) {
+        try {
             val filename = filenode.text()
             val hrefValue = filenode.attributes()["href"]
             //获取文件流
@@ -327,12 +413,10 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                     }
                 }
             }
-            null
         } catch (e: Exception) {
             logger.error(e.message)
             logger.warn("$verifiedUrl/$packageName/${filenode.attributes()["href"]}")
             failSet.add("$verifiedUrl/$packageName/${filenode.attributes()["href"]}")
-            "fail mark!"
         }
     }
 
@@ -349,7 +433,6 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 return null
             }
         }
-
         //TODO 计算sha256
         val sha256 = FileDigestUtils.fileSha256(artifactFile.getInputStream())
         val md5 = FileDigestUtils.fileMd5(artifactFile.getInputStream())
@@ -391,5 +474,20 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(PypiLocalRepository::class.java)
+        fun convert(tMigrateData: TMigrateData): MigrateDataInfo {
+            return tMigrateData.let {
+                MigrateDataInfo(
+                        errorData = jacksonObjectMapper().readValue(it.errorData, Set::class.java),
+                        projectId = it.projectId,
+                        repoName = it.repoName,
+                        createdBy = it.createdBy,
+                        createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                        packagesNum = it.packagesNum,
+                        filesNum = it.filesNum,
+                        elapseTimeSeconds = it.elapseTimeSeconds,
+                        description = it.description
+                )
+            }
+        }
     }
 }
