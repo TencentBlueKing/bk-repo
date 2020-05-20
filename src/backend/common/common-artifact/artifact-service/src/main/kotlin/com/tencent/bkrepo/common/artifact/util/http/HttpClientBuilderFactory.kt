@@ -37,6 +37,8 @@ object HttpClientBuilderFactory {
                 if (neverReadTimeout) {
                     readTimeout(0, TimeUnit.MILLISECONDS)
                 }
+            }.apply {
+                writeTimeout(0, TimeUnit.MILLISECONDS)
             }
     }
 }
