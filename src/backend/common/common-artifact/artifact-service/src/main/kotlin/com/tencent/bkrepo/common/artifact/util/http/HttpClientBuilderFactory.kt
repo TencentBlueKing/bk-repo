@@ -13,8 +13,8 @@ import java.util.concurrent.TimeUnit
  */
 object HttpClientBuilderFactory {
 
-    private const val DEFAULT_READ_TIMEOUT_SECONDS = 10 * 1000L
-    private const val DEFAULT_CONNECT_TIMEOUT_SECONDS = 10 * 1000L
+    private const val DEFAULT_READ_TIMEOUT_SECONDS = 50 * 1000L
+    private const val DEFAULT_CONNECT_TIMEOUT_SECONDS = 50 * 1000L
 
     private val defaultClient by lazy {
         OkHttpClient.Builder()
