@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
@@ -74,6 +75,10 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     }
 
     override fun remove(context: ArtifactRemoveContext) {
+        throw UnsupportedMethodException()
+    }
+
+    override fun migrate(context: ArtifactMigrateContext) {
         throw UnsupportedMethodException()
     }
 

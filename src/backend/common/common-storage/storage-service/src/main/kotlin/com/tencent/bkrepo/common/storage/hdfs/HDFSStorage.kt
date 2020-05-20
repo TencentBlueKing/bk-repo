@@ -52,12 +52,15 @@ open class HDFSStorage : AbstractFileStorage<HDFSCredentials, HDFSClient>() {
         if (credentials.clusterMode) {
             url = "hdfs://${credentials.clusterName}"
             configuration["fs.defaultFS"] = url
+            configuration["dfs.replication"] = 1.toString()
             configuration["dfs.nameservices"] = credentials.clusterName
-            configuration["dfs.ha.namenodes.${credentials.clusterName}"] = credentials.nameNodeMap.keys.joinToString(separator = ",")
+            configuration["dfs.ha.namenodes.${credentials.clusterName}"] =
+                credentials.nameNodeMap.keys.joinToString(separator = ",")
             credentials.nameNodeMap.forEach { (node, address) ->
                 configuration["dfs.namenode.rpc-address.${credentials.clusterName}.$node"] = address
             }
-            configuration["dfs.client.failover.proxy.provider.${credentials.clusterName}"] = "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
+            configuration["dfs.client.failover.proxy.provider.${credentials.clusterName}"] =
+                "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
         }
         val fileSystem = FileSystem.get(URI.create(url), configuration, username)
         return HDFSClient(workingPath, fileSystem)
