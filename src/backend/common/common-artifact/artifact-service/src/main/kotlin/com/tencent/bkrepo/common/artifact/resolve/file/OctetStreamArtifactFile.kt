@@ -37,8 +37,7 @@ class OctetStreamArtifactFile(
 
     private fun init() {
         if (!hasInitialized) {
-            val dirPath = Paths.get(location, "octet-stream")
-            filePath = Files.createTempFile(dirPath, "artifact", "upload")
+            filePath = Files.createTempFile(Paths.get(location), "artifact_", ".upload")
             val file = filePath.toFile()
             val fileOutputStream = FileOutputStream(file)
             Streams.copy(source, fileOutputStream, true)

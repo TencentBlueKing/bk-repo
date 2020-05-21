@@ -10,7 +10,7 @@ import java.io.File
 import java.nio.file.Files
 
 /**
- * 存储服务简单实现s
+ * 存储服务简单实现
  *
  * @author: carrypan
  * @date: 2019/12/26
@@ -26,7 +26,7 @@ class SimpleStorageService : AbstractStorageService() {
     }
 
     override fun doLoad(path: String, filename: String, credentials: StorageCredentials): File? {
-        val tempFile = Files.createTempFile("artifact", "tmp").toFile()
+        val tempFile = Files.createTempFile("artifact_", ".tmp").toFile()
         return fileStorage.load(path, filename, tempFile, credentials) ?: run {
             tempFile.delete()
             null
