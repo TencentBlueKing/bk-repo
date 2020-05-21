@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.storage.filesystem
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import org.apache.commons.io.FileUtils
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -12,6 +13,7 @@ import java.nio.file.FileVisitor
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 
 /**
  * 本地文件存储客户端
@@ -54,6 +56,32 @@ class FileSystemClient(private val root: String) {
             }
         }
         return file
+    }
+
+    fun store(dir: String, filename: String, file: File, overwrite: Boolean = false): File {
+        val target = Paths.get(this.root, dir, filename)
+        val targetFile = target.toFile()
+        val source = file.toPath()
+        createDirectories(target.parent)
+        if (overwrite) {
+            Files.deleteIfExists(target)
+        }
+        if (!Files.exists(target)) {
+            try {
+                Files.move(source, target, StandardCopyOption.REPLACE_EXISTING)
+            } catch (ex: IOException) {
+                // ignore and let the Files.copy, outside
+                // this if block, take over and attempt to copy it
+                logger.warn("Failed to store file by Files.move(source, target), fallback to use file channel: ${ex.message}")
+                targetFile.createNewFile()
+                FileLockExecutor.executeInLock(file.inputStream()) { input ->
+                    FileLockExecutor.executeInLock(target.toFile()) { output ->
+                        transfer(input, output, file.length())
+                    }
+                }
+            }
+        }
+        return target.toFile()
     }
 
     fun delete(dir: String, filename: String) {
@@ -187,5 +215,7 @@ class FileSystemClient(private val root: String) {
          * 防止不同jdk版本的不同实现，这里限定一下大小
          */
         private const val FILE_COPY_BUFFER_SIZE = 64 * 1024 * 1024L
+
+        private val logger = LoggerFactory.getLogger(FileSystemClient::class.java)
     }
 }

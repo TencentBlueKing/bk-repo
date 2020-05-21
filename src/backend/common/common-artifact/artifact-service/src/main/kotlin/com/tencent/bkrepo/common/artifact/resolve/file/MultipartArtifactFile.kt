@@ -1,10 +1,9 @@
-package com.tencent.bkrepo.common.artifact.file
+package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import org.apache.commons.fileupload.disk.DiskFileItem
 import java.io.File
 import java.io.InputStream
-import java.io.OutputStream
-import org.apache.commons.fileupload.disk.DiskFileItem
 
 /**
  *
@@ -18,8 +17,6 @@ class MultipartArtifactFile(private val diskFileItem: DiskFileItem) : ArtifactFi
 
     override fun getInputStream(): InputStream = diskFileItem.inputStream
 
-    override fun getOutputStream(): OutputStream = diskFileItem.outputStream
-
     override fun getSize(): Long = diskFileItem.size
 
     override fun delete() = diskFileItem.delete()
@@ -29,8 +26,8 @@ class MultipartArtifactFile(private val diskFileItem: DiskFileItem) : ArtifactFi
     /**
      * 该方法在DiskFileItem中为protected，采用反射调用
      */
-    override fun getTempFile(): File {
-        val method = diskFileItem.javaClass.getDeclaredMethod(ArtifactFile::getTempFile.name)
+    override fun getFile(): File {
+        val method = diskFileItem.javaClass.getDeclaredMethod(ArtifactFile::getFile.name)
         method.isAccessible = true
         return method.invoke(diskFileItem) as File
     }

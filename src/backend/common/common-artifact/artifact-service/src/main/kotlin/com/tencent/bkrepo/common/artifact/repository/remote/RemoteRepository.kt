@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.remote
 
 import com.tencent.bkrepo.common.artifact.config.PROXY_AUTHORIZATION
-import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCredentialsConfiguration
@@ -9,6 +8,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -23,7 +23,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
-import org.apache.commons.fileupload.util.Streams
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
@@ -209,10 +208,8 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 创建临时文件并将响应体写入文件
      */
     protected fun createTempFile(body: ResponseBody): File {
-        // set threshold = 0, guarantee any data will be written to file rather than memory cache
-        val artifactFile = ArtifactFileFactory.build(0)
-        Streams.copy(body.byteStream(), artifactFile.getOutputStream(), true)
-        return artifactFile.getTempFile()
+        val artifactFile = ArtifactFileFactory.build(body.byteStream())
+        return artifactFile.getFile()
     }
 
     companion object {

@@ -106,7 +106,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 上传前回调
      */
     open fun onBeforeUpload(context: ArtifactUploadContext) {
-        artifactMetrics.uploadCount.incrementAndGet()
+        artifactMetrics.uploadCount.increment()
     }
 
     /**
@@ -144,7 +144,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 下载前回调
      */
     open fun onBeforeDownload(context: ArtifactDownloadContext) {
-        artifactMetrics.downloadCount.incrementAndGet()
+        artifactMetrics.downloadCount.increment()
     }
 
     /**
@@ -183,14 +183,12 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 上传结束回调
      */
     open fun onUploadFinished(context: ArtifactUploadContext) {
-        artifactMetrics.uploadCount.decrementAndGet()
     }
 
     /**
      * 下载结束回调
      */
     open fun onDownloadFinished(context: ArtifactDownloadContext) {
-        artifactMetrics.downloadCount.decrementAndGet()
     }
 
     companion object {

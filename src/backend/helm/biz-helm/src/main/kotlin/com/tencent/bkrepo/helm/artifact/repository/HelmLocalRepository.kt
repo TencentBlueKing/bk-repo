@@ -5,12 +5,12 @@ import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
-import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -28,7 +28,6 @@ import com.tencent.bkrepo.helm.utils.JsonUtil
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
-import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.lang.StringUtils
 import org.apache.http.HttpStatus
 import org.slf4j.Logger
@@ -92,8 +91,7 @@ class HelmLocalRepository : LocalRepository() {
             fw.close()
             tempFile.deleteOnExit()
         }
-        val artifactFile = ArtifactFileFactory.build()
-        Streams.copy(tempFile.inputStream(), artifactFile.getOutputStream(), true)
+        val artifactFile = ArtifactFileFactory.build(tempFile.inputStream())
         val uploadContext = ArtifactUploadContext(artifactFile)
         uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         this.upload(uploadContext)

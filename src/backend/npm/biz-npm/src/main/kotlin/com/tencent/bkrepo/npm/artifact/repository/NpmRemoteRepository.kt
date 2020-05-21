@@ -3,13 +3,13 @@ package com.tencent.bkrepo.npm.artifact.repository
 import com.google.gson.JsonObject
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.npm.constants.DIST
@@ -214,12 +214,7 @@ class NpmRemoteRepository : RemoteRepository() {
         val jsonObj = GsonUtils.transferFileToJson(file)
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
-        val pkgFile = ArtifactFileFactory.build()
-        Streams.copy(
-            GsonUtils.gson.toJson(jsonObj).byteInputStream(),
-            pkgFile.getOutputStream(),
-            true
-        )
+        val pkgFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(jsonObj).byteInputStream())
         if (cacheConfiguration.cacheEnabled) {
             val nodeCreateRequest = getNodeCreateRequest(context, pkgFile)
             nodeResource.create(nodeCreateRequest)
