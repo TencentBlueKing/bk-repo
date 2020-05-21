@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.resolve
 
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileCleanInterceptor
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMapMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMethodArgumentResolver
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.core.io.FileSystemResource
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.multipart.commons.CommonsMultipartResolver
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
@@ -25,6 +27,11 @@ class ResolverConfiguration {
                 resolvers.add(ArtifactInfoMethodArgumentResolver())
                 resolvers.add(ArtifactFileMethodArgumentResolver())
                 resolvers.add(ArtifactFileMapMethodArgumentResolver())
+            }
+
+            override fun addInterceptors(registry: InterceptorRegistry) {
+                registry.addInterceptor(ArtifactFileCleanInterceptor())
+                super.addInterceptors(registry)
             }
         }
     }
