@@ -32,7 +32,7 @@ class QuartzMongoConfiguration {
         override fun customize(schedulerFactoryBean: SchedulerFactoryBean?) {
             val properties = quartzProperties.properties
             properties["org.quartz.jobStore.class"] = MongoDBJobStore::class.qualifiedName
- //           properties["org.quartz.threadPool.threadCount"] = 10.toString()
+            properties["org.quartz.threadPool.threadCount"] = 1.toString()
             properties["org.quartz.jobStore.mongoUri"] = mongoProperties.uri
             properties["org.quartz.jobStore.dbName"] = mongoProperties.mongoClientDatabase
         }
