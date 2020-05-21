@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import org.apache.commons.fileupload.util.Streams
+import org.slf4j.LoggerFactory
 import java.io.BufferedInputStream
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -11,6 +12,7 @@ import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.system.measureTimeMillis
 
 /**
  * application/octet-stream 流文件
@@ -37,15 +39,18 @@ class OctetStreamArtifactFile(
 
     private fun init() {
         if (!hasInitialized) {
-            filePath = Files.createTempFile(Paths.get(location), "artifact_", ".upload")
-            val file = filePath.toFile()
-            val fileOutputStream = FileOutputStream(file)
-            Streams.copy(source, fileOutputStream, true)
-            if (file.length() <= fileSizeThreshold) {
-                content = file.readBytes()
-                isInMemory = true
+            val executionTimeMillis = measureTimeMillis {
+                filePath = Files.createTempFile(Paths.get(location), "artifact_", ".upload")
+                val file = filePath.toFile()
+                val fileOutputStream = FileOutputStream(file)
+                Streams.copy(source, fileOutputStream, true)
+                if (file.length() <= fileSizeThreshold) {
+                    content = file.readBytes()
+                    isInMemory = true
+                }
+                hasInitialized = true
             }
-            hasInitialized = true
+            logger.info("Receive [${getSize()}]bytes, elapse [$executionTimeMillis]ms, average speed: [${getSize()/executionTimeMillis*1000}]bytes/s.")
         }
     }
 
@@ -83,4 +88,6 @@ class OctetStreamArtifactFile(
         init()
         return isInMemory
     }
+
+    private val logger = LoggerFactory.getLogger(OctetStreamArtifactFile::class.java)
 }

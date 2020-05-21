@@ -30,12 +30,12 @@ class CacheStorageService : AbstractStorageService() {
     private val cacheClient: FileSystemClient by lazy { FileSystemClient(storageProperties.cache.path) }
 
     override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
-        val cachedFile = cacheClient.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize())
+        val cachedFile = cacheClient.store(path, filename, artifactFile.getFile())
         fileStorage.store(path, filename, cachedFile, credentials)
     }
 
     override fun doStore(path: String, filename: String, file: File, credentials: StorageCredentials) {
-        val cachedFile = cacheClient.store(path, filename, file.inputStream(), file.length())
+        val cachedFile = cacheClient.store(path, filename, file)
         fileStorage.store(path, filename, cachedFile, credentials)
     }
 
@@ -97,12 +97,13 @@ class CacheStorageService : AbstractStorageService() {
             assert(receiveFile != null) { "Failed to load file." }
             assert(content == receiveFile!!.readText()) {"File content inconsistent."}
             assert(content == cachedFile!!.readText()) {"File content inconsistent."}
-            // 删除文件
-            cacheClient.delete(path, filename)
-            fileStorage.delete(path, filename, credentials)
+
         } catch (exception: Exception) {
             throw exception
         } finally {
+            // 删除文件
+            cacheClient.delete(path, filename)
+            fileStorage.delete(path, filename, credentials)
             receiveFile?.deleteOnExit()
         }
     }

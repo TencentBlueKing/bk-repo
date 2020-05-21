@@ -17,6 +17,7 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.charset.Charset
 import java.util.UUID
+import kotlin.system.measureTimeMillis
 
 /**
  * 存储服务抽象实现
@@ -42,14 +43,18 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
 
         try {
-            if (doExist(path, digest, credentials)) {
-                logger.info("File [$digest] exists on [$credentials], skip store.")
-                return
+            val size = artifactFile.getSize()
+            val executionTimeMillis = measureTimeMillis {
+                if (doExist(path, digest, credentials)) {
+                    logger.info("File [$digest] exists on, skip store.")
+                } else {
+                    doStore(path, digest, artifactFile, credentials)
+                }
             }
-            doStore(path, digest, artifactFile, credentials)
-            logger.info("Success to store artifactFile [$digest] on [$credentials].")
+            logger.info("Success to store artifact file [$digest], [${size}]bytes, elapse [$executionTimeMillis]ms, " +
+                "average speed: [${size/executionTimeMillis*1000}]bytes/s.")
         } catch (exception: Exception) {
-            logger.error("Failed to store artifactFile [$digest] on [$credentials].", exception)
+            logger.error("Failed to store artifact file [$digest].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -59,12 +64,16 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
 
         try {
-            if (doExist(path, digest, credentials)) {
-                logger.info("File [$digest] exists on [$credentials], skip store.")
-                return
+            val size = file.length()
+            val executionTimeMillis = measureTimeMillis {
+                if (doExist(path, digest, credentials)) {
+                    logger.info("File [$digest] exists on, skip store.")
+                } else {
+                    doStore(path, digest, file, credentials)
+                }
             }
-            doStore(path, digest, file, credentials)
-            logger.info("Success to store file [$digest] on [$credentials].")
+            logger.info("Success to store file [$digest], [${size}]bytes, elapse [$executionTimeMillis]ms, " +
+                "average speed: [${size/executionTimeMillis*1000}]bytes/s.")
         } catch (exception: Exception) {
             logger.error("Failed to store file [$digest] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
@@ -252,7 +261,11 @@ abstract class AbstractStorageService : StorageService {
     }
 
     override fun checkHealth(storageCredentials: StorageCredentials?) {
-        return doCheckHealth(getCredentialsOrDefault(storageCredentials))
+        val executionTimeMillis = measureTimeMillis {
+            doCheckHealth(getCredentialsOrDefault(storageCredentials))
+        }
+        assert(executionTimeMillis <= 5*1000) { "Heach check timeout, $executionTimeMillis ms totally." }
+        return
     }
 
     protected fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
