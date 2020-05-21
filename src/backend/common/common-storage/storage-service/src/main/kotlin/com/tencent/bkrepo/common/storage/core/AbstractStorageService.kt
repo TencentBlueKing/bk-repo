@@ -47,7 +47,7 @@ abstract class AbstractStorageService : StorageService {
             val kilobytes = artifactFile.getSize() / 1024.0
             val executionSeconds = measureNanoTime {
                 if (doExist(path, digest, credentials)) {
-                    logger.info("File [$digest] exists on, skip store.")
+                    logger.info("File [$digest] exists, skip store.")
                     return
                 } else {
                     doStore(path, digest, artifactFile, credentials)
@@ -69,7 +69,7 @@ abstract class AbstractStorageService : StorageService {
             val size = file.length()
             val executionTimeMillis = measureTimeMillis {
                 if (doExist(path, digest, credentials)) {
-                    logger.info("File [$digest] exists on, skip store.")
+                    logger.info("File [$digest] exists, skip store.")
                 } else {
                     doStore(path, digest, file, credentials)
                 }
@@ -266,7 +266,7 @@ abstract class AbstractStorageService : StorageService {
         val executionTimeMillis = measureTimeMillis {
             doCheckHealth(getCredentialsOrDefault(storageCredentials))
         }
-        assert(executionTimeMillis <= 5*1000) { "Heach check timeout, $executionTimeMillis ms totally." }
+        assert(executionTimeMillis <= 5*1000) { "Health check timeout, $executionTimeMillis ms totally." }
         return
     }
 
