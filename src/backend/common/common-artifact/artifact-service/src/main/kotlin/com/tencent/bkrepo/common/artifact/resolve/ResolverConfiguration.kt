@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.resolve
 
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMapMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.file.UploadConfigElement
@@ -7,12 +8,14 @@ import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoMethodArgumen
 import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 import org.springframework.core.io.FileSystemResource
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.multipart.commons.CommonsMultipartResolver
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
+@Import(ArtifactFileFactory::class)
 class ResolverConfiguration {
 
     @Bean
