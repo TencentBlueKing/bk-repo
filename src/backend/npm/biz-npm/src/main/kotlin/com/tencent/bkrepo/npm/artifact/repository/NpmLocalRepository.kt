@@ -152,7 +152,7 @@ class NpmLocalRepository : LocalRepository() {
 
         try {
             this.onDownloadValidate(context)
-            this.onBeforeDownload(context)
+            this.onDownloadBefore(context)
             val file =
                 this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] does not exist")
             val name = NodeUtils.getName(getNodeFullPath(context))

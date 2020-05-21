@@ -46,7 +46,7 @@ class HelmLocalRepository : LocalRepository() {
 
         try {
             this.onDownloadValidate(context)
-            this.onBeforeDownload(context)
+            this.onDownloadBefore(context)
             val file =
                 this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] does not exist")
             ServletResponseUtils.response(determineFileName(context), file)
@@ -64,7 +64,7 @@ class HelmLocalRepository : LocalRepository() {
         return if (StringUtils.isBlank(fileName)) INDEX_YAML else fileName
     }
 
-    override fun onBeforeDownload(context: ArtifactDownloadContext) {
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
         // 检查index-cache.yaml文件是否存在，如果不存在则说明是添加仓库
         val repositoryInfo = context.repositoryInfo
         val projectId = repositoryInfo.projectId
@@ -97,7 +97,7 @@ class HelmLocalRepository : LocalRepository() {
         this.upload(uploadContext)
     }
 
-    override fun onBeforeUpload(context: ArtifactUploadContext) {
+    override fun onUploadBefore(context: ArtifactUploadContext) {
         // 判断是否是强制上传
         val isForce = context.request.getParameter("force")?.let { true } ?: false
         context.contextAttributes["force"] = isForce

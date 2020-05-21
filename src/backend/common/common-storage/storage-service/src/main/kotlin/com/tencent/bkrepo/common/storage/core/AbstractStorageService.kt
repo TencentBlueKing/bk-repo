@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.storage.core
 
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -44,17 +45,17 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
 
         try {
-            val kilobytes = artifactFile.getSize() / 1024.0
-            val executionSeconds = measureNanoTime {
+            val size = artifactFile.getSize()
+            val nanoTime = measureNanoTime {
                 if (doExist(path, digest, credentials)) {
                     logger.info("File [$digest] exists, skip store.")
                     return
                 } else {
                     doStore(path, digest, artifactFile, credentials)
                 }
-            } / 1000.0 / 1000.0 / 1000.0
-            logger.info("Success to store artifact file [$digest], size: ${kilobytes}KB, elapse: ${executionSeconds}s, " +
-                "average: ${kilobytes/executionSeconds}KB/s.")
+            }
+            logger.info("Success to store artifact file [$digest], size: ${HumanReadable.bytes(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
+                "average: ${HumanReadable.throughput(size, nanoTime)}.")
         } catch (exception: Exception) {
             logger.error("Failed to store artifact file [$digest].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
@@ -66,16 +67,16 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
 
         try {
-            val kilobytes = file.length() / 1024.0
-            val executionSeconds = measureNanoTime {
+            val size = file.length()
+            val nanoTime = measureNanoTime {
                 if (doExist(path, digest, credentials)) {
                     logger.info("File [$digest] exists, skip store.")
                 } else {
                     doStore(path, digest, file, credentials)
                 }
-            } / 1000.0 / 1000.0 / 1000.0
-            logger.info("Success to store file [$digest], size: ${kilobytes}KB, elapse: ${executionSeconds}s, " +
-                "average: ${kilobytes/executionSeconds}KB/s.")
+            }
+            logger.info("Success to store file [$digest], size: ${HumanReadable.bytes(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
+                "average: ${HumanReadable.throughput(size, nanoTime)}.")
         } catch (exception: Exception) {
             logger.error("Failed to store file [$digest] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
@@ -266,7 +267,7 @@ abstract class AbstractStorageService : StorageService {
         val executionTimeMillis = measureTimeMillis {
             doCheckHealth(getCredentialsOrDefault(storageCredentials))
         }
-        assert(executionTimeMillis <= 5*1000) { "Health check timeout, $executionTimeMillis ms totally." }
+        assert(executionTimeMillis <= 2*1000) { "Health check timeout, $executionTimeMillis ms totally." }
         return
     }
 

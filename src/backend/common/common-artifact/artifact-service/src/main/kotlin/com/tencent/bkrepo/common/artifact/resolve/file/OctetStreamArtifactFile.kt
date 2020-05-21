@@ -1,6 +1,10 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_BYTES_COUNT
+import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_CONSUME_COUNT
+import io.micrometer.core.instrument.Metrics
 import org.apache.commons.fileupload.util.Streams
 import org.slf4j.LoggerFactory
 import java.io.BufferedInputStream
@@ -39,19 +43,22 @@ class OctetStreamArtifactFile(
 
     private fun init() {
         if (!hasInitialized) {
-            val executionSeconds = measureNanoTime {
+            val nanoTime = measureNanoTime {
                 filePath = Files.createTempFile(Paths.get(location), "artifact_", ".upload")
                 val file = filePath.toFile()
                 val fileOutputStream = FileOutputStream(file)
-                Streams.copy(source, fileOutputStream, true)
-                if (file.length() <= fileSizeThreshold) {
+                val size = Streams.copy(source, fileOutputStream, true)
+                if (size <= fileSizeThreshold) {
                     content = file.readBytes()
                     isInMemory = true
                 }
                 hasInitialized = true
-            } / 1000.0 / 1000.0 / 1000.0
-            val kilobytes = getSize() / 1024.0
-            logger.info("Receive ${kilobytes}KB, elapse: ${executionSeconds}s, average: ${kilobytes/executionSeconds}KB/s.")
+            }
+            val size = getSize()
+            Metrics.counter(ARTIFACT_UPLOADED_BYTES_COUNT).increment(size.toDouble())
+            Metrics.counter(ARTIFACT_UPLOADED_CONSUME_COUNT).increment(nanoTime / 1000.0 / 1000.0)
+            logger.info("Receive artifact file, size: ${HumanReadable.bytes(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
+                "average: ${HumanReadable.throughput(size, nanoTime)}.")
         }
     }
 
