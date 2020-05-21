@@ -42,6 +42,13 @@ class HelmExceptionHandler {
         helmResponse(responseObject, exception)
     }
 
+    @ExceptionHandler(HelmErrorInvalidProvenanceFileException::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handlerHelmErrorInvalidProvenanceFileException(exception: HelmErrorInvalidProvenanceFileException) {
+        val responseObject = HelmErrorResponse(exception.message)
+        helmResponse(responseObject, exception)
+    }
+
     @ExceptionHandler(HelmFileNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerHelmFileNotFoundException(exception: HelmFileNotFoundException) {
