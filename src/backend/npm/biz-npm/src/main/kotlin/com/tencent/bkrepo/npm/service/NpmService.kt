@@ -15,7 +15,9 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
+import com.tencent.bkrepo.npm.async.NpmDependentHandler
 import com.tencent.bkrepo.npm.constants.APPLICATION_OCTET_STEAM
 import com.tencent.bkrepo.npm.constants.ATTACHMENTS
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
@@ -51,7 +53,9 @@ import com.tencent.bkrepo.npm.exception.NpmArtifactExistException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.pojo.NpmDeleteResponse
 import com.tencent.bkrepo.npm.pojo.NpmMetaData
+import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
+import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.GsonUtils
@@ -69,6 +73,7 @@ import java.util.Date
 
 @Service
 class NpmService @Autowired constructor(
+    private val npmDependentHandler: NpmDependentHandler,
     private val metadataResource: MetadataResource
 ) {
 
@@ -87,6 +92,7 @@ class NpmService @Autowired constructor(
             context.contextAttributes = attributesMap
             val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
             repository.upload(context)
+            npmDependentHandler.updatePkgDepts(userId, artifactInfo, jsonObj, NpmOperationAction.PUBLISH)
             NpmSuccessResponse.createEntitySuccess()
         } else {
             unPublishOperation(artifactInfo, jsonObj)
@@ -161,7 +167,6 @@ class NpmService @Autowired constructor(
         attributesMap: MutableMap<String, Any>
     ) {
         val distTags = getDistTags(jsonObj)!!
-        // val version = jsonObj.getAsJsonObject(DISTTAGS).get(LATEST).asString
         val name = jsonObj.get(NAME).asString
         val versionJsonObj = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(distTags.second)
         val packageJsonWithVersionFile = ArtifactFileFactory.build()
@@ -244,8 +249,8 @@ class NpmService @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     fun download(artifactInfo: NpmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        context.contextAttributes[NPM_FILE_FULL_PATH] =
-            "/${artifactInfo.scope}/${artifactInfo.pkgName}/-/${artifactInfo.scope}/${artifactInfo.artifactUri}"
+        val requestURI = HttpContextHolder.getRequest().requestURI
+        context.contextAttributes[NPM_FILE_FULL_PATH] = requestURI.substringAfterLast(artifactInfo.repoName)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.download(context)
     }
@@ -264,6 +269,7 @@ class NpmService @Autowired constructor(
         context.contextAttributes[NPM_FILE_FULL_PATH] = fullPathList
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.remove(context)
+        npmDependentHandler.updatePkgDepts(userId, artifactInfo, pkgInfo, NpmOperationAction.UNPUBLISH)
         return NpmDeleteResponse(true, name, REV_VALUE)
     }
 
@@ -303,11 +309,11 @@ class NpmService @Autowired constructor(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): Map<String, Any> {
+    fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): NpmSearchResponse {
         val context = ArtifactListContext()
         context.contextAttributes[SEARCH_REQUEST] = searchRequest
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        return repository.list(context) as Map<String, Any>
+        return repository.list(context) as NpmSearchResponse
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)

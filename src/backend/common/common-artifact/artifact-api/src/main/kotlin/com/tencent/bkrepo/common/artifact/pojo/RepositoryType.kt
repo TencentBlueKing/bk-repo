@@ -14,5 +14,6 @@ enum class RepositoryType {
     PYPI,
     NPM,
     OPDATA,
-    HELM
+    HELM,
+    COMPOSER
 }

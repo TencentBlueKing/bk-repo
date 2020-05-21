@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.opdata.service
 
 import com.tencent.bkrepo.opdata.model.ProjectModel
+import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.NodeResult
 import com.tencent.bkrepo.opdata.pojo.QueryRequest
@@ -8,7 +9,6 @@ import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -90,11 +90,12 @@ class GrafanaService @Autowired constructor(
     private fun dealProjectList(target: Target, result: MutableList<Any>) {
         var rows = mutableListOf<List<Any>>()
         var columns = mutableListOf<Columns>()
-        val info = projectModel.getProjectList()
-        columns.add(Columns(ProjectInfo::name.name, "string"))
-        columns.add(Columns(ProjectInfo::displayName.name, "string"))
+        val info = projectMetricsRepository.findAll()
+        columns.add(Columns(TProjectMetrics::projectId.name, "string"))
+        columns.add(Columns(TProjectMetrics::nodeNum.name, "number"))
+        columns.add(Columns(TProjectMetrics::capSize.name, "number"))
         info.forEach {
-            val row = listOf(it.name, it.displayName)
+            val row = listOf(it.projectId, it.nodeNum, it.capSize)
             rows.add(row)
         }
         val data = QueryResult(columns, rows, target.type)

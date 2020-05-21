@@ -8,14 +8,15 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import java.io.File
+import java.io.InputStream
 import java.io.InputStreamReader
 
 object GsonUtils {
     val gson: Gson =
         GsonBuilder().setPrettyPrinting().disableHtmlEscaping().setDateFormat("yyyy-MM-dd HH:mm:ss.sss'Z'").create()
 
-    fun gsonToString(obj: Any): String? {
-        return gson.toJson(obj)
+    fun gsonToInputStream(obj: JsonElement): InputStream {
+        return gson.toJson(obj).byteInputStream()
     }
 
     fun stringToArray(gsonString: String): JsonArray {
@@ -45,6 +46,13 @@ object GsonUtils {
     fun transferFileToJson(file: File): JsonObject {
         return gson.fromJson<JsonObject>(
             InputStreamReader(file.inputStream()),
+            object : TypeToken<JsonObject>() {}.type
+        )
+    }
+
+    fun transferInputStreamToJson(inputStream: InputStream): JsonObject {
+        return gson.fromJson<JsonObject>(
+            InputStreamReader(inputStream),
             object : TypeToken<JsonObject>() {}.type
         )
     }
