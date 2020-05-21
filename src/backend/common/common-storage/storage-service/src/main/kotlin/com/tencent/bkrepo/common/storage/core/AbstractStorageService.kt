@@ -304,6 +304,8 @@ abstract class AbstractStorageService : StorageService {
     open fun getTempPath(): String? = null
 
     companion object {
+        const val HEALTH_CHECK_PATH = "/health-check"
+        const val HEALTH_CHECK_PREFIX = "health-check"
         private const val CURRENT_PATH = ""
         private const val BLOCK_SUFFIX = ".block"
         private const val BLOCK_EXTENSION = "block"

@@ -46,7 +46,6 @@ class SimpleStorageService : AbstractStorageService() {
     }
 
     override fun doCheckHealth(credentials: StorageCredentials) {
-        val path = "health-check"
         val filename = System.nanoTime().toString()
         val randomSize = 10
 
@@ -54,17 +53,17 @@ class SimpleStorageService : AbstractStorageService() {
         var writeFile: File? = null
         var receiveFile: File? = null
         try {
-            writeFile = File.createTempFile(path, filename)
-            receiveFile = File.createTempFile(path, filename)
+            writeFile = Files.createTempFile(HEALTH_CHECK_PREFIX, filename).toFile()
+            receiveFile = Files.createTempFile(HEALTH_CHECK_PREFIX, filename).toFile()
             writeFile.writeText(content)
             // 写文件
-            fileStorage.synchronizeStore(path, filename, receiveFile, credentials)
+            fileStorage.synchronizeStore(HEALTH_CHECK_PATH, filename, receiveFile, credentials)
             // 读文件
-            fileStorage.load(path, filename, receiveFile, credentials)
+            fileStorage.load(HEALTH_CHECK_PATH, filename, receiveFile, credentials)
             assert(receiveFile != null) { "Failed to load file." }
             assert(content == receiveFile!!.readText()) {"File content inconsistent."}
             // 删除文件
-            fileStorage.delete(path, filename, credentials)
+            fileStorage.delete(HEALTH_CHECK_PATH, filename, credentials)
         } catch (exception: Exception) {
             throw exception
         } finally {
