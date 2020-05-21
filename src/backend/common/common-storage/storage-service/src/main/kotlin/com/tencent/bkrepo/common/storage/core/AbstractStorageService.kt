@@ -17,6 +17,7 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.charset.Charset
 import java.util.UUID
+import kotlin.system.measureNanoTime
 import kotlin.system.measureTimeMillis
 
 /**
@@ -43,16 +44,17 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
 
         try {
-            val size = artifactFile.getSize()
-            val executionTimeMillis = measureTimeMillis {
+            val kilobytes = artifactFile.getSize() / 1024.0
+            val executionSeconds = measureNanoTime {
                 if (doExist(path, digest, credentials)) {
                     logger.info("File [$digest] exists on, skip store.")
+                    return
                 } else {
                     doStore(path, digest, artifactFile, credentials)
                 }
-            }
-            logger.info("Success to store artifact file [$digest], [${size}]bytes, elapse [$executionTimeMillis]ms, " +
-                "average speed: [${size/executionTimeMillis*1000}]bytes/s.")
+            } / 1000.0 / 1000.0
+            logger.info("Success to store artifact file [$digest], size: ${kilobytes}KB, elapse: ${executionSeconds}s, " +
+                "average: ${kilobytes/executionSeconds}KB/s.")
         } catch (exception: Exception) {
             logger.error("Failed to store artifact file [$digest].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())

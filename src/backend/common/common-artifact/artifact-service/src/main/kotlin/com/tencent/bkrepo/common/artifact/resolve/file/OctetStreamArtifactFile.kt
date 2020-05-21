@@ -12,7 +12,7 @@ import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.system.measureTimeMillis
+import kotlin.system.measureNanoTime
 
 /**
  * application/octet-stream 流文件
@@ -39,7 +39,7 @@ class OctetStreamArtifactFile(
 
     private fun init() {
         if (!hasInitialized) {
-            val executionTimeMillis = measureTimeMillis {
+            val executionSeconds = measureNanoTime {
                 filePath = Files.createTempFile(Paths.get(location), "artifact_", ".upload")
                 val file = filePath.toFile()
                 val fileOutputStream = FileOutputStream(file)
@@ -49,8 +49,9 @@ class OctetStreamArtifactFile(
                     isInMemory = true
                 }
                 hasInitialized = true
-            }
-            logger.info("Receive [${getSize()}]bytes, elapse [$executionTimeMillis]ms, average speed: [${getSize()/executionTimeMillis*1000}]bytes/s.")
+            } / 1000.0 / 1000.0
+            val kilobytes = getSize() / 1024.0
+            logger.info("Receive ${kilobytes}KB, elapse: ${executionSeconds}s, average: ${kilobytes/executionSeconds}KB/s.")
         }
     }
 
