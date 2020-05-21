@@ -1,27 +1,27 @@
 package com.tencent.bkrepo.common.artifact.metrics
 
+import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
-import java.util.concurrent.atomic.AtomicInteger
 import javax.annotation.Resource
 
 @Component
 class ArtifactMetrics: MeterBinder {
-    var uploadCount = AtomicInteger(0)
-    var downloadCount = AtomicInteger(0)
+    lateinit var uploadCount: Counter
+    lateinit var downloadCount: Counter
 
     @Resource
     lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
 
     override fun bindTo(meterRegistry: MeterRegistry) {
-        Gauge.builder(ARTIFACT_UPLOADING_COUNT, uploadCount, { it.get().toDouble() })
+        uploadCount = Counter.builder(ARTIFACT_UPLOADING_COUNT)
             .description(ARTIFACT_UPLOADING_COUNT_DESC)
             .register(meterRegistry)
 
-        Gauge.builder(ARTIFACT_DOWNLOADING_COUNT, downloadCount, { it.get().toDouble() })
+        downloadCount = Counter.builder(ARTIFACT_DOWNLOADING_COUNT)
             .description(ARTIFACT_DOWNLOADING_COUNT_DESC)
             .register(meterRegistry)
 
