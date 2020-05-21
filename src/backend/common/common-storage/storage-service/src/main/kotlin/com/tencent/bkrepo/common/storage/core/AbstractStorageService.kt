@@ -52,7 +52,7 @@ abstract class AbstractStorageService : StorageService {
                 } else {
                     doStore(path, digest, artifactFile, credentials)
                 }
-            } / 1000.0 / 1000.0
+            } / 1000.0 / 1000.0 / 1000.0
             logger.info("Success to store artifact file [$digest], size: ${kilobytes}KB, elapse: ${executionSeconds}s, " +
                 "average: ${kilobytes/executionSeconds}KB/s.")
         } catch (exception: Exception) {
@@ -66,16 +66,16 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
 
         try {
-            val size = file.length()
-            val executionTimeMillis = measureTimeMillis {
+            val kilobytes = file.length() / 1024.0
+            val executionSeconds = measureNanoTime {
                 if (doExist(path, digest, credentials)) {
                     logger.info("File [$digest] exists, skip store.")
                 } else {
                     doStore(path, digest, file, credentials)
                 }
-            }
-            logger.info("Success to store file [$digest], [${size}]bytes, elapse [$executionTimeMillis]ms, " +
-                "average speed: [${size/executionTimeMillis*1000}]bytes/s.")
+            } / 1000.0 / 1000.0 / 1000.0
+            logger.info("Success to store file [$digest], size: ${kilobytes}KB, elapse: ${executionSeconds}s, " +
+                "average: ${kilobytes/executionSeconds}KB/s.")
         } catch (exception: Exception) {
             logger.error("Failed to store file [$digest] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())

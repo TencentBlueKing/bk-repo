@@ -49,7 +49,7 @@ class OctetStreamArtifactFile(
                     isInMemory = true
                 }
                 hasInitialized = true
-            } / 1000.0 / 1000.0
+            } / 1000.0 / 1000.0 / 1000.0
             val kilobytes = getSize() / 1024.0
             logger.info("Receive ${kilobytes}KB, elapse: ${executionSeconds}s, average: ${kilobytes/executionSeconds}KB/s.")
         }
