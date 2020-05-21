@@ -70,6 +70,13 @@ class NpmExceptionHandler {
         npmResponse(responseObject, exception)
     }
 
+    @ExceptionHandler(NpmArgumentNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handlerNpmArgumentNotFoundException(exception: NpmArgumentNotFoundException) {
+        val responseObject = NpmErrorResponse.notFound()
+        npmResponse(responseObject, exception)
+    }
+
     @ExceptionHandler(NpmArtifactExistException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handlerNpmArtifactExistException(exception: NpmArtifactExistException) {

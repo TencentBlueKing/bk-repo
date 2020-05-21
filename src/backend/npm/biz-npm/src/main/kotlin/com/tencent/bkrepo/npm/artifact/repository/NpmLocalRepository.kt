@@ -333,7 +333,7 @@ class NpmLocalRepository : LocalRepository() {
                     putArtifact(context, file)
                 }
             } catch (exception: Exception) {
-                logger.error("put tgz File [$tgzFilePath] failed : ", exception)
+                logger.error("put tgz File [$tgzFilePath] failed : ${exception.message}")
                 throw exception
             } finally {
                 response?.body()?.close()
@@ -441,6 +441,11 @@ class NpmLocalRepository : LocalRepository() {
             return false
         }
         return true
+    }
+
+    fun dependentMigrate(context: ArtifactMigrateContext) {
+        val pkgJsonFile = searchPkgJson(context)
+        npmDependentHandler.updatePkgDepts(context.userId, context.artifactInfo, pkgJsonFile, NpmOperationAction.MIGRATION)
     }
 
     companion object {

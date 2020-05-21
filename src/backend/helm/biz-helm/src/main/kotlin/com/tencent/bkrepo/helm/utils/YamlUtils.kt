@@ -35,8 +35,13 @@ object YamlUtils {
     }
 
     @Throws(Exception::class)
-    inline fun <reified T> getObject(file: File): T {
+    inline fun <reified T> convertFileToEntity(file: File): T {
         return getYaml().loadAs(file.inputStream(), T::class.java)
+    }
+
+    @Throws(Exception::class)
+    inline fun <reified T> convertStringToEntity(yaml: String): T {
+        return getYaml().loadAs(yaml, T::class.java)
     }
 
     fun <T> transEntity2File(v: T): String {
