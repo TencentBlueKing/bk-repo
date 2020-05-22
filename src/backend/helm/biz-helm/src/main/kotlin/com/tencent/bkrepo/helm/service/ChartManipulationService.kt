@@ -109,7 +109,7 @@ class ChartManipulationService {
         repository.upload(context)
         if (artifactFileMap.keys.contains(CHART)) {
             try {
-                freshIndexYamlForPush(artifactInfo, artifactFileMap, chartFileInfo)
+                freshIndexYamlForPush(artifactInfo, chartFileInfo)
             } catch (exception: HelmIndexFreshFailException) {
                 targetFileRollback(chartFileInfo)
                 throw HelmIndexFreshFailException(exception.message)
@@ -131,10 +131,9 @@ class ChartManipulationService {
 
     private fun freshIndexYamlForPush(
         artifactInfo: HelmArtifactInfo,
-        artifactFileMap: ArtifactFileMap,
         chartFileInfo: MutableMap<String, Any>
     ) {
-        val indexEntity = getIndexYamlFile(artifactInfo, chartFileInfo, artifactFileMap)
+        val indexEntity = getIndexYamlFile(artifactInfo, chartFileInfo)
         uploadIndexYaml(indexEntity)
         logger.info("fresh index.yaml for push [${chartFileInfo[NAME]}-${chartFileInfo[VERSION]}.$CHART_PACKAGE_FILE_EXTENSION] success!")
     }
@@ -143,7 +142,9 @@ class ChartManipulationService {
         if (!artifactFileMap.keys.contains(CHART)) throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
         val inputStream = (artifactFileMap[CHART] as MultipartArtifactFile).getInputStream()
         val result = inputStream.getArchivesContent("tgz")
-        return YamlUtils.convertStringToEntity(result)
+        val chartFileInfoMap = YamlUtils.convertStringToEntity<MutableMap<String, Any>>(result)
+        chartFileInfoMap["digest"] = FileDigestUtils.fileSha256(inputStream)
+        return chartFileInfoMap
     }
 
     private fun uploadIndexYaml(indexEntity: IndexEntity) {
@@ -156,11 +157,10 @@ class ChartManipulationService {
 
     private fun getIndexYamlFile(
         artifactInfo: HelmArtifactInfo,
-        chartMap: MutableMap<String, Any>,
-        artifactFileMap: ArtifactFileMap
+        chartMap: MutableMap<String, Any>
     ): IndexEntity {
         val indexEntity = getOriginalIndexYaml()
-        updateChartMap(artifactInfo, chartMap, artifactFileMap)
+        updateChartMap(artifactInfo, chartMap)
         val chartName = chartMap[NAME] as String
         val isFirstChart = indexEntity.entries.containsKey(chartName)
         indexEntity.entries.let {
@@ -185,8 +185,7 @@ class ChartManipulationService {
 
     private fun updateChartMap(
         artifactInfo: HelmArtifactInfo,
-        chartMap: MutableMap<String, Any>,
-        artifactFileMap: ArtifactFileMap
+        chartMap: MutableMap<String, Any>
     ) {
         val chartName = chartMap[NAME] as String
         val chartVersion = chartMap[VERSION] as String
@@ -197,7 +196,7 @@ class ChartManipulationService {
         )
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS+08:00")
         chartMap["created"] = LocalDateTime.now().format(format)
-        chartMap["digest"] = artifactFileMap[CHART]?.getInputStream()?.let { FileDigestUtils.fileSha256(it) }!!
+        chartMap["digest"] = chartMap["digest"] as String
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
