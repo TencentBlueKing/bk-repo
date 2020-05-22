@@ -1,12 +1,15 @@
 package com.tencent.bkrepo.generic.artifact
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
@@ -48,8 +51,14 @@ class GenericLocalRepository : LocalRepository() {
         val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
         if (isBlockUpload(uploadId, sequence)) {
             this.blockUpload(uploadId, sequence!!, context)
+            context.response.contentType = StringPool.MEDIA_TYPE_JSON
+            context.response.writer.println(JsonUtils.objectMapper.writeValueAsString(ResponseBuilder.success()))
         } else {
-            super.onUpload(context)
+            val nodeCreateRequest = getNodeCreateRequest(context)
+            storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
+            val createResult = nodeResource.create(nodeCreateRequest)
+            context.response.contentType = StringPool.MEDIA_TYPE_JSON
+            context.response.writer.println(JsonUtils.objectMapper.writeValueAsString(createResult))
         }
     }
 
