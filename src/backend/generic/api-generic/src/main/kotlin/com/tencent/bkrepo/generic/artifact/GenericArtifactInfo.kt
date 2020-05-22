@@ -10,8 +10,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 class GenericArtifactInfo(
     projectId: String,
     repoName: String,
-    artifactUri: String,
-    val fullPath: String
+    artifactUri: String
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
         const val GENERIC_MAPPING_URI = "/{projectId}/{repoName}/**"

@@ -27,7 +27,7 @@ class MultipartArtifactFile(private val diskFileItem: DiskFileItem) : ArtifactFi
      * 该方法在DiskFileItem中为protected，采用反射调用
      */
     override fun getFile(): File {
-        val method = diskFileItem.javaClass.getDeclaredMethod(ArtifactFile::getFile.name)
+        val method = diskFileItem.javaClass.getDeclaredMethod("getTempFile")
         method.isAccessible = true
         return method.invoke(diskFileItem) as File
     }

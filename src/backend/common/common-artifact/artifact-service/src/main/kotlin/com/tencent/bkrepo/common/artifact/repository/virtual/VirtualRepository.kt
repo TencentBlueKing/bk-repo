@@ -39,11 +39,11 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactSearchContext
                 repository.search(subContext)?.let { jsonObj ->
-                    logger.debug("Artifact[${artifactInfo.getFullUri()}] is found it Repository[$repoIdentify].")
+                    logger.debug("Artifact[$artifactInfo] is found it Repository[$repoIdentify].")
                     return jsonObj
-                } ?: logger.debug("Artifact[${artifactInfo.getFullUri()}] is not found in Repository[$repoIdentify], skipped.")
+                } ?: logger.debug("Artifact[$artifactInfo] is not found in Repository[$repoIdentify], skipped.")
             } catch (exception: Exception) {
-                logger.warn("Search Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
+                logger.warn("Search Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
         return null
@@ -65,11 +65,11 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactDownloadContext
                 repository.onDownload(subContext)?.let { file ->
-                    logger.debug("Artifact[${artifactInfo.getFullUri()}] is found it Repository[$repoIdentify].")
+                    logger.debug("Artifact[$artifactInfo] is found it Repository[$repoIdentify].")
                     return file
-                } ?: logger.debug("Artifact[${artifactInfo.getFullUri()}] is not found in Repository[$repoIdentify], skipped.")
+                } ?: logger.debug("Artifact[$artifactInfo] is not found in Repository[$repoIdentify], skipped.")
             } catch (exception: Exception) {
-                logger.warn("Download Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
+                logger.warn("Download Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
         return null

@@ -53,7 +53,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         try {
             this.onDownloadValidate(context)
             this.onDownloadBefore(context)
-            val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo.getFullUri()}] not found")
+            val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
             val name = NodeUtils.getName(context.artifactInfo.artifactUri)
             ServletResponseUtils.response(name, file)
             this.onDownloadSuccess(context, file)
@@ -121,9 +121,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onUploadSuccess(context: ArtifactUploadContext) {
         artifactMetrics.uploadedCounter.increment()
-        val artifactUri = context.artifactInfo.getFullUri()
+        val artifactInfo = context.artifactInfo
         val userId = context.userId
-        logger.info("User[$userId] upload artifact[$artifactUri] success")
+        logger.info("User[$userId] upload artifact[$artifactInfo] success")
     }
 
     /**
@@ -161,9 +161,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     open fun onDownloadSuccess(context: ArtifactDownloadContext, file: File) {
         artifactMetrics.downloadedCounter.increment()
 
-        val artifactUri = context.artifactInfo.getFullUri()
+        val artifactInfo = context.artifactInfo
         val userId = context.userId
-        logger.info("User[$userId] download artifact[$artifactUri] success")
+        logger.info("User[$userId] download artifact[$artifactInfo] success")
     }
 
     /**
