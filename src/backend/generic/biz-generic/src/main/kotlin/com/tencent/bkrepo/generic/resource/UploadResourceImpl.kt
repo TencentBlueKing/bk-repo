@@ -22,9 +22,8 @@ class UploadResourceImpl @Autowired constructor(
     private val uploadService: UploadService
 ) : UploadResource {
 
-    override fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile): Response<Void> {
+    override fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile){
         uploadService.upload(artifactInfo, file)
-        return ResponseBuilder.success()
     }
 
     override fun startBlockUpload(userId: String, artifactInfo: GenericArtifactInfo): Response<UploadTransactionInfo> {
