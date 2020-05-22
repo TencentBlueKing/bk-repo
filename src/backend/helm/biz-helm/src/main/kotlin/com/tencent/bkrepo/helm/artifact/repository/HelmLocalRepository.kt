@@ -17,7 +17,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.helm.constants.CHART_NOT_FOUND
+import com.tencent.bkrepo.helm.constants.EMPTY_CHART_OR_VERSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
@@ -35,7 +35,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.File
-import java.io.FileWriter
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -82,18 +81,8 @@ class HelmLocalRepository : LocalRepository() {
     private fun createIndexCacheYamlFile() {
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss+08:00")
         val initStr = String.format(INIT_STR, LocalDateTime.now().format(format))
-        val tempFile = createTempFile("index-cache", ".yaml")
-        val fw = FileWriter(tempFile)
-        try {
-            fw.write(initStr)
-        } finally {
-            // 关闭临时文件
-            fw.flush()
-            fw.close()
-            tempFile.deleteOnExit()
-        }
         val artifactFile = ArtifactFileFactory.build()
-        Streams.copy(tempFile.inputStream(), artifactFile.getOutputStream(), true)
+        Streams.copy(initStr.byteInputStream(), artifactFile.getOutputStream(), true)
         val uploadContext = ArtifactUploadContext(artifactFile)
         uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         this.upload(uploadContext)
@@ -214,9 +203,9 @@ class HelmLocalRepository : LocalRepository() {
         val artifactInfo = context.artifactInfo
         val fullPath = INDEX_CACHE_YAML
         with(artifactInfo) {
-            val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return CHART_NOT_FOUND
+            val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return EMPTY_CHART_OR_VERSION
             val indexYamlFile = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
-                ?: return CHART_NOT_FOUND
+                ?: return EMPTY_CHART_OR_VERSION
             return JsonUtil.searchJson(indexYamlFile, artifactUri)
         }
     }
