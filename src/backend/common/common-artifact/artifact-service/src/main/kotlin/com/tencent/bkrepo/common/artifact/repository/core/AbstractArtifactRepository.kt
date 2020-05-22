@@ -37,7 +37,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     override fun upload(context: ArtifactUploadContext) {
         try {
             this.onUploadValidate(context)
-            this.onBeforeUpload(context)
+            this.onUploadBefore(context)
             this.onUpload(context)
             this.onUploadSuccess(context)
         } catch (validateException: ArtifactValidateException) {
@@ -52,7 +52,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     override fun download(context: ArtifactDownloadContext) {
         try {
             this.onDownloadValidate(context)
-            this.onBeforeDownload(context)
+            this.onDownloadBefore(context)
             val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo.getFullUri()}] not found")
             val name = NodeUtils.getName(context.artifactInfo.artifactUri)
             ServletResponseUtils.response(name, file)
@@ -105,8 +105,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     /**
      * 上传前回调
      */
-    open fun onBeforeUpload(context: ArtifactUploadContext) {
-        artifactMetrics.uploadCount.incrementAndGet()
+    open fun onUploadBefore(context: ArtifactUploadContext) {
+        artifactMetrics.uploadingCount.incrementAndGet()
     }
 
     /**
@@ -120,6 +120,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 上传成功回调
      */
     open fun onUploadSuccess(context: ArtifactUploadContext) {
+        artifactMetrics.uploadedCounter.increment()
         val artifactUri = context.artifactInfo.getFullUri()
         val userId = context.userId
         logger.info("User[$userId] upload artifact[$artifactUri] success")
@@ -143,8 +144,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     /**
      * 下载前回调
      */
-    open fun onBeforeDownload(context: ArtifactDownloadContext) {
-        artifactMetrics.downloadCount.incrementAndGet()
+    open fun onDownloadBefore(context: ArtifactDownloadContext) {
+        artifactMetrics.downloadingCount.incrementAndGet()
     }
 
     /**
@@ -158,6 +159,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 下载成功回调
      */
     open fun onDownloadSuccess(context: ArtifactDownloadContext, file: File) {
+        artifactMetrics.downloadedCounter.increment()
+
         val artifactUri = context.artifactInfo.getFullUri()
         val userId = context.userId
         logger.info("User[$userId] download artifact[$artifactUri] success")
@@ -183,14 +186,14 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 上传结束回调
      */
     open fun onUploadFinished(context: ArtifactUploadContext) {
-        artifactMetrics.uploadCount.decrementAndGet()
+        artifactMetrics.uploadingCount.decrementAndGet()
     }
 
     /**
      * 下载结束回调
      */
     open fun onDownloadFinished(context: ArtifactDownloadContext) {
-        artifactMetrics.downloadCount.decrementAndGet()
+        artifactMetrics.downloadingCount.decrementAndGet()
     }
 
     companion object {

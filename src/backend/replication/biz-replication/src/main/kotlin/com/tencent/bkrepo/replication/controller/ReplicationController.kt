@@ -196,7 +196,7 @@ class ReplicationController : ReplicationClient {
     }
 
     override fun replicaRepoCreateRequest(token: String, request: RepoCreateRequest): Response<RepositoryInfo> {
-        return  repositoryResource.detail(request.projectId, request.name).data?.let { ResponseBuilder.success(it) } ?: repositoryResource.create(request)
+        return repositoryResource.detail(request.projectId, request.name).data?.let { ResponseBuilder.success(it) } ?: repositoryResource.create(request)
     }
 
     override fun replicaRepoUpdateRequest(token: String, request: RepoUpdateRequest): Response<Void> {

@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import org.apache.commons.lang.RandomStringUtils
 import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -30,12 +31,12 @@ class CacheStorageService : AbstractStorageService() {
     private val cacheClient: FileSystemClient by lazy { FileSystemClient(storageProperties.cache.path) }
 
     override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
-        val cachedFile = cacheClient.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize())
+        val cachedFile = cacheClient.store(path, filename, artifactFile.getFile())
         fileStorage.store(path, filename, cachedFile, credentials)
     }
 
     override fun doStore(path: String, filename: String, file: File, credentials: StorageCredentials) {
-        val cachedFile = cacheClient.store(path, filename, file.inputStream(), file.length())
+        val cachedFile = cacheClient.store(path, filename, file)
         fileStorage.store(path, filename, cachedFile, credentials)
     }
 
@@ -79,30 +80,30 @@ class CacheStorageService : AbstractStorageService() {
     }
 
     override fun doCheckHealth(credentials: StorageCredentials) {
-        val path = "health-check"
         val filename = System.nanoTime().toString()
-        val randomSize = 10
+        val randomSize = 100
 
         val content = RandomStringUtils.randomAlphabetic(randomSize)
         var receiveFile: File? = null
         try {
-            receiveFile = File.createTempFile(path, filename)
+            receiveFile = Files.createTempFile(HEALTH_CHECK_PREFIX, filename).toFile()
             // 写文件
-            val file = cacheClient.store(path, filename, content.byteInputStream(), randomSize.toLong(), true)
-            fileStorage.synchronizeStore(path, filename, file, credentials)
+            val file = cacheClient.store(HEALTH_CHECK_PATH, filename, content.byteInputStream(), randomSize.toLong(), true)
+            fileStorage.synchronizeStore(HEALTH_CHECK_PATH, filename, file, credentials)
             // 读文件
-            val cachedFile = cacheClient.load(path, filename)
-            fileStorage.load(path, filename, receiveFile, credentials)
+            val cachedFile = cacheClient.load(HEALTH_CHECK_PATH, filename)
+            fileStorage.load(HEALTH_CHECK_PATH, filename, receiveFile, credentials)
             assert(cachedFile != null) { "Failed to load cached file." }
             assert(receiveFile != null) { "Failed to load file." }
             assert(content == receiveFile!!.readText()) {"File content inconsistent."}
             assert(content == cachedFile!!.readText()) {"File content inconsistent."}
-            // 删除文件
-            cacheClient.delete(path, filename)
-            fileStorage.delete(path, filename, credentials)
+
         } catch (exception: Exception) {
             throw exception
         } finally {
+            // 删除文件
+            cacheClient.delete(HEALTH_CHECK_PATH, filename)
+            fileStorage.delete(HEALTH_CHECK_PATH, filename, credentials)
             receiveFile?.deleteOnExit()
         }
     }

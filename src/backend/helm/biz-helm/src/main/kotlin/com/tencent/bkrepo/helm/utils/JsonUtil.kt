@@ -32,7 +32,7 @@ object JsonUtil {
                     .getAsJsonObject(ENTRIES)
                     .toString()
                 // index.yaml content maybe null
-                if (StringUtils.equals(result, EMPTY_CHART_OR_VERSION)) CHART_NOT_FOUND else result
+                if (StringUtils.equals(result, EMPTY_CHART_OR_VERSION)) EMPTY_CHART_OR_VERSION else result
             }
             // query with name
             1 -> {
