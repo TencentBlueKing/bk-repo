@@ -17,7 +17,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.helm.constants.CHART_NOT_FOUND
+import com.tencent.bkrepo.helm.constants.EMPTY_CHART_OR_VERSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
@@ -212,9 +212,9 @@ class HelmLocalRepository : LocalRepository() {
         val artifactInfo = context.artifactInfo
         val fullPath = INDEX_CACHE_YAML
         with(artifactInfo) {
-            val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return CHART_NOT_FOUND
+            val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return EMPTY_CHART_OR_VERSION
             val indexYamlFile = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
-                ?: return CHART_NOT_FOUND
+                ?: return EMPTY_CHART_OR_VERSION
             return JsonUtil.searchJson(indexYamlFile, artifactUri)
         }
     }

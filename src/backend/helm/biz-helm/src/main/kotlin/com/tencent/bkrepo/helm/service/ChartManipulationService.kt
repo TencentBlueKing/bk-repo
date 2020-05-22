@@ -32,7 +32,6 @@ import com.tencent.bkrepo.helm.utils.JsonUtil.gson
 import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
 import com.tencent.bkrepo.repository.util.NodeUtils.formatFullPath
-import org.apache.commons.fileupload.util.Streams
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
