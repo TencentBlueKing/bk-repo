@@ -47,7 +47,7 @@ class SimpleStorageService : AbstractStorageService() {
 
     override fun doCheckHealth(credentials: StorageCredentials) {
         val filename = System.nanoTime().toString()
-        val randomSize = 10
+        val randomSize = 100
 
         val content = RandomStringUtils.randomAlphabetic(randomSize)
         var writeFile: File? = null

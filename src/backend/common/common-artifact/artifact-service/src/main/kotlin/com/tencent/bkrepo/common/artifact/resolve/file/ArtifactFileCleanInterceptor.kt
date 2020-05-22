@@ -8,14 +8,18 @@ import javax.servlet.http.HttpServletResponse
 import kotlin.system.measureTimeMillis
 
 class ArtifactFileCleanInterceptor: HandlerInterceptor {
+    @Suppress("UNCHECKED_CAST")
     override fun afterCompletion(request: HttpServletRequest, response: HttpServletResponse, handler: Any, ex: Exception?) {
-        val artifactFileList = request.getAttribute(ArtifactFileFactory.ARTIFACT_FILES) as? List<ArtifactFile>
-        artifactFileList?.forEach {
-            val filename = it.getFile().name
-            measureTimeMillis { it.delete() }.apply {
-                logger.info("Delete temp artifact file [$filename] success, elapse $this ms")
+        try {
+            val artifactFileList = request.getAttribute(ArtifactFileFactory.ARTIFACT_FILES) as? List<ArtifactFile>
+            artifactFileList?.forEach {
+                val absolutePath = it.getFile().absolutePath
+                measureTimeMillis { it.delete() }.apply {
+                    logger.info("Delete temp artifact file [$absolutePath] success, elapse $this ms")
+                }
             }
-
+        } catch (ex: Exception) {
+            logger.error("Failed to clean temp artifact file.", ex)
         }
     }
 
