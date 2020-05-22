@@ -1,15 +1,20 @@
 package com.tencent.bkrepo.common.artifact.util.response
 
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.config.BYTES
 import com.tencent.bkrepo.common.artifact.config.CONTENT_DISPOSITION_TEMPLATE
 import com.tencent.bkrepo.common.artifact.config.ICO_MIME_TYPE
 import com.tencent.bkrepo.common.artifact.config.STREAM_MIME_TYPE
 import com.tencent.bkrepo.common.artifact.config.TGZ_MIME_TYPE
 import com.tencent.bkrepo.common.artifact.config.YAML_MIME_TYPE
+import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADED_BYTES_COUNT
+import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADED_CONSUME_COUNT
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.util.NodeUtils
+import io.micrometer.core.instrument.Metrics
+import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
 import org.springframework.web.util.UriUtils
@@ -19,6 +24,7 @@ import java.io.RandomAccessFile
 import java.nio.charset.StandardCharsets
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import kotlin.system.measureNanoTime
 
 /**
  * Servlet 文件响应工具类
@@ -41,6 +47,8 @@ object ServletResponseUtils {
         add("tgz", TGZ_MIME_TYPE)
         add("ico", ICO_MIME_TYPE)
     }
+
+    private val logger = LoggerFactory.getLogger(ServletResponseUtils::class.java)
 
     fun response(filename: String, file: File) {
         val request = HttpContextHolder.getRequest()
@@ -141,20 +149,27 @@ object ServletResponseUtils {
 
     private fun copyRange(input: RandomAccessFile, output: OutputStream, range: Range) {
         if (range.getLength() == 0L) return
-        input.seek(range.start)
-        val length = range.getLength()
-        val buffer = ByteArray(BUFFER_SIZE)
-        var bytesToRead = BUFFER_SIZE
-        if (length < BUFFER_SIZE.toLong()) {
-            bytesToRead = length.toInt()
+        val nanoTime = measureNanoTime {
+            input.seek(range.start)
+            val length = range.getLength()
+            val buffer = ByteArray(BUFFER_SIZE)
+            var bytesToRead = BUFFER_SIZE
+            if (length < BUFFER_SIZE.toLong()) {
+                bytesToRead = length.toInt()
+            }
+            var totalRead = 0L
+            var read: Int = -1
+            while (bytesToRead > 0 && input.read(buffer, 0, bytesToRead).also { read = it } != -1) {
+                output.write(buffer, 0, read)
+                totalRead += read.toLong()
+                bytesToRead = (length - totalRead).coerceAtMost(BUFFER_SIZE.toLong()).toInt()
+            }
         }
-        var totalRead = 0L
-        var read: Int = -1
-        while (bytesToRead > 0 && input.read(buffer, 0, bytesToRead).also { read = it } != -1) {
-            output.write(buffer, 0, read)
-            totalRead += read.toLong()
-            bytesToRead = (length - totalRead).coerceAtMost(BUFFER_SIZE.toLong()).toInt()
-        }
+        val size = range.getLength()
+        Metrics.counter(ARTIFACT_DOWNLOADED_BYTES_COUNT).increment(size.toDouble())
+        Metrics.counter(ARTIFACT_DOWNLOADED_CONSUME_COUNT).increment(nanoTime / 1000.0 / 1000.0)
+        logger.info("Response artifact file, size: ${HumanReadable.bytes(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
+            "average: ${HumanReadable.throughput(size, nanoTime)}.")
     }
 
     private fun resolveRanges(request: HttpServletRequest, file: File, eTag: String?): List<Range> {

@@ -7,7 +7,6 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
@@ -16,6 +15,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.async.NpmDependentHandler
 import com.tencent.bkrepo.npm.constants.APPLICATION_OCTET_STEAM
@@ -62,7 +62,6 @@ import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.apache.commons.codec.binary.Base64
-import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -145,8 +144,7 @@ class NpmService @Autowired constructor(
         timeMap.add(distTags.second, GsonUtils.gson.toJsonTree(Date()))
         timeMap.add(MODIFIED, GsonUtils.gson.toJsonTree(Date()))
         pkgInfo.add(TIME, timeMap)
-        val packageJsonFile = ArtifactFileFactory.build()
-        Streams.copy(GsonUtils.gson.toJson(pkgInfo).byteInputStream(), packageJsonFile.getOutputStream(), true)
+        val packageJsonFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(pkgInfo).byteInputStream())
         artifactFileMap[NPM_PACKAGE_JSON_FILE] = packageJsonFile
     }
 
@@ -169,12 +167,7 @@ class NpmService @Autowired constructor(
         val distTags = getDistTags(jsonObj)!!
         val name = jsonObj.get(NAME).asString
         val versionJsonObj = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(distTags.second)
-        val packageJsonWithVersionFile = ArtifactFileFactory.build()
-        Streams.copy(
-            GsonUtils.gson.toJson(versionJsonObj).byteInputStream(),
-            packageJsonWithVersionFile.getOutputStream(),
-            true
-        )
+        val packageJsonWithVersionFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(versionJsonObj).byteInputStream())
         artifactFileMap[NPM_PACKAGE_VERSION_JSON_FILE] = packageJsonWithVersionFile
         // 添加相关属性
         attributesMap[ATTRIBUTE_OCTET_STREAM_SHA1] = versionJsonObj.getAsJsonObject(DIST).get(SHASUM).asString
@@ -198,12 +191,7 @@ class NpmService @Autowired constructor(
         attributesMap: MutableMap<String, Any>
     ) {
         val attachments = getAttachmentsInfo(jsonObj, attributesMap)
-        val tgzFile = ArtifactFileFactory.build()
-        Streams.copy(
-            Base64.decodeBase64(attachments.get(DATA)?.asString).inputStream(),
-            tgzFile.getOutputStream(),
-            true
-        )
+        val tgzFile = ArtifactFileFactory.build(Base64.decodeBase64(attachments.get(DATA)?.asString).inputStream())
         artifactFileMap[NPM_PACKAGE_TGZ_FILE] = tgzFile
     }
 
@@ -282,8 +270,7 @@ class NpmService @Autowired constructor(
         attributesMap[NPM_PKG_JSON_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
 
         val artifactFileMap = ArtifactFileMap()
-        val pkgFile = ArtifactFileFactory.build()
-        Streams.copy(GsonUtils.gson.toJson(jsonObj).byteInputStream(), pkgFile.getOutputStream(), true)
+        val pkgFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(jsonObj).byteInputStream())
         artifactFileMap[NPM_PACKAGE_JSON_FILE] = pkgFile
         val context = ArtifactUploadContext(artifactFileMap)
         context.contextAttributes = attributesMap
@@ -338,12 +325,7 @@ class NpmService @Autowired constructor(
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         val pkgInfo = repository.search(context) as JsonObject
         pkgInfo.getAsJsonObject(DISTTAGS).addProperty(tag, body.replace("\"", ""))
-        val artifactFile = ArtifactFileFactory.build()
-        Streams.copy(
-            GsonUtils.gson.toJson(pkgInfo).byteInputStream(),
-            artifactFile.getOutputStream(),
-            true
-        )
+        val artifactFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(pkgInfo).byteInputStream())
         val uploadContext = ArtifactUploadContext(artifactFile)
         uploadContext.contextAttributes[OCTET_STREAM + "_full_path"] = String.format(NPM_PKG_FULL_PATH, name)
         repository.upload(uploadContext)
@@ -359,12 +341,7 @@ class NpmService @Autowired constructor(
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         val pkgInfo = repository.search(context) as JsonObject
         pkgInfo.getAsJsonObject(DISTTAGS).remove(tag)
-        val artifactFile = ArtifactFileFactory.build()
-        Streams.copy(
-            GsonUtils.gson.toJson(pkgInfo).byteInputStream(),
-            artifactFile.getOutputStream(),
-            true
-        )
+        val artifactFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(pkgInfo).byteInputStream())
         val uploadContext = ArtifactUploadContext(artifactFile)
         uploadContext.contextAttributes[OCTET_STREAM + "_full_path"] = String.format(NPM_PKG_FULL_PATH, name)
         repository.upload(uploadContext)

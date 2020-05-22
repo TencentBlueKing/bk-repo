@@ -14,7 +14,7 @@ import java.nio.file.Paths
 open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSystemClient>() {
 
     override fun store(path: String, filename: String, file: File, client: FileSystemClient) {
-        client.store(path, filename, file.inputStream(), file.length())
+        client.store(path, filename, file)
     }
 
     override fun load(path: String, filename: String, received: File, client: FileSystemClient): File? {

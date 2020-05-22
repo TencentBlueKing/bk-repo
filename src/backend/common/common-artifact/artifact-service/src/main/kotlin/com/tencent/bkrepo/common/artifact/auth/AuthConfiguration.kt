@@ -23,7 +23,7 @@ class AuthConfiguration {
     private lateinit var artifactConfiguration: ArtifactConfiguration
 
     @Bean
-    fun artifactInterceptorConfigurer(): WebMvcConfigurer {
+    fun artifactAuthConfigurer(): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addInterceptors(registry: InterceptorRegistry) {
                 val clientAuthConfig = artifactConfiguration.getClientAuthConfig()

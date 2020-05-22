@@ -14,7 +14,7 @@ data class CacheProperties(
     /**
      * 存放缓存文件的本地目录
      */
-    var path: String = "/data/cached",
+    var path: String = "data/cached",
     /**
      * 缓存文件时间，单位天。小于或等于0则永久存储
      */
