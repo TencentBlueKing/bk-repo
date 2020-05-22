@@ -34,7 +34,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.File
-import java.io.FileWriter
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -81,17 +80,7 @@ class HelmLocalRepository : LocalRepository() {
     private fun createIndexCacheYamlFile() {
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss+08:00")
         val initStr = String.format(INIT_STR, LocalDateTime.now().format(format))
-        val tempFile = createTempFile("index-cache", ".yaml")
-        val fw = FileWriter(tempFile)
-        try {
-            fw.write(initStr)
-        } finally {
-            // 关闭临时文件
-            fw.flush()
-            fw.close()
-            tempFile.deleteOnExit()
-        }
-        val artifactFile = ArtifactFileFactory.build(tempFile.inputStream())
+        val artifactFile = ArtifactFileFactory.build(initStr.byteInputStream())
         val uploadContext = ArtifactUploadContext(artifactFile)
         uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         this.upload(uploadContext)
