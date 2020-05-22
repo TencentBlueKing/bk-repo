@@ -39,11 +39,11 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
+        val size = file.length()
         val nanoTime = measureNanoTime {
             val client = getClient(storageCredentials)
             store(path, filename, file, client)
         }
-        val size = file.length()
         logger.info("Success to persist file [$filename], size: ${HumanReadable.bytes(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
             "average: ${HumanReadable.throughput(size, nanoTime)}.")
     }

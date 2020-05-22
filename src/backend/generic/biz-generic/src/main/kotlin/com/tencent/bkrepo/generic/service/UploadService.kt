@@ -57,9 +57,9 @@ class UploadService @Autowired constructor(
 
             expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
             // 判断文件是否存在
-            if (!overwrite && nodeResource.exist(projectId, repoName, fullPath).data == true) {
-                logger.warn("User[$userId] start block upload [${artifactInfo.getFullUri()}] failed: artifact already exists.")
-                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
+            if (!overwrite && nodeResource.exist(projectId, repoName, artifactUri).data == true) {
+                logger.warn("User[$userId] start block upload [$artifactInfo] failed: artifact already exists.")
+                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, artifactUri)
             }
             val uploadId = storageService.createBlockId()
             val uploadTransaction = UploadTransactionInfo(
@@ -67,7 +67,7 @@ class UploadService @Autowired constructor(
                 expireSeconds = uploadTransactionExpires
             )
 
-            logger.info("User[$userId] start block upload [${artifactInfo.getFullUri()}] success: $uploadTransaction.")
+            logger.info("User[$userId] start block upload [$artifactInfo] success: $uploadTransaction.")
             return uploadTransaction
         }
     }
@@ -75,7 +75,7 @@ class UploadService @Autowired constructor(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun abortBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
         storageService.deleteBlockId(uploadId)
-        logger.info("User[$userId] abort upload block [${artifactInfo.getFullUri()}] success.")
+        logger.info("User[$userId] abort upload block [$artifactInfo] success.")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -83,7 +83,7 @@ class UploadService @Autowired constructor(
         val storageCredentials = getStorageCredentials()
         // 判断uploadId是否存在
         if (!storageService.checkBlockId(uploadId)) {
-            logger.warn("User[$userId] abort block upload [${artifactInfo.getFullUri()}] failed: uploadId not found.")
+            logger.warn("User[$userId] abort block upload [$artifactInfo] failed: uploadId not found.")
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         }
 
@@ -94,7 +94,7 @@ class UploadService @Autowired constructor(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
                 folder = false,
-                fullPath = artifactInfo.fullPath,
+                fullPath = artifactInfo.artifactUri,
                 sha256 = mergedFileInfo.sha256,
                 md5 = mergedFileInfo.md5,
                 size = mergedFileInfo.size,
@@ -102,7 +102,7 @@ class UploadService @Autowired constructor(
                 operator = userId
             )
         )
-        logger.info("User[$userId] complete upload [${artifactInfo.getFullUri()}] success.")
+        logger.info("User[$userId] complete upload [$artifactInfo] success.")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
