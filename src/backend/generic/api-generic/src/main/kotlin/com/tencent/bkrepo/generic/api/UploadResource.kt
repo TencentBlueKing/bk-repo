@@ -30,7 +30,7 @@ interface UploadResource {
 
     @ApiOperation("上传")
     @PutMapping(GENERIC_MAPPING_URI)
-    fun upload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile): Response<Void>
+    fun upload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile)
 
     @ApiOperation("开启分块上传")
     @PostMapping(BLOCK_MAPPING_URI)

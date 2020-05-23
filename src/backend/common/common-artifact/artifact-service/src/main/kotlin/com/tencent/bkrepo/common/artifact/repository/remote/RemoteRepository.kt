@@ -87,7 +87,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
             storageService.load(nodeInfo.sha256!!, context.storageCredentials)?.run {
-                logger.debug("Cached remote artifact[${context.artifactInfo.getFullUri()}] is hit.")
+                logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
                 this
             }
         } else null
