@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.artifact
 import com.tencent.bkrepo.common.artifact.auth.AuthConfiguration
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventListener
 import com.tencent.bkrepo.common.artifact.exception.ExceptionConfiguration
+import com.tencent.bkrepo.common.artifact.health.ArtifactHealhConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.PermissionConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.ResolverConfiguration
@@ -12,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.PropertySource
 import org.springframework.core.Ordered
 
 /**
@@ -22,12 +24,14 @@ import org.springframework.core.Ordered
 @Configuration
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnWebApplication
+@PropertySource("classpath:common-artifact.properties")
 @Import(
     AuthConfiguration::class,
     PermissionConfiguration::class,
     ResolverConfiguration::class,
     ExceptionConfiguration::class,
-    ArtifactMetricsConfiguration::class
+    ArtifactMetricsConfiguration::class,
+    ArtifactHealhConfiguration::class
 )
 class ArtifactAutoConfiguration {
 

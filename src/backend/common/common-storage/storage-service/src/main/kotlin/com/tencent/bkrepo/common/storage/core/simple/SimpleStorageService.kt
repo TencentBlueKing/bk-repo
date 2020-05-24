@@ -1,13 +1,13 @@
 package com.tencent.bkrepo.common.storage.core.simple
 
-import com.google.common.io.ByteStreams
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import org.apache.commons.lang.RandomStringUtils
 import java.io.File
+import java.nio.file.Files
 
 /**
  * 存储服务简单实现
@@ -18,17 +18,7 @@ import java.io.File
 class SimpleStorageService : AbstractStorageService() {
 
     override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
-        // force to write file
-        val file = if (artifactFile.isInMemory()) {
-            val tempArtifactFile = ArtifactFileFactory.build(0)
-            artifactFile.getInputStream().use { input ->
-                tempArtifactFile.getOutputStream().use { output -> ByteStreams.copy(input, output) }
-            }
-            tempArtifactFile.getTempFile()
-        } else {
-            artifactFile.getTempFile()
-        }
-        fileStorage.synchronizeStore(path, filename, file, credentials)
+        doStore(path, filename, artifactFile.getFile(), credentials)
     }
 
     override fun doStore(path: String, filename: String, file: File, credentials: StorageCredentials) {
@@ -36,9 +26,9 @@ class SimpleStorageService : AbstractStorageService() {
     }
 
     override fun doLoad(path: String, filename: String, credentials: StorageCredentials): File? {
-        val tempArtifactFile = ArtifactFileFactory.build(0)
-        return fileStorage.load(path, filename, tempArtifactFile.getTempFile(), credentials) ?: run {
-            tempArtifactFile.delete()
+        val tempFile = Files.createTempFile("artifact_", ".tmp").toFile()
+        return fileStorage.load(path, filename, tempFile, credentials) ?: run {
+            tempFile.delete()
             null
         }
     }
@@ -53,5 +43,32 @@ class SimpleStorageService : AbstractStorageService() {
 
     override fun doManualRetry(path: String, filename: String, credentials: StorageCredentials) {
         throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
+    }
+
+    override fun doCheckHealth(credentials: StorageCredentials) {
+        val filename = System.nanoTime().toString()
+        val randomSize = 100
+
+        val content = RandomStringUtils.randomAlphabetic(randomSize)
+        var writeFile: File? = null
+        var receiveFile: File? = null
+        try {
+            writeFile = Files.createTempFile(HEALTH_CHECK_PREFIX, filename).toFile()
+            receiveFile = Files.createTempFile(HEALTH_CHECK_PREFIX, filename).toFile()
+            writeFile.writeText(content)
+            // 写文件
+            fileStorage.synchronizeStore(HEALTH_CHECK_PATH, filename, receiveFile, credentials)
+            // 读文件
+            fileStorage.load(HEALTH_CHECK_PATH, filename, receiveFile, credentials)
+            assert(receiveFile != null) { "Failed to load file." }
+            assert(content == receiveFile!!.readText()) {"File content inconsistent."}
+            // 删除文件
+            fileStorage.delete(HEALTH_CHECK_PATH, filename, credentials)
+        } catch (exception: Exception) {
+            throw exception
+        } finally {
+            writeFile?.deleteOnExit()
+            receiveFile?.deleteOnExit()
+        }
     }
 }

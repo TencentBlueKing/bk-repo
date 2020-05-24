@@ -3,11 +3,14 @@ package com.tencent.bkrepo.common.storage.core
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import java.io.File
+import kotlin.system.measureNanoTime
 
 /**
  * 文件存储接口
@@ -36,8 +39,13 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
-        val client = getClient(storageCredentials)
-        store(path, filename, file, client)
+        val size = file.length()
+        val nanoTime = measureNanoTime {
+            val client = getClient(storageCredentials)
+            store(path, filename, file, client)
+        }
+        logger.info("Success to persist file [$filename], size: ${HumanReadable.bytes(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
+            "average: ${HumanReadable.throughput(size, nanoTime)}.")
     }
 
     override fun load(path: String, filename: String, received: File, storageCredentials: StorageCredentials): File? {
@@ -77,4 +85,8 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     abstract fun load(path: String, filename: String, received: File, client: Client): File?
     abstract fun delete(path: String, filename: String, client: Client)
     abstract fun exist(path: String, filename: String, client: Client): Boolean
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(AbstractFileStorage::class.java)
+    }
 }

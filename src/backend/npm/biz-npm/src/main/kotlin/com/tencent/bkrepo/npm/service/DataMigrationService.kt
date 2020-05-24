@@ -20,6 +20,7 @@ import com.tencent.bkrepo.npm.pojo.NpmDataMigrationResponse
 import com.tencent.bkrepo.npm.pojo.migration.MigrationErrorDataInfo
 import com.tencent.bkrepo.npm.pojo.migration.service.MigrationErrorDataCreateRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
+import com.tencent.bkrepo.npm.utils.MigrationUtils
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -43,7 +44,9 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.stream.Collectors
+import javax.annotation.Resource
 
 @Service
 class DataMigrationService {
@@ -54,7 +57,7 @@ class DataMigrationService {
     @Value("\${npm.migration.package.count: 100}")
     private val count: Int = 100
 
-    @Autowired
+    @Resource(name = "npmTaskAsyncExecutor")
     private lateinit var asyncExecutor: ThreadPoolTaskExecutor
 
     @Autowired
@@ -128,17 +131,17 @@ class DataMigrationService {
 
     fun dataMigration(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse<String> {
         val attributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
-        // RequestContextHolder.setRequestAttributes(attributes, true)
+        RequestContextHolder.setRequestAttributes(attributes, true)
 
         successSet.clear()
         errorSet.clear()
         logger.info("npm data migration pkgName size : [${totalDataSet.size}]")
         val start = System.currentTimeMillis()
-        val list = split(totalDataSet, count)
+        val list = MigrationUtils.split(totalDataSet, count)
         val callableList: MutableList<Callable<Set<String>>> = mutableListOf()
         list.forEach {
             callableList.add(Callable {
-                RequestContextHolder.setRequestAttributes(attributes)
+                RequestContextHolder.setRequestAttributes(attributes, true)
                 doDataMigration(artifactInfo, it.toSet())
                 errorSet
             })
@@ -185,38 +188,6 @@ class DataMigrationService {
         repository.migrate(context)
     }
 
-    fun <T> split(set: Set<T>, count: Int = 1000): List<List<T>> {
-        val list = set.toList()
-        if (set.isEmpty()) {
-            return emptyList()
-        }
-        val resultList = mutableListOf<List<T>>()
-        var itemList: MutableList<T>?
-        val size = set.size
-
-        if (size < count) {
-            resultList.add(list)
-        } else {
-            val pre = size / count
-            val last = size % count
-            for (i in 0 until pre) {
-                itemList = mutableListOf()
-                for (j in 0 until count) {
-                    itemList.add(list[i * count + j])
-                }
-                resultList.add(itemList)
-            }
-            if (last > 0) {
-                itemList = mutableListOf()
-                for (i in 0 until last) {
-                    itemList.add(list[pre * count + i])
-                }
-                resultList.add(itemList)
-            }
-        }
-        return resultList
-    }
-
     fun checkResponse(response: Response): Boolean {
         if (!response.isSuccessful) {
             logger.warn("Download file from remote failed: [${response.code()}]")
@@ -233,7 +204,7 @@ class DataMigrationService {
      * @param <T>
      * @return
      */
-    fun <T> submit(callableList: List<Callable<T>>, timeout: Long = 10L): List<T> {
+    fun <T> submit(callableList: List<Callable<T>>, timeout: Long = 1L): List<T> {
         if (callableList.isEmpty()) {
             return emptyList()
         }
@@ -247,8 +218,11 @@ class DataMigrationService {
             try {
                 val result: T = future.get(timeout, TimeUnit.HOURS)
                 result?.let { resultList.add(it) }
+            } catch (exception: TimeoutException) {
+                logger.error("async tack result timeout: ${exception.message}")
+                throw exception
             } catch (e: Exception) {
-                logger.error("get async task result error : {}", e.message)
+                logger.error("get async task result error : ${e.message}")
                 throw e
             }
         }

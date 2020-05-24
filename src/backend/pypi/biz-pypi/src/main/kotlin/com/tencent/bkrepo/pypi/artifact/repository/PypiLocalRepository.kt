@@ -5,10 +5,14 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
-import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.file.MultipartArtifactFile
-import com.tencent.bkrepo.common.artifact.repository.context.*
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.MultipartArtifactFile
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -42,7 +46,6 @@ import org.springframework.context.annotation.Primary
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.repository.MongoRepository
 import java.io.File
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -401,9 +404,8 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
             val hrefValue = filenode.attributes()["href"]
             //获取文件流
             val byteStream = "$verifiedUrl/$packageName/$hrefValue".downloadUrlHttpClient()
-            val artifactFile = ArtifactFileFactory.build()
             byteStream?.let {
-                Streams.copy(byteStream, artifactFile.getOutputStream(), true)
+                val artifactFile = ArtifactFileFactory.build(byteStream)
                 val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename)
                 nodeCreateRequest?.let {
                     nodeResource.create(nodeCreateRequest)

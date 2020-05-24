@@ -1,18 +1,17 @@
 package com.tencent.bkrepo.composer.artifact.repository
 
 import com.google.gson.GsonBuilder
-import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.composer.COMPOSER_VERSION_INIT
 import com.tencent.bkrepo.composer.INIT_PACKAGES
-import org.apache.commons.fileupload.util.Streams
 import org.springframework.stereotype.Component
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.composer.artifact.ComposerArtifactInfo
@@ -124,7 +123,6 @@ class ComposerLocalRepository : LocalRepository(),ComposerRepository {
                 // query "/p/%package%.json" node ,if not exists create it.
                 val pArtifactUri = "/p/$packageName.json"
                 json?.let { json -> packageName?.let { packageName -> version?.let { version ->
-                    val jsonFile = ArtifactFileFactory.build()
                     val resultJson = if (nodeResource.detail(projectId, repoName, pArtifactUri).data == null) {
                         JsonUtil.addComposerVersion(String.format(COMPOSER_VERSION_INIT, packageName), json, packageName, version)
                     } else {
@@ -148,10 +146,9 @@ class ComposerLocalRepository : LocalRepository(),ComposerRepository {
                         // update "/p/%package%.json" 。override by default
                         JsonUtil.addComposerVersion(existsJson, json, packageName, version)
                     }
+                    val byteArrayInputStream = ByteArrayInputStream(GsonBuilder().create().toJson(resultJson).toByteArray())
+                    val jsonFile = ArtifactFileFactory.build(byteArrayInputStream)
                     ArtifactUploadContext(jsonFile).let { jsonUploadContext ->
-                        ByteArrayInputStream(GsonBuilder().create().toJson(resultJson).toByteArray()).use {
-                            Streams.copy(it, jsonFile.getOutputStream(), true)
-                        }
                         val jsonNodeCreateRequest = getJsonNodeCreateRequest(context = jsonUploadContext,
                                 artifactFile = jsonFile,
                                 fullPath = "/p/$packageName.json",
@@ -205,11 +202,9 @@ class ComposerLocalRepository : LocalRepository(),ComposerRepository {
             val request = HttpContextHolder.getRequest()
             val host = "http://${request.remoteHost}:${request.serverPort}/$projectId/$repoName"
             while (nodeResource.detail(projectId, repoName, artifactUri).data == null) {
-                val artifactFile = ArtifactFileFactory.build()
+                val byteArrayInputStream = ByteArrayInputStream(INIT_PACKAGES.toByteArray())
+                val artifactFile = ArtifactFileFactory.build(byteArrayInputStream)
                 val artifactUploadContext = ArtifactUploadContext(artifactFile)
-                ByteArrayInputStream(INIT_PACKAGES.toByteArray()).use {
-                    Streams.copy(it, artifactFile.getOutputStream(), true)
-                }
                 val nodeCreateRequest = getPackagesNodeCreateRequest(context = artifactUploadContext)
                 nodeResource.create(nodeCreateRequest)
                 artifactUploadContext.getArtifactFile().let {

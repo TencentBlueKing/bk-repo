@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.docker.helpers
 
-import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
 import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.model.DockerBasicPath
@@ -9,11 +9,11 @@ import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
 import com.tencent.bkrepo.docker.util.DockerSchemaUtils
 import com.tencent.bkrepo.docker.util.DockerUtils
-import java.io.ByteArrayInputStream
-import java.io.IOException
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.io.ByteArrayInputStream
+import java.io.IOException
 
 @Component
 class DockerManifestSyncer() {
@@ -45,8 +45,8 @@ class DockerManifestSyncer() {
                             path.dockerRepo,
                             finalBlobPath
                         )
-                        val artifactFile = ArtifactFileFactory.build()
                         val blobContent = ByteArrayInputStream(DockerSchemaUtils.EMPTY_BLOB_CONTENT)
+                        val artifactFile = ArtifactFileFactory.build(blobContent)
                         blobContent.use {
                             repo.upload(
                                 UploadContext(path.projectId, path.repoName, finalBlobPath).content(it).sha256(

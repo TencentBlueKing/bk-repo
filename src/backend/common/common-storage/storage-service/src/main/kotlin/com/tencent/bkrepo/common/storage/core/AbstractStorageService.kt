@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.storage.core
 
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -17,6 +18,8 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.charset.Charset
 import java.util.UUID
+import kotlin.system.measureNanoTime
+import kotlin.system.measureTimeMillis
 
 /**
  * 存储服务抽象实现
@@ -42,14 +45,19 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
 
         try {
-            if (doExist(path, digest, credentials)) {
-                logger.info("File [$digest] exists on [$credentials], skip store.")
-                return
+            val size = artifactFile.getSize()
+            val nanoTime = measureNanoTime {
+                if (doExist(path, digest, credentials)) {
+                    logger.info("File [$digest] exists, skip store.")
+                    return
+                } else {
+                    doStore(path, digest, artifactFile, credentials)
+                }
             }
-            doStore(path, digest, artifactFile, credentials)
-            logger.info("Success to store artifactFile [$digest] on [$credentials].")
+            logger.info("Success to store artifact file [$digest], size: ${HumanReadable.bytes(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
+                "average: ${HumanReadable.throughput(size, nanoTime)}.")
         } catch (exception: Exception) {
-            logger.error("Failed to store artifactFile [$digest] on [$credentials].", exception)
+            logger.error("Failed to store artifact file [$digest].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -59,12 +67,16 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
 
         try {
-            if (doExist(path, digest, credentials)) {
-                logger.info("File [$digest] exists on [$credentials], skip store.")
-                return
+            val size = file.length()
+            val nanoTime = measureNanoTime {
+                if (doExist(path, digest, credentials)) {
+                    logger.info("File [$digest] exists, skip store.")
+                } else {
+                    doStore(path, digest, file, credentials)
+                }
             }
-            doStore(path, digest, file, credentials)
-            logger.info("Success to store file [$digest] on [$credentials].")
+            logger.info("Success to store file [$digest], size: ${HumanReadable.bytes(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
+                "average: ${HumanReadable.throughput(size, nanoTime)}.")
         } catch (exception: Exception) {
             logger.error("Failed to store file [$digest] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
@@ -251,6 +263,14 @@ abstract class AbstractStorageService : StorageService {
         return SynchronizeResult()
     }
 
+    override fun checkHealth(storageCredentials: StorageCredentials?) {
+        val executionTimeMillis = measureTimeMillis {
+            doCheckHealth(getCredentialsOrDefault(storageCredentials))
+        }
+        assert(executionTimeMillis <= 2*1000) { "Health check timeout, $executionTimeMillis ms totally." }
+        return
+    }
+
     protected fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
         return storageCredentials ?: fileStorage.getDefaultCredentials()
     }
@@ -281,9 +301,12 @@ abstract class AbstractStorageService : StorageService {
     protected abstract fun doDelete(path: String, filename: String, credentials: StorageCredentials)
     protected abstract fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean
     protected abstract fun doManualRetry(path: String, filename: String, credentials: StorageCredentials)
+    protected abstract fun doCheckHealth(credentials: StorageCredentials)
     open fun getTempPath(): String? = null
 
     companion object {
+        const val HEALTH_CHECK_PATH = "/health-check"
+        const val HEALTH_CHECK_PREFIX = "health-check"
         private const val CURRENT_PATH = ""
         private const val BLOCK_SUFFIX = ".block"
         private const val BLOCK_EXTENSION = "block"
