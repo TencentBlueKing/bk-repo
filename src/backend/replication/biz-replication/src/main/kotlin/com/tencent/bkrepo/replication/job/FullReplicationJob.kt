@@ -62,17 +62,7 @@ class FullReplicationJob : QuartzJobBean() {
     private var version: String = DEFAULT_VERSION
 
     override fun executeInternal(context: JobExecutionContext) {
-
-        val query = Query()
-        val update = Update()
-        query.addCriteria(
-            Criteria.where(TReplicaTriggers::keyName.name).`is`(context.trigger.key.name).and(
-                TReplicaTriggers::keyGroup.name
-            ).`is`(context.trigger.key.group)
-        )
-        update.set(TReplicaTriggers::state.name, Trigger.TriggerState.NORMAL.name)
-        mongoTemplate.upsert(query, update, TReplicaTriggers::class.java)
-
+        updateTriggerStatus(context.trigger.key.name, context.trigger.key.group)
         val taskId = context.jobDetail.jobDataMap.getString(TASK_ID_KEY)
         logger.info("Start to execute replication task[$taskId].")
         val task = taskRepository.findByIdOrNull(taskId) ?: run {
@@ -119,6 +109,18 @@ class FullReplicationJob : QuartzJobBean() {
                 logger.warn("The local cluster's version[$version] is different from remote cluster's version[$remoteVersion]")
             }
         }
+    }
+
+    private fun updateTriggerStatus(keyName: String, keyGroup: String) {
+        val query = Query()
+        val update = Update()
+        query.addCriteria(
+            Criteria.where(TReplicaTriggers::keyName.name).`is`(keyName).and(
+                TReplicaTriggers::keyGroup.name
+            ).`is`(keyGroup)
+        )
+        update.set(TReplicaTriggers::state.name, Trigger.TriggerState.NORMAL.name)
+        mongoTemplate.upsert(query, update, TReplicaTriggers::class.java)
     }
 
     private fun prepare(context: ReplicationContext) {
