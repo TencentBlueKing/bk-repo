@@ -8,7 +8,7 @@ class NpmArtifactInfo(
     artifactUri: String,
     val scope: String,
     val pkgName: String,
-    val version: String
+    override val version: String
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
 
     constructor(projectId: String, repoName: String, artifactUri: String) : this(

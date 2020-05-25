@@ -11,7 +11,7 @@ import okhttp3.Request
 import org.springframework.stereotype.Component
 
 @Component
-class ComposerRemoteRepository: RemoteRepository(), ComposerRepository{
+class ComposerRemoteRepository : RemoteRepository(), ComposerRepository {
     override fun packages(context: ArtifactSearchContext): String? {
         val artifactInfo = context.artifactInfo
         val request = HttpContextHolder.getRequest()
@@ -35,5 +35,4 @@ class ComposerRemoteRepository: RemoteRepository(), ComposerRepository{
         }
         return result
     }
-
 }
