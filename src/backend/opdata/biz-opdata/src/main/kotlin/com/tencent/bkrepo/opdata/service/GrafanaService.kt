@@ -94,8 +94,26 @@ class GrafanaService @Autowired constructor(
         columns.add(Columns(TProjectMetrics::projectId.name, "string"))
         columns.add(Columns(TProjectMetrics::nodeNum.name, "number"))
         columns.add(Columns(TProjectMetrics::capSize.name, "number"))
+        columns.add(Columns("customNum", "number"))
+        columns.add(Columns("customSize", "number"))
+        columns.add(Columns("pipelineNum", "number"))
+        columns.add(Columns("pipelineSize", "number"))
         info.forEach {
-            val row = listOf(it.projectId, it.nodeNum, it.capSize)
+            var customNum = 0L
+            var customSize = 0L
+            var pipelineNum = 0L
+            var pipelineSize = 0L
+            it.repoMetrics.forEach {
+                if (it.repoName == "custom") {
+                    customNum = it.num
+                    customSize = it.size
+                }
+                if (it.repoName == "pipeline") {
+                    pipelineNum = it.num
+                    pipelineSize = it.size
+                }
+            }
+            val row = listOf(it.projectId, it.nodeNum, it.capSize, customNum, customSize, pipelineNum, pipelineSize)
             rows.add(row)
         }
         val data = QueryResult(columns, rows, target.type)
