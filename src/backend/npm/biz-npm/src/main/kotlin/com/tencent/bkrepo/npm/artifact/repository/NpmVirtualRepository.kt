@@ -34,7 +34,7 @@ class NpmVirtualRepository : VirtualRepository() {
                     list.add(map as NpmSearchResponse)
                 }
             } catch (exception: Exception) {
-                logger.warn("list Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
+                logger.warn("list Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
         return recordMap(list, searchRequest)
