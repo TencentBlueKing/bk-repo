@@ -7,7 +7,6 @@ import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
-import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
@@ -16,6 +15,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -53,6 +53,7 @@ import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
+import com.tencent.bkrepo.repository.pojo.download.count.service.DownloadCountCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
@@ -60,7 +61,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
-import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -179,6 +179,20 @@ class NpmLocalRepository : LocalRepository() {
 
     override fun getNodeFullPath(context: ArtifactDownloadContext): String {
         return context.contextAttributes[NPM_FILE_FULL_PATH] as String
+    }
+
+    override fun countDownloads(context: ArtifactDownloadContext) {
+        val artifactInfo = context.artifactInfo
+        val artifact = artifactInfo.artifactUri.substringBefore("/-/").trimStart('/')
+        val version = artifactInfo.artifactUri.substringAfterLast("$artifact${StringPool.DASH}").substringBefore(".tgz")
+        artifactDownloadCountResource.create(
+            DownloadCountCreateRequest(
+                artifactInfo.projectId,
+                artifactInfo.repoName,
+                artifact,
+                version
+            )
+        )
     }
 
     override fun search(context: ArtifactSearchContext): JsonObject? {
@@ -381,12 +395,7 @@ class NpmLocalRepository : LocalRepository() {
         val versionsFile = jsonFile.getAsJsonObject(VERSIONS)
         versionsFile.keySet().forEach { version ->
             val versionFile = versionsFile.getAsJsonObject(version)
-            val artifactFile = ArtifactFileFactory.build()
-            GsonUtils.gsonToInputStream(versionFile).use { input ->
-                artifactFile.getOutputStream().use { output ->
-                    Streams.copy(input, output, true)
-                }
-            }
+            val artifactFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
             context.contextAttributes[NPM_FILE_FULL_PATH] =
                 String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
             val nodeCreateRequest = getNodeCreateRequest(context, artifactFile)
@@ -398,8 +407,7 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     private fun putArtifact(context: ArtifactMigrateContext, file: File) {
-        val pkgFile = ArtifactFileFactory.build()
-        Streams.copy(file.inputStream(), pkgFile.getOutputStream(), true)
+        val pkgFile = ArtifactFileFactory.build(file.inputStream())
         val nodeCreateRequest = getNodeCreateRequest(context, pkgFile)
         nodeResource.create(nodeCreateRequest)
         storageService.store(nodeCreateRequest.sha256!!, pkgFile, context.storageCredentials)
@@ -426,10 +434,8 @@ class NpmLocalRepository : LocalRepository() {
      * 创建临时文件并将响应体写入文件
      */
     protected fun createTempFile(body: ResponseBody): File {
-        // set threshold = 0, guarantee any data will be written to file rather than memory cache
-        val artifactFile = ArtifactFileFactory.build(0)
-        Streams.copy(body.byteStream(), artifactFile.getOutputStream(), true)
-        return artifactFile.getTempFile()
+        val artifactFile = ArtifactFileFactory.build(body.byteStream())
+        return artifactFile.getFile()
     }
 
     /**

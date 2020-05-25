@@ -27,7 +27,6 @@ import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import okhttp3.Request
 import okhttp3.Response
-import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -90,7 +89,7 @@ class NpmRemoteRepository : RemoteRepository() {
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
             val file = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
-            file?.let { logger.debug("Cached remote artifact[${context.artifactInfo.getFullUri()}] is hit") }
+            file?.let { logger.debug("Cached remote artifact[${context.artifactInfo}] is hit") }
             file
         } else null
     }
@@ -113,16 +112,11 @@ class NpmRemoteRepository : RemoteRepository() {
                     ?: throw NpmArtifactNotFoundException("file $tgzFullPath download failed.")
                 val jsonFile = transFileToJson(file)
                 val versionFile = jsonFile.getAsJsonObject(VERSIONS).getAsJsonObject(pkgInfo.third)
-                val artifactFile = ArtifactFileFactory.build(0)
-                GsonUtils.gsonToInputStream(versionFile).use { input ->
-                    artifactFile.getOutputStream().use { output ->
-                        Streams.copy(input, output, true)
-                    }
-                }
+                val artifactFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
                 val name = jsonFile[NAME].asString
                 context.contextAttributes[NPM_FILE_FULL_PATH] =
                     String.format(NPM_PKG_VERSION_FULL_PATH, name, name, pkgInfo.third)
-                putArtifactCache(context, artifactFile.getTempFile())
+                putArtifactCache(context, artifactFile.getFile())
             }
         } catch (exception: Exception) {
             logger.info("http send [$searchUri] failed, ", exception)
