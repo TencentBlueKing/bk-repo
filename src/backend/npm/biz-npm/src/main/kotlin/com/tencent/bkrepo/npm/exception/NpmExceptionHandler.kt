@@ -35,7 +35,6 @@ class NpmExceptionHandler {
     @ExceptionHandler(ClientAuthException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handlerClientAuthException(exception: ClientAuthException) {
-        HttpContextHolder.getResponse().setHeader(BASIC_AUTH_RESPONSE_HEADER, BASIC_AUTH_RESPONSE_VALUE)
         val responseObject = NpmErrorResponse("Unauthorized", "Authentication required")
         npmResponse(responseObject, exception)
     }
