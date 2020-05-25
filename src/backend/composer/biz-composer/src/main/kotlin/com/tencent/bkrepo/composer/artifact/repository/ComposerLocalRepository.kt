@@ -8,8 +8,8 @@ import com.tencent.bkrepo.composer.COMPOSER_VERSION_INIT
 import com.tencent.bkrepo.composer.INIT_PACKAGES
 import org.springframework.stereotype.Component
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
+import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
+import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -25,6 +25,7 @@ import java.io.ByteArrayInputStream
 import java.io.FileInputStream
 import java.io.InputStreamReader
 import java.io.File
+import org.springframework.transaction.annotation.Transactional
 
 @Component
 class ComposerLocalRepository : LocalRepository(),ComposerRepository {
@@ -35,11 +36,9 @@ class ComposerLocalRepository : LocalRepository(),ComposerRepository {
     fun getCompressNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
-        val artifactFile = context.artifactFileMap["octet-stream"]?.getInputStream()
         val filename = artifactInfo.artifactUri
-        val map = context.contextAttributes[ATTRIBUTE_SHA256MAP] as LinkedHashMap<*, *>
-        val sha256 = map["octet-stream"]
-        val md5 = (context.contextAttributes[ATTRIBUTE_MD5MAP] as LinkedHashMap<*, *>)["octet-stream"]
+        val sha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256]
+        val md5 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5]
         val composerArtifactInfo = artifactInfo as ComposerArtifactInfo
 
         return NodeCreateRequest(
@@ -47,7 +46,7 @@ class ComposerLocalRepository : LocalRepository(),ComposerRepository {
                 repoName = repositoryInfo.name,
                 folder = false,
                 overwrite = true,
-                fullPath = "/direct-dists/${artifactInfo.artifactUri}",
+                fullPath = "/direct-dists/$filename",
                 size = 123,
                 sha256 = sha256 as String?,
                 md5 = md5 as String?,
@@ -104,16 +103,15 @@ class ComposerLocalRepository : LocalRepository(),ComposerRepository {
         )
     }
 
+    @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
         with(context.artifactInfo as ComposerArtifactInfo) {
 
             // store compress file
             val nodeCreateRequest = getCompressNodeCreateRequest(context)
             nodeResource.create(nodeCreateRequest)
-            context.artifactFileMap["octet-stream"]?.let {
-                storageService.store(nodeCreateRequest.sha256!!,
-                        it, context.storageCredentials)
-            }
+            storageService.store(nodeCreateRequest.sha256!!,
+                        context.getArtifactFile(), context.storageCredentials)
 
             val fileInputStream = context.artifactFileMap["octet-stream"]?.getInputStream()
             fileInputStream?.wrapperJson(artifactUri)?.let { paramsMap ->

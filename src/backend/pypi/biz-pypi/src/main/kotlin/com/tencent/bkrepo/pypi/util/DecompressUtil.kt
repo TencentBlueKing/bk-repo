@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.pypi.util
 
+import com.tencent.bkrepo.pypi.exception.PypiUnSupportCompressException
 import com.tencent.bkrepo.pypi.util.JsonUtil.jsonValue
 import com.tencent.bkrepo.pypi.util.PropertiesUtil.propInfo
 import org.apache.commons.compress.archivers.ArchiveInputStream
@@ -32,7 +33,7 @@ object DecompressUtil {
                 getTgzPkgInfo(this)
             }
             else -> {
-                mapOf()
+                throw PypiUnSupportCompressException("Can not support compress format!")
             }
         }
     }

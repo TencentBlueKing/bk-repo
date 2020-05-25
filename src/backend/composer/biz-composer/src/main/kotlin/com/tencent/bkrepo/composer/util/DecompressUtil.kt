@@ -3,6 +3,7 @@ package com.tencent.bkrepo.composer.util
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.tencent.bkrepo.composer.exception.ComposerUnSupportCompressException
 import com.tencent.bkrepo.composer.util.JsonUtil.jsonValue
 import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
@@ -23,17 +24,14 @@ object DecompressUtil {
             "tar" -> {
                 getTarComposerJson(this)
             }
-            "zip" -> {
+            "zip","whl" -> {
                 getZipComposerJson(this)
             }
-            "tar.gz" -> {
-                getTgzComposerJson(this)
-            }
-            "tgz" -> {
+            "tar.gz", "tgz" -> {
                 getTgzComposerJson(this)
             }
             else -> {
-                "can not support compress format!"
+                throw ComposerUnSupportCompressException("Can not support compress format!")
             }
         }
     }
@@ -99,47 +97,6 @@ object DecompressUtil {
             }
         }
         return stringBuilder.toString()
-    }
-
-    /**
-     * @param destDir
-     */
-    @Throws(Exception::class)
-    infix fun ZipFile.unZipTo(destDir: String) {
-        try {
-            for (entry in entries()) {
-                // 判断是否为文件夹
-                if (entry.isDirectory) {
-                    File("$destDir/${entry.name}").mkdirs()
-                } else {
-                    getInputStream(entry).use { entryStream ->
-                        val tmpFile = File(destDir + File.separator + entry.name)
-                        createDirectory(tmpFile.parent + File.separator, null)
-                        FileOutputStream(tmpFile).use { fos ->
-                            var length: Int
-                            val b = ByteArray(2048)
-                            while ((entryStream.read(b).also { length = it }) != -1) {
-                                fos.write(b, 0, length)
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            logger.error("file unTar failed : " + e.message)
-            throw e
-        }
-    }
-
-    private fun createDirectory(outputDir: String, subDir: String?) {
-        var file = File(outputDir)
-        if (!(subDir == null || subDir.trim { it <= ' ' } == "")) { // 子目录不为空
-            file = File(outputDir + File.separator + subDir)
-        }
-        if (!file.exists()) {
-            file.mkdirs()
-        }
     }
 
     private val logger = LoggerFactory.getLogger(DecompressUtil::class.java)
