@@ -29,7 +29,7 @@ object DecompressUtil {
             "zip" -> {
                 getZipMetadata(this)
             }
-            "tar.gz","tgz" -> {
+            "tar.gz", "tgz" -> {
                 getTgzPkgInfo(this)
             }
             else -> {
@@ -68,8 +68,6 @@ object DecompressUtil {
         return propStr.propInfo()
     }
 
-
-
     private fun getPkgInfo(tarInputStream: ArchiveInputStream, file: String): String {
         val stringBuilder = StringBuffer("")
         with(tarInputStream) {
@@ -85,7 +83,7 @@ object DecompressUtil {
                                     return stringBuilder.toString()
                                 }
                             }
-                        } != null){}
+                        } != null) {}
             } catch (ise: IllegalStateException) {
                 if (ise.message != "it must not be null") {
                 } else {

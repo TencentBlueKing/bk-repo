@@ -17,4 +17,3 @@ class PypiExceptionHandler {
         return PypiExceptionResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE.toString(), exception.message)
     }
 }
-

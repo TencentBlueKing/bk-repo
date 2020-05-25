@@ -12,19 +12,19 @@ import java.time.LocalDateTime
         CompoundIndex(name = "migration_data_idx", def = "{'id': 1, 'projectId': 1, 'repoName': 1}", background = true, unique = true)
 )
 data class TMigrateData(
-        var id: String? = null,
+    var id: String? = null,
         // 错误数据
-        var errorData: String?,
-        var createdBy: String,
-        var createdDate: LocalDateTime,
-        var lastModifiedBy: String,
-        var lastModifiedDate: LocalDateTime,
-        var packagesNum: Int,
-        var filesNum: Int,
-        var elapseTimeSeconds: Long,
-        var description: String,
+    var errorData: String?,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+    var packagesNum: Int,
+    var filesNum: Int,
+    var elapseTimeSeconds: Long,
+    var description: String,
 
-        @ShardingKey(count = SHARDING_COUNT)
-        var projectId: String,
-        var repoName: String
+    @ShardingKey(count = SHARDING_COUNT)
+    var projectId: String,
+    var repoName: String
 )

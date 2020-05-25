@@ -37,7 +37,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import org.apache.commons.fileupload.util.Streams
 import org.jsoup.nodes.Element
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -275,9 +274,6 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         return filenodeList
     }
 
-
-
-
     @org.springframework.beans.factory.annotation.Value("\${migrate.url}")
     private lateinit var migrateUrl: String
 
@@ -292,13 +288,13 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
             migrateDataInfo?.let {
                  return PypiMigrateResponse(migrateDataInfo.description,
                         migrateDataInfo.filesNum,
-                migrateDataInfo.filesNum-migrateDataInfo.errorData.size,
+                migrateDataInfo.filesNum - migrateDataInfo.errorData.size,
                         migrateDataInfo.errorData.size,
                         migrateDataInfo.elapseTimeSeconds,
                         migrateDataInfo.errorData as Set<String>,
                         migrateDataInfo.createdDate)
             }
-            return PypiMigrateResponse("未找到数据迁移记录，如果已经调用迁移接口{migrate/url},请稍后查询" )
+            return PypiMigrateResponse("未找到数据迁移记录，如果已经调用迁移接口{migrate/url},请稍后查询")
         }
     }
 
@@ -310,7 +306,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         return mongoTemplate.findOne(query, TMigrateData::class.java)?.let { convert(it) }
     }
 
-    fun migrateData(context: ArtifactMigrateContext): PypiMigrateResponse<String>{
+    fun migrateData(context: ArtifactMigrateContext): PypiMigrateResponse<String> {
         val job = GlobalScope.launch {
             migrate(context)
         }
@@ -323,21 +319,21 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
 
         var totalCount: Int
         val cpuCore = cpuCore()
-        val threadPool = ThreadPoolExecutor(cpuCore, cpuCore*2, 15, TimeUnit.SECONDS,
+        val threadPool = ThreadPoolExecutor(cpuCore, cpuCore * 2, 15, TimeUnit.SECONDS,
                 LinkedBlockingQueue(),
                 ThreadFactoryBuilder().setNameFormat("pypiRepo-migrate-thread-%d").build(),
-                PypiMigrateReject() )
+                PypiMigrateReject())
 
-        //获取所有的包,开始计时
+        // 获取所有的包,开始计时
         val start = System.currentTimeMillis()
-        verifiedUrl.htmlHrefs(limitPackages.toInt()).let { simpleHrefs->
+        verifiedUrl.htmlHrefs(limitPackages.toInt()).let { simpleHrefs ->
             totalCount = migrateUrl.sumTasks(simpleHrefs)
             for (e in simpleHrefs) {
-                //每一个包所包含的文件列表
+                // 每一个包所包含的文件列表
                 e.text()?.let { packageName ->
                     "$verifiedUrl/$packageName".htmlHrefs().let { filenodes ->
                         for (filenode in filenodes) {
-                            threadPool.submit( Runnable {
+                            threadPool.submit(Runnable {
                                 migrateUpload(context, filenode, verifiedUrl, packageName)
                             })
                         }
@@ -347,9 +343,9 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         }
 
         threadPool.shutdown()
-        while(!threadPool.awaitTermination(2, TimeUnit.SECONDS)){}
+        while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {}
         val end = System.currentTimeMillis()
-        val elapseTimeSeconds = (end-start)/1000
+        val elapseTimeSeconds = (end - start) / 1000
         insertMigrateData(context.artifactInfo.projectId,
                 context.artifactInfo.repoName,
                 failSet,
@@ -358,12 +354,13 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 elapseTimeSeconds)
     }
 
-    private fun insertMigrateData(projectId: String,
-                                  repoName: String,
-                                  collect: Set<String>,
-                                  packagesName: Int,
-                                  filesNum: Int,
-                                  elapseTimeSeconds: Long
+    private fun insertMigrateData(
+        projectId: String,
+        repoName: String,
+        collect: Set<String>,
+        packagesName: Int,
+        filesNum: Int,
+        elapseTimeSeconds: Long
     ) {
         val dataCreateRequest = MigrateDataCreateNode(
                 projectId = projectId,
@@ -402,7 +399,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         try {
             val filename = filenode.text()
             val hrefValue = filenode.attributes()["href"]
-            //获取文件流
+            // 获取文件流
             val byteStream = "$verifiedUrl/$packageName/$hrefValue".downloadUrlHttpClient()
             byteStream?.let {
                 val artifactFile = ArtifactFileFactory.build(byteStream)
@@ -425,17 +422,17 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     fun createMigrateNode(context: ArtifactMigrateContext, artifactFile: ArtifactFile, packageName: String, filename: String): NodeCreateRequest? {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
-        //获取文件版本信息
+        // 获取文件版本信息
         val pkgInfo = filename.fileFormat()?.let { artifactFile.getInputStream().getPkgInfo(it) }
-        //文件fullPath
+        // 文件fullPath
         val path = "/$packageName/${pkgInfo?.get("version")}/$filename"
-        //TODO  查重
+        // TODO  查重
         nodeResource.exist(repositoryInfo.projectId, repositoryInfo.name, path).data?.let {
             if (it) {
                 return null
             }
         }
-        //TODO 计算sha256
+        // TODO 计算sha256
         val sha256 = FileDigestUtils.fileSha256(artifactFile.getInputStream())
         val md5 = FileDigestUtils.fileMd5(artifactFile.getInputStream())
         val pypiArtifactInfo = artifactInfo as PypiArtifactInfo

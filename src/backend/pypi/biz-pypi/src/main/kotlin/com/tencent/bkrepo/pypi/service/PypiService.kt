@@ -35,8 +35,8 @@ class PypiService {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun search(
-            pypiArtifactInfo: PypiArtifactInfo,
-            xmlString: String
+        pypiArtifactInfo: PypiArtifactInfo,
+        xmlString: String
     ) {
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
@@ -45,8 +45,8 @@ class PypiService {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun upload(
-            pypiArtifactInfo: PypiArtifactInfo,
-            artifactFileMap: ArtifactFileMap
+        pypiArtifactInfo: PypiArtifactInfo,
+        artifactFileMap: ArtifactFileMap
     ) {
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
@@ -66,5 +66,4 @@ class PypiService {
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         return (repository as PypiLocalRepository).migrateResult(context)
     }
-
 }

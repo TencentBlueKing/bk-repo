@@ -32,8 +32,6 @@ object JsoupUtil {
         return document.body().select("a[href]")
     }
 
-
-
     fun String.sumTasks(elements: Elements): Int {
         var sum = 0
         for (e in elements) {

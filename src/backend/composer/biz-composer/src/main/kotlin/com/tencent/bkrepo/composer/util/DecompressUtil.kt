@@ -9,12 +9,9 @@ import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import org.slf4j.LoggerFactory
-import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.*
 import java.util.zip.GZIPInputStream
-import java.util.zip.ZipFile
 
 object DecompressUtil {
 
@@ -24,7 +21,7 @@ object DecompressUtil {
             "tar" -> {
                 getTarComposerJson(this)
             }
-            "zip","whl" -> {
+            "zip", "whl" -> {
                 getZipComposerJson(this)
             }
             "tar.gz", "tgz" -> {
@@ -88,7 +85,7 @@ object DecompressUtil {
                                     return stringBuilder.toString()
                                 }
                             }
-                        } != null){}
+                        } != null) {}
             } catch (ise: IllegalStateException) {
                 if (ise.message != "it must not be null") {
                 } else {

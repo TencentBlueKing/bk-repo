@@ -12,7 +12,6 @@ import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
 import io.swagger.annotations.ApiOperation
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 
@@ -27,9 +26,9 @@ interface PypiResource {
      */
     @PostMapping(PYPI_ROOT_POST_URI)
     fun upload(
-            @ArtifactPathVariable
-            pypiArtifactInfo: PypiArtifactInfo,
-            artifactFileMap: ArtifactFileMap
+        @ArtifactPathVariable
+        pypiArtifactInfo: PypiArtifactInfo,
+        artifactFileMap: ArtifactFileMap
     )
 
     /**
@@ -40,9 +39,9 @@ interface PypiResource {
             produces = [MediaType.TEXT_XML_VALUE]
     )
     fun search(
-            @ArtifactPathVariable
-            pypiArtifactInfo: PypiArtifactInfo,
-            @RequestBody xmlString: String
+        @ArtifactPathVariable
+        pypiArtifactInfo: PypiArtifactInfo,
+        @RequestBody xmlString: String
     )
 
     /**
@@ -71,5 +70,4 @@ interface PypiResource {
     @ApiOperation("数据迁移结果查询接口")
     @GetMapping(PYPI_MIGRATE_RESULT, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
     fun migrateResult(@ArtifactPathVariable pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String>
-
 }

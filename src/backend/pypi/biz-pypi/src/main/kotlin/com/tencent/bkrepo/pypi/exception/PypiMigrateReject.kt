@@ -23,11 +23,10 @@ class PypiMigrateReject : RejectedExecutionHandler {
      * @throws RejectedExecutionException if there is no remedy
      */
     override fun rejectedExecution(r: Runnable?, executor: ThreadPoolExecutor?) {
-        logger.warn("${r.toString()} is drop")
+        logger.warn("$r is drop")
     }
 
-    companion object{
+    companion object {
         val logger: Logger = LoggerFactory.getLogger(PypiMigrateReject::class.java)
     }
-
 }

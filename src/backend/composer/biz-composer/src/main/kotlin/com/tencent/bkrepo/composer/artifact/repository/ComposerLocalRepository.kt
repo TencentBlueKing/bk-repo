@@ -28,7 +28,7 @@ import java.io.File
 import org.springframework.transaction.annotation.Transactional
 
 @Component
-class ComposerLocalRepository : LocalRepository(),ComposerRepository {
+class ComposerLocalRepository : LocalRepository(), ComposerRepository {
 
     /**
      * Composer节点创建请求
@@ -136,7 +136,7 @@ class ComposerLocalRepository : LocalRepository(),ComposerRepository {
                             BufferedReader(InputStreamReader(FileInputStream(existsJsonFile))).use { bufferedReader ->
                                 while (bufferedReader.readLine().also { it?.let {
                                             stringBuilder.append(it)
-                                        } } != null){}
+                                        } } != null) {}
                             }
                             stringBuilder.toString()
                         }
@@ -184,7 +184,7 @@ class ComposerLocalRepository : LocalRepository(),ComposerRepository {
                             BufferedReader(InputStreamReader(FileInputStream(it))).use { bufferedReader ->
                                 while (bufferedReader.readLine().also { it?.let {
                                             stringBuilder.append(it)
-                                        } } != null){}
+                                        } } != null) {}
                             }
                             return stringBuilder.toString().wrapperJson(host, packageName)
                         }
@@ -217,7 +217,7 @@ class ComposerLocalRepository : LocalRepository(),ComposerRepository {
                         BufferedReader(InputStreamReader(FileInputStream(it))).use { bufferedReader ->
                             while (bufferedReader.readLine().also { it?.let {
                                         stringBuilder.append(it)
-                                    } } != null){}
+                                    } } != null) {}
                         }
                         return stringBuilder.toString().wrapperPackageJson(host)
                     }
