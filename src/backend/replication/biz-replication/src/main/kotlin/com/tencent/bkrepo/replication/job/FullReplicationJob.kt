@@ -12,6 +12,7 @@ import com.tencent.bkrepo.replication.constant.TASK_ID_KEY
 import com.tencent.bkrepo.replication.model.TReplicaTriggers
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
+import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.replication.pojo.setting.ConflictStrategy
@@ -204,7 +205,18 @@ class FullReplicationJob : QuartzJobBean() {
             var fileNodeList =
                 repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, ROOT, page, pageSize)
             while (fileNodeList.isNotEmpty()) {
-                fileNodeList.forEach { replicaNode(it, context) }
+                var fullPathList = mutableListOf<String>()
+                fileNodeList.forEach { fullPathList.add(it.fullPath) }
+                with(context) {
+                    val existFullPathList = replicationClient.checkNodeExistList(
+                        authToken,
+                        NodeExistCheckRequest(localRepoInfo.projectId, localRepoInfo.name, fullPathList)
+                    ).data!!
+
+                    // 同步不存在的节点
+                    fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
+                }
+
                 page += 1
                 fileNodeList =
                     repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, ROOT, page, pageSize)
@@ -212,16 +224,10 @@ class FullReplicationJob : QuartzJobBean() {
         }
     }
 
-    private fun replicaNode(node: NodeInfo, context: ReplicationContext) {
+    private fun replicaNode(node: NodeInfo, context: ReplicationContext, existFullPathList: List<String>) {
         with(context) {
             // 节点冲突检查
-            if (replicationClient.checkNodeExist(
-                    authToken,
-                    remoteProjectId,
-                    remoteRepoName,
-                    node.fullPath
-                ).data == true
-            ) {
+            if (!existFullPathList.contains(node.fullPath)) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> {
                         logger.warn("Node[$node] conflict, skip it.")

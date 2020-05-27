@@ -7,6 +7,7 @@ import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.constant.SERVICE_NAME
+import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -43,6 +44,12 @@ interface ReplicationClient {
 
     @GetMapping("/version")
     fun version(@RequestHeader(HttpHeaders.AUTHORIZATION) token: String): Response<String>
+
+    @PostMapping("/node/exist/list")
+    fun checkNodeExistList(
+        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
+        @RequestBody nodeExistCheckRequest: NodeExistCheckRequest
+    ): Response<List<String>>
 
     @GetMapping("/node/exist")
     fun checkNodeExist(
