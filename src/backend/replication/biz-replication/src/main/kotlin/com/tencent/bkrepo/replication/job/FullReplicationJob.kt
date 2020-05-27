@@ -208,11 +208,12 @@ class FullReplicationJob : QuartzJobBean() {
                 var fullPathList = mutableListOf<String>()
                 fileNodeList.forEach { fullPathList.add(it.fullPath) }
                 with(context) {
-                    val existFullPathList = replicationClient.checkNodeExistList(
-                        authToken,
+                    val nodeCheckRequest =
                         NodeExistCheckRequest(localRepoInfo.projectId, localRepoInfo.name, fullPathList)
+                    val existFullPathList = replicationClient.checkNodeExistList(
+                        authToken, nodeCheckRequest
                     ).data!!
-                    logger.info("node path list {}", existFullPathList.toString())
+                    logger.info("node path list params [$nodeCheckRequest], result [$existFullPathList]")
                     // 同步不存在的节点
                     fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
                 }
@@ -227,7 +228,7 @@ class FullReplicationJob : QuartzJobBean() {
     private fun replicaNode(node: NodeInfo, context: ReplicationContext, existFullPathList: List<String>) {
         with(context) {
             // 节点冲突检查
-            if (!existFullPathList.contains(node.fullPath)) {
+            if (existFullPathList.contains(node.fullPath)) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> {
                         logger.warn("Node[$node] conflict, skip it.")
