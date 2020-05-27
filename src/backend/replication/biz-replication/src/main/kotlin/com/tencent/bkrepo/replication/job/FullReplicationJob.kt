@@ -212,7 +212,7 @@ class FullReplicationJob : QuartzJobBean() {
                         authToken,
                         NodeExistCheckRequest(localRepoInfo.projectId, localRepoInfo.name, fullPathList)
                     ).data!!
-
+                    logger.info("node path list {}", existFullPathList.toString())
                     // 同步不存在的节点
                     fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
                 }
@@ -257,6 +257,12 @@ class FullReplicationJob : QuartzJobBean() {
                     md5 = node.md5!!,
                     metadata = metadata,
                     operator = node.createdBy
+                )
+                logger.info(
+                    "start to replica file {} ,{}, {}",
+                    replicaRequest.projectId,
+                    replicaRequest.repoName,
+                    replicaRequest.fullPath
                 )
                 replicationService.replicaFile(context, replicaRequest)
                 task.replicationProgress.successNode += 1
