@@ -14,7 +14,7 @@ import java.time.LocalDate
         unique = true
     )
 )
-data class TArtifactDownloadCount (
+data class TArtifactDownloadCount(
     var id: String? = null,
     var projectId: String,
     var repoName: String,
