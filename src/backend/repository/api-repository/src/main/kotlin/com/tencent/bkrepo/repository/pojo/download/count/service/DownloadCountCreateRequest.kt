@@ -12,5 +12,5 @@ data class DownloadCountCreateRequest(
     @ApiModelProperty("构建名称", required = true)
     val artifact: String,
     @ApiModelProperty("构建版本", required = true)
-    val version: String?
+    val version: String? = null
 )

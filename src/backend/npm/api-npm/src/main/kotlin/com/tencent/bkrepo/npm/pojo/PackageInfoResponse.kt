@@ -20,6 +20,8 @@ data class PackageInfoResponse(
     val versions: List<TagsInfo>,
     @ApiModelProperty("包的主要贡献者信息")
     val maintainers: List<MaintainerInfo>,
+    @ApiModelProperty("包的下载量信息")
+    val downloadCount: List<DownloadCount>,
     @ApiModelProperty("包的依赖信息")
     val dependencies: List<DependenciesInfo>,
     @ApiModelProperty("包的开发依赖信息")
@@ -29,18 +31,32 @@ data class PackageInfoResponse(
 )
 
 data class TagsInfo(
+    @ApiModelProperty("tag")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     val tags: String? = null,
+    @ApiModelProperty("版本")
     val version: String,
+    @ApiModelProperty("时间")
     val time: String
 )
 
 data class MaintainerInfo(
+    @ApiModelProperty("贡献者名称")
     val name: String,
+    @ApiModelProperty("邮箱")
     val email: String
 )
 
 data class DependenciesInfo(
+    @ApiModelProperty("包的名称")
     val name: String,
+    @ApiModelProperty("版本")
     val version: String
+)
+
+data class DownloadCount(
+    @ApiModelProperty("时间段")
+    val description: String,
+    @ApiModelProperty("下载量")
+    val count: Int
 )
