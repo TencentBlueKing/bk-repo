@@ -167,7 +167,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         return null
     }
 
-    companion object{
+    companion object {
         val logger: Logger = LoggerFactory.getLogger(PypiRemoteRepository::class.java)
     }
 }

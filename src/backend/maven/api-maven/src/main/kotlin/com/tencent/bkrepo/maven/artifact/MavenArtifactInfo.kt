@@ -11,10 +11,10 @@ class MavenArtifactInfo(
     projectId: String,
     repoName: String,
     artifactUri: String,
+    version: String,
     private val groupId: String,
-    private val artifactId: String,
-    private val version: String
-) : ArtifactInfo(projectId, repoName, artifactUri) {
+    private val artifactId: String
+) : ArtifactInfo(projectId, repoName, artifactUri, version) {
     companion object {
         const val MAVEN_MAPPING_URI = "/{projectId}/{repoName}/**"
     }
@@ -28,7 +28,7 @@ class MavenArtifactInfo(
     }
 
     private fun hasVersion(): Boolean {
-        return version.isNotBlank() && "NA" != version
+        return version?.isNotBlank()!! && "NA" != version
     }
 
     fun isValid(): Boolean {

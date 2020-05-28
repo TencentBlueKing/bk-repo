@@ -42,7 +42,8 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
                 val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactListContext
                 repository.list(subContext)
             } catch (exception: Exception) {
-                logger.warn("Download Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
+                with(artifactInfo) { "$projectId/$repoName$artifactUri" }
+                logger.warn("Download Artifact[${with(artifactInfo) { "$projectId/$repoName$artifactUri" }}] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
     }
@@ -68,7 +69,7 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
                     valueList.addAll(it)
                 }
             } catch (exception: Exception) {
-                logger.warn("Download Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
+                logger.warn("Download Artifact[${with(artifactInfo) { "$projectId/$repoName$artifactUri" }}] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
         return valueList
