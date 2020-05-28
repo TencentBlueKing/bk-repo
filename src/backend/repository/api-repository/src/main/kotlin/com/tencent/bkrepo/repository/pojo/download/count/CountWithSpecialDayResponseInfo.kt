@@ -5,7 +5,7 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiModelProperty
 
 @Api("日、周、月 返回下载统计量")
-data class CountWithSpecialDayInfoResponse (
+data class CountWithSpecialDayInfoResponse(
     @ApiModelProperty("构建名称")
     val artifact: String,
     @ApiModelProperty("构建版本")

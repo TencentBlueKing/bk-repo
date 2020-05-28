@@ -22,9 +22,12 @@ import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.exception.NpmArgumentNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.pojo.DependenciesInfo
+import com.tencent.bkrepo.npm.pojo.DownloadCount
 import com.tencent.bkrepo.npm.pojo.MaintainerInfo
 import com.tencent.bkrepo.npm.pojo.PackageInfoResponse
 import com.tencent.bkrepo.npm.pojo.TagsInfo
+import com.tencent.bkrepo.repository.api.ArtifactDownloadCountResource
+import com.tencent.bkrepo.repository.pojo.download.count.SpecialDayCount
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -35,12 +38,17 @@ class NpmWebService {
     @Autowired
     private lateinit var moduleDepsService: ModuleDepsService
 
+    @Autowired
+    private lateinit var downloadCountResource: ArtifactDownloadCountResource
+
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     fun getPackageInfo(artifactInfo: NpmArtifactInfo): PackageInfoResponse {
         val pkgName = artifactInfo.artifactUri.trimStart('/')
         val packageJson = searchPkgInfo(pkgName)
         val page = moduleDepsService.page(artifactInfo.projectId, artifactInfo.repoName, 0, 20, pkgName)
+        val query = downloadCountResource.query(artifactInfo.projectId, artifactInfo.repoName, artifactInfo.artifactUri)
+
         val latestVersion = packageJson.getAsJsonObject(DISTTAGS).get(LATEST).asString
         val currentTags: MutableList<TagsInfo> = mutableListOf()
         val versionsList: MutableList<TagsInfo> = mutableListOf()
@@ -81,6 +89,7 @@ class NpmWebService {
             currentTags,
             versionsList,
             maintainersList,
+            query.data!!.dayCount.map { convert(it) },
             dependenciesList,
             devDependenciesList,
             page
@@ -94,5 +103,13 @@ class NpmWebService {
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         return repository.search(context)?.let { it as JsonObject }
             ?: throw NpmArtifactNotFoundException("package [$pkgName] not found.")
+    }
+
+    companion object {
+        fun convert(dayCount: SpecialDayCount): DownloadCount {
+            with(dayCount) {
+                return DownloadCount(description, count)
+            }
+        }
     }
 }
