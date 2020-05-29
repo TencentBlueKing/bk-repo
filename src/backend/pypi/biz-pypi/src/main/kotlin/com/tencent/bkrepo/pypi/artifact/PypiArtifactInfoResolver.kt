@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.pypi.artifact
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil
 import javax.servlet.http.HttpServletRequest

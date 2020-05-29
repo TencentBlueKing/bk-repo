@@ -9,19 +9,19 @@ object HumanReadable {
     private val sizeUnits = arrayOf("B", "KB", "MB", "GB", "TB", "PB", "EB")
     private val sizeFormat = DecimalFormat("#,##0.#").apply { maximumFractionDigits = 2 }
 
-    fun bytes(bytes: Long): String {
+    fun size(bytes: Long): String {
         var size = bytes.toDouble()
         var index = 0
         while (size >= 1024) {
             size /= 1024.0
             index += 1
         }
-        return "${sizeFormat.format(size)}${sizeUnits[index]}"
+        return "${sizeFormat.format(size)} ${sizeUnits[index]}"
     }
 
     fun throughput(bytes: Long, nano: Long): String {
         val speed = bytes * 1000 * 1000 * 1000 / nano
-        return bytes(speed) + "/s"
+        return size(speed) + "/s"
     }
 
     fun time(nano: Long): String {

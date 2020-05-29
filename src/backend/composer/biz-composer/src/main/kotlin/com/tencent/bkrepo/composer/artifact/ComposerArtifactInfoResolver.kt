@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.composer.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import io.undertow.servlet.spec.HttpServletRequestImpl
 import javax.servlet.http.HttpServletRequest
