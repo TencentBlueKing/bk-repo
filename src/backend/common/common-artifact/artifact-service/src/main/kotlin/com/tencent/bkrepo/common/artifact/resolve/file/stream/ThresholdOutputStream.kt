@@ -1,25 +1,36 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
 import java.io.ByteArrayOutputStream
-import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 
 class ThresholdOutputStream(
-    private val fileSizeThreshold: Int = 0,
+    private val fileSizeThreshold: Int,
     private val filePath: Path
 ) : OutputStream() {
     var totalBytes: Long = 0L
     private val contentBytes = ByteArrayOutputStream()
     private var outputStream: OutputStream = contentBytes
-    private var thresholdExceeded: Boolean = false
+    private var isInMemory: Boolean = true
 
-    fun isInMemory() = !thresholdExceeded
+    fun isInMemory() = isInMemory
 
     fun getCachedByteArray(): ByteArray {
         return contentBytes.toByteArray()
+    }
+
+    @Synchronized
+    fun flushToFile() {
+        if (isInMemory) {
+            Files.createFile(filePath)
+            val fileOutputStream = Files.newOutputStream(filePath)
+            contentBytes.writeTo(fileOutputStream)
+            contentBytes.flush()
+            outputStream = fileOutputStream
+            isInMemory = false
+        }
     }
 
     override fun write(b: Int) {
@@ -54,12 +65,8 @@ class ThresholdOutputStream(
     }
 
     private fun checkThreshold(size: Int) {
-        if (!thresholdExceeded && totalBytes + size > fileSizeThreshold) {
-            Files.createFile(filePath)
-            val fileOutputStream = FileOutputStream(filePath.toFile())
-            contentBytes.writeTo(fileOutputStream)
-            outputStream = fileOutputStream
-            thresholdExceeded = true
+        if (isInMemory && totalBytes + size > fileSizeThreshold) {
+            flushToFile()
         }
     }
 }
