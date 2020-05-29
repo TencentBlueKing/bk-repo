@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.artifact.api
 
 import java.io.File
+import java.nio.file.Files
 
 class FileSystemArtifactFile(private val file: File) : ArtifactFile {
     override fun getInputStream() = file.inputStream()
@@ -13,7 +14,9 @@ class FileSystemArtifactFile(private val file: File) : ArtifactFile {
 
     override fun flushToFile() = file
 
-    override fun delete() = file.deleteOnExit()
+    override fun delete() {
+        Files.deleteIfExists(file.toPath())
+    }
 }
 
 fun File.toArtifactFile(): ArtifactFile {

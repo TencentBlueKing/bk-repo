@@ -91,9 +91,12 @@ class OctetStreamArtifactFileTest {
         assertNull(artifactFile.getFile())
 
         val file = artifactFile.flushToFile()
+        assertFalse(artifactFile.isInMemory())
         assertTrue(file.exists())
+        assertEquals(file.absolutePath, artifactFile.getFile()!!.absolutePath)
         assertEquals(10, file.length())
         file.delete()
         assertFalse(file.exists())
+        assertFalse(artifactFile.getFile()!!.exists())
     }
 }

@@ -7,10 +7,8 @@ import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_BYTES_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_CONSUME_COUNT
 import io.micrometer.core.instrument.Metrics
 import org.slf4j.LoggerFactory
-import java.io.BufferedInputStream
 import java.io.ByteArrayInputStream
 import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
@@ -37,7 +35,7 @@ class OctetStreamArtifactFile(
     override fun getInputStream(): InputStream {
         init()
         return if (!isInMemory()) {
-            BufferedInputStream(Files.newInputStream(filePath))
+            Files.newInputStream(filePath)
         } else {
             ByteArrayInputStream(outputStream.getCachedByteArray())
         }
@@ -62,10 +60,8 @@ class OctetStreamArtifactFile(
 
     override fun flushToFile(): File {
         init()
-        if (isInMemory()) {
-            Files.createFile(filePath)
-            val fileOutputStream = FileOutputStream(filePath.toFile())
-            fileOutputStream.write(outputStream.getCachedByteArray())
+        if (outputStream.isInMemory()) {
+            outputStream.flushToFile()
         }
         return filePath.toFile()
     }
