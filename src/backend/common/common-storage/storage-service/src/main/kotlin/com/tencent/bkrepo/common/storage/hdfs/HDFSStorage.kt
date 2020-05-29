@@ -45,7 +45,9 @@ open class HDFSStorage : AbstractFileStorage<HDFSCredentials, HDFSClient>() {
 
     override fun delete(path: String, filename: String, client: HDFSClient) {
         val remotePath = concatRemotePath(path, filename, client)
-        client.fileSystem.deleteOnExit(remotePath)
+        if (client.fileSystem.exists(remotePath)) {
+            client.fileSystem.delete(remotePath, false)
+        }
     }
 
     override fun exist(path: String, filename: String, client: HDFSClient): Boolean {
