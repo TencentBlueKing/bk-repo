@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.common.artifact.resolve.path
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResolveException
 import kotlin.reflect.KClass
 

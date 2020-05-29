@@ -5,14 +5,13 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.resolve.file.MultipartArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -27,12 +26,12 @@ import com.tencent.bkrepo.pypi.artifact.model.TMigrateData
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
 import com.tencent.bkrepo.pypi.exception.PypiMigrateReject
+import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
 import com.tencent.bkrepo.pypi.util.DecompressUtil.getPkgInfo
 import com.tencent.bkrepo.pypi.util.FileNameUtil.fileFormat
+import com.tencent.bkrepo.pypi.util.HttpUtil.downloadUrlHttpClient
 import com.tencent.bkrepo.pypi.util.JsoupUtil.htmlHrefs
 import com.tencent.bkrepo.pypi.util.JsoupUtil.sumTasks
-import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
-import com.tencent.bkrepo.pypi.util.HttpUtil.downloadUrlHttpClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import kotlinx.coroutines.GlobalScope
@@ -45,10 +44,8 @@ import org.springframework.context.annotation.Primary
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import java.io.File
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
-import java.lang.Exception
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -103,17 +100,6 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
             operator = context.userId,
             metadata = pypiArtifactInfo.metadata
         )
-    }
-
-    override fun onDownload(context: ArtifactDownloadContext): File? {
-        val repositoryInfo = context.repositoryInfo
-        val projectId = repositoryInfo.projectId
-        val repoName = repositoryInfo.name
-        val fullPath = getNodeFullPath(context)
-        val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
-
-        node.nodeInfo.takeIf { !it.folder } ?: return null
-        return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
     }
 
     override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {

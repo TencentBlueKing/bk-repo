@@ -8,8 +8,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
-import java.io.File
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -49,7 +49,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
         return null
     }
 
-    override fun onDownload(context: ArtifactDownloadContext): File? {
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         val artifactInfo = context.artifactInfo
         val virtualConfiguration = context.repositoryConfiguration as VirtualConfiguration
         val repoList = virtualConfiguration.repositoryList
@@ -64,9 +64,9 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactDownloadContext
-                repository.onDownload(subContext)?.let { file ->
+                repository.onDownload(subContext)?.let {
                     logger.debug("Artifact[$artifactInfo] is found it Repository[$repoIdentify].")
-                    return file
+                    return it
                 } ?: logger.debug("Artifact[$artifactInfo] is not found in Repository[$repoIdentify], skipped.")
             } catch (exception: Exception) {
                 logger.warn("Download Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${exception.message}")

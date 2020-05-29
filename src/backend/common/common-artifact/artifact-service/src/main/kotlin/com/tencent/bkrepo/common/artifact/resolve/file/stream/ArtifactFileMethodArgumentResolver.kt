@@ -1,7 +1,8 @@
-package com.tencent.bkrepo.common.artifact.resolve.file
+package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResolveException
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import org.springframework.core.MethodParameter
 import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest

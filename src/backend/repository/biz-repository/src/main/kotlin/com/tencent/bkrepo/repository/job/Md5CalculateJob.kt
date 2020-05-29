@@ -1,13 +1,14 @@
 package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.hash.md5
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.dao.repository.RepoRepository
+import com.tencent.bkrepo.repository.model.TNode
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.event.ApplicationReadyEvent
@@ -73,8 +74,8 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
                             .and(TNode::deleted.name).`is`(node.deleted)
                         )
                         if (!node.sha256.isNullOrBlank() && storageService.exist(node.sha256!!, storageCredentials)) {
-                            val file = storageService.load(node.sha256!!, storageCredentials)!!
-                            val md5 = FileDigestUtils.fileMd5(file.inputStream())
+                            val inputStream = storageService.load(node.sha256!!, Range.ofFull(node.size), storageCredentials)!!
+                            val md5 = inputStream.md5()
                             val nodeUpdate = Update.update("md5", md5)
                             nodeDao.updateFirst(nodeQuery, nodeUpdate)
                             cleanupCount += 1

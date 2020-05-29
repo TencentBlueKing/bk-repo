@@ -63,7 +63,7 @@ class FileSynchronizeVisitor(
         val path = fileLocator.locate(filename)
         val file = filePath.toFile()
         logger.info("Synchronize file[$filename]")
-        fileStorage.synchronizeStore(path, filename, file, credential)
+        fileStorage.store(path, filename, file, credential)
         return file.length()
     }
 

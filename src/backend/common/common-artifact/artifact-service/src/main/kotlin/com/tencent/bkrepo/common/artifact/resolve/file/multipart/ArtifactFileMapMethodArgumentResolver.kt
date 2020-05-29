@@ -1,9 +1,9 @@
-package com.tencent.bkrepo.common.artifact.resolve.file
+package com.tencent.bkrepo.common.artifact.resolve.file.multipart
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResolveException
-import org.apache.commons.fileupload.disk.DiskFileItem
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import org.springframework.core.MethodParameter
 import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
@@ -11,7 +11,6 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.multipart.MultipartHttpServletRequest
-import org.springframework.web.multipart.commons.CommonsMultipartFile
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -36,7 +35,6 @@ class ArtifactFileMapMethodArgumentResolver : HandlerMethodArgumentResolver {
     }
 
     private fun resolveMultipartFile(multipartFile: MultipartFile): ArtifactFile {
-        val commonsMultipartFile = multipartFile as CommonsMultipartFile
-        return ArtifactFileFactory.build(commonsMultipartFile.fileItem as DiskFileItem)
+        return ArtifactFileFactory.build(multipartFile)
     }
 }

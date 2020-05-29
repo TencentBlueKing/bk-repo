@@ -28,8 +28,3 @@ const val ASYNC_TASK_ACTIVE_COUNT_DESC = "异步任务实时数量"
 
 const val ASYNC_TASK_QUEUE_SIZE = "async.task.queue.size"
 const val ASYNC_TASK_QUEUE_SIZE_DESC = "异步任务队列大小"
-
-
-
-
-
