@@ -61,13 +61,24 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     override fun load(path: String, filename: String, received: File, storageCredentials: StorageCredentials): File? {
-        val client = getClient(storageCredentials)
-        return load(path, filename, received, client)
+        return try {
+            val client = getClient(storageCredentials)
+            return load(path, filename, received, client)
+        } catch (ex: Exception) {
+            logger.warn("Failed to load file[$filename]: ${ex.message}", ex)
+            null
+        }
+
     }
 
     override fun load(path: String, filename: String, range: Range, storageCredentials: StorageCredentials): InputStream? {
-        val client = getClient(storageCredentials)
-        return load(path, filename, range, client)
+        return try {
+            val client = getClient(storageCredentials)
+            load(path, filename, range, client)
+        } catch (ex: Exception) {
+            logger.warn("Failed to load range stream[$filename]: ${ex.message}", ex)
+            null
+        }
     }
 
     override fun delete(path: String, filename: String, storageCredentials: StorageCredentials) {
