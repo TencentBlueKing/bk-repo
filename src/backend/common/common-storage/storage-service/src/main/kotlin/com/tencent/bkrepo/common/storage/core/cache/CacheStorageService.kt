@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.util.unit.DataSize
 import java.io.InputStream
 import java.nio.charset.Charset
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.Executor
@@ -62,7 +63,7 @@ class CacheStorageService : AbstractStorageService() {
             val cachedFile = cacheClient.load(path, filename) ?: run {
                 cacheClient.touch(path, filename).let {
                     fileStorage.load(path, filename, it, credentials) ?: run {
-                        it.deleteOnExit()
+                        Files.deleteIfExists(it.toPath())
                         null
                     }
                 }
