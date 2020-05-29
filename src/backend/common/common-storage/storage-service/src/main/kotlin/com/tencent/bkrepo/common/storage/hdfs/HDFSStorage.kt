@@ -67,7 +67,7 @@ open class HDFSStorage : AbstractFileStorage<HDFSCredentials, HDFSClient>() {
         if (credentials.clusterMode) {
             url = "hdfs://${credentials.clusterName}"
             configuration["fs.defaultFS"] = url
-            configuration["dfs.replication"] = 1.toString()
+            configuration["dfs.replication"] = 2.toString()
             configuration["dfs.nameservices"] = credentials.clusterName
             configuration["dfs.ha.namenodes.${credentials.clusterName}"] =
                 credentials.nameNodeMap.keys.joinToString(separator = ",")

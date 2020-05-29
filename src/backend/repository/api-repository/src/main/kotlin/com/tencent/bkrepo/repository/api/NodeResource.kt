@@ -73,6 +73,16 @@ interface NodeResource {
         @RequestParam fullPath: String
     ): Response<Boolean>
 
+    @ApiOperation("列出仓库中已存在的节点")
+    @PostMapping("/exist/list/{projectId}/{repoName}")
+    fun listExistFullPath(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @RequestBody fullPathList: List<String>
+    ): Response<List<String>>
+
     @ApiOperation("列表查询指定目录下所有节点")
     @GetMapping("/list/{projectId}/{repoName}")
     fun list(

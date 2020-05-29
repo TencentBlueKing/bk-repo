@@ -31,6 +31,16 @@ object QueryHelper {
         return query
     }
 
+    fun nodeListQuery(projectId: String, repoName: String, fullPathList: List<String>): Query {
+        val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
+            .and(TNode::repoName.name).`is`(repoName)
+            .and(TNode::deleted.name).`is`(null)
+            .and(TNode::fullPath.name).`in`(fullPathList)
+        val query = Query(criteria)
+
+        return query
+    }
+
     fun nodeListCriteria(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Criteria {
         val formattedPath = NodeUtils.formatPath(path)
         val escapedPath = NodeUtils.escapeRegex(formattedPath)

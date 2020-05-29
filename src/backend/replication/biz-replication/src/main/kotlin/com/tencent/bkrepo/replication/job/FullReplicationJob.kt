@@ -12,6 +12,7 @@ import com.tencent.bkrepo.replication.constant.TASK_ID_KEY
 import com.tencent.bkrepo.replication.model.TReplicaTriggers
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
+import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.replication.pojo.setting.ConflictStrategy
@@ -204,7 +205,19 @@ class FullReplicationJob : QuartzJobBean() {
             var fileNodeList =
                 repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, ROOT, page, pageSize)
             while (fileNodeList.isNotEmpty()) {
-                fileNodeList.forEach { replicaNode(it, context) }
+                var fullPathList = mutableListOf<String>()
+                fileNodeList.forEach { fullPathList.add(it.fullPath) }
+                with(context) {
+                    val nodeCheckRequest =
+                        NodeExistCheckRequest(localRepoInfo.projectId, localRepoInfo.name, fullPathList)
+                    val existFullPathList = replicationClient.checkNodeExistList(
+                        authToken, nodeCheckRequest
+                    ).data!!
+                    logger.info("node path list params [$nodeCheckRequest], result [$existFullPathList]")
+                    // 同步不存在的节点
+                    fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
+                }
+
                 page += 1
                 fileNodeList =
                     repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, ROOT, page, pageSize)
@@ -212,16 +225,10 @@ class FullReplicationJob : QuartzJobBean() {
         }
     }
 
-    private fun replicaNode(node: NodeInfo, context: ReplicationContext) {
+    private fun replicaNode(node: NodeInfo, context: ReplicationContext, existFullPathList: List<String>) {
         with(context) {
             // 节点冲突检查
-            if (replicationClient.checkNodeExist(
-                    authToken,
-                    remoteProjectId,
-                    remoteRepoName,
-                    node.fullPath
-                ).data == true
-            ) {
+            if (existFullPathList.contains(node.fullPath)) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> {
                         logger.warn("Node[$node] conflict, skip it.")
@@ -251,6 +258,12 @@ class FullReplicationJob : QuartzJobBean() {
                     md5 = node.md5!!,
                     metadata = metadata,
                     operator = node.createdBy
+                )
+                logger.info(
+                    "start to replica file {} ,{}, {}",
+                    replicaRequest.projectId,
+                    replicaRequest.repoName,
+                    replicaRequest.fullPath
                 )
                 replicationService.replicaFile(context, replicaRequest)
                 task.replicationProgress.successNode += 1
