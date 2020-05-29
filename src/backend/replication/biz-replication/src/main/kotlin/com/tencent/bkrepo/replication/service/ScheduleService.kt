@@ -29,6 +29,7 @@ class ScheduleService @Autowired constructor(
         val jobDetail = JobBuilder.newJob(FullReplicationJob::class.java)
             .withIdentity(task.id, DEFAULT_GROUP_ID)
             .usingJobData(TASK_ID_KEY, task.id)
+            .requestRecovery()
             .build()
         val trigger = createTrigger(task)
         scheduler.scheduleJob(jobDetail, trigger)
