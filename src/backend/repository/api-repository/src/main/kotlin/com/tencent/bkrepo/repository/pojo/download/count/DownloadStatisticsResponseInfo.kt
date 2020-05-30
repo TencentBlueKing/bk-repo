@@ -5,7 +5,7 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiModelProperty
 
 @Api("构建下载量信息")
-data class CountResponseInfo(
+data class DownloadStatisticsResponseInfo(
     @ApiModelProperty("构建名称")
     val artifact: String,
     @ApiModelProperty("构建版本")
