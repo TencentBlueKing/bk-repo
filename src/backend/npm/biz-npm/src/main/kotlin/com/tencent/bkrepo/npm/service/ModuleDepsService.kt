@@ -15,7 +15,6 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -28,9 +27,6 @@ class ModuleDepsService {
 
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
-
-    // @Autowired
-    // private lateinit var repositoryService: RepositoryService
 
     /**
      * 创建依赖关系
@@ -46,7 +42,6 @@ class ModuleDepsService {
                 CommonMessageCode.PARAMETER_MISSING,
                 this::deps.name
             )
-            // repositoryService.checkRepository(projectId, repoName)
             if (exist(projectId, repoName, name, deps)) {
                 if (!overwrite) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, name)
@@ -84,15 +79,11 @@ class ModuleDepsService {
                     CommonMessageCode.PARAMETER_MISSING,
                     this::deps.name
                 )
-                // repositoryService.checkRepository(projectId, repoName)
                 if (exist(projectId, repoName, name, deps)) {
                     if (!overwrite) {
                         throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, name)
                     }
                     return@continuing
-                    // else {
-                    //     delete(DepsDeleteRequest(projectId, repoName, name, deps, operator))
-                    // }
                 }
 
                 val moduleDeps = TModuleDeps(
@@ -119,47 +110,38 @@ class ModuleDepsService {
         val criteria =
             Criteria.where(TModuleDeps::projectId.name).`is`(projectId).and(TModuleDeps::repoName.name).`is`(repoName)
                 .and(TModuleDeps::deps.name).`is`(deps)
-                .and(TModuleDeps::deleted.name).`is`(null)
         name?.run { criteria.and(TModuleDeps::name.name).`is`(name) }
 
         return mongoTemplate.exists(Query(criteria), TModuleDeps::class.java)
     }
 
-    fun delete(depsDeleteRequest: DepsDeleteRequest, soft: Boolean = true) {
+    fun delete(depsDeleteRequest: DepsDeleteRequest) {
         with(depsDeleteRequest) {
             this.takeIf { !name.isNullOrBlank() } ?: throw ErrorCodeException(
                 CommonMessageCode.PARAMETER_MISSING,
                 this::name.name
             )
-            // repositoryService.checkRepository(projectId, repoName)
             if (!exist(projectId, repoName, name, deps)) throw ErrorCodeException(
                 ArtifactMessageCode.NODE_EXISTED,
                 deps
             )
             val depsQuery = depsQuery(this)
-            if (soft) {
-                mongoTemplate.updateMulti(depsQuery, depsDeleteUpdate(operator), TModuleDeps::class.java)
-            } else {
-                mongoTemplate.remove(depsQuery, TModuleDeps::class.java)
+            mongoTemplate.remove(depsQuery, TModuleDeps::class.java).also {
+                logger.info("Delete module deps [$depsDeleteRequest] by [$operator] success.")
             }
-            logger.info("Delete module deps [$depsDeleteRequest] by [$operator] success.")
         }
     }
 
     fun deleteAllByName(depsDeleteRequest: DepsDeleteRequest, soft: Boolean = true) {
         with(depsDeleteRequest) {
-            // repositoryService.checkRepository(projectId, repoName)
             if (!exist(projectId, repoName, name, deps)) throw ErrorCodeException(
                 ArtifactMessageCode.NODE_EXISTED,
                 deps
             )
             val depsQuery = depsQuery(this)
-            if (soft) {
-                mongoTemplate.updateMulti(depsQuery, depsDeleteUpdate(operator), TModuleDeps::class.java)
-            } else {
-                mongoTemplate.remove(depsQuery, TModuleDeps::class.java)
+            mongoTemplate.remove(depsQuery, TModuleDeps::class.java).also {
+                logger.info("Delete all module deps [$depsDeleteRequest] by [$operator] success.")
             }
-            logger.info("Delete all module deps [$depsDeleteRequest] by [$operator] success.")
         }
     }
 
@@ -174,19 +156,10 @@ class ModuleDepsService {
         }
     }
 
-    private fun depsDeleteUpdate(operator: String): Update {
-        return Update()
-            .set(TModuleDeps::lastModifiedDate.name, LocalDateTime.now())
-            .set(TModuleDeps::lastModifiedBy.name, operator)
-            .set(TModuleDeps::deleted.name, LocalDateTime.now())
-    }
-
     fun find(projectId: String, repoName: String, name: String, deps: String): ModuleDepsInfo {
-        // repositoryService.checkRepository(projectId, repoName)
         val criteria =
             Criteria.where(TModuleDeps::projectId.name).`is`(projectId).and(TModuleDeps::repoName.name).`is`(repoName)
                 .and(TModuleDeps::name.name).`is`(name).and(TModuleDeps::deps.name).`is`(deps)
-                .and(TModuleDeps::deleted.name).`is`(null)
         if (mongoTemplate.count(Query.query(criteria), TModuleDeps::class.java) >= THRESHOLD) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
         }
@@ -194,10 +167,9 @@ class ModuleDepsService {
     }
 
     fun list(projectId: String, repoName: String, name: String): List<ModuleDepsInfo> {
-        // repositoryService.checkRepository(projectId, repoName)
         val criteria =
             Criteria.where(TModuleDeps::projectId.name).`is`(projectId).and(TModuleDeps::repoName.name).`is`(repoName)
-                .and(TModuleDeps::name.name).`is`(name).and(TModuleDeps::deleted.name).`is`(null)
+                .and(TModuleDeps::name.name).`is`(name)
         val query = Query.query(criteria).with(Sort.by(TModuleDeps::createdDate.name))
         if (mongoTemplate.count(query, TModuleDeps::class.java) >= THRESHOLD) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
@@ -208,10 +180,9 @@ class ModuleDepsService {
     fun page(projectId: String, repoName: String, page: Int, size: Int, name: String): Page<ModuleDepsInfo> {
         page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
         size.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
-        // repositoryService.checkRepository(projectId, repoName)
         val criteria =
             Criteria.where(TModuleDeps::projectId.name).`is`(projectId).and(TModuleDeps::repoName.name).`is`(repoName)
-                .and(TModuleDeps::name.name).`is`(name).and(TModuleDeps::deleted.name).`is`(null)
+                .and(TModuleDeps::name.name).`is`(name)
         val query = Query.query(criteria).with(Sort.by(TModuleDeps::createdDate.name))
         val listData = mongoTemplate.find(query, TModuleDeps::class.java).map { convert(it)!! }
         val count = mongoTemplate.count(query, TModuleDeps::class.java)

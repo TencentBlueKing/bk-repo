@@ -82,7 +82,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         throw UnsupportedMethodException()
     }
 
-    open fun determineArtifactName(context: ArtifactDownloadContext): String {
+    open fun determineArtifactName(context: ArtifactTransferContext): String {
         val artifactUri = context.artifactInfo.artifactUri
         return artifactUri.substring(artifactUri.lastIndexOf(NodeUtils.FILE_SEPARATOR) + 1)
     }
