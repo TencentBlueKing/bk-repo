@@ -51,6 +51,17 @@ class ReScheduleOnceJob {
                     .withIdentity(taskId, DEFAULT_GROUP_ID)
                     .startAt(date)
                     .build()
+                task.replicationProgress.conflictedNode = 0L
+                task.replicationProgress.failedNode = 0L
+                task.replicationProgress.failedProject = 0L
+                task.replicationProgress.failedRepo = 0L
+                task.replicationProgress.replicatedNode = 0L
+                task.replicationProgress.replicatedProject = 0L
+                task.replicationProgress.replicatedRepo = 0L
+                task.replicationProgress.successNode = 0L
+                task.replicationProgress.successRepo = 0L
+                task.replicationProgress.successProject = 0L
+                taskRepository.save(task)
                 scheduler.rescheduleJob(TriggerKey.triggerKey(it.name, it.group), trigger)
                 logger.info("job  key [${it.group}], [${it.name}] reschdule")
             }
