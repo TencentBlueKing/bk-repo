@@ -8,5 +8,5 @@ data class NpmAsyncProperties(
     var maxPoolSize: Int = 1000,
     var queueCapacity: Int = 1000,
     var keepAliveSeconds: Int = 60,
-    var threadNamePrefix: String = "async-executor-"
+    var threadNamePrefix: String = "npm-async-executor-"
 )

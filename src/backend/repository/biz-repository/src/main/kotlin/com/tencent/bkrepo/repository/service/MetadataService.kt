@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional
  * @date: 2019-10-14
  */
 @Service
-class MetadataService: AbstractService() {
+class MetadataService : AbstractService() {
 
     @Autowired
     private lateinit var repositoryService: RepositoryService
