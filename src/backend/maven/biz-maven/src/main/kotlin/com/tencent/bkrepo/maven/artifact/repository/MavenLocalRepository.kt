@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.maven.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
+import com.tencent.bkrepo.common.artifact.hash.md5
+import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -16,8 +16,8 @@ class MavenLocalRepository : LocalRepository() {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         val artifactFile = context.getArtifactFile()
-        val sha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
-        val md5 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] as String
+        val sha256 = artifactFile.getInputStream().sha256()
+        val md5 = artifactFile.getInputStream().md5()
 
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
