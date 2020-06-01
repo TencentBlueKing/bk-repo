@@ -1,8 +1,11 @@
 package com.tencent.bkrepo.common.storage.filesystem
 
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.bound
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import java.io.File
+import java.io.InputStream
 import java.nio.file.Paths
 
 /**
@@ -17,6 +20,10 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
         client.store(path, filename, file)
     }
 
+    override fun store(path: String, filename: String, inputStream: InputStream, client: FileSystemClient) {
+        client.store(path, filename, inputStream, inputStream.available().toLong())
+    }
+
     override fun load(path: String, filename: String, received: File, client: FileSystemClient): File? {
         return client.load(path, filename)?.run {
             FileLockExecutor.executeInLock(this.inputStream()) { input ->
@@ -26,6 +33,10 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
             }
             received
         }
+    }
+
+    override fun load(path: String, filename: String, range: Range, client: FileSystemClient): InputStream? {
+        return client.load(path, filename)?.bound(range)
     }
 
     override fun delete(path: String, filename: String, client: FileSystemClient) {

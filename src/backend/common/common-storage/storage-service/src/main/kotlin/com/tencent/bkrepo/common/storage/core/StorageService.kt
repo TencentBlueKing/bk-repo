@@ -1,11 +1,12 @@
 package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
-import java.io.File
 
 /**
  * 存储服务接口
@@ -20,14 +21,9 @@ interface StorageService {
     fun store(digest: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials? = null)
 
     /**
-     * 存储文件
-     */
-    fun store(digest: String, file: File, storageCredentials: StorageCredentials? = null)
-
-    /**
      * 加载文件
      */
-    fun load(digest: String, storageCredentials: StorageCredentials? = null): File?
+    fun load(digest: String, range: Range, storageCredentials: StorageCredentials? = null): ArtifactInputStream?
 
     /**
      * 删除文件

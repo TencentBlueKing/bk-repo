@@ -40,7 +40,7 @@ import java.time.format.DateTimeFormatter
 @Component
 class HelmLocalRepository : LocalRepository() {
     override fun download(context: ArtifactDownloadContext) {
-        val artifactUri = getNodeFullPath(context)
+        val artifactUri = determineArtifactUri(context)
         val userId = context.userId
 
         try {
@@ -150,7 +150,7 @@ class HelmLocalRepository : LocalRepository() {
         return isForce || !(fullPath.trim().endsWith(".tgz", true) || fullPath.trim().endsWith(".prov", true))
     }
 
-    override fun getNodeFullPath(context: ArtifactDownloadContext): String {
+    override fun determineArtifactUri(context: ArtifactDownloadContext): String {
         return context.contextAttributes[FULL_PATH] as String
     }
 

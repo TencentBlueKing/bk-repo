@@ -147,7 +147,7 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     override fun download(context: ArtifactDownloadContext) {
-        val artifactUri = getNodeFullPath(context)
+        val artifactUri = determineArtifactUri(context)
         val userId = context.userId
 
         try {
@@ -155,7 +155,7 @@ class NpmLocalRepository : LocalRepository() {
             this.onDownloadBefore(context)
             val file =
                 this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] does not exist")
-            val name = NodeUtils.getName(getNodeFullPath(context))
+            val name = NodeUtils.getName(determineArtifactUri(context))
             ServletResponseUtils.response(name, file)
             logger.info("User[$userId] download artifact[$artifactUri] success")
             this.onDownloadSuccess(context, file)
@@ -170,14 +170,14 @@ class NpmLocalRepository : LocalRepository() {
         val repositoryInfo = context.repositoryInfo
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
-        val fullPath = getNodeFullPath(context)
+        val fullPath = determineArtifactUri(context)
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
 
         node.nodeInfo.takeIf { !it.folder } ?: return null
         return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
     }
 
-    override fun getNodeFullPath(context: ArtifactDownloadContext): String {
+    override fun determineArtifactUri(context: ArtifactDownloadContext): String {
         return context.contextAttributes[NPM_FILE_FULL_PATH] as String
     }
 
