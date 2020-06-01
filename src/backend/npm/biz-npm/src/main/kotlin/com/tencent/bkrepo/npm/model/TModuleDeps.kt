@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 @CompoundIndexes(
     CompoundIndex(
         name = "projectId_repoName_name_deps_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'name': 1, 'deps': 1, 'deleted': 1}",
+        def = "{'projectId': 1, 'repoName': 1, 'name': 1, 'deps': 1}",
         background = true
     )
 )
@@ -24,6 +24,5 @@ data class TModuleDeps(
     var createdBy: String,
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-    var deleted: LocalDateTime? = null
+    var lastModifiedDate: LocalDateTime
 )

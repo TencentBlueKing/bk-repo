@@ -2,9 +2,9 @@ package com.tencent.bkrepo.repository.api
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
-import com.tencent.bkrepo.repository.pojo.download.count.CountResponseInfo
-import com.tencent.bkrepo.repository.pojo.download.count.CountWithSpecialDayInfoResponse
-import com.tencent.bkrepo.repository.pojo.download.count.service.DownloadCountCreateRequest
+import com.tencent.bkrepo.repository.pojo.download.count.DownloadStatisticsForSpecialDateInfoResponse
+import com.tencent.bkrepo.repository.pojo.download.count.DownloadStatisticsResponseInfo
+import com.tencent.bkrepo.repository.pojo.download.count.service.DownloadStatisticsCreateRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -17,17 +17,17 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import java.time.LocalDate
 
-@Api("节点服务接口")
+@Api("构建下载量统计服务接口")
 @FeignClient(SERVICE_NAME, contextId = "ArtifactDownloadCountResource")
-@RequestMapping("/service/download/count")
-interface ArtifactDownloadCountResource {
+@RequestMapping("/service/download/statistics")
+interface DownloadStatisticsResource {
     @ApiOperation("创建构建下载量")
-    @PostMapping("/create")
-    fun create(@RequestBody countCreateRequest: DownloadCountCreateRequest): Response<Void>
+    @PostMapping("/add")
+    fun add(@RequestBody statisticsCreateRequest: DownloadStatisticsCreateRequest): Response<Void>
 
     @ApiOperation("查询构建下载量")
-    @GetMapping("/find/{projectId}/{repoName}/{artifact}")
-    fun find(
+    @GetMapping("/query/{projectId}/{repoName}/{artifact}")
+    fun query(
         @ApiParam("所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam("仓库名称", required = true)
@@ -40,11 +40,11 @@ interface ArtifactDownloadCountResource {
         @RequestParam startDay: LocalDate,
         @ApiParam("结束日期", required = true)
         @RequestParam endDay: LocalDate
-    ): Response<CountResponseInfo>
+    ): Response<DownloadStatisticsResponseInfo>
 
     @ApiOperation("查询构建在 日、周、月 的下载量")
-    @GetMapping("/query/{projectId}/{repoName}/{artifact}")
-    fun query(
+    @GetMapping("/query/special/{projectId}/{repoName}/{artifact}")
+    fun queryForSpecial(
         @ApiParam("所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam("仓库名称", required = true)
@@ -53,5 +53,5 @@ interface ArtifactDownloadCountResource {
         @PathVariable artifact: String,
         @ApiParam("构建版本", required = false)
         @RequestParam version: String? = null
-    ): Response<CountWithSpecialDayInfoResponse>
+    ): Response<DownloadStatisticsForSpecialDateInfoResponse>
 }

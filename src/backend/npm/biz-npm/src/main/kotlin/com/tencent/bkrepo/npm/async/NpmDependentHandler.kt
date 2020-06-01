@@ -13,6 +13,7 @@ import com.tencent.bkrepo.npm.pojo.module.des.service.DepsDeleteRequest
 import com.tencent.bkrepo.npm.service.ModuleDepsService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
@@ -21,10 +22,8 @@ class NpmDependentHandler {
     @Autowired
     private lateinit var moduleDepsService: ModuleDepsService
 
-    // @Async
+    @Async
     fun updatePkgDepts(userId: String, artifactInfo: ArtifactInfo, jsonObj: JsonObject, action: NpmOperationAction) {
-        // logger.info("updatePkgDependent current Thread : [${Thread.currentThread().name}]")
-
         val distTags = getDistTags(jsonObj)!!
         val versionJsonData = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(distTags.second)
 

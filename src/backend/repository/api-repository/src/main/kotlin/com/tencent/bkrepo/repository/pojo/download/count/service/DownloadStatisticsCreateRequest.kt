@@ -4,7 +4,7 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("创建构建下载统计次数")
-data class DownloadCountCreateRequest(
+data class DownloadStatisticsCreateRequest(
     @ApiModelProperty("所属项目", required = true)
     val projectId: String,
     @ApiModelProperty("仓库名称", required = true)
