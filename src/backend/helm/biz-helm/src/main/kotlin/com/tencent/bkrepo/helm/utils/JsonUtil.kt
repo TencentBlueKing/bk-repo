@@ -11,7 +11,7 @@ import com.tencent.bkrepo.helm.constants.ENTRIES
 import com.tencent.bkrepo.helm.constants.ERROR_NOT_FOUND
 import com.tencent.bkrepo.helm.constants.NO_CHART_NAME_FOUND
 import org.apache.commons.lang.StringUtils
-import java.io.File
+import java.io.InputStream
 
 object JsonUtil {
     val gson: Gson =
@@ -21,9 +21,9 @@ object JsonUtil {
         return gson.fromJson(gsonString, cls)
     }
 
-    fun searchJson(indexYamlFile: File, urls: String): String {
+    fun searchJson(inputStream: InputStream, urls: String): String {
         val jsonParser = JsonParser()
-        val jsonStr = YamlUtils.yaml2Json(indexYamlFile)
+        val jsonStr = YamlUtils.yaml2Json(inputStream)
         val urlList = urls.removePrefix("/").split("/").filter { it.isNotBlank() }
         return when (urlList.size) {
             // Without name and version

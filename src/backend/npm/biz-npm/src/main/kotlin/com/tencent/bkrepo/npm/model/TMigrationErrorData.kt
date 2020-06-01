@@ -9,9 +9,8 @@ import java.time.LocalDateTime
 @CompoundIndexes(
     CompoundIndex(
         name = "projectId_repoName_error_data_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'counter': 1, 'deleted': 1}",
-        background = true,
-        unique = true
+        def = "{'projectId': 1, 'repoName': 1, 'counter': 1}",
+        background = true
     )
 )
 data class TMigrationErrorData(
@@ -25,6 +24,5 @@ data class TMigrationErrorData(
     var createdBy: String,
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-    var deleted: LocalDateTime? = null
+    var lastModifiedDate: LocalDateTime
 )

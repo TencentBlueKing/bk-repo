@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -177,9 +176,8 @@ class ChartManipulationService {
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-        val indexFile = repository.search(context) as File
-        logger.info("search original $INDEX_CACHE_YAML success, original file length : [${indexFile.length()}]!")
-        val indexMap = YamlUtils.convertFileToEntity<Map<String, Any>>(indexFile)
+        val indexMap = repository.search(context) as Map<*, *>
+        logger.info("search original $INDEX_CACHE_YAML success!")
         return gson.fromJson(JsonParser().parse(gson.toJson(indexMap)).asJsonObject, IndexEntity::class.java)
     }
 

@@ -26,8 +26,8 @@ import com.tencent.bkrepo.npm.pojo.DownloadCount
 import com.tencent.bkrepo.npm.pojo.MaintainerInfo
 import com.tencent.bkrepo.npm.pojo.PackageInfoResponse
 import com.tencent.bkrepo.npm.pojo.TagsInfo
-import com.tencent.bkrepo.repository.api.ArtifactDownloadCountResource
-import com.tencent.bkrepo.repository.pojo.download.count.SpecialDayCount
+import com.tencent.bkrepo.repository.api.DownloadStatisticsResource
+import com.tencent.bkrepo.repository.pojo.download.count.SpecialDateDownloadStatistics
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -39,7 +39,7 @@ class NpmWebService {
     private lateinit var moduleDepsService: ModuleDepsService
 
     @Autowired
-    private lateinit var downloadCountResource: ArtifactDownloadCountResource
+    private lateinit var downloadStatisticsResource: DownloadStatisticsResource
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
@@ -47,7 +47,7 @@ class NpmWebService {
         val pkgName = artifactInfo.artifactUri.trimStart('/')
         val packageJson = searchPkgInfo(pkgName)
         val page = moduleDepsService.page(artifactInfo.projectId, artifactInfo.repoName, 0, 20, pkgName)
-        val query = downloadCountResource.query(artifactInfo.projectId, artifactInfo.repoName, artifactInfo.artifactUri)
+        val query = downloadStatisticsResource.queryForSpecial(artifactInfo.projectId, artifactInfo.repoName, artifactInfo.artifactUri)
 
         val latestVersion = packageJson.getAsJsonObject(DISTTAGS).get(LATEST).asString
         val currentTags: MutableList<TagsInfo> = mutableListOf()
@@ -89,7 +89,7 @@ class NpmWebService {
             currentTags,
             versionsList,
             maintainersList,
-            query.data!!.dayCount.map { convert(it) },
+            query.data!!.dateDownloadStatistics.map { convert(it) },
             dependenciesList,
             devDependenciesList,
             page
@@ -106,8 +106,8 @@ class NpmWebService {
     }
 
     companion object {
-        fun convert(dayCount: SpecialDayCount): DownloadCount {
-            with(dayCount) {
+        fun convert(dateDownloadStatistics: SpecialDateDownloadStatistics): DownloadCount {
+            with(dateDownloadStatistics) {
                 return DownloadCount(description, count)
             }
         }

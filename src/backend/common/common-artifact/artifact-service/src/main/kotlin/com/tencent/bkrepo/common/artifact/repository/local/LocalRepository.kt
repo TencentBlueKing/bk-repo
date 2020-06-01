@@ -10,9 +10,9 @@ import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactReposi
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.ArtifactDownloadCountResource
+import com.tencent.bkrepo.repository.api.DownloadStatisticsResource
 import com.tencent.bkrepo.repository.api.NodeResource
-import com.tencent.bkrepo.repository.pojo.download.count.service.DownloadCountCreateRequest
+import com.tencent.bkrepo.repository.pojo.download.count.service.DownloadStatisticsCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,7 +38,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
     lateinit var publisher: ApplicationEventPublisher
 
     @Autowired
-    lateinit var artifactDownloadCountResource: ArtifactDownloadCountResource
+    lateinit var downloadStatisticsResource: DownloadStatisticsResource
 
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
@@ -60,8 +60,8 @@ abstract class LocalRepository : AbstractArtifactRepository() {
 
     open fun countDownloads(context: ArtifactDownloadContext) {
         val artifactInfo = context.artifactInfo
-        artifactDownloadCountResource.create(
-            DownloadCountCreateRequest(
+        downloadStatisticsResource.add(
+            DownloadStatisticsCreateRequest(
                 artifactInfo.projectId,
                 artifactInfo.repoName,
                 artifactInfo.artifact,
