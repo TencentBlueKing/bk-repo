@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.artifact.resolve.path
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.BeanClassLoaderAware
 import org.springframework.beans.factory.support.BeanDefinitionRegistry

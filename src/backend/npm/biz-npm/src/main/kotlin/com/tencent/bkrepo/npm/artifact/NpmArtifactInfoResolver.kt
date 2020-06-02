@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.npm.artifact
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger

@@ -4,20 +4,20 @@ import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.helm.constants.CHART_NOT_FOUND
+import com.tencent.bkrepo.helm.constants.EMPTY_CHART_OR_VERSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
@@ -25,6 +25,7 @@ import com.tencent.bkrepo.helm.constants.INIT_STR
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.utils.JsonUtil
+import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
@@ -33,36 +34,11 @@ import org.apache.http.HttpStatus
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.io.File
-import java.io.FileWriter
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Component
 class HelmLocalRepository : LocalRepository() {
-    override fun download(context: ArtifactDownloadContext) {
-        val artifactUri = getNodeFullPath(context)
-        val userId = context.userId
-
-        try {
-            this.onDownloadValidate(context)
-            this.onDownloadBefore(context)
-            val file =
-                this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] does not exist")
-            ServletResponseUtils.response(determineFileName(context), file)
-            logger.info("User[$userId] download artifact[$artifactUri] success")
-            this.onDownloadSuccess(context, file)
-        } catch (validateException: ArtifactValidateException) {
-            this.onValidateFailed(context, validateException)
-        } catch (exception: Exception) {
-            this.onDownloadFailed(context, exception)
-        }
-    }
-
-    fun determineFileName(context: ArtifactDownloadContext): String {
-        val fileName = context.artifactInfo.artifactUri.trimStart('/')
-        return if (StringUtils.isBlank(fileName)) INDEX_YAML else fileName
-    }
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
         // 检查index-cache.yaml文件是否存在，如果不存在则说明是添加仓库
@@ -77,21 +53,16 @@ class HelmLocalRepository : LocalRepository() {
         }
     }
 
+    override fun determineArtifactName(context: ArtifactTransferContext): String {
+        val fileName = context.artifactInfo.artifactUri.trimStart('/')
+        return if (StringUtils.isBlank(fileName)) INDEX_YAML else fileName
+    }
+
     // 创建cache-index.yaml文件并初始化
     private fun createIndexCacheYamlFile() {
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss+08:00")
         val initStr = String.format(INIT_STR, LocalDateTime.now().format(format))
-        val tempFile = createTempFile("index-cache", ".yaml")
-        val fw = FileWriter(tempFile)
-        try {
-            fw.write(initStr)
-        } finally {
-            // 关闭临时文件
-            fw.flush()
-            fw.close()
-            tempFile.deleteOnExit()
-        }
-        val artifactFile = ArtifactFileFactory.build(tempFile.inputStream())
+        val artifactFile = ArtifactFileFactory.build(initStr.byteInputStream())
         val uploadContext = ArtifactUploadContext(artifactFile)
         uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         this.upload(uploadContext)
@@ -161,11 +132,11 @@ class HelmLocalRepository : LocalRepository() {
         return isForce || !(fullPath.trim().endsWith(".tgz", true) || fullPath.trim().endsWith(".prov", true))
     }
 
-    override fun getNodeFullPath(context: ArtifactDownloadContext): String {
+    override fun determineArtifactUri(context: ArtifactDownloadContext): String {
         return context.contextAttributes[FULL_PATH] as String
     }
 
-    override fun search(context: ArtifactSearchContext): File? {
+    override fun search(context: ArtifactSearchContext): Map<String, Any>? {
         val fullPath = context.contextAttributes[FULL_PATH] as String
         return try {
             this.onSearch(context) ?: throw ArtifactNotFoundException("Artifact[$fullPath] does not exist")
@@ -175,7 +146,7 @@ class HelmLocalRepository : LocalRepository() {
         }
     }
 
-    private fun onSearch(context: ArtifactSearchContext): File? {
+    private fun onSearch(context: ArtifactSearchContext): Map<String, Any>? {
         val repositoryInfo = context.repositoryInfo
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
@@ -192,7 +163,9 @@ class HelmLocalRepository : LocalRepository() {
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
 
         node.nodeInfo.takeIf { !it.folder } ?: return null
-        return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials) ?: return null
+        return storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)?.run {
+            YamlUtils.convertFileToEntity<Map<String, Any>>(this)
+        }
     }
 
     override fun remove(context: ArtifactRemoveContext) {
@@ -212,10 +185,10 @@ class HelmLocalRepository : LocalRepository() {
         val artifactInfo = context.artifactInfo
         val fullPath = INDEX_CACHE_YAML
         with(artifactInfo) {
-            val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return CHART_NOT_FOUND
-            val indexYamlFile = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
-                ?: return CHART_NOT_FOUND
-            return JsonUtil.searchJson(indexYamlFile, artifactUri)
+            val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return EMPTY_CHART_OR_VERSION
+            val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
+                ?: return EMPTY_CHART_OR_VERSION
+            return JsonUtil.searchJson(inputStream, artifactUri)
         }
     }
 

@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class ChartRepositoryService {
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     fun getIndexYaml(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactDownloadContext()

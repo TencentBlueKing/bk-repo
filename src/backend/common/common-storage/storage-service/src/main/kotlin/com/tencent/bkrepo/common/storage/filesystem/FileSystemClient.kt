@@ -86,12 +86,14 @@ class FileSystemClient(private val root: String) {
 
     fun delete(dir: String, filename: String) {
         val filePath = Paths.get(this.root, dir, filename)
-        if (Files.isRegularFile(filePath)) {
-            FileLockExecutor.executeInLock(filePath.toFile()) {
-                Files.delete(filePath)
+        if (Files.exists(filePath)) {
+            if (Files.isRegularFile(filePath)) {
+                FileLockExecutor.executeInLock(filePath.toFile()) {
+                    Files.delete(filePath)
+                }
+            } else {
+                throw IllegalArgumentException("[$filePath] is not a regular file.")
             }
-        } else {
-            throw IllegalArgumentException("[$filePath] is not a regular file.")
         }
     }
 

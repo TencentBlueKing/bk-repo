@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.annotation.Resource
 
 @Component
-class ArtifactMetrics: MeterBinder {
+class ArtifactMetrics : MeterBinder {
     var uploadingCount = AtomicInteger(0)
     var downloadingCount = AtomicInteger(0)
 

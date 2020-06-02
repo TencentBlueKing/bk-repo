@@ -11,27 +11,32 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.resolve.file.MultipartArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.constants.CHART
+import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
+import com.tencent.bkrepo.helm.constants.NAME
+import com.tencent.bkrepo.helm.constants.PROV
+import com.tencent.bkrepo.helm.constants.PROVENANCE_FILE_EXTENSION
+import com.tencent.bkrepo.helm.constants.VERSION
+import com.tencent.bkrepo.helm.exception.HelmErrorInvalidProvenanceFileException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.exception.HelmIndexFreshFailException
 import com.tencent.bkrepo.helm.pojo.HelmSuccessResponse
 import com.tencent.bkrepo.helm.pojo.IndexEntity
+import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.JsonUtil.gson
-import com.tencent.bkrepo.helm.utils.PackDecompressorUtils
 import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
 import com.tencent.bkrepo.repository.util.NodeUtils.formatFullPath
-import org.apache.commons.fileupload.util.Streams
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -47,7 +52,7 @@ class ChartManipulationService {
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes = getContextAttrMap(artifactFileMap = artifactFileMap)
-        if (!artifactFileMap.keys.contains("prov")) throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
+        if (!artifactFileMap.keys.contains(PROV)) throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
         repository.upload(context)
         return HelmSuccessResponse.pushSuccess()
     }
@@ -58,13 +63,13 @@ class ChartManipulationService {
     ): MutableMap<String, Any> {
         val attributesMap = mutableMapOf<String, Any>()
         artifactFileMap.entries.forEach { (name, _) ->
-            if (name != "chart" && name != "prov") {
+            if (CHART != name && PROV != name) {
                 throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
             }
-            if ("chart" == name) {
+            if (CHART == name) {
                 attributesMap[name + "_full_path"] = getChartFileFullPath(chartFileInfo)
             }
-            if ("prov" == name) {
+            if (PROV == name) {
                 attributesMap[name + "_full_path"] = getProvFileFullPath(artifactFileMap)
             }
         }
@@ -72,16 +77,25 @@ class ChartManipulationService {
     }
 
     private fun getChartFileFullPath(chartFile: Map<String, Any>?): String {
-        val chartName = chartFile?.get("name") as String
-        val chartVersion = chartFile["version"] as String
-        return "$FILE_SEPARATOR$chartName-$chartVersion.tgz"
+        val chartName = chartFile?.get(NAME) as String
+        val chartVersion = chartFile[VERSION] as String
+        return String.format("$FILE_SEPARATOR%s-%s.%s", chartName, chartVersion, CHART_PACKAGE_FILE_EXTENSION)
     }
 
     private fun getProvFileFullPath(artifactFileMap: ArtifactFileMap): String {
-        val multipartArtifactFile = artifactFileMap["prov"] as? MultipartArtifactFile
-            ?: throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
-        val fileName = multipartArtifactFile.getOriginalFilename()
-        return FILE_SEPARATOR + fileName.substringAfterLast('/')
+        val inputStream = (artifactFileMap[PROV] as MultipartArtifactFile).getInputStream()
+        val contentStr = String(inputStream.readBytes())
+        val hasPGPBegin = contentStr.startsWith("-----BEGIN PGP SIGNED MESSAGE-----")
+        val nameMatch = Regex("\nname:[ *](.+)").findAll(contentStr).toList().flatMap(MatchResult::groupValues)
+        val versionMatch = Regex("\nversion:[ *](.+)").findAll(contentStr).toList().flatMap(MatchResult::groupValues)
+        if (!hasPGPBegin || nameMatch.size != 2 || versionMatch.size != 2) {
+            throw HelmErrorInvalidProvenanceFileException("invalid provenance file")
+        }
+        return provenanceFilenameFromNameVersion(nameMatch[1], versionMatch[1])
+    }
+
+    private fun provenanceFilenameFromNameVersion(name: String, version: String): String {
+        return String.format("$FILE_SEPARATOR%s-%s.%s", name, version, PROVENANCE_FILE_EXTENSION)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -92,9 +106,9 @@ class ChartManipulationService {
         val chartFileInfo = getChartFile(artifactFileMap)
         context.contextAttributes = getContextAttrMap(artifactFileMap, chartFileInfo)
         repository.upload(context)
-        if (artifactFileMap.keys.contains("chart")) {
+        if (artifactFileMap.keys.contains(CHART)) {
             try {
-                freshIndexYamlForPush(artifactInfo, artifactFileMap, chartFileInfo)
+                freshIndexYamlForPush(artifactInfo, chartFileInfo)
             } catch (exception: HelmIndexFreshFailException) {
                 targetFileRollback(chartFileInfo)
                 throw HelmIndexFreshFailException(exception.message)
@@ -116,21 +130,20 @@ class ChartManipulationService {
 
     private fun freshIndexYamlForPush(
         artifactInfo: HelmArtifactInfo,
-        artifactFileMap: ArtifactFileMap,
         chartFileInfo: MutableMap<String, Any>
     ) {
-        val indexEntity = getIndexYamlFile(artifactInfo, chartFileInfo, artifactFileMap)
+        val indexEntity = getIndexYamlFile(artifactInfo, chartFileInfo)
         uploadIndexYaml(indexEntity)
-        logger.info("fresh index.yaml for push [${chartFileInfo["name"]}-${chartFileInfo["version"]}.tgz] success!")
+        logger.info("fresh index.yaml for push [${chartFileInfo[NAME]}-${chartFileInfo[VERSION]}.$CHART_PACKAGE_FILE_EXTENSION] success!")
     }
 
     private fun getChartFile(artifactFileMap: ArtifactFileMap): MutableMap<String, Any> {
-        val inputStream = (artifactFileMap["chart"] as MultipartArtifactFile).getInputStream()
-        val tempDir = System.getProperty("java.io.tmpdir")
-        PackDecompressorUtils.unTarGZ(inputStream, tempDir)
-        logger.info("file " + getFileName(artifactFileMap) + " unTar success!")
-        val file = getUnTgzFile(artifactFileMap, tempDir)
-        return YamlUtils.getObject(file)
+        if (!artifactFileMap.keys.contains(CHART)) throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
+        val inputStream = (artifactFileMap[CHART] as MultipartArtifactFile).getInputStream()
+        val result = inputStream.getArchivesContent("tgz")
+        val chartFileInfoMap = YamlUtils.convertStringToEntity<MutableMap<String, Any>>(result)
+        chartFileInfoMap["digest"] = FileDigestUtils.fileSha256(inputStream)
+        return chartFileInfoMap
     }
 
     private fun uploadIndexYaml(indexEntity: IndexEntity) {
@@ -143,12 +156,11 @@ class ChartManipulationService {
 
     private fun getIndexYamlFile(
         artifactInfo: HelmArtifactInfo,
-        chartMap: MutableMap<String, Any>,
-        artifactFileMap: ArtifactFileMap
+        chartMap: MutableMap<String, Any>
     ): IndexEntity {
         val indexEntity = getOriginalIndexYaml()
-        updateChartMap(artifactInfo, chartMap, artifactFileMap)
-        val chartName = chartMap["name"] as String
+        updateChartMap(artifactInfo, chartMap)
+        val chartName = chartMap[NAME] as String
         val isFirstChart = indexEntity.entries.containsKey(chartName)
         indexEntity.entries.let {
             if (!isFirstChart) {
@@ -164,19 +176,17 @@ class ChartManipulationService {
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-        val indexFile = repository.search(context) as File
-        logger.info("search original $INDEX_CACHE_YAML success, original file length : [${indexFile.length()}]!")
-        val indexMap = YamlUtils.getObject<Map<String, Any>>(indexFile)
+        val indexMap = repository.search(context) as Map<*, *>
+        logger.info("search original $INDEX_CACHE_YAML success!")
         return gson.fromJson(JsonParser().parse(gson.toJson(indexMap)).asJsonObject, IndexEntity::class.java)
     }
 
     private fun updateChartMap(
         artifactInfo: HelmArtifactInfo,
-        chartMap: MutableMap<String, Any>,
-        artifactFileMap: ArtifactFileMap
+        chartMap: MutableMap<String, Any>
     ) {
-        val chartName = chartMap["name"] as String
-        val chartVersion = chartMap["version"] as String
+        val chartName = chartMap[NAME] as String
+        val chartVersion = chartMap[VERSION] as String
         chartMap["urls"] = listOf(
             domain.trimEnd('/') + formatFullPath(
                 "${artifactInfo.projectId}/${artifactInfo.repoName}/charts/$chartName-$chartVersion.tgz"
@@ -184,30 +194,7 @@ class ChartManipulationService {
         )
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS+08:00")
         chartMap["created"] = LocalDateTime.now().format(format)
-        chartMap["digest"] = artifactFileMap["chart"]?.getInputStream()?.let { FileDigestUtils.fileSha256(it) }!!
-    }
-
-    private fun getUnTgzFile(artifactFileMap: ArtifactFileMap, tempDir: String): File {
-        val name = getFileName(artifactFileMap).substringBeforeLast('-')
-        val filePath = "$tempDir/$name${FILE_SEPARATOR}Chart.yaml"
-        logger.info("unTgz Chart.yaml file path : $filePath")
-        val file = File(filePath)
-        if (!file.exists()) {
-            logger.error("get unTgz file error : Chart.yaml not found, error Path: $name${FILE_SEPARATOR}Chart.yaml")
-            throw HelmIndexFreshFailException("file Chart.yaml not found，error Path: $name${FILE_SEPARATOR}Chart.yaml")
-        }
-        return file
-    }
-
-    private fun getFileFullPath(artifactFileMap: ArtifactFileMap): String {
-        val multipartArtifactFile = artifactFileMap["chart"] as? MultipartArtifactFile
-            ?: throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
-        val fileName = multipartArtifactFile.getOriginalFilename()
-        return FILE_SEPARATOR + fileName.substringAfterLast('/')
-    }
-
-    private fun getFileName(artifactFileMap: ArtifactFileMap): String {
-        return getFileFullPath(artifactFileMap).trimStart('/')
+        chartMap["digest"] = chartMap["digest"] as String
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -216,7 +203,7 @@ class ChartManipulationService {
         val chartInfo = getChartInfo(artifactInfo)
         val context = ArtifactRemoveContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        val fullPath = "/${chartInfo.first}-${chartInfo.second}.tgz"
+        val fullPath = String.format("/%s-%s.%s", chartInfo.first, chartInfo.second, CHART_PACKAGE_FILE_EXTENSION)
         context.contextAttributes[FULL_PATH] = fullPath
         repository.remove(context)
         logger.info("remove artifact [$fullPath] success!")
@@ -235,12 +222,12 @@ class ChartManipulationService {
         try {
             val indexEntity = getOriginalIndexYaml()
             indexEntity.entries.let {
-                if (it[chartInfo.first]?.size == 1 && chartInfo.second == it[chartInfo.first]?.get(0)?.get("version") as String) {
+                if (it[chartInfo.first]?.size == 1 && chartInfo.second == it[chartInfo.first]?.get(0)?.get(VERSION) as String) {
                     it.remove(chartInfo.first)
                 } else {
                     run stop@{
                         it[chartInfo.first]?.forEachIndexed { index, chartMap ->
-                            if (chartInfo.second == chartMap["version"] as String) {
+                            if (chartInfo.second == chartMap[VERSION] as String) {
                                 it[chartInfo.first]?.removeAt(index)
                                 return@stop
                             }

@@ -3,6 +3,7 @@ package com.tencent.bkrepo.pypi.resource
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.pypi.api.PypiResource
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
 import com.tencent.bkrepo.pypi.service.PypiService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Controller
@@ -46,5 +47,18 @@ class PypiResourceImpl : PypiResource {
     @ResponseBody
     override fun packages(artifactInfo: PypiArtifactInfo) {
         pypiService.packages(artifactInfo)
+    }
+
+    @ResponseBody
+    override fun migrateByUrl(ArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
+        return pypiService.migrate(ArtifactInfo)
+    }
+
+    /**
+     * 数据迁移结果查询接口
+     */
+    @ResponseBody
+    override fun migrateResult(ArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
+        return pypiService.migrateResult(ArtifactInfo)
     }
 }

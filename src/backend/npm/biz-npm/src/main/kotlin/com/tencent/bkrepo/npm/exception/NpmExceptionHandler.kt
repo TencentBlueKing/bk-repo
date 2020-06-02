@@ -35,7 +35,6 @@ class NpmExceptionHandler {
     @ExceptionHandler(ClientAuthException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handlerClientAuthException(exception: ClientAuthException) {
-        HttpContextHolder.getResponse().setHeader(BASIC_AUTH_RESPONSE_HEADER, BASIC_AUTH_RESPONSE_VALUE)
         val responseObject = NpmErrorResponse("Unauthorized", "Authentication required")
         npmResponse(responseObject, exception)
     }
@@ -66,6 +65,13 @@ class NpmExceptionHandler {
     @ExceptionHandler(NpmArtifactNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerNpmArtifactNotFoundException(exception: NpmArtifactNotFoundException) {
+        val responseObject = NpmErrorResponse.notFound()
+        npmResponse(responseObject, exception)
+    }
+
+    @ExceptionHandler(NpmArgumentNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handlerNpmArgumentNotFoundException(exception: NpmArgumentNotFoundException) {
         val responseObject = NpmErrorResponse.notFound()
         npmResponse(responseObject, exception)
     }

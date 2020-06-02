@@ -34,7 +34,12 @@ class NodeResourceImpl @Autowired constructor(
     private val shareService: ShareService
 ) : NodeResource {
 
-    override fun detail(projectId: String, repoName: String, repoType: String, fullPath: String): Response<NodeDetail?> {
+    override fun detail(
+        projectId: String,
+        repoName: String,
+        repoType: String,
+        fullPath: String
+    ): Response<NodeDetail?> {
         return ResponseBuilder.success(nodeService.detail(projectId, repoName, fullPath, repoType))
     }
 
@@ -46,11 +51,33 @@ class NodeResourceImpl @Autowired constructor(
         return ResponseBuilder.success(nodeService.exist(projectId, repoName, fullPath))
     }
 
-    override fun list(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Response<List<NodeInfo>> {
+    override fun listExistFullPath(
+        projectId: String,
+        repoName: String,
+        fullPathList: List<String>
+    ): Response<List<String>> {
+        return ResponseBuilder.success(nodeService.listExistfullPath(projectId, repoName, fullPathList))
+    }
+
+    override fun list(
+        projectId: String,
+        repoName: String,
+        path: String,
+        includeFolder: Boolean,
+        deep: Boolean
+    ): Response<List<NodeInfo>> {
         return ResponseBuilder.success(nodeService.list(projectId, repoName, path, includeFolder, deep))
     }
 
-    override fun page(projectId: String, repoName: String, page: Int, size: Int, path: String, includeFolder: Boolean, deep: Boolean): Response<Page<NodeInfo>> {
+    override fun page(
+        projectId: String,
+        repoName: String,
+        page: Int,
+        size: Int,
+        path: String,
+        includeFolder: Boolean,
+        deep: Boolean
+    ): Response<Page<NodeInfo>> {
         return ResponseBuilder.success(nodeService.page(projectId, repoName, path, page, size, includeFolder, deep))
     }
 
@@ -91,7 +118,11 @@ class NodeResourceImpl @Autowired constructor(
         return ResponseBuilder.success(nodeService.countFileNode(projectId, repoName, path))
     }
 
-    override fun listShareRecord(projectId: String, repoName: String, fullPath: String): Response<List<ShareRecordInfo>> {
+    override fun listShareRecord(
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    ): Response<List<ShareRecordInfo>> {
         return ResponseBuilder.success(shareService.list(projectId, repoName, fullPath))
     }
 

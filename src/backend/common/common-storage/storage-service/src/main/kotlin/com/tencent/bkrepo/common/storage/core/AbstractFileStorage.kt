@@ -4,12 +4,14 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import java.io.File
+import java.io.InputStream
 import kotlin.system.measureNanoTime
 
 /**
@@ -39,18 +41,44 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
+        val client = getClient(storageCredentials)
+        val size = file.length()
         val nanoTime = measureNanoTime {
-            val client = getClient(storageCredentials)
             store(path, filename, file, client)
         }
-        val size = file.length()
-        logger.info("Success to persist file [$filename], size: ${HumanReadable.bytes(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
+        logger.info("Success to persist file [$filename], size: ${HumanReadable.size(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
+            "average: ${HumanReadable.throughput(size, nanoTime)}.")
+    }
+
+    override fun store(path: String, filename: String, inputStream: InputStream, storageCredentials: StorageCredentials) {
+        val client = getClient(storageCredentials)
+        val size = inputStream.available().toLong()
+        val nanoTime = measureNanoTime {
+            store(path, filename, inputStream, client)
+        }
+        logger.info("Success to persist stream [$filename], size: ${HumanReadable.size(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
             "average: ${HumanReadable.throughput(size, nanoTime)}.")
     }
 
     override fun load(path: String, filename: String, received: File, storageCredentials: StorageCredentials): File? {
-        val client = getClient(storageCredentials)
-        return load(path, filename, received, client)
+        return try {
+            val client = getClient(storageCredentials)
+            return load(path, filename, received, client)
+        } catch (ex: Exception) {
+            logger.warn("Failed to load file[$filename]: ${ex.message}", ex)
+            null
+        }
+
+    }
+
+    override fun load(path: String, filename: String, range: Range, storageCredentials: StorageCredentials): InputStream? {
+        return try {
+            val client = getClient(storageCredentials)
+            load(path, filename, range, client)
+        } catch (ex: Exception) {
+            logger.warn("Failed to load range stream[$filename]: ${ex.message}", ex)
+            null
+        }
     }
 
     override fun delete(path: String, filename: String, storageCredentials: StorageCredentials) {
@@ -82,7 +110,9 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
 
     protected abstract fun onCreateClient(credentials: Credentials): Client
     abstract fun store(path: String, filename: String, file: File, client: Client)
+    abstract fun store(path: String, filename: String, inputStream: InputStream, client: Client)
     abstract fun load(path: String, filename: String, received: File, client: Client): File?
+    abstract fun load(path: String, filename: String, range: Range, client: Client): InputStream?
     abstract fun delete(path: String, filename: String, client: Client)
     abstract fun exist(path: String, filename: String, client: Client): Boolean
 

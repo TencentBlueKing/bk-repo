@@ -27,3 +27,6 @@ object JsonUtils {
         configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
     }
 }
+
+
+fun Any.toJsonString() = JsonUtils.objectMapper.writeValueAsString(this).orEmpty()

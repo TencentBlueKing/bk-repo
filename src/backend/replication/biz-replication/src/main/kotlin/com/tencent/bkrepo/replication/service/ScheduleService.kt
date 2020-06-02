@@ -4,6 +4,7 @@ import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
 import com.tencent.bkrepo.replication.constant.TASK_ID_KEY
 import com.tencent.bkrepo.replication.job.FullReplicationJob
 import com.tencent.bkrepo.replication.model.TReplicationTask
+import org.joda.time.DateTime
 import org.quartz.CronScheduleBuilder
 import org.quartz.JobBuilder
 import org.quartz.JobKey
@@ -28,6 +29,7 @@ class ScheduleService @Autowired constructor(
         val jobDetail = JobBuilder.newJob(FullReplicationJob::class.java)
             .withIdentity(task.id, DEFAULT_GROUP_ID)
             .usingJobData(TASK_ID_KEY, task.id)
+            .requestRecovery()
             .build()
         val trigger = createTrigger(task)
         scheduler.scheduleJob(jobDetail, trigger)
@@ -38,9 +40,10 @@ class ScheduleService @Autowired constructor(
         with(task.setting.executionPlan) {
             return when {
                 executeImmediately -> {
+                    val date = DateTime.now().plusSeconds(10).toDate()
                     TriggerBuilder.newTrigger()
                         .withIdentity(task.id, DEFAULT_GROUP_ID)
-                        .startNow()
+                        .startAt(date)
                         .build()
                 }
                 executeTime != null -> {

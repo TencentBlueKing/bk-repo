@@ -23,16 +23,22 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean
 class QuartzMongoConfiguration {
 
     @Bean
-    fun quartzMongoCustomizer(quartzProperties: QuartzProperties, mongoProperties: MongoProperties): SchedulerFactoryBeanCustomizer {
+    fun quartzMongoCustomizer(
+        quartzProperties: QuartzProperties,
+        mongoProperties: MongoProperties
+    ): SchedulerFactoryBeanCustomizer {
         return QuartzMongoCustomizer(quartzProperties, mongoProperties)
     }
 
-    private class QuartzMongoCustomizer(private val quartzProperties: QuartzProperties, private val mongoProperties: MongoProperties) : SchedulerFactoryBeanCustomizer {
+    private class QuartzMongoCustomizer(
+        private val quartzProperties: QuartzProperties,
+        private val mongoProperties: MongoProperties
+    ) : SchedulerFactoryBeanCustomizer {
 
         override fun customize(schedulerFactoryBean: SchedulerFactoryBean?) {
             val properties = quartzProperties.properties
             properties["org.quartz.jobStore.class"] = MongoDBJobStore::class.qualifiedName
- //           properties["org.quartz.threadPool.threadCount"] = 10.toString()
+            properties["org.quartz.threadPool.threadCount"] = 20.toString()
             properties["org.quartz.jobStore.mongoUri"] = mongoProperties.uri
             properties["org.quartz.jobStore.dbName"] = mongoProperties.mongoClientDatabase
         }

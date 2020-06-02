@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.remote
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.config.PROXY_AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
@@ -9,6 +10,9 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
 import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -25,7 +29,6 @@ import okhttp3.Response
 import okhttp3.ResponseBody
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import java.io.File
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.time.Duration
@@ -57,26 +60,26 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         } else null
     }
 
-    override fun onDownload(context: ArtifactDownloadContext): File? {
-        getCacheArtifact(context)?.let {
-            return it
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        return getCacheArtifactResource(context) ?: run {
+            val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+            val httpClient = createHttpClient(remoteConfiguration)
+            val downloadUri = generateRemoteDownloadUrl(context)
+            val request = Request.Builder().url(downloadUri).build()
+            val response = httpClient.newCall(request).execute()
+            return if (checkResponse(response)) {
+                val artifactFile = createTempFile(response.body()!!)
+                val nodeInfo = putArtifactCache(context, artifactFile)
+                val artifactStream = artifactFile.getInputStream().toArtifactStream()
+                return ArtifactResource(artifactStream, determineArtifactName(context), nodeInfo)
+            } else null
         }
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
-        val httpClient = createHttpClient(remoteConfiguration)
-        val downloadUri = generateRemoteDownloadUrl(context)
-        val request = Request.Builder().url(downloadUri).build()
-        val response = httpClient.newCall(request).execute()
-        return if (checkResponse(response)) {
-            val file = createTempFile(response.body()!!)
-            putArtifactCache(context, file)
-            file
-        } else null
     }
 
     /**
      * 尝试读取缓存的远程构件
      */
-    private fun getCacheArtifact(context: ArtifactDownloadContext): File? {
+    private fun getCacheArtifactResource(context: ArtifactDownloadContext): ArtifactResource? {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
         if (!cacheConfiguration.cacheEnabled) return null
@@ -86,9 +89,9 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val createdDate = LocalDateTime.parse(nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
-            storageService.load(nodeInfo.sha256!!, context.storageCredentials)?.run {
-                logger.debug("Cached remote artifact[${context.artifactInfo.getFullUri()}] is hit.")
-                this
+            storageService.load(nodeInfo.sha256!!, Range.ofFull(nodeInfo.size), context.storageCredentials)?.run {
+                logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
+                ArtifactResource(this, determineArtifactName(context), nodeInfo)
             }
         } else null
     }
@@ -105,30 +108,30 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 将远程拉取的构件缓存本地
      */
-    private fun putArtifactCache(context: ArtifactDownloadContext, file: File) {
+    private fun putArtifactCache(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeInfo? {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
-        if (cacheConfiguration.cacheEnabled) {
-            val nodeCreateRequest = getCacheNodeCreateRequest(context, file)
-            storageService.store(nodeCreateRequest.sha256!!, file, context.storageCredentials)
-            nodeResource.create(nodeCreateRequest)
-        }
+        return if (cacheConfiguration.cacheEnabled) {
+            val nodeCreateRequest = getCacheNodeCreateRequest(context, artifactFile)
+            storageService.store(nodeCreateRequest.sha256!!, artifactFile, context.storageCredentials)
+            nodeResource.create(nodeCreateRequest).data
+        } else null
     }
 
     /**
      * 获取缓存节点创建请求
      */
-    open fun getCacheNodeCreateRequest(context: ArtifactDownloadContext, file: File): NodeCreateRequest {
+    open fun getCacheNodeCreateRequest(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeCreateRequest {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
-        val sha256 = FileDigestUtils.fileSha256(file)
-        val md5 = FileDigestUtils.fileMd5(file)
+        val sha256 = FileDigestUtils.fileSha256(artifactFile.getInputStream())
+        val md5 = FileDigestUtils.fileMd5(artifactFile.getInputStream())
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
             repoName = repositoryInfo.name,
             folder = false,
             fullPath = artifactInfo.artifactUri,
-            size = file.length(),
+            size = artifactFile.getSize(),
             sha256 = sha256,
             md5 = md5,
             overwrite = true,
@@ -145,7 +148,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         builder.connectTimeout(configuration.networkConfiguration.connectTimeout, TimeUnit.MILLISECONDS)
         builder.proxy(createProxy(configuration.networkConfiguration.proxy))
         builder.proxyAuthenticator(createProxyAuthenticator(configuration.networkConfiguration.proxy))
-        createBasicAuthInteceptor(configuration.credentialsConfiguration)?.let { builder.addInterceptor(it) }
+        createBasicAuthInterceptor(configuration.credentialsConfiguration)?.let { builder.addInterceptor(it) }
         return builder.build()
     }
 
@@ -175,7 +178,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 创建身份认证
      */
-    open fun createBasicAuthInteceptor(configuration: RemoteCredentialsConfiguration?): Interceptor? {
+    open fun createBasicAuthInterceptor(configuration: RemoteCredentialsConfiguration?): Interceptor? {
         return configuration?.let {
             return BasicAuthInterceptor(
                 it.username,
@@ -207,9 +210,8 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 创建临时文件并将响应体写入文件
      */
-    protected fun createTempFile(body: ResponseBody): File {
-        val artifactFile = ArtifactFileFactory.build(body.byteStream())
-        return artifactFile.getFile()
+    protected fun createTempFile(body: ResponseBody): ArtifactFile {
+        return ArtifactFileFactory.build(body.byteStream())
     }
 
     companion object {

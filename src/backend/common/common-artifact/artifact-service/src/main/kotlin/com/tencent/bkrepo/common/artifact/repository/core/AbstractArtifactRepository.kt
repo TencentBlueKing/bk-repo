@@ -16,12 +16,12 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.util.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import java.io.File
 
 /**
  * 构件仓库抽象类
@@ -53,10 +53,10 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         try {
             this.onDownloadValidate(context)
             this.onDownloadBefore(context)
-            val file = this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo.getFullUri()}] not found")
-            val name = NodeUtils.getName(context.artifactInfo.artifactUri)
-            ServletResponseUtils.response(name, file)
-            this.onDownloadSuccess(context, file)
+            val artifactResponse = this.onDownload(context)
+                ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
+            ArtifactResourceWriter.write(artifactResponse)
+            this.onDownloadSuccess(context)
         } catch (validateException: ArtifactValidateException) {
             this.onValidateFailed(context, validateException)
         } catch (exception: Exception) {
@@ -80,6 +80,11 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     override fun migrate(context: ArtifactMigrateContext) {
         throw UnsupportedMethodException()
+    }
+
+    open fun determineArtifactName(context: ArtifactTransferContext): String {
+        val artifactUri = context.artifactInfo.artifactUri
+        return artifactUri.substring(artifactUri.lastIndexOf(NodeUtils.FILE_SEPARATOR) + 1)
     }
 
     /**
@@ -121,9 +126,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onUploadSuccess(context: ArtifactUploadContext) {
         artifactMetrics.uploadedCounter.increment()
-        val artifactUri = context.artifactInfo.getFullUri()
+        val artifactInfo = context.artifactInfo
         val userId = context.userId
-        logger.info("User[$userId] upload artifact[$artifactUri] success")
+        logger.info("User[$userId] upload artifact[$artifactInfo] success")
     }
 
     /**
@@ -151,19 +156,19 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     /**
      * 下载构件
      */
-    open fun onDownload(context: ArtifactDownloadContext): File? {
+    open fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         throw UnsupportedMethodException()
     }
 
     /**
      * 下载成功回调
      */
-    open fun onDownloadSuccess(context: ArtifactDownloadContext, file: File) {
+    open fun onDownloadSuccess(context: ArtifactDownloadContext) {
         artifactMetrics.downloadedCounter.increment()
 
-        val artifactUri = context.artifactInfo.getFullUri()
+        val artifactInfo = context.artifactInfo
         val userId = context.userId
-        logger.info("User[$userId] download artifact[$artifactUri] success")
+        logger.info("User[$userId] download artifact[$artifactInfo] success")
     }
 
     /**
