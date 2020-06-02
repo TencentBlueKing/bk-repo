@@ -74,7 +74,7 @@ class DockerSchemaUtils {
                         projectId,
                         repoName,
                         manifestConfigFile.path
-                    ).sha256(manifestConfigFile.sha256!!)
+                    ).sha256(manifestConfigFile.sha256!!).length(manifestConfigFile.contentLength)
                 )
                 manifestStream.use {
                     var bytes = IOUtils.toByteArray(it)

@@ -111,7 +111,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
             throw ClientAuthException("Authorization value is null")
         }
         if (!basicAuthHeader.startsWith("Bearer ")) {
-            logger.warn("parse uri failed {}", basicAuthHeader)
+            logger.warn("parse token failed {}", basicAuthHeader)
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
         try {

@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.docker.resource
 
+import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.docker.api.User
+import com.tencent.bkrepo.docker.model.DockerBasicPath
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.PathUtil
 import com.tencent.bkrepo.docker.util.UserUtil
@@ -9,8 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletRequest
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.docker.model.DockerBasicPath
 
 @RestController
 class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) : User {
