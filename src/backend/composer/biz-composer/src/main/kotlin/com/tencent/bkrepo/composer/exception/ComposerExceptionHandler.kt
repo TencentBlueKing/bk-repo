@@ -16,4 +16,10 @@ class ComposerExceptionHandler {
     fun handleException(exception: ComposerUnSupportCompressException): ComposerExceptionResponse {
         return ComposerExceptionResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE.toString(), exception.message)
     }
+
+    @ExceptionHandler(ComposerPackageMessageDeficiencyException::class)
+    @ResponseStatus(HttpStatus.PRECONDITION_FAILED)
+    fun handleException(exception: ComposerPackageMessageDeficiencyException): ComposerExceptionResponse {
+        return ComposerExceptionResponse(HttpStatus.PRECONDITION_FAILED.toString(), exception.message)
+    }
 }

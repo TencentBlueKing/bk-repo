@@ -3,8 +3,8 @@ package com.tencent.bkrepo.pypi.artifact.repository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
+import com.tencent.bkrepo.common.artifact.hash.md5
+import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -18,7 +18,6 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.model.MigrateDataCreateNode
 import com.tencent.bkrepo.pypi.artifact.model.MigrateDataInfo
@@ -81,11 +80,10 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     override fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
-        val artifactFile = context.getArtifactFile("content")
+        val artifactFile = context.getArtifactFile()
         val filename = (artifactFile as MultipartArtifactFile).getOriginalFilename()
-        val map = context.contextAttributes[ATTRIBUTE_SHA256MAP] as LinkedHashMap<*, *>
-        val sha256 = map["content"]
-        val md5 = (context.contextAttributes[ATTRIBUTE_MD5MAP] as LinkedHashMap<*, *>)["content"]
+        val sha256 = artifactFile.getInputStream().sha256()
+        val md5 = artifactFile.getInputStream().md5()
         val pypiArtifactInfo = artifactInfo as PypiArtifactInfo
 
         return NodeCreateRequest(
@@ -412,15 +410,14 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         val pkgInfo = filename.fileFormat()?.let { artifactFile.getInputStream().getPkgInfo(it) }
         // 文件fullPath
         val path = "/$packageName/${pkgInfo?.get("version")}/$filename"
-        // TODO  查重
+
         nodeResource.exist(repositoryInfo.projectId, repositoryInfo.name, path).data?.let {
             if (it) {
                 return null
             }
         }
-        // TODO 计算sha256
-        val sha256 = FileDigestUtils.fileSha256(artifactFile.getInputStream())
-        val md5 = FileDigestUtils.fileMd5(artifactFile.getInputStream())
+        val sha256 = artifactFile.getInputStream().sha256()
+        val md5 = artifactFile.getInputStream().md5()
         val pypiArtifactInfo = artifactInfo as PypiArtifactInfo
 
         return NodeCreateRequest(
@@ -430,8 +427,8 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 overwrite = true,
                 fullPath = path,
                 size = artifactFile.getSize(),
-                sha256 = sha256 as String?,
-                md5 = md5 as String?,
+                sha256 = sha256,
+                md5 = md5,
                 operator = context.userId,
                 metadata = pypiArtifactInfo.metadata
         )
