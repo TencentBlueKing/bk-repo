@@ -4,6 +4,8 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.permission.PermissionService
+import com.tencent.bkrepo.common.artifact.permission.Principal
+import com.tencent.bkrepo.common.artifact.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.UserRepositoryResource
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
@@ -24,6 +26,8 @@ class UserRepositoryResourceImpl @Autowired constructor(
     private val permissionService: PermissionService,
     private val repositoryService: RepositoryService
 ) : UserRepositoryResource {
+
+    @Principal(PrincipalType.PLATFORM)
     override fun create(userId: String, userRepoCreateRequest: UserRepoCreateRequest): Response<Void> {
         permissionService.checkPermission(userId, ResourceType.PROJECT, PermissionAction.MANAGE, userRepoCreateRequest.projectId)
 
@@ -44,6 +48,7 @@ class UserRepositoryResourceImpl @Autowired constructor(
         return ResponseBuilder.success()
     }
 
+    @Principal(PrincipalType.PLATFORM)
     override fun list(projectId: String): Response<List<RepositoryInfo>> {
         return ResponseBuilder.success(repositoryService.list(projectId))
     }

@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.repository.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.permission.Principal
+import com.tencent.bkrepo.common.artifact.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.UserProjectResource
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
@@ -15,6 +17,7 @@ class UserProjectResourceImpl @Autowired constructor(
     private val projectService: ProjectService
 ) : UserProjectResource {
 
+    @Principal(PrincipalType.PLATFORM)
     override fun create(userId: String, userProjectRequest: UserProjectCreateRequest): Response<Void> {
         val createRequest = with(userProjectRequest) {
             ProjectCreateRequest(
@@ -28,6 +31,7 @@ class UserProjectResourceImpl @Autowired constructor(
         return ResponseBuilder.success()
     }
 
+    @Principal(PrincipalType.PLATFORM)
     override fun list(): Response<List<ProjectInfo>> {
         return ResponseBuilder.success(projectService.list())
     }
