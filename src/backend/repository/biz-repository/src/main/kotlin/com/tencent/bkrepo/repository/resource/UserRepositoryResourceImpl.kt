@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.artifact.permission.PermissionService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.UserRepositoryResource
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.repository.service.RepositoryService
 import org.springframework.beans.factory.annotation.Autowired
@@ -41,5 +42,9 @@ class UserRepositoryResourceImpl @Autowired constructor(
         }
         repositoryService.create(createRequest)
         return ResponseBuilder.success()
+    }
+
+    override fun list(projectId: String): Response<List<RepositoryInfo>> {
+        return ResponseBuilder.success(repositoryService.list(projectId))
     }
 }
