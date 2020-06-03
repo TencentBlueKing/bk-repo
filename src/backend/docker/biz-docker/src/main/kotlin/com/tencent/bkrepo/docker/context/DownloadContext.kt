@@ -12,6 +12,7 @@ class DownloadContext(projectId: String, repoName: String, path: String) {
     var projectId: String = ""
     var repoName: String = ""
     var fullPath: String = ""
+    var length: Long = 0
 
     init {
         this.projectId = projectId
@@ -36,6 +37,11 @@ class DownloadContext(projectId: String, repoName: String, path: String) {
 
     fun sha256(sha256: String): DownloadContext {
         this.sha256 = sha256
+        return this
+    }
+
+    fun length(length: Long): DownloadContext {
+        this.length = length
         return this
     }
 

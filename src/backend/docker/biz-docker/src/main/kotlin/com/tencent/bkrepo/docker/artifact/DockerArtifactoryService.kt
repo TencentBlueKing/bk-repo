@@ -5,6 +5,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
 import com.tencent.bkrepo.common.artifact.permission.PermissionService
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -28,12 +29,11 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import java.io.File
-import java.io.InputStream
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.io.InputStream
 
 @Service
 class DockerArtifactoryService @Autowired constructor(
@@ -67,12 +67,14 @@ class DockerArtifactoryService @Autowired constructor(
             throw DockerRepoNotFoundException(context.repoName)
         }
         // get content from storage
-        val file = storageService.load(context.sha256, repository.storageCredentials) ?: kotlin.run {
-            logger.error("user [$userId] load data from  storage  [${context.name}] failed: [${context.projectId},${context.repoName}] failed")
-            throw DockerFileReadFailedException(context.repoName)
-        }
-        logger.info("load file sha256 {}, length {}", context.sha256, file.length())
-        return file.inputStream()
+        val inputStream =
+            storageService.load(context.sha256, Range.ofFull(context.length), repository.storageCredentials)
+                ?: kotlin.run {
+                    logger.error("user [$userId] load data from  storage  [${context.name}] failed: [${context.projectId},${context.repoName}] failed")
+                    throw DockerFileReadFailedException(context.repoName)
+                }
+        logger.info("load file sha256 {}, length {}", context.sha256, context.length)
+        return inputStream
     }
 
     fun getWorkContextC(): DockerWorkContext {
@@ -84,18 +86,19 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
     // download file
-    fun download(context: DownloadContext): File {
+    fun download(context: DownloadContext): InputStream {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user [$userId]  download file  [$context.path] failed: [$context.repoName] not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
         // load file from storage
-        var file = storageService.load(context.sha256, repository.storageCredentials) ?: run {
+        var inputStream =
+            storageService.load(context.sha256, Range.ofFull(context.length), repository.storageCredentials) ?: run {
             logger.error("user [$userId]  load data from storage  [$context.path] failed: [$context.repoName] ")
             throw DockerRepoNotFoundException(context.repoName)
         }
-        return file
+        return inputStream
     }
 
     // upload file
@@ -359,6 +362,25 @@ class DockerArtifactoryService @Autowired constructor(
         )
         val result = nodeResource.query(queryModel).data ?: run {
             logger.warn("find artifacts failed:  $fileName found no node")
+            return emptyList()
+        }
+        return result.records
+    }
+
+    // find artifacts by digest
+    fun findArtifactsByDigest(projectId: String, repoName: String, digestName: String): List<Map<String, Any>> {
+        val projectRule = Rule.QueryRule("projectId", projectId)
+        val repoNameRule = Rule.QueryRule("repoName", repoName)
+        val nameRule = Rule.QueryRule("name", digestName)
+        val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule))
+        val queryModel = QueryModel(
+            page = PageLimit(0, 9999999),
+            sort = Sort(listOf("path"), Sort.Direction.ASC),
+            select = mutableListOf("path", "size"),
+            rule = rule
+        )
+        val result = nodeResource.query(queryModel).data ?: run {
+            logger.warn("find artifacts failed:  $digestName found no node")
             return emptyList()
         }
         return result.records

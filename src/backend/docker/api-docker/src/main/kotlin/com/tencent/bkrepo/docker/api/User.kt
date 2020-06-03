@@ -18,7 +18,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
  * @date: 2020-03-12
  */
 @Api("docker镜像仓库扩展查询api")
-@RequestMapping("/user")
+@RequestMapping("/api")
 interface User {
 
     @ApiOperation("获取manifest文件")
