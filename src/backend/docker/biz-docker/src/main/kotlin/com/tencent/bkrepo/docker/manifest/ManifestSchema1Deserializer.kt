@@ -6,9 +6,9 @@ import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.DockerImageMetadata
 import com.tencent.bkrepo.docker.model.ManifestMetadata
 import com.tencent.bkrepo.docker.util.JsonUtil
-import java.io.IOException
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
+import java.io.IOException
 
 class ManifestSchema1Deserializer {
     companion object {
@@ -71,7 +71,7 @@ class ManifestSchema1Deserializer {
         private fun getCommand(dockerMetadata: DockerImageMetadata): String? {
             var command: String? = null
             if (dockerMetadata.containerConfig != null && dockerMetadata.containerConfig!!.cmd != null) {
-                if (dockerMetadata.containerConfig!!.cmd!!.size === 3) {
+                if (dockerMetadata.containerConfig!!.cmd!!.size == 3) {
                     command = dockerMetadata.containerConfig!!.cmd!!.get(2)
                 } else {
                     command = dockerMetadata.containerConfig!!.cmd.toString()
@@ -79,7 +79,7 @@ class ManifestSchema1Deserializer {
             }
 
             if (dockerMetadata.config != null && StringUtils.isBlank(command) && dockerMetadata.config!!.cmd != null) {
-                if (dockerMetadata.config!!.cmd!!.size === 3) {
+                if (dockerMetadata.config!!.cmd!!.size == 3) {
                     command = dockerMetadata.config!!.cmd!!.get(2)
                 } else {
                     command = dockerMetadata.config!!.cmd.toString()

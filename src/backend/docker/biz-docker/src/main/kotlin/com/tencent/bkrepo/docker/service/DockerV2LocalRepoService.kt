@@ -9,6 +9,7 @@ import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.errors.DockerV2Errors
 import com.tencent.bkrepo.docker.exception.DockerNotFoundException
+import com.tencent.bkrepo.docker.exception.DockerRepoNotFoundException
 import com.tencent.bkrepo.docker.exception.DockerSyncManifestException
 import com.tencent.bkrepo.docker.helpers.DockerCatalogTagsSlicer
 import com.tencent.bkrepo.docker.helpers.DockerManifestDigester
@@ -28,16 +29,6 @@ import com.tencent.bkrepo.docker.util.DockerSchemaUtils
 import com.tencent.bkrepo.docker.util.DockerUtils
 import com.tencent.bkrepo.docker.util.JsonUtil
 import com.tencent.bkrepo.docker.util.RepoUtil
-import java.io.ByteArrayInputStream
-import java.io.IOException
-import java.io.InputStream
-import java.net.URI
-import java.util.Objects
-import java.util.regex.Pattern
-import javax.ws.rs.core.Response
-import javax.ws.rs.core.UriBuilder
-import kotlin.collections.HashMap
-import kotlin.streams.toList
 import org.apache.commons.io.IOUtils
 import org.apache.commons.io.output.NullOutputStream
 import org.apache.commons.lang.StringUtils
@@ -49,6 +40,16 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.io.ByteArrayInputStream
+import java.io.IOException
+import java.io.InputStream
+import java.net.URI
+import java.nio.charset.Charset
+import java.util.Objects
+import java.util.regex.Pattern
+import javax.ws.rs.core.Response
+import javax.ws.rs.core.UriBuilder
+import kotlin.streams.toList
 
 @Service
 class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactoryService) : DockerV2RepoService {
@@ -165,7 +166,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         if (matched == null) {
             return DockerV2Errors.manifestUnknown(digest.toString())
         } else {
-            return this.buildManifestResponse(path, path.dockerRepo, digest)
+            return this.buildManifestResponse(path, path.dockerRepo, digest, matched.contentLength)
         }
     }
 
@@ -179,6 +180,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         }
         var sha256 = nodeDetail.nodeInfo.sha256
         return Artifact(path.projectId, path.repoName, path.dockerRepo).sha256(sha256.toString())
+            .contentLength(nodeDetail.nodeInfo.size)
     }
 
     private fun getAcceptableManifestTypes(): List<ManifestType> {
@@ -202,7 +204,11 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             if (manifest == null) {
                 return DockerV2Errors.manifestUnknown(manifestPath)
             } else {
-                return this.buildManifestResponse(path, manifestPath, DockerDigest("sh256:${manifest.nodeInfo.sha256}"))
+                return this.buildManifestResponse(
+                    path, manifestPath,
+                    DockerDigest("sh256:${manifest.nodeInfo.sha256}"),
+                    manifest.nodeInfo.size
+                )
             }
         }
     }
@@ -237,11 +243,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             return ""
         } else {
             var context = DownloadContext(path.projectId, path.repoName, path.dockerRepo).projectId(path.projectId)
-                .repoName(path.repoName)
-                .sha256(manifest.nodeInfo.sha256!!)
-            var file = this.repo.download(context)
-            val contents = file.readText()
-            return contents
+                .repoName(path.repoName).sha256(manifest.nodeInfo.sha256!!).length(manifest.nodeInfo.size)
+            var inputStream = this.repo.download(context)
+            return inputStream.readBytes().toString(Charset.defaultCharset())
         }
     }
 
@@ -264,38 +268,44 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         id: String
     ): ResponseEntity<Any> {
         val digest = DockerDigest(id)
+        val artifact = this.repo.findArtifactsByDigest(projectId, repoName, digest.filename())
+        if (0 == artifact.size) {
+            logger.warn("user [$userId]  get artifact  [$dockerRepo] failed: [$id] not found")
+            throw DockerRepoNotFoundException(id)
+        }
+        logger.info("get blob info [$artifact]")
+        val length = artifact.get(0).get("size") as Int
         var context = DownloadContext(projectId, repoName, dockerRepo).projectId(projectId).repoName(repoName)
-            .sha256(digest.getDigestHex())
-        var file = this.repo.download(context)
-        val inputStreamResource = InputStreamResource(file.inputStream())
+            .sha256(digest.getDigestHex()).length(length.toLong())
+        val inputStreamResource = InputStreamResource(this.repo.download(context))
         httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
         httpHeaders.set("Docker-Content-Digest", digest.toString())
         httpHeaders.set("Content-Type", DockerSchemaUtils.getManifestType(projectId, repoName, dockerRepo, this.repo))
-        logger.info("file result length {}", file.length())
+        logger.info("file result length {}", length)
         return ResponseEntity.ok()
             .headers(httpHeaders)
-            .contentLength(file.length())
+            .contentLength(context.length)
             .body(inputStreamResource)
     }
 
     private fun buildManifestResponse(
         path: DockerBasicPath,
         manifestPath: String,
-        digest: DockerDigest
+        digest: DockerDigest,
+        length: Long
     ): ResponseEntity<Any> {
         var context = DownloadContext(path.projectId, path.repoName, path.dockerRepo).projectId(path.projectId)
-            .repoName(path.repoName)
-            .sha256(digest.getDigestHex())
-        var file = this.repo.download(context)
-        val inputStreamResource = InputStreamResource(file.inputStream())
+            .repoName(path.repoName).length(length).sha256(digest.getDigestHex())
+        var inputStream = this.repo.download(context)
+        val inputStreamResource = InputStreamResource(inputStream)
         val contentType = DockerSchemaUtils.getManifestType(path.projectId, path.repoName, manifestPath, this.repo)
         httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
         httpHeaders.set("Docker-Content-Digest", digest.toString())
         httpHeaders.set("Content-Type", contentType)
-        logger.info("file result length {}， type {}", file.length(), contentType)
+        logger.info("file result length {}， type {}", length, contentType)
         return ResponseEntity.ok()
             .headers(httpHeaders)
-            .contentLength(file.length())
+            .contentLength(length)
             .body(inputStreamResource)
     }
 
@@ -414,24 +424,11 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         val digest = DockerManifestDigester.calc(manifestBytes)
         logger.info("manifest file digest : {}", digest)
         if (ManifestType.Schema2List == manifestType) {
-            this.processManifestList(
-                path,
-                tag,
-                manifestPath,
-                digest!!,
-                manifestBytes,
-                manifestType
-            )
+            this.processManifestList(path, tag, manifestPath, digest!!, manifestBytes, manifestType)
             return digest
         } else {
-            val manifestMetadata = ManifestDeserializer.deserialize(
-                this.repo,
-                path,
-                tag,
-                manifestType,
-                manifestBytes,
-                digest!!
-            )
+            val manifestMetadata =
+                ManifestDeserializer.deserialize(this.repo, path, tag, manifestType, manifestBytes, digest!!)
             this.addManifestsBlobs(manifestType, manifestBytes, manifestMetadata)
             if (!manifestSyncer.sync(this.repo, manifestMetadata, path, tag)) {
                 val msg = "fail to  sync manifest blobs, canceling manifest upload"
@@ -671,14 +668,14 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             val blob = this.getRepoBlob(projectId, repoName, dockerRepo, digest)
             if (blob != null) {
                 var context = DownloadContext(projectId, repoName, dockerRepo).projectId(projectId).repoName(repoName)
-                    .sha256(digest.getDigestHex())
-                var file = this.repo.download(context)
+                    .sha256(digest.getDigestHex()).length(blob.contentLength)
+                val inputStream = this.repo.download(context)
                 httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
                 httpHeaders.set("Docker-Content-Digest", digest.toString())
-                val resource = InputStreamResource(file.inputStream())
+                val resource = InputStreamResource(inputStream)
                 return ResponseEntity.ok()
                     .headers(httpHeaders)
-                    .contentLength(file.length())
+                    .contentLength(blob.contentLength)
                     .contentType(MediaType.parseMediaType("application/octet-stream"))
                     .body(resource)
             } else {
@@ -692,7 +689,8 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         if (result.size == 0) {
             return null
         }
-        return Artifact(projectId, repoName, dockerRepo).sha256(digest.filename())
+        val length = result.get(0).get("size") as Int
+        return Artifact(projectId, repoName, dockerRepo).sha256(digest.filename()).contentLength(length.toLong())
     }
 
     override fun startBlobUpload(

@@ -4,12 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.model.DockerDigest
-import java.io.IOException
-import javax.xml.bind.DatatypeConverter
 import org.apache.commons.io.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
+import java.io.IOException
+import javax.xml.bind.DatatypeConverter
 
 class DockerSchemaUtils {
     companion object {
@@ -74,7 +74,7 @@ class DockerSchemaUtils {
                         projectId,
                         repoName,
                         manifestConfigFile.path
-                    ).sha256(manifestConfigFile.sha256!!)
+                    ).sha256(manifestConfigFile.sha256!!).length(manifestConfigFile.contentLength)
                 )
                 manifestStream.use {
                     var bytes = IOUtils.toByteArray(it)
