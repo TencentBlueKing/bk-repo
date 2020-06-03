@@ -42,7 +42,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
     private lateinit var serviceUserResource: ServiceUserResource
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String {
-        if (request.requestURI.startsWith("/user")) {
+        if (request.requestURI.startsWith("/api")) {
             with(authCredentials as PlatformAuthCredentials) {
                 val appId = authService.checkPlatformAccount(accessKey, secretKey)
                 val userId = request.getHeader(AUTH_HEADER_UID)?.let {
@@ -99,7 +99,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
 
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
         val basicAuthHeader = request.getHeader(AUTHORIZATION)
-        if (request.requestURI.startsWith("/user")) {
+        if (request.requestURI.startsWith("/api")) {
             val encodedCredentials = basicAuthHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
             val parts = decodedHeader.split(":")
