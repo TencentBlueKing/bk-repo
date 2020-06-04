@@ -22,6 +22,6 @@ data class TDownloadStatistics(
     var artifact: String,
     var version: String?,
     // download count
-    var count: Int,
+    var count: Long,
     var date: LocalDate
 )

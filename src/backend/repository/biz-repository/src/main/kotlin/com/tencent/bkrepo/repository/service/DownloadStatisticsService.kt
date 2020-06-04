@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
+import com.mongodb.DuplicateKeyException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -53,9 +54,14 @@ class DownloadStatisticsService : AbstractService() {
                 count = 1,
                 date = LocalDate.now()
             )
-            downloadStatisticsRepository.insert(downloadCount)
-                .also { logger.info("Create artifact download count [$statisticsCreateRequest] success.") }
-            return ResponseBuilder.success()
+            return try {
+                downloadStatisticsRepository.insert(downloadCount)
+                    .also { logger.info("Create artifact download count [$statisticsCreateRequest] success.") }
+                ResponseBuilder.success()
+            } catch (ex: DuplicateKeyException) {
+                logger.warn("insert downloadStatistics record failed: ${ex.message}")
+                ResponseBuilder.success()
+            }
         }
     }
 
