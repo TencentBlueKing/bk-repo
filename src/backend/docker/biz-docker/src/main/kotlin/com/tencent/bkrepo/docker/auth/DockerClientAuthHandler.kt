@@ -5,15 +5,16 @@ import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.common.api.constant.APP_KEY
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.artifact.auth.basic.BasicAuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.AuthService
 import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
-import com.tencent.bkrepo.common.artifact.auth.basic.BasicAuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.platform.PlatformAuthCredentials
 import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
 import com.tencent.bkrepo.docker.util.JwtUtil
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -42,7 +43,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
     private lateinit var serviceUserResource: ServiceUserResource
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String {
-        if (request.requestURI.startsWith("/api")) {
+        if (request.requestURI.startsWith(USER_API_PREFIX)) {
             with(authCredentials as PlatformAuthCredentials) {
                 val appId = authService.checkPlatformAccount(accessKey, secretKey)
                 val userId = request.getHeader(AUTH_HEADER_UID)?.let {
@@ -55,7 +56,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
             }
         }
         val token = (authCredentials as JwtAuthCredentials).token
-        if (JwtUtil.verifyToken(token) == false) {
+        if (!JwtUtil.verifyToken(token)) {
             logger.info("auth token failed {} ", token)
             throw ClientAuthException("auth failed")
         }
@@ -94,12 +95,12 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
                 "BAD_CREDENTIAL"
             )
         )
-        response.getWriter().flush()
+        response.writer.flush()
     }
 
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
         val basicAuthHeader = request.getHeader(AUTHORIZATION)
-        if (request.requestURI.startsWith("/api")) {
+        if (request.requestURI.startsWith(USER_API_PREFIX)) {
             val encodedCredentials = basicAuthHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
             val parts = decodedHeader.split(":")
@@ -118,7 +119,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
             val token = basicAuthHeader.removePrefix("Bearer ")
             return JwtAuthCredentials(token)
         } catch (exception: Exception) {
-            logger.warn("Authorization value {} is not a valid scheme", basicAuthHeader)
+            logger.warn("Authorization value [$basicAuthHeader] is not a valid scheme")
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
     }
