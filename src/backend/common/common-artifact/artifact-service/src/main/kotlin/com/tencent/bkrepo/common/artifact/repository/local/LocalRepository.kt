@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.scheduling.annotation.Async
 import java.util.regex.Pattern
 
 /**
@@ -58,6 +59,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
         }
     }
 
+    @Async
     open fun countDownloads(context: ArtifactDownloadContext) {
         val artifactInfo = context.artifactInfo
         downloadStatisticsResource.add(
