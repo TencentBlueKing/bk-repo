@@ -53,7 +53,7 @@ class PathUtil {
             repoName: String
         ): String {
             var restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
-            var name = restOfTheUrl.removePrefix("/user/repo/tag/$projectId/$repoName/")
+            var name = restOfTheUrl.removePrefix("/api/repo/tag/$projectId/$repoName/")
             return name
         }
     }
