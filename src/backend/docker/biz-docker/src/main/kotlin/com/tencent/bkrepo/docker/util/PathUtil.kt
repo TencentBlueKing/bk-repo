@@ -11,11 +11,11 @@ class PathUtil {
         }
 
         fun userPrefix(projectId: String, repoName: String): String {
-            return "/user/manifest/$projectId/$repoName/"
+            return "/api/manifest/$projectId/$repoName/"
         }
 
         fun layerPrefix(projectId: String, repoName: String): String {
-            return "/user/layer/$projectId/$repoName/"
+            return "/api/layer/$projectId/$repoName/"
         }
 
         fun artifactName(request: HttpServletRequest, pattern: String, projectId: String, repoName: String): String {
