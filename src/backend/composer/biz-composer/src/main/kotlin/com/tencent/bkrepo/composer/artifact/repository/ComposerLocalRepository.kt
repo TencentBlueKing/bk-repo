@@ -1,15 +1,12 @@
 package com.tencent.bkrepo.composer.artifact.repository
 
 import com.google.gson.GsonBuilder
-import com.sun.xml.internal.messaging.saaj.util.ByteInputStream
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.composer.COMPOSER_VERSION_INIT
 import com.tencent.bkrepo.composer.INIT_PACKAGES
 import org.springframework.stereotype.Component
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -35,8 +32,8 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         val filename = artifactInfo.artifactUri
-        val sha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
-        val md5 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] as String
+        val sha256 = context.getArtifactFile().getInputStream().sha256()
+        val md5 = context.getArtifactFile().getInputStream().md5()
         val composerArtifactInfo = artifactInfo as ComposerArtifactInfo
 
         return NodeCreateRequest(
@@ -103,14 +100,8 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
         with(context.artifactInfo as ComposerArtifactInfo) {
-
-            val bytes = context.getArtifactFile().getInputStream().readBytes()
-            val nodeCreateRequest = getCompressNodeCreateRequest(context)
-            nodeResource.create(nodeCreateRequest)
-            storageService.store(nodeCreateRequest.sha256!!,
-                    ArtifactFileFactory.build(ByteInputStream(bytes, bytes.size)), context.storageCredentials)
-
-            ByteInputStream(bytes, bytes.size).wrapperJson(artifactUri)?.let { paramsMap ->
+            // 先读取并保存文件信息。
+            context.getArtifactFile().getInputStream().wrapperJson(artifactUri).let { paramsMap ->
                 val packageName = paramsMap["packageName"]
                 val version = paramsMap["version"]
                 val json = paramsMap["json"]
@@ -158,6 +149,10 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
                 } } }
             }
         }
+        val nodeCreateRequest = getCompressNodeCreateRequest(context)
+        nodeResource.create(nodeCreateRequest)
+        storageService.store(nodeCreateRequest.sha256!!,
+                context.getArtifactFile(), context.storageCredentials)
     }
 
     override fun getJson(context: ArtifactSearchContext): String? {

@@ -84,3 +84,9 @@ include ":composer"
 include ":composer:api-composer"
 include ":composer:biz-composer"
 include ":composer:boot-composer"
+
+include "rpm"
+include "rpm:api-rpm"
+include "rpm:biz-rpm"
+include "rpm:boot-rpm"
+
