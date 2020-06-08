@@ -1,9 +1,10 @@
 package com.tencent.bkrepo.repository.service
 
-import com.mongodb.DuplicateKeyException
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.dao.repository.DownloadStatisticsRepository
 import com.tencent.bkrepo.repository.model.TDownloadStatistics
@@ -13,6 +14,7 @@ import com.tencent.bkrepo.repository.pojo.download.count.SpecialDateDownloadStat
 import com.tencent.bkrepo.repository.pojo.download.count.service.DownloadStatisticsCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.aggregation.AggregationResults
 import org.springframework.data.mongodb.core.query.Criteria
@@ -60,7 +62,7 @@ class DownloadStatisticsService : AbstractService() {
                 ResponseBuilder.success()
             } catch (ex: DuplicateKeyException) {
                 logger.warn("insert downloadStatistics record failed: ${ex.message}")
-                ResponseBuilder.success()
+                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, downloadCount.artifact + (downloadCount.version ?: StringPool.EMPTY ))
             }
         }
     }
