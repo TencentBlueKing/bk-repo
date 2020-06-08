@@ -36,8 +36,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     override fun upload(context: ArtifactUploadContext) {
         try {
-            this.onUploadValidate(context)
             this.onUploadBefore(context)
+            this.onUploadValidate(context)
             this.onUpload(context)
             this.onUploadSuccess(context)
         } catch (validateException: ArtifactValidateException) {
