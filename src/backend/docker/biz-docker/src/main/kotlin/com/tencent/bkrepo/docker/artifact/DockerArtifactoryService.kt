@@ -15,12 +15,12 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import com.tencent.bkrepo.docker.context.DownloadContext
+import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.exception.DockerFileReadFailedException
 import com.tencent.bkrepo.docker.exception.DockerFileSaveFailedException
 import com.tencent.bkrepo.docker.exception.DockerMoveFileFailedException
 import com.tencent.bkrepo.docker.exception.DockerRepoNotFoundException
-import com.tencent.bkrepo.docker.model.DockerBasicPath
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
@@ -44,13 +44,9 @@ class DockerArtifactoryService @Autowired constructor(
     private val permissionService: PermissionService
 ) {
 
-    private lateinit var context: DockerWorkContext
+    private var context: DockerWorkContext = DockerWorkContext()
 
     lateinit var userId: String
-
-    init {
-        this.context = DockerWorkContext()
-    }
 
     fun startAppend(): String {
         return storageService.createAppendId()
@@ -66,15 +62,12 @@ class DockerArtifactoryService @Autowired constructor(
             logger.warn("user [$userId] read local  [${context.name}] failed: [${context.projectId},${context.repoName}] not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
+        logger.info("load file sha256 {}, length {}", context.sha256, context.length)
         // get content from storage
-        val inputStream =
-            storageService.load(context.sha256, Range.ofFull(context.length), repository.storageCredentials)
-                ?: kotlin.run {
+        return storageService.load(context.sha256, Range.ofFull(context.length), repository.storageCredentials) ?: run {
                     logger.error("user [$userId] load data from  storage  [${context.name}] failed: [${context.projectId},${context.repoName}] failed")
                     throw DockerFileReadFailedException(context.repoName)
                 }
-        logger.info("load file sha256 {}, length {}", context.sha256, context.length)
-        return inputStream
     }
 
     fun getWorkContextC(): DockerWorkContext {
@@ -93,12 +86,10 @@ class DockerArtifactoryService @Autowired constructor(
             throw DockerRepoNotFoundException(context.repoName)
         }
         // load file from storage
-        var inputStream =
-            storageService.load(context.sha256, Range.ofFull(context.length), repository.storageCredentials) ?: run {
+        return storageService.load(context.sha256, Range.ofFull(context.length), repository.storageCredentials) ?: run {
             logger.error("user [$userId]  load data from storage  [$context.path] failed: [$context.repoName] ")
             throw DockerRepoNotFoundException(context.repoName)
         }
-        return inputStream
     }
 
     // upload file
@@ -159,7 +150,7 @@ class DockerArtifactoryService @Autowired constructor(
             logger.error("user [$userId] finish upload file  [$context.path] failed: [${result.code}, ${result.message}]")
             throw DockerFileSaveFailedException(context.path)
         }
-        logger.info("user [$userId] finish upload file  {} , {} success", context.path, file.sha256)
+        logger.info("user [$userId] finish upload file  [${context.path}] , [${file.sha256}] success")
         return ResponseEntity.ok().body("ok")
     }
 
@@ -182,11 +173,11 @@ class DockerArtifactoryService @Autowired constructor(
     // move file
     fun move(projectId: String, repoName: String, from: String, to: String): Boolean {
         val renameRequest = NodeRenameRequest(projectId, repoName, from, to, userId)
-        logger.info("rename request {}", renameRequest.toString())
+        logger.info("rename request [$renameRequest]")
         val result = nodeResource.rename(renameRequest)
         if (result.isNotOk()) {
             logger.error("user [$userId] rename  [$from] to [$to] failed: [${result.code}, ${result.message}]")
-            throw DockerMoveFileFailedException(from + "->" + to)
+            throw DockerMoveFileFailedException("$from->$to")
         }
         return true
     }
@@ -200,54 +191,49 @@ class DockerArtifactoryService @Autowired constructor(
     // get node  attribute
     fun getAttribute(projectId: String, repoName: String, fullPath: String, key: String): String? {
         val result = metadataService.query(projectId, repoName, fullPath).data!!
-        logger.info(
-            "getAttribute params :{}, {}, {}, {} ,result:{}",
-            projectId,
-            repoName,
-            fullPath,
-            key,
-            result.toString()
-        )
+        logger.info("getAttribute params : [$projectId], [$repoName], [$fullPath], [$key] ,result: [$result]")
         return result.get(key)
     }
 
     // check node
     fun exists(projectId: String, repoName: String, dockerRepo: String): Boolean {
-        return nodeResource.exist(projectId, repoName, dockerRepo).data ?: return false
+        return nodeResource.exist(projectId, repoName, dockerRepo).data ?: run {
+            return false
+        }
     }
 
     // check path read permission
-    fun canRead(path: DockerBasicPath): Boolean {
+    fun canRead(pathContext: RequestContext): Boolean {
         try {
             permissionService.checkPermission(
                 userId,
                 ResourceType.PROJECT,
                 PermissionAction.WRITE,
-                path.projectId,
-                path.repoName
+                pathContext.projectId,
+                pathContext.repoName
             )
-            return true
         } catch (e: PermissionCheckException) {
-            logger.warn("user: {} ,check read permission fail {},{}", userId, path.projectId, path.repoName)
+            logger.warn("user: [$userId] ,check read permission fail [${pathContext.projectId}], [${pathContext.repoName}]")
             return false
         }
+        return true
     }
 
     // check path write permission
-    fun canWrite(path: DockerBasicPath): Boolean {
+    fun canWrite(pathContext: RequestContext): Boolean {
         try {
             permissionService.checkPermission(
                 userId,
                 ResourceType.PROJECT,
                 PermissionAction.WRITE,
-                path.projectId,
-                path.repoName
+                pathContext.projectId,
+                pathContext.repoName
             )
-            return true
         } catch (e: PermissionCheckException) {
-            logger.error("user: {} ,check write permission fail {},{}", userId, path.projectId, path.repoName)
+            logger.error("user: [$userId] ,check write permission fail [${pathContext.projectId}], [${pathContext.repoName}")
             return false
         }
+        return true
     }
 
     // construct artifact object
@@ -265,14 +251,13 @@ class DockerArtifactoryService @Autowired constructor(
     }
 
     // find artifact
-    fun findArtifact(path: DockerBasicPath, fileName: String): NodeDetail? {
+    fun findArtifact(pathContext: RequestContext, fileName: String): NodeDetail? {
         // get node info
-        var fullPath = "/${path.dockerRepo}/$fileName"
-        val nodes = nodeResource.detail(path.projectId, path.repoName, fullPath).data ?: run {
-            logger.warn("get artifact detail failed: ${path.projectId}, ${path.repoName}, $fullPath found no node")
+        val fullPath = "/${pathContext.dockerRepo}/$fileName"
+        return nodeResource.detail(pathContext.projectId, pathContext.repoName, fullPath).data ?: run {
+            logger.warn("get artifact detail failed: ${pathContext.projectId}, ${pathContext.repoName}, $fullPath found no node")
             return null
         }
-        return nodes
     }
 
     // find artifact list
@@ -312,9 +297,9 @@ class DockerArtifactoryService @Autowired constructor(
             logger.warn("find repo list failed: [$projectId, $repoName] ")
             return emptyList()
         }
-        var data = mutableListOf<String>()
+        val data = mutableListOf<String>()
         result.records.forEach {
-            var path = it.get("path") as String
+            val path = it["path"] as String
             data.add(path.removeSuffix("/").replaceAfterLast("/", "").removeSuffix("/").removePrefix("/"))
         }
         return data.distinct()
@@ -338,11 +323,11 @@ class DockerArtifactoryService @Autowired constructor(
             logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
             return emptyMap()
         }
-        var data = mutableMapOf<String, String>()
+        val data = mutableMapOf<String, String>()
         result.records.forEach {
-            var path = it.get("path") as String
+            var path = it["path"] as String
             val tag = path.removePrefix("/$image/").removeSuffix("/")
-            val user = it.get("createdBy") as String
+            val user = it["createdBy"] as String
             data.put(tag, user)
         }
         return data
@@ -361,7 +346,7 @@ class DockerArtifactoryService @Autowired constructor(
             rule = rule
         )
         val result = nodeResource.query(queryModel).data ?: run {
-            logger.warn("find artifacts failed:  $fileName found no node")
+            logger.warn("find artifacts failed: [$fileName] found no node")
             return emptyList()
         }
         return result.records
@@ -389,11 +374,10 @@ class DockerArtifactoryService @Autowired constructor(
     // find manifest
     fun findManifest(projectId: String, repoName: String, manifestPath: String): NodeDetail? {
         // query node info
-        val nodes = nodeResource.detail(projectId, repoName, manifestPath).data ?: run {
+        return nodeResource.detail(projectId, repoName, manifestPath).data ?: run {
             logger.warn("find manifest failed: $projectId, $repoName, $manifestPath found no node")
             return null
         }
-        return nodes
     }
 
     companion object {

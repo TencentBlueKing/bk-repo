@@ -19,7 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import java.util.concurrent.Executor
 import java.util.regex.Pattern
+import javax.annotation.Resource
 
 /**
  *
@@ -40,6 +42,9 @@ abstract class LocalRepository : AbstractArtifactRepository() {
     @Autowired
     lateinit var downloadStatisticsResource: DownloadStatisticsResource
 
+    @Resource
+    private lateinit var taskAsyncExecutor: Executor
+
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
         storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
@@ -59,15 +64,17 @@ abstract class LocalRepository : AbstractArtifactRepository() {
     }
 
     open fun countDownloads(context: ArtifactDownloadContext) {
-        val artifactInfo = context.artifactInfo
-        downloadStatisticsResource.add(
-            DownloadStatisticsCreateRequest(
-                artifactInfo.projectId,
-                artifactInfo.repoName,
-                artifactInfo.artifact,
-                artifactInfo.version
+        taskAsyncExecutor.execute {
+            val artifactInfo = context.artifactInfo
+            downloadStatisticsResource.add(
+                DownloadStatisticsCreateRequest(
+                    artifactInfo.projectId,
+                    artifactInfo.repoName,
+                    artifactInfo.artifact,
+                    artifactInfo.version
+                )
             )
-        )
+        }
     }
 
     /**

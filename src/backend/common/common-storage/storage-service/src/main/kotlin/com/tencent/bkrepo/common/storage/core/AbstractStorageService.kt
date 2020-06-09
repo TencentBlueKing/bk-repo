@@ -1,10 +1,14 @@
 package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.uniqueId
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
+import com.tencent.bkrepo.common.artifact.hash.md5
+import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.ZeroInputStream
 import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -13,8 +17,9 @@ import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthChecker.Companion.HEALTH_CHECK_FILE
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
-import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,9 +27,11 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
 import java.nio.charset.Charset
-import java.util.UUID
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import kotlin.system.measureNanoTime
-import kotlin.system.measureTimeMillis
 
 /**
  * 存储服务抽象实现
@@ -42,6 +49,11 @@ abstract class AbstractStorageService : StorageService {
 
     @Autowired
     private lateinit var storageProperties: StorageProperties
+
+    @Autowired
+    protected lateinit var monitor: StorageHealthMonitor
+
+    private val healthCheckExecutor = Executors.newSingleThreadExecutor()
 
     private val tempFileClient: FileSystemClient by lazy { FileSystemClient(determineTempPath()) }
 
@@ -249,11 +261,17 @@ abstract class AbstractStorageService : StorageService {
     }
 
     override fun checkHealth(storageCredentials: StorageCredentials?) {
-        val executionTimeMillis = measureTimeMillis {
-            doCheckHealth(getCredentialsOrDefault(storageCredentials))
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        val future = healthCheckExecutor.submit(Callable {
+            doCheckHealth(credentials)
+        })
+        try {
+            future.get(monitor.monitorConfig.timeout.seconds, TimeUnit.SECONDS)
+        } catch (timeoutException: TimeoutException) {
+            throw RuntimeException(StorageHealthMonitor.IO_TIMEOUT_MESSAGE)
+        } catch (exception: Exception) {
+            throw RuntimeException(exception.message.orEmpty())
         }
-        assert(executionTimeMillis <= 2 * 1000) { "Health check timeout, $executionTimeMillis ms totally." }
-        return
     }
 
     protected fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
@@ -261,8 +279,8 @@ abstract class AbstractStorageService : StorageService {
     }
 
     private fun storeFile(file: File, credentials: StorageCredentials): FileInfo {
-        val sha256 = FileDigestUtils.fileSha256(file)
-        val md5 = FileDigestUtils.fileMd5(file)
+        val sha256 = file.sha256()
+        val md5 = file.md5()
         val size = file.length()
         val fileInfo = FileInfo(sha256, md5, size)
         val path = fileLocator.locate(sha256)
@@ -272,24 +290,24 @@ abstract class AbstractStorageService : StorageService {
         return fileInfo
     }
 
-    private fun determineTempPath(): String {
-        return getTempPath() ?: fileStorage.getTempPath()
-    }
+    private fun determineTempPath() = getTempPath() ?: fileStorage.getTempPath()
 
-    private fun generateUniqueId(): String {
-        return UUID.randomUUID().toString().replace("-", "").toLowerCase()
-    }
+    private fun generateUniqueId() = uniqueId()
 
     protected abstract fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials)
     protected abstract fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): InputStream?
     protected abstract fun doDelete(path: String, filename: String, credentials: StorageCredentials)
     protected abstract fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean
     protected abstract fun doManualRetry(path: String, filename: String, credentials: StorageCredentials)
-    protected abstract fun doCheckHealth(credentials: StorageCredentials)
+
+    open fun doCheckHealth(credentials: StorageCredentials) {
+        fileStorage.delete(CURRENT_PATH, HEALTH_CHECK_FILE, credentials)
+        val inputStream = ZeroInputStream(monitor.monitorConfig.dataSize.toBytes())
+        fileStorage.store(CURRENT_PATH, HEALTH_CHECK_FILE, inputStream, credentials)
+    }
     open fun getTempPath(): String? = null
 
     companion object {
-        const val HEALTH_CHECK_PATH = "/health-check"
         private const val CURRENT_PATH = ""
         private const val BLOCK_SUFFIX = ".block"
         private const val BLOCK_EXTENSION = "block"

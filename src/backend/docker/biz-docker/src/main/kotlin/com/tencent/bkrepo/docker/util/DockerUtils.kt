@@ -95,7 +95,7 @@ abstract class DockerUtils {
             fileName: String
         ): Artifact? {
             val result = repo.findArtifacts(projectId, repoName, fileName)
-            if (result.size == 0) {
+            if (result.isEmpty()) {
                 return null
             }
             val blob = result.get(0)

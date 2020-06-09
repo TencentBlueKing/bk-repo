@@ -68,7 +68,6 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
             logger.warn("Failed to load file[$filename]: ${ex.message}", ex)
             null
         }
-
     }
 
     override fun load(path: String, filename: String, range: Range, storageCredentials: StorageCredentials): InputStream? {

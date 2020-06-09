@@ -1,15 +1,42 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
+import com.tencent.bkrepo.common.storage.monitor.UploadProperties
 import org.springframework.util.unit.DataSize
+import javax.servlet.MultipartConfigElement
 
-class UploadConfigElement(uploadProperties: UploadProperties) {
-    val location: String = uploadProperties.location
-    val maxFileSize: Long = convertToBytes(uploadProperties.maxFileSize, -1)
-    val maxRequestSize: Long = convertToBytes(uploadProperties.maxRequestSize, -1)
-    val fileSizeThreshold: Int = convertToBytes(uploadProperties.fileSizeThreshold, 0).toInt()
-    val resolveLazily: Boolean = uploadProperties.isResolveLazily
+class UploadConfigElement(
+    private val uploadProperties: UploadProperties
+) : MultipartConfigElement(uploadProperties.location) {
 
-    private fun convertToBytes(size: DataSize?, defaultValue: Int): Long {
-        return if (size?.isNegative == false) size.toBytes() else defaultValue.toLong()
+    init {
+        if (uploadProperties.maxFileSize.isNegative) {
+            uploadProperties.maxFileSize = DataSize.ofBytes(-1)
+        }
+        if (uploadProperties.maxRequestSize.isNegative) {
+            uploadProperties.maxRequestSize = DataSize.ofBytes(-1)
+        }
+        if (uploadProperties.fileSizeThreshold.isNegative) {
+            uploadProperties.maxRequestSize = DataSize.ofBytes(-1)
+        }
+    }
+
+    override fun getLocation(): String {
+        return uploadProperties.location
+    }
+
+    override fun getMaxFileSize(): Long {
+        return uploadProperties.maxFileSize.toBytes()
+    }
+
+    override fun getMaxRequestSize(): Long {
+        return uploadProperties.maxRequestSize.toBytes()
+    }
+
+    override fun getFileSizeThreshold(): Int {
+        return uploadProperties.fileSizeThreshold.toBytes().toInt()
+    }
+
+    fun isResolveLazily(): Boolean {
+        return uploadProperties.isResolveLazily
     }
 }
