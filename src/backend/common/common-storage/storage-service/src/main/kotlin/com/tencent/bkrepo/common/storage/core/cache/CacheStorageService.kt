@@ -10,12 +10,8 @@ import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import org.apache.commons.lang.RandomStringUtils
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.util.unit.DataSize
 import java.io.InputStream
-import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -36,26 +32,29 @@ class CacheStorageService : AbstractStorageService() {
     @Resource
     private lateinit var taskAsyncExecutor: Executor
 
-    @Value("\${upload.fileSizeThreshold}")
-    private lateinit var fileSizeThreshold: DataSize
-
     private val tempPath: Path by lazy { Paths.get(storageProperties.cache.path, temp) }
 
     private val cacheClient: FileSystemClient by lazy { FileSystemClient(storageProperties.cache.path) }
 
     override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
-        if (storageProperties.cache.useThreshold && artifactFile.isInMemory()) {
-            fileStorage.store(path, filename, artifactFile.getInputStream(), credentials)
-        } else {
-            val cachedFile = cacheClient.store(path, filename, artifactFile.flushToFile())
-            taskAsyncExecutor.execute {
-                fileStorage.store(path, filename, cachedFile, credentials)
+        when {
+            artifactFile.isInMemory() -> {
+                fileStorage.store(path, filename, artifactFile.getInputStream(), credentials)
+            }
+            artifactFile.isFallback() -> {
+                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
+            }
+            else -> {
+                val cachedFile = cacheClient.store(path, filename, artifactFile.flushToFile())
+                taskAsyncExecutor.execute {
+                    fileStorage.store(path, filename, cachedFile, credentials)
+                }
             }
         }
     }
 
     override fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): InputStream? {
-        return if (storageProperties.cache.useThreshold && !isExceedThreshold(range)) {
+        return if (!isExceedThreshold(range) || !monitor.health.get()) {
             fileStorage.load(path, filename, range, credentials) ?: run {
                 cacheClient.load(path, filename)?.bound(range)
             }
@@ -100,33 +99,14 @@ class CacheStorageService : AbstractStorageService() {
     }
 
     override fun doCheckHealth(credentials: StorageCredentials) {
-        val filename = System.nanoTime().toString()
-        val size = 100
-
-        val content = RandomStringUtils.randomAlphabetic(size)
-        try {
-            // write
-            cacheClient.store(HEALTH_CHECK_PATH, filename, content.byteInputStream(), size.toLong(), true)
-            fileStorage.store(HEALTH_CHECK_PATH, filename, content.byteInputStream(), credentials)
-            // read
-            val cachedFile = cacheClient.load(HEALTH_CHECK_PATH, filename)
-            val loadedContent = fileStorage.load(HEALTH_CHECK_PATH, filename, Range.ofFull(size.toLong()), credentials)
-                ?.readBytes()?.toString(Charset.defaultCharset()).orEmpty()
-            // check
-            assert(cachedFile != null) { "Failed to load cached file." }
-            assert(content == loadedContent) { "File content inconsistent." }
-            assert(content == cachedFile!!.readText()) { "File content inconsistent." }
-        } catch (exception: Exception) {
-            throw exception
-        } finally {
-            // delete
-            cacheClient.delete(HEALTH_CHECK_PATH, filename)
-            fileStorage.delete(HEALTH_CHECK_PATH, filename, credentials)
+        if (!monitor.health.get()) {
+            throw RuntimeException("Cache storage is unhealthy: ${monitor.reason}")
         }
+        super.doCheckHealth(credentials)
     }
 
     private fun isExceedThreshold(range: Range): Boolean {
-        return range.total > fileSizeThreshold.toBytes()
+        return range.total > monitor.uploadConfig.fileSizeThreshold.toBytes()
     }
 
     companion object {
