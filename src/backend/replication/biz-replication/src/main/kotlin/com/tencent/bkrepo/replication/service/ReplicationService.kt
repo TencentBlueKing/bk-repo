@@ -33,7 +33,6 @@ class ReplicationService(
                 throw RuntimeException("File size ${file.length()} does not match node size ${request.size}")
             }
             val fileRequestBody = RequestBody.create(MEDIA_TYPE_STREAM, file)
-            InpustreamRequestBody
             val builder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", file.name, fileRequestBody)
