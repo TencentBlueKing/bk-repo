@@ -4,8 +4,8 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
-import com.tencent.bkrepo.repository.pojo.download.count.DownloadStatisticsForSpecialDateInfoResponse
-import com.tencent.bkrepo.repository.pojo.download.count.DownloadStatisticsResponseInfo
+import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
+import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -31,7 +31,7 @@ interface UserDownloadStatisticsResource {
         @RequestParam startDate: LocalDate,
         @ApiParam("结束日期", required = true)
         @RequestParam endDate: LocalDate
-    ): Response<DownloadStatisticsResponseInfo>
+    ): Response<DownloadStatisticsResponse>
 
     @ApiOperation("查询构建在 日、周、月 的下载量")
     @GetMapping("/query/special/$DEFAULT_MAPPING_URI")
@@ -42,5 +42,5 @@ interface UserDownloadStatisticsResource {
         artifact: String,
         @ApiParam("构建版本", required = false)
         version: String? = null
-    ): Response<DownloadStatisticsForSpecialDateInfoResponse>
+    ): Response<DownloadStatisticsMetricResponse>
 }

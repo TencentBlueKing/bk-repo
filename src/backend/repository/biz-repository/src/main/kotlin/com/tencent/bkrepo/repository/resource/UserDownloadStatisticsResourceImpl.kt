@@ -7,8 +7,8 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.UserDownloadStatisticsResource
-import com.tencent.bkrepo.repository.pojo.download.count.DownloadStatisticsForSpecialDateInfoResponse
-import com.tencent.bkrepo.repository.pojo.download.count.DownloadStatisticsResponseInfo
+import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
+import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
 import com.tencent.bkrepo.repository.service.DownloadStatisticsService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -20,7 +20,7 @@ class UserDownloadStatisticsResourceImpl @Autowired constructor(
 ) : UserDownloadStatisticsResource {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    override fun query(userId: String, artifactInfo: ArtifactInfo, artifact: String, version: String?, startDate: LocalDate, endDate: LocalDate): Response<DownloadStatisticsResponseInfo> {
+    override fun query(userId: String, artifactInfo: ArtifactInfo, artifact: String, version: String?, startDate: LocalDate, endDate: LocalDate): Response<DownloadStatisticsResponse> {
         with(artifactInfo) {
             val downloadStatisticsInfo = downloadStatisticsService.query(projectId, repoName, artifact, version, startDate, endDate)
             return ResponseBuilder.success(downloadStatisticsInfo)
@@ -28,7 +28,7 @@ class UserDownloadStatisticsResourceImpl @Autowired constructor(
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    override fun queryForSpecial(userId: String, artifactInfo: ArtifactInfo, artifact: String, version: String?): Response<DownloadStatisticsForSpecialDateInfoResponse> {
+    override fun queryForSpecial(userId: String, artifactInfo: ArtifactInfo, artifact: String, version: String?): Response<DownloadStatisticsMetricResponse> {
         with(artifactInfo) {
             val downloadStatisticsInfo = downloadStatisticsService.queryForSpecial(projectId, repoName, artifact, version)
             return ResponseBuilder.success(downloadStatisticsInfo)
