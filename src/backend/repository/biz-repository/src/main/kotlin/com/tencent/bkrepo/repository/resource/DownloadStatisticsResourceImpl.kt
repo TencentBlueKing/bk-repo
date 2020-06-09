@@ -3,9 +3,9 @@ package com.tencent.bkrepo.repository.resource
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.DownloadStatisticsResource
-import com.tencent.bkrepo.repository.pojo.download.count.DownloadStatisticsForSpecialDateInfoResponse
-import com.tencent.bkrepo.repository.pojo.download.count.DownloadStatisticsResponseInfo
-import com.tencent.bkrepo.repository.pojo.download.count.service.DownloadStatisticsCreateRequest
+import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
+import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.service.DownloadStatisticsService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -16,16 +16,16 @@ class DownloadStatisticsResourceImpl @Autowired constructor(
     private val downloadStatisticsService: DownloadStatisticsService
 ) : DownloadStatisticsResource {
 
-    override fun add(statisticsCreateRequest: DownloadStatisticsCreateRequest): Response<Void> {
-        downloadStatisticsService.add(statisticsCreateRequest)
+    override fun add(statisticsAddRequest: DownloadStatisticsAddRequest): Response<Void> {
+        downloadStatisticsService.add(statisticsAddRequest)
         return ResponseBuilder.success()
     }
 
-    override fun query(projectId: String, repoName: String, artifact: String, version: String?, startDay: LocalDate, endDay: LocalDate): Response<DownloadStatisticsResponseInfo> {
+    override fun query(projectId: String, repoName: String, artifact: String, version: String?, startDay: LocalDate, endDay: LocalDate): Response<DownloadStatisticsResponse> {
         return ResponseBuilder.success(downloadStatisticsService.query(projectId, repoName, artifact, version, startDay, endDay))
     }
 
-    override fun queryForSpecial(projectId: String, repoName: String, artifact: String, version: String?): Response<DownloadStatisticsForSpecialDateInfoResponse> {
+    override fun queryForSpecial(projectId: String, repoName: String, artifact: String, version: String?): Response<DownloadStatisticsMetricResponse> {
         return ResponseBuilder.success(downloadStatisticsService.queryForSpecial(projectId, repoName, artifact, version))
     }
 }
