@@ -12,7 +12,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.DownloadStatisticsResource
 import com.tencent.bkrepo.repository.api.NodeResource
-import com.tencent.bkrepo.repository.pojo.download.count.service.DownloadStatisticsCreateRequest
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -67,7 +67,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
         taskAsyncExecutor.execute {
             val artifactInfo = context.artifactInfo
             downloadStatisticsResource.add(
-                DownloadStatisticsCreateRequest(
+                DownloadStatisticsAddRequest(
                     artifactInfo.projectId,
                     artifactInfo.repoName,
                     artifactInfo.artifact,
