@@ -2,7 +2,7 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
-import com.tencent.bkrepo.common.api.util.RequestBodyUtil
+import com.tencent.bkrepo.replication.pojo.request.RequestBodyUtil
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
