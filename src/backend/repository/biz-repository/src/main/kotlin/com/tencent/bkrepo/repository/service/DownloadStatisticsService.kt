@@ -1,11 +1,7 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.dao.repository.DownloadStatisticsRepository
 import com.tencent.bkrepo.repository.model.TDownloadStatistics
 import com.tencent.bkrepo.repository.pojo.download.count.DownloadStatisticsForSpecialDateInfoResponse
@@ -37,16 +33,13 @@ class DownloadStatisticsService : AbstractService() {
     private lateinit var repositoryService: RepositoryService
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun add(statisticsCreateRequest: DownloadStatisticsCreateRequest): Response<Void> {
+    fun add(statisticsCreateRequest: DownloadStatisticsCreateRequest) {
         // 如果没有就创建，有的话进行原子更新
+        val now = LocalDate.now()
         with(statisticsCreateRequest) {
-            if (exist(projectId, repoName, artifact, version)) {
-                val criteria = criteria(projectId, repoName, artifact, version)
-                criteria.and(TDownloadStatistics::date.name).`is`(LocalDate.now())
-                val update = Update().apply { inc(TDownloadStatistics::count.name, 1) }
-                mongoTemplate.findAndModify(Query(criteria), update, TDownloadStatistics::class.java)
-                    .also { logger.info("update download count form artifact [$artifact] success!") }
-                return ResponseBuilder.success()
+            if (exist(projectId, repoName, artifact, version, now)) {
+                update(this, now)
+                return
             }
             val downloadCount = TDownloadStatistics(
                 projectId = projectId,
@@ -54,53 +47,76 @@ class DownloadStatisticsService : AbstractService() {
                 artifact = artifact,
                 version = version,
                 count = 1,
-                date = LocalDate.now()
+                date = now
             )
-            return try {
+            try {
                 downloadStatisticsRepository.insert(downloadCount)
                     .also { logger.info("Create artifact download count [$statisticsCreateRequest] success.") }
-                ResponseBuilder.success()
             } catch (ex: DuplicateKeyException) {
                 logger.warn("insert downloadStatistics record failed: ${ex.message}")
-                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, downloadCount.artifact + (downloadCount.version ?: StringPool.EMPTY ))
+                // 重新更新一次
+                update(this, now)
             }
         }
     }
 
-    fun exist(projectId: String, repoName: String, artifact: String, version: String?): Boolean {
+    @Transactional(rollbackFor = [Throwable::class])
+    fun update(statisticsCreateRequest: DownloadStatisticsCreateRequest, now: LocalDate) {
+        with(statisticsCreateRequest) {
+            val criteria = criteria(projectId, repoName, artifact, version)
+            criteria.and(TDownloadStatistics::date.name).`is`(now)
+            val update = Update().apply { inc(TDownloadStatistics::count.name, 1) }
+            mongoTemplate.findAndModify(Query(criteria), update, TDownloadStatistics::class.java)
+                .also { logger.info("update download count form artifact [$artifact] success!") }
+        }
+    }
+
+    fun exist(projectId: String, repoName: String, artifact: String, version: String?, now: LocalDate): Boolean {
         if (artifact.isBlank()) return false
         val criteria = criteria(projectId, repoName, artifact, version)
-        criteria.and(TDownloadStatistics::date.name).`is`(LocalDate.now())
+        criteria.and(TDownloadStatistics::date.name).`is`(now)
         return mongoTemplate.exists(Query(criteria), TDownloadStatistics::class.java)
     }
 
-    fun query(projectId: String, repoName: String, artifact: String, version: String?, startDate: LocalDate, endDate: LocalDate): DownloadStatisticsResponseInfo {
-            artifact.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(
-                CommonMessageCode.PARAMETER_MISSING,
-                "artifact"
-            )
-            repositoryService.checkRepository(projectId, repoName)
-            val criteria = criteria(projectId, repoName, artifact, version)
-            criteria.and(TDownloadStatistics::date.name).lte(endDate).gte(startDate)
-            val aggregation = Aggregation.newAggregation(
-                Aggregation.match(criteria),
-                Aggregation.group().sum(TDownloadStatistics::count.name).`as`(DownloadStatisticsResponseInfo::count.name)
-            )
-            val aggregateResult =
-                mongoTemplate.aggregate(aggregation, TDownloadStatistics::class.java, HashMap::class.java)
-            val count = if (aggregateResult.mappedResults.size > 0) {
-                aggregateResult.mappedResults[0][DownloadStatisticsResponseInfo::count.name] as? Int ?: 0
-            } else 0
-            return DownloadStatisticsResponseInfo(
-                artifact,
-                version,
-                count,
-                projectId,
-                repoName
-            )
+    fun query(
+        projectId: String,
+        repoName: String,
+        artifact: String,
+        version: String?,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): DownloadStatisticsResponseInfo {
+        artifact.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(
+            CommonMessageCode.PARAMETER_MISSING,
+            "artifact"
+        )
+        repositoryService.checkRepository(projectId, repoName)
+        val criteria = criteria(projectId, repoName, artifact, version)
+        criteria.and(TDownloadStatistics::date.name).lte(endDate).gte(startDate)
+        val aggregation = Aggregation.newAggregation(
+            Aggregation.match(criteria),
+            Aggregation.group().sum(TDownloadStatistics::count.name).`as`(DownloadStatisticsResponseInfo::count.name)
+        )
+        val aggregateResult =
+            mongoTemplate.aggregate(aggregation, TDownloadStatistics::class.java, HashMap::class.java)
+        val count = if (aggregateResult.mappedResults.size > 0) {
+            aggregateResult.mappedResults[0][DownloadStatisticsResponseInfo::count.name] as? Int ?: 0
+        } else 0
+        return DownloadStatisticsResponseInfo(
+            artifact,
+            version,
+            count,
+            projectId,
+            repoName
+        )
     }
 
-    fun queryForSpecial(projectId: String, repoName: String, artifact: String, version: String?): DownloadStatisticsForSpecialDateInfoResponse {
+    fun queryForSpecial(
+        projectId: String,
+        repoName: String,
+        artifact: String,
+        version: String?
+    ): DownloadStatisticsForSpecialDateInfoResponse {
         artifact.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(
             CommonMessageCode.PARAMETER_MISSING,
             "artifact"
@@ -124,7 +140,13 @@ class DownloadStatisticsService : AbstractService() {
         return DownloadStatisticsForSpecialDateInfoResponse(artifact, version, dayCount, projectId, repoName)
     }
 
-    private fun queryMonthDownloadCount(projectId: String, repoName: String, artifact: String, version: String?, today: LocalDate): Int {
+    private fun queryMonthDownloadCount(
+        projectId: String,
+        repoName: String,
+        artifact: String,
+        version: String?,
+        today: LocalDate
+    ): Int {
         val firstDayOfThisMonth = today.with(TemporalAdjusters.firstDayOfMonth())
         val lastDayOfThisMonth = today.with(lastDayOfMonth())
         val monthCriteria =
@@ -139,7 +161,13 @@ class DownloadStatisticsService : AbstractService() {
         return getAggregateCount(monthResult)
     }
 
-    private fun queryWeekDownloadCount(projectId: String, repoName: String, artifact: String, version: String?, today: LocalDate): Int {
+    private fun queryWeekDownloadCount(
+        projectId: String,
+        repoName: String,
+        artifact: String,
+        version: String?,
+        today: LocalDate
+    ): Int {
         val firstDayOfWeek =
             today.with(TemporalAdjusters.ofDateAdjuster { localDate -> localDate.minusDays(localDate.dayOfWeek.value - DayOfWeek.MONDAY.value.toLong()) })
         val lastDayOfWeek =
@@ -156,7 +184,13 @@ class DownloadStatisticsService : AbstractService() {
         return getAggregateCount(weekResult)
     }
 
-    private fun queryTodayDownloadCount(projectId: String, repoName: String, artifact: String, version: String?, today: LocalDate): Int {
+    private fun queryTodayDownloadCount(
+        projectId: String,
+        repoName: String,
+        artifact: String,
+        version: String?,
+        today: LocalDate
+    ): Int {
         val todayCriteria =
             criteria(projectId, repoName, artifact, version).and(TDownloadStatistics::date.name)
                 .`is`(today)
