@@ -6,21 +6,21 @@ import java.io.InputStream
 class DownloadContext(projectId: String, repoName: String, path: String) {
     private val requestHeaders = Maps.newHashMap<String, String>()
 
+    // name
     var name: String = ""
     var content: InputStream? = null
     var sha256: String = ""
     var projectId: String = ""
     var repoName: String = ""
-    var fullPath: String = ""
     var length: Long = 0
 
     init {
         this.projectId = projectId
         this.repoName = repoName
-        this.fullPath = path
+        this.name = path
     }
 
-    fun path(name: String): DownloadContext {
+    fun name(name: String): DownloadContext {
         this.name = name
         return this
     }
@@ -49,7 +49,6 @@ class DownloadContext(projectId: String, repoName: String, path: String) {
         if (key != null && value != null) {
             this.requestHeaders[key] = value
         }
-
         return this
     }
 }

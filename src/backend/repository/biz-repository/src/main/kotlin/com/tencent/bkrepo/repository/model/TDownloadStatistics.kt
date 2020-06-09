@@ -9,7 +9,7 @@ import java.time.LocalDate
 @CompoundIndexes(
     CompoundIndex(
         name = "projectId_repoName_artifact_download_count_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'artifact': 1, 'version': 1, 'currentDate': 1}",
+        def = "{'projectId': 1, 'repoName': 1, 'artifact': 1, 'version': 1, 'date': 1}",
         background = true,
         unique = true
     )
@@ -22,6 +22,6 @@ data class TDownloadStatistics(
     var artifact: String,
     var version: String?,
     // download count
-    var count: Int,
+    var count: Long,
     var date: LocalDate
 )

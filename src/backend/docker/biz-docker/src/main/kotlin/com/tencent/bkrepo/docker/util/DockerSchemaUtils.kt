@@ -70,11 +70,8 @@ class DockerSchemaUtils {
                 )
                 logger.info("fetch manifest config file {}", manifestConfigFile!!.sha256)
                 val manifestStream = repo.readGlobal(
-                    DownloadContext(
-                        projectId,
-                        repoName,
-                        manifestConfigFile.path
-                    ).sha256(manifestConfigFile.sha256!!).length(manifestConfigFile.contentLength)
+                    DownloadContext(projectId, repoName, manifestConfigFile.path)
+                        .sha256(manifestConfigFile.sha256!!).length(manifestConfigFile.contentLength)
                 )
                 manifestStream.use {
                     var bytes = IOUtils.toByteArray(it)
@@ -91,8 +88,7 @@ class DockerSchemaUtils {
         fun fetchSchema2Manifest(repo: DockerArtifactoryService, schema2Path: String): ByteArray {
             val manifestStream = repo.getWorkContextC().readGlobal(schema2Path)
             manifestStream.use {
-                val byteArray = IOUtils.toByteArray(it)
-                return byteArray
+                return IOUtils.toByteArray(it)
             }
         }
 

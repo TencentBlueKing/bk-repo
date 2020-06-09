@@ -17,7 +17,8 @@ class DownloadStatisticsResourceImpl @Autowired constructor(
 ) : DownloadStatisticsResource {
 
     override fun add(statisticsCreateRequest: DownloadStatisticsCreateRequest): Response<Void> {
-        return downloadStatisticsService.add(statisticsCreateRequest)
+        downloadStatisticsService.add(statisticsCreateRequest)
+        return ResponseBuilder.success()
     }
 
     override fun query(projectId: String, repoName: String, artifact: String, version: String?, startDay: LocalDate, endDay: LocalDate): Response<DownloadStatisticsResponseInfo> {

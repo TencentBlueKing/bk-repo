@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestMapping
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
 
 /**
  *  docker image extension api
@@ -18,7 +19,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
  * @date: 2020-03-12
  */
 @Api("docker镜像仓库扩展查询api")
-@RequestMapping("/api")
+@RequestMapping(USER_API_PREFIX)
 interface User {
 
     @ApiOperation("获取manifest文件")
