@@ -93,8 +93,15 @@ class ReplicationController : ReplicationClient {
         return nodeResource.exist(projectId, repoName, fullPath)
     }
 
-    override fun checkNodeExistList(token: String, request: NodeExistCheckRequest): Response<List<String>> {
-        return nodeResource.listExistFullPath(request.projectId, request.repoName, request.fullPathList)
+    override fun checkNodeExistList(
+        token: String,
+        nodeExistCheckRequest: NodeExistCheckRequest
+    ): Response<List<String>> {
+        return nodeResource.listExistFullPath(
+            nodeExistCheckRequest.projectId,
+            nodeExistCheckRequest.repoName,
+            nodeExistCheckRequest.fullPathList
+        )
     }
 
     override fun replicaUser(token: String, userReplicaRequest: UserReplicaRequest): Response<User> {

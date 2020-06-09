@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.api.util
+package com.tencent.bkrepo.replication.pojo.request
 
 import okhttp3.MediaType
 import okhttp3.RequestBody
