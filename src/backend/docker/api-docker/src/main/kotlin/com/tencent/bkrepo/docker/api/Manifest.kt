@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.docker.api
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.docker.constant.DOCKER_API_PREFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_REFERENCE_SUFFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_TAG_SUFFIX
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -21,11 +24,11 @@ import org.springframework.web.bind.annotation.RequestMethod
  * @date: 2019-10-03
  */
 @Api("docker镜像manifest文件处理接口")
-@RequestMapping("/v2")
+@RequestMapping(DOCKER_API_PREFIX)
 interface Manifest {
 
-    @ApiOperation("上传manifetst文件")
-    @PutMapping("/{projectId}/{repoName}/**/manifests/{tag}")
+    @ApiOperation("上传manifest文件")
+    @PutMapping(DOCKER_MANIFEST_TAG_SUFFIX)
     fun putManifest(
         request: HttpServletRequest,
         @RequestAttribute
@@ -46,7 +49,7 @@ interface Manifest {
     ): ResponseEntity<Any>
 
     @ApiOperation("获取manifest文件")
-    @GetMapping("/{projectId}/{repoName}/**/manifests/{reference}")
+    @GetMapping(DOCKER_MANIFEST_REFERENCE_SUFFIX)
     fun getManifest(
         request: HttpServletRequest,
         @RequestAttribute
@@ -63,7 +66,7 @@ interface Manifest {
     ): ResponseEntity<Any>
 
     @ApiOperation("检查manifest文件存在")
-    @RequestMapping(method = [RequestMethod.HEAD], value = ["{projectId}/{repoName}/**/manifests/{reference}"])
+    @RequestMapping(method = [RequestMethod.HEAD], value = [DOCKER_MANIFEST_REFERENCE_SUFFIX])
     fun existManifest(
         request: HttpServletRequest,
         @RequestAttribute

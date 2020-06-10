@@ -245,7 +245,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
             throw DockerRepoNotFoundException(id)
         }
         logger.info("get blob info [$artifact]")
-        val length = artifact.get(0).get("size") as Int
+        val length = artifact[0].get("size") as Int
         val context = DownloadContext(
             pathContext.projectId,
             pathContext.repoName,
@@ -296,14 +296,14 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         RepoUtil.loadRepo(repo, userId, pathContext.projectId, pathContext.repoName)
         return try {
             deleteManifestByDigest(pathContext, DockerDigest(reference))
-        } catch (var4: Exception) {
-            logger.error("unable to parse digest, delete manifest by tag '{}'", reference)
+        } catch (exception: Exception) {
+            logger.error("unable to parse digest, delete manifest by tag [$reference]")
             deleteManifestByTag(pathContext, reference)
         }
     }
 
     private fun deleteManifestByDigest(pathContext: RequestContext, digest: DockerDigest): ResponseEntity<Any> {
-        logger.info("delete docker manifest for  [${pathContext.dockerRepo}] digest [$digest] in repo [path.repoName]")
+        logger.info("delete docker manifest for  [${pathContext.dockerRepo}] digest [$digest] in repo [${pathContext.repoName}]")
         val manifests = repo.findArtifacts(pathContext.projectId, pathContext.repoName, "manifest.json")
         val manifestIter = manifests.iterator()
 

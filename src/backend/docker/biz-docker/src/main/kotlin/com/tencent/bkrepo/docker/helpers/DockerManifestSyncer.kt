@@ -2,8 +2,8 @@ package com.tencent.bkrepo.docker.helpers
 
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
-import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.context.RequestContext
+import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
@@ -71,14 +71,14 @@ class DockerManifestSyncer() {
                             logger.error("could not find temp blob '{}'", tempBlobPath)
                             return false
                         }
-                        logger.debug("blob {} copy to {}", blobDigest.filename(), finalBlobPath)
+                        logger.info("blob [${blobDigest.filename()}] copy to [$finalBlobPath]")
                     }
                 }
             }
         }
 
         // this.removeUnreferencedBlobs(repo, "$dockerRepo/$tag", info)
-        logger.debug("finish synv docker repository blobs")
+        logger.info("finish sync docker repository blobs")
         return true
     }
 
@@ -122,7 +122,7 @@ class DockerManifestSyncer() {
         tempBlobPath: String,
         finalBlobPath: String
     ) {
-        logger.info("move temp blob from '{}' to '{}'", tempBlobPath, finalBlobPath)
+        logger.info("move temp blob from [$tempBlobPath] to [$finalBlobPath]")
         repo.move(projectId, repoName, tempBlobPath, finalBlobPath)
     }
 

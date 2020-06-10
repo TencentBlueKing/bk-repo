@@ -13,8 +13,9 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 /**
- * 统一异常处理
+ * docker repo exception handler
  */
+
 @RestControllerAdvice
 class ExceptionHandler {
 
@@ -60,7 +61,7 @@ class ExceptionHandler {
 
     @ExceptionHandler(DockerRepoNotFoundException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleExternalDockeReporNotFoundExceptionn(exception: DockerRepoNotFoundException): ResponseEntity<Any> {
+    fun handleExternalDockerRepoNotFoundExceptionn(exception: DockerRepoNotFoundException): ResponseEntity<Any> {
         logger.warn("Failed with repo not found   exception:[${exception.message}]")
         return DockerV2Errors.repoInvalid(exception.message!!)
     }

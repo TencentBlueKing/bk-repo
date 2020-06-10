@@ -98,9 +98,9 @@ abstract class DockerUtils {
             if (result.isEmpty()) {
                 return null
             }
-            val blob = result.get(0)
-            val length = blob.get("size") as Int
-            val fullPath = blob.get("fullPath") as String
+            val blob = result[0]
+            val length = blob["size"] as Int
+            val fullPath = blob["fullPath"] as String
             return Artifact(projectId, repoName, dockerRepo).sha256(fileName.replace("sha256__", ""))
                 .contentLength(length.toLong()).path(fullPath)
         }

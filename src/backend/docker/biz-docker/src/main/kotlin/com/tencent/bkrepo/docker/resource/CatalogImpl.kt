@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.docker.resource
 
 import com.tencent.bkrepo.docker.api.Catalog
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
@@ -17,7 +18,7 @@ class CatalogImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServic
         last: String?
     ): ResponseEntity<Any> {
         var maxEntries = 0
-        var index = ""
+        var index = EMPTYSTR
         if (n != null) {
             maxEntries = n
         }

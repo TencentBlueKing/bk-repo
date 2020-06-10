@@ -17,6 +17,6 @@ class DockerArtifactConfiguration : ArtifactConfiguration {
 
     override fun getClientAuthConfig() = ClientAuthConfig(
         includePatterns = listOf("/**"),
-        excludePatterns = listOf("/v2/auth", "/v2/_catalog", "/v2/*/*/*/tags/list", "/v3/bs")
+        excludePatterns = listOf("/v2/auth", "/v2/_catalog", "/v2/*/*/*/tags/list")
     )
 }

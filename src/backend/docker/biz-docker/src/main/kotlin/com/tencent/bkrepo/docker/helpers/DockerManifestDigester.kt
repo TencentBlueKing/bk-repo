@@ -20,7 +20,7 @@ object DockerManifestDigester {
         val manifest = mapper().readTree(jsonBytes)
         val schemaVersion = manifest.get("schemaVersion")
         if (schemaVersion == null) {
-            logger.error("Unable to determine the schema version of the manifest")
+            logger.error("unable to determine the schema version of the manifest")
             return null
         } else {
             val schema = schemaVersion.asInt()
