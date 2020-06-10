@@ -39,4 +39,8 @@ class UploadConfigElement(
     fun isResolveLazily(): Boolean {
         return uploadProperties.isResolveLazily
     }
+
+    fun getRateLimit(): Long {
+        return uploadProperties.rateLimit.toBytes()
+    }
 }

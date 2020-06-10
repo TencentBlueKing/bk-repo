@@ -24,7 +24,13 @@ open class OctetStreamArtifactFile(
 
     private var hasInitialized: Boolean = false
     private val listener = DigestCalculateListener()
-    private val receiver = SmartStreamReceiver(config.fileSizeThreshold, generateRandomName(), monitor.getPrimaryPath(), monitor.monitorConfig.enableTransfer)
+    private val receiver = SmartStreamReceiver(
+        monitor.getPrimaryPath(),
+        generateRandomName(),
+        config.fileSizeThreshold,
+        config.getRateLimit(),
+        monitor.monitorConfig.enableTransfer
+    )
 
     init {
         if (!config.isResolveLazily()) {

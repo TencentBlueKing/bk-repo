@@ -9,5 +9,6 @@ data class UploadProperties(
     var maxFileSize: DataSize = DataSize.ofBytes(-1),
     var maxRequestSize: DataSize = DataSize.ofBytes(-1),
     var fileSizeThreshold: DataSize = DataSize.ofBytes(-1),
-    var isResolveLazily: Boolean = true
+    var isResolveLazily: Boolean = true,
+    var rateLimit: DataSize = DataSize.ofBytes(-1)
 )

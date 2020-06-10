@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
+import com.tencent.bkrepo.common.artifact.stream.RateLimitInputStream
 import com.tencent.bkrepo.common.artifact.stream.StreamReceiveListener
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -12,9 +13,10 @@ import java.nio.file.Path
 import kotlin.system.measureNanoTime
 
 class SmartStreamReceiver(
-    private val fileSizeThreshold: Int,
-    private val filename: String,
     private var path: Path,
+    private val filename: String,
+    private val fileSizeThreshold: Int,
+    private val rateLimit: Long,
     private val enableTransfer: Boolean
 ) : StorageHealthMonitor.Observer {
     private val contentBytes = ByteArrayOutputStream(DEFAULT_BUFFER_SIZE)
@@ -27,17 +29,18 @@ class SmartStreamReceiver(
     var fallback: Boolean = false
 
     fun receive(source: InputStream, listener: StreamReceiveListener): Throughput {
+        val input = RateLimitInputStream(source, rateLimit)
         var bytesCopied: Long = 0
         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
         val nanoTime = measureNanoTime {
-            var bytes = source.read(buffer)
+            var bytes = input.read(buffer)
             while (bytes >= 0) {
                 checkFallback()
                 outputStream.write(buffer, 0, bytes)
                 listener.data(buffer, 0, bytes)
                 bytesCopied += bytes
                 checkThreshold(bytesCopied)
-                bytes = source.read(buffer)
+                bytes = input.read(buffer)
             }
         }
         totalSize = bytesCopied
