@@ -285,7 +285,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         httpHeaders.set("Docker-Distribution-Api-Version", "registry/2.0")
         httpHeaders.set("Docker-Content-Digest", digest.toString())
         httpHeaders.set("Content-Type", contentType)
-        logger.info("file result length {}， type {}", length, contentType)
+        logger.info("file [${digest.getDigestHex()}] result length [$length] type [$contentType]")
         return ResponseEntity.ok()
             .headers(httpHeaders)
             .contentLength(length)

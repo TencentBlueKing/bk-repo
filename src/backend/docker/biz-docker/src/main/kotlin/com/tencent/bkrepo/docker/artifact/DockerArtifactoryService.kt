@@ -82,12 +82,12 @@ class DockerArtifactoryService @Autowired constructor(
     fun download(context: DownloadContext): InputStream {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
-            logger.warn("user [$userId]  download file  [$context.path] failed: [$context.repoName] not found")
+            logger.warn("user [$userId]  download file [${context.sha256} ,${context.name}] failed: [${context.repoName}] not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
         // load file from storage
         return storageService.load(context.sha256, Range.ofFull(context.length), repository.storageCredentials) ?: run {
-            logger.error("user [$userId]  load data from storage  [$context.path] failed: [$context.repoName] ")
+            logger.error("user [$userId] fail to load data [${context.sha256}] from storage  [${context.name}] failed: [${context.repoName}] ")
             throw DockerRepoNotFoundException(context.repoName)
         }
     }
@@ -96,7 +96,7 @@ class DockerArtifactoryService @Autowired constructor(
     fun upload(context: UploadContext): ResponseEntity<Any> {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId]  upload file  [$context.path] failed: [${context.repoName}] not found")
+            logger.warn("user[$userId]  upload file  [${context.path}] failed: [${context.repoName}] not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
         // save the node
