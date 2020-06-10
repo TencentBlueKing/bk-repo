@@ -2,7 +2,7 @@ package com.tencent.bkrepo.docker.util
 
 import com.google.common.base.Joiner
 import com.tencent.bkrepo.docker.artifact.Artifact
-import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.DockerArtifactService
 import com.tencent.bkrepo.docker.artifact.DockerWorkContext
 import com.tencent.bkrepo.docker.helpers.DockerSearchBlobPolicy
 import org.slf4j.LoggerFactory
@@ -79,7 +79,7 @@ abstract class DockerUtils {
         }
 
         fun getBlobGlobally(
-            repo: DockerArtifactoryService,
+            repo: DockerArtifactService,
             blobFilename: String,
             searchPolicy: DockerSearchBlobPolicy
         ): Artifact? {
@@ -88,7 +88,7 @@ abstract class DockerUtils {
         }
 
         fun findBlobGlobally(
-            repo: DockerArtifactoryService,
+            repo: DockerArtifactService,
             projectId: String,
             repoName: String,
             dockerRepo: String,
@@ -106,7 +106,7 @@ abstract class DockerUtils {
         }
 
         fun getManifestConfigBlob(
-            repo: DockerArtifactoryService,
+            repo: DockerArtifactService,
             blobFilename: String,
             projectId: String,
             repoName: String,
@@ -129,7 +129,7 @@ abstract class DockerUtils {
 
         // get blob from repo path
         fun getBlobFromRepoPath(
-            repo: DockerArtifactoryService,
+            repo: DockerArtifactService,
             projectId: String,
             repoName: String,
             dockerRepo: String,

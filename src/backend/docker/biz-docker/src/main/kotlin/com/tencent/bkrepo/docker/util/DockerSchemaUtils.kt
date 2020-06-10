@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.docker.util
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.DockerArtifactService
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.model.DockerDigest
 import org.apache.commons.io.IOUtils
@@ -22,7 +22,7 @@ class DockerSchemaUtils {
             projectId: String,
             repoName: String,
             manifestPath: String,
-            repo: DockerArtifactoryService
+            repo: DockerArtifactService
         ): String? {
             return repo.getAttribute(projectId, repoName, manifestPath, "docker.manifest.type")
         }
@@ -49,7 +49,7 @@ class DockerSchemaUtils {
         }
 
         fun fetchSchema2ManifestConfig(
-            repo: DockerArtifactoryService,
+            repo: DockerArtifactService,
             projectId: String,
             repoName: String,
             manifestBytes: ByteArray,
@@ -85,7 +85,7 @@ class DockerSchemaUtils {
             return ByteArray(0)
         }
 
-        fun fetchSchema2Manifest(repo: DockerArtifactoryService, schema2Path: String): ByteArray {
+        fun fetchSchema2Manifest(repo: DockerArtifactService, schema2Path: String): ByteArray {
             val manifestStream = repo.getWorkContextC().readGlobal(schema2Path)
             manifestStream.use {
                 return IOUtils.toByteArray(it)
@@ -93,7 +93,7 @@ class DockerSchemaUtils {
         }
 
         fun fetchSchema2Path(
-            repo: DockerArtifactoryService,
+            repo: DockerArtifactService,
             projectId: String,
             repoName: String,
             dockerRepo: String,

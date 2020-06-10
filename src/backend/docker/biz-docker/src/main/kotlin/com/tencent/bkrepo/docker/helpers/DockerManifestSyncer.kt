@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.docker.helpers
 
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.DockerArtifactService
 import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
@@ -20,7 +20,7 @@ class DockerManifestSyncer() {
 
     @Throws(IOException::class)
     fun sync(
-        repo: DockerArtifactoryService,
+        repo: DockerArtifactService,
         info: ManifestMetadata,
         pathContext: RequestContext,
         tag: String
@@ -87,7 +87,7 @@ class DockerManifestSyncer() {
     }
 
     protected fun copyBlobFromFirstReadableDockerRepo(
-        repo: DockerArtifactoryService,
+        repo: DockerArtifactService,
         projectId: String,
         repoName: String,
         dockerRepo: String,
@@ -101,7 +101,7 @@ class DockerManifestSyncer() {
     }
 
     protected fun copyBlob(
-        repo: DockerArtifactoryService,
+        repo: DockerArtifactService,
         projectId: String,
         repoName: String,
         sourcePath: String,
@@ -116,7 +116,7 @@ class DockerManifestSyncer() {
     }
 
     private fun moveBlobFromTempDir(
-        repo: DockerArtifactoryService,
+        repo: DockerArtifactService,
         projectId: String,
         repoName: String,
         tempBlobPath: String,
