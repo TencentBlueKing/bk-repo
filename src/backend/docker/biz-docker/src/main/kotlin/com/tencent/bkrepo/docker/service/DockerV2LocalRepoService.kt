@@ -181,9 +181,10 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
         } else if (!repo.exists(pathContext.projectId, pathContext.repoName, manifestPath)) {
             return DockerV2Errors.manifestUnknown(manifestPath)
         } else {
-            var manifest = repo.findManifest(pathContext.projectId, pathContext.repoName, manifestPath) ?: run {
+            val manifest = repo.findManifest(pathContext.projectId, pathContext.repoName, manifestPath) ?: run {
                 return DockerV2Errors.manifestUnknown(manifestPath)
             }
+            logger.debug("get manifest by tag result [$manifest]")
             return buildManifestResponse(
                 pathContext, manifestPath,
                     DockerDigest("sh256:${manifest.nodeInfo.sha256}"),
