@@ -30,7 +30,6 @@ class ManifestSchema2Deserializer {
             }
         }
 
-        @Throws(IOException::class)
         private fun applyAttributesFromContent(manifestBytes: ByteArray, jsonBytes: ByteArray, manifestMetadata: ManifestMetadata): ManifestMetadata {
             val config = JsonUtil.readTree(jsonBytes)
             val manifest = JsonUtil.readTree(manifestBytes)

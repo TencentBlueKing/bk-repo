@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.docker.helpers
 
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.DockerArtifactService
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
@@ -13,38 +13,29 @@ import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
-import java.io.IOException
 
 @Component
-class DockerManifestSyncer() {
+class DockerManifestSyncer constructor(repoService: DockerArtifactService) {
 
-    @Throws(IOException::class)
-    fun sync(
-        repo: DockerArtifactoryService,
-        info: ManifestMetadata,
-        pathContext: RequestContext,
-        tag: String
-    ): Boolean {
+    val repo = repoService
+
+    fun sync(info: ManifestMetadata, pathContext: RequestContext, tag: String): Boolean {
         logger.info("start to sync docker repository blobs")
-        val manifestInfo = info.blobsInfo.iterator()
+        val manifestInfos = info.blobsInfo.iterator()
 
-        while (manifestInfo.hasNext()) {
-            val blobInfo = manifestInfo.next()
-            logger.info("sync docker digest {}", blobInfo.digest)
+        while (manifestInfos.hasNext()) {
+            val blobInfo = manifestInfos.next()
+            logger.info("sync docker blob digest [${blobInfo.digest}]")
             if (blobInfo.digest != null && !this.isForeignLayer(blobInfo)) {
                 val blobDigest = DockerDigest(blobInfo.digest!!)
                 val blobFilename = blobDigest.filename()
-                logger.info(" blob file name digest {}", blobFilename)
+                logger.info("blob file name digest [$blobFilename]")
                 val tempBlobPath = "/${pathContext.dockerRepo}/_uploads/$blobFilename"
                 val finalBlobPath = "/${pathContext.dockerRepo}/$tag/$blobFilename"
                 if (!repo.exists(pathContext.projectId, pathContext.repoName, finalBlobPath)) {
                     if (DockerSchemaUtils.isEmptyBlob(blobDigest)) {
-                        logger.debug(
-                            "found empty layer {} in manifest for image {} ,create blob in path {}",
-                            blobFilename,
-                            pathContext.dockerRepo,
-                            finalBlobPath
-                        )
+                        logger.debug("found empty layer [$blobFilename] in manifest for image [${pathContext.dockerRepo}] ,create blob in path [$finalBlobPath]")
+
                         val blobContent = ByteArrayInputStream(DockerSchemaUtils.EMPTY_BLOB_CONTENT)
                         val artifactFile = ArtifactFileFactory.build(blobContent)
                         blobContent.use {
@@ -55,20 +46,13 @@ class DockerManifestSyncer() {
                             )
                         }
                     } else if (repo.exists(pathContext.projectId, pathContext.repoName, tempBlobPath)) {
-                        this.moveBlobFromTempDir(repo, pathContext.projectId, pathContext.repoName, tempBlobPath, finalBlobPath)
+                        moveBlobFromTempDir(pathContext.projectId, pathContext.repoName, tempBlobPath, finalBlobPath)
                     } else {
-                        logger.debug("blob temp file '{}' doesn't exist in temp, try other tags", tempBlobPath)
+                        logger.debug("blob temp file [$tempBlobPath] doesn't exist in temp, try other tags")
                         val targetPath = "/${pathContext.dockerRepo}/$tag/$blobFilename"
-                        if (!this.copyBlobFromFirstReadableDockerRepo(
-                                repo,
-                                pathContext.projectId,
-                                pathContext.repoName,
-                                pathContext.dockerRepo,
-                                blobFilename,
-                                targetPath
-                            )
+                        if (!copyBlobFromFirstReadableDockerRepo(pathContext, blobFilename, targetPath)
                         ) {
-                            logger.error("could not find temp blob '{}'", tempBlobPath)
+                            logger.error("could not find temp blob [$tempBlobPath]")
                             return false
                         }
                         logger.info("blob [${blobDigest.filename()}] copy to [$finalBlobPath]")
@@ -76,8 +60,6 @@ class DockerManifestSyncer() {
                 }
             }
         }
-
-        // this.removeUnreferencedBlobs(repo, "$dockerRepo/$tag", info)
         logger.info("finish sync docker repository blobs")
         return true
     }
@@ -86,22 +68,14 @@ class DockerManifestSyncer() {
         return "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == blobInfo.mediaType
     }
 
-    protected fun copyBlobFromFirstReadableDockerRepo(
-        repo: DockerArtifactoryService,
-        projectId: String,
-        repoName: String,
-        dockerRepo: String,
-        blobFilename: String,
-        targetPath: String
-    ): Boolean {
-        val blob = DockerUtils.findBlobGlobally(repo, projectId, repoName, dockerRepo, blobFilename) ?: run {
+    private fun copyBlobFromFirstReadableDockerRepo(pathContext: RequestContext, blobFilename: String, targetPath: String): Boolean {
+        val blob = DockerUtils.findBlobGlobally(repo, pathContext, blobFilename) ?: run {
             return false
         }
-        return this.copyBlob(repo, projectId, repoName, blob.path, targetPath, blobFilename)
+        return copyBlob(pathContext.projectId, pathContext.repoName, blob.path, targetPath, blobFilename)
     }
 
-    protected fun copyBlob(
-        repo: DockerArtifactoryService,
+    private fun copyBlob(
         projectId: String,
         repoName: String,
         sourcePath: String,
@@ -116,7 +90,6 @@ class DockerManifestSyncer() {
     }
 
     private fun moveBlobFromTempDir(
-        repo: DockerArtifactoryService,
         projectId: String,
         repoName: String,
         tempBlobPath: String,

@@ -22,6 +22,10 @@ const val DOCKER_MANIFEST_REFERENCE_SUFFIX = "/{projectId}/{repoName}/**/manifes
 const val DOCKER_TAGS_SUFFIX = "/{projectId}/{repoName}/{name}/tags/list"
 const val DOCKER_CATALOG_SUFFIX = "_catalog"
 
+const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
+const val HTTP_PROTOCOL_HTTP = "http"
+const val HTTP_PROTOCOL_HTTPS = "https"
+
 const val AUTH_ENABLE = "enable"
 
 const val AUTH_DISABLE = "disable"

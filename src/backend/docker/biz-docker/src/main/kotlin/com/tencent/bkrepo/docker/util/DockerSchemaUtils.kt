@@ -1,8 +1,9 @@
 package com.tencent.bkrepo.docker.util
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.DockerArtifactService
 import com.tencent.bkrepo.docker.context.DownloadContext
+import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.model.DockerDigest
 import org.apache.commons.io.IOUtils
 import org.apache.commons.lang.StringUtils
@@ -12,6 +13,7 @@ import java.io.IOException
 import javax.xml.bind.DatatypeConverter
 
 class DockerSchemaUtils {
+
     companion object {
         private val logger = LoggerFactory.getLogger(DockerSchemaUtils::class.java)
         val EMPTY_BLOB_CONTENT =
@@ -22,7 +24,7 @@ class DockerSchemaUtils {
             projectId: String,
             repoName: String,
             manifestPath: String,
-            repo: DockerArtifactoryService
+            repo: DockerArtifactService
         ): String? {
             return repo.getAttribute(projectId, repoName, manifestPath, "docker.manifest.type")
         }
@@ -49,11 +51,9 @@ class DockerSchemaUtils {
         }
 
         fun fetchSchema2ManifestConfig(
-            repo: DockerArtifactoryService,
-            projectId: String,
-            repoName: String,
+            repo: DockerArtifactService,
+            pathContext: RequestContext,
             manifestBytes: ByteArray,
-            dockerRepoPath: String,
             tag: String
         ): ByteArray {
             try {
@@ -63,29 +63,27 @@ class DockerSchemaUtils {
                 val manifestConfigFile = DockerUtils.getManifestConfigBlob(
                     repo,
                     manifestConfigFilename,
-                    projectId,
-                    repoName,
-                    dockerRepoPath,
+                    pathContext,
                     tag
                 )
                 logger.info("fetch manifest config file {}", manifestConfigFile!!.sha256)
                 val manifestStream = repo.readGlobal(
-                    DownloadContext(projectId, repoName, manifestConfigFile.path)
+                    DownloadContext(pathContext.projectId, pathContext.repoName, manifestConfigFile.path)
                         .sha256(manifestConfigFile.sha256!!).length(manifestConfigFile.contentLength)
                 )
                 manifestStream.use {
                     var bytes = IOUtils.toByteArray(it)
-                    logger.info("config blob data size {}", bytes.size)
+                    logger.info("config blob data size [bytes.size]")
                     return bytes
                 }
-            } catch (ioException: IOException) {
-                logger.error("error fetching manifest schema2: " + ioException.message, ioException)
+            } catch (exception: IOException) {
+                logger.error("error fetching manifest schema2: [$exception] ")
             }
 
             return ByteArray(0)
         }
 
-        fun fetchSchema2Manifest(repo: DockerArtifactoryService, schema2Path: String): ByteArray {
+        fun fetchSchema2Manifest(repo: DockerArtifactService, schema2Path: String): ByteArray {
             val manifestStream = repo.getWorkContextC().readGlobal(schema2Path)
             manifestStream.use {
                 return IOUtils.toByteArray(it)
@@ -93,10 +91,8 @@ class DockerSchemaUtils {
         }
 
         fun fetchSchema2Path(
-            repo: DockerArtifactoryService,
-            projectId: String,
-            repoName: String,
-            dockerRepo: String,
+            repo: DockerArtifactService,
+            pathContext: RequestContext,
             manifestListBytes: ByteArray,
             searchGlobally: Boolean
         ): String {
@@ -116,9 +112,7 @@ class DockerSchemaUtils {
                         if (searchGlobally) {
                             val manifestFile = DockerUtils.findBlobGlobally(
                                 repo,
-                                projectId,
-                                repoName,
-                                manifestFilename,
+                                pathContext,
                                 manifestFilename
                             )
                             return if (manifestFile == null) "" else DockerUtils.getFullPath(
@@ -127,7 +121,8 @@ class DockerSchemaUtils {
                             )
                         }
 
-                        val artifact = repo.artifact(projectId, repoName, dockerRepo)
+                        val artifact =
+                            repo.artifact(pathContext.projectId, pathContext.repoName, pathContext.dockerRepo)
                         return artifact!!.path
                     }
                 }

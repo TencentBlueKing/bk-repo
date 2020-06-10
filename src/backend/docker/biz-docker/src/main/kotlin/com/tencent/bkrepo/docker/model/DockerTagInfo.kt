@@ -7,7 +7,7 @@ import com.google.common.collect.Sets
 class DockerTagInfo {
     var title: String = ""
     var digest: DockerDigest? = null
-    var totalSize: Long = 0
+    var totalSize: Long = 0L
     var ports: MutableSet<String> = Sets.newHashSet()
     var volumes: MutableSet<String> = Sets.newHashSet()
     var labels: Multimap<String, String> = HashMultimap.create()

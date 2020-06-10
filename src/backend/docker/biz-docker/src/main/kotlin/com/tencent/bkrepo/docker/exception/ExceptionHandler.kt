@@ -22,37 +22,36 @@ class ExceptionHandler {
     @ExceptionHandler(ExternalErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleExternalErrorCodeException(exception: ExternalErrorCodeException): ResponseEntity<Any> {
-        logger.warn("Failed with external error code exception:[${exception.errorCode}-${exception.errorMessage}]")
+        logger.warn("failed with external error code exception:[${exception.errorCode}-${exception.errorMessage}]")
         return DockerV2Errors.internalError(exception.errorMessage)
     }
 
     @ExceptionHandler(ErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleErrorCodeException(exception: ErrorCodeException): ResponseEntity<Any> {
-        logger.warn("Failed with error code exception:[${exception.message}]")
+        logger.warn("failed with error code exception:[${exception.message}]")
         return DockerV2Errors.internalError(exception.message)
     }
 
     @ExceptionHandler(ClientException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleClientException(exception: ClientException): ResponseEntity<Any> {
-        logger.error("Failed with client exception:[$exception]", exception)
+        logger.error("failed with client exception:[$exception]", exception)
         return DockerV2Errors.internalError(exception.errorMessage)
     }
 
     @ExceptionHandler(HystrixRuntimeException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleHystrixRuntimeException(exception: HystrixRuntimeException): ResponseEntity<Any> {
-        logger.error("Failed with hystrix exception:[${exception.failureType}-${exception.message}]", exception)
+        logger.error("failed with hystrix exception:[${exception.failureType}-${exception.message}]", exception)
         return DockerV2Errors.internalError(exception.message)
     }
 
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: Exception): ResponseEntity<Any> {
-        // ribbon 会将ClientException 包装为RuntimeException
         if (exception.cause is ClientException) {
-            logger.error("Failed with client exception:[${exception.cause}]")
+            logger.error("failed with client exception:[${exception.cause}]")
             return DockerV2Errors.internalError(exception.message)
         }
         logger.error("Failed with other exception:[${exception.message}]", exception)
@@ -61,8 +60,8 @@ class ExceptionHandler {
 
     @ExceptionHandler(DockerRepoNotFoundException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleExternalDockerRepoNotFoundExceptionn(exception: DockerRepoNotFoundException): ResponseEntity<Any> {
-        logger.warn("Failed with repo not found   exception:[${exception.message}]")
+    fun handleExternalDockerRepoNotFoundException(exception: DockerRepoNotFoundException): ResponseEntity<Any> {
+        logger.warn("failed with repo not found exception:[${exception.message}]")
         return DockerV2Errors.repoInvalid(exception.message!!)
     }
 
