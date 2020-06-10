@@ -618,21 +618,23 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
                 }
             }
         } catch (e: PermissionCheckException) {
-            logger.error("the user do not have permission to op")
+            logger.warn("the user do not have permission to op")
             return DockerV2Errors.unauthorizedUpload()
         }
     }
 
     override fun getBlob(pathContext: RequestContext, digest: DockerDigest): ResponseEntity<Any> {
         RepoUtil.loadRepo(repo, userId, pathContext.projectId, pathContext.repoName)
-        logger.info("fetch docker blob {} from repo {}", digest.getDigestHex(), pathContext.repoName)
         if (DockerSchemaUtils.isEmptyBlob(digest)) {
-            logger.info("request for empty layer for image {}", pathContext.dockerRepo)
+            logger.warn("request for empty layer for image [${pathContext.dockerRepo}]")
             return DockerSchemaUtils.emptyBlobGetResponse()
         } else {
-            val blob = getRepoBlob(pathContext.projectId, pathContext.repoName, pathContext.dockerRepo, digest)
-            if (blob != null) {
-                var context =
+            val blob =
+                getRepoBlob(pathContext.projectId, pathContext.repoName, pathContext.dockerRepo, digest) ?: run {
+                    return DockerV2Errors.blobUnknown(digest.toString())
+                }
+            logger.info("fet blob [${digest.getDigestHex()}] from repo [${pathContext.dockerRepo}] ,length [${blob.contentLength}]")
+            val context =
                     DownloadContext(pathContext.projectId, pathContext.repoName, pathContext.dockerRepo)
                     .sha256(digest.getDigestHex()).length(blob.contentLength)
                 val inputStream = repo.download(context)
@@ -644,9 +646,6 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactor
                     .contentLength(blob.contentLength)
                     .contentType(MediaType.parseMediaType("application/octet-stream"))
                     .body(resource)
-            } else {
-                return DockerV2Errors.blobUnknown(digest.toString())
-            }
         }
     }
 
