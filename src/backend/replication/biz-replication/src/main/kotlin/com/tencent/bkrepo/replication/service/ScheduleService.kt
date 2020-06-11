@@ -33,7 +33,7 @@ class ScheduleService @Autowired constructor(
             .build()
         val trigger = createTrigger(task)
         scheduler.scheduleJob(jobDetail, trigger)
-        logger.info("Create full replication job success!")
+        logger.info("Create full replication job [${task.localProjectId}, ${task.localRepoName}] success!")
     }
 
     private fun createTrigger(task: TReplicationTask): Trigger {
