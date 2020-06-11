@@ -13,7 +13,7 @@ data class Throughput(
 
     override fun toString(): String {
         return with(HumanReadable) {
-            "size: ${size(bytes)}, elapse: ${time(bytes)}, average: ${throughput(bytes, duration.toNanos())}"
+            "size: ${size(bytes)}, elapse: ${time(duration.toNanos())}, average: ${throughput(bytes, duration.toNanos())}"
         }
     }
 }
