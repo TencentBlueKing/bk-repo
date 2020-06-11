@@ -3,8 +3,8 @@ package com.tencent.bkrepo.docker.resource
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.api.Blob
 import com.tencent.bkrepo.docker.constant.BLOB_PATTERN
-import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.context.RequestContext
+import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.PathUtil
 import com.tencent.bkrepo.docker.util.UserUtil.Companion.getContextUserId
@@ -29,14 +29,9 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
     ): ResponseEntity<Any> {
         dockerRepo.httpHeaders = headers
         dockerRepo.userId = getContextUserId(userId)
-        val name = PathUtil.artifactName(request,
-            BLOB_PATTERN, projectId, repoName)
-        return dockerRepo.uploadBlob(
-            RequestContext(projectId, repoName, name),
-            DockerDigest(digest),
-            uuid,
-            artifactFile
-        )
+        val name = PathUtil.artifactName(request, BLOB_PATTERN, projectId, repoName)
+        val pathContext = RequestContext(projectId, repoName, name)
+        return dockerRepo.uploadBlob(pathContext, DockerDigest(digest), uuid, artifactFile)
     }
 
     override fun isBlobExists(
@@ -47,14 +42,9 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         digest: String
     ): ResponseEntity<Any> {
         dockerRepo.userId = getContextUserId(userId)
-        val name = PathUtil.artifactName(request,
-            BLOB_PATTERN, projectId, repoName)
-        return dockerRepo.isBlobExists(
-            RequestContext(
-                projectId,
-                repoName,
-                name
-            ), DockerDigest(digest))
+        val name = PathUtil.artifactName(request, BLOB_PATTERN, projectId, repoName)
+        val pathContext = RequestContext(projectId, repoName, name)
+        return dockerRepo.isBlobExists(pathContext, DockerDigest(digest))
     }
 
     override fun getBlob(
@@ -65,14 +55,9 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         digest: String
     ): ResponseEntity<Any> {
         dockerRepo.userId = getContextUserId(userId)
-        val name = PathUtil.artifactName(request,
-            BLOB_PATTERN, projectId, repoName)
-        return dockerRepo.getBlob(
-            RequestContext(
-                projectId,
-                repoName,
-                name
-            ), DockerDigest(digest))
+        val name = PathUtil.artifactName(request, BLOB_PATTERN, projectId, repoName)
+        val pathContext = RequestContext(projectId, repoName, name)
+        return dockerRepo.getBlob(pathContext, DockerDigest(digest))
     }
 
     override fun startBlobUpload(
@@ -85,14 +70,9 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
     ): ResponseEntity<Any> {
         dockerRepo.httpHeaders = headers
         dockerRepo.userId = getContextUserId(userId)
-        val name = PathUtil.artifactName(request,
-            BLOB_PATTERN, projectId, repoName)
-        return dockerRepo.startBlobUpload(
-            RequestContext(
-                projectId,
-                repoName,
-                name
-            ), mount)
+        val name = PathUtil.artifactName(request, BLOB_PATTERN, projectId, repoName)
+        val pathContext = RequestContext(projectId, repoName, name)
+        return dockerRepo.startBlobUpload(pathContext, mount)
     }
 
     override fun patchUpload(
@@ -106,13 +86,8 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
     ): ResponseEntity<Any> {
         dockerRepo.httpHeaders = headers
         dockerRepo.userId = getContextUserId(userId)
-        val name = PathUtil.artifactName(request,
-            BLOB_PATTERN, projectId, repoName)
-        return dockerRepo.patchUpload(
-            RequestContext(
-                projectId,
-                repoName,
-                name
-            ), uuid, artifactFile)
+        val name = PathUtil.artifactName(request, BLOB_PATTERN, projectId, repoName)
+        val pathContext = RequestContext(projectId, repoName, name)
+        return dockerRepo.patchUpload(pathContext, uuid, artifactFile)
     }
 }

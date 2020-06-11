@@ -4,7 +4,7 @@ class Digest {
 
     companion object {
 
-        var algorithms = listOf<String>("SHA256", "SHA384", "SHA512")
+        private var algorithms = listOf<String>("SHA256", "SHA384", "SHA512")
 
         fun validDigest(data: String): Boolean {
             var digArray = data.split(":")

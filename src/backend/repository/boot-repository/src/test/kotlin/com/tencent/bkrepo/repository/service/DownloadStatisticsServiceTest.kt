@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.repository.pojo.download.count.service.DownloadStatisticsCreateRequest
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,7 +16,12 @@ internal class DownloadStatisticsServiceTest @Autowired constructor(
     fun createTest() {
         (1 until 10).forEach {
             val request =
-                DownloadStatisticsCreateRequest("test", "npm-local", "helloworld-npm-publish", "1.0.2")
+                DownloadStatisticsAddRequest(
+                    "test",
+                    "npm-local",
+                    "helloworld-npm-publish",
+                    "1.0.2"
+                )
             println(request)
             downloadStatisticsService.add(request)
         }

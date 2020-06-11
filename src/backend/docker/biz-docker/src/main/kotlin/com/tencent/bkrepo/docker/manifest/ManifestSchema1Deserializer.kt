@@ -18,7 +18,7 @@ class ManifestSchema1Deserializer {
             try {
                 return applyAttributesFromContent(manifestBytes, digest)
             } catch (exception: IOException) {
-                logger.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
+                logger.error("Unable to deserialize the manifest.json file: [$exception]")
                 throw RuntimeException(exception)
             }
         }

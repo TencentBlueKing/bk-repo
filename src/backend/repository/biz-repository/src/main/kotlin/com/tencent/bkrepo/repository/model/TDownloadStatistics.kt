@@ -5,10 +5,10 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDate
 
-@Document("artifact_download_count")
+@Document("artifact_download_statistics")
 @CompoundIndexes(
     CompoundIndex(
-        name = "projectId_repoName_artifact_download_count_idx",
+        name = "projectId_repoName_artifact_version_date_idx",
         def = "{'projectId': 1, 'repoName': 1, 'artifact': 1, 'version': 1, 'date': 1}",
         background = true,
         unique = true
@@ -18,10 +18,8 @@ data class TDownloadStatistics(
     var id: String? = null,
     var projectId: String,
     var repoName: String,
-    // artifact name
     var artifact: String,
     var version: String?,
-    // download count
-    var count: Long,
-    var date: LocalDate
+    var date: LocalDate,
+    var count: Long
 )

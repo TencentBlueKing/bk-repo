@@ -16,9 +16,9 @@ import javax.servlet.http.HttpServletRequest
  *
  * @author: owenlxu
  * @date: 2019-10-03
+ * ManifestImpl validates and impl the manifest interface
  */
 
-// ManifestImpl validates and impl the manifest interface
 @RestController
 class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) : Manifest {
 
@@ -33,12 +33,8 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
     ): ResponseEntity<Any> {
         dockerRepo.userId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
-        return dockerRepo.uploadManifest(
-            RequestContext(
-                projectId,
-                repoName,
-                name
-            ), tag, contentType, artifactFile)
+        val pathContext = RequestContext(projectId, repoName, name)
+        return dockerRepo.uploadManifest(pathContext, tag, contentType, artifactFile)
     }
 
     override fun getManifest(
@@ -50,12 +46,8 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
     ): ResponseEntity<Any> {
         dockerRepo.userId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
-        return dockerRepo.getManifest(
-            RequestContext(
-                projectId,
-                repoName,
-                name
-            ), reference)
+        val pathContext = RequestContext(projectId, repoName, name)
+        return dockerRepo.getManifest(pathContext, reference)
     }
 
     override fun existManifest(
@@ -67,11 +59,7 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
     ): ResponseEntity<Any> {
         dockerRepo.userId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
-        return dockerRepo.getManifest(
-            RequestContext(
-                projectId,
-                repoName,
-                name
-            ), reference)
+        val pathContext = RequestContext(projectId, repoName, name)
+        return dockerRepo.getManifest(pathContext, reference)
     }
 }

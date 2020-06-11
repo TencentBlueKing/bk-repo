@@ -69,7 +69,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
         if (serviceUserResource.detail(userId).data == null) {
             val request = CreateUserRequest(userId = userId, name = userId)
             serviceUserResource.createUser(request)
-            logger.info("create user request: {} success.", request.toString())
+            logger.info("create user request: [$request] success")
         }
     }
 
@@ -87,7 +87,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
             String.format("Bearer realm=\"%s\",service=\"%s\",scope=\"%s\"", authUrl, registryService, scopeStr)
         )
         response.contentType = MediaType.APPLICATION_JSON
-        response.getWriter().print(
+        response.writer.print(
             String.format(
                 "{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}",
                 "UNAUTHORIZED",

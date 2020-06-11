@@ -2,7 +2,7 @@ package com.tencent.bkrepo.docker.auth
 
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.docker.util.JwtUtil
-import com.tencent.bkrepo.docker.util.TimeUtils
+import com.tencent.bkrepo.docker.util.TimeUtil
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
@@ -16,7 +16,7 @@ class AuthUtil {
         try {
             val user = DockerClientAuthHandler.extractBasicAuth(request)
             val token = JwtUtil.sign(user.username)
-            val issuedAt = TimeUtils.getGMTTime()
+            val issuedAt = TimeUtil.getGMTTime()
             val tokenUrl = String.format("{\"token\": \"%s\", \"access_token\": \"%s\",\"issued_at\": \"%s\"}", token, token, issuedAt)
             return ResponseEntity.ok().header("Content-Type", "application/json").header("Docker-Distribution-Api-Version", "registry/2.0").body(tokenUrl)
         } catch (authException: ClientAuthException) {

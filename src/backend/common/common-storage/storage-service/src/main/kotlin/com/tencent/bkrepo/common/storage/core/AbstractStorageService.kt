@@ -17,7 +17,6 @@ import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
-import com.tencent.bkrepo.common.storage.monitor.StorageHealthChecker.Companion.HEALTH_CHECK_FILE
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import org.apache.commons.io.FileUtils
@@ -301,14 +300,16 @@ abstract class AbstractStorageService : StorageService {
     protected abstract fun doManualRetry(path: String, filename: String, credentials: StorageCredentials)
 
     open fun doCheckHealth(credentials: StorageCredentials) {
-        fileStorage.delete(CURRENT_PATH, HEALTH_CHECK_FILE, credentials)
+        val filename = System.nanoTime().toString()
         val inputStream = ZeroInputStream(monitor.monitorConfig.dataSize.toBytes())
-        fileStorage.store(CURRENT_PATH, HEALTH_CHECK_FILE, inputStream, credentials)
+        fileStorage.store(HEALTH_CHECK_PATH, filename, inputStream, credentials)
+        fileStorage.delete(HEALTH_CHECK_PATH, filename, credentials)
     }
     open fun getTempPath(): String? = null
 
     companion object {
         private const val CURRENT_PATH = ""
+        private const val HEALTH_CHECK_PATH = "/health-check"
         private const val BLOCK_SUFFIX = ".block"
         private const val BLOCK_EXTENSION = "block"
         private const val SHA256_SUFFIX = ".sha256"
