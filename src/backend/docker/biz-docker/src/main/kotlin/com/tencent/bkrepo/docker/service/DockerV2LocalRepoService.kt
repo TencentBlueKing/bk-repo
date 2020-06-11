@@ -334,10 +334,10 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactSe
             return DockerV2Errors.unauthorizedUpload()
         }
         val stream = artifactFile.getInputStream()
-        logger.info("deploy docker manifest [${pathContext.dockerRepo},$tag] into repo [${pathContext.repoName}] ,media [$mediaType]")
+        logger.info("deploy docker manifest [$pathContext,$tag] ,media [$mediaType]")
         val manifestType = ManifestType.from(mediaType)
         val manifestPath = buildManifestPathFromType(pathContext.dockerRepo, tag, manifestType)
-        logger.info("upload manifest path {}", manifestPath)
+        logger.info("upload manifest path [$manifestPath]")
         stream.use {
             val digest = processUploadedManifestType(
                 pathContext,

@@ -25,7 +25,7 @@ class DockerManifestSyncer constructor(repoService: DockerArtifactService) {
 
         while (manifestInfos.hasNext()) {
             val blobInfo = manifestInfos.next()
-            logger.info("sync docker blob digest [${blobInfo.digest}]")
+            logger.info("sync docker blob digest [$blobInfo]")
             if (blobInfo.digest != null && !this.isForeignLayer(blobInfo)) {
                 val blobDigest = DockerDigest(blobInfo.digest!!)
                 val blobFilename = blobDigest.filename()
@@ -35,7 +35,6 @@ class DockerManifestSyncer constructor(repoService: DockerArtifactService) {
                 if (!repo.exists(pathContext.projectId, pathContext.repoName, finalBlobPath)) {
                     if (DockerSchemaUtil.isEmptyBlob(blobDigest)) {
                         logger.debug("found empty layer [$blobFilename] in manifest for image [${pathContext.dockerRepo}] ,create blob in path [$finalBlobPath]")
-
                         val blobContent = ByteArrayInputStream(DockerSchemaUtil.EMPTY_BLOB_CONTENT)
                         val artifactFile = ArtifactFileFactory.build(blobContent)
                         blobContent.use {
@@ -50,8 +49,7 @@ class DockerManifestSyncer constructor(repoService: DockerArtifactService) {
                     } else {
                         logger.debug("blob temp file [$tempBlobPath] doesn't exist in temp, try other tags")
                         val targetPath = "/${pathContext.dockerRepo}/$tag/$blobFilename"
-                        if (!copyBlobFromFirstReadableDockerRepo(pathContext, blobFilename, targetPath)
-                        ) {
+                        if (!copyBlobFromFirstReadableDockerRepo(pathContext, blobFilename, targetPath)) {
                             logger.error("could not find temp blob [$tempBlobPath]")
                             return false
                         }
@@ -83,20 +81,15 @@ class DockerManifestSyncer constructor(repoService: DockerArtifactService) {
         blobFilename: String
     ): Boolean {
         if (!StringUtils.equals(sourcePath, targetPath)) {
-            logger.info("found [$blobFilename in path [$sourcePath] copy over to [$targetPath]")
+            logger.info("found [$blobFilename] in path [$sourcePath] copy over to [$targetPath]")
             return repo.copy(projectId, repoName, sourcePath, targetPath)
         }
         return false
     }
 
-    private fun moveBlobFromTempDir(
-        projectId: String,
-        repoName: String,
-        tempBlobPath: String,
-        finalBlobPath: String
-    ) {
-        logger.info("move temp blob from [$tempBlobPath] to [$finalBlobPath]")
-        repo.move(projectId, repoName, tempBlobPath, finalBlobPath)
+    private fun moveBlobFromTempDir(projectId: String, repoName: String, tempPath: String, finalPath: String) {
+        logger.info("move temp blob from [$tempPath] to [$finalPath]")
+        repo.move(projectId, repoName, tempPath, finalPath)
     }
 
     companion object {
