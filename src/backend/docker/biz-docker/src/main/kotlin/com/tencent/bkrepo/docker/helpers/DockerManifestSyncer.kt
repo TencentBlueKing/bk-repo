@@ -7,8 +7,8 @@ import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
-import com.tencent.bkrepo.docker.util.DockerSchemaUtils
-import com.tencent.bkrepo.docker.util.DockerUtils
+import com.tencent.bkrepo.docker.util.DockerSchemaUtil
+import com.tencent.bkrepo.docker.util.DockerUtil
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -33,15 +33,15 @@ class DockerManifestSyncer constructor(repoService: DockerArtifactService) {
                 val tempBlobPath = "/${pathContext.dockerRepo}/_uploads/$blobFilename"
                 val finalBlobPath = "/${pathContext.dockerRepo}/$tag/$blobFilename"
                 if (!repo.exists(pathContext.projectId, pathContext.repoName, finalBlobPath)) {
-                    if (DockerSchemaUtils.isEmptyBlob(blobDigest)) {
+                    if (DockerSchemaUtil.isEmptyBlob(blobDigest)) {
                         logger.debug("found empty layer [$blobFilename] in manifest for image [${pathContext.dockerRepo}] ,create blob in path [$finalBlobPath]")
 
-                        val blobContent = ByteArrayInputStream(DockerSchemaUtils.EMPTY_BLOB_CONTENT)
+                        val blobContent = ByteArrayInputStream(DockerSchemaUtil.EMPTY_BLOB_CONTENT)
                         val artifactFile = ArtifactFileFactory.build(blobContent)
                         blobContent.use {
                             repo.upload(
                                 UploadContext(pathContext.projectId, pathContext.repoName, finalBlobPath).content(it).sha256(
-                                    DockerSchemaUtils.emptyBlobDigest().getDigestHex()
+                                    DockerSchemaUtil.emptyBlobDigest().getDigestHex()
                                 ).artifactFile(artifactFile)
                             )
                         }
@@ -69,7 +69,7 @@ class DockerManifestSyncer constructor(repoService: DockerArtifactService) {
     }
 
     private fun copyBlobFromFirstReadableDockerRepo(pathContext: RequestContext, blobFilename: String, targetPath: String): Boolean {
-        val blob = DockerUtils.findBlobGlobally(repo, pathContext, blobFilename) ?: run {
+        val blob = DockerUtil.findBlobGlobally(repo, pathContext, blobFilename) ?: run {
             return false
         }
         return copyBlob(pathContext.projectId, pathContext.repoName, blob.path, targetPath, blobFilename)
@@ -83,7 +83,7 @@ class DockerManifestSyncer constructor(repoService: DockerArtifactService) {
         blobFilename: String
     ): Boolean {
         if (!StringUtils.equals(sourcePath, targetPath)) {
-            logger.info("found {} in path {}, copy over to {}", blobFilename, sourcePath, targetPath)
+            logger.info("found [$blobFilename in path [$sourcePath] copy over to [$targetPath]")
             return repo.copy(projectId, repoName, sourcePath, targetPath)
         }
         return false

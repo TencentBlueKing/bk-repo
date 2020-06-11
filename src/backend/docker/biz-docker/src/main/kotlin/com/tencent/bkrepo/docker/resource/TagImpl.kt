@@ -26,12 +26,8 @@ class TagImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) :
         if (last != null) {
             index = last
         }
+        val pathContext = RequestContext(projectId, repoName, name)
         dockerRepo.userId = userId
-        return dockerRepo.getTags(
-            RequestContext(
-                projectId,
-                repoName,
-                name
-            ), maxEntries, index)
+        return dockerRepo.getTags(pathContext, maxEntries, index)
     }
 }

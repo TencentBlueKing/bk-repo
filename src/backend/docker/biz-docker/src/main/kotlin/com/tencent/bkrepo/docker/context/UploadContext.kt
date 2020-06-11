@@ -6,12 +6,13 @@ import java.io.InputStream
 class UploadContext(projectId: String, repoName: String, path: String) {
 
     // full path
-    var path: String = ""
-    var content: InputStream? = null
-    var sha256: String = ""
     var projectId: String = ""
     var repoName: String = ""
+    var path: String = ""
+
     var artifactFile: ArtifactFile? = null
+    var content: InputStream? = null
+    var sha256: String = ""
 
     init {
         this.projectId = projectId

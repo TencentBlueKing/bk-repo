@@ -2,6 +2,7 @@ package com.tencent.bkrepo.docker.util
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.docker.artifact.DockerArtifactService
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.model.DockerDigest
@@ -12,10 +13,10 @@ import org.springframework.http.ResponseEntity
 import java.io.IOException
 import javax.xml.bind.DatatypeConverter
 
-class DockerSchemaUtils {
+class DockerSchemaUtil {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DockerSchemaUtils::class.java)
+        private val logger = LoggerFactory.getLogger(DockerSchemaUtil::class.java)
         val EMPTY_BLOB_CONTENT =
             DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")
         private val EMPTY_BLOB_SIZE = 32
@@ -60,7 +61,7 @@ class DockerSchemaUtils {
                 val manifest = JsonUtil.readTree(manifestBytes)
                 val digest = manifest.get("config").get("digest").asText()
                 val manifestConfigFilename = DockerDigest(digest).filename()
-                val manifestConfigFile = DockerUtils.getManifestConfigBlob(
+                val manifestConfigFile = DockerUtil.getManifestConfigBlob(
                     repo,
                     manifestConfigFilename,
                     pathContext,
@@ -69,7 +70,7 @@ class DockerSchemaUtils {
                 logger.info("fetch manifest config file {}", manifestConfigFile!!.sha256)
                 val manifestStream = repo.readGlobal(
                     DownloadContext(pathContext.projectId, pathContext.repoName, manifestConfigFile.path)
-                        .sha256(manifestConfigFile.sha256!!).length(manifestConfigFile.contentLength)
+                        .sha256(manifestConfigFile.sha256!!).length(manifestConfigFile.length)
                 )
                 manifestStream.use {
                     var bytes = IOUtils.toByteArray(it)
@@ -110,15 +111,14 @@ class DockerSchemaUtils {
                         val digest = manifest.get("digest").asText()
                         val manifestFilename = DockerDigest(digest).filename()
                         if (searchGlobally) {
-                            val manifestFile = DockerUtils.findBlobGlobally(
+                            val manifestFile = DockerUtil.findBlobGlobally(
                                 repo,
                                 pathContext,
                                 manifestFilename
-                            )
-                            return if (manifestFile == null) "" else DockerUtils.getFullPath(
-                                manifestFile,
-                                repo.getWorkContextC()
-                            )
+                            ) ?: kotlin.run {
+                                return EMPTYSTR
+                            }
+                            return DockerUtil.getFullPath(manifestFile)
                         }
 
                         val artifact =
@@ -127,10 +127,10 @@ class DockerSchemaUtils {
                     }
                 }
             } catch (ioException: IOException) {
-                logger.error("Error fetching manifest list: " + ioException.message, ioException)
+                logger.error("Error fetching manifest list [$ioException]")
             }
 
-            return ""
+            return EMPTYSTR
         }
     }
 }

@@ -35,10 +35,10 @@ import org.springframework.stereotype.Service
 import java.io.InputStream
 
 /**
- *  docker repo storage interface
- *  to work with storage module
  * @author: owenlxu
  * @date: 2020-06-10
+ *  docker repo storage interface
+ *  to work with storage module
  */
 
 @Service
@@ -199,16 +199,20 @@ class DockerArtifactService @Autowired constructor(
         return true
     }
 
-    // set node  attribute
+    // set node attribute
     fun setAttributes(projectId: String, repoName: String, path: String, data: Map<String, String>) {
-        logger.info("set attributes request {},{},{}", projectId, repoName, path, data.toString())
-        metadataService.save(MetadataSaveRequest(projectId, repoName, path, data))
+        logger.info("set attributes request [$projectId,$repoName,$path,$data]")
+        val result = metadataService.save(MetadataSaveRequest(projectId, repoName, path, data))
+        if (result.isNotOk()) {
+            logger.error("set attribute [$projectId,$repoName,$path,$data] fail")
+            throw DockerFileSaveFailedException("set attribute fail")
+        }
     }
 
-    // get node  attribute
+    // get node attribute
     fun getAttribute(projectId: String, repoName: String, fullPath: String, key: String): String? {
         val result = metadataService.query(projectId, repoName, fullPath).data!!
-        logger.info("getAttribute params : [$projectId], [$repoName], [$fullPath], [$key] ,result: [$result]")
+        logger.info("getAttribute params : [$projectId,$repoName,$fullPath,$key] ,result: [$result]")
         return result[key]
     }
 
@@ -236,7 +240,7 @@ class DockerArtifactService @Autowired constructor(
         return true
     }
 
-    // check path write permission
+    // check user write permission
     fun canWrite(pathContext: RequestContext): Boolean {
         try {
             permissionService.checkPermission(
@@ -247,7 +251,7 @@ class DockerArtifactService @Autowired constructor(
                 pathContext.repoName
             )
         } catch (e: PermissionCheckException) {
-            logger.error("user: [$userId] ,check write permission fail [$pathContext")
+            logger.warn("user: [$userId] ,check write permission fail [$pathContext]")
             return false
         }
         return true
@@ -256,15 +260,15 @@ class DockerArtifactService @Autowired constructor(
     // construct artifact object
     fun artifact(projectId: String, repoName: String, fullPath: String): Artifact? {
         val nodes = nodeResource.detail(projectId, repoName, fullPath).data ?: run {
-            logger.warn("get  artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
+            logger.warn("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
         }
         if (nodes.nodeInfo.sha256 == null) {
-            logger.error("get  artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
+            logger.error("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
         }
         return Artifact(projectId, repoName, fullPath).sha256(nodes.nodeInfo.sha256!!)
-            .contentLength(nodes.nodeInfo.size)
+            .length(nodes.nodeInfo.size)
     }
 
     // find artifact
@@ -345,28 +349,9 @@ class DockerArtifactService @Autowired constructor(
             var path = it["path"] as String
             val tag = path.removePrefix("/$image/").removeSuffix("/")
             val user = it["createdBy"] as String
-            data.put(tag, user)
+            data[tag] = user
         }
         return data
-    }
-
-    // find artifacts by name
-    fun findArtifactsByName(projectId: String, repoName: String, fileName: String): List<Map<String, Any>> {
-        val projectRule = Rule.QueryRule("projectId", projectId)
-        val repoNameRule = Rule.QueryRule("repoName", repoName)
-        val nameRule = Rule.QueryRule("name", fileName)
-        val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule))
-        val queryModel = QueryModel(
-            page = PageLimit(0, 9999999),
-            sort = Sort(listOf("path"), Sort.Direction.ASC),
-            select = mutableListOf("path"),
-            rule = rule
-        )
-        val result = nodeResource.query(queryModel).data ?: run {
-            logger.warn("find artifacts failed: [$fileName] found no node")
-            return emptyList()
-        }
-        return result.records
     }
 
     // find artifacts by digest
@@ -388,7 +373,7 @@ class DockerArtifactService @Autowired constructor(
         return result.records
     }
 
-    // find manifest
+    // find manifest by manifest path
     fun findManifest(projectId: String, repoName: String, manifestPath: String): NodeDetail? {
         // query node info
         return nodeResource.detail(projectId, repoName, manifestPath).data ?: run {

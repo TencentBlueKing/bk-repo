@@ -3,15 +3,14 @@ package com.tencent.bkrepo.docker.util
 import com.google.common.base.Joiner
 import com.tencent.bkrepo.docker.artifact.Artifact
 import com.tencent.bkrepo.docker.artifact.DockerArtifactService
-import com.tencent.bkrepo.docker.artifact.DockerWorkContext
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.helpers.DockerSearchBlobPolicy
 import org.slf4j.LoggerFactory
 
-class DockerUtils(repo: DockerArtifactService) {
+class DockerUtil(repo: DockerArtifactService) {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DockerUtils::class.java)
+        private val logger = LoggerFactory.getLogger(DockerUtil::class.java)
         val IMAGES_DIR = ".images"
         val LAYER_FILENAME = "layer.tar"
         val JSON_FILENAME = "json.json"
@@ -107,7 +106,7 @@ class DockerUtils(repo: DockerArtifactService) {
                 pathContext.repoName,
                 pathContext.dockerRepo
             ).sha256(fileName.replace("sha256__", ""))
-                .contentLength(length.toLong()).path(fullPath)
+                .length(length.toLong()).path(fullPath)
         }
 
         fun getManifestConfigBlob(
@@ -144,8 +143,8 @@ class DockerUtils(repo: DockerArtifactService) {
             return blob
         }
 
-        fun getFullPath(artifact: Artifact, workContext: DockerWorkContext): String {
-            return workContext.translateRepoId(artifact.getRepoId()) + "/" + artifact.getArtifactPath()
+        fun getFullPath(artifact: Artifact): String {
+            return "/" + artifact.path
         }
     }
 }
