@@ -94,7 +94,7 @@ class DockerUtil(repo: DockerArtifactService) {
             pathContext: RequestContext,
             fileName: String
         ): Artifact? {
-            val result = repo.findArtifacts(pathContext.projectId, pathContext.repoName, fileName)
+            val result = repo.getArtifactListByName(pathContext.projectId, pathContext.repoName, fileName)
             if (result.isEmpty()) {
                 return null
             }
@@ -119,7 +119,7 @@ class DockerUtil(repo: DockerArtifactService) {
             // search blob in the repo first
             logger.info("search manifest config blob in: [$configPath]")
             if (repo.exists(pathContext.projectId, pathContext.repoName, configPath)) {
-                return repo.artifact(pathContext.projectId, pathContext.repoName, configPath)
+                return repo.getArtifact(pathContext.projectId, pathContext.repoName, configPath)
             }
             // search file in the temp path
             return getBlobFromRepo(repo, pathContext, blobFilename)
@@ -135,7 +135,7 @@ class DockerUtil(repo: DockerArtifactService) {
             logger.info("search blob in temp path [$tempBlobPath] first")
             var blob: Artifact?
             if (repo.exists(pathContext.projectId, pathContext.repoName, tempBlobPath)) {
-                blob = repo.artifact(pathContext.projectId, pathContext.repoName, tempBlobPath)
+                blob = repo.getArtifact(pathContext.projectId, pathContext.repoName, tempBlobPath)
                 return blob
             }
             logger.info("attempt to search  blob [$pathContext,$blobFilename]")

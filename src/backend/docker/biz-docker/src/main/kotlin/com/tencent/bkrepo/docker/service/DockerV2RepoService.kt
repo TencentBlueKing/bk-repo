@@ -8,33 +8,33 @@ import org.springframework.http.ResponseEntity
 interface DockerV2RepoService {
     fun ping(): ResponseEntity<Any>
 
-    fun isBlobExists(pathContext: RequestContext, digest: DockerDigest): ResponseEntity<Any>
+    fun isBlobExists(context: RequestContext, digest: DockerDigest): ResponseEntity<Any>
 
-    fun getBlob(pathContext: RequestContext, digest: DockerDigest): ResponseEntity<Any>
+    fun getBlob(context: RequestContext, digest: DockerDigest): ResponseEntity<Any>
 
-    fun startBlobUpload(pathContext: RequestContext, mount: String?): ResponseEntity<Any>
+    fun startBlobUpload(context: RequestContext, mount: String?): ResponseEntity<Any>
 
-    fun patchUpload(pathContext: RequestContext, uuid: String, artifactFile: ArtifactFile): ResponseEntity<Any>
+    fun patchUpload(context: RequestContext, uuid: String, file: ArtifactFile): ResponseEntity<Any>
 
     fun uploadBlob(
-        pathContext: RequestContext,
+        context: RequestContext,
         digest: DockerDigest,
         uuid: String,
-        artifactFile: ArtifactFile
+        file: ArtifactFile
     ): ResponseEntity<Any>
 
     fun uploadManifest(
-        pathContext: RequestContext,
+        context: RequestContext,
         tag: String,
         mediaType: String,
-        artifactFile: ArtifactFile
+        file: ArtifactFile
     ): ResponseEntity<Any>
 
-    fun getManifest(pathContext: RequestContext, reference: String): ResponseEntity<Any>
+    fun getManifest(context: RequestContext, reference: String): ResponseEntity<Any>
 
-    fun deleteManifest(pathContext: RequestContext, reference: String): ResponseEntity<Any>
+    fun deleteManifest(context: RequestContext, reference: String): ResponseEntity<Any>
 
-    fun getTags(pathContext: RequestContext, maxEntries: Int, lastEntry: String): ResponseEntity<Any>
+    fun getTags(context: RequestContext, maxEntries: Int, lastEntry: String): ResponseEntity<Any>
 
     fun catalog(projectId: String, name: String, maxEntries: Int, lastEntry: String): ResponseEntity<Any>
 }

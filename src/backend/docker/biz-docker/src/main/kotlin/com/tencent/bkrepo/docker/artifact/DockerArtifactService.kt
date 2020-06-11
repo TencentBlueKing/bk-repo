@@ -25,7 +25,6 @@ import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
@@ -37,8 +36,8 @@ import java.io.InputStream
 /**
  * @author: owenlxu
  * @date: 2020-06-10
- *  docker repo storage interface
- *  to work with storage module
+ * docker repo storage interface
+ * to work with storage module
  */
 
 @Service
@@ -49,8 +48,6 @@ class DockerArtifactService @Autowired constructor(
     private val metadataService: MetadataResource,
     private val permissionService: PermissionService
 ) {
-
-    private var context: DockerWorkContext = DockerWorkContext()
 
     lateinit var userId: String
 
@@ -78,10 +75,6 @@ class DockerArtifactService @Autowired constructor(
             logger.error("user [$userId] load data from  storage  [${context.name}] failed: [${context.projectId},${context.repoName}] failed")
             throw DockerFileReadFailedException(context.repoName)
         }
-    }
-
-    fun getWorkContextC(): DockerWorkContext {
-        return this.context
     }
 
     // TODO : to implement
@@ -257,8 +250,8 @@ class DockerArtifactService @Autowired constructor(
         return true
     }
 
-    // construct artifact object
-    fun artifact(projectId: String, repoName: String, fullPath: String): Artifact? {
+    // get artifact detail
+    fun getArtifact(projectId: String, repoName: String, fullPath: String): Artifact? {
         val nodes = nodeResource.detail(projectId, repoName, fullPath).data ?: run {
             logger.warn("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
@@ -271,18 +264,8 @@ class DockerArtifactService @Autowired constructor(
             .length(nodes.nodeInfo.size)
     }
 
-    // find artifact
-    fun findArtifact(pathContext: RequestContext, fileName: String): NodeDetail? {
-        // get node info
-        val fullPath = "/${pathContext.dockerRepo}/$fileName"
-        return nodeResource.detail(pathContext.projectId, pathContext.repoName, fullPath).data ?: run {
-            logger.warn("get artifact detail failed: ${pathContext.projectId}, ${pathContext.repoName}, $fullPath found no node")
-            return null
-        }
-    }
-
-    // find artifact list
-    fun findArtifacts(projectId: String, repoName: String, fileName: String): List<Map<String, Any>> {
+    // get artifact list by name
+    fun getArtifactListByName(projectId: String, repoName: String, fileName: String): List<Map<String, Any>> {
         val projectRule = Rule.QueryRule("projectId", projectId)
         val repoNameRule = Rule.QueryRule("repoName", repoName)
         val nameRule = Rule.QueryRule("name", fileName)
@@ -301,8 +284,8 @@ class DockerArtifactService @Autowired constructor(
         return result.records
     }
 
-    // find repo list
-    fun findRepoList(projectId: String, repoName: String): List<String> {
+    // get docker image list
+    fun getDockerImageList(projectId: String, repoName: String): List<String> {
         val projectRule = Rule.QueryRule("projectId", projectId)
         val repoNameRule = Rule.QueryRule("repoName", repoName)
         val nameRule = Rule.QueryRule("name", "manifest.json")
@@ -326,8 +309,8 @@ class DockerArtifactService @Autowired constructor(
         return data.distinct()
     }
 
-    // find repo tag list
-    fun findRepoTagList(projectId: String, repoName: String, image: String): Map<String, String> {
+    // get repo tag list
+    fun getRepoTagList(projectId: String, repoName: String, image: String): Map<String, String> {
         val projectRule = Rule.QueryRule("projectId", projectId)
         val repoNameRule = Rule.QueryRule("repoName", repoName)
         val nameRule = Rule.QueryRule("name", "manifest.json")
@@ -354,8 +337,8 @@ class DockerArtifactService @Autowired constructor(
         return data
     }
 
-    // find artifacts by digest
-    fun findArtifactsByDigest(projectId: String, repoName: String, digestName: String): List<Map<String, Any>> {
+    // get blob list by digest
+    fun getBlobListByDigest(projectId: String, repoName: String, digestName: String): List<Map<String, Any>> {
         val projectRule = Rule.QueryRule("projectId", projectId)
         val repoNameRule = Rule.QueryRule("repoName", repoName)
         val nameRule = Rule.QueryRule("name", digestName)
@@ -371,15 +354,6 @@ class DockerArtifactService @Autowired constructor(
             return emptyList()
         }
         return result.records
-    }
-
-    // find manifest by manifest path
-    fun findManifest(projectId: String, repoName: String, manifestPath: String): NodeDetail? {
-        // query node info
-        return nodeResource.detail(projectId, repoName, manifestPath).data ?: run {
-            logger.warn("find manifest failed: $projectId, $repoName, $manifestPath found no node")
-            return null
-        }
     }
 
     companion object {

@@ -31,7 +31,7 @@ class DockerSchemaUtil {
         }
 
         fun isEmptyBlob(digest: DockerDigest): Boolean {
-            return digest.toString().equals(emptyBlobDigest().toString())
+            return digest.toString() == emptyBlobDigest().toString()
         }
 
         fun emptyBlobDigest(): DockerDigest {
@@ -74,7 +74,7 @@ class DockerSchemaUtil {
                 )
                 manifestStream.use {
                     var bytes = IOUtils.toByteArray(it)
-                    logger.info("config blob data size [bytes.size]")
+                    logger.info("config blob data size [${bytes.size}]")
                     return bytes
                 }
             } catch (exception: IOException) {
@@ -84,11 +84,13 @@ class DockerSchemaUtil {
             return ByteArray(0)
         }
 
+        // TODO: need to develop
         fun fetchSchema2Manifest(repo: DockerArtifactService, schema2Path: String): ByteArray {
-            val manifestStream = repo.getWorkContextC().readGlobal(schema2Path)
-            manifestStream.use {
-                return IOUtils.toByteArray(it)
-            }
+            return ByteArray(0)
+            // val manifestStream = repo.readGlobal(schema2Path)
+            // manifestStream.use {
+            //     return IOUtils.toByteArray(it)
+            // }
         }
 
         fun fetchSchema2Path(
@@ -122,12 +124,12 @@ class DockerSchemaUtil {
                         }
 
                         val artifact =
-                            repo.artifact(pathContext.projectId, pathContext.repoName, pathContext.dockerRepo)
+                            repo.getArtifact(pathContext.projectId, pathContext.repoName, pathContext.dockerRepo)
                         return artifact!!.path
                     }
                 }
             } catch (ioException: IOException) {
-                logger.error("Error fetching manifest list [$ioException]")
+                logger.error("error fetch manifest list [$ioException]")
             }
 
             return EMPTYSTR
