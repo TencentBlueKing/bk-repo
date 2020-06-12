@@ -211,7 +211,7 @@ class FullReplicationJob : QuartzJobBean() {
                     val existFullPathList = replicationClient.checkNodeExistList(
                         authToken, nodeCheckRequest
                     ).data!!
-                    logger.info("node path list params [$nodeCheckRequest], result [$existFullPathList]")
+                    logger.debug("node path list params [$nodeCheckRequest], result [$existFullPathList]")
                     // 同步不存在的节点
                     fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
                 }
@@ -229,12 +229,12 @@ class FullReplicationJob : QuartzJobBean() {
             if (existFullPathList.contains(node.fullPath)) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> {
-                        logger.warn("Node[$node] conflict, skip it.")
+                        logger.debug("Node[$node] conflict, skip it.")
                         task.replicationProgress.conflictedNode += 1
                         return
                     }
                     ConflictStrategy.OVERWRITE -> {
-                        logger.warn("Node[$node] conflict, overwrite it.")
+                        logger.debug("Node[$node] conflict, overwrite it.")
                     }
                     ConflictStrategy.FAST_FAIL -> throw RuntimeException("Node[$node] conflict.")
                 }
