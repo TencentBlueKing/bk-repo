@@ -1,37 +1,30 @@
 package com.tencent.bkrepo.docker.context
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import java.io.InputStream
 
-class UploadContext(projectId: String, repoName: String, path: String) {
+class UploadContext(projectId: String, repoName: String, fullPath: String) {
 
     // full path
     var projectId: String = ""
     var repoName: String = ""
-    var path: String = ""
+    var fullPath: String = ""
 
     var artifactFile: ArtifactFile? = null
-    var content: InputStream? = null
     var sha256: String = ""
 
     init {
         this.projectId = projectId
         this.repoName = repoName
-        this.path = path
+        this.fullPath = fullPath
     }
 
     fun path(path: String): UploadContext {
-        this.path = path
+        this.fullPath = path
         return this
     }
 
     fun artifactFile(artifactFile: ArtifactFile): UploadContext {
         this.artifactFile = artifactFile
-        return this
-    }
-
-    fun content(content: InputStream): UploadContext {
-        this.content = content
         return this
     }
 
