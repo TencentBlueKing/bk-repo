@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.rpm.util.redline.model
 
-class Entry constructor() {
+class Entry {
     lateinit var name: String
     var flags: String? = null
     var epoch: String? = null

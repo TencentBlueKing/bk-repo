@@ -1,13 +1,9 @@
 package com.tencent.bkrepo.rpm.util.rpm
 
 import com.google.common.collect.Lists
-import com.tencent.bkrepo.rpm.util.redline.model.ChangeLog
-import com.tencent.bkrepo.rpm.util.redline.model.Entry
-import com.tencent.bkrepo.rpm.util.redline.model.RpmFormat
-import com.tencent.bkrepo.rpm.util.redline.model.RpmMetadata
+import com.tencent.bkrepo.rpm.util.redline.model.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.File
 import org.apache.commons.lang.StringUtils
 import org.redline_rpm.header.Header
 import org.redline_rpm.header.Flags
@@ -28,11 +24,6 @@ class RpmFormatInterpreter {
         rpmMetadata.headerEnd = rawMetadata.headerEnd
         rpmMetadata.name = getName(header)!!
         rpmMetadata.architecture = if (rawMetadata.type == RpmType.SOURCE) "src" else getArchitecture(header)!!
-//        if (rawMetadata.type == RpmType.SOURCE) {
-//            rpmMetadata.architecture = "src"
-//        } else {
-//            rpmMetadata.architecture = getArchitecture(header)!!
-//        }
         rpmMetadata.version = getVersion(header)!!
         rpmMetadata.epoch = getEpoch(header)
         rpmMetadata.release = getRelease(header)!!
@@ -198,7 +189,7 @@ class RpmFormatInterpreter {
             val baseNameDirIndex = baseNameDirIndexes[i]
             val filePath = dirPaths[0][baseNameDirIndex] + baseName
             val dir = dirPaths[0][baseNameDirIndex]?.contains("$filePath/")
-            val file = if (dir!!) File(filePath, "dir") else File(filePath)
+            val file = if (dir!!) File("dir", filePath) else File(null, filePath)
             files.add(file)
         }
         return files

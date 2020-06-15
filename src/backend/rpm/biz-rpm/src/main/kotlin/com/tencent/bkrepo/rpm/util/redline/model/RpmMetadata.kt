@@ -1,10 +1,9 @@
 package com.tencent.bkrepo.rpm.util.redline.model
 
-import java.io.File
-import java.util.*
+import java.util.LinkedList
 import kotlin.properties.Delegates
 
-class RpmMetadata constructor() {
+class RpmMetadata {
     lateinit var sha1Digest: String
     lateinit var artifactRelativePath: String
     var lastModified: Long? = System.currentTimeMillis()
