@@ -33,6 +33,10 @@ class FileSystemArtifactFile(private val file: File) : ArtifactFile {
     override fun delete() {
         Files.deleteIfExists(file.toPath())
     }
+
+    override fun hasInitialized(): Boolean {
+        return true
+    }
 }
 
 fun File.toArtifactFile(): ArtifactFile {
