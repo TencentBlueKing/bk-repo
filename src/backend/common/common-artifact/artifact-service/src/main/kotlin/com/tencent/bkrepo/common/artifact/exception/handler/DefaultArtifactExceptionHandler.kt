@@ -4,7 +4,9 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_VALUE
 import com.tencent.bkrepo.common.artifact.exception.ArtifactException
+import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -19,6 +21,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 @RestControllerAdvice
 class DefaultArtifactExceptionHandler : AbstractArtifactExceptionHandler() {
+
+    @ExceptionHandler(ArtifactReceiveException::class)
+    fun handleException(exception: ArtifactReceiveException) {
+        LoggerHolder.logBusinessException(exception)
+    }
 
     @ExceptionHandler(ClientAuthException::class)
     fun handleException(exception: ClientAuthException): Response<*> {
