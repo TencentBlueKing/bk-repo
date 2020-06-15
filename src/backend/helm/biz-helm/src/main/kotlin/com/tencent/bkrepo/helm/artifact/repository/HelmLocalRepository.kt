@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -25,7 +26,6 @@ import com.tencent.bkrepo.helm.constants.INIT_STR
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.utils.JsonUtil
-import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
@@ -136,7 +136,7 @@ class HelmLocalRepository : LocalRepository() {
         return context.contextAttributes[FULL_PATH] as String
     }
 
-    override fun search(context: ArtifactSearchContext): Map<String, Any>? {
+    override fun search(context: ArtifactSearchContext): ArtifactInputStream? {
         val fullPath = context.contextAttributes[FULL_PATH] as String
         return try {
             this.onSearch(context) ?: throw ArtifactNotFoundException("Artifact[$fullPath] does not exist")
@@ -146,7 +146,7 @@ class HelmLocalRepository : LocalRepository() {
         }
     }
 
-    private fun onSearch(context: ArtifactSearchContext): Map<String, Any>? {
+    private fun onSearch(context: ArtifactSearchContext): ArtifactInputStream? {
         val repositoryInfo = context.repositoryInfo
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
@@ -163,9 +163,7 @@ class HelmLocalRepository : LocalRepository() {
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
 
         node.nodeInfo.takeIf { !it.folder } ?: return null
-        return storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)?.run {
-            YamlUtils.convertFileToEntity<Map<String, Any>>(this)
-        }
+        return storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
     }
 
     override fun remove(context: ArtifactRemoveContext) {

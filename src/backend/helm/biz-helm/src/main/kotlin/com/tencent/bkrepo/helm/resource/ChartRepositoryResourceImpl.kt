@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.helm.resource
 
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.helm.api.ChartRepositoryResource
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
@@ -22,5 +24,10 @@ class ChartRepositoryResourceImpl : ChartRepositoryResource {
 
     override fun installProv(artifactInfo: HelmArtifactInfo) {
         chartRepositoryService.installTgz(artifactInfo)
+    }
+
+    override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo): Response<Void> {
+        chartRepositoryService.regenerateIndexYaml(artifactInfo)
+        return ResponseBuilder.success()
     }
 }
