@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.docker.api
 
+import com.tencent.bkrepo.docker.constant.DOCKER_API_PREFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_CATALOG_SUFFIX
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -17,11 +19,11 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 
 @Api("docker镜像catalog相关接口")
-@RequestMapping("/v2/")
+@RequestMapping(DOCKER_API_PREFIX)
 interface Catalog {
 
     @ApiOperation("获取catalog列表")
-    @RequestMapping(method = [RequestMethod.GET], value = ["_catalog"])
+    @RequestMapping(method = [RequestMethod.GET], value = [DOCKER_CATALOG_SUFFIX])
     fun list(
         @RequestAttribute
         userId: String,

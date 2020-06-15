@@ -18,9 +18,5 @@ data class CacheProperties(
     /**
      * 缓存文件时间，单位天。小于或等于0则永久存储
      */
-    var expireDays: Int = -1,
-    /**
-     * 基于阈值的文件缓存策略
-     */
-    var useThreshold: Boolean = false
+    var expireDays: Int = -1
 )

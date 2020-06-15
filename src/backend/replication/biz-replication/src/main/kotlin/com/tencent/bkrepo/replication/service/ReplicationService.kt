@@ -3,6 +3,7 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.replication.job.ReplicationContext
+import com.tencent.bkrepo.replication.pojo.request.RequestBodyUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
@@ -18,7 +19,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.Request
-import okhttp3.RequestBody
 import org.springframework.stereotype.Service
 
 @Service
@@ -28,14 +28,11 @@ class ReplicationService(
     fun replicaFile(context: ReplicationContext, request: NodeCreateRequest) {
         with(context) {
             // 查询文件
-            val file = repoDataService.getFile(request.sha256!!, currentRepoDetail.localRepoInfo)
-            if (file.length() != request.size) {
-                throw RuntimeException("File size ${file.length()} does not match node size ${request.size}")
-            }
-            val fileRequestBody = RequestBody.create(MEDIA_TYPE_STREAM, file)
+            val inputStream = repoDataService.getFile(request.sha256!!, request.size!!, currentRepoDetail.localRepoInfo)
+            val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM!!, inputStream, request.size!!)
             val builder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("file", file.name, fileRequestBody)
+                .addFormDataPart("file", request.fullPath, fileRequestBody)
                 .addFormDataPart("projectId", request.projectId)
                 .addFormDataPart("repoName", request.repoName)
                 .addFormDataPart("fullPath", request.fullPath)
@@ -47,11 +44,11 @@ class ReplicationService(
                 builder.addFormDataPart("metadata[$key]", value)
             }
             val requestBody = builder.build()
-            val request = Request.Builder()
+            val httpRequest = Request.Builder()
                 .url("$normalizedUrl/replica/file")
                 .post(requestBody)
                 .build()
-            val response = httpClient.newCall(request).execute()
+            val response = httpClient.newCall(httpRequest).execute()
             response.use {
                 if (!response.isSuccessful) {
                     val responseString = response.body()?.string() ?: UNKNOWN

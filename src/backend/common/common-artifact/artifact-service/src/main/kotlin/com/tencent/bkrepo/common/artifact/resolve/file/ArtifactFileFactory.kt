@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.artifact.resolve.file
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.OctetStreamArtifactFile
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST
 import org.springframework.web.context.request.RequestContextHolder
@@ -16,25 +17,33 @@ import java.io.InputStream
  * @date: 2019/10/30
  */
 @Component
-class ArtifactFileFactory(uploadProperties: UploadProperties) {
+class ArtifactFileFactory(
+    uploadConfigElement: UploadConfigElement,
+    storageHealthMonitor: StorageHealthMonitor
+) {
 
     init {
-        config = UploadConfigElement(uploadProperties)
+        config = uploadConfigElement
+        monitor = storageHealthMonitor
     }
 
     companion object {
 
         private lateinit var config: UploadConfigElement
+        private lateinit var monitor: StorageHealthMonitor
+
         const val ARTIFACT_FILES = "artifact.files"
 
         fun build(inputStream: InputStream): ArtifactFile {
-            val artifactFile = OctetStreamArtifactFile(inputStream, config.fileSizeThreshold, config.location, config.resolveLazily)
-            track(artifactFile)
-            return artifactFile
+            return OctetStreamArtifactFile(inputStream, monitor, config).apply {
+                track(this)
+            }
         }
 
         fun build(multipartFile: MultipartFile): ArtifactFile {
-            return MultipartArtifactFile(multipartFile, config.fileSizeThreshold, config.location, config.resolveLazily)
+            return MultipartArtifactFile(multipartFile, monitor, config).apply {
+                track(this)
+            }
         }
 
         @Suppress("UNCHECKED_CAST")

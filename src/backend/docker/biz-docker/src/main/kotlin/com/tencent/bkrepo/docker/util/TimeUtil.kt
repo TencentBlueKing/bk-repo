@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.TimeZone
 
-object TimeUtils {
+object TimeUtil {
     fun getGMTTime(): String {
         val timeZone = TimeZone.getTimeZone("GMT")
         val time = System.currentTimeMillis()

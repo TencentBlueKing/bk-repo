@@ -259,12 +259,7 @@ class FullReplicationJob : QuartzJobBean() {
                     metadata = metadata,
                     operator = node.createdBy
                 )
-                logger.info(
-                    "start to replica file {} ,{}, {}",
-                    replicaRequest.projectId,
-                    replicaRequest.repoName,
-                    replicaRequest.fullPath
-                )
+                logger.info("start to replica file ${replicaRequest.projectId} ,${replicaRequest.repoName}, ${replicaRequest.fullPath}")
                 replicationService.replicaFile(context, replicaRequest)
                 task.replicationProgress.successNode += 1
             } catch (exception: Exception) {

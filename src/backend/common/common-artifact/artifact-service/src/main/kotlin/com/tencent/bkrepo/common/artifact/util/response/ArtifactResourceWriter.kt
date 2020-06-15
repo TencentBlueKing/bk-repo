@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.artifact.util.response
 
-import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
 import com.tencent.bkrepo.common.artifact.config.BYTES
 import com.tencent.bkrepo.common.artifact.config.CONTENT_DISPOSITION_TEMPLATE
@@ -15,6 +14,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.util.NodeUtils
 import io.micrometer.core.instrument.Metrics
@@ -100,14 +100,15 @@ object ArtifactResourceWriter {
     private fun writeRangeStream(inputStream: ArtifactInputStream, response: HttpServletResponse) {
         inputStream.use {
             val output = response.outputStream
-            val (size, nanoTime) = executeAndMeasureNanoTime {
+            executeAndMeasureNanoTime {
                 inputStream.copyTo(output, BUFFER_SIZE)
+            }.apply {
+                val throughput = Throughput(first, second)
+                Metrics.counter(ARTIFACT_DOWNLOADED_BYTES_COUNT).increment(throughput.bytes.toDouble())
+                Metrics.counter(ARTIFACT_DOWNLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
+                logger.info("Response artifact file, $throughput.")
             }
             output.flush()
-            Metrics.counter(ARTIFACT_DOWNLOADED_BYTES_COUNT).increment(size.toDouble())
-            Metrics.counter(ARTIFACT_DOWNLOADED_CONSUME_COUNT).increment(nanoTime / 1000.0 / 1000.0)
-            logger.info("Response artifact file, size: ${HumanReadable.size(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
-                "average: ${HumanReadable.throughput(size, nanoTime)}.")
         }
     }
 

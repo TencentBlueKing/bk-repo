@@ -9,6 +9,7 @@ import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.api.NodeResource
@@ -19,7 +20,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.io.File
+import java.io.InputStream
 
 @Service
 class RepoDataService @Autowired constructor(
@@ -61,8 +62,8 @@ class RepoDataService @Autowired constructor(
         return metadataResource.query(nodeInfo.projectId, nodeInfo.repoName, nodeInfo.fullPath).data!!
     }
 
-    fun getFile(sha256: String, repoInfo: RepositoryInfo): File {
-        return storageService.load(sha256, repoInfo.storageCredentials)!!
+    fun getFile(sha256: String, length: Long, repoInfo: RepositoryInfo): InputStream {
+        return storageService.load(sha256, Range.ofFull(length), repoInfo.storageCredentials)!!
     }
 
     fun listRole(projectId: String, repoName: String?): List<Role> {

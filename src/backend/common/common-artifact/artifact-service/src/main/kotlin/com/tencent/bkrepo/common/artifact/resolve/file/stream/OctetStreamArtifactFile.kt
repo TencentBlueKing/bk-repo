@@ -1,10 +1,13 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
-import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile.Companion.generatePath
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile.Companion.generateRandomName
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_BYTES_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_CONSUME_COUNT
+import com.tencent.bkrepo.common.artifact.resolve.file.SmartStreamReceiver
+import com.tencent.bkrepo.common.artifact.resolve.file.UploadConfigElement
+import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import io.micrometer.core.instrument.Metrics
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
@@ -12,22 +15,19 @@ import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
-import java.nio.file.Paths
-import kotlin.system.measureNanoTime
 
-class OctetStreamArtifactFile(
+open class OctetStreamArtifactFile(
     private val source: InputStream,
-    fileSizeThreshold: Int,
-    location: String,
-    resolveLazily: Boolean = true
+    private val monitor: StorageHealthMonitor,
+    config: UploadConfigElement
 ) : ArtifactFile {
 
-    private val filePath = generatePath(Paths.get(location))
-    private val outputStream = ThresholdOutputStream(fileSizeThreshold, filePath)
     private var hasInitialized: Boolean = false
+    private val listener = DigestCalculateListener()
+    private val receiver = SmartStreamReceiver(config.fileSizeThreshold, generateRandomName(), monitor.getPrimaryPath(), monitor.monitorConfig.enableTransfer)
 
     init {
-        if (!resolveLazily) {
+        if (!config.isResolveLazily()) {
             init()
         }
     }
@@ -35,57 +35,77 @@ class OctetStreamArtifactFile(
     override fun getInputStream(): InputStream {
         init()
         return if (!isInMemory()) {
-            Files.newInputStream(filePath)
+            Files.newInputStream(receiver.getFilePath())
         } else {
-            ByteArrayInputStream(outputStream.getCachedByteArray())
+            ByteArrayInputStream(receiver.getCachedByteArray())
         }
     }
 
     override fun getSize(): Long {
         init()
-        return outputStream.totalBytes
+        return receiver.totalSize
     }
 
     override fun isInMemory(): Boolean {
         init()
-        return outputStream.isInMemory()
+        return receiver.isInMemory
     }
 
     override fun getFile(): File? {
         init()
         return if (!isInMemory()) {
-            filePath.toFile()
+            receiver.getFilePath().toFile()
         } else null
     }
 
     override fun flushToFile(): File {
         init()
-        if (outputStream.isInMemory()) {
-            outputStream.flushToFile()
+        if (isInMemory()) {
+            receiver.flushToFile()
         }
-        return filePath.toFile()
+        return receiver.getFilePath().toFile()
+    }
+
+    override fun isFallback(): Boolean {
+        init()
+        return receiver.fallback
+    }
+
+    override fun getFileMd5(): String {
+        init()
+        return listener.md5
+    }
+
+    override fun getFileSha256(): String {
+        init()
+        return listener.sha256
     }
 
     override fun delete() {
         if (hasInitialized && !isInMemory()) {
             try {
-                Files.deleteIfExists(filePath)
+                Files.deleteIfExists(receiver.getFilePath())
             } catch (e: NoSuchFileException) { // already deleted
             }
         }
     }
 
-    private fun init() {
+    fun init() {
         if (!hasInitialized) {
-            val nanoTime = measureNanoTime {
-                source.copyTo(outputStream)
+            try {
+                monitor.add(receiver)
+                if (!monitor.health.get()) {
+                    receiver.unhealthy(monitor.getFallbackPath(), monitor.reason)
+                }
+                val throughput = receiver.receive(source, listener)
                 hasInitialized = true
+
+                Metrics.counter(ARTIFACT_UPLOADED_BYTES_COUNT).increment(throughput.bytes.toDouble())
+                Metrics.counter(ARTIFACT_UPLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
+                logger.info("Receive artifact file, $throughput.")
+            } finally {
+                monitor.remove(receiver)
             }
-            val size = outputStream.totalBytes
-            Metrics.counter(ARTIFACT_UPLOADED_BYTES_COUNT).increment(size.toDouble())
-            Metrics.counter(ARTIFACT_UPLOADED_CONSUME_COUNT).increment(nanoTime / 1000.0 / 1000.0)
-            logger.info("Receive artifact file, size: ${HumanReadable.size(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
-                "average: ${HumanReadable.throughput(size, nanoTime)}.")
         }
     }
 

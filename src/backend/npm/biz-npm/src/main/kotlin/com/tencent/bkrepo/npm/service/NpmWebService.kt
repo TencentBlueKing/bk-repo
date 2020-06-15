@@ -27,7 +27,7 @@ import com.tencent.bkrepo.npm.pojo.MaintainerInfo
 import com.tencent.bkrepo.npm.pojo.PackageInfoResponse
 import com.tencent.bkrepo.npm.pojo.TagsInfo
 import com.tencent.bkrepo.repository.api.DownloadStatisticsResource
-import com.tencent.bkrepo.repository.pojo.download.count.SpecialDateDownloadStatistics
+import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetric
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -89,7 +89,7 @@ class NpmWebService {
             currentTags,
             versionsList,
             maintainersList,
-            query.data!!.dateDownloadStatistics.map { convert(it) },
+            query.data!!.statisticsMetrics.map { convert(it) },
             dependenciesList,
             devDependenciesList,
             page
@@ -106,8 +106,8 @@ class NpmWebService {
     }
 
     companion object {
-        fun convert(dateDownloadStatistics: SpecialDateDownloadStatistics): DownloadCount {
-            with(dateDownloadStatistics) {
+        fun convert(downloadStatisticsMetric: DownloadStatisticsMetric): DownloadCount {
+            with(downloadStatisticsMetric) {
                 return DownloadCount(description, count)
             }
         }

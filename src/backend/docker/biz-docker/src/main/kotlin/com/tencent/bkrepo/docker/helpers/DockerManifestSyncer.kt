@@ -1,84 +1,64 @@
 package com.tencent.bkrepo.docker.helpers
 
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.DockerArtifactService
+import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.context.UploadContext
-import com.tencent.bkrepo.docker.model.DockerBasicPath
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
-import com.tencent.bkrepo.docker.util.DockerSchemaUtils
-import com.tencent.bkrepo.docker.util.DockerUtils
+import com.tencent.bkrepo.docker.util.DockerSchemaUtil
+import com.tencent.bkrepo.docker.util.DockerUtil
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
-import java.io.IOException
 
 @Component
-class DockerManifestSyncer() {
+class DockerManifestSyncer constructor(repoService: DockerArtifactService) {
 
-    @Throws(IOException::class)
-    fun sync(
-        repo: DockerArtifactoryService,
-        info: ManifestMetadata,
-        path: DockerBasicPath,
-        tag: String
-    ): Boolean {
+    val repo = repoService
+
+    fun sync(info: ManifestMetadata, pathContext: RequestContext, tag: String): Boolean {
         logger.info("start to sync docker repository blobs")
-        val manifestInfo = info.blobsInfo.iterator()
+        val manifestInfos = info.blobsInfo.iterator()
 
-        while (manifestInfo.hasNext()) {
-            val blobInfo = manifestInfo.next()
-            logger.info("sync docker digest {}", blobInfo.digest)
+        while (manifestInfos.hasNext()) {
+            val blobInfo = manifestInfos.next()
+            logger.info("sync docker blob digest [$blobInfo]")
             if (blobInfo.digest != null && !this.isForeignLayer(blobInfo)) {
                 val blobDigest = DockerDigest(blobInfo.digest!!)
                 val blobFilename = blobDigest.filename()
-                logger.info(" blob file name digest {}", blobFilename)
-                val tempBlobPath = "/${path.dockerRepo}/_uploads/$blobFilename"
-                val finalBlobPath = "/${path.dockerRepo}/$tag/$blobFilename"
-                if (!repo.exists(path.projectId, path.repoName, finalBlobPath)) {
-                    if (DockerSchemaUtils.isEmptyBlob(blobDigest)) {
-                        logger.debug(
-                            "found empty layer {} in manifest for image {} ,create blob in path {}",
-                            blobFilename,
-                            path.dockerRepo,
-                            finalBlobPath
-                        )
-                        val blobContent = ByteArrayInputStream(DockerSchemaUtils.EMPTY_BLOB_CONTENT)
+                logger.info("blob file name digest [$blobFilename]")
+                val tempBlobPath = "/${pathContext.dockerRepo}/_uploads/$blobFilename"
+                val finalBlobPath = "/${pathContext.dockerRepo}/$tag/$blobFilename"
+                if (!repo.exists(pathContext.projectId, pathContext.repoName, finalBlobPath)) {
+                    if (DockerSchemaUtil.isEmptyBlob(blobDigest)) {
+                        logger.debug("found empty layer [$blobFilename] in manifest for image [${pathContext.dockerRepo}] ,create blob in path [$finalBlobPath]")
+                        val blobContent = ByteArrayInputStream(DockerSchemaUtil.EMPTY_BLOB_CONTENT)
                         val artifactFile = ArtifactFileFactory.build(blobContent)
                         blobContent.use {
                             repo.upload(
-                                UploadContext(path.projectId, path.repoName, finalBlobPath).content(it).sha256(
-                                    DockerSchemaUtils.emptyBlobDigest().getDigestHex()
+                                UploadContext(pathContext.projectId, pathContext.repoName, finalBlobPath).content(it).sha256(
+                                    DockerSchemaUtil.emptyBlobDigest().getDigestHex()
                                 ).artifactFile(artifactFile)
                             )
                         }
-                    } else if (repo.exists(path.projectId, path.repoName, tempBlobPath)) {
-                        this.moveBlobFromTempDir(repo, path.projectId, path.repoName, tempBlobPath, finalBlobPath)
+                    } else if (repo.exists(pathContext.projectId, pathContext.repoName, tempBlobPath)) {
+                        moveBlobFromTempDir(pathContext.projectId, pathContext.repoName, tempBlobPath, finalBlobPath)
                     } else {
-                        logger.debug("blob temp file '{}' doesn't exist in temp, try other tags", tempBlobPath)
-                        val targetPath = "/${path.dockerRepo}/$tag/$blobFilename"
-                        if (!this.copyBlobFromFirstReadableDockerRepo(
-                                repo,
-                                path.projectId,
-                                path.repoName,
-                                path.dockerRepo,
-                                blobFilename,
-                                targetPath
-                            )
-                        ) {
-                            logger.error("could not find temp blob '{}'", tempBlobPath)
+                        logger.debug("blob temp file [$tempBlobPath] doesn't exist in temp, try other tags")
+                        val targetPath = "/${pathContext.dockerRepo}/$tag/$blobFilename"
+                        if (!copyBlobFromFirstReadableDockerRepo(pathContext, blobFilename, targetPath)) {
+                            logger.error("could not find temp blob [$tempBlobPath]")
                             return false
                         }
-                        logger.debug("blob {} copy to {}", blobDigest.filename(), finalBlobPath)
+                        logger.info("blob [${blobDigest.filename()}] copy to [$finalBlobPath]")
                     }
                 }
             }
         }
-
-        // this.removeUnreferencedBlobs(repo, "$dockerRepo/$tag", info)
-        logger.debug("finish synv docker repository blobs")
+        logger.info("finish sync docker repository blobs")
         return true
     }
 
@@ -86,22 +66,14 @@ class DockerManifestSyncer() {
         return "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == blobInfo.mediaType
     }
 
-    protected fun copyBlobFromFirstReadableDockerRepo(
-        repo: DockerArtifactoryService,
-        projectId: String,
-        repoName: String,
-        dockerRepo: String,
-        blobFilename: String,
-        targetPath: String
-    ): Boolean {
-        val blob = DockerUtils.findBlobGlobally(repo, projectId, repoName, dockerRepo, blobFilename) ?: run {
+    private fun copyBlobFromFirstReadableDockerRepo(pathContext: RequestContext, blobFilename: String, targetPath: String): Boolean {
+        val blob = DockerUtil.findBlobGlobally(repo, pathContext, blobFilename) ?: run {
             return false
         }
-        return this.copyBlob(repo, projectId, repoName, blob.path, targetPath, blobFilename)
+        return copyBlob(pathContext.projectId, pathContext.repoName, blob.path, targetPath, blobFilename)
     }
 
-    protected fun copyBlob(
-        repo: DockerArtifactoryService,
+    private fun copyBlob(
         projectId: String,
         repoName: String,
         sourcePath: String,
@@ -109,21 +81,15 @@ class DockerManifestSyncer() {
         blobFilename: String
     ): Boolean {
         if (!StringUtils.equals(sourcePath, targetPath)) {
-            logger.info("found {} in path {}, copy over to {}", blobFilename, sourcePath, targetPath)
+            logger.info("found [$blobFilename] in path [$sourcePath] copy over to [$targetPath]")
             return repo.copy(projectId, repoName, sourcePath, targetPath)
         }
         return false
     }
 
-    private fun moveBlobFromTempDir(
-        repo: DockerArtifactoryService,
-        projectId: String,
-        repoName: String,
-        tempBlobPath: String,
-        finalBlobPath: String
-    ) {
-        logger.info("move temp blob from '{}' to '{}'", tempBlobPath, finalBlobPath)
-        repo.move(projectId, repoName, tempBlobPath, finalBlobPath)
+    private fun moveBlobFromTempDir(projectId: String, repoName: String, tempPath: String, finalPath: String) {
+        logger.info("move temp blob from [$tempPath] to [$finalPath]")
+        repo.move(projectId, repoName, tempPath, finalPath)
     }
 
     companion object {

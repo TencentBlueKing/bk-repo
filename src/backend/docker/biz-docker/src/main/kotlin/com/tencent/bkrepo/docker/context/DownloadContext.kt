@@ -1,27 +1,21 @@
 package com.tencent.bkrepo.docker.context
 
-import com.google.common.collect.Maps
 import java.io.InputStream
 
-class DownloadContext(projectId: String, repoName: String, path: String) {
-    private val requestHeaders = Maps.newHashMap<String, String>()
-
-    var name: String = ""
-    var content: InputStream? = null
-    var sha256: String = ""
+class DownloadContext(projectId: String, repoName: String, name: String) {
+    // name
     var projectId: String = ""
     var repoName: String = ""
-    var fullPath: String = ""
+    var name: String = ""
+
+    var length: Long = 0L
+    var content: InputStream? = null
+    var sha256: String = ""
 
     init {
         this.projectId = projectId
         this.repoName = repoName
-        this.fullPath = path
-    }
-
-    fun path(name: String): DownloadContext {
         this.name = name
-        return this
     }
 
     fun projectId(projectId: String): DownloadContext {
@@ -34,16 +28,18 @@ class DownloadContext(projectId: String, repoName: String, path: String) {
         return this
     }
 
+    fun name(name: String): DownloadContext {
+        this.name = name
+        return this
+    }
+
     fun sha256(sha256: String): DownloadContext {
         this.sha256 = sha256
         return this
     }
 
-    fun header(key: String?, value: String?): DownloadContext {
-        if (key != null && value != null) {
-            this.requestHeaders[key] = value
-        }
-
+    fun length(length: Long): DownloadContext {
+        this.length = length
         return this
     }
 }

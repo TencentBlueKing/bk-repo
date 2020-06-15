@@ -54,7 +54,7 @@ import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
-import com.tencent.bkrepo.repository.pojo.download.count.service.DownloadStatisticsCreateRequest
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
@@ -160,7 +160,7 @@ class NpmLocalRepository : LocalRepository() {
         val artifact = artifactInfo.artifactUri.substringBefore("/-/").trimStart('/')
         val version = artifactInfo.artifactUri.substringAfterLast("$artifact${StringPool.DASH}").substringBefore(".tgz")
         downloadStatisticsResource.add(
-            DownloadStatisticsCreateRequest(
+            DownloadStatisticsAddRequest(
                 artifactInfo.projectId,
                 artifactInfo.repoName,
                 artifact,

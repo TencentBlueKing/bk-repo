@@ -1,6 +1,6 @@
-package com.tencent.bkrepo.docker.model
+package com.tencent.bkrepo.docker.context
 
-data class DockerBasicPath(
+data class RequestContext(
     var projectId: String,
     var repoName: String,
     var dockerRepo: String

@@ -12,14 +12,16 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.DownloadStatisticsResource
 import com.tencent.bkrepo.repository.api.NodeResource
-import com.tencent.bkrepo.repository.pojo.download.count.service.DownloadStatisticsCreateRequest
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import java.util.concurrent.Executor
 import java.util.regex.Pattern
+import javax.annotation.Resource
 
 /**
  *
@@ -40,6 +42,9 @@ abstract class LocalRepository : AbstractArtifactRepository() {
     @Autowired
     lateinit var downloadStatisticsResource: DownloadStatisticsResource
 
+    @Resource
+    private lateinit var taskAsyncExecutor: Executor
+
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
         storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
@@ -59,15 +64,17 @@ abstract class LocalRepository : AbstractArtifactRepository() {
     }
 
     open fun countDownloads(context: ArtifactDownloadContext) {
-        val artifactInfo = context.artifactInfo
-        downloadStatisticsResource.add(
-            DownloadStatisticsCreateRequest(
-                artifactInfo.projectId,
-                artifactInfo.repoName,
-                artifactInfo.artifact,
-                artifactInfo.version
+        taskAsyncExecutor.execute {
+            val artifactInfo = context.artifactInfo
+            downloadStatisticsResource.add(
+                DownloadStatisticsAddRequest(
+                    artifactInfo.projectId,
+                    artifactInfo.repoName,
+                    artifactInfo.artifact,
+                    artifactInfo.version
+                )
             )
-        )
+        }
     }
 
     /**

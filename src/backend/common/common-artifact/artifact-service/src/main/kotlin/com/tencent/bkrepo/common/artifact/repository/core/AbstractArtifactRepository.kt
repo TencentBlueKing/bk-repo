@@ -18,7 +18,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.response.ArtifactResourceWriter
-import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -36,8 +35,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     override fun upload(context: ArtifactUploadContext) {
         try {
-            this.onUploadValidate(context)
             this.onUploadBefore(context)
+            this.onUploadValidate(context)
             this.onUpload(context)
             this.onUploadSuccess(context)
         } catch (validateException: ArtifactValidateException) {
@@ -51,8 +50,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     override fun download(context: ArtifactDownloadContext) {
         try {
-            this.onDownloadValidate(context)
             this.onDownloadBefore(context)
+            this.onDownloadValidate(context)
             val artifactResponse = this.onDownload(context)
                 ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
             ArtifactResourceWriter.write(artifactResponse)
@@ -96,8 +95,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         val md5Map = mutableMapOf<String, String>()
         // 计算sha256和md5
         context.artifactFileMap.entries.forEach { (name, file) ->
-            sha256Map[name] = FileDigestUtils.fileSha256(file.getInputStream())
-            md5Map[name] = FileDigestUtils.fileMd5(file.getInputStream())
+            sha256Map[name] = file.getFileSha256()
+            md5Map[name] = file.getFileMd5()
             if (name == OCTET_STREAM) {
                 context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] = sha256Map[name] as String
                 context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] = md5Map[name] as String
