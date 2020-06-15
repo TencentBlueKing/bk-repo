@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.exception.ArtifactResolveException
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import org.springframework.core.MethodParameter
 import org.springframework.web.bind.support.WebDataBinderFactory
@@ -28,10 +27,6 @@ class ArtifactFileMethodArgumentResolver : HandlerMethodArgumentResolver {
     }
 
     private fun resolveOctetStream(request: HttpServletRequest): ArtifactFile {
-        try {
-            return ArtifactFileFactory.build(request.inputStream)
-        } catch (exception: Exception) {
-            throw ArtifactResolveException("Processing octet-stream request failed: [${exception.message}]")
-        }
+        return ArtifactFileFactory.build(request.inputStream)
     }
 }

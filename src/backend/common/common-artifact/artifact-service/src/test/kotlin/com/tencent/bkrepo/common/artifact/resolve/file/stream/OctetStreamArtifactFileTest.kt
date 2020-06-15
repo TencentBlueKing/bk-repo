@@ -2,9 +2,9 @@ package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
 import com.tencent.bkrepo.common.api.util.randomString
 import com.tencent.bkrepo.common.artifact.resolve.file.UploadConfigElement
-import com.tencent.bkrepo.common.artifact.resolve.file.UploadProperties
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import com.tencent.bkrepo.common.storage.monitor.UploadProperties
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -17,7 +17,11 @@ class OctetStreamArtifactFileTest {
     
     private val tempDir = System.getProperty("java.io.tmpdir")
 
-    private val monitor = StorageHealthMonitor(tempDir, MonitorProperties())
+    private val uploadProperties = UploadProperties(
+        location = tempDir
+    )
+
+    private val monitor = StorageHealthMonitor(uploadProperties, MonitorProperties())
 
     private fun createConfigElement(threshold: Long): UploadConfigElement {
         val uploadProperties = UploadProperties(
