@@ -21,6 +21,7 @@ class StorageHealthMonitor(
     private val executorService = Executors.newSingleThreadExecutor()
     private val observerList = mutableListOf<Observer>()
     private var healthyThroughputCount: AtomicInteger = AtomicInteger(0)
+    private var unhealthyThroughputCount: AtomicInteger = AtomicInteger(0)
 
     init {
         require(!monitorConfig.timeout.isNegative && !monitorConfig.timeout.isZero)
@@ -37,15 +38,20 @@ class StorageHealthMonitor(
             while (monitorConfig.enabled) {
                 val checker = StorageHealthChecker(Paths.get(uploadConfig.location), monitorConfig.dataSize)
                 val future = executorService.submit(checker)
-                try {
+                val sleep = try {
                     future.get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
+                    changeToHealthy()
+                    true
                 } catch (timeoutException: TimeoutException) {
                     changeToUnhealthy(IO_TIMEOUT_MESSAGE)
                 } catch (exception: Exception) {
                     changeToUnhealthy(exception.message.orEmpty())
+                } finally {
+                    checker.clean()
                 }
-                changeToHealthy()
-                TimeUnit.SECONDS.sleep(monitorConfig.interval.seconds)
+                if (sleep) {
+                    TimeUnit.SECONDS.sleep(monitorConfig.interval.seconds)
+                }
             }
         }
     }
@@ -66,20 +72,35 @@ class StorageHealthMonitor(
 
     fun getFallbackPath(): Path? = monitorConfig.fallbackLocation?.toPath()
 
-    private fun changeToUnhealthy(message: String) {
-        healthyThroughputCount.set(0)
+    private fun changeToUnhealthy(message: String): Boolean {
+        var sleep = true
         reason = message
-        if (health.compareAndSet(true, false)) {
-            logger.error("Path[${getPrimaryPath()}] is unhealthy, reason: $reason")
-            for (observer in observerList) {
-                observer.unhealthy(getFallbackPath(), reason)
+        healthyThroughputCount.set(0)
+        val count = unhealthyThroughputCount.incrementAndGet()
+        // 如果当前是健康状态，不睡眠立即检查
+        if (health.get()) {
+            sleep = false
+            logger.warn("Path[${getPrimaryPath()}] check failed [$count/${monitorConfig.timesToFallback}].")
+        }
+        if (count >= monitorConfig.timesToFallback) {
+            if (health.compareAndSet(true, false)) {
+                logger.error("Path[${getPrimaryPath()}] change to unhealthy, reason: $reason")
+                for (observer in observerList) {
+                    observer.unhealthy(getFallbackPath(), reason)
+                }
+                sleep = true
             }
         }
+        return sleep
     }
 
     private fun changeToHealthy() {
         val count = healthyThroughputCount.incrementAndGet()
-        if (count > monitorConfig.timesToRestore) {
+        if (!health.get()) {
+            logger.warn("Try to restore [$count/${monitorConfig.timesToRestore}].")
+        }
+
+        if (count >= monitorConfig.timesToRestore) {
             if (health.compareAndSet(false, true)) {
                 logger.info("Path[${getPrimaryPath()}] restore healthy.")
                 for (observer in observerList) {
