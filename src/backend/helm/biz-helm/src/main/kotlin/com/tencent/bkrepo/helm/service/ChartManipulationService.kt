@@ -12,6 +12,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.constants.CHART
@@ -176,7 +177,9 @@ class ChartManipulationService {
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-        val indexMap = repository.search(context) as Map<*, *>
+        val indexMap = (repository.search(context) as? ArtifactInputStream)?.run {
+            YamlUtils.convertFileToEntity<Map<String, Any>>(this)
+        }
         logger.info("search original $INDEX_CACHE_YAML success!")
         return gson.fromJson(JsonParser().parse(gson.toJson(indexMap)).asJsonObject, IndexEntity::class.java)
     }
