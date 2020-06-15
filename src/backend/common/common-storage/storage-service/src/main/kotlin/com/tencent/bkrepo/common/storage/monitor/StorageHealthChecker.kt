@@ -6,14 +6,19 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.Callable
 
-class StorageHealthChecker(private val dir: Path, private val dataSize: DataSize) : Callable<Unit> {
+class StorageHealthChecker(dir: Path, private val dataSize: DataSize) : Callable<Unit> {
+
+    private val tempPath = dir.resolve(System.nanoTime().toString())
 
     override fun call() {
-        val tempPath = dir.resolve(System.nanoTime().toString())
         Files.createFile(tempPath)
         Files.newOutputStream(tempPath).use {
             ZeroInputStream(dataSize.toBytes()).copyTo(it)
         }
+        Files.deleteIfExists(tempPath)
+    }
+
+    fun clean() {
         Files.deleteIfExists(tempPath)
     }
 }
