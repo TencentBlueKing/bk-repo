@@ -67,10 +67,7 @@ object DecompressUtil {
                     } != null) {
                 }
             } catch (ise: IllegalStateException) {
-                if (ise.message != "it must not be null") {
-                } else {
-                    logger.error(ise.message)
-                }
+                logger.error(ise.message)
             }
         }
         return stringBuilder.toString()
