@@ -60,12 +60,13 @@ class ChartRepositoryService {
         logger.info("query node success, node list size [${nodeList.size}]")
         if (nodeList.isNotEmpty()) {
             nodeList.forEach { it ->
-                Thread.sleep(20)
+                Thread.sleep(100)
                 try {
                     if (!it.name.endsWith("tgz")) return@forEach
                     context.contextAttributes[FULL_PATH] = it.fullPath
                     val artifactInputStream = repository.search(context) as ArtifactInputStream
                     val result = artifactInputStream.getArchivesContent("tgz")
+                    artifactInputStream.close()
                     val chartInfoMap = YamlUtils.convertStringToEntity<MutableMap<String, Any>>(result)
                     val chartName = chartInfoMap[NAME] as String
                     val chartVersion = chartInfoMap[VERSION] as String
