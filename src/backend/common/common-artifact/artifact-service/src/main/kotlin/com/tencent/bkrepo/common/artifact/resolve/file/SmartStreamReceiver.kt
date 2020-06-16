@@ -72,8 +72,8 @@ class SmartStreamReceiver(
     }
 
     private fun checkFallback() {
-        if (fallback && !hasTransferred) {
-            if (enableTransfer) {
+        if (enableTransfer) {
+            if (fallback && !hasTransferred) {
                 if (fallBackPath != null && fallBackPath != path) {
                     // update path
                     val originalPath = path
