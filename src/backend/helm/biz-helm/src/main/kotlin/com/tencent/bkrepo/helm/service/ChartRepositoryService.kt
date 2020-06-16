@@ -60,7 +60,7 @@ class ChartRepositoryService {
         logger.info("query node success, node list size [${nodeList.size}]")
         if (nodeList.isNotEmpty()) {
             nodeList.forEach { it ->
-                Thread.sleep(100)
+                Thread.sleep(20)
                 try {
                     if (!it.name.endsWith("tgz")) return@forEach
                     context.contextAttributes[FULL_PATH] = it.fullPath
