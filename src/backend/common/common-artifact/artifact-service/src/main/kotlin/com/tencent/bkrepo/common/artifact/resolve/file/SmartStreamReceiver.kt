@@ -72,16 +72,17 @@ class SmartStreamReceiver(
     }
 
     private fun checkFallback() {
-        if (enableTransfer) {
-            if (fallback && !hasTransferred) {
-                if (fallBackPath != null && fallBackPath != path) {
-                    // update path
-                    val originalPath = path
-                    path = fallBackPath!!
-                    // transfer date
-                    if (!isInMemory) {
+        if (fallback && !hasTransferred) {
+            if (fallBackPath != null && fallBackPath != path) {
+                // update path
+                val originalPath = path
+                path = fallBackPath!!
+                // transfer date
+                if (!isInMemory) {
+                    if (enableTransfer) {
                         val originalFile = originalPath.resolve(filename)
                         val filePath = path.resolve(filename).apply { Files.createFile(this) }
+                        cleanOriginalOutputStream()
                         originalFile.toFile().inputStream().use {
                             outputStream = filePath.toFile().outputStream()
                             it.copyTo(outputStream)
@@ -89,17 +90,29 @@ class SmartStreamReceiver(
                         Files.deleteIfExists(originalFile)
                         logger.info("Success to transfer data from [$originalPath] to [$path]")
                     }
-                } else {
-                    logger.info("Fallback path is null or equals to primary path, ignore transfer data")
                 }
-                hasTransferred = true
+            } else {
+                logger.info("Fallback path is null or equals to primary path, ignore transfer data")
             }
+            hasTransferred = true
         }
     }
 
     private fun checkThreshold(bytesCopied: Long) {
         if (isInMemory && bytesCopied > fileSizeThreshold) {
             flushToFile()
+        }
+    }
+
+    private fun cleanOriginalOutputStream() {
+        try {
+            outputStream.flush()
+        } catch (e: Exception) {
+        }
+
+        try {
+            outputStream.close()
+        } catch (e: Exception) {
         }
     }
 
