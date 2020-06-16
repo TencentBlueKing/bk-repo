@@ -73,11 +73,12 @@ class ChartRepositoryService {
 
         val indexEntity = getOriginalIndexYaml()
         val dateTime = indexEntity.generated.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME) }
+        val now = LocalDateTime.now()
         val nodeList = queryNodeList(artifactInfo, lastModifyTime = dateTime)
         if (nodeList.isNotEmpty()) {
             logger.info("start regenerate index.yaml ... ")
             generateIndexFile(nodeList, indexEntity, artifactInfo)
-            indexEntity.generated = LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER))
+            indexEntity.generated = now.format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER))
             uploadIndexYaml(indexEntity)
             logger.info("regenerate index.yaml success！")
         }
@@ -205,7 +206,7 @@ class ChartRepositoryService {
     fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        val indexEntity = IndexEntity(apiVersion = "v1", generated = LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER)))
+        val indexEntity = initIndexEntity()
         val nodeList =
             nodeResource.list(artifactInfo.projectId, artifactInfo.repoName, "/", includeFolder = false, deep = false).data ?: emptyList()
         logger.info("query node success, node list size [${nodeList.size}]")
