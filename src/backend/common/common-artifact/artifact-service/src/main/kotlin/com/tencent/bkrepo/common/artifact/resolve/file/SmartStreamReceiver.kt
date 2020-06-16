@@ -74,12 +74,15 @@ class SmartStreamReceiver(
     private fun checkFallback() {
         if (fallback && !hasTransferred) {
             if (fallBackPath != null && fallBackPath != path) {
-                // update path
+                // originalPath表示NFS位置， fallBackPath表示本地磁盘位置
                 val originalPath = path
+                // 更新当前path为本地磁盘
                 path = fallBackPath!!
                 // transfer date
                 if (!isInMemory) {
+                    // 当文件已经落到NFS
                     if (enableTransfer) {
+                        // 开Transfer功能时，从NFS转移到本地盘
                         val originalFile = originalPath.resolve(filename)
                         val filePath = path.resolve(filename).apply { Files.createFile(this) }
                         cleanOriginalOutputStream()
@@ -89,6 +92,9 @@ class SmartStreamReceiver(
                         }
                         Files.deleteIfExists(originalFile)
                         logger.info("Success to transfer data from [$originalPath] to [$path]")
+                    } else {
+                        // 禁用Transfer功能时，忽略操作，继续使用NFS
+                        path = originalPath
                     }
                 }
             } else {
