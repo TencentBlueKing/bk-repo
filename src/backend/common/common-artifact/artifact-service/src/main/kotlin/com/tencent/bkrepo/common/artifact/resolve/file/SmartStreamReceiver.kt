@@ -58,6 +58,10 @@ class SmartStreamReceiver(
             }
         } finally {
             try {
+                source.close()
+            } catch (ignored: Exception) {
+            }
+            try {
                 outputStream.close()
             } catch (ignored: Exception) {
             }
