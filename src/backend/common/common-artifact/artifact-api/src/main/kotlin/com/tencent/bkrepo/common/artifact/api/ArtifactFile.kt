@@ -15,6 +15,7 @@ interface ArtifactFile {
     fun getFileMd5(): String
     fun getFileSha256(): String
     fun delete()
+    fun hasInitialized(): Boolean
 
     companion object {
         protected const val ARTIFACT_PREFIX = "artifact_"
