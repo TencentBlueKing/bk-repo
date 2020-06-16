@@ -27,22 +27,24 @@ class SmartStreamReceiver(
     var fallback: Boolean = false
 
     fun receive(source: InputStream, listener: StreamReceiveListener): Throughput {
-        var bytesCopied: Long = 0
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-        val nanoTime = measureNanoTime {
-            var bytes = source.read(buffer)
-            while (bytes >= 0) {
-                checkFallback()
-                outputStream.write(buffer, 0, bytes)
-                listener.data(buffer, 0, bytes)
-                bytesCopied += bytes
-                checkThreshold(bytesCopied)
-                bytes = source.read(buffer)
+        source.use {
+            var bytesCopied: Long = 0
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            val nanoTime = measureNanoTime {
+                var bytes = source.read(buffer)
+                while (bytes >= 0) {
+                    checkFallback()
+                    outputStream.write(buffer, 0, bytes)
+                    listener.data(buffer, 0, bytes)
+                    bytesCopied += bytes
+                    checkThreshold(bytesCopied)
+                    bytes = source.read(buffer)
+                }
             }
+            totalSize = bytesCopied
+            listener.finished()
+            return Throughput(bytesCopied, nanoTime)
         }
-        totalSize = bytesCopied
-        listener.finished()
-        return Throughput(bytesCopied, nanoTime)
     }
 
     fun getCachedByteArray(): ByteArray = contentBytes.toByteArray()
