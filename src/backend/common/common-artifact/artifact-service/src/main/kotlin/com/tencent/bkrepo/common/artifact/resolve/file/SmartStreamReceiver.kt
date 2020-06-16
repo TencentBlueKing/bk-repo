@@ -92,8 +92,8 @@ class SmartStreamReceiver(
                 } else {
                     logger.info("Fallback path is null or equals to primary path, ignore transfer data")
                 }
+                hasTransferred = true
             }
-            hasTransferred = true
         }
     }
 
