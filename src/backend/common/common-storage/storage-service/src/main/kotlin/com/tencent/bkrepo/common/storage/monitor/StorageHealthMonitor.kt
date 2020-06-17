@@ -74,17 +74,18 @@ class StorageHealthMonitor(
 
     private fun changeToUnhealthy(message: String): Boolean {
         var sleep = true
-        reason = message
         healthyThroughputCount.set(0)
         val count = unhealthyThroughputCount.incrementAndGet()
-        // 如果当前是健康状态，不睡眠立即检查
         if (health.get()) {
+            // 如果当前是健康状态，不睡眠立即检查
             sleep = false
             logger.warn("Path[${getPrimaryPath()}] check failed [$count/${monitorConfig.timesToFallback}].")
         }
+
         if (count >= monitorConfig.timesToFallback) {
             if (health.compareAndSet(true, false)) {
                 logger.error("Path[${getPrimaryPath()}] change to unhealthy, reason: $reason")
+                reason = message
                 for (observer in observerList) {
                     observer.unhealthy(getFallbackPath(), reason)
                 }
@@ -95,6 +96,7 @@ class StorageHealthMonitor(
     }
 
     private fun changeToHealthy() {
+        healthyThroughputCount.set(0)
         val count = healthyThroughputCount.incrementAndGet()
         if (!health.get()) {
             logger.warn("Try to restore [$count/${monitorConfig.timesToRestore}].")

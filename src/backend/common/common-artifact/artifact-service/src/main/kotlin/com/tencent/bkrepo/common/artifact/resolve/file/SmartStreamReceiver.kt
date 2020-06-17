@@ -13,6 +13,13 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.system.measureNanoTime
 
+/**
+ * 支持低于阈值的小文件直接通过内存缓存
+ * 支持流拷贝监控，接收流时直接计算sha256和md5
+ * 支持磁盘健康状态监听，当磁盘不可用时执行falling back策略，使用本地磁盘进行接收
+ * 支持数据转移，当磁盘IO慢时将已经落盘的数据转移到本地磁盘
+ * 忽略客户端主动断开错误
+ */
 class SmartStreamReceiver(
     private val fileSizeThreshold: Int,
     private val filename: String,
@@ -33,14 +40,16 @@ class SmartStreamReceiver(
             var bytesCopied: Long = 0
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
             val nanoTime = measureNanoTime {
-                var bytes = source.read(buffer)
-                while (bytes >= 0) {
-                    checkFallback()
-                    outputStream.write(buffer, 0, bytes)
-                    listener.data(buffer, 0, bytes)
-                    bytesCopied += bytes
-                    checkThreshold(bytesCopied)
-                    bytes = source.read(buffer)
+                source.use {
+                    var bytes = source.read(buffer)
+                    while (bytes >= 0) {
+                        checkFallback()
+                        outputStream.write(buffer, 0, bytes)
+                        listener.data(buffer, 0, bytes)
+                        bytesCopied += bytes
+                        checkThreshold(bytesCopied)
+                        bytes = source.read(buffer)
+                    }
                 }
             }
             totalSize = bytesCopied
@@ -96,23 +105,32 @@ class SmartStreamReceiver(
 
     private fun checkFallback() {
         if (fallback && !hasTransferred) {
-            if (!enableTransfer) {
-                if (fallBackPath != null && fallBackPath != path) {
-                    val originalPath = path
-                    path = fallBackPath!!
-                    // transfer date
-                    if (!isInMemory) {
+            if (fallBackPath != null && fallBackPath != path) {
+                // originalPath表示NFS位置， fallBackPath表示本地磁盘位置
+                val originalPath = path
+                // 更新当前path为本地磁盘
+                path = fallBackPath!!
+                // transfer date
+                if (!isInMemory) {
+                    // 当文件已经落到NFS
+                    if (enableTransfer) {
+                        // 开Transfer功能时，从NFS转移到本地盘
                         val originalFile = originalPath.resolve(filename)
                         val filePath = path.resolve(filename).apply { Files.createFile(this) }
-                        originalFile.toFile().inputStream().use { input ->
-                            filePath.toFile().outputStream().use { output -> input.copyTo(output) }
+                        cleanOriginalOutputStream()
+                        originalFile.toFile().inputStream().use {
+                            outputStream = filePath.toFile().outputStream()
+                            it.copyTo(outputStream)
                         }
                         Files.deleteIfExists(originalFile)
                         logger.info("Success to transfer data from [$originalPath] to [$path]")
+                    } else {
+                        // 禁用Transfer功能时，忽略操作，继续使用NFS
+                        path = originalPath
                     }
-                } else {
-                    logger.info("Fallback path is null or equals to primary path, ignore transfer data")
                 }
+            } else {
+                logger.info("Fallback path is null or equals to primary path, ignore transfer data")
             }
             hasTransferred = true
         }
@@ -120,9 +138,22 @@ class SmartStreamReceiver(
 
     private fun checkThreshold(bytesCopied: Long) {
         if (isInMemory && bytesCopied > fileSizeThreshold) {
-            flushToFile(false)
+            flushToFile()
         }
     }
+
+    private fun cleanOriginalOutputStream() {
+        try {
+            outputStream.flush()
+        } catch (e: Exception) {
+        }
+
+        try {
+            outputStream.close()
+        } catch (e: Exception) {
+        }
+    }
+
 
     private fun cleanTempFile() {
         if (!isInMemory) {
