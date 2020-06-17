@@ -7,12 +7,17 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.artifact.repository.HelmLocalRepository
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
 class ChartInfoService {
+    @Autowired
+    private lateinit var chartRepositoryService: ChartRepositoryService
+
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun allChartsList(artifactInfo: HelmArtifactInfo): String {
+        chartRepositoryService.freshIndexFile(artifactInfo)
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         return (repository as HelmLocalRepository).searchJson(context)

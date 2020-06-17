@@ -11,8 +11,10 @@ import com.tencent.bkrepo.replication.model.TReplicationTask
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
+import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import org.springframework.util.Base64Utils
+import java.util.concurrent.TimeUnit
 
 class ReplicationContext(val task: TReplicationTask) {
     val authToken: String
@@ -31,7 +33,7 @@ class ReplicationContext(val task: TReplicationTask) {
             replicationClient = FeignClientFactory.create(ReplicationClient::class.java, this)
             httpClient = HttpClientBuilderFactory.create(certificate, true).addInterceptor(
                 BasicAuthInterceptor(username, password)
-            ).build()
+            ).connectionPool(ConnectionPool(20, 10, TimeUnit.MINUTES)).build()
             normalizedUrl = normalizeUrl(this)
         }
     }

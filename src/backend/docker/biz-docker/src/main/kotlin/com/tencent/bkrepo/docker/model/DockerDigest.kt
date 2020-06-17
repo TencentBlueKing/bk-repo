@@ -15,7 +15,7 @@ class DockerDigest(digest: String?) {
         this.hex = StringUtils.substring(digest, sepIndex + 1)
     }
 
-    fun filename(): String {
+    fun fileName(): String {
         return this.alg + "__" + this.hex
     }
 
