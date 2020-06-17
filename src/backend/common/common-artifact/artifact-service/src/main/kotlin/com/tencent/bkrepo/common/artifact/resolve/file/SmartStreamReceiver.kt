@@ -33,17 +33,20 @@ class SmartStreamReceiver(
             var bytesCopied: Long = 0
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
             val nanoTime = measureNanoTime {
-                var bytes = source.read(buffer)
-                while (bytes >= 0) {
-                    checkFallback()
-                    outputStream.write(buffer, 0, bytes)
-                    listener.data(buffer, 0, bytes)
-                    bytesCopied += bytes
-                    checkThreshold(bytesCopied)
-                    bytes = source.read(buffer)
+                source.use {
+                    var bytes = source.read(buffer)
+                    while (bytes >= 0) {
+                        checkFallback()
+                        outputStream.write(buffer, 0, bytes)
+                        listener.data(buffer, 0, bytes)
+                        bytesCopied += bytes
+                        checkThreshold(bytesCopied)
+                        bytes = source.read(buffer)
+                    }
                 }
             }
             totalSize = bytesCopied
+            checkSize()
             listener.finished()
             return Throughput(bytesCopied, nanoTime)
         } catch (exception: IOException) {
@@ -57,14 +60,7 @@ class SmartStreamReceiver(
                 throw exception
             }
         } finally {
-            try {
-                source.close()
-            } catch (ignored: Exception) {
-            }
-            try {
-                outputStream.close()
-            } catch (ignored: Exception) {
-            }
+            cleanOriginalOutputStream()
         }
     }
 
@@ -82,10 +78,7 @@ class SmartStreamReceiver(
             isInMemory = false
 
             if (closeStream) {
-                try {
-                    outputStream.close()
-                } catch (e: Exception) {
-                }
+                cleanOriginalOutputStream()
             }
         }
     }
@@ -98,43 +91,80 @@ class SmartStreamReceiver(
         }
     }
 
+    /**
+     * 检查是否需要fall back操作
+     */
     private fun checkFallback() {
         if (fallback && !hasTransferred) {
-            if (!enableTransfer) {
-                if (fallBackPath != null && fallBackPath != path) {
-                    val originalPath = path
-                    path = fallBackPath!!
-                    // transfer date
-                    if (!isInMemory) {
+            if (fallBackPath != null && fallBackPath != path) {
+                // originalPath表示NFS位置， fallBackPath表示本地磁盘位置
+                val originalPath = path
+                // 更新当前path为本地磁盘
+                path = fallBackPath!!
+                // transfer date
+                if (!isInMemory) {
+                    // 当文件已经落到NFS
+                    if (enableTransfer) {
+                        // 开Transfer功能时，从NFS转移到本地盘
+                        cleanOriginalOutputStream()
                         val originalFile = originalPath.resolve(filename)
                         val filePath = path.resolve(filename).apply { Files.createFile(this) }
-                        originalFile.toFile().inputStream().use { input ->
-                            filePath.toFile().outputStream().use { output -> input.copyTo(output) }
+                        originalFile.toFile().inputStream().use {
+                            outputStream = filePath.toFile().outputStream()
+                            it.copyTo(outputStream)
                         }
                         Files.deleteIfExists(originalFile)
                         logger.info("Success to transfer data from [$originalPath] to [$path]")
+                    } else {
+                        // 禁用Transfer功能时，忽略操作，继续使用NFS
+                        path = originalPath
                     }
-                } else {
-                    logger.info("Fallback path is null or equals to primary path, ignore transfer data")
                 }
+            } else {
+                logger.info("Fallback path is null or equals to primary path, ignore transfer data")
             }
             hasTransferred = true
         }
     }
 
+    /**
+     * 检查是否超出内存阈值，超过则将数据写入文件中，并保持outputStream开启
+     */
     private fun checkThreshold(bytesCopied: Long) {
         if (isInMemory && bytesCopied > fileSizeThreshold) {
             flushToFile(false)
         }
     }
 
+    private fun checkSize() {
+        if (isInMemory) {
+            val actualSize = contentBytes.size().toLong()
+            require(totalSize == actualSize) {
+                "$totalSize bytes received, but $actualSize bytes saved in memory."
+            }
+        } else {
+            val actualSize = Files.size(path.resolve(filename))
+            require(totalSize == actualSize) {
+                "$totalSize bytes received, but $actualSize bytes saved in file."
+            }
+        }
+    }
+
+    private fun cleanOriginalOutputStream() {
+        try {
+            outputStream.flush()
+        } catch (e: Exception) { }
+
+        try {
+            outputStream.close()
+        } catch (e: Exception) { }
+    }
+
     private fun cleanTempFile() {
         if (!isInMemory) {
             try {
-                outputStream.close()
                 Files.deleteIfExists(path.resolve(filename))
-            } catch (ignored: Exception) {
-            }
+            } catch (ignored: Exception) { }
         }
     }
 
