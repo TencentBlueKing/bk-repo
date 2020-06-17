@@ -15,6 +15,9 @@ const val VERSION = "version"
 const val CHART_PACKAGE_FILE_EXTENSION = "tgz"
 const val PROVENANCE_FILE_EXTENSION = "tgz.prov"
 
+// 统一时间格式
+const val DATA_TIME_FORMATTER = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+
 // 定义返回代码片段
 const val CHART_NOT_FOUND = "{\n    \"error\": \"chart not found\"\n}"
 const val NO_CHART_NAME_FOUND = "{\n    \"error\": \"no chart name found\"\n}"

@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.docker.artifact
 
-class Artifact(projectId: String, repoName: String, name: String) {
+class Artifact(projectId: String, repoName: String, artifactName: String) {
 
     var projectId: String = ""
     var repoName: String = ""
-    var name: String = ""
+    var artifactName: String = ""
 
     var sha256: String? = null
     var length: Long = 0L
@@ -13,7 +13,7 @@ class Artifact(projectId: String, repoName: String, name: String) {
     init {
         this.projectId = projectId
         this.repoName = repoName
-        this.name = name
+        this.artifactName = artifactName
     }
 
     fun sha256(fileSha256: String): Artifact {
@@ -26,8 +26,8 @@ class Artifact(projectId: String, repoName: String, name: String) {
         return this
     }
 
-    fun name(name: String): Artifact {
-        this.name = name
+    fun artifactName(name: String): Artifact {
+        this.artifactName = name
         return this
     }
 

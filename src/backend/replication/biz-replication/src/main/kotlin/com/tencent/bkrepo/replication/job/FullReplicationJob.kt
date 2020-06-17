@@ -65,16 +65,15 @@ class FullReplicationJob : QuartzJobBean() {
     override fun executeInternal(context: JobExecutionContext) {
         updateTriggerStatus(context.trigger.key.name, context.trigger.key.group)
         val taskId = context.jobDetail.jobDataMap.getString(TASK_ID_KEY)
-        logger.info("Start to execute replication task[$taskId].")
+        logger.info("start to execute replication task[$taskId].")
         val task = taskRepository.findByIdOrNull(taskId) ?: run {
-            logger.error("Task[$taskId] does not exist.")
+            logger.error("task[$taskId] does not exist.")
             return
         }
         if (task.status == ReplicationStatus.PAUSED) {
-            logger.info("Task[$taskId] status is paused, skip task.")
+            logger.info("task[$taskId] status is paused, skip task.")
         }
         try {
-            with(task.setting) {
                 val replicaContext = ReplicationContext(task)
                 // 更新状态
                 task.status = ReplicationStatus.REPLICATING
@@ -89,7 +88,6 @@ class FullReplicationJob : QuartzJobBean() {
                 startReplica(replicaContext)
                 // 更新状态
                 task.status = ReplicationStatus.SUCCESS
-            }
         } catch (exception: Exception) {
             // 记录异常
             task.status = ReplicationStatus.FAILED
@@ -121,7 +119,7 @@ class FullReplicationJob : QuartzJobBean() {
             ).`is`(keyGroup)
         )
         update.set(TReplicaTriggers::state.name, Trigger.TriggerState.NORMAL.name)
-        mongoTemplate.upsert(query, update, TReplicaTriggers::class.java)
+        mongoTemplate.updateFirst(query, update, TReplicaTriggers::class.java)
     }
 
     private fun prepare(context: ReplicationContext) {
@@ -213,7 +211,7 @@ class FullReplicationJob : QuartzJobBean() {
                     val existFullPathList = replicationClient.checkNodeExistList(
                         authToken, nodeCheckRequest
                     ).data!!
-                    logger.info("node path list params [$nodeCheckRequest], result [$existFullPathList]")
+                    logger.debug("node path list params [$nodeCheckRequest], result [$existFullPathList]")
                     // 同步不存在的节点
                     fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
                 }
@@ -231,12 +229,12 @@ class FullReplicationJob : QuartzJobBean() {
             if (existFullPathList.contains(node.fullPath)) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> {
-                        logger.warn("Node[$node] conflict, skip it.")
+                        logger.debug("Node[$node] conflict, skip it.")
                         task.replicationProgress.conflictedNode += 1
                         return
                     }
                     ConflictStrategy.OVERWRITE -> {
-                        logger.warn("Node[$node] conflict, overwrite it.")
+                        logger.debug("Node[$node] conflict, overwrite it.")
                     }
                     ConflictStrategy.FAST_FAIL -> throw RuntimeException("Node[$node] conflict.")
                 }

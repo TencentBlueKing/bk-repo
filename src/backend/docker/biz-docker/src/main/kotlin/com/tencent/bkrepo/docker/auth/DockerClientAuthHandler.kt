@@ -14,6 +14,7 @@ import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import com.tencent.bkrepo.docker.constant.REGISTRY_SERVICE
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
 import com.tencent.bkrepo.docker.util.JwtUtil
 import org.slf4j.LoggerFactory
@@ -57,11 +58,11 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
         }
         val token = (authCredentials as JwtAuthCredentials).token
         if (!JwtUtil.verifyToken(token)) {
-            logger.info("auth token failed {} ", token)
+            logger.warn("auth token failed {} ", token)
             throw ClientAuthException("auth failed")
         }
         val userName = JwtUtil.getUserName(token)
-        logger.info("auth token {} ,user {}", token, userName)
+        logger.info("auth token [$token] ,user [$userName]")
         return userName
     }
 
@@ -80,11 +81,10 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
     override fun onAuthenticateFailed(response: HttpServletResponse, clientAuthException: ClientAuthException) {
         response.status = SC_UNAUTHORIZED
         response.setHeader("Docker-Distribution-Api-Version", "registry/2.0")
-        val registryService = "bkrepo"
         val scopeStr = "repository:bkrepo/docker-local/tb:push,pull"
         response.setHeader(
             BASIC_AUTH_RESPONSE_HEADER,
-            String.format("Bearer realm=\"%s\",service=\"%s\",scope=\"%s\"", authUrl, registryService, scopeStr)
+            String.format("Bearer realm=\"%s\",service=\"%s\",scope=\"%s\"", authUrl, REGISTRY_SERVICE, scopeStr)
         )
         response.contentType = MediaType.APPLICATION_JSON
         response.writer.print(
