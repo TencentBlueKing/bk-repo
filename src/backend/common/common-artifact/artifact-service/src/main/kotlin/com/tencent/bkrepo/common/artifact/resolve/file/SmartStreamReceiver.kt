@@ -138,7 +138,7 @@ class SmartStreamReceiver(
 
     private fun checkThreshold(bytesCopied: Long) {
         if (isInMemory && bytesCopied > fileSizeThreshold) {
-            flushToFile()
+            flushToFile(false)
         }
     }
 
