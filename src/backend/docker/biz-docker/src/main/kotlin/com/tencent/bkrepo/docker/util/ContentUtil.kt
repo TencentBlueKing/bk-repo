@@ -101,8 +101,10 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
     }
 
     fun addManifestsBlobs(
-        context: RequestContext, type: ManifestType,
-        bytes: ByteArray, metadata: ManifestMetadata
+        context: RequestContext,
+        type: ManifestType,
+        bytes: ByteArray,
+        metadata: ManifestMetadata
     ) {
         if (ManifestType.Schema2 == type) {
             addSchema2Blob(bytes, metadata)
@@ -142,8 +144,11 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
     }
 
     fun buildManifestResponse(
-        httpHeaders: HttpHeaders, context: RequestContext,
-        manifestPath: String, digest: DockerDigest, length: Long
+        httpHeaders: HttpHeaders,
+        context: RequestContext,
+        manifestPath: String,
+        digest: DockerDigest,
+        length: Long
     ): DockerResponse {
         val downloadContext = DownloadContext(context).length(length).sha256(digest.getDigestHex())
         val inputStream = repo.download(downloadContext)
