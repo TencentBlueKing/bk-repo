@@ -52,19 +52,6 @@ class RepoServiceUtil {
             return DockerV2Errors.unauthorizedUpload()
         }
 
-        private fun getProtocol(httpHeaders: HttpHeaders): String {
-            val protocolHeaders = httpHeaders[HTTP_FORWARDED_PROTO]
-            if (protocolHeaders == null || protocolHeaders.isEmpty()) {
-                return HTTP_PROTOCOL_HTTP
-            }
-            return if (protocolHeaders.isNotEmpty()) {
-                protocolHeaders.iterator().next() as String
-            } else {
-                logger.debug("X-Forwarded-Proto does not exist, return https.")
-                HTTP_PROTOCOL_HTTPS
-            }
-        }
-
         fun getAcceptableManifestTypes(httpHeaders: HttpHeaders): List<ManifestType> {
             return httpHeaders.accept.stream().filter { Objects.nonNull(it) }.map { ManifestType.from(it) }.toList()
         }
@@ -137,11 +124,24 @@ class RepoServiceUtil {
             return builder.build()
         }
 
-        fun buildManifestPathFromType(dockerRepo: String, tag: String, manifestType: ManifestType): String {
+        fun buildManifestPath(dockerRepo: String, tag: String, manifestType: ManifestType): String {
             return if (ManifestType.Schema2List == manifestType) {
                 "/$dockerRepo/$tag/list.manifest.json"
             } else {
                 "/$dockerRepo/$tag/manifest.json"
+            }
+        }
+
+        private fun getProtocol(httpHeaders: HttpHeaders): String {
+            val protocolHeaders = httpHeaders[HTTP_FORWARDED_PROTO]
+            if (protocolHeaders == null || protocolHeaders.isEmpty()) {
+                return HTTP_PROTOCOL_HTTP
+            }
+            return if (protocolHeaders.isNotEmpty()) {
+                protocolHeaders.iterator().next() as String
+            } else {
+                logger.debug("X-Forwarded-Proto does not exist, return https.")
+                HTTP_PROTOCOL_HTTPS
             }
         }
     }

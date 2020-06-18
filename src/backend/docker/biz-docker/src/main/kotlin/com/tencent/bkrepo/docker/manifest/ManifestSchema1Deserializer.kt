@@ -71,18 +71,18 @@ class ManifestSchema1Deserializer {
         private fun getCommand(dockerMetadata: DockerImageMetadata): String? {
             var command: String? = null
             if (dockerMetadata.containerConfig != null && dockerMetadata.containerConfig!!.cmd != null) {
-                if (dockerMetadata.containerConfig!!.cmd!!.size == 3) {
-                    command = dockerMetadata.containerConfig!!.cmd!!.get(2)
+                command = if (dockerMetadata.containerConfig!!.cmd!!.size == 3) {
+                    dockerMetadata.containerConfig!!.cmd!!.get(2)
                 } else {
-                    command = dockerMetadata.containerConfig!!.cmd.toString()
+                    dockerMetadata.containerConfig!!.cmd.toString()
                 }
             }
 
             if (dockerMetadata.config != null && StringUtils.isBlank(command) && dockerMetadata.config!!.cmd != null) {
-                if (dockerMetadata.config!!.cmd!!.size == 3) {
-                    command = dockerMetadata.config!!.cmd!!.get(2)
+                command = if (dockerMetadata.config!!.cmd!!.size == 3) {
+                    dockerMetadata.config!!.cmd!!.get(2)
                 } else {
-                    command = dockerMetadata.config!!.cmd.toString()
+                    dockerMetadata.config!!.cmd.toString()
                 }
             }
 

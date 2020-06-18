@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.docker.util
 
 import com.google.common.base.Joiner
-import com.tencent.bkrepo.docker.artifact.Artifact
+import com.tencent.bkrepo.docker.artifact.DockerArtifact
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.context.RequestContext
 import org.slf4j.LoggerFactory
@@ -63,7 +63,7 @@ class ArtifactUtil {
         }
 
         // get blob by file name cross repo
-        fun getBlobByName(repo: DockerArtifactRepo, pathContext: RequestContext, fileName: String): Artifact? {
+        fun getBlobByName(repo: DockerArtifactRepo, pathContext: RequestContext, fileName: String): DockerArtifact? {
             val result = repo.getArtifactListByName(pathContext.projectId, pathContext.repoName, fileName)
             if (result.isEmpty()) {
                 return null
@@ -71,14 +71,14 @@ class ArtifactUtil {
             val blob = result[0]
             val length = blob["size"] as Int
             val fullPath = blob["fullPath"] as String
-            return Artifact(
+            return DockerArtifact(
                 pathContext.projectId,
                 pathContext.repoName,
                 pathContext.artifactName
-            ).sha256(sha256FromFileName(fileName)).length(length.toLong()).path(fullPath)
+            ).sha256(sha256FromFileName(fileName)).length(length.toLong()).fullPath(fullPath)
         }
 
-        fun getManifestByName(repo: DockerArtifactRepo, context: RequestContext, fileName: String): Artifact? {
+        fun getManifestByName(repo: DockerArtifactRepo, context: RequestContext, fileName: String): DockerArtifact? {
             val fullPath = "/${context.artifactName}/$fileName"
             return repo.getArtifact(context.projectId, context.repoName, fullPath) ?: run {
                 return null
@@ -90,7 +90,7 @@ class ArtifactUtil {
             filename: String,
             context: RequestContext,
             tag: String
-        ): Artifact? {
+        ): DockerArtifact? {
             val configPath = Joiner.on("/").join(context.artifactName, tag, filename)
             // search blob by full tag path
             logger.info("search manifest config blob in: [$configPath]")
@@ -102,7 +102,7 @@ class ArtifactUtil {
         }
 
         // get blob from repo path
-        fun getBlobFromRepo(repo: DockerArtifactRepo, context: RequestContext, fileName: String): Artifact? {
+        fun getBlobFromRepo(repo: DockerArtifactRepo, context: RequestContext, fileName: String): DockerArtifact? {
             val tempBlobPath = "/${context.artifactName}/_uploads/$fileName"
             logger.info("search blob in temp path [$tempBlobPath] first")
             if (repo.exists(context.projectId, context.repoName, tempBlobPath)) {
@@ -112,8 +112,8 @@ class ArtifactUtil {
             return getBlobByName(repo, context, fileName)
         }
 
-        fun getFullPath(artifact: Artifact): String {
-            return "/" + artifact.path
+        fun getFullPath(dockerArtifact: DockerArtifact): String {
+            return "/" + dockerArtifact.fullPath
         }
 
         private fun sha256FromFileName(fileName: String): String {

@@ -33,11 +33,11 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.InputStream
 
-/**
- * @author: owenlxu
- * @date: 2020-06-10
+/*
  * docker repo storage interface
  * to work with storage module
+ * @author: owenlxu
+ * @date: 2020-06-10
  */
 
 @Service
@@ -237,7 +237,7 @@ class DockerArtifactRepo @Autowired constructor(
     }
 
     // get artifact detail
-    fun getArtifact(projectId: String, repoName: String, fullPath: String): Artifact? {
+    fun getArtifact(projectId: String, repoName: String, fullPath: String): DockerArtifact? {
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: run {
             logger.warn("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
@@ -246,7 +246,7 @@ class DockerArtifactRepo @Autowired constructor(
             logger.error("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
         }
-        return Artifact(projectId, repoName, fullPath).sha256(node.nodeInfo.sha256!!)
+        return DockerArtifact(projectId, repoName, fullPath).sha256(node.nodeInfo.sha256!!)
             .length(node.nodeInfo.size)
     }
 
@@ -296,35 +296,37 @@ class DockerArtifactRepo @Autowired constructor(
     }
 
     // get repo tag list
-    fun getRepoTagList(projectId: String, repoName: String, image: String): Map<String, String> {
-        val projectRule = Rule.QueryRule("projectId", projectId)
-        val repoNameRule = Rule.QueryRule("repoName", repoName)
-        val nameRule = Rule.QueryRule("name", "manifest.json")
-        val pathRule = Rule.QueryRule("path", "/$image/", OperationType.PREFIX)
-        val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule, pathRule))
-        val queryModel = QueryModel(
-            page = PageLimit(0, 100000),
-            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("fullPath", "path", "size", "createdBy"),
-            rule = rule
-        )
+    fun getRepoTagList(context: RequestContext): Map<String, String> {
+        with(context) {
+            val projectRule = Rule.QueryRule("projectId", projectId)
+            val repoNameRule = Rule.QueryRule("repoName", repoName)
+            val nameRule = Rule.QueryRule("name", "manifest.json")
+            val pathRule = Rule.QueryRule("path", "/$artifactName/", OperationType.PREFIX)
+            val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule, pathRule))
+            val queryModel = QueryModel(
+                page = PageLimit(0, 100000),
+                sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
+                select = mutableListOf("fullPath", "path", "size", "createdBy"),
+                rule = rule
+            )
 
-        val result = nodeResource.query(queryModel).data ?: run {
-            logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
-            return emptyMap()
+            val result = nodeResource.query(queryModel).data ?: run {
+                logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
+                return emptyMap()
+            }
+            val data = mutableMapOf<String, String>()
+            result.records.forEach {
+                var path = it["path"] as String
+                val tag = path.removePrefix("/$artifactName/").removeSuffix("/")
+                val user = it["createdBy"] as String
+                data[tag] = user
+            }
+            return data
         }
-        val data = mutableMapOf<String, String>()
-        result.records.forEach {
-            var path = it["path"] as String
-            val tag = path.removePrefix("/$image/").removeSuffix("/")
-            val user = it["createdBy"] as String
-            data[tag] = user
-        }
-        return data
     }
 
     // get blob list by digest
-    fun getBlobListByDigest(projectId: String, repoName: String, digestName: String): List<Map<String, Any>> {
+    fun getBlobListByDigest(projectId: String, repoName: String, digestName: String): List<Map<String, Any>>? {
         val projectRule = Rule.QueryRule("projectId", projectId)
         val repoNameRule = Rule.QueryRule("repoName", repoName)
         val nameRule = Rule.QueryRule("name", digestName)
@@ -337,7 +339,7 @@ class DockerArtifactRepo @Autowired constructor(
         )
         val result = nodeResource.query(queryModel).data ?: run {
             logger.warn("find artifacts failed:  $digestName found no node")
-            return emptyList()
+            return null
         }
         return result.records
     }

@@ -18,17 +18,17 @@ class ManifestDeserializer {
             digest: DockerDigest
         ): ManifestMetadata {
             var manifestBytes = bytes
+            val contentUtil = ContentUtil(repo)
             when (manifestType) {
                 ManifestType.Schema1 -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 ManifestType.Schema1Signed -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 ManifestType.Schema2 -> {
-                    val manifestJsonBytes =
-                        ContentUtil.getSchema2ManifestConfigContent(repo, context, manifestBytes, tag)
+                    val manifestJsonBytes = contentUtil.getSchema2ManifestConfigContent(context, manifestBytes, tag)
                     return ManifestSchema2Deserializer.deserialize(manifestBytes, manifestJsonBytes, context.artifactName, tag, digest)
                 }
                 ManifestType.Schema2List -> {
-                    val schema2Path = ContentUtil.getSchema2Path(repo, context, manifestBytes)
-                    manifestBytes = ContentUtil.getSchema2ManifestContent(repo, context, schema2Path)
+                    val schema2Path = contentUtil.getSchema2Path(context, manifestBytes)
+                    manifestBytes = contentUtil.getSchema2ManifestContent(context, schema2Path)
                     return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 }
                 else -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)

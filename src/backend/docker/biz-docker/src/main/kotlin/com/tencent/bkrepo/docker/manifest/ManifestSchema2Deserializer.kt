@@ -36,7 +36,7 @@ class ManifestSchema2Deserializer {
             var totalSize = 0L
             val history = config.get("history")
             val layers = manifest.get("layers")
-            val historySize = if (history == null) 0 else history.size()
+            val historySize = history?.size() ?: 0
             var historyCounter = 0L
             if (history != null) {
                 // TODO: resolve params pass
