@@ -13,13 +13,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.system.measureNanoTime
 
-/**
- * 支持低于阈值的小文件直接通过内存缓存
- * 支持流拷贝监控，接收流时直接计算sha256和md5
- * 支持磁盘健康状态监听，当磁盘不可用时执行falling back策略，使用本地磁盘进行接收
- * 支持数据转移，当磁盘IO慢时将已经落盘的数据转移到本地磁盘
- * 忽略客户端主动断开错误
- */
 class SmartStreamReceiver(
     private val fileSizeThreshold: Int,
     private val filename: String,
@@ -53,6 +46,7 @@ class SmartStreamReceiver(
                 }
             }
             totalSize = bytesCopied
+            checkSize()
             listener.finished()
             return Throughput(bytesCopied, nanoTime)
         } catch (exception: IOException) {
@@ -66,10 +60,7 @@ class SmartStreamReceiver(
                 throw exception
             }
         } finally {
-            try {
-                outputStream.close()
-            } catch (ignored: Exception) {
-            }
+            cleanOriginalOutputStream()
         }
     }
 
@@ -87,10 +78,7 @@ class SmartStreamReceiver(
             isInMemory = false
 
             if (closeStream) {
-                try {
-                    outputStream.close()
-                } catch (e: Exception) {
-                }
+                cleanOriginalOutputStream()
             }
         }
     }
@@ -103,6 +91,9 @@ class SmartStreamReceiver(
         }
     }
 
+    /**
+     * 检查是否需要fall back操作
+     */
     private fun checkFallback() {
         if (fallback && !hasTransferred) {
             if (fallBackPath != null && fallBackPath != path) {
@@ -115,9 +106,9 @@ class SmartStreamReceiver(
                     // 当文件已经落到NFS
                     if (enableTransfer) {
                         // 开Transfer功能时，从NFS转移到本地盘
+                        cleanOriginalOutputStream()
                         val originalFile = originalPath.resolve(filename)
                         val filePath = path.resolve(filename).apply { Files.createFile(this) }
-                        cleanOriginalOutputStream()
                         originalFile.toFile().inputStream().use {
                             outputStream = filePath.toFile().outputStream()
                             it.copyTo(outputStream)
@@ -136,32 +127,44 @@ class SmartStreamReceiver(
         }
     }
 
+    /**
+     * 检查是否超出内存阈值，超过则将数据写入文件中，并保持outputStream开启
+     */
     private fun checkThreshold(bytesCopied: Long) {
         if (isInMemory && bytesCopied > fileSizeThreshold) {
             flushToFile(false)
         }
     }
 
-    private fun cleanOriginalOutputStream() {
-        try {
-            outputStream.flush()
-        } catch (e: Exception) {
-        }
-
-        try {
-            outputStream.close()
-        } catch (e: Exception) {
+    private fun checkSize() {
+        if (isInMemory) {
+            val actualSize = contentBytes.size().toLong()
+            require(totalSize == actualSize) {
+                "$totalSize bytes received, but $actualSize bytes saved in memory."
+            }
+        } else {
+            val actualSize = Files.size(path.resolve(filename))
+            require(totalSize == actualSize) {
+                "$totalSize bytes received, but $actualSize bytes saved in file."
+            }
         }
     }
 
+    private fun cleanOriginalOutputStream() {
+        try {
+            outputStream.flush()
+        } catch (e: Exception) { }
+
+        try {
+            outputStream.close()
+        } catch (e: Exception) { }
+    }
 
     private fun cleanTempFile() {
         if (!isInMemory) {
             try {
-                outputStream.close()
                 Files.deleteIfExists(path.resolve(filename))
-            } catch (ignored: Exception) {
-            }
+            } catch (ignored: Exception) { }
         }
     }
 

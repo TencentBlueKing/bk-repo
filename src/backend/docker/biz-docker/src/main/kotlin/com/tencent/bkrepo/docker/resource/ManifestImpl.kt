@@ -14,9 +14,9 @@ import javax.servlet.http.HttpServletRequest
 
 /**
  *
+ *  ManifestImpl validates and impl the manifest interface
  * @author: owenlxu
  * @date: 2019-10-03
- * ManifestImpl validates and impl the manifest interface
  */
 
 @RestController
@@ -31,9 +31,9 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
         contentType: String,
         artifactFile: ArtifactFile
     ): ResponseEntity<Any> {
-        dockerRepo.userId = UserUtil.getContextUserId(userId)
+        val uId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
-        val pathContext = RequestContext(projectId, repoName, name)
+        val pathContext = RequestContext(uId, projectId, repoName, name)
         return dockerRepo.uploadManifest(pathContext, tag, contentType, artifactFile)
     }
 
@@ -44,9 +44,9 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
         repoName: String,
         reference: String
     ): ResponseEntity<Any> {
-        dockerRepo.userId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
-        val pathContext = RequestContext(projectId, repoName, name)
+        val uId = UserUtil.getContextUserId(userId)
+        val pathContext = RequestContext(uId, projectId, repoName, name)
         return dockerRepo.getManifest(pathContext, reference)
     }
 
@@ -57,9 +57,9 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
         repoName: String,
         reference: String
     ): ResponseEntity<Any> {
-        dockerRepo.userId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
-        val pathContext = RequestContext(projectId, repoName, name)
+        val uId = UserUtil.getContextUserId(userId)
+        val pathContext = RequestContext(uId, projectId, repoName, name)
         return dockerRepo.getManifest(pathContext, reference)
     }
 }

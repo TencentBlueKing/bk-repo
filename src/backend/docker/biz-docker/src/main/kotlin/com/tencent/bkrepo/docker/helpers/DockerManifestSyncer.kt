@@ -68,7 +68,7 @@ class DockerManifestSyncer constructor(repo: DockerArtifactRepo) {
         val blob = ArtifactUtil.getBlobByName(repo, pathContext, blobFilename) ?: run {
             return false
         }
-        return copyBlob(pathContext.projectId, pathContext.repoName, blob.path, targetPath, blobFilename)
+        return copyBlob(pathContext.projectId, pathContext.repoName, blob.fullPath, targetPath, blobFilename)
     }
 
     private fun copyBlob(

@@ -3,6 +3,7 @@ package com.tencent.bkrepo.docker.resource
 import com.tencent.bkrepo.docker.api.Tag
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
+import com.tencent.bkrepo.docker.util.UserUtil
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
@@ -26,8 +27,8 @@ class TagImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) :
         if (last != null) {
             index = last
         }
-        val pathContext = RequestContext(projectId, repoName, name)
-        dockerRepo.userId = userId
+        val uId = UserUtil.getContextUserId(userId)
+        val pathContext = RequestContext(uId, projectId, repoName, name)
         return dockerRepo.getTags(pathContext, maxEntries, index)
     }
 }

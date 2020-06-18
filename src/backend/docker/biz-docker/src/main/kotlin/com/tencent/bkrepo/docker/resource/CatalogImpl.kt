@@ -2,7 +2,9 @@ package com.tencent.bkrepo.docker.resource
 
 import com.tencent.bkrepo.docker.api.Catalog
 import com.tencent.bkrepo.docker.constant.EMPTYSTR
+import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
+import com.tencent.bkrepo.docker.util.UserUtil
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
@@ -25,7 +27,8 @@ class CatalogImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServic
         if (last != null) {
             index = last
         }
-        dockerRepo.userId = userId
-        return dockerRepo.catalog(projectId, repoName, maxEntries, index)
+        val uId = UserUtil.getContextUserId(userId)
+        val pathContext = RequestContext(uId, projectId, repoName, "")
+        return dockerRepo.catalog(pathContext, maxEntries, index)
     }
 }
