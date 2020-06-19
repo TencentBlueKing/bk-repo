@@ -34,7 +34,7 @@ class MongoLock {
         val mapResult = mongoLockDao.incrByWithExpire(key, 1, System.currentTimeMillis() + expire)
         // 如果结果是1，代表当前请求获得锁
         if (mapResult["value"] as Int == 1) {
-            logger.info("Get lock success with key [$key] for [${expire/1000}] sec")
+            logger.info("Get lock success with key [$key] for [${expire / 1000}] sec")
             return true
             // 如果结果>1，表示当前请求在获取锁的过程中，锁已被其他请求获得。
         } else if (mapResult["value"] as Int > 1) {

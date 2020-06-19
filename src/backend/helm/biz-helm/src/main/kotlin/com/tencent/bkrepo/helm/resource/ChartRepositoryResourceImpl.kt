@@ -7,6 +7,7 @@ import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDateTime
 
 @RestController
 class ChartRepositoryResourceImpl : ChartRepositoryResource {
@@ -29,5 +30,9 @@ class ChartRepositoryResourceImpl : ChartRepositoryResource {
     override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo): Response<Void> {
         chartRepositoryService.regenerateIndexYaml(artifactInfo)
         return ResponseBuilder.success()
+    }
+
+    override fun batchInstallTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
+        chartRepositoryService.batchInstallTgz(artifactInfo, startTime)
     }
 }

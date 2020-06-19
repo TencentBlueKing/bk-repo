@@ -10,6 +10,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -22,9 +23,11 @@ import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.VERSION
+import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.lock.MongoLock
 import com.tencent.bkrepo.helm.pojo.IndexEntity
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
+import com.tencent.bkrepo.helm.utils.HelmZipResponseWriter
 import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.util.NodeUtils
@@ -56,11 +59,11 @@ class ChartRepositoryService {
         var isLock = false
         try {
             isLock = mongoLock.getLock(LOCK_KEY)
-            if(isLock){
+            if (isLock) {
                 freshIndexFile(artifactInfo)
             }
         } finally {
-            if(isLock){
+            if (isLock) {
                 mongoLock.releaseLock(LOCK_KEY)
             }
         }
@@ -239,6 +242,24 @@ class ChartRepositoryService {
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = artifactInfo.artifactUri
         repository.download(context)
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Transactional(rollbackFor = [Throwable::class])
+    fun batchInstallTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
+        val artifactResourceList = mutableListOf<ArtifactResource>()
+        val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
+        if (nodeList.isEmpty()) {
+            throw HelmFileNotFoundException("no chart found in repository")
+        }
+        val context = ArtifactSearchContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        nodeList.forEach {
+            context.contextAttributes[FULL_PATH] = it["fullPath"] as String
+            val artifactInputStream = repository.search(context) as ArtifactInputStream
+            artifactResourceList.add(ArtifactResource(artifactInputStream, it["name"] as String, null))
+        }
+        HelmZipResponseWriter.write(artifactResourceList)
     }
 
     companion object {
