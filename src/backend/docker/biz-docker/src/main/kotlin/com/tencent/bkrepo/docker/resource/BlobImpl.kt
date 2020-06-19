@@ -19,14 +19,8 @@ import javax.servlet.http.HttpServletRequest
 class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) : Blob {
 
     override fun uploadBlob(
-        request: HttpServletRequest,
-        userId: String?,
-        headers: HttpHeaders,
-        projectId: String,
-        repoName: String,
-        uuid: String,
-        digest: String?,
-        artifactFile: ArtifactFile
+        request: HttpServletRequest, userId: String?, headers: HttpHeaders, projectId: String,
+        repoName: String, uuid: String, digest: String?, artifactFile: ArtifactFile
     ): DockerResponse {
         dockerRepo.httpHeaders = headers
         val uId = getContextUserId(userId)
@@ -36,11 +30,8 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
     }
 
     override fun isBlobExists(
-        request: HttpServletRequest,
-        userId: String?,
-        projectId: String,
-        repoName: String,
-        digest: String
+        request: HttpServletRequest, userId: String?, projectId: String,
+        repoName: String, digest: String
     ): DockerResponse {
         val uId = getContextUserId(userId)
         val name = PathUtil.artifactName(request, BLOB_PATTERN, projectId, repoName)
@@ -49,11 +40,8 @@ class BlobImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
     }
 
     override fun getBlob(
-        request: HttpServletRequest,
-        userId: String?,
-        projectId: String,
-        repoName: String,
-        digest: String
+        request: HttpServletRequest, userId: String?,
+        projectId: String, repoName: String, digest: String
     ): ResponseEntity<Any> {
         val uId = getContextUserId(userId)
         val name = PathUtil.artifactName(request, BLOB_PATTERN, projectId, repoName)

@@ -493,12 +493,11 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         val manifestPath = RepoServiceUtil.buildManifestPath(context.artifactName, tag, useManifestType)
         logger.info("get manifest by tag params [$context,$manifestPath]")
         if (!repo.canRead(context)) {
+            logger.warn("do not have permission to get [$context,$manifestPath]")
             return DockerV2Errors.unauthorizedManifest(manifestPath, null as String?)
         }
-        if (!repo.exists(context.projectId, context.repoName, manifestPath)) {
-            return DockerV2Errors.manifestUnknown(manifestPath)
-        }
         val manifest = repo.getArtifact(context.projectId, context.repoName, manifestPath) ?: run {
+            logger.warn("the node not exist [$context,$manifestPath]")
             return DockerV2Errors.manifestUnknown(manifestPath)
         }
         logger.debug("get manifest by tag result [$manifest]")

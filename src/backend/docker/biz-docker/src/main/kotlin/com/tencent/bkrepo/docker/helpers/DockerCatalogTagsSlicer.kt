@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.docker.helpers
 
-import java.util.TreeSet
 import org.apache.commons.lang.StringUtils
+import java.util.TreeSet
 
 class DockerCatalogTagsSlicer {
     companion object {
@@ -50,14 +50,10 @@ class DockerCatalogTagsSlicer {
             return fromElement
         }
 
-        private fun calcToElement(
-            elementsHolder: DockerPaginationElementsHolder,
-            fromElement: String,
-            maxEntries: Int
-        ): String {
-            var toElement = elementsHolder.elements.last() as String
+        private fun calcToElement(holder: DockerPaginationElementsHolder, element: String, maxEntries: Int): String {
+            var toElement = holder.elements.last() as String
             if (maxEntries > 0) {
-                val repos = elementsHolder.elements.tailSet(fromElement)
+                val repos = holder.elements.tailSet(element)
                 var repoIndex = 1
                 val iter = repos.iterator()
 
