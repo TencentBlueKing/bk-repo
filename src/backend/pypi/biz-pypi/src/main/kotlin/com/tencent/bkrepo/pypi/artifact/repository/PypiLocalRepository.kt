@@ -385,7 +385,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
             val hrefValue = filenode.attributes()["href"]
             // 获取文件流
             val byteStream = "$verifiedUrl/$packageName/$hrefValue".downloadUrlHttpClient()
-            byteStream?.let {
+            byteStream?.use {
                 val artifactFile = ArtifactFileFactory.build(byteStream)
                 val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename)
                 nodeCreateRequest?.let {

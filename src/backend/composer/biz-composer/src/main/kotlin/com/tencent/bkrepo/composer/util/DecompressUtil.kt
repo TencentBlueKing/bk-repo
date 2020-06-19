@@ -93,16 +93,16 @@ object DecompressUtil {
      * @param tarInputStream 压缩文件流
      * @return 以字符串格式返回 composer.json 文件内容
      */
-    private fun getCompressComposerJson(tarInputStream: ArchiveInputStream): String {
+    private fun getCompressComposerJson(archiveInputStream: ArchiveInputStream): String {
         val stringBuilder = StringBuffer("")
-        with(tarInputStream) {
+        archiveInputStream.use {
             try {
-                while (nextEntry.also { zipEntry ->
+                while (archiveInputStream.nextEntry.also { zipEntry ->
                             zipEntry?.let {
                                 if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == com.tencent.bkrepo.composer.COMPOSER_JSON) {
                                     var length: Int
                                     val bytes = ByteArray(2048)
-                                    while ((tarInputStream.read(bytes).also { length = it }) != -1) {
+                                    while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
                                         stringBuilder.append(String(bytes, 0, length))
                                     }
                                     return stringBuilder.toString()

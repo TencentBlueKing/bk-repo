@@ -190,7 +190,13 @@ class RpmFormatInterpreter {
             val filePath = dirPaths[0][baseNameDirIndex] + baseName
             val dir = dirPaths[0][baseNameDirIndex]?.contains("$filePath/")
             val file = if (dir!!) File("dir", filePath) else File(null, filePath)
-            files.add(file)
+            //过滤文件列表
+            with(file.name) {
+                if(this.startsWith("/etc/") ||
+                        this.startsWith("/usr/bin/") ||
+                        this.startsWith("/usr/sbin"))
+                    files.add(file)
+            }
         }
         return files
     }

@@ -68,16 +68,16 @@ object DecompressUtil {
         return propStr.propInfo()
     }
 
-    private fun getPkgInfo(tarInputStream: ArchiveInputStream, file: String): String {
+    private fun getPkgInfo(archiveInputStream: ArchiveInputStream, file: String): String {
         val stringBuilder = StringBuffer("")
-        with(tarInputStream) {
+        archiveInputStream.use {
             try {
-                while (nextEntry.also { zipEntry ->
+                while (archiveInputStream.nextEntry.also { zipEntry ->
                             zipEntry?.let {
                                 if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == file) {
                                     var length: Int
                                     val bytes = ByteArray(2048)
-                                    while ((tarInputStream.read(bytes).also { length = it }) != -1) {
+                                    while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
                                         stringBuilder.append(String(bytes, 0, length))
                                     }
                                     return stringBuilder.toString()

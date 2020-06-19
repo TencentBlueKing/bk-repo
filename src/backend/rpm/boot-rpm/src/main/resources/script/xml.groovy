@@ -7,6 +7,11 @@ import groovy.xml.MarkupBuilder
 import groovy.xml.XmlUtil
 import org.apache.commons.lang.StringUtils
 
+/**
+ * 更新"-primary.xml"
+ * @param rpmMetadataWithOldStream
+ * @return
+ */
 String updataPrimaryXml(RpmMetadataWithOldStream rpmMetadataWithOldStream) {
     def oldPrimary = new XmlParser().parse(rpmMetadataWithOldStream.oldPrimaryStream)
 
@@ -14,8 +19,27 @@ String updataPrimaryXml(RpmMetadataWithOldStream rpmMetadataWithOldStream) {
     oldPrimary.@packages = packageCount + 1
 
     def str = new XmlParser().parseText(xmlPackageInit(rpmMetadataWithOldStream.newRpmMetadata))
-    oldPrimary.value().add(str.value()[0])
+    //查询 location&&ver&&rel 相同的节点，有则先删除
+    def oldNodeList  = oldPrimary.value()
+    def newNode = str.value()[0]
+    addIndex(oldNodeList, newNode)
     return XmlUtil.serialize(oldPrimary)
+}
+/**
+ * 构件名称是由工具生成，包含了包名,release, version, 并且构件下载时uri是由构件名称自动拼接。
+ * 原则上location值相同的话代表为同一构件(在接受请求时对构件进行了查重，进入这里代表构件包名,release, version相同，但包内文件内容不同)，
+ * 将新的<package/>替换旧值
+ * @param oldPrimary
+ * @param newNode
+ */
+void addIndex(NodeList oldPrimary, Node newNode) {
+    for (oldNode in oldPrimary) {
+        if (oldNode.location.@href == newNode.location.@href) {
+            oldPrimary.remove(oldNode)
+            break
+        }
+    }
+    oldPrimary.add(newNode)
 }
 
 MarkupBuilder xmlPackageWrapper(RpmMetadata rpmMetadata, MarkupBuilder builder){
@@ -83,6 +107,11 @@ MarkupBuilder xmlPackageWrapper(RpmMetadata rpmMetadata, MarkupBuilder builder){
     return builder
 }
 
+/**
+ * 初始化rpm 构件对应的xml
+ * @param rpmMetadata
+ * @return
+ */
 String xmlPackageInit(RpmMetadata rpmMetadata) {
     def writer = new StringWriter()
     def xml = new MarkupBuilder(writer)

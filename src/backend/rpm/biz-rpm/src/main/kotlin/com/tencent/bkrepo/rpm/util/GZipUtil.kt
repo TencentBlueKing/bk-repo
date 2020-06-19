@@ -8,13 +8,12 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 object GZipUtil {
+    /**
+     * 将'xml'以gzip压缩后返回'xml.gz'
+     */
     fun ByteArray.gZip(): File {
         val file = File.createTempFile("name", "-primary.xml.gz")
-        val tempOutputStream = FileOutputStream(file)
-        val gZIPOutputStream = GZIPOutputStream(tempOutputStream)
-        gZIPOutputStream.use {
-            it.write(this, 0, this.size)
-        }
+        GZIPOutputStream(FileOutputStream(file)).use { it.write(this, 0, this.size) }
         return file
     }
 
@@ -22,8 +21,8 @@ object GZipUtil {
      * 解压
      */
     fun InputStream.UnGzipInputStream(): InputStream {
-        val gzipInputStream = GZIPInputStream(this)
-        val byteArray = gzipInputStream.readBytes()
-        return ByteInputStream(byteArray, byteArray.size)
+        return GZIPInputStream(this).readBytes().let {
+            ByteInputStream(it, it.size)
+        }
     }
 }
