@@ -1,0 +1,19 @@
+package com.tencent.bkrepo.helm.model
+
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+
+@Document("mongo_lock")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "mongo_distributed_lock_inx",
+        def = "{'key': 1, 'expire': 1}",
+        background = true
+    )
+)
+data class TMongoLock(
+    val key: String,
+    val value: Int,
+    val expire: Long
+)

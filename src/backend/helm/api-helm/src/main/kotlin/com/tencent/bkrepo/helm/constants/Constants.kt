@@ -3,8 +3,6 @@ package com.tencent.bkrepo.helm.constants
 const val INDEX_YAML = "index.yaml"
 const val INDEX_CACHE_YAML = "index-cache.yaml"
 
-const val INIT_STR = "apiVersion: v1\nentries: {}\ngenerated: \"%s\"\nserverInfo: {}\n"
-
 const val FULL_PATH = "_full_path"
 
 const val CHART_YAML = "Chart.yaml"

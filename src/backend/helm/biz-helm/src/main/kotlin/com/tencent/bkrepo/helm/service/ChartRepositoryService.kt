@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.helm.service
 
-import com.google.gson.JsonParser
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -22,9 +22,9 @@ import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.VERSION
+import com.tencent.bkrepo.helm.lock.MongoLock
 import com.tencent.bkrepo.helm.pojo.IndexEntity
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
-import com.tencent.bkrepo.helm.utils.JsonUtil
 import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.util.NodeUtils
@@ -47,10 +47,23 @@ class ChartRepositoryService {
     @Autowired
     private lateinit var nodeResource: NodeResource
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Autowired
+    private lateinit var mongoLock: MongoLock
+
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     fun getIndexYaml(artifactInfo: HelmArtifactInfo) {
-        freshIndexFile(artifactInfo)
+        var isLock = false
+        try {
+            isLock = mongoLock.getLock(LOCK_KEY)
+            if(isLock){
+                freshIndexFile(artifactInfo)
+            }
+        } finally {
+            if(isLock){
+                mongoLock.releaseLock(LOCK_KEY)
+            }
+        }
         downloadIndexYaml()
     }
 
@@ -66,8 +79,7 @@ class ChartRepositoryService {
                 logger.info("start generate index.yaml ... ")
                 generateIndexFile(nodeList, indexEntity, artifactInfo)
             }
-            uploadIndexYaml(indexEntity)
-            logger.info("generate index.yaml success！")
+            uploadIndexYaml(indexEntity).also { logger.info("generate index.yaml success！") }
             return
         }
 
@@ -79,8 +91,7 @@ class ChartRepositoryService {
             logger.info("start regenerate index.yaml ... ")
             generateIndexFile(nodeList, indexEntity, artifactInfo)
             indexEntity.generated = now.format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER))
-            uploadIndexYaml(indexEntity)
-            logger.info("regenerate index.yaml success！")
+            uploadIndexYaml(indexEntity).also { logger.info("regenerate index.yaml success！") }
         }
     }
 
@@ -113,16 +124,21 @@ class ChartRepositoryService {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun generateIndexFile(result: List<Map<String, Any>>, indexEntity: IndexEntity, artifactInfo: HelmArtifactInfo) {
-        result.forEach {
-            val context = ArtifactSearchContext()
-            val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+    private fun generateIndexFile(
+        result: List<Map<String, Any>>,
+        indexEntity: IndexEntity,
+        artifactInfo: HelmArtifactInfo
+    ) {
+        val context = ArtifactSearchContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        result.forEach { it ->
+            Thread.sleep(20)
             context.contextAttributes[FULL_PATH] = it["fullPath"] as String
             var chartName: String? = null
             var chartVersion: String? = null
             try {
                 val artifactInputStream = repository.search(context) as ArtifactInputStream
-                val content = artifactInputStream.getArchivesContent("tgz")
+                val content = artifactInputStream.use { it.getArchivesContent("tgz") }
                 val chartInfoMap = YamlUtils.convertStringToEntity<MutableMap<String, Any>>(content)
                 chartName = chartInfoMap[NAME] as String
                 chartVersion = chartInfoMap[VERSION] as String
@@ -135,7 +151,7 @@ class ChartRepositoryService {
                 chartInfoMap["digest"] = it["sha256"] as String
                 addIndexEntries(indexEntity, chartInfoMap)
             } catch (ex: Exception) {
-                logger.error("generateIndexFile for chart [$chartName-$chartVersion.tgz] failed!")
+                logger.error("generate IndexFile for chart [$chartName-$chartVersion.tgz] failed!")
             }
         }
     }
@@ -184,14 +200,11 @@ class ChartRepositoryService {
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-        val indexMap = (repository.search(context) as? ArtifactInputStream)?.run {
+        val indexMap = (repository.search(context) as ArtifactInputStream).run {
             YamlUtils.convertFileToEntity<Map<String, Any>>(this)
         }
-        ChartManipulationService.logger.info("search original $INDEX_CACHE_YAML success!")
-        return JsonUtil.gson.fromJson(
-            JsonParser().parse(JsonUtil.gson.toJson(indexMap)).asJsonObject,
-            IndexEntity::class.java
-        )
+        logger.info("search original $INDEX_CACHE_YAML success!")
+        return objectMapper.convertValue(indexMap, IndexEntity::class.java)
     }
 
     fun downloadIndexYaml() {
@@ -204,40 +217,14 @@ class ChartRepositoryService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
-        val context = ArtifactSearchContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         val indexEntity = initIndexEntity()
-        val nodeList =
-            nodeResource.list(artifactInfo.projectId, artifactInfo.repoName, "/", includeFolder = false, deep = false).data ?: emptyList()
-        logger.info("query node success, node list size [${nodeList.size}]")
+        val nodeList = queryNodeList(artifactInfo, false)
+        logger.info("query node list for full refresh index.yaml success, size [${nodeList.size}]")
         if (nodeList.isNotEmpty()) {
-            nodeList.forEach { it ->
-                Thread.sleep(20)
-                try {
-                    if (!it.name.endsWith("tgz")) return@forEach
-                    context.contextAttributes[FULL_PATH] = it.fullPath
-                    val artifactInputStream = repository.search(context) as ArtifactInputStream
-                    val result = artifactInputStream.getArchivesContent("tgz")
-                    artifactInputStream.close()
-                    val chartInfoMap = YamlUtils.convertStringToEntity<MutableMap<String, Any>>(result)
-                    val chartName = chartInfoMap[NAME] as String
-                    val chartVersion = chartInfoMap[VERSION] as String
-                    chartInfoMap["digest"] = it.sha256 as String
-                    chartInfoMap["created"] = convertDateTime(it.createdDate)
-                    chartInfoMap["urls"] = listOf(
-                        domain.trimEnd('/') + NodeUtils.formatFullPath(
-                            "${artifactInfo.projectId}/${artifactInfo.repoName}/charts/$chartName-$chartVersion.tgz"
-                        )
-                    )
-                    logger.info("helm chart $chartName , Info [$chartInfoMap]")
-                    addIndexEntries(indexEntity, chartInfoMap)
-                } catch (ex: Exception) {
-                    logger.error("update index.yaml failed, message: ${ex.message}")
-                }
-            }
+            logger.info("start full refresh index.yaml ... ")
+            generateIndexFile(nodeList, indexEntity, artifactInfo)
         }
-        uploadIndexYaml(indexEntity)
-        logger.info("regenerate index.yaml success！")
+        uploadIndexYaml(indexEntity).also { logger.info("Full refresh index.yaml success！") }
     }
 
     private fun convertDateTime(timeStr: String): String {
@@ -256,5 +243,6 @@ class ChartRepositoryService {
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(ChartRepositoryService::class.java)
+        const val LOCK_KEY = "chart_index"
     }
 }
