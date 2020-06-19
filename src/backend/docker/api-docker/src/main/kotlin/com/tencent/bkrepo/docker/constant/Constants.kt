@@ -27,5 +27,6 @@ const val HTTP_PROTOCOL_HTTP = "http"
 const val HTTP_PROTOCOL_HTTPS = "https"
 
 const val AUTH_ENABLE = "enable"
-
 const val AUTH_DISABLE = "disable"
+
+val REGISTRY_SERVICE = "bkrepo"

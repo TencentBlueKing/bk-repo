@@ -90,6 +90,10 @@ open class OctetStreamArtifactFile(
         }
     }
 
+    override fun hasInitialized(): Boolean {
+        return hasInitialized
+    }
+
     fun init() {
         if (!hasInitialized) {
             try {

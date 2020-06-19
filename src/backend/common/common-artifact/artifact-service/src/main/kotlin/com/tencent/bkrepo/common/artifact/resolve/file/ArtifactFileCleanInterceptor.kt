@@ -12,14 +12,14 @@ class ArtifactFileCleanInterceptor : HandlerInterceptor {
     override fun afterCompletion(request: HttpServletRequest, response: HttpServletResponse, handler: Any, ex: Exception?) {
         try {
             val artifactFileList = request.getAttribute(ArtifactFileFactory.ARTIFACT_FILES) as? List<ArtifactFile>
-            artifactFileList?.filter { !it.isInMemory() }?.forEach {
+            artifactFileList?.filter { it.hasInitialized() && !it.isInMemory() }?.forEach {
                 val absolutePath = it.getFile()!!.absolutePath
                 measureTimeMillis { it.delete() }.apply {
                     logger.info("Delete temp artifact file [$absolutePath] success, elapse $this ms")
                 }
             }
         } catch (ex: Exception) {
-            logger.error("Failed to clean temp artifact file.", ex)
+            logger.warn("Failed to clean temp artifact file.", ex)
         }
     }
 

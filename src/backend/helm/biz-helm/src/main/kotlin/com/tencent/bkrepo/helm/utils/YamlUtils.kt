@@ -43,8 +43,8 @@ object YamlUtils {
         return getYaml().loadAs(yaml, T::class.java)
     }
 
-    fun <T> transEntity2File(v: T): String {
-        return getYaml().dump(v)
+    fun <T> transEntityToStream(v: T): InputStream {
+        return getYaml().dump(v).byteInputStream()
     }
 
     fun yaml2Json(inputStream: InputStream): String {

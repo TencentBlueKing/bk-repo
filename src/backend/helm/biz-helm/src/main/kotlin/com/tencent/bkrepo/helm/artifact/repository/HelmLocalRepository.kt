@@ -2,7 +2,6 @@ package com.tencent.bkrepo.helm.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
-import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -10,7 +9,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -21,51 +20,23 @@ import com.tencent.bkrepo.helm.constants.EMPTY_CHART_OR_VERSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
-import com.tencent.bkrepo.helm.constants.INIT_STR
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.utils.JsonUtil
-import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
 import org.apache.commons.lang.StringUtils
 import org.apache.http.HttpStatus
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Component
 class HelmLocalRepository : LocalRepository() {
 
-    override fun onDownloadBefore(context: ArtifactDownloadContext) {
-        // 检查index-cache.yaml文件是否存在，如果不存在则说明是添加仓库
-        val repositoryInfo = context.repositoryInfo
-        val projectId = repositoryInfo.projectId
-        val repoName = repositoryInfo.name
-        val fullPath = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-        val exist = nodeResource.exist(projectId, repoName, fullPath)
-        if (!exist.data!!) {
-            // 新建index-cache.yaml文件
-            createIndexCacheYamlFile()
-        }
-    }
-
     override fun determineArtifactName(context: ArtifactTransferContext): String {
         val fileName = context.artifactInfo.artifactUri.trimStart('/')
         return if (StringUtils.isBlank(fileName)) INDEX_YAML else fileName
-    }
-
-    // 创建cache-index.yaml文件并初始化
-    private fun createIndexCacheYamlFile() {
-        val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss+08:00")
-        val initStr = String.format(INIT_STR, LocalDateTime.now().format(format))
-        val artifactFile = ArtifactFileFactory.build(initStr.byteInputStream())
-        val uploadContext = ArtifactUploadContext(artifactFile)
-        uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-        this.upload(uploadContext)
     }
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
@@ -136,7 +107,7 @@ class HelmLocalRepository : LocalRepository() {
         return context.contextAttributes[FULL_PATH] as String
     }
 
-    override fun search(context: ArtifactSearchContext): Map<String, Any>? {
+    override fun search(context: ArtifactSearchContext): ArtifactInputStream? {
         val fullPath = context.contextAttributes[FULL_PATH] as String
         return try {
             this.onSearch(context) ?: throw ArtifactNotFoundException("Artifact[$fullPath] does not exist")
@@ -146,26 +117,15 @@ class HelmLocalRepository : LocalRepository() {
         }
     }
 
-    private fun onSearch(context: ArtifactSearchContext): Map<String, Any>? {
+    private fun onSearch(context: ArtifactSearchContext): ArtifactInputStream? {
         val repositoryInfo = context.repositoryInfo
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
-
-        if (fullPath.contains(INDEX_CACHE_YAML)) {
-            val indexFilePath = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-            val exist = nodeResource.exist(projectId, repoName, indexFilePath)
-            if (!exist.data!!) {
-                // 新建index-cache.yaml文件
-                createIndexCacheYamlFile()
-            }
-        }
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
 
         node.nodeInfo.takeIf { !it.folder } ?: return null
-        return storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)?.run {
-            YamlUtils.convertFileToEntity<Map<String, Any>>(this)
-        }
+        return storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
     }
 
     override fun remove(context: ArtifactRemoveContext) {

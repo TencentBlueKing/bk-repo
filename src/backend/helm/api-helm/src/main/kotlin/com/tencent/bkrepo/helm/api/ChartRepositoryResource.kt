@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.helm.api
 
+import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.HELM_INDEX_YAML_URL
@@ -22,4 +23,8 @@ interface ChartRepositoryResource {
     @ApiOperation("retrieved when you run helm install with the --verify flag")
     @GetMapping(HELM_PROV_INSTALL_URL)
     fun installProv(@ArtifactPathVariable artifactInfo: HelmArtifactInfo)
+
+    @ApiOperation("regenerate index.yaml")
+    @GetMapping("/{projectId}/{repoName}/regenerate")
+    fun regenerateIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Response<Void>
 }

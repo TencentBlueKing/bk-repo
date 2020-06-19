@@ -9,12 +9,16 @@ import com.tencent.bkrepo.replication.constant.ReplicationMessageCode
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import com.tencent.bkrepo.replication.model.TReplicationTask
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskCreateRequest
+import com.tencent.bkrepo.replication.pojo.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.setting.ReplicationSetting
 import com.tencent.bkrepo.replication.pojo.task.ReplicationProgress
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicationTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
 import com.tencent.bkrepo.replication.repository.TaskRepository
+import com.tencent.bkrepo.repository.api.ProjectResource
+import com.tencent.bkrepo.repository.api.RepositoryResource
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -28,11 +32,49 @@ import java.time.format.DateTimeFormatter
 class TaskService(
     private val taskRepository: TaskRepository,
     private val scheduleService: ScheduleService,
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
+    private val projectResource: ProjectResource,
+    private val repositoryResource: RepositoryResource
 ) {
 
     fun testConnect(remoteClusterInfo: RemoteClusterInfo) {
         tryConnect(remoteClusterInfo)
+    }
+
+    // create full repo job and schedule
+    fun createFull(userId: String, username: String, password: String, url: String): Boolean {
+        val projectList = projectResource.list().data ?: kotlin.run {
+            return false
+        }
+        projectList.forEach { pit ->
+            val projectId = pit.name
+            val repoList = repositoryResource.list(projectId).data ?: return@forEach
+            repoList.forEach {
+                val repoName = it.name
+                val remoteClusterInfo = RemoteClusterInfo(url, null, username, password)
+                val setting = ReplicationSetting(true, true, ConflictStrategy.SKIP, remoteClusterInfo)
+                val task = TReplicationTask(
+                    createdBy = userId,
+                    createdDate = LocalDateTime.now(),
+                    lastModifiedBy = userId,
+                    lastModifiedDate = LocalDateTime.now(),
+
+                    includeAllProject = false,
+                    localProjectId = projectId,
+                    localRepoName = repoName,
+                    remoteProjectId = projectId,
+                    remoteRepoName = repoName,
+
+                    type = ReplicationType.FULL,
+                    setting = setting,
+                    replicationProgress = ReplicationProgress(),
+                    status = ReplicationStatus.WAITING
+                )
+                taskRepository.insert(task)
+                scheduleService.createJob(task)
+            }
+        }
+        return true
     }
 
     fun create(userId: String, request: ReplicationTaskCreateRequest): ReplicationTaskInfo {
