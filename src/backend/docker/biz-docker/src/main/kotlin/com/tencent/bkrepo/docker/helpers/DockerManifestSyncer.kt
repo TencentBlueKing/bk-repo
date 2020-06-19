@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.context.UploadContext
+import com.tencent.bkrepo.docker.exception.DockerFileSaveFailedException
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
@@ -33,31 +34,37 @@ class DockerManifestSyncer constructor(repo: DockerArtifactRepo) {
                 // check path exist
                 if (repo.exists(context.projectId, context.repoName, finalPath)) {
                     logger.info("node exist in the repo [$finalPath]")
-                    return true
+                    continue
                 }
                 // check is empty digest
                 if (ContentUtil.isEmptyBlob(blobDigest)) {
-                    with(context) {
-                        logger.info("found empty layer [$fileName] in manifest  ,create blob in path [$finalPath]")
-                        val blobContent = ByteArrayInputStream(ContentUtil.EMPTY_BLOB_CONTENT)
-                        val artifactFile = ArtifactFileFactory.build(blobContent)
-                        val uploadContext = UploadContext(projectId, repoName, finalPath)
+                    logger.info("found empty layer [$fileName] in manifest  ,create blob in path [$finalPath]")
+                    val blobContent = ByteArrayInputStream(ContentUtil.EMPTY_BLOB_CONTENT)
+                    val artifactFile = ArtifactFileFactory.build(blobContent)
+                    val uploadContext = UploadContext(context.projectId, context.repoName, finalPath)
                             .sha256(ContentUtil.emptyBlobDigest().getDigestHex()).artifactFile(artifactFile)
-                        return repo.upload(uploadContext)
+                    if (!repo.upload(uploadContext)) {
+                        throw DockerFileSaveFailedException(finalPath)
                     }
+                    continue
                 }
                 // temp path exist, move from it to final
                 if (repo.exists(context.projectId, context.repoName, tempPath)) {
                     logger.info("move blob from the temp path [$context,$tempPath,$finalPath]")
-                    return moveBlobFromTempDir(context, tempPath, finalPath)
+                    if (!moveBlobFromTempDir(context, tempPath, finalPath)) {
+                        throw DockerFileSaveFailedException(finalPath)
+                    }
+                    continue
                 }
                 // copy from other blob
                 logger.info("blob temp file [$tempPath] doesn't exist in temp, try other tags")
-                return copyBlobFromFirstRepo(context, fileName, finalPath)
+                if (!copyBlobFromFirstRepo(context, fileName, finalPath)) {
+                    throw DockerFileSaveFailedException(finalPath)
+                }
             }
         }
         logger.warn("finish sync docker repository blobs,false")
-        return false
+        return true
     }
 
     private fun isForeignLayer(blobInfo: DockerBlobInfo): Boolean {
