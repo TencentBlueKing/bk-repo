@@ -50,4 +50,15 @@ internal class BoundedInputStreamTest {
         Assertions.assertEquals(-1, wrapper.read(ByteArray(1)))
     }
 
+    @Test
+    fun testOverflowInt() {
+        val size = 10
+        val content = randomString(size)
+        val source = content.byteInputStream()
+        val wrapper = BoundedInputStream(source, Int.MAX_VALUE.toLong() + 1)
+
+        val byteArray = ByteArray(4096)
+        wrapper.read(byteArray)
+    }
+
 }
