@@ -20,8 +20,11 @@ class Range(startPosition: Long, endPosition: Long, val total: Long) {
         return length == 0L
     }
 
+    override fun toString(): String {
+        return "${start}-${end}/${total}"
+    }
+
     companion object {
-        val EMPTY = ofFull(0)
         fun ofFull(total: Long) = Range(0, total - 1, total)
     }
 }
