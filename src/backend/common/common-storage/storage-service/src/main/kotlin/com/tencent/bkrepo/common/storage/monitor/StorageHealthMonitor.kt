@@ -35,20 +35,24 @@ class StorageHealthMonitor(
 
     private fun start() {
         thread {
-            while (monitorConfig.enabled) {
-                val checker = StorageHealthChecker(Paths.get(uploadConfig.location), monitorConfig.dataSize)
-                val future = executorService.submit(checker)
-                val sleep = try {
-                    future.get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
-                    changeToHealthy()
-                    true
-                } catch (timeoutException: TimeoutException) {
-                    changeToUnhealthy(IO_TIMEOUT_MESSAGE)
-                } catch (exception: Exception) {
-                    changeToUnhealthy(exception.message.orEmpty())
-                } finally {
-                    checker.clean()
+            while (true) {
+                var sleep = true
+                if (monitorConfig.enabled) {
+                    val checker = StorageHealthChecker(Paths.get(uploadConfig.location), monitorConfig.dataSize)
+                    val future = executorService.submit(checker)
+                    sleep = try {
+                        future.get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
+                        changeToHealthy()
+                        true
+                    } catch (timeoutException: TimeoutException) {
+                        changeToUnhealthy(IO_TIMEOUT_MESSAGE)
+                    } catch (exception: Exception) {
+                        changeToUnhealthy(exception.message.orEmpty())
+                    } finally {
+                        checker.clean()
+                    }
                 }
+
                 if (sleep) {
                     TimeUnit.SECONDS.sleep(monitorConfig.interval.seconds)
                 }
@@ -96,7 +100,7 @@ class StorageHealthMonitor(
     }
 
     private fun changeToHealthy() {
-        healthyThroughputCount.set(0)
+        unhealthyThroughputCount.set(0)
         val count = healthyThroughputCount.incrementAndGet()
         if (!health.get()) {
             logger.warn("Try to restore [$count/${monitorConfig.timesToRestore}].")
