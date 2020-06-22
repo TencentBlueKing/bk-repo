@@ -147,35 +147,39 @@ class DockerArtifactRepo @Autowired constructor(
     }
 
     // copy file
-    fun copy(projectId: String, repoName: String, srcPath: String, destPath: String): Boolean {
-        val copyRequest = NodeCopyRequest(
-            srcProjectId = projectId,
-            srcRepoName = repoName,
-            srcFullPath = srcPath,
-            destProjectId = projectId,
-            destRepoName = repoName,
-            destFullPath = destPath,
-            overwrite = true,
-            operator = userId
-        )
-        val result = nodeResource.copy(copyRequest)
-        if (result.isNotOk()) {
-            logger.error("user [$userId] request [$copyRequest] copy file fail")
-            throw DockerMoveFileFailedException("$srcPath->$destPath")
+    fun copy(context: RequestContext, srcPath: String, destPath: String): Boolean {
+        with(context) {
+            val copyRequest = NodeCopyRequest(
+                srcProjectId = projectId,
+                srcRepoName = repoName,
+                srcFullPath = srcPath,
+                destProjectId = projectId,
+                destRepoName = repoName,
+                destFullPath = destPath,
+                overwrite = true,
+                operator = userId
+            )
+            val result = nodeResource.copy(copyRequest)
+            if (result.isNotOk()) {
+                logger.error("user [$userId] request [$copyRequest] copy file fail")
+                throw DockerMoveFileFailedException("$srcPath->$destPath")
+            }
+            return true
         }
-        return true
     }
 
     // move file
-    fun move(projectId: String, repoName: String, from: String, to: String): Boolean {
-        val renameRequest = NodeRenameRequest(projectId, repoName, from, to, userId)
-        logger.debug("rename request [$renameRequest]")
-        val result = nodeResource.rename(renameRequest)
-        if (result.isNotOk()) {
-            logger.error("user [$userId] request [$renameRequest] rename file fail")
-            throw DockerMoveFileFailedException("$from->$to")
+    fun move(context: RequestContext, from: String, to: String): Boolean {
+        with(context) {
+            val renameRequest = NodeRenameRequest(projectId, repoName, from, to, userId)
+            logger.debug("rename request [$renameRequest]")
+            val result = nodeResource.rename(renameRequest)
+            if (result.isNotOk()) {
+                logger.error("user [$userId] request [$renameRequest] rename file fail")
+                throw DockerMoveFileFailedException("$from->$to")
+            }
+            return true
         }
-        return true
     }
 
     // set node attribute
@@ -203,37 +207,41 @@ class DockerArtifactRepo @Autowired constructor(
     }
 
     // check path read permission
-    fun canRead(pathContext: RequestContext): Boolean {
-        try {
-            permissionService.checkPermission(
-                userId,
-                ResourceType.PROJECT,
-                PermissionAction.WRITE,
-                pathContext.projectId,
-                pathContext.repoName
-            )
-        } catch (e: PermissionCheckException) {
-            logger.debug("user: [$userId] ,check read permission fail [$pathContext]")
-            return false
+    fun canRead(context: RequestContext): Boolean {
+        with(context) {
+            try {
+                permissionService.checkPermission(
+                    userId,
+                    ResourceType.PROJECT,
+                    PermissionAction.WRITE,
+                    projectId,
+                    repoName
+                )
+            } catch (e: PermissionCheckException) {
+                logger.debug("user: [$userId] ,check read permission fail [$context]")
+                return false
+            }
+            return true
         }
-        return true
     }
 
     // check user write permission
-    fun canWrite(pathContext: RequestContext): Boolean {
-        try {
-            permissionService.checkPermission(
-                userId,
-                ResourceType.PROJECT,
-                PermissionAction.WRITE,
-                pathContext.projectId,
-                pathContext.repoName
-            )
-        } catch (e: PermissionCheckException) {
-            logger.debug("user: [$userId] ,check write permission fail [$pathContext]")
-            return false
+    fun canWrite(context: RequestContext): Boolean {
+        with(context) {
+            try {
+                permissionService.checkPermission(
+                    userId,
+                    ResourceType.PROJECT,
+                    PermissionAction.WRITE,
+                    projectId,
+                    repoName
+                )
+            } catch (e: PermissionCheckException) {
+                logger.debug("user: [$userId] ,check write permission fail [$context]")
+                return false
+            }
+            return true
         }
-        return true
     }
 
     // get artifact detail

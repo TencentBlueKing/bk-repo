@@ -2,7 +2,7 @@ package com.tencent.bkrepo.docker.model
 
 import org.apache.commons.lang.StringUtils
 
-class DockerBlobInfo(var id: String, var digest: String?, var size: Long, var created: String) {
+data class DockerBlobInfo(var id: String, var digest: String?, var size: Long, var created: String) {
     var shortId: String? = null
     var command: String? = null
     var commandText: String? = null

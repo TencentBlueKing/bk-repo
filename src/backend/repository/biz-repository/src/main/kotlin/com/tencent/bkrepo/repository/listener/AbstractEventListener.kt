@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.listener
 
+import com.google.gson.Gson
 import com.tencent.bkrepo.common.stream.message.IMessage
 import com.tencent.bkrepo.common.stream.producer.StreamProducer
 import com.tencent.bkrepo.repository.dao.repository.OperateLogRepository
@@ -16,11 +17,12 @@ abstract class AbstractEventListener {
     private lateinit var streamProducer: StreamProducer
 
     fun logEvent(event: IEvent) {
+        val description = Gson().toJson(event)
         val log = TOperateLog(
             resourceType = event.getResourceType(),
             resourceKey = event.getResourceKey(),
             operateType = event.getOperateType(),
-            description = event.toString(),
+            description = description,
             userId = event.userId,
             clientAddress = event.clientAddress
         )
