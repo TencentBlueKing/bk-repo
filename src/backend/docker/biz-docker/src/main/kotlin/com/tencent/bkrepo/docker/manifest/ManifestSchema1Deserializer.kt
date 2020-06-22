@@ -11,7 +11,9 @@ import org.slf4j.LoggerFactory
 import java.io.IOException
 
 class ManifestSchema1Deserializer {
+
     companion object {
+
         private val logger = LoggerFactory.getLogger(ManifestSchema1Deserializer::class.java)
 
         fun deserialize(manifestBytes: ByteArray, digest: DockerDigest): ManifestMetadata {

@@ -2,11 +2,10 @@ package com.tencent.bkrepo.docker.model
 
 import org.apache.commons.lang.StringUtils
 
-class DockerDigest(digest: String?) {
+data class DockerDigest(val digest: String?) {
+
     var alg: String = ""
-        private set
     var hex: String = ""
-        private set
 
     init {
         val sepIndex = StringUtils.indexOf(digest, ":")

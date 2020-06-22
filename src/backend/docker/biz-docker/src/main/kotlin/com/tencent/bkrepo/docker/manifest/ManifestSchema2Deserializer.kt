@@ -93,11 +93,11 @@ class ManifestSchema2Deserializer {
 
         private fun checkCircuitBreaker(manifestBytes: ByteArray, jsonBytes: ByteArray, iterationsCounter: Int) {
             if (iterationsCounter > 5000) {
-                breakeCircuit(manifestBytes, jsonBytes, "5000 Iterations ware performed")
+                breakCircuit(manifestBytes, jsonBytes, "5000 Iterations ware performed")
             }
         }
 
-        private fun breakeCircuit(manifestBytes: ByteArray, jsonBytes: ByteArray, reason: String) {
+        private fun breakCircuit(manifestBytes: ByteArray, jsonBytes: ByteArray, reason: String) {
             val msg = "ManifestSchema2Deserializer CIRCUIT BREAKER: " + reason + " breaking operation.\nManifest: " + String(manifestBytes, StandardCharsets.UTF_8) + "\njsonBytes:" + String(jsonBytes, StandardCharsets.UTF_8)
             logger.error(msg)
             throw IllegalArgumentException("Circuit Breaker Threshold Reached, Breaking Operation. see log output for manifest details.")
@@ -116,7 +116,7 @@ class ManifestSchema2Deserializer {
                 var command = layerHistory.get("created_by").asText()
                 if (StringUtils.contains(command, "(nop)")) {
                     command = StringUtils.substringAfter(command, "(nop) ")
-                    val dockerCmd = StringUtils.substringBefore(command.trim({ it <= ' ' }), " ")
+                    val dockerCmd = StringUtils.substringBefore(command.trim { it <= ' ' }, " ")
                     command = StringUtils.substringAfter(command, " ")
                     blobInfo.command = dockerCmd
                     blobInfo.commandText = command

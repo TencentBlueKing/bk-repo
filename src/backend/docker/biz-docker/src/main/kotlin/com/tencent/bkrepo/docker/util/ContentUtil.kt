@@ -60,7 +60,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
         val configFile = ArtifactUtil.getManifestConfigBlob(repo, fileName, context, tag) ?: run {
             return ByteArray(0)
         }
-        logger.info("get manifest config file [${configFile.toString()}]")
+        logger.info("get manifest config file [$configFile]")
         val downloadContext = DownloadContext(context).sha256(configFile.sha256!!).length(configFile.length)
         val stream = repo.download(downloadContext)
         stream.use {

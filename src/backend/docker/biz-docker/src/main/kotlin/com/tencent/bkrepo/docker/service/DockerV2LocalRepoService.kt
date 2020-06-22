@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.docker.service
 
-import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.constant.EMPTYSTR
@@ -43,7 +42,6 @@ import java.nio.charset.Charset
 class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRepo) : DockerV2RepoService {
 
     var httpHeaders: HttpHeaders = HttpHeaders()
-    val manifestSyncer = DockerManifestSyncer(repo)
     val contentUtil = ContentUtil(repo)
     val repoUtil = RepoUtil(repo)
 
@@ -260,7 +258,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
 
         val metadata = ManifestDeserializer.deserialize(repo, context, tag, manifestType, manifestBytes, digest!!)
         contentUtil.addManifestsBlobs(context, manifestType, manifestBytes, metadata)
-        if (!manifestSyncer.sync(metadata, context, tag)) {
+        if (!DockerManifestSyncer.sync(repo, metadata, context, tag)) {
             val msg = "fail to  sync manifest blobs, cancel manifest upload"
                 logger.error(msg)
                 throw DockerSyncManifestException(msg)
@@ -268,10 +266,10 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
 
         logger.info("start to upload manifest : [$manifestType]")
         with(context) {
-                val uploadContext = RepoServiceUtil.manifestUploadContext(
-                    projectId, repoName, manifestType,
-                    metadata, manifestPath, artifactFile
-                )
+            val uploadContext = RepoServiceUtil.manifestUploadContext(
+                projectId, repoName, manifestType,
+                metadata, manifestPath, artifactFile
+            )
             if (!repo.upload(uploadContext)) {
                 throw DockerFileSaveFailedException(manifestPath)
             }

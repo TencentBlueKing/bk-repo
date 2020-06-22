@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.docker.context
 
-class DownloadContext(requestContext: RequestContext) {
+data class DownloadContext(val requestContext: RequestContext) {
 
     var context: RequestContext = requestContext
     var length: Long = 0L

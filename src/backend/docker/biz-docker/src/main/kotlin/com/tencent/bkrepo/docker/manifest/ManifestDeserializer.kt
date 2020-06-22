@@ -7,11 +7,16 @@ import com.tencent.bkrepo.docker.model.ManifestMetadata
 import com.tencent.bkrepo.docker.util.ContentUtil
 
 class ManifestDeserializer {
+
     companion object {
 
         fun deserialize(
-            repo: DockerArtifactRepo, context: RequestContext, tag: String,
-            manifestType: ManifestType, bytes: ByteArray, digest: DockerDigest
+            repo: DockerArtifactRepo,
+            context: RequestContext,
+            tag: String,
+            manifestType: ManifestType,
+            bytes: ByteArray,
+            digest: DockerDigest
         ): ManifestMetadata {
             var manifestBytes = bytes
             val contentUtil = ContentUtil(repo)
