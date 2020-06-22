@@ -6,12 +6,11 @@ import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.DockerImageMetadata
 import com.tencent.bkrepo.docker.model.ManifestMetadata
 import com.tencent.bkrepo.docker.util.JsonUtil
-import java.io.IOException
-import java.nio.charset.StandardCharsets
-import java.util.Collections
-import java.util.stream.StreamSupport
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
+import java.io.IOException
+import java.nio.charset.StandardCharsets
+import java.util.stream.StreamSupport
 
 class ManifestSchema2Deserializer {
     companion object {
@@ -82,12 +81,12 @@ class ManifestSchema2Deserializer {
                 checkCircuitBreaker(manifestBytes, jsonBytes, iterationsCounter)
                 ++iterationsCounter
             }
-            Collections.reverse(manifestMetadata.blobsInfo)
+            manifestMetadata.blobsInfo.reverse()
             manifestMetadata.tagInfo.totalSize = totalSize
             val dockerMetadata = JsonUtil.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
-            populatePorts(manifestMetadata, dockerMetadata)
-            populateVolumes(manifestMetadata, dockerMetadata)
-            populateLabels(manifestMetadata, dockerMetadata)
+            ManifestUtil.populatePorts(manifestMetadata, dockerMetadata)
+            ManifestUtil.populateVolumes(manifestMetadata, dockerMetadata)
+            ManifestUtil.populateLabels(manifestMetadata, dockerMetadata)
             return manifestMetadata
         }
 
@@ -136,67 +135,6 @@ class ManifestSchema2Deserializer {
                 if (layerNode.has("urls")) {
                     blobInfo.urls = mutableListOf<String>()
                     layerNode.get("urls").forEach { jsonNode -> blobInfo.urls!!.add(jsonNode.asText()) }
-                }
-            }
-        }
-
-        private fun populatePorts(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
-            if (dockerMetadata.config != null) {
-                addPorts(manifestMetadata, dockerMetadata.config!!.exposedPorts)
-            }
-
-            if (dockerMetadata.containerConfig != null) {
-                addPorts(manifestMetadata, dockerMetadata.containerConfig!!.exposedPorts)
-            }
-        }
-
-        private fun addPorts(manifestMetadata: ManifestMetadata, exposedPorts: JsonNode?) {
-            if (exposedPorts != null) {
-                val iterPorts = exposedPorts.fieldNames()
-
-                while (iterPorts.hasNext()) {
-                    manifestMetadata.tagInfo.ports.add(iterPorts.next())
-                }
-            }
-        }
-
-        private fun populateVolumes(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
-            if (dockerMetadata.config != null) {
-                addVolumes(manifestMetadata, dockerMetadata.config!!.volumes)
-            }
-
-            if (dockerMetadata.containerConfig != null) {
-                addVolumes(manifestMetadata, dockerMetadata.containerConfig!!.volumes)
-            }
-        }
-
-        private fun addVolumes(manifestMetadata: ManifestMetadata, volumes: JsonNode?) {
-            if (volumes != null) {
-                val iterVolume = volumes.fieldNames()
-
-                while (iterVolume.hasNext()) {
-                    manifestMetadata.tagInfo.volumes.add(iterVolume.next())
-                }
-            }
-        }
-
-        private fun populateLabels(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
-            if (dockerMetadata.config != null) {
-                addLabels(manifestMetadata, dockerMetadata.config!!.labels)
-            }
-
-            if (dockerMetadata.containerConfig != null) {
-                addLabels(manifestMetadata, dockerMetadata.containerConfig!!.labels)
-            }
-        }
-
-        private fun addLabels(manifestMetadata: ManifestMetadata, labels: Map<String, String>?) {
-            if (labels != null) {
-                val iter = labels.entries.iterator()
-
-                while (iter.hasNext()) {
-                    val label = iter.next()
-                    manifestMetadata.tagInfo.labels.put(label.key, label.value)
                 }
             }
         }

@@ -6,6 +6,7 @@ import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.HTTP_FORWARDED_PROTO
 import com.tencent.bkrepo.docker.constant.HTTP_PROTOCOL_HTTP
 import com.tencent.bkrepo.docker.constant.HTTP_PROTOCOL_HTTPS
+import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.errors.DockerV2Errors
 import com.tencent.bkrepo.docker.manifest.ManifestType
@@ -57,26 +58,20 @@ class RepoServiceUtil {
         }
 
         fun manifestListUploadContext(
-            projectId: String,
-            repoName: String,
-            type: ManifestType,
-            digest: DockerDigest,
-            path: String,
-            bytes: ByteArray
+            context: RequestContext, digest: DockerDigest,
+            path: String, bytes: ByteArray
         ): UploadContext {
-            val artifactFile = ArtifactFileFactory.build(bytes.inputStream())
-            val context = UploadContext(projectId, repoName, path).artifactFile(artifactFile)
-            if (type == ManifestType.Schema2List && "sha256" == digest.getDigestAlg()) {
-                context.sha256(digest.getDigestHex())
+            with(context) {
+                val artifactFile = ArtifactFileFactory.build(bytes.inputStream())
+                val uploadContext = UploadContext(projectId, repoName, path).artifactFile(artifactFile)
+                uploadContext.sha256(digest.getDigestHex())
+                return uploadContext
             }
-            return context
         }
 
         fun buildManifestPropertyMap(
-            dockerRepo: String,
-            tag: String,
-            digest: DockerDigest,
-            type: ManifestType
+            dockerRepo: String, tag: String,
+            digest: DockerDigest, type: ManifestType
         ): HashMap<String, String> {
             var map = HashMap<String, String>()
             map[digest.getDigestAlg()] = digest.getDigestHex()
@@ -88,18 +83,16 @@ class RepoServiceUtil {
         }
 
         fun manifestUploadContext(
-            projectId: String,
-            repoName: String,
-            type: ManifestType,
-            metadata: ManifestMetadata,
-            path: String,
-            file: ArtifactFile
+            context: RequestContext, type: ManifestType,
+            metadata: ManifestMetadata, path: String, file: ArtifactFile
         ): UploadContext {
-            val context = UploadContext(projectId, repoName, path).artifactFile(file)
-            if ((type == ManifestType.Schema2 || type == ManifestType.Schema2List) && "sha256" == metadata.tagInfo.digest?.getDigestAlg()) {
-                context.sha256(metadata.tagInfo.digest!!.getDigestHex())
+            with(context) {
+                val uploadContext = UploadContext(projectId, repoName, path).artifactFile(file)
+                if ((type == ManifestType.Schema2 || type == ManifestType.Schema2List) && "sha256" == metadata.tagInfo.digest?.getDigestAlg()) {
+                    uploadContext.sha256(metadata.tagInfo.digest!!.getDigestHex())
+                }
+                return uploadContext
             }
-            return context
         }
 
         fun getDockerURI(path: String, httpHeaders: HttpHeaders): URI {

@@ -115,13 +115,8 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
             logger.warn("parse token failed {}", basicAuthHeader)
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
-        try {
-            val token = basicAuthHeader.removePrefix("Bearer ")
-            return JwtAuthCredentials(token)
-        } catch (exception: Exception) {
-            logger.warn("Authorization value [$basicAuthHeader] is not a valid scheme")
-            throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
-        }
+        val token = basicAuthHeader.removePrefix("Bearer ")
+        return JwtAuthCredentials(token)
     }
 
     companion object {
@@ -144,7 +139,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
                     parts[0],
                     parts[1]
                 )
-            } catch (exception: Exception) {
+            } catch (exception: IllegalArgumentException) {
                 logger.warn("auth value is not a valid schema")
                 throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
             }

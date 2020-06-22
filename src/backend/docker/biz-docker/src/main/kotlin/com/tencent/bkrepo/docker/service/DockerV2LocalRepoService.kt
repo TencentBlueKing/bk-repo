@@ -50,8 +50,11 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
     }
 
     override fun ping(): DockerResponse {
-        return ResponseEntity.ok().header("Content-Type", "application/json")
-            .header("Docker-Distribution-Api-Version", "registry/2.0").body("{}")
+        return ResponseEntity.ok().apply {
+            header("Content-Type", "application/json")
+        }.apply {
+            header("Docker-Distribution-Api-Version", "registry/2.0")
+        }.body("{}")
     }
 
     override fun getTags(context: RequestContext, maxEntries: Int, lastEntry: String): DockerResponse {
@@ -119,8 +122,8 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         return try {
             val digest = DockerDigest(reference)
             getManifestByDigest(context, digest)
-        } catch (exception: Exception) {
-            logger.warn("unable to parse digest, get manifest by tag [$reference]")
+        } catch (exception: IllegalArgumentException) {
+            logger.warn("unable to parse digest, get manifest by tag [$context,$reference]")
             getManifestByTag(context, reference)
         }
     }
@@ -176,7 +179,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         repoUtil.loadContext(context)
         return try {
             deleteManifestByDigest(context, DockerDigest(reference))
-        } catch (exception: Exception) {
+        } catch (exception: IllegalArgumentException) {
             logger.warn("unable to parse digest, delete manifest by tag [$context,$reference]")
             deleteManifestByTag(context, reference)
         }
@@ -218,10 +221,8 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
     }
 
     override fun uploadManifest(
-        context: RequestContext,
-        tag: String,
-        mediaType: String,
-        file: ArtifactFile
+        context: RequestContext, tag: String,
+        mediaType: String, file: ArtifactFile
     ): ResponseEntity<Any> {
         repoUtil.loadContext(context)
         if (!repo.canWrite(context)) {
@@ -242,17 +243,14 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
     }
 
     private fun uploadManifestType(
-        context: RequestContext,
-        tag: String,
-        manifestPath: String,
-        manifestType: ManifestType,
-        artifactFile: ArtifactFile
+        context: RequestContext, tag: String, manifestPath: String,
+        manifestType: ManifestType, artifactFile: ArtifactFile
     ): DockerDigest {
         val manifestBytes = IOUtils.toByteArray(artifactFile.getInputStream())
         val digest = DockerManifestDigester.calc(manifestBytes)
         logger.info("manifest file digest content digest : [$digest] ")
         if (ManifestType.Schema2List == manifestType) {
-            processManifestList(context, tag, manifestPath, digest!!, manifestBytes, manifestType)
+            processManifestList(context, tag, manifestPath, digest!!, manifestBytes)
             return digest
         }
 
@@ -267,7 +265,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         logger.info("start to upload manifest : [$manifestType]")
         with(context) {
             val uploadContext = RepoServiceUtil.manifestUploadContext(
-                projectId, repoName, manifestType,
+                context, manifestType,
                 metadata, manifestPath, artifactFile
             )
             if (!repo.upload(uploadContext)) {
@@ -357,10 +355,8 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
     }
 
     override fun uploadBlob(
-        context: RequestContext,
-        digest: DockerDigest,
-        uuid: String,
-        file: ArtifactFile
+        context: RequestContext, digest: DockerDigest,
+        uuid: String, file: ArtifactFile
     ): DockerResponse {
         repoUtil.loadContext(context)
         return if (RepoServiceUtil.putHasStream(httpHeaders)) {
@@ -385,8 +381,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
 
     private fun uploadBlobFromPut(
         context: RequestContext,
-        digest: DockerDigest,
-        file: ArtifactFile
+        digest: DockerDigest, file: ArtifactFile
     ): DockerResponse {
         val blobPath = context.artifactName + "/" + "_uploads" + "/" + digest.fileName()
         if (!repo.canWrite(context)) {
@@ -423,8 +418,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         tag: String,
         manifestPath: String,
         digest: DockerDigest,
-        manifestBytes: ByteArray,
-        manifestType: ManifestType
+        manifestBytes: ByteArray
     ) {
         val manifestList = ManifestListSchema2Deserializer.deserialize(manifestBytes)
         manifestList?.let {
@@ -439,17 +433,17 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
                 }
             }
         }
-        with(context) {
-            val uploadContext = RepoServiceUtil.manifestListUploadContext(
-                projectId, repoName, manifestType,
-                digest, manifestPath, manifestBytes
-            )
+        val uploadContext = RepoServiceUtil.manifestListUploadContext(
+            context, digest,
+            manifestPath, manifestBytes
+        )
 
-            if (!repo.upload(uploadContext)) {
-                throw DockerFileSaveFailedException(manifestPath)
-            }
-            val params = RepoServiceUtil.buildManifestPropertyMap(context.artifactName, tag, digest, manifestType)
-            repo.setAttributes(context.projectId, context.repoName, manifestPath, params)
+        if (!repo.upload(uploadContext)) {
+            throw DockerFileSaveFailedException(manifestPath)
+        }
+        with(context) {
+            val params = RepoServiceUtil.buildManifestPropertyMap(artifactName, tag, digest, ManifestType.Schema2List)
+            repo.setAttributes(projectId, repoName, manifestPath, params)
         }
     }
 

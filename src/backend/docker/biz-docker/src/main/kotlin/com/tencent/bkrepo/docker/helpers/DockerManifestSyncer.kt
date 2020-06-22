@@ -73,10 +73,8 @@ class DockerManifestSyncer {
         }
 
         private fun copyBlobFromFirstRepo(
-            repo: DockerArtifactRepo,
-            context: RequestContext,
-            fileName: String,
-            targetPath: String
+            repo: DockerArtifactRepo, context: RequestContext,
+            fileName: String, targetPath: String
         ): Boolean {
             val blob = ArtifactUtil.getBlobByName(repo, context, fileName) ?: run {
                 return false

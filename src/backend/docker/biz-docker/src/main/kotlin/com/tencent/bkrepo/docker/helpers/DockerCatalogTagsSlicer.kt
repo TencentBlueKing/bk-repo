@@ -4,6 +4,7 @@ import org.apache.commons.lang.StringUtils
 import java.util.TreeSet
 
 class DockerCatalogTagsSlicer {
+
     companion object {
 
         fun sliceCatalog(elementsHolder: DockerPaginationElementsHolder, maxEntries: Int, lastEntry: String) {
