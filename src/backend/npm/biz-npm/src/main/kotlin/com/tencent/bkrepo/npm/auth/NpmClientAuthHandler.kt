@@ -15,14 +15,13 @@ class NpmClientAuthHandler : ClientAuthHandler {
 
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
         val bearerAuthHeader = request.getHeader(BEARER_AUTH_HEADER)
-        // if (bearerAuthHeader.isNullOrBlank()) throw NpmClientAuthException("Authorization value is null")
         if (bearerAuthHeader.isNullOrBlank()) return AnonymousCredentials()
         if (!bearerAuthHeader.startsWith(BEARER_AUTH_HEADER_PREFIX)) throw NpmClientAuthException("Authorization value [$bearerAuthHeader] is not a valid scheme")
 
         return try {
             val token = bearerAuthHeader.removePrefix(BEARER_AUTH_HEADER_PREFIX)
             JwtAuthCredentials(token)
-        } catch (e: Exception) {
+        } catch (ex: RuntimeException) {
             throw ClientAuthException("Authorization value [$bearerAuthHeader] is not a valid scheme")
         }
     }

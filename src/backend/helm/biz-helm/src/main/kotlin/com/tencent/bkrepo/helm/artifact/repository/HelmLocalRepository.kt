@@ -109,12 +109,7 @@ class HelmLocalRepository : LocalRepository() {
 
     override fun search(context: ArtifactSearchContext): ArtifactInputStream? {
         val fullPath = context.contextAttributes[FULL_PATH] as String
-        return try {
-            this.onSearch(context) ?: throw ArtifactNotFoundException("Artifact[$fullPath] does not exist")
-        } catch (exception: Exception) {
-            logger.error(exception.message ?: "search error")
-            null
-        }
+        return this.onSearch(context) ?: throw ArtifactNotFoundException("Artifact[$fullPath] does not exist")
     }
 
     private fun onSearch(context: ArtifactSearchContext): ArtifactInputStream? {
@@ -125,7 +120,9 @@ class HelmLocalRepository : LocalRepository() {
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
 
         node.nodeInfo.takeIf { !it.folder } ?: return null
-        return storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
+        return storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)?.also {
+            logger.info("search artifact [$fullPath] success!")
+        }
     }
 
     override fun remove(context: ArtifactRemoveContext) {

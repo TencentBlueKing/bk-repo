@@ -152,7 +152,7 @@ class ChartRepositoryService {
                 chartInfoMap["created"] = convertDateTime(it["createdDate"] as String)
                 chartInfoMap["digest"] = it["sha256"] as String
                 addIndexEntries(indexEntity, chartInfoMap)
-            } catch (ex: Exception) {
+            } catch (ex: RuntimeException) {
                 logger.error("generate IndexFile for chart [$chartName-$chartVersion.tgz] failed!")
             }
         }

@@ -33,8 +33,8 @@ class NpmVirtualRepository : VirtualRepository() {
                 repository.list(subContext)?.let { map ->
                     list.add(map as NpmSearchResponse)
                 }
-            } catch (exception: Exception) {
-                logger.warn("list Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${exception.message}")
+            } catch (exception: RuntimeException) {
+                logger.error("list Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
         return recordMap(list, searchRequest)
