@@ -57,13 +57,15 @@ class ChartRepositoryService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     fun getIndexYaml(artifactInfo: HelmArtifactInfo) {
-        try {
-            if (mongoLock.tryLock(LOCK_KEY, LOCK_VALUE)) {
-                freshIndexFile(artifactInfo)
-            }
-        } finally {
-            mongoLock.releaseLock(LOCK_KEY, LOCK_VALUE)
-        }
+        // val lockKey = "${artifactInfo.projectId}_${artifactInfo.repoName}"
+        // try {
+        //     if (mongoLock.tryLock(lockKey, LOCK_VALUE)) {
+        //         freshIndexFile(artifactInfo)
+        //     }
+        // } finally {
+        //     mongoLock.releaseLock(lockKey, LOCK_VALUE)
+        // }
+        freshIndexFile(artifactInfo)
         downloadIndexYaml()
     }
 
@@ -261,7 +263,6 @@ class ChartRepositoryService {
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(ChartRepositoryService::class.java)
-        const val LOCK_KEY = "chart_index"
         val LOCK_VALUE = UUID.randomUUID().toString()
     }
 }
