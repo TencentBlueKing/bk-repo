@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.rpm.artifact.repository
 
 import com.sun.xml.internal.messaging.saaj.util.ByteInputStream
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha1
@@ -14,9 +15,13 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.rpm.INDEXER
+import com.tencent.bkrepo.rpm.NO_INDEXER
 import com.tencent.bkrepo.rpm.artifact.SurplusNodeCleaner
+import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
 import com.tencent.bkrepo.rpm.util.GZipUtil.UnGzipInputStream
 import com.tencent.bkrepo.rpm.util.GZipUtil.gZip
 import com.tencent.bkrepo.rpm.util.redline.model.RpmMetadataWithOldStream
@@ -30,7 +35,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.io.FileInputStream
 import java.lang.StringBuilder
-import javax.servlet.http.HttpServletResponse
 
 @Component
 class RpmLocalRepository : LocalRepository() {
@@ -81,17 +85,17 @@ class RpmLocalRepository : LocalRepository() {
      * 查询仓库设置的repodata 深度，默认为0
      */
     private fun searchRpmRepoDataDepth(context: ArtifactUploadContext): Int {
-        (context.repositoryInfo.configuration as RpmLocalConfiguration).repodata_depth?.let { return it }
+        (context.repositoryInfo.configuration as RpmLocalConfiguration).repodataDepth?.let { return it }
         return 0
     }
 
     /**
-     * 检查请求uri地址的层级是否 >= 仓库设置的repodata 深度
+     * 检查请求uri地址的层级是否 > 仓库设置的repodata 深度
      * @return true 将会计算rpm包的索引
      * @return false 只提供文件服务器功能，返回提示信息
      */
     private fun checkRequestUri(context: ArtifactUploadContext): Boolean {
-        val repodataDepth = (context.repositoryInfo.configuration as RpmLocalConfiguration).repodata_depth
+        val repodataDepth = (context.repositoryInfo.configuration as RpmLocalConfiguration).repodataDepth
         val artifactUri = context.artifactInfo.artifactUri.removePrefix("/").split("/").size
         repodataDepth?.let { return artifactUri > repodataDepth }
         return false
@@ -140,7 +144,7 @@ class RpmLocalRepository : LocalRepository() {
 
             val targetXmlString = if (!primaryNodelist.isNullOrEmpty()) {
                 val latestPrimaryNode = primaryNodelist[0]
-                storageService.load(latestPrimaryNode.sha256!!, Range.ofFull(latestPrimaryNode.size), context.storageCredentials)?.UnGzipInputStream().use {inputStream ->
+                storageService.load(latestPrimaryNode.sha256!!, Range.ofFull(latestPrimaryNode.size), context.storageCredentials)?.UnGzipInputStream().use { inputStream ->
                     val rpmMetadataWithOldStream = inputStream?.let { RpmMetadataWithOldStream(rpmMetadata, it) }
                     // 更新primary.xml
                     xmlScript.invokeMethod("updataPrimaryXml", rpmMetadataWithOldStream) as String
@@ -190,7 +194,6 @@ class RpmLocalRepository : LocalRepository() {
      * 更新repomd.xml
      */
     private fun storeRepomdNode(xmlGZFileSha1: String, xmlGZArtifact: ArtifactFile, xmlFileSha1: String, repodataPath: String, context: ArtifactUploadContext) {
-
         val repoMdPath = "repodata/$xmlGZFileSha1-primary.xml.gz"
         val rpmRepoMd = RpmRepoMd(
                 type = "primary",
@@ -202,7 +205,7 @@ class RpmLocalRepository : LocalRepository() {
         )
 
         val xmlRepodataString = xmlScript.invokeMethod("wrapperRepomd", listOf(rpmRepoMd)) as String
-        (xmlRepodataString.toByteArray()).let { ByteInputStream(it, it.size) }.use {xmlRepodataInputStream ->
+        (xmlRepodataString.toByteArray()).let { ByteInputStream(it, it.size) }.use { xmlRepodataInputStream ->
             val xmlRepodataArtifact = ArtifactFileFactory.build(xmlRepodataInputStream)
             // 保存repodata 节点
             val xmlRepomdNode = xmlPrimaryNodeCreate(context.userId,
@@ -215,7 +218,7 @@ class RpmLocalRepository : LocalRepository() {
     }
 
     /**
-     * 检查上传的构件是否已在仓库中，判断条件：uri&&sha256&&md5
+     * 检查上传的构件是否已在仓库中，判断条件：uri && sha256
      * 降低并发对索引文件的影响
      * @return false 有重复构件，只保存构件
      * @return true 无重复构件
@@ -223,16 +226,14 @@ class RpmLocalRepository : LocalRepository() {
     private fun checkRepeatArtifact(context: ArtifactUploadContext): Boolean {
         val artifactUri = context.artifactInfo.artifactUri
         val artifactSha256 = context.getArtifactFile().getFileSha256()
-        val artifactMd5 = context.getArtifactFile().getFileMd5()
 
         return with(context.artifactInfo) {
             val projectQuery = Rule.QueryRule("projectId", projectId)
             val repositoryQuery = Rule.QueryRule("repoName", repoName)
             val sha256Query = Rule.QueryRule("sha256", artifactSha256)
-            val md5Query = Rule.QueryRule("md5", artifactMd5)
-            val fullPathQurey = Rule.QueryRule("fullPath", artifactUri)
+            val fullPathQuery = Rule.QueryRule("fullPath", artifactUri)
 
-            val queryRule = Rule.NestedRule(mutableListOf(projectQuery, repositoryQuery, sha256Query, md5Query, fullPathQurey),
+            val queryRule = Rule.NestedRule(mutableListOf(projectQuery, repositoryQuery, sha256Query, fullPathQuery),
                     Rule.NestedRule.RelationType.AND)
             val queryModel = QueryModel(
                     page = PageLimit(0, 10),
@@ -245,18 +246,26 @@ class RpmLocalRepository : LocalRepository() {
         }
     }
 
-    private fun successUpload(response: HttpServletResponse) {
-        // todo
+    private fun successUpload(context: ArtifactUploadContext, mark: Boolean) {
+        val response = HttpContextHolder.getResponse()
+        response.contentType = "application/json; charset=UTF-8"
+        with(context.artifactInfo) {
+            val description = if (mark) INDEXER else String.format(NO_INDEXER, "$projectId/$repoName", searchRpmRepoDataDepth(context), artifactUri)
+            val rpmUploadResponse = RpmUploadResponse(projectId, repoName, artifactUri, context.getArtifactFile().getFileSha256(), context.getArtifactFile().getFileMd5(), description)
+            response.writer.print(rpmUploadResponse.toJsonString())
+        }
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
-        // 检查请求路径是否契合仓库repodata_depth 深度设置
-        if (checkRequestUri(context) && checkRepeatArtifact(context)) {
+        val mark: Boolean = checkRequestUri(context)
+        // 检查请求路径是否契合仓库repodataDepth 深度设置
+        if (mark && checkRepeatArtifact(context)) {
             indexer(context)
         }
         // 保存rpm 包
         val nodeCreateRequest = rpmNodeCreateRequest(context)
         storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
         nodeResource.create(nodeCreateRequest)
+        successUpload(context, mark)
     }
 }

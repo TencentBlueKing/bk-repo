@@ -2,8 +2,6 @@ package com.tencent.bkrepo.rpm.util.rpm
 
 import com.google.common.collect.Lists
 import com.tencent.bkrepo.rpm.util.redline.model.*
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.apache.commons.lang.StringUtils
 import org.redline_rpm.header.Header
 import org.redline_rpm.header.Flags
@@ -13,10 +11,8 @@ import org.redline_rpm.header.RpmType
 import java.util.LinkedList
 
 class RpmFormatInterpreter {
-    private val log: Logger = LoggerFactory.getLogger(RpmFormatInterpreter::class.java)
 
     fun interpret(rawMetadata: RpmFormat): RpmMetadata {
-        log.trace("Interpreting raw RPM metadata for repository index compatibility")
         val header: Header = rawMetadata.format.header
         val signature: Signature = rawMetadata.format.signature
         val rpmMetadata = RpmMetadata()
@@ -45,7 +41,6 @@ class RpmFormatInterpreter {
         rpmMetadata.obsolete = resolveEntriesEntries(header, Header.HeaderTag.OBSOLETENAME, Header.HeaderTag.OBSOLETEFLAGS, Header.HeaderTag.OBSOLETEVERSION)
         rpmMetadata.files = resolveFiles(header)
         rpmMetadata.changeLogs = resolveChangeLogs(header)
-        log.trace("Completed interpretation of raw RPM metadata for repository index compatibility")
         return rpmMetadata
     }
 
@@ -190,9 +185,9 @@ class RpmFormatInterpreter {
             val filePath = dirPaths[0][baseNameDirIndex] + baseName
             val dir = dirPaths[0][baseNameDirIndex]?.contains("$filePath/")
             val file = if (dir!!) File("dir", filePath) else File(null, filePath)
-            //过滤文件列表
+            // 过滤文件列表
             with(file.name) {
-                if(this.startsWith("/etc/") ||
+                if (this.startsWith("/etc/") ||
                         this.startsWith("/usr/bin/") ||
                         this.startsWith("/usr/sbin"))
                     files.add(file)

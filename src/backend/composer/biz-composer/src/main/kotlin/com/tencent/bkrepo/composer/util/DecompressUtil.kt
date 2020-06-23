@@ -48,29 +48,25 @@ object DecompressUtil {
      */
     @Throws(Exception::class)
     fun InputStream.wrapperJson(uri: String): Map<String, String> {
-        try {
-            UriUtil.getUriArgs(uri).let { args ->
-                args["format"]?.let { format ->
-                    this.getComposerJson(format).let { json ->
-                        JsonParser().parse(json).asJsonObject.let {
-                            // Todo
-                            it.addProperty("uid", UUID.randomUUID().toString())
-                            val distObject = JsonObject()
-                            distObject.addProperty("type", format)
-                            distObject.addProperty("url", "direct-dists$uri")
-                            it.add("dist", distObject)
-                            it.addProperty("type", "library")
-                            return mapOf("packageName" to (json jsonValue "name"),
-                                    "version" to (json jsonValue "version"),
-                                    "json" to GsonBuilder().create().toJson(it))
-                        }
+        UriUtil.getUriArgs(uri).let { args ->
+            args["format"]?.let { format ->
+                this.getComposerJson(format).let { json ->
+                    JsonParser().parse(json).asJsonObject.let {
+                        // Todo uid的值从什么地方拿
+                        it.addProperty("uid", UUID.randomUUID().toString())
+                        val distObject = JsonObject()
+                        distObject.addProperty("type", format)
+                        distObject.addProperty("url", "direct-dists$uri")
+                        it.add("dist", distObject)
+                        it.addProperty("type", "library")
+                        return mapOf("packageName" to (json jsonValue "name"),
+                                "version" to (json jsonValue "version"),
+                                "json" to GsonBuilder().create().toJson(it))
                     }
                 }
             }
-        } catch (e: Exception) {
-            throw ComposerPackageMessageDeficiencyException("PackageName,version and json are necessary ")
         }
-        return mapOf()
+        throw ComposerPackageMessageDeficiencyException("PackageName,version and json are necessary ")
     }
 
     @Throws(Exception::class)
