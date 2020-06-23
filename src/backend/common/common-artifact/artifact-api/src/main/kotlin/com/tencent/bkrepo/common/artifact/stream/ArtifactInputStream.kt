@@ -15,10 +15,6 @@ class ArtifactInputStream(
     override fun close() = delegate.close()
     override fun mark(readlimit: Int) = delegate.mark(readlimit)
     override fun markSupported(): Boolean = delegate.markSupported()
-
-    companion object {
-        val EMPTY = ArtifactInputStream(EmptyInputStream.INSTANCE, Range.EMPTY)
-    }
 }
 
 fun InputStream.toArtifactStream(range: Range): ArtifactInputStream {
