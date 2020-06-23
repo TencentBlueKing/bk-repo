@@ -40,6 +40,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 @Service
 class ChartRepositoryService {
@@ -53,19 +54,15 @@ class ChartRepositoryService {
     @Autowired
     private lateinit var mongoLock: MongoLock
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     fun getIndexYaml(artifactInfo: HelmArtifactInfo) {
-        var isLock = false
         try {
-            isLock = mongoLock.getLock(LOCK_KEY)
-            if (isLock) {
+            if (mongoLock.tryLock(LOCK_KEY, LOCK_VALUE)) {
                 freshIndexFile(artifactInfo)
             }
         } finally {
-            if (isLock) {
-                mongoLock.releaseLock(LOCK_KEY)
-            }
+            mongoLock.releaseLock(LOCK_KEY, LOCK_VALUE)
         }
         downloadIndexYaml()
     }
@@ -265,5 +262,6 @@ class ChartRepositoryService {
     companion object {
         val logger: Logger = LoggerFactory.getLogger(ChartRepositoryService::class.java)
         const val LOCK_KEY = "chart_index"
+        val LOCK_VALUE = UUID.randomUUID().toString()
     }
 }
