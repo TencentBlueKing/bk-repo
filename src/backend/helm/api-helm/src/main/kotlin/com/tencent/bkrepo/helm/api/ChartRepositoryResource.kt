@@ -9,6 +9,8 @@ import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.HELM_PROV_INS
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestParam
+import java.time.LocalDateTime
 
 @Api("helm仓库获取tgz包")
 interface ChartRepositoryResource {
@@ -27,4 +29,8 @@ interface ChartRepositoryResource {
     @ApiOperation("regenerate index.yaml")
     @GetMapping("/{projectId}/{repoName}/regenerate")
     fun regenerateIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Response<Void>
+
+    @ApiOperation("batch install chart")
+    @GetMapping("/{projectId}/{repoName}/batch/charts")
+    fun batchInstallTgz(@ArtifactPathVariable artifactInfo: HelmArtifactInfo, @RequestParam startTime: LocalDateTime)
 }
