@@ -119,7 +119,7 @@ class NpmRemoteRepository : RemoteRepository() {
             context.contextAttributes[NPM_FILE_FULL_PATH] =
                 String.format(NPM_PKG_VERSION_FULL_PATH, name, name, pkgInfo.second)
             putArtifactCache(context, artifact)
-        } catch (ex: NullPointerException) {
+        } catch (ex: TypeCastException) {
             logger.warn("cache artifact [${pkgInfo.first}-${pkgInfo.second}.json] failed, {}", ex.message)
         }
     }

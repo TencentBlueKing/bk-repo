@@ -172,7 +172,7 @@ class ChartManipulationService {
             }
             uploadIndexYaml(indexEntity)
             logger.info("fresh index.yaml for delete [${chartInfo.first}-${chartInfo.second}.tgz] success!")
-        } catch (exception: NullPointerException) {
+        } catch (exception: TypeCastException) {
             logger.error("fresh index.yaml for delete [${chartInfo.first}-${chartInfo.second}.tgz] failed, ${exception.message}")
             throw exception
         }
