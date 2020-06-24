@@ -97,7 +97,7 @@ class ChartRepositoryService {
         }
     }
 
-    private fun queryNodeList(
+    fun queryNodeList(
         artifactInfo: HelmArtifactInfo,
         exist: Boolean = true,
         lastModifyTime: LocalDateTime? = null
@@ -126,7 +126,7 @@ class ChartRepositoryService {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun generateIndexFile(
+    fun generateIndexFile(
         result: List<Map<String, Any>>,
         indexEntity: IndexEntity,
         artifactInfo: HelmArtifactInfo
@@ -166,7 +166,7 @@ class ChartRepositoryService {
         repository.upload(context)
     }
 
-    private fun initIndexEntity(): IndexEntity {
+    fun initIndexEntity(): IndexEntity {
         return IndexEntity(
             apiVersion = "v1",
             generated = LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER))

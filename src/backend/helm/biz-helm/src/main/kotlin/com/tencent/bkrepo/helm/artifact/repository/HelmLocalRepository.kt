@@ -16,13 +16,10 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.helm.constants.EMPTY_CHART_OR_VERSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
-import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
-import com.tencent.bkrepo.helm.utils.JsonUtil
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.apache.commons.lang.StringUtils
@@ -138,16 +135,16 @@ class HelmLocalRepository : LocalRepository() {
         nodeResource.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
     }
 
-    fun searchJson(context: ArtifactSearchContext): String {
-        val artifactInfo = context.artifactInfo
-        val fullPath = INDEX_CACHE_YAML
-        with(artifactInfo) {
-            val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return EMPTY_CHART_OR_VERSION
-            val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
-                ?: return EMPTY_CHART_OR_VERSION
-            return JsonUtil.searchJson(inputStream, artifactUri)
-        }
-    }
+    // fun searchJson(context: ArtifactSearchContext): String {
+    //     val artifactInfo = context.artifactInfo
+    //     val fullPath = INDEX_CACHE_YAML
+    //     with(artifactInfo) {
+    //         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return EMPTY_CHART_OR_VERSION
+    //         val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
+    //             ?: return EMPTY_CHART_OR_VERSION
+    //         return JsonUtil.searchJson(inputStream, artifactUri)
+    //     }
+    // }
 
     fun isExists(context: ArtifactSearchContext) {
         val artifactInfo = context.artifactInfo
