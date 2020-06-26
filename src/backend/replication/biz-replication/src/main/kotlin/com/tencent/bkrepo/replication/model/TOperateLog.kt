@@ -1,6 +1,8 @@
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.replication.model
 
 import com.tencent.bkrepo.repository.listener.event.IEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
+import com.tencent.bkrepo.repository.listener.event.node.NodeEvent
 import com.tencent.bkrepo.repository.pojo.log.OperateType
 import com.tencent.bkrepo.repository.pojo.log.ResourceType
 import org.omg.CORBA.Object
@@ -16,5 +18,5 @@ data class TOperateLog(
     var operateType: OperateType,
     var userId: String,
     var clientAddress: String,
-    var description: IEvent
+    var description: Any
 )
