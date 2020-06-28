@@ -45,6 +45,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.net.UnknownServiceException
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -380,15 +381,13 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     }
 
     fun migrateUpload(context: ArtifactMigrateContext, filenode: Element, verifiedUrl: String, packageName: String) {
+        val filename = filenode.text()
+        val hrefValue = filenode.attributes()["href"]
+        // 获取文件流
         try {
-            val filename = filenode.text()
-            val hrefValue = filenode.attributes()["href"]
-            // 获取文件流
-            val byteStream = "$verifiedUrl/$packageName/$hrefValue".downloadUrlHttpClient()
-            byteStream?.let {
-                val artifactFile = ArtifactFileFactory.build(byteStream)
-                val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename)
-                nodeCreateRequest?.let {
+            "$verifiedUrl/$packageName/$hrefValue".downloadUrlHttpClient()?.use { inputStream ->
+                val artifactFile = ArtifactFileFactory.build(inputStream)
+                createMigrateNode(context, artifactFile, packageName, filename)?.let { nodeCreateRequest ->
                     nodeResource.create(nodeCreateRequest)
                     artifactFile.let {
                         storageService.store(nodeCreateRequest.sha256!!,
@@ -396,9 +395,8 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                     }
                 }
             }
-        } catch (e: Exception) {
-            logger.error(e.message)
-            logger.warn("$verifiedUrl/$packageName/${filenode.attributes()["href"]}")
+        } catch (unknownServiceException: UnknownServiceException) {
+            logger.error(unknownServiceException.message)
             failSet.add("$verifiedUrl/$packageName/${filenode.attributes()["href"]}")
         }
     }
