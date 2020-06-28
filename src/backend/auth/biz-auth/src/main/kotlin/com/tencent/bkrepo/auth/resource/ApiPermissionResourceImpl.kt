@@ -30,7 +30,7 @@ class ApiPermissionResourceImpl @Autowired constructor(
     override fun checkAdmin(uid: String): Response<Boolean> {
         // todo check request
         val userInfo = userService.getUserById(uid) ?: return ResponseBuilder.success(false)
-        if (userInfo.admin == false) {
+        if (!userInfo.admin) {
             return ResponseBuilder.success(false)
         }
         return ResponseBuilder.success(true)

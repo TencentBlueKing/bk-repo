@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.docker.auth
 
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import com.tencent.bkrepo.docker.response.DockerResponse
 import com.tencent.bkrepo.docker.util.JwtUtil
 import com.tencent.bkrepo.docker.util.TimeUtil
 import org.slf4j.LoggerFactory
@@ -9,10 +10,15 @@ import org.springframework.stereotype.Service
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
+/**
+ * docker auth util
+ * @author: owenlxu
+ * @date: 2019-11-12
+ */
 @Service
 class AuthUtil {
 
-    fun authUser(request: HttpServletRequest, response: HttpServletResponse): ResponseEntity<Any> {
+    fun authUser(request: HttpServletRequest, response: HttpServletResponse): DockerResponse {
         return try {
             val user = DockerClientAuthHandler.extractBasicAuth(request)
             val token = JwtUtil.sign(user.username)

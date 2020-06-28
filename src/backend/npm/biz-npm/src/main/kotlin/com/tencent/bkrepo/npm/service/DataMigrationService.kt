@@ -42,6 +42,7 @@ import java.io.InputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -81,7 +82,7 @@ class DataMigrationService {
                     totalDataSet =
                         use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
                 }
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 logger.error("http send [$url] for get all package name data failed, {}", exception.message)
                 throw exception
             } finally {
@@ -173,7 +174,7 @@ class DataMigrationService {
                 if (successSet.size % 10 == 0) {
                     logger.info("progress rate : successRate:[${successSet.size}/${totalDataSet.size}], failRate[${errorSet.size}/${totalDataSet.size}]")
                 }
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 logger.error("failed to install [$pkgName.json] file, {}", exception.message)
                 errorSet.add(pkgName)
             }
@@ -220,10 +221,10 @@ class DataMigrationService {
                 result?.let { resultList.add(it) }
             } catch (exception: TimeoutException) {
                 logger.error("async tack result timeout: ${exception.message}")
-                throw exception
-            } catch (e: Exception) {
-                logger.error("get async task result error : ${e.message}")
-                throw e
+            } catch (ex: InterruptedException) {
+                logger.error("get async task result error : ${ex.message}")
+            } catch (ex: ExecutionException) {
+                logger.error("get async task result error : ${ex.message}")
             }
         }
         return resultList
@@ -268,7 +269,7 @@ class DataMigrationService {
         // repositoryService.checkRepository(projectId, repoName)
         val criteria =
             Criteria.where(TMigrationErrorData::projectId.name).`is`(projectId).and(TMigrationErrorData::repoName.name)
-                .`is`(repoName).and(TMigrationErrorData::deleted.name).`is`(null)
+                .`is`(repoName)
         val query = Query.query(criteria).with(Sort(Sort.Direction.DESC, TMigrationErrorData::counter.name)).limit(0)
         return mongoTemplate.findOne(query, TMigrationErrorData::class.java)?.let { convert(it)!! }
     }

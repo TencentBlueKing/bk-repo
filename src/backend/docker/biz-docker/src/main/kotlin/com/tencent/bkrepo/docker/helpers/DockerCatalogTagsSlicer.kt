@@ -12,33 +12,24 @@ class DockerCatalogTagsSlicer {
                 val fromElement = calcFromElement(elementsHolder, lastEntry)
                 if (StringUtils.isBlank(fromElement)) {
                     elementsHolder.elements = TreeSet()
-                } else {
-                    val toElement = calcToElement(elementsHolder, fromElement, maxEntries)
-                    if (!StringUtils.equals(fromElement, toElement)) {
-                        if (!StringUtils.equals(toElement, elementsHolder.elements.last() as String)) {
-                            if (StringUtils.isBlank(toElement)) {
-                                elementsHolder.elements = TreeSet()
-                            } else {
-                                elementsHolder.hasMoreElements =
-                                    !StringUtils.equals(elementsHolder.elements.last() as String, toElement)
-                                elementsHolder.elements = elementsHolder.elements.subSet(
-                                    fromElement,
-                                    true,
-                                    toElement,
-                                    true
-                                ) as TreeSet<String>
-                            }
-                        } else if (!StringUtils.equals(fromElement, elementsHolder.elements.first() as String)) {
-                            elementsHolder.elements =
-                                elementsHolder.elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
-                        }
-                    } else {
-                        elementsHolder.hasMoreElements =
-                            !StringUtils.equals(elementsHolder.elements.last() as String, toElement)
-                        elementsHolder.elements =
-                            elementsHolder.elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
-                    }
+                    return
                 }
+                val toElement = calcToElement(elementsHolder, fromElement, maxEntries)
+                if (!StringUtils.equals(fromElement, toElement)) {
+                    if (!StringUtils.equals(toElement, elementsHolder.elements.last() as String)) {
+                        if (StringUtils.isBlank(toElement)) {
+                            elementsHolder.elements = TreeSet()
+                        } else {
+                            elementsHolder.hasMoreElements = !StringUtils.equals(elementsHolder.elements.last() as String, toElement)
+                            elementsHolder.elements = elementsHolder.elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
+                        }
+                    } else if (!StringUtils.equals(fromElement, elementsHolder.elements.first() as String)) {
+                        elementsHolder.elements = elementsHolder.elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
+                    }
+                    return
+                }
+                elementsHolder.hasMoreElements = !StringUtils.equals(elementsHolder.elements.last() as String, toElement)
+                elementsHolder.elements = elementsHolder.elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
             }
         }
 
@@ -47,7 +38,6 @@ class DockerCatalogTagsSlicer {
             if (StringUtils.isNotBlank(lastEntry)) {
                 fromElement = elementsHolder.elements.higher(lastEntry) as String
             }
-
             return fromElement
         }
 
@@ -66,7 +56,6 @@ class DockerCatalogTagsSlicer {
                     }
                 }
             }
-
             return toElement
         }
     }

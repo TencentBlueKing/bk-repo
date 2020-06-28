@@ -72,10 +72,7 @@ class DockerManifestSyncer {
             return "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == blobInfo.mediaType
         }
 
-        private fun copyBlobFromFirstRepo(
-            repo: DockerArtifactRepo, context: RequestContext,
-            fileName: String, targetPath: String
-        ): Boolean {
+        private fun copyBlobFromFirstRepo(repo: DockerArtifactRepo, context: RequestContext, fileName: String, targetPath: String): Boolean {
             val blob = ArtifactUtil.getBlobByName(repo, context, fileName) ?: run {
                 return false
             }

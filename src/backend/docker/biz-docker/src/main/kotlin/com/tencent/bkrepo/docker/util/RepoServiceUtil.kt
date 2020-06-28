@@ -58,8 +58,10 @@ class RepoServiceUtil {
         }
 
         fun manifestListUploadContext(
-            context: RequestContext, digest: DockerDigest,
-            path: String, bytes: ByteArray
+            context: RequestContext,
+            digest: DockerDigest,
+            path: String,
+            bytes: ByteArray
         ): UploadContext {
             with(context) {
                 val artifactFile = ArtifactFileFactory.build(bytes.inputStream())
@@ -70,8 +72,10 @@ class RepoServiceUtil {
         }
 
         fun buildManifestPropertyMap(
-            dockerRepo: String, tag: String,
-            digest: DockerDigest, type: ManifestType
+            dockerRepo: String,
+            tag: String,
+            digest: DockerDigest,
+            type: ManifestType
         ): HashMap<String, String> {
             var map = HashMap<String, String>()
             map[digest.getDigestAlg()] = digest.getDigestHex()
@@ -83,8 +87,11 @@ class RepoServiceUtil {
         }
 
         fun manifestUploadContext(
-            context: RequestContext, type: ManifestType,
-            metadata: ManifestMetadata, path: String, file: ArtifactFile
+            context: RequestContext,
+            type: ManifestType,
+            metadata: ManifestMetadata,
+            path: String,
+            file: ArtifactFile
         ): UploadContext {
             with(context) {
                 val uploadContext = UploadContext(projectId, repoName, path).artifactFile(file)
