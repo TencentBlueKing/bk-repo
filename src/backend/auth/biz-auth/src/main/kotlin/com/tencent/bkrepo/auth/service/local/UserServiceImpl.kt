@@ -14,8 +14,6 @@ import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import java.time.LocalDateTime
-import java.util.UUID
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -24,6 +22,8 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.util.UUID
 
 @Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
@@ -40,7 +40,7 @@ class UserServiceImpl @Autowired constructor(
             logger.warn("create user [${request.userId}]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
         }
-        if (request.group == true && request.asstUsers.size == 0) {
+        if (request.group && request.asstUsers.size == 0) {
             throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
         }
         var pwd: String = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
@@ -126,15 +126,10 @@ class UserServiceImpl @Autowired constructor(
     override fun addUserToRole(userId: String, roleId: String): User? {
         logger.info("add user to role userId : {}, roleId : {}", userId, roleId)
         // check user
-        val user = userRepository.findFirstByUserId(userId)
-        if (user == null) {
-            logger.warn(" user not  exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
+        checkUser(userId)
 
         // check role
-        val role = roleRepository.findFirstById(roleId)
-        if (role == null) {
+        roleRepository.findFirstById(roleId) ?: run {
             logger.warn(" role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         }
@@ -179,15 +174,10 @@ class UserServiceImpl @Autowired constructor(
     override fun removeUserFromRole(userId: String, roleId: String): User? {
         logger.info("remove user from role userId : {}, roleId : {}", userId, roleId)
         // check user
-        val user = userRepository.findFirstByUserId(userId)
-        if (user == null) {
-            logger.warn(" user not  exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
+        checkUser(userId)
 
         // check role
-        val role = roleRepository.findFirstById(roleId)
-        if (role == null) {
+        roleRepository.findFirstById(roleId) ?: kotlin.run {
             logger.warn(" role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         }
@@ -230,11 +220,7 @@ class UserServiceImpl @Autowired constructor(
 
     override fun updateUserById(userId: String, request: UpdateUserRequest): Boolean {
         logger.info("update user userId : {}, request : {}", userId, request.toString())
-        val user = userRepository.findFirstByUserId(userId)
-        if (user == null) {
-            logger.warn("user [$userId]  not exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
+        checkUser(userId)
 
         val query = Query()
         query.addCriteria(Criteria.where(TUser::userId.name).`is`(userId))
@@ -258,12 +244,7 @@ class UserServiceImpl @Autowired constructor(
 
     override fun createToken(userId: String): User? {
         logger.info("create token userId : {}", userId)
-        val user = userRepository.findFirstByUserId(userId)
-        if (user == null) {
-            logger.warn("user [$userId]  not exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
-
+        checkUser(userId)
         val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
         val update = Update()
         val uuid = UUID.randomUUID().toString()
@@ -275,12 +256,7 @@ class UserServiceImpl @Autowired constructor(
 
     override fun addUserToken(userId: String, token: String): User? {
         logger.info("add user token userId : {} ,token : {}", userId, token)
-        val user = userRepository.findFirstByUserId(userId)
-        if (user == null) {
-            logger.warn("user [$userId]  not exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
-
+        checkUser(userId)
         val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
         val update = Update()
         val userToken = Token(id = token, createdAt = LocalDateTime.now(), expiredAt = LocalDateTime.now().plusYears(2))
@@ -291,12 +267,7 @@ class UserServiceImpl @Autowired constructor(
 
     override fun removeToken(userId: String, token: String): User? {
         logger.info("remove token userId : {} ,token : {}", userId, token)
-        val user = userRepository.findFirstByUserId(userId)
-        if (user == null) {
-            logger.warn("user [$userId]  not exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
-
+        checkUser(userId)
         val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
         val s = BasicDBObject()
         s["id"] = token
@@ -333,6 +304,13 @@ class UserServiceImpl @Autowired constructor(
             tokens = tUser.tokens,
             roles = tUser.roles
         )
+    }
+
+    private fun checkUser(userId: String) {
+        userRepository.findFirstByUserId(userId) ?: run {
+            logger.warn("user [$userId]  not exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
     }
 
     companion object {
