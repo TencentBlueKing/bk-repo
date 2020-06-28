@@ -39,7 +39,7 @@ class AuthInterceptor : HandlerInterceptor {
             }
             return true
         } catch (e: Exception) {
-            response.getWriter().print(authFailStr)
+            response.writer.print(authFailStr)
             return false
         }
     }

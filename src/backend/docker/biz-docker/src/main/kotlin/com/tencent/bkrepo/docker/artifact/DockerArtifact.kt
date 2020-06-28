@@ -1,5 +1,10 @@
 package com.tencent.bkrepo.docker.artifact
 
+/**
+ *  docker artifact des class
+ * @author: owenlxu
+ * @date: 2020-03-12
+ */
 class DockerArtifact(projectId: String, repoName: String, artifactName: String) {
 
     var projectId: String = ""
@@ -23,16 +28,6 @@ class DockerArtifact(projectId: String, repoName: String, artifactName: String) 
 
     fun length(length: Long): DockerArtifact {
         this.length = length
-        return this
-    }
-
-    fun projectId(projectId: String): DockerArtifact {
-        this.projectId = projectId
-        return this
-    }
-
-    fun repoName(repoName: String): DockerArtifact {
-        this.repoName = repoName
         return this
     }
 
