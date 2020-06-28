@@ -25,7 +25,7 @@ object XmlConvertUtil {
     }
 
     fun methodResponse2Xml(methodResponse: MethodResponse): String {
-        var xmlMapper = XmlMapper()
+        val xmlMapper = XmlMapper()
         xmlMapper.setDefaultUseWrapper(false)
         xmlMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)
         xmlMapper.enable(MapperFeature.USE_STD_BEAN_NAMING)

@@ -20,7 +20,6 @@ object HttpUtil {
         val url = URL(this)
         val connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "GET"
-        val inputStream = connection.inputStream
-        return inputStream
+        return connection.inputStream
     }
 }

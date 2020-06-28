@@ -33,6 +33,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.io.IOException
 import java.io.InputStream
 import java.time.Duration
 import java.time.LocalDateTime
@@ -118,7 +119,7 @@ class NpmRemoteRepository : RemoteRepository() {
             context.contextAttributes[NPM_FILE_FULL_PATH] =
                 String.format(NPM_PKG_VERSION_FULL_PATH, name, name, pkgInfo.second)
             putArtifactCache(context, artifact)
-        } catch (ex: Exception) {
+        } catch (ex: TypeCastException) {
             logger.warn("cache artifact [${pkgInfo.first}-${pkgInfo.second}.json] failed, {}", ex.message)
         }
     }
@@ -146,8 +147,8 @@ class NpmRemoteRepository : RemoteRepository() {
                 putArtifactCache(context, file)
                 transFileToJson(file.getInputStream())
             } else null
-        } catch (exception: Exception) {
-            logger.info("http send [$searchUri] failed, {}", exception.message)
+        } catch (exception: IOException) {
+            logger.error("http send [$searchUri] failed, {}", exception.message)
             throw exception
         } finally {
             if (response != null) {

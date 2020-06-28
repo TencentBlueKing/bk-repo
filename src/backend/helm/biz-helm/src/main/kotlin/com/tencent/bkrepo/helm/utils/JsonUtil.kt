@@ -41,7 +41,7 @@ object JsonUtil {
                         .getAsJsonObject(ENTRIES)
                         .getAsJsonArray(urlList[0])
                         .toString()
-                } catch (nullPointer: NullPointerException) {
+                } catch (ex: ClassCastException) {
                     CHART_NOT_FOUND
                 }
                 if (StringUtils.equals(result, EMPTY_NAME_OR_VERSION)) CHART_NOT_FOUND else result

@@ -27,8 +27,10 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
+import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -61,12 +63,11 @@ class PackageDependentService {
                     totalDataSet =
                         use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
                 }
-            } catch (exception: Exception) {
+            } catch (exception: IOException) {
                 logger.error(
                     "http send [$url] for get all package name data failed, {}",
                     exception.message
                 )
-                throw exception
             } finally {
                 response?.body()?.close()
             }
@@ -133,7 +134,7 @@ class PackageDependentService {
                 if (successSet.size % 10 == 0) {
                     logger.info("dependent migrate progress rate : successRate:[${successSet.size}/${totalDataSet.size}], failRate[${errorSet.size}/${totalDataSet.size}]")
                 }
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 logger.error("failed to query [$pkgName.json] file, {}", exception.message)
                 errorSet.add(pkgName)
             }
@@ -164,10 +165,10 @@ class PackageDependentService {
                 result?.let { resultList.add(it) }
             } catch (exception: TimeoutException) {
                 logger.error("async tack result timeout: ${exception.message}")
-                throw exception
-            } catch (e: Exception) {
+            } catch (e: InterruptedException) {
                 logger.error("get async task result error : ${e.message}")
-                throw e
+            } catch (e: ExecutionException) {
+                logger.error("get async task result error : ${e.message}")
             }
         }
         return resultList
