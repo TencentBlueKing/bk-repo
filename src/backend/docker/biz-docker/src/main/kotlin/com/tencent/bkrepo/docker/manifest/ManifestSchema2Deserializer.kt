@@ -91,8 +91,8 @@ class ManifestSchema2Deserializer {
         }
 
         private fun checkCircuitBreaker(manifestBytes: ByteArray, jsonBytes: ByteArray, iterationsCounter: Int) {
-            if (iterationsCounter > 5000) {
-                breakCircuit(manifestBytes, jsonBytes, "5000 Iterations ware performed")
+            if (iterationsCounter > CIRCUIT_BREAKER_THRESHOLD) {
+                breakCircuit(manifestBytes, jsonBytes, "$CIRCUIT_BREAKER_THRESHOLD Iterations ware performed")
             }
         }
 
