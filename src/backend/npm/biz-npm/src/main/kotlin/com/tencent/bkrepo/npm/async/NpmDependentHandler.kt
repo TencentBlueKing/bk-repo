@@ -24,7 +24,7 @@ class NpmDependentHandler {
 
     @Async
     fun updatePkgDepts(userId: String, artifactInfo: ArtifactInfo, jsonObj: JsonObject, action: NpmOperationAction) {
-        val distTags = getDistTags(jsonObj)!!
+        val distTags = getDistTags(jsonObj)
         val versionJsonData = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(distTags.second)
 
         when (action) {
@@ -114,15 +114,17 @@ class NpmDependentHandler {
         logger.info("migration dependent for package: [$name], size: [${createList.size}] success.")
     }
 
-    private fun getDistTags(jsonObj: JsonObject): Pair<String, String>? {
+    private fun getDistTags(jsonObj: JsonObject): Pair<String, String> {
         val distTags = jsonObj.getAsJsonObject(DISTTAGS)
-        if (distTags.has(LATEST)) {
-            return Pair(LATEST, distTags[LATEST].asString)
+        return if (distTags.has(LATEST)) {
+            Pair(LATEST, distTags[LATEST].asString)
+        } else {
+            var pair = Pair("", "")
+            distTags.entrySet().forEach {
+                pair = Pair(it.key, it.value.asString)
+            }
+            pair
         }
-        distTags.entrySet().forEach {
-            return Pair(it.key, it.value.asString)
-        }
-        return null
     }
 
     companion object {

@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.npm.service
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -68,7 +69,7 @@ class DataMigrationService {
     private lateinit var mongoTemplate: MongoTemplate
 
     private val okHttpClient: OkHttpClient by lazy {
-        HttpClientBuilderFactory.create().readTimeout(60L, TimeUnit.SECONDS).build()
+        HttpClientBuilderFactory.create().readTimeout(TIMEOUT, TimeUnit.SECONDS).build()
     }
 
     private final fun initTotalDataSetByUrl() {
@@ -106,7 +107,7 @@ class DataMigrationService {
             if (result == null) {
                 initTotalDataSetByFile()
             } else {
-                totalDataSet = result.errorData as MutableSet<String>
+                totalDataSet = result.errorData
             }
         } else {
             initTotalDataSetByFile()
@@ -122,7 +123,7 @@ class DataMigrationService {
             if (result == null) {
                 initTotalDataSetByUrl()
             } else {
-                totalDataSet = result.errorData as MutableSet<String>
+                totalDataSet = result.errorData
             }
         } else {
             initTotalDataSetByUrl()
@@ -149,7 +150,7 @@ class DataMigrationService {
         }
         val resultList = submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
-        logger.info("npm history data migration, total size[${totalDataSet.size}], success[${successSet.size}], fail[${errorSet.size}], elapse [${elapseTimeMillis / 1000}] s totally")
+        logger.info("npm history data migration, total size[${totalDataSet.size}], success[${successSet.size}], fail[${errorSet.size}], elapse [${elapseTimeMillis.div(1000L)}] s totally")
         val collect = resultList.stream().flatMap { set -> set.stream() }.collect(Collectors.toSet())
         if (collect.isNotEmpty() && useErrorData) {
             insertErrorData(artifactInfo, collect)
@@ -159,7 +160,7 @@ class DataMigrationService {
             totalDataSet.size,
             successSet.size,
             errorSet.size,
-            elapseTimeMillis / 1000,
+            elapseTimeMillis.div(1000L),
             collect
         )
     }
@@ -171,7 +172,7 @@ class DataMigrationService {
                 migrate(artifactInfo, pkgName)
                 logger.info("npm package name: [$pkgName] migration success!")
                 successSet.add(pkgName)
-                if (successSet.size % 10 == 0) {
+                if (successSet.size.rem(10) == 0) {
                     logger.info("progress rate : successRate:[${successSet.size}/${totalDataSet.size}], failRate[${errorSet.size}/${totalDataSet.size}]")
                 }
             } catch (exception: RuntimeException) {
@@ -276,6 +277,7 @@ class DataMigrationService {
 
     companion object {
         private const val FILE_NAME = "pkgName.json"
+        const val TIMEOUT = 60L
         val logger: Logger = LoggerFactory.getLogger(DataMigrationService::class.java)
 
         private var totalDataSet = mutableSetOf<String>()
@@ -286,7 +288,7 @@ class DataMigrationService {
             return tMigrationErrorData?.let {
                 MigrationErrorDataInfo(
                     counter = it.counter,
-                    errorData = jacksonObjectMapper().readValue(it.errorData, Set::class.java),
+                    errorData = jacksonObjectMapper().readValue(it.errorData, object : TypeReference<MutableSet<String>>() {}),
                     projectId = it.projectId,
                     repoName = it.repoName,
                     createdBy = it.createdBy,

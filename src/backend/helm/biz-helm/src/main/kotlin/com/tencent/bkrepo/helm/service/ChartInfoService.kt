@@ -23,7 +23,7 @@ class ChartInfoService {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): String {
-        if(startTime != null){
+        if (startTime != null) {
             val nodeList = chartRepositoryService.queryNodeList(artifactInfo, lastModifyTime = startTime)
             val indexEntity = chartRepositoryService.initIndexEntity()
             if (nodeList.isNotEmpty()) {

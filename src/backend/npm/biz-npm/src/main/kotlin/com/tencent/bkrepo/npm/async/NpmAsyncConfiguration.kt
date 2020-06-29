@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.npm.async
 
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -26,12 +25,12 @@ class NpmAsyncConfiguration {
         executor.setThreadNamePrefix(properties.threadNamePrefix)
         executor.setRejectedExecutionHandler(CallerRunsPolicy())
         executor.setWaitForTasksToCompleteOnShutdown(true)
-        executor.setAwaitTerminationSeconds(5 * 60)
+        executor.setAwaitTerminationSeconds(AWAIT_TERMINATION_SECONDS)
         executor.initialize()
         return executor
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(NpmAsyncConfiguration::class.java)
+        const val AWAIT_TERMINATION_SECONDS = 5 * 60
     }
 }

@@ -2,6 +2,7 @@ package com.tencent.bkrepo.npm.artifact
 
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.npm.constants.FILE_SEPARATOR
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -18,11 +19,10 @@ class NpmArtifactInfoResolver : ArtifactInfoResolver {
         artifactUri: String,
         request: HttpServletRequest
     ): NpmArtifactInfo {
-        val uri = URLDecoder.decode(request.requestURI, "utf-8")
+        val uri = URLDecoder.decode(request.requestURI, characterEncoding)
 
         val pathElements = LinkedList<String>()
-        val stringTokenizer = StringTokenizer(uri.substringBefore("/-rev"), "/")
-        // val stringTokenizer = StringTokenizer(uri, "/")
+        val stringTokenizer = StringTokenizer(uri.substringBefore(delimiter), FILE_SEPARATOR)
         while (stringTokenizer.hasMoreTokens()) {
             pathElements.add(stringTokenizer.nextToken())
         }
@@ -41,6 +41,8 @@ class NpmArtifactInfoResolver : ArtifactInfoResolver {
     }
 
     companion object {
+        var characterEncoding: String = "utf-8"
+        var delimiter: String = "/-rev"
         val logger: Logger = LoggerFactory.getLogger(NpmArtifactInfo::class.java)
     }
 }

@@ -135,17 +135,6 @@ class HelmLocalRepository : LocalRepository() {
         nodeResource.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
     }
 
-    // fun searchJson(context: ArtifactSearchContext): String {
-    //     val artifactInfo = context.artifactInfo
-    //     val fullPath = INDEX_CACHE_YAML
-    //     with(artifactInfo) {
-    //         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return EMPTY_CHART_OR_VERSION
-    //         val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
-    //             ?: return EMPTY_CHART_OR_VERSION
-    //         return JsonUtil.searchJson(inputStream, artifactUri)
-    //     }
-    // }
-
     fun isExists(context: ArtifactSearchContext) {
         val artifactInfo = context.artifactInfo
         val response = HttpContextHolder.getResponse()

@@ -46,42 +46,18 @@ class NpmWebService {
     fun getPackageInfo(artifactInfo: NpmArtifactInfo): PackageInfoResponse {
         val pkgName = artifactInfo.artifactUri.trimStart('/')
         val packageJson = searchPkgInfo(pkgName)
-        val page = moduleDepsService.page(artifactInfo.projectId, artifactInfo.repoName, 0, 20, pkgName)
+        val page = moduleDepsService.page(artifactInfo.projectId, artifactInfo.repoName, PAGE, SIZE, pkgName)
         val query = downloadStatisticsResource.queryForSpecial(artifactInfo.projectId, artifactInfo.repoName, artifactInfo.artifactUri)
 
         val latestVersion = packageJson.getAsJsonObject(DISTTAGS).get(LATEST).asString
-        val currentTags: MutableList<TagsInfo> = mutableListOf()
-        val versionsList: MutableList<TagsInfo> = mutableListOf()
-        val maintainersList: MutableList<MaintainerInfo> = mutableListOf()
-        val dependenciesList: MutableList<DependenciesInfo> = mutableListOf()
-        val devDependenciesList: MutableList<DependenciesInfo> = mutableListOf()
-
-        val timeJsonObject = packageJson.getAsJsonObject(TIME)
-        packageJson.getAsJsonObject(DISTTAGS).entrySet().forEach { (key, value) ->
-            val time = timeJsonObject[value.asString].asString
-            currentTags.add(TagsInfo(tags = key, version = value.asString, time = time))
-        }
-        timeJsonObject.entrySet().forEach { (key, value) ->
-            if (!(key == "created" || key == "modified")) {
-                versionsList.add(TagsInfo(version = key, time = value.asString))
-            }
-        }
-        packageJson.getAsJsonArray(MAINTAINERS)?.forEach {
-            it.asJsonObject.entrySet().forEach { (key, value) ->
-                maintainersList.add(MaintainerInfo(key, value.asString))
-            }
-        }
         val versionJsonObject = packageJson.getAsJsonObject(VERSIONS).getAsJsonObject(latestVersion)
-        if (versionJsonObject.has(DEPENDENCIES) && !versionJsonObject.getAsJsonObject(DEPENDENCIES).isJsonNull) {
-            versionJsonObject.getAsJsonObject(DEPENDENCIES).entrySet().forEach { (key, value) ->
-                dependenciesList.add(DependenciesInfo(key, value.asString))
-            }
-        }
-        if (versionJsonObject.has(DEV_DEPENDENCIES) && !versionJsonObject.getAsJsonObject(DEV_DEPENDENCIES).isJsonNull) {
-            versionJsonObject.getAsJsonObject(DEV_DEPENDENCIES).entrySet().forEach { (key, value) ->
-                devDependenciesList.add(DependenciesInfo(key, value.asString))
-            }
-        }
+        val timeJsonObject = packageJson.getAsJsonObject(TIME)
+
+        val currentTags = parseDistTags(packageJson, timeJsonObject)
+        val versionsList = parseVersions(timeJsonObject)
+        val maintainersList = parseMaintainers(packageJson)
+        val dependenciesList = parseDependencies(versionJsonObject)
+        val devDependenciesList = parseDevDependencies(versionJsonObject)
         return PackageInfoResponse(
             packageJson[NAME].asString,
             packageJson[DESCRIPTION].asString,
@@ -96,6 +72,55 @@ class NpmWebService {
         )
     }
 
+    private fun parseDistTags(packageJson: JsonObject, timeJsonObject: JsonObject): MutableList<TagsInfo> {
+        val currentTags: MutableList<TagsInfo> = mutableListOf()
+        packageJson.getAsJsonObject(DISTTAGS).entrySet().forEach { (key, value) ->
+            val time = timeJsonObject[value.asString].asString
+            currentTags.add(TagsInfo(tags = key, version = value.asString, time = time))
+        }
+        return currentTags
+    }
+
+    private fun parseVersions(timeJsonObject: JsonObject): MutableList<TagsInfo> {
+        val versionsList: MutableList<TagsInfo> = mutableListOf()
+        timeJsonObject.entrySet().forEach { (key, value) ->
+            if (!(key == "created" || key == "modified")) {
+                versionsList.add(TagsInfo(version = key, time = value.asString))
+            }
+        }
+        return versionsList
+    }
+
+    private fun parseMaintainers(packageJson: JsonObject): MutableList<MaintainerInfo> {
+        val maintainersList: MutableList<MaintainerInfo> = mutableListOf()
+        packageJson.getAsJsonArray(MAINTAINERS)?.forEach {
+            it.asJsonObject.entrySet().forEach { (key, value) ->
+                maintainersList.add(MaintainerInfo(key, value.asString))
+            }
+        }
+        return maintainersList
+    }
+
+    private fun parseDependencies(versionJsonObject: JsonObject): MutableList<DependenciesInfo> {
+        val dependenciesList: MutableList<DependenciesInfo> = mutableListOf()
+        if (versionJsonObject.has(DEPENDENCIES) && !versionJsonObject.getAsJsonObject(DEPENDENCIES).isJsonNull) {
+            versionJsonObject.getAsJsonObject(DEPENDENCIES).entrySet().forEach { (key, value) ->
+                dependenciesList.add(DependenciesInfo(key, value.asString))
+            }
+        }
+        return dependenciesList
+    }
+
+    private fun parseDevDependencies(versionJsonObject: JsonObject): MutableList<DependenciesInfo> {
+        val devDependenciesList: MutableList<DependenciesInfo> = mutableListOf()
+        if (versionJsonObject.has(DEV_DEPENDENCIES) && !versionJsonObject.getAsJsonObject(DEV_DEPENDENCIES).isJsonNull) {
+            versionJsonObject.getAsJsonObject(DEV_DEPENDENCIES).entrySet().forEach { (key, value) ->
+                devDependenciesList.add(DependenciesInfo(key, value.asString))
+            }
+        }
+        return devDependenciesList
+    }
+
     private fun searchPkgInfo(pkgName: String): JsonObject {
         pkgName.takeIf { !pkgName.isBlank() } ?: throw NpmArgumentNotFoundException("argument [$pkgName] not found.")
         val context = ArtifactSearchContext()
@@ -106,6 +131,9 @@ class NpmWebService {
     }
 
     companion object {
+        const val PAGE = 0
+        const val SIZE = 20
+
         fun convert(downloadStatisticsMetric: DownloadStatisticsMetric): DownloadCount {
             with(downloadStatisticsMetric) {
                 return DownloadCount(description, count)

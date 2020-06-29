@@ -88,7 +88,7 @@ class NpmLocalRepository : LocalRepository() {
     private lateinit var npmDependentHandler: NpmDependentHandler
 
     private val okHttpClient: OkHttpClient by lazy {
-        HttpClientBuilderFactory.create().readTimeout(60L, TimeUnit.SECONDS).build()
+        HttpClientBuilderFactory.create().readTimeout(TIMEOUT, TimeUnit.SECONDS).build()
     }
 
     override fun onUploadValidate(context: ArtifactUploadContext) {
@@ -124,10 +124,10 @@ class NpmLocalRepository : LocalRepository() {
         val repositoryInfo = context.repositoryInfo
         val artifactFile = context.getArtifactFile(name)
         val contextAttributes = context.contextAttributes
-        val fileSha256Map = context.contextAttributes[ATTRIBUTE_SHA256MAP] as Map<String, String>
-        val fileMd5Map = context.contextAttributes[ATTRIBUTE_MD5MAP] as Map<String, String>
-        val sha256 = fileSha256Map[name]
-        val md5 = fileMd5Map[name]
+        val fileSha256Map = context.contextAttributes[ATTRIBUTE_SHA256MAP] as Map<*, *>
+        val fileMd5Map = context.contextAttributes[ATTRIBUTE_MD5MAP] as Map<*, *>
+        val sha256 = fileSha256Map[name] as? String
+        val md5 = fileMd5Map[name] as? String
 
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
@@ -143,6 +143,7 @@ class NpmLocalRepository : LocalRepository() {
         )
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun parseMetaData(name: String, contextAttributes: MutableMap<String, Any>): Map<String, String> {
         return if (name == NPM_PACKAGE_TGZ_FILE) contextAttributes[NPM_METADATA] as Map<String, String> else emptyMap()
     }
@@ -276,14 +277,14 @@ class NpmLocalRepository : LocalRepository() {
             val packageInfo = mutableMapOf<String, Any>()
             val metadataInfo = mutableMapOf<String, Any?>()
             val date = it[LAST_MODIFIED_DATE] as String
-            val metadata = it[METADATA] as Map<String, String?>
-            metadataInfo[NAME] = metadata[NAME]
-            metadataInfo[DESCRIPTION] = metadata[DESCRIPTION]
-            metadataInfo[MAINTAINERS] = parseJsonArrayToList(metadata[MAINTAINERS])
-            metadataInfo[VERSION] = metadata[VERSION]
+            val metadata = it[METADATA] as Map<*, *>
+            metadataInfo[NAME] = metadata[NAME] as? String
+            metadataInfo[DESCRIPTION] = metadata[DESCRIPTION] as? String
+            metadataInfo[MAINTAINERS] = parseJsonArrayToList(metadata[MAINTAINERS] as? String)
+            metadataInfo[VERSION] = metadata[VERSION] as? String
             metadataInfo[DATE] = date
-            metadataInfo[KEYWORDS] = parseJsonArrayToList(metadata[KEYWORDS])
-            metadataInfo[AUTHOR] = metadata[AUTHOR]
+            metadataInfo[KEYWORDS] = parseJsonArrayToList(metadata[KEYWORDS] as? String)
+            metadataInfo[AUTHOR] = metadata[AUTHOR] as? String
             packageInfo[PACKAGE] = metadataInfo
             listInfo.add(packageInfo)
         }
@@ -303,7 +304,7 @@ class NpmLocalRepository : LocalRepository() {
         val versions = jsonObject.getAsJsonObject(VERSIONS)
         versions.keySet().forEach { version ->
             var response: Response? = null
-            var tgzFilePath: String? = null
+            val tgzFilePath: String?
             val tarball = versions.getAsJsonObject(version).getAsJsonObject(DIST).get(TARBALL).asString
             tgzFilePath = tarball.substringAfterLast(registry)
             context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
@@ -426,6 +427,7 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     companion object {
+        const val TIMEOUT = 60L
         val logger: Logger = LoggerFactory.getLogger(NpmLocalRepository::class.java)
     }
 }
