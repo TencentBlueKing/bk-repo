@@ -7,9 +7,8 @@ import org.springframework.boot.env.EnvironmentPostProcessor
 import org.springframework.boot.logging.LogLevel
 import org.springframework.core.env.ConfigurableEnvironment
 import org.springframework.core.env.MapPropertySource
-import org.springframework.stereotype.Component
 
-@Component
+// @Component
 class QuartzEnvironmentPostProcessor : EnvironmentPostProcessor {
 
     override fun postProcessEnvironment(environment: ConfigurableEnvironment, application: SpringApplication?) {

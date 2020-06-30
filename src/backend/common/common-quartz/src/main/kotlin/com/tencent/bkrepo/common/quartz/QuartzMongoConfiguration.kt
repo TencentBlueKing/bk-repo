@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.quartz
 
-import com.novemberain.quartz.mongodb.MongoDBJobStore
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import com.mongodb.client.MongoClient
+import com.mongodb.client.MongoDatabase
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.mongo.MongoProperties
 import org.springframework.boot.autoconfigure.quartz.QuartzProperties
@@ -10,10 +10,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.PropertySource
-import org.springframework.scheduling.quartz.SchedulerFactoryBean
 
 @Configuration
-@ConditionalOnClass(MongoDBJobStore::class)
 @EnableConfigurationProperties(
     QuartzProperties::class,
     MongoProperties::class
@@ -23,24 +21,26 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean
 class QuartzMongoConfiguration {
 
     @Bean
-    fun quartzMongoCustomizer(
-        quartzProperties: QuartzProperties,
-        mongoProperties: MongoProperties
-    ): SchedulerFactoryBeanCustomizer {
-        return QuartzMongoCustomizer(quartzProperties, mongoProperties)
+    fun mongoDatabase(mongoProperties: MongoProperties, mongoClient: MongoClient): MongoDatabase {
+        val databaseName = mongoProperties.mongoClientDatabase
+        return mongoClient.getDatabase(databaseName)
     }
 
-    private class QuartzMongoCustomizer(
-        private val quartzProperties: QuartzProperties,
-        private val mongoProperties: MongoProperties
-    ) : SchedulerFactoryBeanCustomizer {
-
-        override fun customize(schedulerFactoryBean: SchedulerFactoryBean?) {
+    @Bean
+    fun quartzMongoCustomizer(
+        quartzProperties: QuartzProperties,
+        mongoProperties: MongoProperties,
+        mongoDatabase: MongoDatabase
+    ): SchedulerFactoryBeanCustomizer {
+        Companion.mongoDatabase = mongoDatabase
+        return SchedulerFactoryBeanCustomizer {
             val properties = quartzProperties.properties
-            properties["org.quartz.jobStore.class"] = MongoDBJobStore::class.qualifiedName
-            properties["org.quartz.threadPool.threadCount"] = 20.toString()
-            properties["org.quartz.jobStore.mongoUri"] = mongoProperties.uri
-            properties["org.quartz.jobStore.dbName"] = mongoProperties.mongoClientDatabase
+            properties["org.quartz.jobStore.class"] = MongoJobStore::class.qualifiedName
+            // properties["org.quartz.threadPool.threadCount"] = 20.toString()
         }
+    }
+
+    companion object {
+        lateinit var mongoDatabase: MongoDatabase
     }
 }

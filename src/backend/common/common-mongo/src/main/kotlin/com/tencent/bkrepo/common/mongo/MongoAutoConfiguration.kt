@@ -3,7 +3,8 @@ package com.tencent.bkrepo.common.mongo
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.data.mongodb.MongoDbFactory
+import org.springframework.context.annotation.PropertySource
+import org.springframework.data.mongodb.MongoDatabaseFactory
 import org.springframework.data.mongodb.MongoTransactionManager
 import org.springframework.data.mongodb.core.convert.DefaultDbRefResolver
 import org.springframework.data.mongodb.core.convert.DefaultMongoTypeMapper
@@ -16,20 +17,21 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext
  * 同时，mongodb 事物控制只能用与多副本集的情况，否则会报错，因此添加了enabled开关
  */
 @Configuration
+@PropertySource("classpath:common-mongo.properties")
 class MongoAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = ["spring.data.mongodb.transaction.enabled"], matchIfMissing = true)
-    fun transactionManager(dbFactory: MongoDbFactory): MongoTransactionManager {
-        return MongoTransactionManager(dbFactory)
+    fun transactionManager(mongoDatabaseFactory: MongoDatabaseFactory): MongoTransactionManager {
+        return MongoTransactionManager(mongoDatabaseFactory)
     }
 
     /**
      * remove _class
      */
     @Bean
-    fun mappingMongoConverter(factory: MongoDbFactory): MappingMongoConverter {
-        val dbRefResolver = DefaultDbRefResolver(factory)
+    fun mappingMongoConverter(mongoDatabaseFactory: MongoDatabaseFactory): MappingMongoConverter {
+        val dbRefResolver = DefaultDbRefResolver(mongoDatabaseFactory)
 
         val conversions = MongoCustomConversions(emptyList<Any>())
         val mappingContext = MongoMappingContext()
