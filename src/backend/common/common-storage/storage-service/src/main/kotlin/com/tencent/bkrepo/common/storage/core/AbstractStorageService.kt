@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.storage.core
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
-import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.md5
@@ -19,6 +19,7 @@ import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -52,19 +53,16 @@ abstract class AbstractStorageService : StorageService {
     override fun store(digest: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?) {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
-
         try {
-            val size = artifactFile.getSize()
-            val nanoTime = measureNanoTime {
-                if (doExist(path, digest, credentials)) {
-                    logger.info("Artifact file [$digest] exists, skip store.")
-                    return
-                } else {
-                    doStore(path, digest, artifactFile, credentials)
-                }
+            if (doExist(path, digest, credentials)) {
+                logger.info("Artifact file [$digest] exists, skip store.")
+                return
+            } else {
+                val size = artifactFile.getSize()
+                val nanoTime = measureNanoTime { doStore(path, digest, artifactFile, credentials) }
+                val throughput = Throughput(size, nanoTime)
+                logger.info("Success to store artifact file [$digest], $throughput.")
             }
-            logger.info("Success to store artifact file [$digest], size: ${HumanReadable.size(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
-                "average: ${HumanReadable.throughput(size, nanoTime)}.")
         } catch (exception: Exception) {
             logger.error("Failed to store artifact file [$digest].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
@@ -73,7 +71,6 @@ abstract class AbstractStorageService : StorageService {
 
     override fun load(digest: String, range: Range, storageCredentials: StorageCredentials?): ArtifactInputStream? {
         if (range.isEmpty()) return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
-
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
         try {
@@ -87,7 +84,6 @@ abstract class AbstractStorageService : StorageService {
     override fun delete(digest: String, storageCredentials: StorageCredentials?) {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
-
         try {
             doDelete(path, digest, credentials)
             logger.info("Success to delete file [$digest] on [$credentials].")
@@ -100,7 +96,6 @@ abstract class AbstractStorageService : StorageService {
     override fun exist(digest: String, storageCredentials: StorageCredentials?): Boolean {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
-
         try {
             return doExist(path, digest, credentials)
         } catch (exception: Exception) {
@@ -328,7 +323,7 @@ abstract class AbstractStorageService : StorageService {
     open fun getTempPath(credentials: StorageCredentials): String? = null
 
     companion object {
-        private const val CURRENT_PATH = ""
+        private const val CURRENT_PATH = StringPool.EMPTY
         private const val HEALTH_CHECK_PATH = "/health-check"
         private const val BLOCK_SUFFIX = ".block"
         private const val SHA256_SUFFIX = ".sha256"

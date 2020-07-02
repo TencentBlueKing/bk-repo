@@ -36,14 +36,8 @@ class ArtifactContextHolder(
             val request = HttpContextHolder.getRequestOrNull() ?: return null
             val repoInfoAttribute = request.getAttribute(REPO_KEY)
             return if (repoInfoAttribute == null) {
-                val artifactInfo =
-                    getArtifactInfo(
-                        request
-                    )
-                val repositoryInfo =
-                    queryRepositoryInfo(
-                        artifactInfo
-                    )
+                val artifactInfo = getArtifactInfo(request)
+                val repositoryInfo = queryRepositoryInfo(artifactInfo)
                 request.setAttribute(REPO_KEY, repositoryInfo)
                 repositoryInfo
             } else {
