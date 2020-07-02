@@ -21,6 +21,6 @@ data class TFileReference(
     var id: String? = null,
     @ShardingKey(count = SHARDING_COUNT)
     var sha256: String,
-    var storageCredentials: String? = null,
+    var credentialsKey: String? = null,
     var count: Long
 )

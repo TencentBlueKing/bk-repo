@@ -1,7 +1,5 @@
 package com.tencent.bkrepo.common.storage.core.simple
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
@@ -40,9 +38,5 @@ class SimpleStorageService : AbstractStorageService() {
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
         return fileStorage.exist(path, filename, credentials)
-    }
-
-    override fun doManualRetry(path: String, filename: String, credentials: StorageCredentials) {
-        throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
     }
 }

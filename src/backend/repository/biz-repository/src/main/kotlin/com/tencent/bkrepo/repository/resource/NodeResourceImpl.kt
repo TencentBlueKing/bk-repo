@@ -56,7 +56,7 @@ class NodeResourceImpl @Autowired constructor(
         repoName: String,
         fullPathList: List<String>
     ): Response<List<String>> {
-        return ResponseBuilder.success(nodeService.listExistfullPath(projectId, repoName, fullPathList))
+        return ResponseBuilder.success(nodeService.listExistFullPath(projectId, repoName, fullPathList))
     }
 
     override fun list(

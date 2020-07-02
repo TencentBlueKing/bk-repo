@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.storage.filesystem
 
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import com.tencent.bkrepo.common.storage.util.createFile
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -23,59 +24,48 @@ import java.nio.file.StandardCopyOption
  */
 class FileSystemClient(private val root: String) {
 
-    init {
-        Files.createDirectories(Paths.get(root))
-    }
-
     fun touch(dir: String, filename: String): File {
         val filePath = Paths.get(this.root, dir, filename)
-        createDirectories(filePath.parent)
-        if (!Files.exists(filePath)) {
-            try {
-                Files.createFile(filePath)
-            } catch (exception: java.nio.file.FileAlreadyExistsException) {
-                // ignore
-            }
+        try {
+            filePath.createFile()
+        } catch (exception: FileAlreadyExistsException) {
+            // ignore
         }
         return filePath.toFile()
     }
 
     fun store(dir: String, filename: String, inputStream: InputStream, size: Long, overwrite: Boolean = false): File {
         val filePath = Paths.get(this.root, dir, filename)
-        createDirectories(filePath.parent)
         if (overwrite) {
             Files.deleteIfExists(filePath)
         }
-        val file = filePath.toFile()
         if (!Files.exists(filePath)) {
-            file.createNewFile()
+            val file = filePath.createFile()
             FileLockExecutor.executeInLock(inputStream) { input ->
                 FileLockExecutor.executeInLock(file) { output ->
                     transfer(input, output, size)
                 }
             }
         }
-        return file
+        return filePath.toFile()
     }
 
     fun store(dir: String, filename: String, file: File, overwrite: Boolean = false): File {
-        val target = Paths.get(this.root, dir, filename)
-        val targetFile = target.toFile()
         val source = file.toPath()
-        createDirectories(target.parent)
+        val target = Paths.get(this.root, dir, filename)
         if (overwrite) {
             Files.deleteIfExists(target)
         }
         if (!Files.exists(target)) {
+            val targetFile = target.createFile()
             try {
                 Files.move(source, target, StandardCopyOption.REPLACE_EXISTING)
             } catch (ex: IOException) {
                 // ignore and let the Files.copy, outside
                 // this if block, take over and attempt to copy it
                 logger.warn("Failed to store file by Files.move(source, target), fallback to use file channel: ${ex.message}")
-                targetFile.createNewFile()
                 FileLockExecutor.executeInLock(file.inputStream()) { input ->
-                    FileLockExecutor.executeInLock(target.toFile()) { output ->
+                    FileLockExecutor.executeInLock(targetFile) { output ->
                         transfer(input, output, file.length())
                     }
                 }
@@ -131,7 +121,7 @@ class FileSystemClient(private val root: String) {
     fun deleteDirectory(dir: String, name: String) {
         val filePath = Paths.get(this.root, dir, name)
         if (Files.isDirectory(filePath)) {
-            Files.delete(filePath)
+            filePath.toFile().deleteRecursively()
         } else {
             throw IllegalArgumentException("[$filePath] is not a directory.")
         }
@@ -142,7 +132,7 @@ class FileSystemClient(private val root: String) {
     }
 
     fun listFiles(path: String, extension: String): Collection<File> {
-        return FileUtils.listFiles(File(this.root, path), arrayOf(extension), false)
+        return FileUtils.listFiles(File(this.root, path), arrayOf(extension.trim('.')), false)
     }
 
     fun mergeFiles(fileList: List<File>, outputFile: File): File {
@@ -200,12 +190,6 @@ class FileSystemClient(private val root: String) {
         }
         if (totalCopied != size) {
             throw IOException("Failed to copy full contents. Expected length: $size, Actual: $totalCopied")
-        }
-    }
-
-    private fun createDirectories(path: Path) {
-        if (!Files.exists(path)) {
-            Files.createDirectories(path)
         }
     }
 

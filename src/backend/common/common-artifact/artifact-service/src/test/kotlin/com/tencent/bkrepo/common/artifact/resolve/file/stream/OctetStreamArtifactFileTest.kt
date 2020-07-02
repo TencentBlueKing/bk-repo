@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
-import com.tencent.bkrepo.common.api.util.randomString
-import com.tencent.bkrepo.common.artifact.resolve.file.UploadConfigElement
+import com.tencent.bkrepo.common.api.constant.StringPool.randomString
+import com.tencent.bkrepo.common.storage.config.UploadProperties
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
-import com.tencent.bkrepo.common.storage.monitor.UploadProperties
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -17,24 +17,17 @@ class OctetStreamArtifactFileTest {
     
     private val tempDir = System.getProperty("java.io.tmpdir")
 
-    private val uploadProperties = UploadProperties(
-        location = tempDir
-    )
+    private val uploadProperties = UploadProperties(location = tempDir)
 
-    private val monitor = StorageHealthMonitor(uploadProperties, MonitorProperties())
-
-    private fun createConfigElement(threshold: Long): UploadConfigElement {
-        val uploadProperties = UploadProperties(
-            location = tempDir,
-            fileSizeThreshold =  DataSize.ofBytes(threshold)
-        )
-        return UploadConfigElement(uploadProperties)
+    private fun createMonitor(threshold: Long): StorageHealthMonitor {
+        val storageProperties = StorageProperties(upload = uploadProperties, fileSizeThreshold = DataSize.ofBytes(threshold))
+        return StorageHealthMonitor(storageProperties, MonitorProperties())
     }
 
     @Test
     fun testZeroThreshold() {
         val source = randomString(0).byteInputStream()
-        val artifactFile = OctetStreamArtifactFile(source, monitor, createConfigElement(0))
+        val artifactFile = OctetStreamArtifactFile(source, createMonitor(0))
         assertTrue(artifactFile.isInMemory())
     }
 
@@ -42,7 +35,7 @@ class OctetStreamArtifactFileTest {
     fun testInMemory() {
         val randomString = randomString(10)
         val source = randomString.byteInputStream()
-        val artifactFile = OctetStreamArtifactFile(source, monitor, createConfigElement(11))
+        val artifactFile = OctetStreamArtifactFile(source, createMonitor(11))
         assertTrue(artifactFile.isInMemory())
         val artifactFileString = artifactFile.getInputStream().readBytes().toString(Charset.defaultCharset())
         assertEquals(randomString, artifactFileString)
@@ -52,7 +45,7 @@ class OctetStreamArtifactFileTest {
     fun testInFile() {
         val randomString = randomString(10)
         val source = randomString.byteInputStream()
-        val artifactFile = OctetStreamArtifactFile(source, monitor, createConfigElement(9))
+        val artifactFile = OctetStreamArtifactFile(source, createMonitor(9))
         assertFalse(artifactFile.isInMemory())
         assertTrue(artifactFile.getFile()!!.exists())
         val artifactFileString = artifactFile.getInputStream().readBytes().toString(Charset.defaultCharset())
@@ -63,7 +56,7 @@ class OctetStreamArtifactFileTest {
     fun testBigSizeInMemory() {
         val randomString = randomString(1024 * 1024)
         val source = randomString.byteInputStream()
-        val artifactFile = OctetStreamArtifactFile(source, monitor, createConfigElement(1024 * 1024 + 1))
+        val artifactFile = OctetStreamArtifactFile(source, createMonitor(1024 * 1024 + 1))
         assertTrue(artifactFile.isInMemory())
         val artifactFileString = artifactFile.getInputStream().readBytes().toString(Charset.defaultCharset())
         assertEquals(randomString, artifactFileString)
@@ -73,7 +66,7 @@ class OctetStreamArtifactFileTest {
     fun testBigSizeInFile() {
         val randomString = randomString(1024 * 1024)
         val source = randomString.byteInputStream()
-        val artifactFile = OctetStreamArtifactFile(source,  monitor, createConfigElement(1024 * 1024 - 1))
+        val artifactFile = OctetStreamArtifactFile(source, createMonitor(1024 * 1024 - 1))
         assertFalse(artifactFile.isInMemory())
         assertTrue(artifactFile.getFile()!!.exists())
         val artifactFileString = artifactFile.getInputStream().readBytes().toString(Charset.defaultCharset())
@@ -84,7 +77,7 @@ class OctetStreamArtifactFileTest {
     fun testDeleteInMemory() {
         val randomString = randomString(10)
         val source = randomString.byteInputStream()
-        val artifactFile = OctetStreamArtifactFile(source, monitor, createConfigElement(10))
+        val artifactFile = OctetStreamArtifactFile(source, createMonitor(10))
         assertTrue(artifactFile.isInMemory())
         assertNull(artifactFile.getFile())
         artifactFile.delete()
@@ -94,7 +87,7 @@ class OctetStreamArtifactFileTest {
     fun testDeleteInFile() {
         val randomString = randomString(11)
         val source = randomString.byteInputStream()
-        val artifactFile = OctetStreamArtifactFile(source,  monitor, createConfigElement(10))
+        val artifactFile = OctetStreamArtifactFile(source, createMonitor(10))
         assertFalse(artifactFile.isInMemory())
         assertTrue(artifactFile.getFile()!!.exists())
         artifactFile.delete()
@@ -105,7 +98,7 @@ class OctetStreamArtifactFileTest {
     fun testFlushToFile() {
         val randomString = randomString(10)
         val source = randomString.byteInputStream()
-        val artifactFile = OctetStreamArtifactFile(source,  monitor, createConfigElement(10))
+        val artifactFile = OctetStreamArtifactFile(source, createMonitor(10))
         assertTrue(artifactFile.isInMemory())
         assertNull(artifactFile.getFile())
 

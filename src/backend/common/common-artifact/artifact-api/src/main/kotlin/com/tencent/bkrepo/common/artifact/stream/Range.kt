@@ -21,7 +21,7 @@ class Range(startPosition: Long, endPosition: Long, val total: Long) {
     }
 
     override fun toString(): String {
-        return "${start}-${end}/${total}"
+        return "$start-$end/$total"
     }
 
     companion object {

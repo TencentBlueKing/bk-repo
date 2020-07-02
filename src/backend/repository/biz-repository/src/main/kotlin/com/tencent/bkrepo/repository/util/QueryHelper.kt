@@ -1,8 +1,7 @@
-package com.tencent.bkrepo.repository.service.util
+package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.util.NodeUtils
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -36,9 +35,8 @@ object QueryHelper {
             .and(TNode::repoName.name).`is`(repoName)
             .and(TNode::deleted.name).`is`(null)
             .and(TNode::fullPath.name).`in`(fullPathList)
-        val query = Query(criteria)
 
-        return query
+        return Query(criteria)
     }
 
     fun nodeListCriteria(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Criteria {
@@ -61,7 +59,15 @@ object QueryHelper {
     }
 
     fun nodeListQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Query {
-        return Query.query(nodeListCriteria(projectId, repoName, path, includeFolder, deep))
+        return Query.query(
+            nodeListCriteria(
+                projectId,
+                repoName,
+                path,
+                includeFolder,
+                deep
+            )
+        )
             .with(Sort.by(TNode::fullPath.name))
             .apply {
                 // 强制使用fullPath索引，否则mongodb会使用path索引，不能达到最优索引
@@ -72,7 +78,13 @@ object QueryHelper {
     }
 
     fun nodePageQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean, page: Int, size: Int): Query {
-        return nodeListQuery(projectId, repoName, path, includeFolder, deep)
+        return nodeListQuery(
+            projectId,
+            repoName,
+            path,
+            includeFolder,
+            deep
+        )
             .with(PageRequest.of(page, size))
     }
 

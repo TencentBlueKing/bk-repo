@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.storage.monitor
 
-import com.tencent.bkrepo.common.api.util.toPath
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
@@ -13,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 class StorageHealthMonitor(
-    val uploadConfig: UploadProperties,
+    val storageProperties: StorageProperties,
     val monitorConfig: MonitorProperties
 ) {
     var health: AtomicBoolean = AtomicBoolean(true)
@@ -27,10 +28,10 @@ class StorageHealthMonitor(
         require(!monitorConfig.timeout.isNegative && !monitorConfig.timeout.isZero)
         require(!monitorConfig.interval.isNegative && !monitorConfig.interval.isZero)
         require(monitorConfig.timesToRestore > 0)
-        Files.createDirectories(Paths.get(uploadConfig.location))
+        Files.createDirectories(Paths.get(storageProperties.upload.location))
         monitorConfig.fallbackLocation?.let { Files.createDirectories(Paths.get(it)) }
         start()
-        logger.info("Start up storage monitor for path[${uploadConfig.location}]")
+        logger.info("Start up storage monitor for path[${storageProperties.upload.location}]")
     }
 
     private fun start() {
@@ -38,7 +39,7 @@ class StorageHealthMonitor(
             while (true) {
                 var sleep = true
                 if (monitorConfig.enabled) {
-                    val checker = StorageHealthChecker(Paths.get(uploadConfig.location), monitorConfig.dataSize)
+                    val checker = StorageHealthChecker(Paths.get(storageProperties.upload.location), monitorConfig.dataSize)
                     val future = executorService.submit(checker)
                     sleep = try {
                         future.get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
@@ -72,7 +73,7 @@ class StorageHealthMonitor(
         observerList.remove(observer)
     }
 
-    fun getPrimaryPath(): Path = uploadConfig.location.toPath()
+    fun getPrimaryPath(): Path = storageProperties.upload.location.toPath()
 
     fun getFallbackPath(): Path? = monitorConfig.fallbackLocation?.toPath()
 
