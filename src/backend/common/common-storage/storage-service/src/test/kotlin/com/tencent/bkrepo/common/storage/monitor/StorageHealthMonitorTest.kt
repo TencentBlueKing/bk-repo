@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit
 internal class StorageHealthMonitorTest {
 
     private val uploadProperties: UploadProperties = UploadProperties(location = "temp")
-    private val storageProperties: StorageProperties = StorageProperties(upload = uploadProperties)
     private val monitorConfig: MonitorProperties = MonitorProperties(
         enabled = true,
         fallbackLocation = "temp-fallback",
@@ -20,10 +19,11 @@ internal class StorageHealthMonitorTest {
         timesToRestore = 5,
         timesToFallback = 2
     )
+    private val storageProperties: StorageProperties = StorageProperties(upload = uploadProperties, monitor = monitorConfig)
 
     @Test
     fun testCheck() {
-        val monitor = StorageHealthMonitor(storageProperties, monitorConfig)
+        val monitor = StorageHealthMonitor(storageProperties)
         TimeUnit.SECONDS.sleep(10)
         monitor.stop()
     }
@@ -38,7 +38,8 @@ internal class StorageHealthMonitorTest {
             timesToRestore = 5,
             timesToFallback = 2
         )
-        val monitor = StorageHealthMonitor(storageProperties, config)
+        val storageProperties = StorageProperties(upload = uploadProperties, monitor = config)
+        val monitor = StorageHealthMonitor(storageProperties)
         repeat(2) {
             monitor.add(object : StorageHealthMonitor.Observer {
                 override fun unhealthy(fallbackPath: Path?, reason: String?) {

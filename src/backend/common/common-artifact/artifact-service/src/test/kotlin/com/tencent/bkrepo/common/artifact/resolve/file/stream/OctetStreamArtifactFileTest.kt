@@ -20,8 +20,12 @@ class OctetStreamArtifactFileTest {
     private val uploadProperties = UploadProperties(location = tempDir)
 
     private fun createMonitor(threshold: Long): StorageHealthMonitor {
-        val storageProperties = StorageProperties(upload = uploadProperties, fileSizeThreshold = DataSize.ofBytes(threshold))
-        return StorageHealthMonitor(storageProperties, MonitorProperties())
+        val storageProperties = StorageProperties(
+            upload = uploadProperties,
+            fileSizeThreshold = DataSize.ofBytes(threshold),
+            monitor = MonitorProperties()
+        )
+        return StorageHealthMonitor(storageProperties)
     }
 
     @Test

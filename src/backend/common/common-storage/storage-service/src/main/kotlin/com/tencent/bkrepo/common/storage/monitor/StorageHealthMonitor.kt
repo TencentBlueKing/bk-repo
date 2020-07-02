@@ -14,11 +14,11 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 class StorageHealthMonitor(
-    val storageProperties: StorageProperties,
-    val monitorConfig: MonitorProperties
+    val storageProperties: StorageProperties
 ) {
     var health: AtomicBoolean = AtomicBoolean(true)
     var reason: String? = null
+    val monitorConfig = storageProperties.monitor
     private val executorService = Executors.newSingleThreadExecutor()
     private val observerList = mutableListOf<Observer>()
     private var healthyThroughputCount: AtomicInteger = AtomicInteger(0)

@@ -7,9 +7,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.multipart.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.ArtifactFileMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoMethodArgumentResolver
 import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -19,7 +17,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
 @Import(ArtifactFileFactory::class)
-@EnableConfigurationProperties(MonitorProperties::class)
 class ResolverConfiguration {
 
     @Bean
@@ -53,7 +50,7 @@ class ResolverConfiguration {
     }
 
     @Bean
-    fun storageHealthMonitor(storageProperties: StorageProperties, monitorProperties: MonitorProperties): StorageHealthMonitor {
-        return StorageHealthMonitor(storageProperties, monitorProperties)
+    fun storageHealthMonitor(storageProperties: StorageProperties): StorageHealthMonitor {
+        return StorageHealthMonitor(storageProperties)
     }
 }
