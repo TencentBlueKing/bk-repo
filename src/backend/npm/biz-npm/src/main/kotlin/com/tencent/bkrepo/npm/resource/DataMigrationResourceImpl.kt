@@ -20,4 +20,8 @@ class DataMigrationResourceImpl : DataMigrationResource {
     override fun dataMigrationByUrl(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse<String> {
         return dataMigrationService.dataMigrationByUrl(artifactInfo, useErrorData)
     }
+
+    override fun dataMigrationByPkgName(artifactInfo: NpmArtifactInfo, useErrorData: Boolean, pkgName: String): NpmDataMigrationResponse<String> {
+        return dataMigrationService.dataMigrationByPkgName(artifactInfo, useErrorData, pkgName)
+    }
 }

@@ -41,11 +41,10 @@ class NpmVirtualRepository : VirtualRepository() {
     }
 
     private fun recordMap(list: List<NpmSearchResponse>, searchRequest: MetadataSearchRequest): NpmSearchResponse {
-        if (list.isNullOrEmpty()) return NpmSearchResponse()
+        if (list.isNullOrEmpty() || list[0].objects.isNullOrEmpty() || list[1].objects.isNullOrEmpty()) return NpmSearchResponse()
         val size = searchRequest.size
         val firstList = list[0].objects
         val secondList = list[1].objects
-        if (firstList.isNullOrEmpty() && secondList.isNullOrEmpty()) return NpmSearchResponse()
         return if (firstList.size >= size) {
             NpmSearchResponse(objects = firstList.subList(0, size))
         } else {

@@ -43,13 +43,13 @@ class PackageDependentService {
     private val url: String = StringPool.EMPTY
 
     @Value("\${npm.migration.package.count: 100}")
-    private val count: Int = 100
+    private val count: Int = DEFAULT_COUNT
 
     @Resource(name = "npmTaskAsyncExecutor")
     private lateinit var asyncExecutor: ThreadPoolTaskExecutor
 
     private val okHttpClient: OkHttpClient by lazy {
-        HttpClientBuilderFactory.create().readTimeout(60L, TimeUnit.SECONDS).build()
+        HttpClientBuilderFactory.create().readTimeout(TIMEOUT, TimeUnit.SECONDS).build()
     }
 
     private final fun initTotalDataSetByUrl() {
@@ -113,14 +113,14 @@ class PackageDependentService {
         }
         val resultList = submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
-        logger.info("npm package dependent migrate, total size[${totalDataSet.size}], success[${successSet.size}], fail[${errorSet.size}], elapse [${elapseTimeMillis / 1000}] s totally")
+        logger.info("npm package dependent migrate, total size[${totalDataSet.size}], success[${successSet.size}], fail[${errorSet.size}], elapse [${elapseTimeMillis.div(1000L)}] s totally")
         val collect = resultList.stream().flatMap { set -> set.stream() }.collect(Collectors.toSet())
         return NpmDataMigrationResponse(
             "npm dependent 依赖迁移信息展示：",
             totalDataSet.size,
             successSet.size,
             errorSet.size,
-            elapseTimeMillis / 1000,
+            elapseTimeMillis.div(1000L),
             collect
         )
     }
@@ -131,7 +131,7 @@ class PackageDependentService {
                 dependentMigrate(artifactInfo, pkgName)
                 logger.info("npm package name: [$pkgName] dependent migration success!")
                 successSet.add(pkgName)
-                if (successSet.size % 10 == 0) {
+                if (successSet.size.rem(10) == 0) {
                     logger.info("dependent migrate progress rate : successRate:[${successSet.size}/${totalDataSet.size}], failRate[${errorSet.size}/${totalDataSet.size}]")
                 }
             } catch (exception: RuntimeException) {
@@ -184,6 +184,8 @@ class PackageDependentService {
 
     companion object {
         private const val FILE_NAME = "pkgName.json"
+        const val TIMEOUT = 60L
+        const val DEFAULT_COUNT = 100
         val logger: Logger = LoggerFactory.getLogger(PackageDependentService::class.java)
 
         private var totalDataSet = mutableSetOf<String>()

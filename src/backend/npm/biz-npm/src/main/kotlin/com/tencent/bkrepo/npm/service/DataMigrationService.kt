@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.npm.service
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -38,6 +39,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
+import java.io.IOException
 import java.io.InputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -68,8 +70,12 @@ class DataMigrationService {
     private lateinit var mongoTemplate: MongoTemplate
 
     private val okHttpClient: OkHttpClient by lazy {
-        HttpClientBuilderFactory.create().readTimeout(60L, TimeUnit.SECONDS).build()
+        HttpClientBuilderFactory.create().readTimeout(TIMEOUT, TimeUnit.SECONDS).build()
     }
+
+    private var totalDataSet = mutableSetOf<String>()
+    private val successSet = mutableSetOf<String>()
+    private val errorSet = mutableSetOf<String>()
 
     private final fun initTotalDataSetByUrl() {
         if (StringUtils.isNotEmpty(url)) {
@@ -98,6 +104,12 @@ class DataMigrationService {
             use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
     }
 
+    private final fun initTotalDataSetByPkgName(pkgName: String) {
+        if (StringUtils.isNotBlank(pkgName)) {
+            totalDataSet = pkgName.split(',').filter { it.isNotBlank() }.map { it.trim() }.toMutableSet()
+        }
+    }
+
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     fun dataMigrationByFile(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse<String> {
@@ -106,7 +118,7 @@ class DataMigrationService {
             if (result == null) {
                 initTotalDataSetByFile()
             } else {
-                totalDataSet = result.errorData as MutableSet<String>
+                totalDataSet = result.errorData
             }
         } else {
             initTotalDataSetByFile()
@@ -122,11 +134,18 @@ class DataMigrationService {
             if (result == null) {
                 initTotalDataSetByUrl()
             } else {
-                totalDataSet = result.errorData as MutableSet<String>
+                totalDataSet = result.errorData
             }
         } else {
             initTotalDataSetByUrl()
         }
+        return dataMigration(artifactInfo, useErrorData)
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Transactional(rollbackFor = [Throwable::class])
+    fun dataMigrationByPkgName(artifactInfo: NpmArtifactInfo, useErrorData: Boolean, pkgName: String): NpmDataMigrationResponse<String> {
+        initTotalDataSetByPkgName(pkgName)
         return dataMigration(artifactInfo, useErrorData)
     }
 
@@ -149,7 +168,7 @@ class DataMigrationService {
         }
         val resultList = submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
-        logger.info("npm history data migration, total size[${totalDataSet.size}], success[${successSet.size}], fail[${errorSet.size}], elapse [${elapseTimeMillis / 1000}] s totally")
+        logger.info("npm history data migration, total size[${totalDataSet.size}], success[${successSet.size}], fail[${errorSet.size}], elapse [${elapseTimeMillis.div(1000L)}] s totally")
         val collect = resultList.stream().flatMap { set -> set.stream() }.collect(Collectors.toSet())
         if (collect.isNotEmpty() && useErrorData) {
             insertErrorData(artifactInfo, collect)
@@ -159,7 +178,7 @@ class DataMigrationService {
             totalDataSet.size,
             successSet.size,
             errorSet.size,
-            elapseTimeMillis / 1000,
+            elapseTimeMillis.div(1000L),
             collect
         )
     }
@@ -168,12 +187,16 @@ class DataMigrationService {
         logger.info("current Thread : ${Thread.currentThread().name}")
         data.forEach { pkgName ->
             try {
+                Thread.sleep(20L)
                 migrate(artifactInfo, pkgName)
                 logger.info("npm package name: [$pkgName] migration success!")
                 successSet.add(pkgName)
-                if (successSet.size % 10 == 0) {
+                if (successSet.size.rem(10) == 0) {
                     logger.info("progress rate : successRate:[${successSet.size}/${totalDataSet.size}], failRate[${errorSet.size}/${totalDataSet.size}]")
                 }
+            } catch (exception: IOException) {
+                logger.error("failed to install [$pkgName.json] file, {}", exception.message)
+                errorSet.add(pkgName)
             } catch (exception: RuntimeException) {
                 logger.error("failed to install [$pkgName.json] file, {}", exception.message)
                 errorSet.add(pkgName)
@@ -249,7 +272,6 @@ class DataMigrationService {
                 CommonMessageCode.PARAMETER_MISSING,
                 this::errorData.name
             )
-            // repositoryService.checkRepository(projectId, repoName)
             val errorData = TMigrationErrorData(
                 projectId = projectId,
                 repoName = repoName,
@@ -266,7 +288,6 @@ class DataMigrationService {
     }
 
     fun find(projectId: String, repoName: String): MigrationErrorDataInfo? {
-        // repositoryService.checkRepository(projectId, repoName)
         val criteria =
             Criteria.where(TMigrationErrorData::projectId.name).`is`(projectId).and(TMigrationErrorData::repoName.name)
                 .`is`(repoName)
@@ -276,17 +297,14 @@ class DataMigrationService {
 
     companion object {
         private const val FILE_NAME = "pkgName.json"
+        const val TIMEOUT = 60L
         val logger: Logger = LoggerFactory.getLogger(DataMigrationService::class.java)
-
-        private var totalDataSet = mutableSetOf<String>()
-        private val successSet = mutableSetOf<String>()
-        private val errorSet = mutableSetOf<String>()
 
         fun convert(tMigrationErrorData: TMigrationErrorData?): MigrationErrorDataInfo? {
             return tMigrationErrorData?.let {
                 MigrationErrorDataInfo(
                     counter = it.counter,
-                    errorData = jacksonObjectMapper().readValue(it.errorData, Set::class.java),
+                    errorData = jacksonObjectMapper().readValue(it.errorData, object : TypeReference<MutableSet<String>>() {}),
                     projectId = it.projectId,
                     repoName = it.repoName,
                     createdBy = it.createdBy,

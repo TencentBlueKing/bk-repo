@@ -5,11 +5,15 @@ const val INDEX_CACHE_YAML = "index-cache.yaml"
 
 const val FULL_PATH = "_full_path"
 
+const val V1 = "v1"
 const val CHART_YAML = "Chart.yaml"
 const val CHART = "chart"
 const val PROV = "prov"
 const val NAME = "name"
 const val VERSION = "version"
+const val URLS = "urls"
+const val DIGEST = "digest"
+const val CREATED = "created"
 const val CHART_PACKAGE_FILE_EXTENSION = "tgz"
 const val PROVENANCE_FILE_EXTENSION = "tgz.prov"
 
