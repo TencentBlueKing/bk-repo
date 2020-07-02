@@ -173,7 +173,11 @@ class NpmLocalRepository : LocalRepository() {
 
     override fun search(context: ArtifactSearchContext): JsonObject? {
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        return this.onSearch(context) ?: throw ArtifactNotFoundException("Artifact[$fullPath] does not exist")
+        val searchResponse = this.onSearch(context)
+        if (searchResponse == null) {
+            logger.warn("Artifact[$fullPath] does not exist")
+        }
+        return searchResponse
     }
 
     private fun onSearch(context: ArtifactSearchContext): JsonObject? {
