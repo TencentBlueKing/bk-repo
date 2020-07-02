@@ -27,6 +27,13 @@ import javax.servlet.http.HttpServletResponse
 import javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
 import javax.ws.rs.core.MediaType
 
+/**
+ *  docker auth handler
+ *  to define auth method
+ * @author: owenlxu
+ * @date: 2019-11-12
+ */
+
 @Component
 class DockerClientAuthHandler(val userResource: ServiceUserResource) :
     ClientAuthHandler {
@@ -135,10 +142,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
                 val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
                 val parts = decodedHeader.split(":")
                 require(parts.size >= 2)
-                return BasicAuthCredentials(
-                    parts[0],
-                    parts[1]
-                )
+                return BasicAuthCredentials(parts[0], parts[1])
             } catch (exception: IllegalArgumentException) {
                 logger.warn("auth value is not a valid schema")
                 throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")

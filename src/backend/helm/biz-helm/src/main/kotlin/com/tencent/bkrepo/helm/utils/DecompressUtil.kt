@@ -67,7 +67,7 @@ object DecompressUtil {
                     } != null) {
                 }
             } catch (ise: IllegalStateException) {
-                logger.error(ise.message)
+                logger.error("get archivers content error : ${ise.message}")
             }
         }
         return stringBuilder.toString()

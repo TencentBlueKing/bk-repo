@@ -15,6 +15,7 @@ class ComposerRemoteRepository : RemoteRepository(), ComposerRepository {
     override fun packages(context: ArtifactSearchContext): String? {
         val artifactInfo = context.artifactInfo
         val request = HttpContextHolder.getRequest()
+        // todo
         val host = "http://${request.remoteHost}:${request.serverPort}/${artifactInfo.projectId}/${artifactInfo.repoName}"
         return INIT_PACKAGES.wrapperPackageJson(host)
     }
@@ -30,7 +31,7 @@ class ComposerRemoteRepository : RemoteRepository(), ComposerRepository {
         val result = okHttpClient.newCall(request).execute().body()?.string()
         try {
             JsonParser().parse(result).asJsonObject
-        } catch (e: Exception) {
+        } catch (e: IllegalStateException) {
             return null
         }
         return result

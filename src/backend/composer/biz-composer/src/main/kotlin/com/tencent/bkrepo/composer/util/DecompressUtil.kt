@@ -48,29 +48,25 @@ object DecompressUtil {
      */
     @Throws(Exception::class)
     fun InputStream.wrapperJson(uri: String): Map<String, String> {
-        try {
-            UriUtil.getUriArgs(uri).let { args ->
-                args["format"]?.let { format ->
-                    this.getComposerJson(format).let { json ->
-                        JsonParser().parse(json).asJsonObject.let {
-                            // Todo
-                            it.addProperty("uid", UUID.randomUUID().toString())
-                            val distObject = JsonObject()
-                            distObject.addProperty("type", format)
-                            distObject.addProperty("url", "direct-dists$uri")
-                            it.add("dist", distObject)
-                            it.addProperty("type", "library")
-                            return mapOf("packageName" to (json jsonValue "name"),
-                                    "version" to (json jsonValue "version"),
-                                    "json" to GsonBuilder().create().toJson(it))
-                        }
+        UriUtil.getUriArgs(uri).let { args ->
+            args["format"]?.let { format ->
+                this.getComposerJson(format).let { json ->
+                    JsonParser().parse(json).asJsonObject.let {
+                        // Todo uid的值从什么地方拿
+                        it.addProperty("uid", UUID.randomUUID().toString())
+                        val distObject = JsonObject()
+                        distObject.addProperty("type", format)
+                        distObject.addProperty("url", "direct-dists$uri")
+                        it.add("dist", distObject)
+                        it.addProperty("type", "library")
+                        return mapOf("packageName" to (json jsonValue "name"),
+                                "version" to (json jsonValue "version"),
+                                "json" to GsonBuilder().create().toJson(it))
                     }
                 }
             }
-        } catch (e: Exception) {
-            throw ComposerPackageMessageDeficiencyException("PackageName,version and json are necessary ")
         }
-        return mapOf()
+        throw ComposerPackageMessageDeficiencyException("PackageName,version and json are necessary ")
     }
 
     @Throws(Exception::class)
@@ -93,16 +89,16 @@ object DecompressUtil {
      * @param tarInputStream 压缩文件流
      * @return 以字符串格式返回 composer.json 文件内容
      */
-    private fun getCompressComposerJson(tarInputStream: ArchiveInputStream): String {
+    private fun getCompressComposerJson(archiveInputStream: ArchiveInputStream): String {
         val stringBuilder = StringBuffer("")
-        with(tarInputStream) {
+        archiveInputStream.use {
             try {
-                while (nextEntry.also { zipEntry ->
+                while (archiveInputStream.nextEntry.also { zipEntry ->
                             zipEntry?.let {
                                 if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == com.tencent.bkrepo.composer.COMPOSER_JSON) {
                                     var length: Int
                                     val bytes = ByteArray(2048)
-                                    while ((tarInputStream.read(bytes).also { length = it }) != -1) {
+                                    while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
                                         stringBuilder.append(String(bytes, 0, length))
                                     }
                                     return stringBuilder.toString()

@@ -1,0 +1,6 @@
+dependencies {
+    api project(":common:common-api")
+    api project(":common:common-artifact:artifact-api")
+    compileOnly "org.springframework:spring-web"
+
+}

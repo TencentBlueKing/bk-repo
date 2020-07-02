@@ -220,10 +220,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         return DockerV2Errors.manifestUnknown(manifestPath)
     }
 
-    override fun uploadManifest(
-        context: RequestContext, tag: String,
-        mediaType: String, file: ArtifactFile
-    ): ResponseEntity<Any> {
+    override fun uploadManifest(context: RequestContext, tag: String, mediaType: String, file: ArtifactFile): ResponseEntity<Any> {
         repoUtil.loadContext(context)
         if (!repo.canWrite(context)) {
             return DockerV2Errors.unauthorizedUpload()
@@ -231,10 +228,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         val manifestType = ManifestType.from(mediaType)
         val manifestPath = RepoServiceUtil.buildManifestPath(context.artifactName, tag, manifestType)
         logger.info("upload manifest path [$context,$tag] ,media [$mediaType , manifestPath]")
-        val digest = uploadManifestType(
-            context, tag, manifestPath,
-            manifestType, file
-            )
+        val digest = uploadManifestType(context, tag, manifestPath, manifestType, file)
         return ResponseEntity.status(201).apply {
             header("Docker-Distribution-Api-Version", "registry/2.0")
         }.apply {
@@ -242,10 +236,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         }.build()
     }
 
-    private fun uploadManifestType(
-        context: RequestContext, tag: String, manifestPath: String,
-        manifestType: ManifestType, artifactFile: ArtifactFile
-    ): DockerDigest {
+    private fun uploadManifestType(context: RequestContext, tag: String, manifestPath: String, manifestType: ManifestType, artifactFile: ArtifactFile): DockerDigest {
         val manifestBytes = IOUtils.toByteArray(artifactFile.getInputStream())
         val digest = DockerManifestDigester.calc(manifestBytes)
         logger.info("manifest file digest content digest : [$digest] ")
@@ -376,10 +367,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         }
     }
 
-    private fun uploadBlobFromPut(
-        context: RequestContext,
-        digest: DockerDigest, file: ArtifactFile
-    ): DockerResponse {
+    private fun uploadBlobFromPut(context: RequestContext, digest: DockerDigest, file: ArtifactFile): DockerResponse {
         val blobPath = context.artifactName + "/" + "_uploads" + "/" + digest.fileName()
         if (!repo.canWrite(context)) {
             return RepoServiceUtil.consumeStreamAndReturnError(file.getInputStream())
@@ -410,13 +398,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
             .header("Content-Length", "0").header("Docker-Content-Digest", digest.toString()).build()
     }
 
-    private fun processManifestList(
-        context: RequestContext,
-        tag: String,
-        manifestPath: String,
-        digest: DockerDigest,
-        manifestBytes: ByteArray
-    ) {
+    private fun processManifestList(context: RequestContext, tag: String, manifestPath: String, digest: DockerDigest, manifestBytes: ByteArray) {
         val manifestList = ManifestListSchema2Deserializer.deserialize(manifestBytes)
         manifestList?.let {
             val iter = manifestList.manifests.iterator()

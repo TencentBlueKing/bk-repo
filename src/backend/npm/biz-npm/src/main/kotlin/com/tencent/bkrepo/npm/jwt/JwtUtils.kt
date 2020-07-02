@@ -4,7 +4,9 @@ import com.tencent.bkrepo.npm.exception.NpmTokenIllegalException
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.MalformedJwtException
 import io.jsonwebtoken.SignatureAlgorithm
+import io.jsonwebtoken.SignatureException
 import org.apache.commons.codec.binary.Base64
 import java.util.Calendar
 import java.util.Date
@@ -65,8 +67,12 @@ object JwtUtils {
                 .parseClaimsJws(token).body
         } catch (expire: ExpiredJwtException) {
             throw NpmTokenIllegalException("token is expired")
-        } catch (e: Exception) {
+        } catch (ex: SignatureException) {
             // token 校验失败, 抛出Token验证非法异常
+            throw NpmTokenIllegalException("bad props auth token:\nbasictoken=$token")
+        } catch (ex: IllegalArgumentException) {
+            throw NpmTokenIllegalException("bad props auth token:\nbasictoken=$token")
+        } catch (ex: MalformedJwtException) {
             throw NpmTokenIllegalException("bad props auth token:\nbasictoken=$token")
         }
     }

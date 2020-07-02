@@ -160,14 +160,10 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
             .post(body)
             .build()
         val htmlContent: String? = okHttpClient.newCall(build).execute().body()?.string()
-        htmlContent?.let {
-            try {
-                val methodResponse = XmlConvertUtil.xml2MethodResponse(it)
-                return methodResponse.params.paramList[0].value.array?.data?.valueList
-            } catch (e: Exception) {
-            }
-        }
-        return null
+        return htmlContent?.let {
+                    val methodResponse = XmlConvertUtil.xml2MethodResponse(it)
+                    return methodResponse.params.paramList[0].value.array?.data?.valueList
+                }
     }
 
     companion object {

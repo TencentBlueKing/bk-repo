@@ -14,9 +14,4 @@ data class DockerBlobInfo(var id: String, var digest: String?, var size: Long, v
             this.shortId = id.substring(0, 12)
         }
     }
-
-    companion object {
-        val MEDIA_TYPE_DIFF_LAYER_TGZ = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-        val MEDIA_TYPE_FOREIGN_DIFF_LAYER_TGZ = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"
-    }
 }
