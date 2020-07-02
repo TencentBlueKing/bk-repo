@@ -17,7 +17,7 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
     JsonSubTypes.Type(value = InnerCosCredentials::class, name = InnerCosCredentials.type),
     JsonSubTypes.Type(value = HDFSCredentials::class, name = HDFSCredentials.type)
 )
-abstract class StorageCredentials {
-    var cache: CacheProperties = CacheProperties()
-    var upload: UploadProperties = UploadProperties()
-}
+abstract class StorageCredentials(
+    open var cache: CacheProperties,
+    open var upload: UploadProperties
+)
