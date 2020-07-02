@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.common.storage.credentials
 
+import com.tencent.bkrepo.common.storage.config.CacheProperties
+import com.tencent.bkrepo.common.storage.config.UploadProperties
+
 /**
  * HDFS配置
  *
@@ -12,8 +15,10 @@ data class HDFSCredentials(
     var user: String = "root",
     var workingDirectory: String = "/",
     var clusterName: String = "localhost",
-    var nameNodeMap: MutableMap<String, String> = mutableMapOf()
-) : StorageCredentials() {
+    var nameNodeMap: MutableMap<String, String> = mutableMapOf(),
+    override var cache: CacheProperties = CacheProperties(),
+    override var upload: UploadProperties = UploadProperties()
+) : StorageCredentials(cache, upload) {
     companion object {
         const val type = "hdfs"
     }
