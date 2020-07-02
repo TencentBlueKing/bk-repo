@@ -16,10 +16,6 @@ data class InnerCosCredentials(
     var timeout: Float = 0.5F
 ) : StorageCredentials() {
 
-    override fun toString(): String {
-        return "InnerCosCredentials[region: $region, bucket: $bucket]"
-    }
-
     companion object {
         const val type = "innercos"
     }

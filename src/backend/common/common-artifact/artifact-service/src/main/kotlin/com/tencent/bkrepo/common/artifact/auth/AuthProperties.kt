@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.config
+package com.tencent.bkrepo.common.artifact.auth
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

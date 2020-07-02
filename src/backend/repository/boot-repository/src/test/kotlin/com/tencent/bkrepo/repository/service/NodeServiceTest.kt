@@ -30,7 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest
  * @date: 2019-09-23
  */
 @DisplayName("节点服务测试")
-@SpringBootTest
+@SpringBootTest(properties = ["auth.enabled=false"])
 internal class NodeServiceTest @Autowired constructor(
     private val nodeService: NodeService,
     private val repositoryService: RepositoryService

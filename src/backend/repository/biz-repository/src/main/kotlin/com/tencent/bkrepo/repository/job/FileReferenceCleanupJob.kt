@@ -42,7 +42,7 @@ class FileReferenceCleanupJob {
             val collectionName = fileReferenceDao.parseSequenceToCollectionName(sequence)
             val zeroReferenceList = fileReferenceDao.determineMongoTemplate().find(query, TFileReference::class.java, collectionName)
             zeroReferenceList.forEach {
-                val storageCredentials = it.storageCredentials?.let { value -> objectMapper.readValue(value, StorageCredentials::class.java) }
+                val storageCredentials = it.credentialsKey?.let { value -> objectMapper.readValue(value, StorageCredentials::class.java) }
                 try {
                     if (it.sha256.isNotBlank() && storageService.exist(it.sha256, storageCredentials)) {
                         storageService.delete(it.sha256, storageCredentials)

@@ -2,6 +2,8 @@ package com.tencent.bkrepo.common.storage.credentials
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.tencent.bkrepo.common.storage.config.CacheProperties
+import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
  * 存储身份信息
@@ -15,4 +17,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
     JsonSubTypes.Type(value = InnerCosCredentials::class, name = InnerCosCredentials.type),
     JsonSubTypes.Type(value = HDFSCredentials::class, name = HDFSCredentials.type)
 )
-abstract class StorageCredentials
+abstract class StorageCredentials {
+    var cache: CacheProperties = CacheProperties()
+    var upload: UploadProperties = UploadProperties()
+}

@@ -32,7 +32,7 @@ class FileReferenceService {
                 logger.error("Failed to decrement reference of node [$node], repository not found.")
                 return false
             }
-            return increment(node.sha256!!, repo.storageCredentials)
+            return increment(node.sha256!!, repo.credentialsKey)
         } else false
     }
 
@@ -43,44 +43,44 @@ class FileReferenceService {
                 logger.error("Failed to decrement reference of node [$node], repository not found.")
                 return false
             }
-            return decrement(node.sha256!!, repo.storageCredentials)
+            return decrement(node.sha256!!, repo.credentialsKey)
         } else false
     }
 
-    private fun query(sha256: String, storageCredentials: String?): TFileReference? {
+    private fun query(sha256: String, credentialsKey: String?): TFileReference? {
         val query = Query.query(Criteria.where(TFileReference::sha256.name).`is`(sha256)
-            .and(TFileReference::storageCredentials.name).`is`(storageCredentials))
+            .and(TFileReference::credentialsKey.name).`is`(credentialsKey))
         return fileReferenceDao.findOne(query)
     }
 
-    private fun increment(sha256: String, storageCredentials: String?): Boolean {
-        val fileReference = query(sha256, storageCredentials)?.run {
+    private fun increment(sha256: String, credentialsKey: String?): Boolean {
+        val fileReference = query(sha256, credentialsKey)?.run {
             this.count += 1
             this
-        } ?: createNewReference(sha256, storageCredentials)
+        } ?: createNewReference(sha256, credentialsKey)
         fileReferenceDao.save(fileReference)
-        logger.info("Increment reference of file [$sha256] on storageCredentials [$storageCredentials].")
+        logger.info("Increment reference of file [$sha256] on credentialsKey [$credentialsKey].")
         return true
     }
 
-    private fun decrement(sha256: String, storageCredentials: String?): Boolean {
-        val fileReference = query(sha256, storageCredentials) ?: run {
-            logger.error("Failed to decrement reference of file [$sha256] on storageCredentials [$storageCredentials]: sha256 reference not found, create new one.")
-            createNewReference(sha256, storageCredentials)
+    private fun decrement(sha256: String, credentialsKey: String?): Boolean {
+        val fileReference = query(sha256, credentialsKey) ?: run {
+            logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: sha256 reference not found, create new one.")
+            createNewReference(sha256, credentialsKey)
         }
         return if (fileReference.count >= 1) {
             fileReference.count -= 1
             fileReferenceDao.save(fileReference)
-            logger.info("Decrement references of file [$sha256] on storageCredentials [$storageCredentials].")
+            logger.info("Decrement references of file [$sha256] on credentialsKey [$credentialsKey].")
             true
         } else {
-            logger.error("Failed to decrement reference of file [$sha256] on storageCredentials [$storageCredentials]: sha256 reference is 0.")
+            logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: sha256 reference is 0.")
             false
         }
     }
 
-    private fun createNewReference(sha256: String, storageCredentials: String?): TFileReference {
-        return TFileReference(sha256 = sha256, storageCredentials = storageCredentials, count = 1)
+    private fun createNewReference(sha256: String, credentialsKey: String?): TFileReference {
+        return TFileReference(sha256 = sha256, credentialsKey = credentialsKey, count = 1)
     }
 
     private fun validateParameter(node: TNode): Boolean {

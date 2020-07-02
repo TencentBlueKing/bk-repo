@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.credendial.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
@@ -29,20 +30,30 @@ import org.springframework.boot.test.context.SpringBootTest
  * @date: 2019-09-23
  */
 @DisplayName("仓库服务测试")
-@SpringBootTest
+@SpringBootTest(properties = ["auth.enabled=false"])
 internal class RepositoryServiceTest @Autowired constructor(
-    private val repositoryService: RepositoryService
+    private val repositoryService: RepositoryService,
+    private val storageCredentialService: StorageCredentialService
 ) {
-
     private val projectId = "unit-test"
     private val operator = "system"
     private val repoName = "test"
+    private val storageCredentialsKey = "unit-test-credentials-key"
+    private val storageCredentials = FileSystemCredentials().apply {
+        path = "test"
+        cache.enabled = true
+        cache.path = "cache-test"
+        cache.expireDays = 10
+    }
 
     @BeforeEach
     fun setUp() {
         repositoryService.list(projectId).forEach {
             repositoryService.delete(RepoDeleteRequest(projectId, it.name, SYSTEM_USER))
         }
+
+        val createRequest = StorageCredentialsCreateRequest(storageCredentialsKey, storageCredentials)
+        storageCredentialService.create(operator, createRequest)
     }
 
     @AfterEach
@@ -50,6 +61,7 @@ internal class RepositoryServiceTest @Autowired constructor(
         repositoryService.list(projectId).forEach {
             repositoryService.delete(RepoDeleteRequest(projectId, it.name, SYSTEM_USER))
         }
+        storageCredentialService.delete(storageCredentialsKey)
     }
 
     @Test
@@ -100,9 +112,7 @@ internal class RepositoryServiceTest @Autowired constructor(
 
     @Test
     fun create() {
-        val request = createRequest().apply {
-            storageCredentials = FileSystemCredentials().apply { path = "path" }
-        }
+        val request = createRequest(storageCredentialKey = storageCredentialsKey)
         repositoryService.create(request)
         val repository = repositoryService.detail(projectId, repoName, "GENERIC")!!
         assertEquals(repoName, repository.name)
@@ -112,8 +122,12 @@ internal class RepositoryServiceTest @Autowired constructor(
         assertEquals(projectId, repository.projectId)
         assertEquals("简单描述", repository.description)
         assertTrue(repository.storageCredentials is FileSystemCredentials)
-        val storageCredentials = repository.storageCredentials as FileSystemCredentials
-        assertEquals("path", storageCredentials.path)
+        val dbCredential = repository.storageCredentials as FileSystemCredentials
+        assertEquals(storageCredentials.path, dbCredential.path)
+        assertEquals(storageCredentials.cache.enabled, dbCredential.cache.enabled )
+        assertEquals(storageCredentials.cache.path, dbCredential.cache.path )
+        assertEquals(storageCredentials.cache.expireDays, dbCredential.cache.expireDays )
+
         assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
     }
 
@@ -132,15 +146,22 @@ internal class RepositoryServiceTest @Autowired constructor(
         assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
     }
 
+
+    @Test
+    fun createWithNonExistCredentials() {
+        val request = createRequest(storageCredentialKey = "non-exist-credentials-key")
+        assertThrows<ErrorCodeException> { repositoryService.create(request) }
+    }
+
     @Test
     fun update() {
         repositoryService.create(createRequest())
         repositoryService.update(RepoUpdateRequest(
-                projectId = projectId,
-                name = repoName,
-                public = false,
-                description = "新的描述",
-                operator = operator))
+            projectId = projectId,
+            name = repoName,
+            public = false,
+            description = "新的描述",
+            operator = operator))
         val repository = repositoryService.detail(projectId, repoName)!!
         assertEquals(false, repository.public)
         assertEquals("新的描述", repository.description)
@@ -159,7 +180,7 @@ internal class RepositoryServiceTest @Autowired constructor(
         assertNotNull(repositoryService.detail(projectId, "test2"))
     }
 
-    private fun createRequest(name: String = repoName): RepoCreateRequest {
+    private fun createRequest(name: String = repoName, storageCredentialKey: String? = null): RepoCreateRequest {
         return RepoCreateRequest(
                 projectId = projectId,
                 name = name,
@@ -168,6 +189,7 @@ internal class RepositoryServiceTest @Autowired constructor(
                 public = true,
                 description = "简单描述",
                 configuration = LocalConfiguration(),
+                storageCredentialsKey = storageCredentialKey,
                 operator = operator
         )
     }
