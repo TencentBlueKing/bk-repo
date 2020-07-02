@@ -39,6 +39,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
+import java.io.IOException
 import java.io.InputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -72,6 +73,10 @@ class DataMigrationService {
         HttpClientBuilderFactory.create().readTimeout(TIMEOUT, TimeUnit.SECONDS).build()
     }
 
+    private var totalDataSet = mutableSetOf<String>()
+    private val successSet = mutableSetOf<String>()
+    private val errorSet = mutableSetOf<String>()
+
     private final fun initTotalDataSetByUrl() {
         if (StringUtils.isNotEmpty(url)) {
             var response: Response? = null
@@ -97,6 +102,12 @@ class DataMigrationService {
         val use = inputStream!!.use { GsonUtils.transferInputStreamToJson(it) }
         totalDataSet =
             use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
+    }
+
+    private final fun initTotalDataSetByPkgName(pkgName: String) {
+        if (StringUtils.isNotBlank(pkgName)) {
+            totalDataSet = pkgName.split(',').filter { it.isNotBlank() }.map { it.trim() }.toMutableSet()
+        }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
@@ -128,6 +139,13 @@ class DataMigrationService {
         } else {
             initTotalDataSetByUrl()
         }
+        return dataMigration(artifactInfo, useErrorData)
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Transactional(rollbackFor = [Throwable::class])
+    fun dataMigrationByPkgName(artifactInfo: NpmArtifactInfo, useErrorData: Boolean, pkgName: String): NpmDataMigrationResponse<String> {
+        initTotalDataSetByPkgName(pkgName)
         return dataMigration(artifactInfo, useErrorData)
     }
 
@@ -169,12 +187,16 @@ class DataMigrationService {
         logger.info("current Thread : ${Thread.currentThread().name}")
         data.forEach { pkgName ->
             try {
+                Thread.sleep(20L)
                 migrate(artifactInfo, pkgName)
                 logger.info("npm package name: [$pkgName] migration success!")
                 successSet.add(pkgName)
                 if (successSet.size.rem(10) == 0) {
                     logger.info("progress rate : successRate:[${successSet.size}/${totalDataSet.size}], failRate[${errorSet.size}/${totalDataSet.size}]")
                 }
+            } catch (exception: IOException) {
+                logger.error("failed to install [$pkgName.json] file, {}", exception.message)
+                errorSet.add(pkgName)
             } catch (exception: RuntimeException) {
                 logger.error("failed to install [$pkgName.json] file, {}", exception.message)
                 errorSet.add(pkgName)
@@ -250,7 +272,6 @@ class DataMigrationService {
                 CommonMessageCode.PARAMETER_MISSING,
                 this::errorData.name
             )
-            // repositoryService.checkRepository(projectId, repoName)
             val errorData = TMigrationErrorData(
                 projectId = projectId,
                 repoName = repoName,
@@ -267,7 +288,6 @@ class DataMigrationService {
     }
 
     fun find(projectId: String, repoName: String): MigrationErrorDataInfo? {
-        // repositoryService.checkRepository(projectId, repoName)
         val criteria =
             Criteria.where(TMigrationErrorData::projectId.name).`is`(projectId).and(TMigrationErrorData::repoName.name)
                 .`is`(repoName)
@@ -279,10 +299,6 @@ class DataMigrationService {
         private const val FILE_NAME = "pkgName.json"
         const val TIMEOUT = 60L
         val logger: Logger = LoggerFactory.getLogger(DataMigrationService::class.java)
-
-        private var totalDataSet = mutableSetOf<String>()
-        private val successSet = mutableSetOf<String>()
-        private val errorSet = mutableSetOf<String>()
 
         fun convert(tMigrationErrorData: TMigrationErrorData?): MigrationErrorDataInfo? {
             return tMigrationErrorData?.let {
