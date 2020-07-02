@@ -20,7 +20,9 @@ import com.tencent.bkrepo.composer.util.JsonUtil.wrapperJson
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperPackageJson
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.springframework.transaction.annotation.Transactional
-import java.io.*
+import java.io.BufferedReader
+import java.io.ByteArrayInputStream
+import java.io.InputStreamReader
 
 @Component
 class ComposerLocalRepository : LocalRepository(), ComposerRepository {
@@ -97,56 +99,53 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
         )
     }
 
+    // todo 方法拆分
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
         with(context.artifactInfo as ComposerArtifactInfo) {
             // 先读取并保存文件信息。
-            context.getArtifactFile().getInputStream().wrapperJson(artifactUri).let { paramsMap ->
-                val packageName = paramsMap["packageName"]
-                val version = paramsMap["version"]
-                val json = paramsMap["json"]
+            val composerJsonNode = context.getArtifactFile().getInputStream().wrapperJson(artifactUri)
 
+            with(composerJsonNode) {
                 // query "/p/%package%.json" node ,if not exists create it.
                 val pArtifactUri = "/p/$packageName.json"
-                json?.let { json -> packageName?.let { packageName -> version?.let { version ->
-                    val resultJson = if (nodeResource.detail(projectId, repoName, pArtifactUri).data == null) {
-                        JsonUtil.addComposerVersion(String.format(COMPOSER_VERSION_INIT, packageName), json, packageName, version)
-                    } else {
-                        // if "/p/%package%.json" is Exists
-                        // load version jsonFile
-                        val existsJsonFile = with(context.artifactInfo) {
-                            val jsonNode = nodeResource.detail(projectId, repoName, "/p/$packageName.json").data ?: return
-                            jsonNode.nodeInfo.takeIf { !it.folder } ?: return
-                            storageService.load(jsonNode.nodeInfo.sha256!!, Range.ofFull(jsonNode.nodeInfo.size), context.storageCredentials) ?: return
-                        }
-
-                        val existsJson = StringBuilder("").let { stringBuilder ->
-                            BufferedReader(InputStreamReader(existsJsonFile)).use { bufferedReader ->
-                                while (bufferedReader.readLine().also { it?.let {
-                                            stringBuilder.append(it)
-                                        } } != null) {}
-                            }
-                            stringBuilder.toString()
-                        }
-
-                        // update "/p/%package%.json" 。override by default
-                        JsonUtil.addComposerVersion(existsJson, json, packageName, version)
+                val resultJson = if (nodeResource.detail(projectId, repoName, pArtifactUri).data == null) {
+                    JsonUtil.addComposerVersion(String.format(COMPOSER_VERSION_INIT, packageName), json, packageName, version)
+                } else {
+                    // if "/p/%package%.json" is Exists
+                    // load version jsonFile
+                    val existsJsonFile = with(context.artifactInfo) {
+                        val jsonNode = nodeResource.detail(projectId, repoName, "/p/$packageName.json").data ?: return
+                        jsonNode.nodeInfo.takeIf { !it.folder } ?: return
+                        storageService.load(jsonNode.nodeInfo.sha256!!, Range.ofFull(jsonNode.nodeInfo.size), context.storageCredentials) ?: return
                     }
-                    val byteArrayInputStream = ByteArrayInputStream(GsonBuilder().create().toJson(resultJson).toByteArray())
-                    val jsonFile = ArtifactFileFactory.build(byteArrayInputStream)
-                    ArtifactUploadContext(jsonFile).let { jsonUploadContext ->
-                        val jsonNodeCreateRequest = getJsonNodeCreateRequest(context = jsonUploadContext,
-                                artifactFile = jsonFile,
-                                fullPath = "/p/$packageName.json",
-                                fileName = "${packageName.split("/").last()}.json"
-                        )
-                        nodeResource.create(jsonNodeCreateRequest)
-                        jsonFile.let {
-                            storageService.store(jsonNodeCreateRequest.sha256!!,
-                                    it, context.storageCredentials)
+
+                    val existsJson = StringBuilder("").let { stringBuilder ->
+                        BufferedReader(InputStreamReader(existsJsonFile)).use { bufferedReader ->
+                            while (bufferedReader.readLine().also { it?.let {
+                                        stringBuilder.append(it)
+                                    } } != null) {}
                         }
+                        stringBuilder.toString()
                     }
-                } } }
+
+                    // update "/p/%package%.json" 。override by default
+                    JsonUtil.addComposerVersion(existsJson, json, packageName, version)
+                }
+                val byteArrayInputStream = ByteArrayInputStream(GsonBuilder().create().toJson(resultJson).toByteArray())
+                val jsonFile = ArtifactFileFactory.build(byteArrayInputStream)
+                ArtifactUploadContext(jsonFile).let { jsonUploadContext ->
+                    val jsonNodeCreateRequest = getJsonNodeCreateRequest(context = jsonUploadContext,
+                            artifactFile = jsonFile,
+                            fullPath = "/p/$packageName.json",
+                            fileName = "${packageName.split("/").last()}.json"
+                    )
+                    nodeResource.create(jsonNodeCreateRequest)
+                    jsonFile.let {
+                        storageService.store(jsonNodeCreateRequest.sha256!!,
+                                it, context.storageCredentials)
+                    }
+                }
             }
         }
         val nodeCreateRequest = getCompressNodeCreateRequest(context)
@@ -155,28 +154,20 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
                 context.getArtifactFile(), context.storageCredentials)
     }
 
+    /**
+     * 查询对应请求包名的'*.json'文件
+     */
     override fun getJson(context: ArtifactSearchContext): String? {
-        with(context.artifactInfo as ComposerArtifactInfo) {
-            if (artifactUri.matches(Regex("^/p/(.*)\\.json$"))) {
+        with(context.artifactInfo) {
+            return if (artifactUri.matches(Regex("^/p/(.*)\\.json$"))) {
                 val request = HttpContextHolder.getRequest()
                 val host = "http://${request.remoteHost}:${request.serverPort}/$projectId/$repoName"
                 val packageName = artifactUri.removePrefix("/p/").removeSuffix(".json")
-                nodeResource.detail(projectId, repoName, artifactUri).data?.let { resultNode ->
-                    resultNode.nodeInfo.takeIf { !it.folder }
-                    storageService.load(resultNode.nodeInfo.sha256!!, Range.ofFull(resultNode.nodeInfo.size), context.storageCredentials)?.let {
-                        StringBuilder("").let { stringBuilder ->
-                            BufferedReader(InputStreamReader(it)).use { bufferedReader ->
-                                while (bufferedReader.readLine().also { it?.let {
-                                            stringBuilder.append(it)
-                                        } } != null) {}
-                            }
-                            return stringBuilder.toString().wrapperJson(host, packageName)
-                        }
-                    }
-                }
+                stream2Json(context)?.wrapperJson(host, packageName)
+            } else {
+                null
             }
         }
-        return null
     }
 
     override fun packages(context: ArtifactSearchContext): String? {
@@ -195,20 +186,26 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
                             it, context.storageCredentials)
                 }
             }
-            nodeResource.detail(projectId, repoName, artifactUri).data?.let { resultNode ->
-                resultNode.nodeInfo.takeIf { !it.folder }
-                storageService.load(resultNode.nodeInfo.sha256!!, Range.ofFull(resultNode.nodeInfo.size), context.storageCredentials)?.let {
-                    StringBuilder("").let { stringBuilder ->
-                        BufferedReader(InputStreamReader(it)).use { bufferedReader ->
-                            while (bufferedReader.readLine().also { it?.let {
-                                        stringBuilder.append(it)
-                                    } } != null) {}
-                        }
-                        return stringBuilder.toString().wrapperPackageJson(host)
-                    }
-                }
-            }
+            return stream2Json(context)?.wrapperPackageJson(host)
         }
-        return null
+    }
+
+    /**
+     * 加载搜索到的流并返回内容
+     */
+    private fun stream2Json(context: ArtifactSearchContext): String? {
+        with(context.artifactInfo) {
+            val node = nodeResource.detail(projectId, repoName, artifactUri).data ?: return null
+            node.nodeInfo.takeIf { !it.folder } ?: return null
+            val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
+                    ?: return null
+            val stringBuilder = StringBuilder("")
+
+            BufferedReader(InputStreamReader(inputStream)).use { bufferedReader ->
+                while (bufferedReader.readLine().also { it?.let {
+                            stringBuilder.append(it) } } != null) { }
+            }
+            return stringBuilder.toString()
+        }
     }
 }

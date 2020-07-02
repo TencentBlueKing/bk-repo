@@ -22,7 +22,7 @@ import com.tencent.bkrepo.rpm.INDEXER
 import com.tencent.bkrepo.rpm.NO_INDEXER
 import com.tencent.bkrepo.rpm.artifact.SurplusNodeCleaner
 import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
-import com.tencent.bkrepo.rpm.util.GZipUtil.UnGzipInputStream
+import com.tencent.bkrepo.rpm.util.GZipUtil.unGzipInputStream
 import com.tencent.bkrepo.rpm.util.GZipUtil.gZip
 import com.tencent.bkrepo.rpm.util.redline.model.RpmMetadataWithOldStream
 import com.tencent.bkrepo.rpm.util.redline.model.RpmRepoMd
@@ -144,7 +144,7 @@ class RpmLocalRepository : LocalRepository() {
 
             val targetXmlString = if (!primaryNodelist.isNullOrEmpty()) {
                 val latestPrimaryNode = primaryNodelist[0]
-                storageService.load(latestPrimaryNode.sha256!!, Range.ofFull(latestPrimaryNode.size), context.storageCredentials)?.UnGzipInputStream().use { inputStream ->
+                storageService.load(latestPrimaryNode.sha256!!, Range.ofFull(latestPrimaryNode.size), context.storageCredentials)?.unGzipInputStream().use { inputStream ->
                     val rpmMetadataWithOldStream = inputStream?.let { RpmMetadataWithOldStream(rpmMetadata, it) }
                     // 更新primary.xml
                     xmlScript.invokeMethod("updataPrimaryXml", rpmMetadataWithOldStream) as String
