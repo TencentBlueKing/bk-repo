@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.storage.credentials.HDFSCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.S3Credentials
 import com.tencent.bkrepo.common.storage.credentials.StorageType
+import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 import org.springframework.util.unit.DataSize
@@ -40,6 +41,11 @@ data class StorageProperties(
     var isResolveLazily: Boolean = true,
 
     /**
+     * 优先从缓存加载文件
+     */
+    var loadCacheFirst: Boolean = true,
+
+    /**
      * 存储类型
      */
     var type: StorageType = StorageType.FILESYSTEM,
@@ -55,6 +61,12 @@ data class StorageProperties(
      */
     @NestedConfigurationProperty
     var upload: UploadProperties = UploadProperties(),
+
+    /**
+     * 磁盘监控配置
+     */
+    @NestedConfigurationProperty
+    var monitor: MonitorProperties = MonitorProperties(),
 
     /**
      * 文件系统存储配置

@@ -115,7 +115,7 @@ class CacheStorageService : AbstractStorageService() {
         } else {
             true
         }
-        val cacheFirst = credentials.cache.loadCacheFirst
+        val cacheFirst = storageProperties.loadCacheFirst
         return cacheFirst && isHealth && !isExceedThreshold
     }
 
