@@ -1,8 +1,10 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
@@ -47,6 +49,9 @@ class RepositoryService : AbstractService() {
     @Autowired
     private lateinit var projectService: ProjectService
 
+    @Autowired
+    private lateinit var storageCredentialService: StorageCredentialService
+
     fun detail(projectId: String, name: String, type: String? = null): RepositoryInfo? {
         return convert(queryRepository(projectId, name, type))
     }
@@ -63,7 +68,6 @@ class RepositoryService : AbstractService() {
 
     fun list(projectId: String): List<RepositoryInfo> {
         val query = createListQuery(projectId)
-
         return mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
     }
 
@@ -89,8 +93,16 @@ class RepositoryService : AbstractService() {
     @Transactional(rollbackFor = [Throwable::class])
     fun create(repoCreateRequest: RepoCreateRequest): RepositoryInfo {
         with(repoCreateRequest) {
+            // 确保项目一定存在
             projectService.checkProject(projectId)
-            if (exist(projectId, name)) throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
+            // 确保同名仓库不存在
+            if (exist(projectId, name)) {
+                throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
+            }
+            // 确保存储凭证一定存在
+            val storageCredential = storageCredentialsKey?.let {
+                storageCredentialService.findByKey(it) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, it)
+            }
             // 创建仓库
             val repository = TRepository(
                 name = name,
@@ -98,8 +110,8 @@ class RepositoryService : AbstractService() {
                 category = category,
                 public = public,
                 description = description,
-                configuration = objectMapper.writeValueAsString(configuration),
-                storageCredentials = storageCredentials?.let { objectMapper.writeValueAsString(it) },
+                configuration = configuration.toJsonString(),
+                credentialsKey = storageCredentialsKey,
                 projectId = projectId,
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
@@ -112,7 +124,7 @@ class RepositoryService : AbstractService() {
                 .also { createRepoManager(it.projectId, it.name, it.createdBy) }
                 .also { publishEvent(RepoCreatedEvent(repoCreateRequest)) }
                 .also { logger.info("Create repository [$repoCreateRequest] success.") }
-                .let { convert(repository)!! }
+                .let { convert(repository, storageCredential)!! }
         }
     }
 
@@ -125,7 +137,7 @@ class RepositoryService : AbstractService() {
             repository.description = description ?: repository.description
             repository.lastModifiedBy = operator
             repository.lastModifiedDate = LocalDateTime.now()
-            configuration?.let { repository.configuration = objectMapper.writeValueAsString(configuration) }
+            configuration?.let { repository.configuration = it.toJsonString() }
             repoRepository.save(repository)
         }.also { publishEvent(RepoUpdatedEvent(it)) }
             .also { logger.info("Update repository[$it] success.") }
@@ -153,33 +165,30 @@ class RepositoryService : AbstractService() {
     }
 
     private fun createListQuery(projectId: String): Query {
-        val query = Query(Criteria.where(TRepository::projectId.name).`is`(projectId)).with(Sort.by(TRepository::name.name))
-        query.fields().exclude(TRepository::storageCredentials.name)
+        return Query(Criteria.where(TRepository::projectId.name).`is`(projectId)).with(Sort.by(TRepository::name.name))
+    }
 
-        return query
+    private fun convert(tRepository: TRepository?, storageCredentials: StorageCredentials? = null): RepositoryInfo? {
+        return tRepository?.let {
+            val credentials = storageCredentials ?: it.credentialsKey?.let { key -> storageCredentialService.findByKey(key) }
+            RepositoryInfo(
+                name = it.name,
+                type = it.type,
+                category = it.category,
+                public = it.public,
+                description = it.description,
+                configuration = JsonUtils.objectMapper.readValue(it.configuration, RepositoryConfiguration::class.java),
+                storageCredentials = credentials,
+                projectId = it.projectId,
+                createdBy = it.createdBy,
+                createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedBy = it.lastModifiedBy,
+                lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+            )
+        }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(RepositoryService::class.java)
-        private val objectMapper = JsonUtils.objectMapper
-
-        fun convert(tRepository: TRepository?): RepositoryInfo? {
-            return tRepository?.let {
-                RepositoryInfo(
-                    name = it.name,
-                    type = it.type,
-                    category = it.category,
-                    public = it.public,
-                    description = it.description,
-                    configuration = objectMapper.readValue(it.configuration, RepositoryConfiguration::class.java),
-                    storageCredentials = it.storageCredentials?.let { property -> objectMapper.readValue(property, StorageCredentials::class.java) },
-                    projectId = it.projectId,
-                    createdBy = it.createdBy,
-                    createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                    lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
-                )
-            }
-        }
     }
 }

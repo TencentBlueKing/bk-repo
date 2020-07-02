@@ -59,7 +59,9 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
 
     override fun load(path: String, filename: String, range: Range, client: InnerCosClient): InputStream? {
         val getObjectRequest = GetObjectRequest(client.bucketName, filename)
-        getObjectRequest.setRange(range.start, range.end)
+        if (range.isPartialContent()) {
+            getObjectRequest.setRange(range.start, range.end)
+        }
         return client.cosClient.getObject(getObjectRequest).objectContent
     }
 

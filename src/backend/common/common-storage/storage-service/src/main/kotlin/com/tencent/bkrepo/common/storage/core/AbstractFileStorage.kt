@@ -33,7 +33,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         val cacheLoader = object : CacheLoader<Credentials, Client>() {
             override fun load(credentials: Credentials): Client = onCreateClient(credentials)
         }
-        CacheBuilder.newBuilder().maximumSize(storageProperties.maxClientPoolSize).build(cacheLoader)
+        CacheBuilder.newBuilder().maximumSize(MAX_CACHE_CLIENT).build(cacheLoader)
     }
 
     val defaultClient: Client by lazy {
@@ -75,7 +75,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
             val client = getClient(storageCredentials)
             load(path, filename, range, client)
         } catch (ex: Exception) {
-            logger.warn("Failed to load range stream[$filename]: ${ex.message}", ex)
+            logger.warn("Failed to load stream[$filename]: ${ex.message}", ex)
             null
         }
     }
@@ -117,5 +117,6 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractFileStorage::class.java)
+        private const val MAX_CACHE_CLIENT = 10L
     }
 }

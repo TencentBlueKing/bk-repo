@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.storage.core.cache
+package com.tencent.bkrepo.common.storage.config
 
 /**
  * 本地文件缓存属性
@@ -10,7 +10,7 @@ data class CacheProperties(
     /**
      * 缓存开关
      */
-    var enabled: Boolean = true,
+    var enabled: Boolean = false,
     /**
      * 存放缓存文件的本地目录
      */

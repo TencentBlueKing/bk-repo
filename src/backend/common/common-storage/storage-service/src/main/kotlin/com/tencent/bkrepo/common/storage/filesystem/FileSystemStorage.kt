@@ -1,9 +1,11 @@
 package com.tencent.bkrepo.common.storage.filesystem
 
+import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.bound
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Paths
@@ -48,10 +50,11 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
     }
 
     override fun getDefaultCredentials() = storageProperties.filesystem
-    override fun onCreateClient(credentials: FileSystemCredentials) = FileSystemClient(credentials.path)
-    override fun getTempPath() = Paths.get(storageProperties.filesystem.path, TEMP).toString()
 
-    companion object {
-        const val TEMP = "temp"
+    override fun onCreateClient(credentials: FileSystemCredentials) = FileSystemClient(credentials.path)
+
+    override fun getTempPath(storageCredentials: StorageCredentials): String {
+        storageCredentials as FileSystemCredentials
+        return Paths.get(storageCredentials.path, TEMP).toString()
     }
 }

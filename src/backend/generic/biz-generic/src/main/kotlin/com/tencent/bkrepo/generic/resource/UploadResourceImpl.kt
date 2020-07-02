@@ -2,16 +2,13 @@ package com.tencent.bkrepo.generic.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.generic.api.UploadResource
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.UploadService
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -22,8 +19,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class UploadResourceImpl @Autowired constructor(
-    private val uploadService: UploadService,
-    private val storageService: StorageService
+    private val uploadService: UploadService
 ) : UploadResource {
 
     override fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile){
@@ -46,17 +42,5 @@ class UploadResourceImpl @Autowired constructor(
 
     override fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): Response<List<BlockInfo>> {
         return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
-    }
-
-    override fun retry(userId: String, sha256: String): Response<Void> {
-        uploadService.retry(userId, sha256)
-        return ResponseBuilder.success()
-    }
-
-    @PostMapping("/form")
-    fun form(map: ArtifactFileMap): Response<Void> {
-        val file = map["file"]!!
-        storageService.store("1122", file)
-        return ResponseBuilder.success()
     }
 }

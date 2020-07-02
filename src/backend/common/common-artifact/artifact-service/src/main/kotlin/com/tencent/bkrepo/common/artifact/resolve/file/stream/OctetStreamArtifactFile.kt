@@ -5,9 +5,11 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile.Companion.generateRan
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_BYTES_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_CONSUME_COUNT
 import com.tencent.bkrepo.common.artifact.resolve.file.SmartStreamReceiver
-import com.tencent.bkrepo.common.artifact.resolve.file.UploadConfigElement
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import com.tencent.bkrepo.common.storage.util.toPath
 import io.micrometer.core.instrument.Metrics
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
@@ -19,15 +21,22 @@ import java.nio.file.NoSuchFileException
 open class OctetStreamArtifactFile(
     private val source: InputStream,
     private val monitor: StorageHealthMonitor,
-    config: UploadConfigElement
+    private val storageCredentials: StorageCredentials? = null
 ) : ArtifactFile {
 
     private var hasInitialized: Boolean = false
     private val listener = DigestCalculateListener()
-    private val receiver = SmartStreamReceiver(config.fileSizeThreshold, generateRandomName(), monitor.getPrimaryPath(), monitor.monitorConfig.enableTransfer)
+    private val storageProperties: StorageProperties = monitor.storageProperties
+    private val receiver = createStreamReceiver()
+
+    private fun createStreamReceiver(): SmartStreamReceiver {
+        val path = storageCredentials?.upload?.location?.toPath() ?: monitor.getPrimaryPath()
+        val fileSizeThreshold = storageProperties.fileSizeThreshold.toBytes()
+        return SmartStreamReceiver(fileSizeThreshold, generateRandomName(), path, monitor.monitorConfig.enableTransfer)
+    }
 
     init {
-        if (!config.isResolveLazily()) {
+        if (!storageProperties.isResolveLazily) {
             init()
         }
     }
@@ -97,9 +106,11 @@ open class OctetStreamArtifactFile(
     fun init() {
         if (!hasInitialized) {
             try {
-                monitor.add(receiver)
-                if (!monitor.health.get()) {
-                    receiver.unhealthy(monitor.getFallbackPath(), monitor.reason)
+                if (storageCredentials == null) {
+                    monitor.add(receiver)
+                    if (!monitor.health.get()) {
+                        receiver.unhealthy(monitor.getFallbackPath(), monitor.reason)
+                    }
                 }
                 val throughput = receiver.receive(source, listener)
                 hasInitialized = true

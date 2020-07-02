@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.google.common.util.concurrent.RateLimiter
-import com.tencent.bkrepo.common.api.util.randomString
-import com.tencent.bkrepo.common.api.util.toPath
+import com.tencent.bkrepo.common.api.constant.StringPool.randomString
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
+import com.tencent.bkrepo.common.storage.util.toPath
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -43,7 +43,7 @@ internal class SmartStreamReceiverTest {
     @Test
     fun testNormalInMemory() {
         val receiver = SmartStreamReceiver(
-            DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()).toBytes().toInt(),
+            DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()).toBytes(),
             filename,
             primaryPath,
             true
@@ -66,7 +66,7 @@ internal class SmartStreamReceiverTest {
     @Test
     fun testNormalInFile() {
         val receiver = SmartStreamReceiver(
-            DataSize.ofBytes(DEFAULT_BUFFER_SIZE - 1L).toBytes().toInt(),
+            DataSize.ofBytes(DEFAULT_BUFFER_SIZE - 1L).toBytes(),
             filename,
             primaryPath,
             true
@@ -90,7 +90,7 @@ internal class SmartStreamReceiverTest {
     @Test
     fun testFallbackInMemory() {
         val receiver = SmartStreamReceiver(
-            DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes().toInt(),
+            DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes(),
             filename,
             primaryPath,
             true
@@ -122,7 +122,7 @@ internal class SmartStreamReceiverTest {
     @Test
     fun testFallbackInFile() {
         val receiver = SmartStreamReceiver(
-            DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes().toInt(),
+            DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes(),
             filename,
             primaryPath,
             true
@@ -152,7 +152,7 @@ internal class SmartStreamReceiverTest {
     @Test
     fun testFallbackInMemoryWithDisableTransfer() {
         val receiver = SmartStreamReceiver(
-            DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes().toInt(),
+            DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes(),
             filename,
             primaryPath,
             false
@@ -183,7 +183,7 @@ internal class SmartStreamReceiverTest {
     @Test
     fun testFallbackInFileWithDisableTransfer() {
         val receiver = SmartStreamReceiver(
-            DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes().toInt(),
+            DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes(),
             filename,
             primaryPath,
             false

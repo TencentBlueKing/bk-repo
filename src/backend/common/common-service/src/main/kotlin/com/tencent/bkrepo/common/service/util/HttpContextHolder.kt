@@ -17,6 +17,10 @@ object HttpContextHolder {
         return (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes).request
     }
 
+    fun getRequestOrNull(): HttpServletRequest? {
+        return (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request
+    }
+
     fun getResponse(): HttpServletResponse {
         return (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes).response!!
     }
