@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -15,6 +16,12 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 
 interface UserResource {
+
+    @ApiOperation("创建项目用户")
+    @PostMapping("/create/project")
+    fun createUserToProject(
+        @RequestBody request: CreateUserToProjectRequest
+    ): Response<Boolean>
 
     @ApiOperation("创建用户")
     @PostMapping("/create")

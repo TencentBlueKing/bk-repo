@@ -5,12 +5,12 @@ import com.tencent.bkrepo.docker.constant.DOCKER_API_PREFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_BLOB_DIGEST_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_BLOB_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_BLOB_UUID_SUFFIX
+import com.tencent.bkrepo.docker.response.DockerResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import javax.servlet.http.HttpServletRequest
 import org.springframework.http.HttpHeaders
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -50,7 +50,7 @@ interface Blob {
         @ApiParam(value = "digest", required = false)
         digest: String?,
         artifactFile: ArtifactFile
-    ): ResponseEntity<Any>
+    ): DockerResponse
 
     @ApiOperation("检查blob文件是否存在")
     @RequestMapping(method = [RequestMethod.HEAD], value = [DOCKER_BLOB_DIGEST_SUFFIX])
@@ -67,7 +67,7 @@ interface Blob {
         @PathVariable
         @ApiParam(value = "digest", required = true)
         digest: String
-    ): ResponseEntity<Any>
+    ): DockerResponse
 
     @ApiOperation("获取blob文件")
     @RequestMapping(method = [RequestMethod.GET], value = [DOCKER_BLOB_DIGEST_SUFFIX])
@@ -84,7 +84,7 @@ interface Blob {
         @PathVariable
         @ApiParam(value = "digest", required = true)
         digest: String
-    ): ResponseEntity<Any>
+    ): DockerResponse
 
     @ApiOperation("开始上传blob文件")
     @RequestMapping(method = [RequestMethod.POST], value = [DOCKER_BLOB_SUFFIX])
@@ -103,7 +103,7 @@ interface Blob {
         @RequestParam
         @ApiParam(value = "mount", required = false)
         mount: String?
-    ): ResponseEntity<Any>
+    ): DockerResponse
 
     @ApiOperation("分片上传blob文件")
     @RequestMapping(method = [RequestMethod.PATCH], value = [DOCKER_BLOB_UUID_SUFFIX])
@@ -123,5 +123,5 @@ interface Blob {
         @ApiParam(value = "uuid", required = false)
         uuid: String,
         artifactFile: ArtifactFile
-    ): ResponseEntity<Any>
+    ): DockerResponse
 }

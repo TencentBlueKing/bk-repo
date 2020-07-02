@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.docker.manifest
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.DockerImageMetadata
 import com.tencent.bkrepo.docker.model.ManifestMetadata
-import com.tencent.bkrepo.docker.util.JsonUtil
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -30,8 +30,8 @@ class ManifestSchema2Deserializer {
         }
 
         private fun applyAttributesFromContent(manifestBytes: ByteArray, jsonBytes: ByteArray, manifestMetadata: ManifestMetadata): ManifestMetadata {
-            val config = JsonUtil.readTree(jsonBytes)
-            val manifest = JsonUtil.readTree(manifestBytes)
+            val config = JsonUtils.objectMapper.readTree(jsonBytes)
+            val manifest = JsonUtils.objectMapper.readTree(manifestBytes)
             var totalSize = 0L
             val history = config.get("history")
             val layers = manifest.get("layers")
@@ -83,7 +83,7 @@ class ManifestSchema2Deserializer {
             }
             manifestMetadata.blobsInfo.reverse()
             manifestMetadata.tagInfo.totalSize = totalSize
-            val dockerMetadata = JsonUtil.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
+            val dockerMetadata = JsonUtils.objectMapper.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
             ManifestUtil.populatePorts(manifestMetadata, dockerMetadata)
             ManifestUtil.populateVolumes(manifestMetadata, dockerMetadata)
             ManifestUtil.populateLabels(manifestMetadata, dockerMetadata)

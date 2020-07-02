@@ -71,11 +71,9 @@ class ArtifactUtil {
             val blob = result[0]
             val length = blob["size"] as Int
             val fullPath = blob["fullPath"] as String
-            return DockerArtifact(
-                pathContext.projectId,
-                pathContext.repoName,
-                pathContext.artifactName
-            ).sha256(sha256FromFileName(fileName)).length(length.toLong()).fullPath(fullPath)
+            with(pathContext) {
+                return DockerArtifact(projectId, repoName, artifactName).sha256(sha256FromFileName(fileName)).length(length.toLong()).fullPath(fullPath)
+            }
         }
 
         fun getManifestByName(repo: DockerArtifactRepo, context: RequestContext, fileName: String): DockerArtifact? {
@@ -85,12 +83,7 @@ class ArtifactUtil {
             }
         }
 
-        fun getManifestConfigBlob(
-            repo: DockerArtifactRepo,
-            filename: String,
-            context: RequestContext,
-            tag: String
-        ): DockerArtifact? {
+        fun getManifestConfigBlob(repo: DockerArtifactRepo, filename: String, context: RequestContext, tag: String): DockerArtifact? {
             val configPath = Joiner.on("/").join(context.artifactName, tag, filename)
             // search blob by full tag path
             logger.info("search manifest config blob in: [$configPath]")

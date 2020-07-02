@@ -7,9 +7,9 @@ import java.util.Date
 
 /**
  * Jwt 工具类
- *
  * @author owenlxu
  */
+
 open class JwtUtil {
 
     companion object {

@@ -2,10 +2,10 @@ package com.tencent.bkrepo.docker.resource
 
 import com.tencent.bkrepo.docker.api.Tag
 import com.tencent.bkrepo.docker.context.RequestContext
+import com.tencent.bkrepo.docker.response.DockerResponse
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.UserUtil
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -18,7 +18,7 @@ class TagImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) :
         name: String,
         n: Int?,
         last: String?
-    ): ResponseEntity<Any> {
+    ): DockerResponse {
         var maxEntries = 0
         var index = ""
         if (n != null) {

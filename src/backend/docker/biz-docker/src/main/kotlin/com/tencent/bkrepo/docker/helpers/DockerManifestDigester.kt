@@ -43,7 +43,7 @@ object DockerManifestDigester {
         var formatLength = 0
         var formatTail = ""
         val signatures = manifest.get("signatures")
-        if (signatures != null) {
+        signatures?.let {
             val sig = signatures.iterator()
             while (sig.hasNext()) {
                 val signature = sig.next() as JsonNode

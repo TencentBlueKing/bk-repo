@@ -14,6 +14,10 @@ import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE_SERVICE_SCOPE
+import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
+import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
+import com.tencent.bkrepo.docker.constant.ERROR_MESSAGE
 import com.tencent.bkrepo.docker.constant.REGISTRY_SERVICE
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
 import com.tencent.bkrepo.docker.util.JwtUtil
@@ -87,20 +91,15 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
 
     override fun onAuthenticateFailed(response: HttpServletResponse, clientAuthException: ClientAuthException) {
         response.status = SC_UNAUTHORIZED
-        response.setHeader("Docker-Distribution-Api-Version", "registry/2.0")
+        response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         val scopeStr = "repository:bkrepo/docker-local/tb:push,pull"
         response.setHeader(
             BASIC_AUTH_RESPONSE_HEADER,
-            String.format("Bearer realm=\"%s\",service=\"%s\",scope=\"%s\"", authUrl, REGISTRY_SERVICE, scopeStr)
+            String.format(AUTH_CHALLENGE_SERVICE_SCOPE, authUrl, REGISTRY_SERVICE, scopeStr)
         )
         response.contentType = MediaType.APPLICATION_JSON
         response.writer.print(
-            String.format(
-                "{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}",
-                "UNAUTHORIZED",
-                "authentication required",
-                "BAD_CREDENTIAL"
-            )
+            String.format(ERROR_MESSAGE, "UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL")
         )
         response.writer.flush()
     }
@@ -119,7 +118,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
             throw ClientAuthException("Authorization value is null")
         }
         if (!basicAuthHeader.startsWith("Bearer ")) {
-            logger.warn("parse token failed {}", basicAuthHeader)
+            logger.warn("parse token failed [$basicAuthHeader]", basicAuthHeader)
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
         val token = basicAuthHeader.removePrefix("Bearer ")

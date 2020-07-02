@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.docker.manifest
 
-import com.tencent.bkrepo.docker.util.JsonUtil
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import java.io.IOException
 import org.springframework.http.MediaType
 
@@ -36,7 +36,7 @@ enum class ManifestType private constructor(private val mediaType: String) {
 
         @Throws(IOException::class)
         fun from(manifestBytes: ByteArray): ManifestType {
-            val manifest = JsonUtil.readTree(manifestBytes)
+            val manifest = JsonUtils.objectMapper.readTree(manifestBytes)
             val schemaVersionNode = manifest.get("schemaVersion")
             if (schemaVersionNode != null) {
                 val schemaVersion = schemaVersionNode.intValue()

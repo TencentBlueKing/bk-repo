@@ -1,16 +1,20 @@
 package com.tencent.bkrepo.docker.api
 
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.docker.constant.DOCKER_USER_LAYER_SUFFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_USER_MANIFEST_SUFFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_USER_REPO_SUFFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_USER_TAG_SUFFIX
+import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
-import javax.servlet.http.HttpServletRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestMapping
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
+import javax.servlet.http.HttpServletRequest
 
 /**
  *  docker image extension api
@@ -23,7 +27,7 @@ import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
 interface User {
 
     @ApiOperation("获取manifest文件")
-    @GetMapping("/manifest/{projectId}/{repoName}/**/{tag}")
+    @GetMapping(DOCKER_USER_MANIFEST_SUFFIX)
     fun getManifest(
         request: HttpServletRequest,
         @RequestAttribute
@@ -40,7 +44,7 @@ interface User {
     ): Response<String>
 
     @ApiOperation("获取layer文件")
-    @GetMapping("/layer/{projectId}/{repoName}/**/{id}")
+    @GetMapping(DOCKER_USER_LAYER_SUFFIX)
     fun getLayer(
         request: HttpServletRequest,
         @RequestAttribute
@@ -57,7 +61,7 @@ interface User {
     ): ResponseEntity<Any>
 
     @ApiOperation("获取所有image")
-    @GetMapping("/repo/{projectId}/{repoName}")
+    @GetMapping(DOCKER_USER_REPO_SUFFIX)
     fun getRepo(
         request: HttpServletRequest,
         @RequestAttribute
@@ -71,7 +75,7 @@ interface User {
     ): Response<List<String>>
 
     @ApiOperation("获取repo所有的tag")
-    @GetMapping("/repo/tag/{projectId}/{repoName}/**")
+    @GetMapping(DOCKER_USER_TAG_SUFFIX)
     fun getRepoTag(
         request: HttpServletRequest,
         @RequestAttribute

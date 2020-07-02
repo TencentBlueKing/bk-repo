@@ -7,6 +7,7 @@ import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_TAG_SUFFIX
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
+import org.springframework.http.HttpHeaders.CONTENT_TYPE
 import javax.servlet.http.HttpServletRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -43,7 +44,7 @@ interface Manifest {
         @ApiParam(value = "tag", required = true)
         tag: String,
         @ApiParam
-        @RequestHeader(value = "Content-Type", required = true)
+        @RequestHeader(value = CONTENT_TYPE, required = true)
         contentType: String,
         artifactFile: ArtifactFile
     ): ResponseEntity<Any>
