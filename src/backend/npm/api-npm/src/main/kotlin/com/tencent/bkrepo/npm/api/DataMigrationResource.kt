@@ -15,4 +15,8 @@ interface DataMigrationResource {
     @ApiOperation("data migration by url")
     @GetMapping("/{projectId}/{repoName}/dataMigrationByUrl")
     fun dataMigrationByUrl(@ArtifactPathVariable artifactInfo: NpmArtifactInfo, @RequestParam(defaultValue = "false") useErrorData: Boolean): NpmDataMigrationResponse<String>
+
+    @ApiOperation("data migration by PkgName")
+    @GetMapping("/{projectId}/{repoName}/dataMigrationByPkgName")
+    fun dataMigrationByPkgName(@ArtifactPathVariable artifactInfo: NpmArtifactInfo, @RequestParam(defaultValue = "false") useErrorData: Boolean, pkgName: String): NpmDataMigrationResponse<String>
 }

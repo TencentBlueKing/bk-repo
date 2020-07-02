@@ -41,7 +41,7 @@ object HelmZipResponseWriter {
                 }
             }
             response.flushBuffer()
-        } catch (exception: Exception) {
+        } catch (exception: RuntimeException) {
             val message = exception.message.orEmpty()
             when {
                 message.contains("Connection reset by peer") -> {

@@ -12,7 +12,7 @@ data class MigrationErrorDataInfo(
     @ApiModelProperty("迁移次数计数器")
     val counter: Int,
     @ApiModelProperty("错误数据")
-    val errorData: Set<*>,
+    val errorData: MutableSet<String>,
     @ApiModelProperty("所属项目id")
     val projectId: String,
     @ApiModelProperty("所属仓库名称")

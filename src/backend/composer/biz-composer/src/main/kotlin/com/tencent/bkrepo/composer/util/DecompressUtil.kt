@@ -3,7 +3,7 @@ package com.tencent.bkrepo.composer.util
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.tencent.bkrepo.composer.exception.ComposerPackageMessageDeficiencyException
+import com.tencent.bkrepo.composer.COMPOSER_JSON
 import com.tencent.bkrepo.composer.exception.ComposerUnSupportCompressException
 import com.tencent.bkrepo.composer.util.JsonUtil.jsonValue
 import org.apache.commons.compress.archivers.ArchiveInputStream
@@ -11,10 +11,13 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import org.slf4j.LoggerFactory
 import java.io.InputStream
-import java.util.*
 import java.util.zip.GZIPInputStream
+import com.tencent.bkrepo.composer.util.pojo.ComposerJsonNode
+import java.util.*
 
 object DecompressUtil {
+
+    private const val bufferSize = 2048
 
     /**
      * 获取composer 压缩包中'composer.json'文件
@@ -47,26 +50,19 @@ object DecompressUtil {
      * @return 'packageName': 包名; 'version': 版本; 'json': 增加属性后的json内容
      */
     @Throws(Exception::class)
-    fun InputStream.wrapperJson(uri: String): Map<String, String> {
-        UriUtil.getUriArgs(uri).let { args ->
-            args["format"]?.let { format ->
-                this.getComposerJson(format).let { json ->
-                    JsonParser().parse(json).asJsonObject.let {
-                        // Todo uid的值从什么地方拿
-                        it.addProperty("uid", UUID.randomUUID().toString())
-                        val distObject = JsonObject()
-                        distObject.addProperty("type", format)
-                        distObject.addProperty("url", "direct-dists$uri")
-                        it.add("dist", distObject)
-                        it.addProperty("type", "library")
-                        return mapOf("packageName" to (json jsonValue "name"),
-                                "version" to (json jsonValue "version"),
-                                "json" to GsonBuilder().create().toJson(it))
-                    }
-                }
-            }
+    fun InputStream.wrapperJson(uri: String): ComposerJsonNode {
+        val uriArgs = UriUtil.getUriArgs(uri)
+        val json = this.getComposerJson(uriArgs.format)
+        JsonParser().parse(json).asJsonObject.let {
+            // Todo uid的值从什么地方拿
+            it.addProperty("uid", UUID.randomUUID().toString())
+            val distObject = JsonObject()
+            distObject.addProperty("type", uriArgs.format)
+            distObject.addProperty("url", "direct-dists$uri")
+            it.add("dist", distObject)
+            it.addProperty("type", "library")
+            return ComposerJsonNode((json jsonValue "name"), (json jsonValue "version"), GsonBuilder().create().toJson(it))
         }
-        throw ComposerPackageMessageDeficiencyException("PackageName,version and json are necessary ")
     }
 
     @Throws(Exception::class)
@@ -95,13 +91,12 @@ object DecompressUtil {
             try {
                 while (archiveInputStream.nextEntry.also { zipEntry ->
                             zipEntry?.let {
-                                if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == com.tencent.bkrepo.composer.COMPOSER_JSON) {
+                                if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == COMPOSER_JSON) {
                                     var length: Int
-                                    val bytes = ByteArray(2048)
+                                    val bytes = ByteArray(bufferSize)
                                     while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
                                         stringBuilder.append(String(bytes, 0, length))
                                     }
-                                    return stringBuilder.toString()
                                 }
                             }
                         } != null) {}
