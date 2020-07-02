@@ -56,11 +56,17 @@ internal class StorageCredentialServiceTest @Autowired constructor(
             storageCredentialService.create("system", createRequest)
         }
 
-
         assertThrows<ErrorCodeException>{
             val createRequest1 = StorageCredentialsCreateRequest("   ", credential)
             storageCredentialService.create("system", createRequest1)
         }
+    }
+
+    @Test
+    fun testCreateDifferentTypeCredential() {
+        val credential = InnerCosCredentials()
+        val createRequest = StorageCredentialsCreateRequest(storageCredentialsKey, credential)
+        storageCredentialService.create("system", createRequest)
     }
 
     @Test

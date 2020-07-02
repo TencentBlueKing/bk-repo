@@ -4,6 +4,7 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
@@ -72,6 +73,20 @@ internal class ClientCacheTest {
         println(hashCode4)
 
         Assertions.assertNotEquals(hashCode1, hashCode4)
+    }
+
+    @Test
+    fun testClassEquals() {
+        val fsCredentials = FileSystemCredentials()
+        val fsCredentials2= FileSystemCredentials(path = "data")
+        println(fsCredentials::class)
+        println(fsCredentials2::class)
+
+        val innerCredentials = InnerCosCredentials()
+        println(innerCredentials::class)
+
+        Assertions.assertEquals(fsCredentials::class, fsCredentials2::class)
+        Assertions.assertNotEquals(fsCredentials::class, innerCredentials::class)
     }
 
 }
