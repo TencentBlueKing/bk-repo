@@ -1,16 +1,15 @@
-package com.tencent.bkrepo.replication.stream.handler
+package com.tencent.bkrepo.replication.handler.event
 
 import com.tencent.bkrepo.common.stream.message.repo.RepoCreatedMessage
 import com.tencent.bkrepo.common.stream.message.repo.RepoDeletedMessage
 import com.tencent.bkrepo.common.stream.message.repo.RepoUpdatedMessage
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import org.springframework.context.event.EventListener
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
 class RepoMessageHandler : AbstractMessageHandler() {
-    @Async
+
     @EventListener(RepoCreatedMessage::class)
     fun handle(message: RepoCreatedMessage) {
         with(message.request) {
@@ -24,7 +23,6 @@ class RepoMessageHandler : AbstractMessageHandler() {
         }
     }
 
-    @Async
     @EventListener(RepoUpdatedMessage::class)
     fun handle(message: RepoUpdatedMessage) {
         with(message.request) {
@@ -38,7 +36,6 @@ class RepoMessageHandler : AbstractMessageHandler() {
         }
     }
 
-    @Async
     @EventListener(RepoDeletedMessage::class)
     fun handle(message: RepoDeletedMessage) {
         with(message.request) {

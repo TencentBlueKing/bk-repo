@@ -1,9 +1,7 @@
 package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.repository.listener.event.IEvent
 import com.tencent.bkrepo.repository.pojo.log.OperateType
 import com.tencent.bkrepo.repository.pojo.log.ResourceType
-import org.omg.CORBA.Object
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -16,5 +14,5 @@ data class TOperateLog(
     var operateType: OperateType,
     var userId: String,
     var clientAddress: String,
-    var description: IEvent
+    var description: Map<String, Any>
 )

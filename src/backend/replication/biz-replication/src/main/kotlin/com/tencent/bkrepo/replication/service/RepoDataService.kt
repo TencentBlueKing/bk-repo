@@ -50,6 +50,10 @@ class RepoDataService @Autowired constructor(
         }
     }
 
+    fun getRepositoryDetail(projectId: String, repoName: String): RepositoryInfo? {
+        return repositoryResource.detail(projectId, repoName).data
+    }
+
     fun countFileNode(repositoryInfo: RepositoryInfo): Long {
         return nodeResource.countFileNode(repositoryInfo.projectId, repositoryInfo.name, ROOT).data!!
     }

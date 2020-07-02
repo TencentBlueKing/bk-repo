@@ -22,9 +22,8 @@ import okhttp3.Request
 import org.springframework.stereotype.Service
 
 @Service
-class ReplicationService(
-    val repoDataService: RepoDataService
-) {
+class ReplicationService(val repoDataService: RepoDataService) {
+
     fun replicaFile(context: ReplicationContext, request: NodeCreateRequest) {
         with(context) {
             // 查询文件

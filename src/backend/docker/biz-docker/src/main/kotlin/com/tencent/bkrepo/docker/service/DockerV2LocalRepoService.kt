@@ -354,10 +354,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
             .header("Docker-Upload-Uuid", uuid).header("Location", location.toString()).build()
     }
 
-    override fun uploadBlob(
-        context: RequestContext, digest: DockerDigest,
-        uuid: String, file: ArtifactFile
-    ): DockerResponse {
+    override fun uploadBlob(context: RequestContext, digest: DockerDigest, uuid: String, file: ArtifactFile): DockerResponse {
         repoUtil.loadContext(context)
         return if (RepoServiceUtil.putHasStream(httpHeaders)) {
             uploadBlobFromPut(context, digest, file)

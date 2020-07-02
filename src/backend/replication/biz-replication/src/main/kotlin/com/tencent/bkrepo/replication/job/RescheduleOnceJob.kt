@@ -19,7 +19,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class ReScheduleOnceJob {
+class RescheduleOnceJob {
 
     @Autowired
     private lateinit var scheduler: Scheduler

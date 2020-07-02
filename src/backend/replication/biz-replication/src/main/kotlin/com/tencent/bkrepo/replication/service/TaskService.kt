@@ -43,7 +43,7 @@ class TaskService(
 
     // create full repo job and schedule
     fun createFull(userId: String, username: String, password: String, url: String): Boolean {
-        val projectList = projectResource.list().data ?: kotlin.run {
+        val projectList = projectResource.list().data ?: run {
             return false
         }
         projectList.forEach { pit ->
@@ -108,6 +108,14 @@ class TaskService(
 
     fun detail(id: String): ReplicationTaskInfo? {
         return taskRepository.findByIdOrNull(id)?.let { convert(it) }
+    }
+
+    fun listAllRemoteTask(type: ReplicationType): List<TReplicationTask> {
+        val typeCriteria = Criteria.where(TReplicationTask::type.name).`is`(type)
+        val statusCriteria = Criteria.where(TReplicationTask::status.name).`in`(ReplicationStatus.WAITING, ReplicationStatus.REPLICATING)
+        val criteria = Criteria().andOperator(typeCriteria, statusCriteria)
+
+        return mongoTemplate.find(Query(criteria), TReplicationTask::class.java)
     }
 
     fun listRelativeTask(type: ReplicationType, localProjectId: String?, localRepoName: String?): List<TReplicationTask> {
