@@ -31,7 +31,7 @@ class ModuleDepsService {
     /**
      * 创建依赖关系
      */
-    @Transactional(rollbackFor = [Throwable::class])
+    @Transactional(rollbackFor = [Exception::class])
     fun create(depsCreateRequest: DepsCreateRequest): ModuleDepsInfo {
         with(depsCreateRequest) {
             this.takeIf { name.isNotBlank() } ?: throw ErrorCodeException(
@@ -65,7 +65,7 @@ class ModuleDepsService {
         }
     }
 
-    @Transactional(rollbackFor = [Throwable::class])
+    @Transactional(rollbackFor = [Exception::class])
     fun batchCreate(depsCreateRequestList: List<DepsCreateRequest>) {
         depsCreateRequestList.takeUnless { it.isNullOrEmpty() }
         val createList = mutableListOf<TModuleDeps>()

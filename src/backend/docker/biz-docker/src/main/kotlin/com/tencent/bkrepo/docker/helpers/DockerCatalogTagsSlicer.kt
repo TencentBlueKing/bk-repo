@@ -3,6 +3,11 @@ package com.tencent.bkrepo.docker.helpers
 import org.apache.commons.lang.StringUtils
 import java.util.TreeSet
 
+/**
+ * catalog sice tags helper
+ * @author: owenlxu
+ * @date: 2020-01-05
+ */
 class DockerCatalogTagsSlicer {
 
     companion object {

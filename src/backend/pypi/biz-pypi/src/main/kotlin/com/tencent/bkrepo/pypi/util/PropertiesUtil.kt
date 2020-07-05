@@ -1,13 +1,12 @@
 package com.tencent.bkrepo.pypi.util
 
+import com.tencent.bkrepo.pypi.util.pojo.PypiInfo
 import java.util.Properties
 
 object PropertiesUtil {
-    fun String.propInfo(): Map<String, String> {
+    fun String.propInfo(): PypiInfo {
         val prop = Properties()
         prop.load(this.byteInputStream())
-        return mapOf("name" to prop.getProperty("Name"),
-                "version" to prop.getProperty("Version"),
-                "summary" to prop.getProperty("Summary"))
+        return PypiInfo(prop.getProperty("Name"), prop.getProperty("Version"), prop.getProperty("Summary"))
     }
 }

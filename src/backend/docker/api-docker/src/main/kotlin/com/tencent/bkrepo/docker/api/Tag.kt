@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.docker.api
 
 import com.tencent.bkrepo.docker.constant.DOCKER_API_PREFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
+import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
+import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
 import com.tencent.bkrepo.docker.constant.DOCKER_TAGS_SUFFIX
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -13,8 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 /**
- *  docker tag api
- *
+ * docker tag api
  * @author: owenlxu
  * @date: 2019-12-01
  */
@@ -28,13 +30,13 @@ interface Tag {
         @RequestAttribute
         userId: String,
         @PathVariable
-        @ApiParam(value = "projectId", required = true)
+        @ApiParam(value = DOCKER_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = "repoName", required = true)
+        @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
         @PathVariable
-        @ApiParam(value = "name", required = true)
+        @ApiParam(value = DOCKER_NODE_NAME, required = true)
         name: String,
         @RequestParam(required = false)
         @ApiParam(value = "n", required = false)

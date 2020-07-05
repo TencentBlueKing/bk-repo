@@ -1,5 +1,10 @@
 package com.tencent.bkrepo.docker.context
 
+/**
+ * docker registry download context
+ * @author: owenlxu
+ * @date: 2019-12-01
+*/
 data class DownloadContext(val requestContext: RequestContext) {
 
     var context: RequestContext = requestContext

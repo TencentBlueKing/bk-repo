@@ -1,21 +1,29 @@
 package com.tencent.bkrepo.docker.manifest
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.DockerImageMetadata
 import com.tencent.bkrepo.docker.model.ManifestMetadata
-import com.tencent.bkrepo.docker.util.JsonUtil
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.stream.StreamSupport
 
+/**
+ * to deserialize manifest schema2 manifest
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 class ManifestSchema2Deserializer {
     companion object {
         private val logger = LoggerFactory.getLogger(ManifestSchema2Deserializer::class.java)
-        private val CIRCUIT_BREAKER_THRESHOLD = 5000
+        private const val CIRCUIT_BREAKER_THRESHOLD = 5000
 
         fun deserialize(manifestBytes: ByteArray, jsonBytes: ByteArray, dockerRepo: String, tag: String, digest: DockerDigest): ManifestMetadata {
             try {
@@ -24,14 +32,14 @@ class ManifestSchema2Deserializer {
                 manifestMetadata.tagInfo.digest = digest
                 return applyAttributesFromContent(manifestBytes, jsonBytes, manifestMetadata)
             } catch (exception: IOException) {
-                logger.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
+                logger.error("Unable to deserialize the manifest.json file: [$exception]")
                 throw RuntimeException(exception)
             }
         }
 
         private fun applyAttributesFromContent(manifestBytes: ByteArray, jsonBytes: ByteArray, manifestMetadata: ManifestMetadata): ManifestMetadata {
-            val config = JsonUtil.readTree(jsonBytes)
-            val manifest = JsonUtil.readTree(manifestBytes)
+            val config = JsonUtils.objectMapper.readTree(jsonBytes)
+            val manifest = JsonUtils.objectMapper.readTree(manifestBytes)
             var totalSize = 0L
             val history = config.get("history")
             val layers = manifest.get("layers")
@@ -48,14 +56,14 @@ class ManifestSchema2Deserializer {
 
             var layersIndex = 0
             while (historyIndex < historySize || layersIndex < layers.size()) {
-                val historyLayer = if (history == null) null else history.get(historyIndex)
+                val historyLayer = history?.get(historyIndex)
                 val layer = layers.get(layersIndex)
                 var size = 0L
                 var digest: String? = null
                 if (notEmptyHistoryLayer(historyLayer) || !foreignHasHistory && isForeignLayer(layer)) {
-                    size = layer.get("size").asLong()
+                    size = layer.get(DOCKER_NODE_SIZE).asLong()
                     totalSize += size
-                    digest = layer.get("digest").asText()
+                    digest = layer.get(DOCKER_DIGEST).asText()
                     ++layersIndex
                 }
 
@@ -68,7 +76,7 @@ class ManifestSchema2Deserializer {
                     created = historyLayer["created"].asText()
                 }
 
-                val blobInfo = DockerBlobInfo("", digest, size, created)
+                val blobInfo = DockerBlobInfo(EMPTYSTR, digest, size, created)
                 if (!isForeignLayer(layer)) {
                     populateWithCommand(historyLayer, blobInfo)
                 }
@@ -83,7 +91,7 @@ class ManifestSchema2Deserializer {
             }
             manifestMetadata.blobsInfo.reverse()
             manifestMetadata.tagInfo.totalSize = totalSize
-            val dockerMetadata = JsonUtil.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
+            val dockerMetadata = JsonUtils.objectMapper.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
             ManifestUtil.populatePorts(manifestMetadata, dockerMetadata)
             ManifestUtil.populateVolumes(manifestMetadata, dockerMetadata)
             ManifestUtil.populateLabels(manifestMetadata, dockerMetadata)
@@ -133,7 +141,7 @@ class ManifestSchema2Deserializer {
                 }
 
                 if (layerNode.has("urls")) {
-                    blobInfo.urls = mutableListOf<String>()
+                    blobInfo.urls = mutableListOf()
                     layerNode.get("urls").forEach { jsonNode -> blobInfo.urls!!.add(jsonNode.asText()) }
                 }
             }

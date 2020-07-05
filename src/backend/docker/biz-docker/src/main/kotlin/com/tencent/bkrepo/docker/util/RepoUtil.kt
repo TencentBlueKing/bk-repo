@@ -6,6 +6,12 @@ import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.exception.DockerRepoNotFoundException
 import org.slf4j.LoggerFactory
 
+/**
+ * docker repo  utility
+ * to deal with repo params
+ * @author: owenlxu
+ * @date: 2019-11-15
+ */
 class RepoUtil constructor(repo: DockerArtifactRepo) {
 
     val repo = repo

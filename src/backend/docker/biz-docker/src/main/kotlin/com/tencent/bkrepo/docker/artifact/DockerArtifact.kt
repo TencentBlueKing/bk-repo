@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.docker.artifact
 
 /**
- *  docker artifact des class
+ * docker artifact des class
  * @author: owenlxu
  * @date: 2020-03-12
  */

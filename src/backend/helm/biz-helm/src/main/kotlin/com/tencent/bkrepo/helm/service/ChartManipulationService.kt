@@ -1,18 +1,15 @@
 package com.tencent.bkrepo.helm.service
 
-import com.google.gson.JsonParser
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
@@ -27,7 +24,6 @@ import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.HelmSuccessResponse
 import com.tencent.bkrepo.helm.pojo.IndexEntity
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
-import com.tencent.bkrepo.helm.utils.JsonUtil.gson
 import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
 import org.slf4j.Logger
@@ -63,16 +59,16 @@ class ChartManipulationService {
                 throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
             }
             if (CHART == name) {
-                attributesMap[name + "_full_path"] = getChartFileFullPath(chartFileInfo)
+                attributesMap[name + FULL_PATH] = getChartFileFullPath(chartFileInfo)
             }
             if (PROV == name) {
-                attributesMap[name + "_full_path"] = getProvFileFullPath(artifactFileMap)
+                attributesMap[name + FULL_PATH] = getProvFileFullPath(artifactFileMap)
             }
         }
         return attributesMap
     }
 
-    private fun getChartFileFullPath(chartFile: Map<String, Any>?): String {
+    fun getChartFileFullPath(chartFile: Map<String, Any>?): String {
         val chartName = chartFile?.get(NAME) as String
         val chartVersion = chartFile[VERSION] as String
         return String.format("$FILE_SEPARATOR%s-%s.%s", chartName, chartVersion, CHART_PACKAGE_FILE_EXTENSION)
@@ -120,17 +116,6 @@ class ChartManipulationService {
         uploadRepository.upload(uploadContext)
     }
 
-    private fun getOriginalIndexYaml(): IndexEntity {
-        val context = ArtifactSearchContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-        val indexMap = (repository.search(context) as? ArtifactInputStream)?.run {
-            YamlUtils.convertFileToEntity<Map<String, Any>>(this)
-        }
-        logger.info("search original $INDEX_CACHE_YAML success!")
-        return gson.fromJson(JsonParser().parse(gson.toJson(indexMap)).asJsonObject, IndexEntity::class.java)
-    }
-
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     fun delete(artifactInfo: HelmArtifactInfo): HelmSuccessResponse {
@@ -146,7 +131,7 @@ class ChartManipulationService {
         return HelmSuccessResponse.deleteSuccess()
     }
 
-    private fun getChartInfo(artifactInfo: HelmArtifactInfo): Pair<String, String> {
+    fun getChartInfo(artifactInfo: HelmArtifactInfo): Pair<String, String> {
         val artifactUri = artifactInfo.artifactUri.trimStart('/')
         val name = artifactUri.substringBeforeLast('/')
         val version = artifactUri.substringAfterLast('/')
@@ -155,7 +140,7 @@ class ChartManipulationService {
 
     private fun freshIndexYamlForRemove(chartInfo: Pair<String, String>) {
         try {
-            val indexEntity = getOriginalIndexYaml()
+            val indexEntity = chartRepositoryService.getOriginalIndexYaml()
             indexEntity.entries.let {
                 if (it[chartInfo.first]?.size == 1 && chartInfo.second == it[chartInfo.first]?.get(0)?.get(VERSION) as String) {
                     it.remove(chartInfo.first)

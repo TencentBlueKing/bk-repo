@@ -2,6 +2,8 @@ package com.tencent.bkrepo.docker.util
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
+import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_LIST
 import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.HTTP_FORWARDED_PROTO
 import com.tencent.bkrepo.docker.constant.HTTP_PROTOCOL_HTTP
@@ -12,11 +14,11 @@ import com.tencent.bkrepo.docker.errors.DockerV2Errors
 import com.tencent.bkrepo.docker.manifest.ManifestType
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
+import com.tencent.bkrepo.docker.response.DockerResponse
 import org.apache.commons.io.IOUtils
 import org.apache.commons.io.output.NullOutputStream
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
-import org.springframework.http.ResponseEntity
 import java.io.InputStream
 import java.net.URI
 import java.util.Objects
@@ -24,6 +26,11 @@ import java.util.regex.Pattern
 import javax.ws.rs.core.UriBuilder
 import kotlin.streams.toList
 
+/**
+ * docker repo service utility
+ * @author: owenlxu
+ * @date: 2019-11-15
+ */
 class RepoServiceUtil {
 
     companion object {
@@ -33,11 +40,11 @@ class RepoServiceUtil {
 
         fun putHasStream(httpHeaders: HttpHeaders): Boolean {
             val headerValues = httpHeaders["User-Agent"]
-            if (headerValues != null) {
-                val headerIter = headerValues.iterator()
+            headerValues?.let {
+                val headerIter = it.iterator()
                 while (headerIter.hasNext()) {
                     val userAgent = headerIter.next() as String
-                    logger.info("User agent header: [$userAgent]")
+                    logger.debug("User agent header: [$userAgent]")
                     if (OLD_USER_AGENT_PATTERN.matcher(userAgent).matches()) {
                         return true
                     }
@@ -46,7 +53,7 @@ class RepoServiceUtil {
             return false
         }
 
-        fun consumeStreamAndReturnError(stream: InputStream): ResponseEntity<Any> {
+        fun consumeStreamAndReturnError(stream: InputStream): DockerResponse {
             NullOutputStream().use {
                 IOUtils.copy(stream, it)
             }
@@ -57,12 +64,7 @@ class RepoServiceUtil {
             return httpHeaders.accept.stream().filter { Objects.nonNull(it) }.map { ManifestType.from(it) }.toList()
         }
 
-        fun manifestListUploadContext(
-            context: RequestContext,
-            digest: DockerDigest,
-            path: String,
-            bytes: ByteArray
-        ): UploadContext {
+        fun manifestListUploadContext(context: RequestContext, digest: DockerDigest, path: String, bytes: ByteArray): UploadContext {
             with(context) {
                 val artifactFile = ArtifactFileFactory.build(bytes.inputStream())
                 val uploadContext = UploadContext(projectId, repoName, path).artifactFile(artifactFile)
@@ -71,12 +73,7 @@ class RepoServiceUtil {
             }
         }
 
-        fun buildManifestPropertyMap(
-            dockerRepo: String,
-            tag: String,
-            digest: DockerDigest,
-            type: ManifestType
-        ): HashMap<String, String> {
+        fun buildManifestPropertyMap(dockerRepo: String, tag: String, digest: DockerDigest, type: ManifestType): HashMap<String, String> {
             var map = HashMap<String, String>()
             map[digest.getDigestAlg()] = digest.getDigestHex()
             map["docker.manifest.digest"] = digest.toString()
@@ -86,13 +83,7 @@ class RepoServiceUtil {
             return map
         }
 
-        fun manifestUploadContext(
-            context: RequestContext,
-            type: ManifestType,
-            metadata: ManifestMetadata,
-            path: String,
-            file: ArtifactFile
-        ): UploadContext {
+        fun manifestUploadContext(context: RequestContext, type: ManifestType, metadata: ManifestMetadata, path: String, file: ArtifactFile): UploadContext {
             with(context) {
                 val uploadContext = UploadContext(projectId, repoName, path).artifactFile(file)
                 if ((type == ManifestType.Schema2 || type == ManifestType.Schema2List) && "sha256" == metadata.tagInfo.digest?.getDigestAlg()) {
@@ -107,18 +98,15 @@ class RepoServiceUtil {
             var host = EMPTYSTR
             var port: Int? = null
             if (hostHeaders != null && hostHeaders.isNotEmpty()) {
-                val parts =
-                    (hostHeaders[0] as String).split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val parts = (hostHeaders[0] as String).split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                 host = parts[0]
                 if (parts.size > 1) {
                     port = Integer.valueOf(parts[1])
                 }
-            } else {
-                logger.warn("docker location url is blank, make sure the host request header exists.")
             }
 
             val builder = UriBuilder.fromPath("v2/$path").host(host).scheme(RepoServiceUtil.getProtocol(httpHeaders))
-            if (port != null) {
+            port?.let {
                 builder.port(port)
             }
             return builder.build()
@@ -126,9 +114,9 @@ class RepoServiceUtil {
 
         fun buildManifestPath(dockerRepo: String, tag: String, manifestType: ManifestType): String {
             return if (ManifestType.Schema2List == manifestType) {
-                "/$dockerRepo/$tag/list.manifest.json"
+                "/$dockerRepo/$tag/$DOCKER_MANIFEST_LIST"
             } else {
-                "/$dockerRepo/$tag/manifest.json"
+                "/$dockerRepo/$tag/$DOCKER_MANIFEST"
             }
         }
 

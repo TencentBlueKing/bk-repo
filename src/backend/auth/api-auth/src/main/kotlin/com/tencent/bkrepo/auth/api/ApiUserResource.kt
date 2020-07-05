@@ -17,22 +17,22 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 
-@Api(tags = ["API_USER"], description = "服务-用户接口")
+@Api(tags = ["API_USER"], description = "用户api-用户接口")
 @FeignClient(SERVICE_NAME, contextId = "ApiUserResource")
-@RequestMapping("/api/user")
+
 interface ApiUserResource {
-    @ApiOperation("创建用户")
-    @PostMapping("/create")
-    fun createUser(
-        @RequestBody request: CreateUserRequest
-    ): Response<Boolean>
 
     @ApiOperation("创建项目用户")
     @PostMapping("/create/project")
     fun createUserToProject(
         @RequestBody request: CreateUserToProjectRequest
+    ): Response<Boolean>
+
+    @ApiOperation("创建用户")
+    @PostMapping("/create")
+    fun createUser(
+        @RequestBody request: CreateUserRequest
     ): Response<Boolean>
 
     @ApiOperation("用户列表")

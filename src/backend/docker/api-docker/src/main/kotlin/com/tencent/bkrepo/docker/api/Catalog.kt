@@ -2,6 +2,8 @@ package com.tencent.bkrepo.docker.api
 
 import com.tencent.bkrepo.docker.constant.DOCKER_API_PREFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_CATALOG_SUFFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
+import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -12,8 +14,7 @@ import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 
 /**
- *  docker image catalog api
- *
+ * docker image catalog api
  * @author: owenlxu
  * @date: 2019-12-01
  */
@@ -28,10 +29,10 @@ interface Catalog {
         @RequestAttribute
         userId: String,
         @RequestParam(required = false)
-        @ApiParam(value = "projectId", required = false)
+        @ApiParam(value = DOCKER_PROJECT_ID, required = false)
         projectId: String,
         @RequestParam(required = false)
-        @ApiParam(value = "repoName", required = false)
+        @ApiParam(value = DOCKER_REPO_NAME, required = false)
         repoName: String,
         @RequestParam(required = false)
         @ApiParam(value = "n", required = false)

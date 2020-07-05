@@ -20,7 +20,7 @@ object GZipUtil {
     /**
      * 解压
      */
-    fun InputStream.UnGzipInputStream(): InputStream {
+    fun InputStream.unGzipInputStream(): InputStream {
         return GZIPInputStream(this).readBytes().let {
             ByteInputStream(it, it.size)
         }
