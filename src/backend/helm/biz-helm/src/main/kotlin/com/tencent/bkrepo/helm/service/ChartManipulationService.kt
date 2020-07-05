@@ -68,7 +68,7 @@ class ChartManipulationService {
         return attributesMap
     }
 
-    private fun getChartFileFullPath(chartFile: Map<String, Any>?): String {
+    fun getChartFileFullPath(chartFile: Map<String, Any>?): String {
         val chartName = chartFile?.get(NAME) as String
         val chartVersion = chartFile[VERSION] as String
         return String.format("$FILE_SEPARATOR%s-%s.%s", chartName, chartVersion, CHART_PACKAGE_FILE_EXTENSION)
@@ -131,7 +131,7 @@ class ChartManipulationService {
         return HelmSuccessResponse.deleteSuccess()
     }
 
-    private fun getChartInfo(artifactInfo: HelmArtifactInfo): Pair<String, String> {
+    fun getChartInfo(artifactInfo: HelmArtifactInfo): Pair<String, String> {
         val artifactUri = artifactInfo.artifactUri.trimStart('/')
         val name = artifactUri.substringBeforeLast('/')
         val version = artifactUri.substringAfterLast('/')

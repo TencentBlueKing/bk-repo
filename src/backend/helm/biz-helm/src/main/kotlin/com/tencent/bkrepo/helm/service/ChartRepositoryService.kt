@@ -186,7 +186,7 @@ class ChartRepositoryService {
         )
     }
 
-    private fun addIndexEntries(
+    fun addIndexEntries(
         indexEntity: IndexEntity,
         chartInfoMap: MutableMap<String, Any>
     ) {
@@ -243,11 +243,6 @@ class ChartRepositoryService {
         uploadIndexYaml(indexEntity).also { logger.info("Full refresh index.yaml success！") }
     }
 
-    private fun convertDateTime(timeStr: String): String {
-        val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
-        return localDateTime.format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER))
-    }
-
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     fun installTgz(artifactInfo: HelmArtifactInfo) {
@@ -281,5 +276,10 @@ class ChartRepositoryService {
 
         val logger: Logger = LoggerFactory.getLogger(ChartRepositoryService::class.java)
         val LOCK_VALUE = UUID.randomUUID().toString()
+
+        fun convertDateTime(timeStr: String): String {
+            val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
+            return localDateTime.format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER))
+        }
     }
 }
