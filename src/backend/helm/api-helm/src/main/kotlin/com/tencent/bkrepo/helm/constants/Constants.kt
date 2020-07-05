@@ -21,10 +21,5 @@ const val PROVENANCE_FILE_EXTENSION = "tgz.prov"
 const val DATA_TIME_FORMATTER = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
 
 // 定义返回代码片段
-const val CHART_NOT_FOUND = "{\n    \"error\": \"chart not found\"\n}"
-const val NO_CHART_NAME_FOUND = "{\n    \"error\": \"no chart name found\"\n}"
-const val CHART_VERSION_NOT_FOUND = "{\n    \"error\": \"no chart version found for %s-%s\"\n}"
-const val EMPTY_CHART_OR_VERSION = "{}"
-const val ERROR_NOT_FOUND = "{\n    \"error\": \"not found\"\n}"
-const val EMPTY_NAME_OR_VERSION = "[]"
-const val ENTRIES = "entries"
+val CHART_NOT_FOUND = mapOf("error" to "chart not found")
+val NO_CHART_NAME_FOUND = mapOf("error" to "no chart name found")
