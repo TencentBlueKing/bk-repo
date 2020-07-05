@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import org.springframework.stereotype.Component
 
 /**
- *  config the path to validate privilege
+ * config the path to validate privilege
  * @author: owenlxu
  * @date: 2019/11/27
  */

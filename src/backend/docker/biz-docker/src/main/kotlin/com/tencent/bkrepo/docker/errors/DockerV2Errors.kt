@@ -7,11 +7,16 @@ import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.constant.ERROR_MESSAGE
 import com.tencent.bkrepo.docker.constant.ERROR_MESSAGE_EMPTY
 import com.tencent.bkrepo.docker.response.DockerResponse
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpHeaders.CONTENT_LENGTH
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+
+/**
+ * define errors to return when exception occur
+ * @author: owenlxu
+ * @date: 2019-12-01
+ */
 
 class DockerV2Errors {
     companion object {

@@ -2,7 +2,9 @@ package com.tencent.bkrepo.docker.util
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.docker.constant.EGOTIST
+import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
+import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_LIST
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.HTTP_FORWARDED_PROTO
 import com.tencent.bkrepo.docker.constant.HTTP_PROTOCOL_HTTP
 import com.tencent.bkrepo.docker.constant.HTTP_PROTOCOL_HTTPS
@@ -24,6 +26,11 @@ import java.util.regex.Pattern
 import javax.ws.rs.core.UriBuilder
 import kotlin.streams.toList
 
+/**
+ * docker repo service utility
+ * @author: owenlxu
+ * @date: 2019-11-15
+ */
 class RepoServiceUtil {
 
     companion object {
@@ -88,7 +95,7 @@ class RepoServiceUtil {
 
         fun getDockerURI(path: String, httpHeaders: HttpHeaders): URI {
             val hostHeaders = httpHeaders["Host"]
-            var host = EGOTIST
+            var host = EMPTYSTR
             var port: Int? = null
             if (hostHeaders != null && hostHeaders.isNotEmpty()) {
                 val parts = (hostHeaders[0] as String).split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
@@ -107,9 +114,9 @@ class RepoServiceUtil {
 
         fun buildManifestPath(dockerRepo: String, tag: String, manifestType: ManifestType): String {
             return if (ManifestType.Schema2List == manifestType) {
-                "/$dockerRepo/$tag/list.manifest.json"
+                "/$dockerRepo/$tag/$DOCKER_MANIFEST_LIST"
             } else {
-                "/$dockerRepo/$tag/manifest.json"
+                "/$dockerRepo/$tag/$DOCKER_MANIFEST"
             }
         }
 

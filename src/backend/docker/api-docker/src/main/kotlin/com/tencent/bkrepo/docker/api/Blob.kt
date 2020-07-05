@@ -5,6 +5,10 @@ import com.tencent.bkrepo.docker.constant.DOCKER_API_PREFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_BLOB_DIGEST_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_BLOB_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_BLOB_UUID_SUFFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
+import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
+import com.tencent.bkrepo.docker.constant.DOCKER_UUID
 import com.tencent.bkrepo.docker.response.DockerResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -20,8 +24,7 @@ import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 
 /**
- *  docker image blob api
- *
+ * docker image blob api
  * @author: owenlxu
  * @date: 2019-10-13
  */
@@ -38,16 +41,16 @@ interface Blob {
         @RequestHeader
         headers: HttpHeaders,
         @PathVariable
-        @ApiParam(value = "projectId", required = true)
+        @ApiParam(value = DOCKER_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = "repoName", required = true)
+        @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
         @PathVariable
-        @ApiParam(value = "uuid", required = true)
+        @ApiParam(value = DOCKER_UUID, required = true)
         uuid: String,
         @RequestParam
-        @ApiParam(value = "digest", required = false)
+        @ApiParam(value = DOCKER_DIGEST, required = false)
         digest: String?,
         artifactFile: ArtifactFile
     ): DockerResponse
@@ -59,13 +62,13 @@ interface Blob {
         @RequestAttribute
         userId: String?,
         @PathVariable
-        @ApiParam(value = "projectId", required = true)
+        @ApiParam(value = DOCKER_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = "repoName", required = true)
+        @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
         @PathVariable
-        @ApiParam(value = "digest", required = true)
+        @ApiParam(value = DOCKER_DIGEST, required = true)
         digest: String
     ): DockerResponse
 
@@ -76,13 +79,13 @@ interface Blob {
         @RequestAttribute
         userId: String?,
         @PathVariable
-        @ApiParam(value = "projectId", required = true)
+        @ApiParam(value = DOCKER_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = "repoName", required = true)
+        @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
         @PathVariable
-        @ApiParam(value = "digest", required = true)
+        @ApiParam(value = DOCKER_DIGEST, required = true)
         digest: String
     ): DockerResponse
 
@@ -95,10 +98,10 @@ interface Blob {
         @RequestHeader
         headers: HttpHeaders,
         @PathVariable
-        @ApiParam(value = "projectId", required = true)
+        @ApiParam(value = DOCKER_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = "repoName", required = true)
+        @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
         @RequestParam
         @ApiParam(value = "mount", required = false)
@@ -114,13 +117,13 @@ interface Blob {
         @RequestHeader
         headers: HttpHeaders,
         @PathVariable
-        @ApiParam(value = "projectId", required = true)
+        @ApiParam(value = DOCKER_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = "repoName", required = true)
+        @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
         @PathVariable
-        @ApiParam(value = "uuid", required = false)
+        @ApiParam(value = DOCKER_UUID, required = false)
         uuid: String,
         artifactFile: ArtifactFile
     ): DockerResponse

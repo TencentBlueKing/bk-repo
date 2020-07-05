@@ -5,7 +5,13 @@ import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.response.DockerResponse
 
+/**
+ * docker v2 protocol interface
+ * @author: owenlxu
+ * @date: 2019-10-15
+ */
 interface DockerV2RepoService {
+
     fun ping(): DockerResponse
 
     fun isBlobExists(context: RequestContext, digest: DockerDigest): DockerResponse

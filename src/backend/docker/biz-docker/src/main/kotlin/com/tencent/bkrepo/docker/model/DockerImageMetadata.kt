@@ -4,6 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.JsonNode
 import java.io.Serializable
 
+/**
+ * docker image metadata
+ * @author: owenlxu
+ * @date: 2019-10-15
+ */
 class DockerImageMetadata : Serializable {
     @JsonProperty("id")
     var id: String? = null

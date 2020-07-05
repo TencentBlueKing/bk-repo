@@ -5,8 +5,9 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_CONTENT_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
-import com.tencent.bkrepo.docker.constant.EGOTIST
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.manifest.ManifestType
@@ -25,6 +26,12 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import javax.xml.bind.DatatypeConverter
 
+/**
+ * docker content  utility
+ * to get detail of manifest or blob
+ * @author: owenlxu
+ * @date: 2019-10-15
+ */
 class ContentUtil constructor(repo: DockerArtifactRepo) {
 
     val repo = repo
@@ -61,7 +68,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
 
     fun getSchema2ManifestConfigContent(context: RequestContext, bytes: ByteArray, tag: String): ByteArray {
         val manifest = JsonUtils.objectMapper.readTree(bytes)
-        val digest = manifest.get("config").get("digest").asText()
+        val digest = manifest.get("config").get(DOCKER_DIGEST).asText()
         val fileName = DockerDigest(digest).fileName()
         val configFile = ArtifactUtil.getManifestConfigBlob(repo, fileName, context, tag) ?: run {
             return ByteArray(0)
@@ -95,15 +102,15 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
                 val architecture = platform.get("architecture").asText()
                 val os = platform.get("os").asText()
                 if (StringUtils.equals(architecture, "amd64") && StringUtils.equals(os, "linux")) {
-                    val digest = manifest.get("digest").asText()
+                    val digest = manifest.get(DOCKER_DIGEST).asText()
                     val fileName = DockerDigest(digest).fileName()
                     val manifestFile = ArtifactUtil.getBlobByName(repo, context, fileName) ?: run {
-                        return EGOTIST
+                        return EMPTYSTR
                     }
                     return ArtifactUtil.getFullPath(manifestFile)
                 }
             }
-        return EGOTIST
+        return EMPTYSTR
     }
 
     fun addManifestsBlobs(context: RequestContext, type: ManifestType, bytes: ByteArray, metadata: ManifestMetadata) {
@@ -118,7 +125,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
         val manifest = JsonUtils.objectMapper.readTree(bytes)
         val config = manifest.get("config")
         config?.let {
-            val digest = config.get("digest").asText()
+            val digest = config.get(DOCKER_DIGEST).asText()
             val blobInfo = DockerBlobInfo("", digest, 0L, "")
             metadata.blobsInfo.add(blobInfo)
         }
@@ -131,7 +138,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
 
         while (manifest.hasNext()) {
             val manifestNode = manifest.next() as JsonNode
-            val digestString = manifestNode.get("platform").get("digest").asText()
+            val digestString = manifestNode.get("platform").get(DOCKER_DIGEST).asText()
             val dockerBlobInfo = DockerBlobInfo("", digestString, 0L, "")
             metadata.blobsInfo.add(dockerBlobInfo)
             val manifestFileName = DockerDigest(digestString).fileName()

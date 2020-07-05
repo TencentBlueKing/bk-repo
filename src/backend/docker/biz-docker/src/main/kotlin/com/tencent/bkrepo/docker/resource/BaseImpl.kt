@@ -4,7 +4,6 @@ import com.tencent.bkrepo.docker.api.Base
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.response.DockerResponse
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpHeaders.CONTENT_TYPE
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity

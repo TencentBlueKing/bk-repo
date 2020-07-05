@@ -4,6 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.docker.model.DockerImageMetadata
 import com.tencent.bkrepo.docker.model.ManifestMetadata
 
+/**
+ * manifest util with each schema
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 class ManifestUtil {
 
     companion object {

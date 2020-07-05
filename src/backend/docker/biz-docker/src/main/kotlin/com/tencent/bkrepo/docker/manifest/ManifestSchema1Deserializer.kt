@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.docker.manifest
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.DockerImageMetadata
@@ -9,6 +10,11 @@ import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import java.io.IOException
 
+/**
+ * to deserialize manifest schema1 manifest
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 class ManifestSchema1Deserializer {
 
     companion object {
@@ -28,7 +34,7 @@ class ManifestSchema1Deserializer {
             val manifestMetadata = ManifestMetadata()
             if (manifestBytes != null) {
                 val manifest = JsonUtils.objectMapper.readTree(manifestBytes)
-                manifestMetadata.tagInfo.title = manifest.get("name").asText() + ":" + manifest.get("tag").asText()
+                manifestMetadata.tagInfo.title = manifest.get(DOCKER_NODE_NAME).asText() + ":" + manifest.get("tag").asText()
                 manifestMetadata.tagInfo.digest = digest
                 var totalSize = 0L
                 val history = manifest.get("history")

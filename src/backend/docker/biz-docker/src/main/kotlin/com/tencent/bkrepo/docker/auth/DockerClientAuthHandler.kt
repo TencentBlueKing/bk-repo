@@ -17,6 +17,7 @@ import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE_SERVICE_SCOPE
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.ERROR_MESSAGE
 import com.tencent.bkrepo.docker.constant.REGISTRY_SERVICE
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
@@ -32,18 +33,17 @@ import javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
 import javax.ws.rs.core.MediaType
 
 /**
- *  docker auth handler
- *  to define auth method
+ * docker auth handler
+ * to define auth method
  * @author: owenlxu
  * @date: 2019-11-12
  */
-
 @Component
 class DockerClientAuthHandler(val userResource: ServiceUserResource) :
     ClientAuthHandler {
 
     @Value("\${auth.url}")
-    private var authUrl: String = ""
+    private var authUrl: String = EMPTYSTR
 
     @Value("\${auth.enable}")
     private var authEnable: Boolean = true

@@ -16,6 +16,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 
+/**
+ * to synchronize blob when finish manifest upload
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 @Component
 class DockerManifestSyncer {
 

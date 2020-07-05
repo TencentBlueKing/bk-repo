@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.docker.api
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
+import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
+import com.tencent.bkrepo.docker.constant.DOCKER_TAG
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_LAYER_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_MANIFEST_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_REPO_SUFFIX
@@ -17,8 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import javax.servlet.http.HttpServletRequest
 
 /**
- *  docker image extension api
- *
+ * docker image extension api
  * @author: owenlxu
  * @date: 2020-03-12
  */
@@ -33,13 +35,13 @@ interface User {
         @RequestAttribute
         userId: String?,
         @PathVariable
-        @ApiParam(value = "projectId", required = true)
+        @ApiParam(value = DOCKER_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = "repoName", required = true)
+        @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
         @PathVariable
-        @ApiParam(value = "tag", required = true)
+        @ApiParam(value = DOCKER_TAG, required = true)
         tag: String
     ): Response<String>
 
@@ -50,10 +52,10 @@ interface User {
         @RequestAttribute
         userId: String?,
         @PathVariable
-        @ApiParam(value = "projectId", required = true)
+        @ApiParam(value = DOCKER_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = "repoName", required = true)
+        @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
         @PathVariable
         @ApiParam(value = "id", required = true)
@@ -67,10 +69,10 @@ interface User {
         @RequestAttribute
         userId: String?,
         @PathVariable
-        @ApiParam(value = "projectId", required = true)
+        @ApiParam(value = DOCKER_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = "repoName", required = true)
+        @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String
     ): Response<List<String>>
 
@@ -81,10 +83,10 @@ interface User {
         @RequestAttribute
         userId: String?,
         @PathVariable
-        @ApiParam(value = "projectId", required = true)
+        @ApiParam(value = DOCKER_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = "repoName", required = true)
+        @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String
     ): Response<Map<String, String>>
 }

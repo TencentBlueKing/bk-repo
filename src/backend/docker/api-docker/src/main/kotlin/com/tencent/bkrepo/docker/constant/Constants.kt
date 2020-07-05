@@ -3,10 +3,11 @@ package com.tencent.bkrepo.docker.constant
 const val REPO_TYPE = "DOCKER"
 
 const val BLOB_PATTERN = "/blobs"
+const val DOCKER_PRE_SUFFIX = "/"
 
 const val MANIFEST_PATTERN = "/manifests"
 
-const val EGOTIST = ""
+const val EMPTYSTR = ""
 
 const val USER_API_PREFIX = "/api"
 const val DOCKER_API_PREFIX = "/v2"
@@ -46,3 +47,22 @@ const val AUTH_CHALLENGE_TOKEN = "{\"token\": \"%s\", \"access_token\": \"%s\",\
 const val DOCKER_HEADER_API_VERSION = "Docker-Distribution-Api-Version"
 const val DOCKER_API_VERSION = "registry/2.0"
 const val DOCKER_CONTENT_DIGEST = "Docker-Content-Digest"
+const val DOCKER_UPLOAD_UUID = "Docker-Upload-Uuid"
+
+const val DOCKER_MANIFEST = "manifest.json"
+const val DOCKER_MANIFEST_LIST = "list.manifest.json"
+const val DOCKER_SEARCH_INDEX = 0
+const val DOCKER_SEARCH_LIMIT = 9999999
+const val DOCKER_SEARCH_LIMIT_SMALL = 10
+
+const val DOCKER_PROJECT_ID = "projectId"
+const val DOCKER_REPO_NAME = "repoName"
+const val DOCKER_NODE_PATH = "path"
+const val DOCKER_NODE_NAME = "name"
+const val DOCKER_NODE_SIZE = "size"
+const val DOCKER_NODE_FULL_PATH = "fullPath"
+const val DOCKER_CREATE_BY = "createdBy"
+const val DOCKER_DIGEST = "digest"
+const val DOCKER_REFERENCE = "reference"
+const val DOCKER_UUID = "uuid"
+const val DOCKER_TAG = "tag"

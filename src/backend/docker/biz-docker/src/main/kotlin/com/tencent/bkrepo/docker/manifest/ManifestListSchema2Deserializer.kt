@@ -2,6 +2,11 @@ package com.tencent.bkrepo.docker.manifest
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
 
+/**
+ * to deserialize manifest schema2 manifestlist
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 class ManifestListSchema2Deserializer {
 
     companion object {
