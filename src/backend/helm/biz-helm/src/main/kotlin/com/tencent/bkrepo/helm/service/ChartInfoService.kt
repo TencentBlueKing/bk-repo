@@ -80,7 +80,7 @@ class ChartInfoService {
             }
             if (rule != null) {
                 val queryModel = QueryModel(
-                    page = PageLimit(0, 5),
+                    page = PageLimit(CURRENT_PAGE, SIZE),
                     sort = Sort(listOf(NAME), Sort.Direction.ASC),
                     select = mutableListOf(PROJECT_ID, REPO_NAME, NODE_FULL_PATH, NODE_METADATA),
                     rule = rule
@@ -92,5 +92,10 @@ class ChartInfoService {
             }
         }
         response.status = status
+    }
+
+    companion object{
+        const val CURRENT_PAGE = 0
+        const val SIZE = 5
     }
 }

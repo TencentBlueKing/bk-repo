@@ -103,10 +103,16 @@ class ChartRepositoryService {
         val now = LocalDateTime.now()
         val nodeList = queryNodeList(artifactInfo, lastModifyTime = dateTime)
         if (nodeList.isNotEmpty()) {
-            logger.info("start regenerate index.yaml, original index.yaml entries size : [${indexEntity.entriesSize()}]")
+            logger.info(
+                "start regenerate index.yaml, original index.yaml entries size : [${indexEntity.entriesSize()}]"
+            )
             generateIndexFile(nodeList, indexEntity, artifactInfo)
             indexEntity.generated = now.format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER))
-            uploadIndexYaml(indexEntity).also { logger.info("regenerate index.yaml success, current index.yaml entries size : [${indexEntity.entriesSize()}]") }
+            uploadIndexYaml(indexEntity).also {
+                logger.info(
+                    "regenerate index.yaml success, current index.yaml entries size : [${indexEntity.entriesSize()}]"
+                )
+            }
         }
     }
 
@@ -128,7 +134,15 @@ class ChartRepositoryService {
         val queryModel = QueryModel(
             page = PageLimit(page, size),
             sort = Sort(listOf(NODE_FULL_PATH), Sort.Direction.ASC),
-            select = mutableListOf(PROJECT_ID, REPO_NAME, NODE_NAME, NODE_FULL_PATH, NODE_METADATA, NODE_SHA256, NODE_CREATE_DATE),
+            select = mutableListOf(
+                PROJECT_ID,
+                REPO_NAME,
+                NODE_NAME,
+                NODE_FULL_PATH,
+                NODE_METADATA,
+                NODE_SHA256,
+                NODE_CREATE_DATE
+            ),
             rule = rule
         )
         val result = nodeResource.query(queryModel).data ?: run {
@@ -147,7 +161,7 @@ class ChartRepositoryService {
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         result.forEach { it ->
-            Thread.sleep(20L)
+            Thread.sleep(SLEEP_MILLIS)
             context.contextAttributes[FULL_PATH] = it[NODE_FULL_PATH] as String
             var chartName: String? = null
             var chartVersion: String? = null
@@ -165,8 +179,11 @@ class ChartRepositoryService {
                 chartInfoMap[CREATED] = convertDateTime(it[NODE_CREATE_DATE] as String)
                 chartInfoMap[DIGEST] = it[NODE_SHA256] as String
                 addIndexEntries(indexEntity, chartInfoMap)
-            } catch (ex: RuntimeException) {
-                logger.error("generate indexFile for chart [$chartName-$chartVersion.tgz] in [${artifactInfo.projectId}/${artifactInfo.repoName}] failed!")
+            } catch (ex: HelmFileNotFoundException) {
+                logger.error(
+                    "generate indexFile for chart [$chartName-$chartVersion.tgz] in " +
+                        "[${artifactInfo.projectId}/${artifactInfo.repoName}] failed, ${ex.message}"
+                )
             }
         }
     }
@@ -219,7 +236,12 @@ class ChartRepositoryService {
             YamlUtils.convertFileToEntity<Map<String, Any>>(this)
         }
         return objectMapper.convertValue(indexMap, IndexEntity::class.java).also {
-            logger.info("search original $INDEX_CACHE_YAML success in [${context.artifactInfo.projectId}/${context.artifactInfo.repoName}], entries size [${it.entries.size}].")
+            logger.info(
+                with(context.artifactInfo) {
+                    "search original $INDEX_CACHE_YAML success in [$projectId/$repoName], " +
+                        "entries size [${it.entries.size}]."
+                }
+            )
         }
     }
 
@@ -258,7 +280,9 @@ class ChartRepositoryService {
         val artifactResourceList = mutableListOf<ArtifactResource>()
         val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
         if (nodeList.isEmpty()) {
-            throw HelmFileNotFoundException("no chart found in repository [${artifactInfo.projectId}/${artifactInfo.repoName}]")
+            throw HelmFileNotFoundException(
+                "no chart found in repository [${artifactInfo.projectId}/${artifactInfo.repoName}]"
+            )
         }
         val context = ArtifactSearchContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
@@ -273,6 +297,7 @@ class ChartRepositoryService {
     companion object {
         const val page = 0
         const val size = 100000
+        const val SLEEP_MILLIS = 20L
 
         val logger: Logger = LoggerFactory.getLogger(ChartRepositoryService::class.java)
         val LOCK_VALUE = UUID.randomUUID().toString()

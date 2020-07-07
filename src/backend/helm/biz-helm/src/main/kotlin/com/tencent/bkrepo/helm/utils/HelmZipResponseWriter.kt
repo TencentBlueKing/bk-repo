@@ -9,6 +9,7 @@ import com.tencent.bkrepo.repository.util.NodeUtils
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
 import java.io.BufferedOutputStream
+import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -41,7 +42,7 @@ object HelmZipResponseWriter {
                 }
             }
             response.flushBuffer()
-        } catch (exception: RuntimeException) {
+        } catch (exception: IOException) {
             val message = exception.message.orEmpty()
             when {
                 message.contains("Connection reset by peer") -> {

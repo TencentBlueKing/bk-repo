@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.npm.artifact
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.npm.constants.FILE_SEPARATOR
@@ -33,16 +34,17 @@ class NpmArtifactInfoResolver : ArtifactInfoResolver {
             )
             return NpmArtifactInfo("", "", "")
         }
-        val scope = if (pathElements[2].contains('@')) pathElements[2] else ""
-        val pkgName = if (scope.contains('@')) pathElements[3] else pathElements[2]
+        val scope = if (pathElements[2].contains(AT)) pathElements[2] else StringPool.EMPTY
+        val pkgName = if (scope.contains(AT)) pathElements[3] else pathElements[2]
         val version =
-            if (pathElements.size > 4) pathElements[4] else (if (StringUtils.isBlank(scope) && pathElements.size == 4) pathElements[3] else "")
+            if (pathElements.size > 4) pathElements[4] else (if (StringUtils.isBlank(scope) && pathElements.size == 4) pathElements[3] else StringPool.EMPTY)
         return NpmArtifactInfo(projectId, repoName, artifactUri, scope, pkgName, version)
     }
 
     companion object {
-        var characterEncoding: String = "utf-8"
-        var delimiter: String = "/-rev"
+        const val characterEncoding: String = "utf-8"
+        const val delimiter: String = "/-rev"
+        const val AT: Char = '@'
         val logger: Logger = LoggerFactory.getLogger(NpmArtifactInfo::class.java)
     }
 }

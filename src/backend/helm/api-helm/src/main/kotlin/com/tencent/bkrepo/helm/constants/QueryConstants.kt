@@ -10,6 +10,3 @@ const val NODE_METADATA = "metadata"
 const val NODE_METADATA_NAME = "metadata.name"
 const val NODE_METADATA_VERSION = "metadata.version"
 const val NODE_SHA256 = "sha256"
-
-const val page = 0
-const val size = 10000

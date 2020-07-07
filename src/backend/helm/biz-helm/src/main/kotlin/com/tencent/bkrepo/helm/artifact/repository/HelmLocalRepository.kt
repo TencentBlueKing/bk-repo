@@ -2,7 +2,6 @@ package com.tencent.bkrepo.helm.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -98,9 +97,9 @@ class HelmLocalRepository : LocalRepository() {
         return context.contextAttributes[FULL_PATH] as String
     }
 
-    override fun search(context: ArtifactSearchContext): ArtifactInputStream? {
+    override fun search(context: ArtifactSearchContext): ArtifactInputStream {
         val fullPath = context.contextAttributes[FULL_PATH] as String
-        return this.onSearch(context) ?: throw ArtifactNotFoundException("Artifact[$fullPath] does not exist")
+        return this.onSearch(context) ?: throw HelmFileNotFoundException("Artifact[$fullPath] does not exist")
     }
 
     private fun onSearch(context: ArtifactSearchContext): ArtifactInputStream? {
@@ -108,12 +107,11 @@ class HelmLocalRepository : LocalRepository() {
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
-        val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
-
-        node.nodeInfo.takeIf { !it.folder } ?: return null
-        return storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)?.also {
-            logger.info("search artifact [$fullPath] success!")
-        }
+        val node = nodeResource.detail(projectId, repoName, fullPath).data
+        if (node == null || node.nodeInfo.folder) return null
+        return storageService.load(
+            node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials
+        )?.also { logger.info("search artifact [$fullPath] success!") }
     }
 
     override fun remove(context: ArtifactRemoveContext) {

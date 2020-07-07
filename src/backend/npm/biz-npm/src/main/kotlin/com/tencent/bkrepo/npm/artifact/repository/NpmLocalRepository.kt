@@ -185,13 +185,12 @@ class NpmLocalRepository : LocalRepository() {
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
-
-        node.nodeInfo.takeIf { !it.folder } ?: return null
+        val node = nodeResource.detail(projectId, repoName, fullPath).data
+        if(node == null || node.nodeInfo.folder) return null
         val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials).also {
             logger.info("search artifact [$fullPath] success!")
-        } ?: return null
-        return getPkgInfo(context, inputStream)
+        }
+        return inputStream?.let { getPkgInfo(context, it)}
     }
 
     private fun getPkgInfo(context: ArtifactSearchContext, inputStream: ArtifactInputStream): JsonObject {
@@ -359,8 +358,8 @@ class NpmLocalRepository : LocalRepository() {
     private fun getCacheArtifact(context: ArtifactTransferContext): ArtifactInputStream? {
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data ?: return null
-        if (node.nodeInfo.folder) return null
+        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+        if(node == null || node.nodeInfo.folder) return null
         val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
         inputStream?.let { logger.debug("Cached remote artifact[$fullPath] is hit") }
         return inputStream

@@ -48,7 +48,9 @@ interface NpmResource {
         NPM_PACKAGE_VERSION_INFO_MAPPING_URI,
         produces = [MediaType.APPLICATION_JSON_UTF8_VALUE]
     )
-    fun searchPackageInfo(@ArtifactPathVariable artifactInfo: NpmArtifactInfo): Map<String, Any>
+    fun searchPackageInfo(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo
+    ): Map<String, Any>
 
     @ApiOperation("install tgz file")
     @GetMapping(NPM_PACKAGE_TGZ_MAPPING_URI)
@@ -56,19 +58,30 @@ interface NpmResource {
 
     @ApiOperation("unpublish package")
     @DeleteMapping(NPM_UNPUBLISH_MAPPING_URI, NPM_UNPUBLISH_SCOPE_MAPPING_URI)
-    fun unpublish(@RequestAttribute userId: String, @ArtifactPathVariable artifactInfo: NpmArtifactInfo): NpmDeleteResponse
+    fun unpublish(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo
+    ): NpmDeleteResponse
 
     @ApiOperation("update package")
     @PutMapping(NPM_UNPUBLISH_MAPPING_URI, NPM_UNPUBLISH_SCOPE_MAPPING_URI)
-    fun updatePkg(@ArtifactPathVariable artifactInfo: NpmArtifactInfo, @RequestBody body: String): NpmSuccessResponse
+    fun updatePkg(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @RequestBody body: String
+    ): NpmSuccessResponse
 
     @ApiOperation("unpublish version package")
     @DeleteMapping(NPM_UNPUBLISH_VERSION_MAPPING_URI, NPM_UNPUBLISH_VERSION_SCOPE_MAPPING_URI)
-    fun unPublishPkgWithVersion(@ArtifactPathVariable artifactInfo: NpmArtifactInfo): NpmDeleteResponse
+    fun unPublishPkgWithVersion(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo
+    ): NpmDeleteResponse
 
     @ApiOperation("npm search")
     @GetMapping(NPM_PACKAGE_SEARCH_MAPPING_URI)
-    fun search(@ArtifactPathVariable artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): NpmSearchResponse
+    fun search(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        searchRequest: MetadataSearchRequest
+    ): NpmSearchResponse
 
     @ApiOperation("npm get dist-tag ls")
     @GetMapping(NPM_PACKAGE_DIST_TAG_INFO_MAPPING_URI)
@@ -76,7 +89,10 @@ interface NpmResource {
 
     @ApiOperation("npm dist-tag add")
     @PutMapping(NPM_PACKAGE_DIST_TAG_ADD_MAPPING_URI)
-    fun addDistTags(@ArtifactPathVariable artifactInfo: NpmArtifactInfo, @RequestBody body: String): NpmSuccessResponse
+    fun addDistTags(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @RequestBody body: String
+    ): NpmSuccessResponse
 
     @ApiOperation("npm dist-tag rm")
     @DeleteMapping(NPM_PACKAGE_DIST_TAG_ADD_MAPPING_URI)
