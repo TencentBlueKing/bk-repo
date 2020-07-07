@@ -18,5 +18,6 @@
 - composer
 - opdata
 - monitor
+- replication
 
 
