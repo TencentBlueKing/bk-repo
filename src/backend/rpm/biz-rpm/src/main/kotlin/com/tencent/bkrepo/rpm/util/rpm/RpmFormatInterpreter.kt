@@ -1,7 +1,18 @@
 package com.tencent.bkrepo.rpm.util.rpm
 
 import com.google.common.collect.Lists
-import com.tencent.bkrepo.rpm.util.redline.model.*
+import com.tencent.bkrepo.rpm.util.redline.model.RpmFormat
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackage
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmVersion
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChecksum
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmTime
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmSize
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmHeaderRange
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmEntry
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmFile
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChangeLog
 import org.apache.commons.lang.StringUtils
 import org.redline_rpm.header.Header
 import org.redline_rpm.header.Flags
@@ -12,36 +23,56 @@ import java.util.LinkedList
 
 class RpmFormatInterpreter {
 
-    fun interpret(rawMetadata: RpmFormat): RpmMetadata {
-        val header: Header = rawMetadata.format.header
-        val signature: Signature = rawMetadata.format.signature
-        val rpmMetadata = RpmMetadata()
-        rpmMetadata.headerStart = rawMetadata.headerStart
-        rpmMetadata.headerEnd = rawMetadata.headerEnd
-        rpmMetadata.name = getName(header)!!
-        rpmMetadata.architecture = if (rawMetadata.type == RpmType.SOURCE) "src" else getArchitecture(header)!!
-        rpmMetadata.version = getVersion(header)!!
-        rpmMetadata.epoch = getEpoch(header)
-        rpmMetadata.release = getRelease(header)!!
-        rpmMetadata.summary = getSummary(header)!!
-        rpmMetadata.description = getDescription(header)!!
-        rpmMetadata.packager = getPackager(header)
-        rpmMetadata.url = getUrl(header)
-        rpmMetadata.buildTime = getBuildTime(header)
-        rpmMetadata.installedSize = getInstalledSize(header)
-        rpmMetadata.archiveSize = getArchiveSize(signature)
-        rpmMetadata.license = getLicense(header)
-        rpmMetadata.vendor = getVendor(header)
-        rpmMetadata.group = getGroup(header)!!
-        rpmMetadata.sourceRpm = getSourceRpm(header)!!
-        rpmMetadata.buildHost = getBuildHost(header)!!
-        rpmMetadata.provide = resolveEntriesEntries(header, Header.HeaderTag.PROVIDENAME, Header.HeaderTag.PROVIDEFLAGS, Header.HeaderTag.PROVIDEVERSION)
-        rpmMetadata.require = resolveEntriesEntries(header, Header.HeaderTag.REQUIRENAME, Header.HeaderTag.REQUIREFLAGS, Header.HeaderTag.REQUIREVERSION)
-        rpmMetadata.conflict = resolveEntriesEntries(header, Header.HeaderTag.CONFLICTNAME, Header.HeaderTag.CONFLICTFLAGS, Header.HeaderTag.CONFLICTVERSION)
-        rpmMetadata.obsolete = resolveEntriesEntries(header, Header.HeaderTag.OBSOLETENAME, Header.HeaderTag.OBSOLETEFLAGS, Header.HeaderTag.OBSOLETEVERSION)
-        rpmMetadata.files = resolveFiles(header)
-        rpmMetadata.changeLogs = resolveChangeLogs(header)
-        return rpmMetadata
+    fun interpret(rawFormat: RpmFormat, size: Long, checkSum: String, href: String): RpmMetadata {
+        val header: Header = rawFormat.format.header
+        val signature: Signature = rawFormat.format.signature
+        return RpmMetadata(setOf(
+                RpmPackage(
+                        "rpm",
+                        getName(header)!!,
+                        if (rawFormat.type == RpmType.SOURCE) {
+                            "src"
+                        } else {
+                            getArchitecture(header)!!
+                        },
+                        RpmVersion(getEpoch(header), getVersion(header)!!, getRelease(header)!!),
+                        RpmChecksum(checkSum),
+                        getSummary(header),
+                        getDescription(header),
+                        getPackager(header),
+                        getUrl(header),
+                        RpmTime(System.currentTimeMillis(), getBuildTime(header)),
+                        RpmSize(size, getInstalledSize(header), getArchiveSize(signature)),
+                        RpmLocation(href),
+                        com.tencent.bkrepo.rpm.util.xStream.pojo.RpmFormat(
+                                getLicense(header),
+                                getVendor(header),
+                                getGroup(header)!!,
+                                getBuildHost(header)!!,
+                                getSourceRpm(header)!!,
+                                RpmHeaderRange(rawFormat.headerStart, rawFormat.headerEnd),
+                                resolveEntriesEntries(header,
+                                        Header.HeaderTag.PROVIDENAME,
+                                        Header.HeaderTag.PROVIDEFLAGS,
+                                        Header.HeaderTag.PROVIDEVERSION),
+                                resolveEntriesEntries(header,
+                                        Header.HeaderTag.REQUIRENAME,
+                                        Header.HeaderTag.REQUIREFLAGS,
+                                        Header.HeaderTag.REQUIREVERSION),
+                                resolveEntriesEntries(header,
+                                        Header.HeaderTag.CONFLICTNAME,
+                                        Header.HeaderTag.CONFLICTFLAGS,
+                                        Header.HeaderTag.CONFLICTVERSION),
+                                resolveEntriesEntries(header,
+                                        Header.HeaderTag.OBSOLETENAME,
+                                        Header.HeaderTag.OBSOLETEFLAGS,
+                                        Header.HeaderTag.OBSOLETEVERSION),
+                                resolveFiles(header)
+//                    resolveChangeLogs(header)
+                        )
+                )
+                    ),
+                1L)
     }
 
     private fun getName(header: Header): String? {
@@ -96,6 +127,10 @@ class RpmFormatInterpreter {
         return getStringHeader(header, Header.HeaderTag.LICENSE)
     }
 
+    private fun getFilemTime(header: Header): Int {
+        return getIntHeader(header, Header.HeaderTag.FILEMTIMES)
+    }
+
     private fun getVendor(header: Header): String? {
         return getStringHeader(header, Header.HeaderTag.VENDOR)
     }
@@ -112,97 +147,96 @@ class RpmFormatInterpreter {
         return getStringHeader(header, Header.HeaderTag.BUILDHOST)
     }
 
-    private fun resolveEntriesEntries(header: Header, namesTag: Header.HeaderTag, flagsTag: Header.HeaderTag, versionsTag: Header.HeaderTag): LinkedList<Entry> {
-        val entries: LinkedList<Entry> = Lists.newLinkedList()
+    private fun resolveEntriesEntries(header: Header, namesTag: Header.HeaderTag, flagsTag: Header.HeaderTag, versionsTag: Header.HeaderTag): LinkedList<RpmEntry> {
+        val entries: LinkedList<RpmEntry> = Lists.newLinkedList()
         val entryNames = getStringArrayHeader(header, namesTag)
         val entryFlags = getIntArrayHeader(header, flagsTag)
         val entryVersions = getStringArrayHeader(header, versionsTag)
         for (i in entryNames.indices) {
             val entryName = entryNames[i]
-            val entry = Entry()
-            entryName?.let { entry.name = it }
+            val rpmEntry = RpmEntry(
+                    entryName
+            )
             if (entryFlags.size > i) {
                 val entryFlag = entryFlags[i]
-                setEntryFlags(entryFlag, entry)
+                setEntryFlags(entryFlag, rpmEntry)
                 if (entryFlag and Flags.PREREQ > 0) {
-                    entry.pre = "1"
+                    rpmEntry.pre = "1"
                 }
             }
             if (entryVersions.size > i) {
-                setEntryVersionFields(entryVersions[i], entry)
+                setEntryVersionFields(entryVersions[i], rpmEntry)
             }
-            entries.add(entry)
+            entries.add(rpmEntry)
         }
-
         return entries
     }
 
-    private fun setEntryFlags(entryFlags: Int, entry: Entry): Int {
+    private fun setEntryFlags(entryFlags: Int, rpmEntry: RpmEntry): Int {
         if (entryFlags and Flags.LESS > 0 && entryFlags and Flags.EQUAL > 0) {
-            entry.flags = "LE"
+            rpmEntry.flags = "LE"
         } else if (entryFlags and Flags.GREATER > 0 && entryFlags and Flags.EQUAL > 0) {
-            entry.flags = "GE"
+            rpmEntry.flags = "GE"
         } else if (entryFlags and Flags.EQUAL > 0) {
-            entry.flags = "EQ"
+            rpmEntry.flags = "EQ"
         } else if (entryFlags and Flags.LESS > 0) {
-            entry.flags = "LT"
+            rpmEntry.flags = "LT"
         } else if (entryFlags and Flags.GREATER > 0) {
-            entry.flags = "GT"
+            rpmEntry.flags = "GT"
         }
         return entryFlags
     }
 
-    private fun setEntryVersionFields(entryVersion: String?, entry: Entry) {
+    private fun setEntryVersionFields(entryVersion: String?, rpmEntry: RpmEntry) {
         if (StringUtils.isNotBlank(entryVersion)) {
             val versionTokens: Array<String> = StringUtils.split(entryVersion, '-')
             val versionValue = versionTokens[0]
             val versionValueTokens: Array<String> = StringUtils.split(versionValue, ':')
             if (versionValueTokens.size > 1) {
-                entry.epoch = versionValueTokens[0]
-                entry.version = versionValueTokens[1]
+                rpmEntry.epoch = versionValueTokens[0]
+                rpmEntry.ver = versionValueTokens[1]
             } else {
-                entry.epoch = "0"
-                entry.version = versionValueTokens[0]
+                rpmEntry.epoch = "0"
+                rpmEntry.ver = versionValueTokens[0]
             }
             if (versionTokens.size > 1) {
                 val releaseValue = versionTokens[1]
                 if (StringUtils.isNotBlank(releaseValue)) {
-                    entry.release = releaseValue
+                    rpmEntry.rel = releaseValue
                 }
             }
         }
     }
 
-    private fun resolveFiles(header: Header): LinkedList<File> {
-        val files: LinkedList<File> = Lists.newLinkedList()
+    private fun resolveFiles(header: Header): LinkedList<RpmFile> {
+        val files: LinkedList<RpmFile> = Lists.newLinkedList()
         val baseNames = getStringArrayHeader(header, Header.HeaderTag.BASENAMES)
         val baseNameDirIndexes = getIntArrayHeader(header, Header.HeaderTag.DIRINDEXES)
 
-        val dirPaths: ArrayList<Array<String?>> = Lists.newArrayList(getStringArrayHeader(header, Header.HeaderTag.DIRNAMES))
+        val dirPaths = getStringArrayHeader(header, Header.HeaderTag.DIRNAMES)
         for (i in baseNames.indices) {
             val baseName = baseNames[i]
             val baseNameDirIndex = baseNameDirIndexes[i]
-            val filePath = dirPaths[0][baseNameDirIndex] + baseName
-            val dir = dirPaths[0][baseNameDirIndex]?.contains("$filePath/")
-            val file = if (dir!!) File("dir", filePath) else File(null, filePath)
-            // 过滤文件列表
-            with(file.name) {
-                if (this.startsWith("/etc/") ||
-                        this.startsWith("/usr/bin/") ||
-                        this.startsWith("/usr/sbin"))
+            val filePath = dirPaths[baseNameDirIndex] + baseName
+            val dir = dirPaths.contains("$filePath/")
+            val file = if (dir) RpmFile("dir", filePath) else RpmFile(null, filePath)
+            (file.filePath).let {
+                if (it.startsWith("/etc/") ||
+                        it.startsWith("/usr/bin/") ||
+                        it.startsWith("/usr/sbin"))
                     files.add(file)
             }
         }
         return files
     }
 
-    private fun resolveChangeLogs(header: Header): LinkedList<ChangeLog> {
-        val changeLogs: LinkedList<ChangeLog> = Lists.newLinkedList()
+    private fun resolveChangeLogs(header: Header): LinkedList<RpmChangeLog> {
+        val changeLogs: LinkedList<RpmChangeLog> = Lists.newLinkedList()
         val changeLogAuthors = getStringArrayHeader(header, Header.HeaderTag.CHANGELOGNAME)
         val changeLogDates = getIntArrayHeader(header, Header.HeaderTag.CHANGELOGTIME)
         val changeLogTexts = getStringArrayHeader(header, Header.HeaderTag.CHANGELOGTEXT)
         for (i in changeLogTexts.indices) {
-            val changeLog = ChangeLog(
+            val changeLog = RpmChangeLog(
                     changeLogAuthors[i],
                     changeLogDates[i],
                     changeLogTexts[i]
