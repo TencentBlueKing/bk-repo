@@ -3,6 +3,7 @@ package com.tencent.bkrepo.composer.util
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.tencent.bkrepo.composer.ARTIFACT_DIRECT_DOWNLOAD_PREFIX
 import com.tencent.bkrepo.composer.COMPOSER_JSON
 import com.tencent.bkrepo.composer.exception.ComposerUnSupportCompressException
 import com.tencent.bkrepo.composer.util.JsonUtil.jsonValue
@@ -13,11 +14,27 @@ import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.util.zip.GZIPInputStream
 import com.tencent.bkrepo.composer.util.pojo.ComposerJsonNode
-import java.util.*
+import java.util.UUID
 
 object DecompressUtil {
 
-    private const val bufferSize = 2048
+    private const val BUFFER_SIZE = 2048
+    // 支持的压缩格式
+    private const val TAR = "tar"
+    private const val ZIP = "zip"
+    private const val WHL = "whl"
+    private const val GZ = "tar.gz"
+    private const val TGZ = "tgz"
+
+    // json属性
+    private const val UID = "uid"
+    private const val TYPE = "type"
+    private const val URL = "url"
+    private const val DIST = "dist"
+    private const val NAME = "name"
+    private const val VERSION = "version"
+
+    private const val LIBRARY = "library"
 
     /**
      * 获取composer 压缩包中'composer.json'文件
@@ -28,13 +45,13 @@ object DecompressUtil {
     @Throws(Exception::class)
     fun InputStream.getComposerJson(format: String): String {
         return when (format) {
-            "tar" -> {
+            TAR -> {
                 getTarComposerJson(this)
             }
-            "zip", "whl" -> {
+            ZIP, WHL -> {
                 getZipComposerJson(this)
             }
-            "tar.gz", "tgz" -> {
+            GZ, TGZ -> {
                 getTgzComposerJson(this)
             }
             else -> {
@@ -54,14 +71,17 @@ object DecompressUtil {
         val uriArgs = UriUtil.getUriArgs(uri)
         val json = this.getComposerJson(uriArgs.format)
         JsonParser().parse(json).asJsonObject.let {
-            // Todo uid的值从什么地方拿
-            it.addProperty("uid", UUID.randomUUID().toString())
+            // todo uid的值从什么地方拿
+            it.addProperty(UID, UUID.randomUUID().toString())
             val distObject = JsonObject()
-            distObject.addProperty("type", uriArgs.format)
-            distObject.addProperty("url", "direct-dists$uri")
-            it.add("dist", distObject)
-            it.addProperty("type", "library")
-            return ComposerJsonNode((json jsonValue "name"), (json jsonValue "version"), GsonBuilder().create().toJson(it))
+            distObject.addProperty(TYPE, uriArgs.format)
+            distObject.addProperty(URL, "$ARTIFACT_DIRECT_DOWNLOAD_PREFIX$uri")
+            it.add(DIST, distObject)
+            it.addProperty(TYPE, LIBRARY)
+
+            return ComposerJsonNode(packageName = (json jsonValue NAME),
+                    version = (json jsonValue VERSION),
+                    json = GsonBuilder().create().toJson(it))
         }
     }
 
@@ -93,7 +113,7 @@ object DecompressUtil {
                             zipEntry?.let {
                                 if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == COMPOSER_JSON) {
                                     var length: Int
-                                    val bytes = ByteArray(bufferSize)
+                                    val bytes = ByteArray(BUFFER_SIZE)
                                     while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
                                         stringBuilder.append(String(bytes, 0, length))
                                     }
