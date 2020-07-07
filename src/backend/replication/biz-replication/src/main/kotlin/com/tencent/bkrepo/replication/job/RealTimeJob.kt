@@ -2,11 +2,8 @@ package com.tencent.bkrepo.replication.job
 
 import com.tencent.bkrepo.replication.handler.NodeEventConsumer
 import com.tencent.bkrepo.replication.model.TOperateLog
-import com.tencent.bkrepo.replication.pojo.task.ReplicationType
-import com.tencent.bkrepo.replication.service.TaskService
 import com.tencent.bkrepo.repository.pojo.log.OperateType
 import com.tencent.bkrepo.repository.pojo.log.ResourceType
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -30,34 +27,37 @@ class RealTimeJob {
     @Autowired
     private lateinit var nodeConsumer: NodeEventConsumer
 
-    @Autowired
-    lateinit var taskService: TaskService
-
     private lateinit var container: MessageListenerContainer
 
     private val collectionName = "operate_log"
 
     @PostConstruct
-    @SchedulerLock
     fun run() {
-        taskService.listAllRemoteTask(ReplicationType.INCREMENTAL).forEach {
+        var isRunning = false
+        while (true) {
             try {
-                container = DefaultMessageListenerContainer(template)
-                val request = getTailCursorRequest(it.localProjectId!!, it.localRepoName!!)
-                container.register(request, TOperateLog::class.java)
-                container.start()
+                if (!isRunning) {
+                    container = DefaultMessageListenerContainer(template)
+                    val request = getTailCursorRequest()
+                    container.register(request, TOperateLog::class.java)
+                    container.start()
+                    logger.info("try to start status :[${container.isRunning}]")
+                }
             } catch (exception: Exception) {
                 logger.error("fail to register container [${exception.message}]")
             } finally {
+                logger.info("container running status :[${container.isRunning}]")
+                // get container running status an sleep try
+                isRunning = container.isRunning
+                Thread.sleep(30000)
             }
         }
     }
 
-    private fun getTailCursorRequest(projectId: String, repoName: String): TailableCursorRequest<Any> {
+    private fun getTailCursorRequest(): TailableCursorRequest<Any> {
         val query = Query.query(
-            Criteria.where(TOperateLog::createdDate.name).gte(LocalDateTime.now()).and(TOperateLog::resourceType.name).`is`(ResourceType.NODE)
-                .and("description.projectId").`is`(projectId)
-                .and("description.repoName").`is`(repoName)
+            Criteria.where(TOperateLog::createdDate.name).gte(LocalDateTime.now()).and(TOperateLog::resourceType.name)
+                .`is`(ResourceType.NODE)
         )
 
         val listener = MessageListener<Document, TOperateLog> {

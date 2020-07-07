@@ -31,7 +31,7 @@ class RescheduleOnceJob {
     private lateinit var taskRepository: TaskRepository
 
     @Scheduled(initialDelay = 1000 * 40, fixedDelay = Long.MAX_VALUE)
-    @SchedulerLock(name = "JobCleanScheduler", lockAtMostFor = "PT1H")
+    @SchedulerLock(name = "reSchedule", lockAtMostFor = "PT1H")
     fun reSchedule() {
         scheduler.getJobKeys(GroupMatcher.groupEquals(DEFAULT_GROUP_ID)).iterator().forEach {
             logger.info("get jobs  key [${it.group}], [${it.name}]")
