@@ -3,7 +3,11 @@ package com.tencent.bkrepo.docker.util
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
+import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_LIST
+import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_NAME
+import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_TYPE
+import com.tencent.bkrepo.docker.constant.DOCKER_NAME_REPO
 import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.HTTP_FORWARDED_PROTO
 import com.tencent.bkrepo.docker.constant.HTTP_PROTOCOL_HTTP
@@ -76,10 +80,10 @@ class RepoServiceUtil {
         fun buildManifestPropertyMap(dockerRepo: String, tag: String, digest: DockerDigest, type: ManifestType): HashMap<String, String> {
             var map = HashMap<String, String>()
             map[digest.getDigestAlg()] = digest.getDigestHex()
-            map["docker.manifest.digest"] = digest.toString()
-            map["docker.manifest"] = tag
-            map["docker.repoName"] = dockerRepo
-            map["docker.manifest.type"] = type.toString()
+            map[DOCKER_MANIFEST_DIGEST] = digest.toString()
+            map[DOCKER_MANIFEST_NAME] = tag
+            map[DOCKER_NAME_REPO] = dockerRepo
+            map[DOCKER_MANIFEST_TYPE] = type.toString()
             return map
         }
 
@@ -93,6 +97,7 @@ class RepoServiceUtil {
             }
         }
 
+        //get return url
         fun getDockerURI(path: String, httpHeaders: HttpHeaders): URI {
             val hostHeaders = httpHeaders["Host"]
             var host = EMPTYSTR
@@ -112,6 +117,7 @@ class RepoServiceUtil {
             return builder.build()
         }
 
+        //build return manifest path
         fun buildManifestPath(dockerRepo: String, tag: String, manifestType: ManifestType): String {
             return if (ManifestType.Schema2List == manifestType) {
                 "/$dockerRepo/$tag/$DOCKER_MANIFEST_LIST"
@@ -120,6 +126,7 @@ class RepoServiceUtil {
             }
         }
 
+        //get http protocol from request head
         private fun getProtocol(httpHeaders: HttpHeaders): String {
             val protocolHeaders = httpHeaders[HTTP_FORWARDED_PROTO]
             if (protocolHeaders == null || protocolHeaders.isEmpty()) {

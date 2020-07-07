@@ -125,7 +125,7 @@ class DockerArtifactRepo @Autowired constructor(
                 sha256 = context.artifactFile!!.getFileSha256(),
                 md5 = context.artifactFile!!.getFileMd5(),
                 operator = userId,
-                metadata = emptyMap(),
+                metadata = context.metadata,
                 overwrite = true
             )
         )

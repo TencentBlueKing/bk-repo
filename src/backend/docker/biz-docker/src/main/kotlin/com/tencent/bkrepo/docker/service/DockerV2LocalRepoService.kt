@@ -288,15 +288,15 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
                 context, manifestType,
                 metadata, manifestPath, artifactFile
             )
-            if (!repo.upload(uploadContext)) {
-                throw DockerFileSaveFailedException(manifestPath)
-            }
             val params = RepoServiceUtil.buildManifestPropertyMap(artifactName, tag, digest, manifestType)
             val labels = metadata.tagInfo.labels
             labels.entries().forEach {
                 params[it.key] = it.value
             }
-            repo.setAttributes(projectId, repoName, manifestPath, params)
+            uploadContext.metadata(params)
+            if (!repo.upload(uploadContext)) {
+                throw DockerFileSaveFailedException(manifestPath)
+            }
             return digest
         }
     }
@@ -448,17 +448,17 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
                 }
             }
         }
-        val uploadContext = RepoServiceUtil.manifestListUploadContext(
-            context, digest,
-            manifestPath, manifestBytes
-        )
 
-        if (!repo.upload(uploadContext)) {
-            throw DockerFileSaveFailedException(manifestPath)
-        }
         with(context) {
+            val uploadContext = RepoServiceUtil.manifestListUploadContext(
+                context, digest,
+                manifestPath, manifestBytes
+            )
             val params = RepoServiceUtil.buildManifestPropertyMap(artifactName, tag, digest, ManifestType.Schema2List)
-            repo.setAttributes(projectId, repoName, manifestPath, params)
+            uploadContext.metadata(params)
+            if (!repo.upload(uploadContext)) {
+                throw DockerFileSaveFailedException(manifestPath)
+            }
         }
     }
 
