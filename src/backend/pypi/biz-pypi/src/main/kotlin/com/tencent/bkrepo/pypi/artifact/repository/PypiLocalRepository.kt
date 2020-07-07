@@ -326,13 +326,11 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 }
             }
         }
-
         threadPool.shutdown()
         while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {}
         val end = System.currentTimeMillis()
         val elapseTimeSeconds = (end - start) / 1000
-        insertMigrateData(context.artifactInfo.projectId,
-                context.artifactInfo.repoName,
+        insertMigrateData(context,
                 failSet,
                 limitPackages.toInt(),
                 totalCount,
@@ -340,16 +338,15 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     }
 
     private fun insertMigrateData(
-        projectId: String,
-        repoName: String,
+        context: ArtifactMigrateContext,
         collect: Set<String>,
         packagesName: Int,
         filesNum: Int,
         elapseTimeSeconds: Long
     ) {
         val dataCreateRequest = MigrateDataCreateNode(
-                projectId = projectId,
-                repoName = repoName,
+                projectId = context.artifactInfo.projectId,
+                repoName = context.artifactInfo.repoName,
                 errorData = jacksonObjectMapper().writeValueAsString(collect),
                 packagesNum = packagesName,
                 filesNum = filesNum,
@@ -405,9 +402,9 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         // 获取文件版本信息
-        val pkgInfo = filename.fileFormat()?.let { artifactFile.getInputStream().getPkgInfo(it) }
+        val pypiInfo = filename.fileFormat()?.let { artifactFile.getInputStream().getPkgInfo(it) }
         // 文件fullPath
-        val path = "/$packageName/${pkgInfo?.get("version")}/$filename"
+        val path = "/$packageName/${pypiInfo.version}/$filename"
 
         nodeResource.exist(repositoryInfo.projectId, repositoryInfo.name, path).data?.let {
             if (it) {

@@ -22,7 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest
  * @date: 2019-10-15
  */
 @DisplayName("元数据服务 测试")
-@SpringBootTest
+@SpringBootTest(properties = ["auth.enabled=false"])
 class MetadataServiceTest @Autowired constructor(
     private val metadataService: MetadataService,
     private val repositoryService: RepositoryService,

@@ -4,13 +4,20 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.base.Charsets
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.model.DockerDigest
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.LoggerFactory
 
+/**
+ * to parse manifest digest
+ * @author: owenlxu
+ * @date: 2020-01-05
+ */
 object DockerManifestDigester {
+
     private val logger = LoggerFactory.getLogger(DockerManifestDigester::class.java)
 
     fun calc(jsonBytes: ByteArray): DockerDigest? {
@@ -30,7 +37,7 @@ object DockerManifestDigester {
             }
             schema2Digest(jsonBytes)
         }
-        return DockerDigest("sha256:$digest")
+        return DockerDigest.fromSha256(digest)
     }
 
     private fun schema2Digest(jsonBytes: ByteArray): String {
@@ -41,14 +48,14 @@ object DockerManifestDigester {
 
     private fun schema1Digest(jsonBytes: ByteArray, manifest: JsonNode): String {
         var formatLength = 0
-        var formatTail = ""
+        var formatTail = EMPTYSTR
         val signatures = manifest.get("signatures")
-        if (signatures != null) {
+        signatures?.let {
             val sig = signatures.iterator()
             while (sig.hasNext()) {
                 val signature = sig.next() as JsonNode
                 var protectedJson = signature.get("protected")
-                if (protectedJson != null) {
+                protectedJson?.let {
                     val protectedBytes = Base64.decodeBase64(protectedJson.asText())
                     protectedJson = mapper().readTree(protectedBytes)
                     formatLength = protectedJson.get("formatLength").asInt()

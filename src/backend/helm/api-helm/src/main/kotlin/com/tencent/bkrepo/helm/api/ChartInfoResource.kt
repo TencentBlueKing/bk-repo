@@ -18,7 +18,7 @@ interface ChartInfoResource {
         @ArtifactPathVariable
         artifactInfo: HelmArtifactInfo,
         @RequestParam startTime: LocalDateTime?
-    )
+    ): Map<String, *>
 
     @RequestMapping(CHARTS_LIST, method = [RequestMethod.HEAD])
     fun exists(

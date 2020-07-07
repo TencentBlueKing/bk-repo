@@ -1,7 +1,12 @@
 package com.tencent.bkrepo.docker.util
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
+import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
+import com.tencent.bkrepo.docker.constant.DOCKER_CONTENT_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
@@ -15,17 +20,25 @@ import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpHeaders.CONTENT_LENGTH
+import org.springframework.http.HttpHeaders.CONTENT_TYPE
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import javax.xml.bind.DatatypeConverter
 
+/**
+ * docker content  utility
+ * to get detail of manifest or blob
+ * @author: owenlxu
+ * @date: 2019-10-15
+ */
 class ContentUtil constructor(repo: DockerArtifactRepo) {
 
     val repo = repo
 
     companion object {
         private val logger = LoggerFactory.getLogger(ContentUtil::class.java)
-        val EMPTY_BLOB_CONTENT =
-            DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")
+        val EMPTY_BLOB_CONTENT: ByteArray = DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")
 
         fun isEmptyBlob(digest: DockerDigest): Boolean {
             return digest.toString() == emptyBlobDigest().toString()
@@ -36,16 +49,16 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
         }
 
         fun emptyBlobHeadResponse(): DockerResponse {
-            return ResponseEntity.ok().header("Docker-Distribution-Api-Version", "registry/2.0")
-                .header("Docker-Content-Digest", emptyBlobDigest().toString()).header("Content-Length", "32")
-                .header("Content-Type", "application/octet-stream").build()
+            return ResponseEntity.ok().header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+                .header(DOCKER_CONTENT_DIGEST, emptyBlobDigest().toString()).header(CONTENT_LENGTH, "32")
+                .header(CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).build()
         }
 
         fun emptyBlobGetResponse(): DockerResponse {
-            return ResponseEntity.ok().header("Content-Length", "32")
-                .header("Docker-Distribution-Api-Version", "registry/2.0")
-                .header("Docker-Content-Digest", emptyBlobDigest().toString())
-                .header("Content-Type", "application/octet-stream").body(EMPTY_BLOB_CONTENT)
+            return ResponseEntity.ok().header(CONTENT_LENGTH, "32")
+                .header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+                .header(DOCKER_CONTENT_DIGEST, emptyBlobDigest().toString())
+                .header(CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).body(EMPTY_BLOB_CONTENT)
         }
     }
 
@@ -54,8 +67,8 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
     }
 
     fun getSchema2ManifestConfigContent(context: RequestContext, bytes: ByteArray, tag: String): ByteArray {
-        val manifest = JsonUtil.readTree(bytes)
-        val digest = manifest.get("config").get("digest").asText()
+        val manifest = JsonUtils.objectMapper.readTree(bytes)
+        val digest = manifest.get("config").get(DOCKER_DIGEST).asText()
         val fileName = DockerDigest(digest).fileName()
         val configFile = ArtifactUtil.getManifestConfigBlob(repo, fileName, context, tag) ?: run {
             return ByteArray(0)
@@ -80,7 +93,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
     }
 
     fun getSchema2Path(context: RequestContext, bytes: ByteArray): String {
-        val manifestList = JsonUtil.readTree(bytes)
+        val manifestList = JsonUtils.objectMapper.readTree(bytes)
         val manifests = manifestList.get("manifests")
         val maniIter = manifests.iterator()
             while (maniIter.hasNext()) {
@@ -89,7 +102,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
                 val architecture = platform.get("architecture").asText()
                 val os = platform.get("os").asText()
                 if (StringUtils.equals(architecture, "amd64") && StringUtils.equals(os, "linux")) {
-                    val digest = manifest.get("digest").asText()
+                    val digest = manifest.get(DOCKER_DIGEST).asText()
                     val fileName = DockerDigest(digest).fileName()
                     val manifestFile = ArtifactUtil.getBlobByName(repo, context, fileName) ?: run {
                         return EMPTYSTR
@@ -100,12 +113,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
         return EMPTYSTR
     }
 
-    fun addManifestsBlobs(
-        context: RequestContext,
-        type: ManifestType,
-        bytes: ByteArray,
-        metadata: ManifestMetadata
-    ) {
+    fun addManifestsBlobs(context: RequestContext, type: ManifestType, bytes: ByteArray, metadata: ManifestMetadata) {
         if (ManifestType.Schema2 == type) {
             addSchema2Blob(bytes, metadata)
         } else if (ManifestType.Schema2List == type) {
@@ -114,23 +122,23 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
     }
 
     private fun addSchema2Blob(bytes: ByteArray, metadata: ManifestMetadata) {
-        val manifest = JsonUtil.readTree(bytes)
+        val manifest = JsonUtils.objectMapper.readTree(bytes)
         val config = manifest.get("config")
         config?.let {
-            val digest = config.get("digest").asText()
+            val digest = config.get(DOCKER_DIGEST).asText()
             val blobInfo = DockerBlobInfo("", digest, 0L, "")
             metadata.blobsInfo.add(blobInfo)
         }
     }
 
     private fun addSchema2ListBlobs(context: RequestContext, bytes: ByteArray, metadata: ManifestMetadata) {
-        val manifestList = JsonUtil.readTree(bytes)
+        val manifestList = JsonUtils.objectMapper.readTree(bytes)
         val manifests = manifestList.get("manifests")
         val manifest = manifests.iterator()
 
         while (manifest.hasNext()) {
             val manifestNode = manifest.next() as JsonNode
-            val digestString = manifestNode.get("platform").get("digest").asText()
+            val digestString = manifestNode.get("platform").get(DOCKER_DIGEST).asText()
             val dockerBlobInfo = DockerBlobInfo("", digestString, 0L, "")
             metadata.blobsInfo.add(dockerBlobInfo)
             val manifestFileName = DockerDigest(digestString).fileName()
@@ -143,23 +151,17 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
         }
     }
 
-    fun buildManifestResponse(
-        httpHeaders: HttpHeaders,
-        context: RequestContext,
-        manifestPath: String,
-        digest: DockerDigest,
-        length: Long
-    ): DockerResponse {
+    fun buildManifestResponse(httpHeaders: HttpHeaders, context: RequestContext, manifestPath: String, digest: DockerDigest, length: Long): DockerResponse {
         val downloadContext = DownloadContext(context).length(length).sha256(digest.getDigestHex())
         val inputStream = repo.download(downloadContext)
         val inputStreamResource = InputStreamResource(inputStream)
         val contentType = getManifestType(context.projectId, context.repoName, manifestPath)
         httpHeaders.apply {
-            set("Docker-Distribution-Api-Version", "registry/2.0")
+            set(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         }.apply {
-            set("Docker-Content-Digest", digest.toString())
+            set(DOCKER_CONTENT_DIGEST, digest.toString())
         }.apply {
-            set("Content-Type", contentType)
+            set(CONTENT_TYPE, contentType)
         }
         logger.info("file [$digest] result length [$length] type [$contentType]")
         return ResponseEntity.ok().headers(httpHeaders).contentLength(length).body(inputStreamResource)

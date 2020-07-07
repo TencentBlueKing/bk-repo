@@ -26,7 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest
  * @date: 2019-11-15
  */
 @DisplayName("节点自定义查询测试")
-@SpringBootTest
+@SpringBootTest(properties = ["auth.enabled=false"])
 internal class NodeQueryTest @Autowired constructor(
     private val nodeService: NodeService,
     private val nodeQueryService: NodeQueryService,

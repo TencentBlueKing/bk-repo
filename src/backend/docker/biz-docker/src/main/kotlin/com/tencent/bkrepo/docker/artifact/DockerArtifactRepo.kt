@@ -12,7 +12,19 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import com.tencent.bkrepo.docker.constant.DOCKER_CREATE_BY
+import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_PATH
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
+import com.tencent.bkrepo.docker.constant.DOCKER_PRE_SUFFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
+import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
+import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_INDEX
+import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_LIMIT
+import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_LIMIT_SMALL
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
@@ -39,7 +51,6 @@ import java.io.InputStream
  * @author: owenlxu
  * @date: 2020-06-10
  */
-
 @Service
 class DockerArtifactRepo @Autowired constructor(
     val repositoryResource: RepositoryResource,
@@ -51,14 +62,24 @@ class DockerArtifactRepo @Autowired constructor(
 
     lateinit var userId: String
 
-    fun startAppend(): String {
+    fun startAppend(context: RequestContext): String {
+        // check repository
+        val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+            logger.warn("user [$userId]  download file [$context] repository not found")
+            throw DockerRepoNotFoundException(context.repoName)
+        }
         logger.debug("user [$userId] start to append file ")
-        return storageService.createAppendId()
+        return storageService.createAppendId(repository.storageCredentials)
     }
 
-    fun writeAppend(uuid: String, artifactFile: ArtifactFile): Long {
+    fun writeAppend(uuid: String, artifactFile: ArtifactFile, context: RequestContext): Long {
+        // check repository
+        val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+            logger.warn("user [$userId]  download file [$context] repository not found")
+            throw DockerRepoNotFoundException(context.repoName)
+        }
         logger.debug("user [$userId]  append file id [$uuid]")
-        return this.storageService.append(uuid, artifactFile)
+        return this.storageService.append(uuid, artifactFile, repository.storageCredentials)
     }
 
     // TODO : to implement
@@ -101,8 +122,8 @@ class DockerArtifactRepo @Autowired constructor(
                 folder = false,
                 fullPath = context.fullPath,
                 size = context.artifactFile!!.getSize(),
-                sha256 = FileDigestUtils.fileSha256(context.artifactFile!!.getInputStream()),
-                md5 = FileDigestUtils.fileMd5(context.artifactFile!!.getInputStream()),
+                sha256 = context.artifactFile!!.getFileSha256(),
+                md5 = context.artifactFile!!.getFileMd5(),
                 operator = userId,
                 metadata = emptyMap(),
                 overwrite = true
@@ -260,14 +281,14 @@ class DockerArtifactRepo @Autowired constructor(
 
     // get artifact list by name
     fun getArtifactListByName(projectId: String, repoName: String, fileName: String): List<Map<String, Any>> {
-        val projectRule = Rule.QueryRule("projectId", projectId)
-        val repoNameRule = Rule.QueryRule("repoName", repoName)
-        val nameRule = Rule.QueryRule("name", fileName)
+        val projectRule = Rule.QueryRule(DOCKER_PROJECT_ID, projectId)
+        val repoNameRule = Rule.QueryRule(DOCKER_REPO_NAME, repoName)
+        val nameRule = Rule.QueryRule(DOCKER_NODE_NAME, fileName)
         val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule))
         val queryModel = QueryModel(
-            page = PageLimit(0, 10),
-            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("fullPath", "path", "size"),
+            page = PageLimit(DOCKER_SEARCH_INDEX, DOCKER_SEARCH_LIMIT_SMALL),
+            sort = Sort(listOf(DOCKER_NODE_FULL_PATH), Sort.Direction.ASC),
+            select = mutableListOf(DOCKER_NODE_FULL_PATH, DOCKER_NODE_PATH, DOCKER_NODE_SIZE),
             rule = rule
         )
 
@@ -280,14 +301,14 @@ class DockerArtifactRepo @Autowired constructor(
 
     // get docker image list
     fun getDockerArtifactList(projectId: String, repoName: String): List<String> {
-        val projectRule = Rule.QueryRule("projectId", projectId)
-        val repoNameRule = Rule.QueryRule("repoName", repoName)
-        val nameRule = Rule.QueryRule("name", "manifest.json")
+        val projectRule = Rule.QueryRule(DOCKER_PROJECT_ID, projectId)
+        val repoNameRule = Rule.QueryRule(DOCKER_REPO_NAME, repoName)
+        val nameRule = Rule.QueryRule(DOCKER_NODE_NAME, DOCKER_MANIFEST)
         val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule))
         val queryModel = QueryModel(
-            page = PageLimit(0, 10000),
-            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("fullPath", "path", "size"),
+            page = PageLimit(DOCKER_SEARCH_INDEX, DOCKER_SEARCH_LIMIT),
+            sort = Sort(listOf(DOCKER_NODE_FULL_PATH), Sort.Direction.ASC),
+            select = mutableListOf(DOCKER_NODE_FULL_PATH, DOCKER_NODE_PATH, DOCKER_NODE_SIZE),
             rule = rule
         )
 
@@ -297,8 +318,12 @@ class DockerArtifactRepo @Autowired constructor(
         }
         val data = mutableListOf<String>()
         result.records.forEach {
-            val path = it["path"] as String
-            data.add(path.removeSuffix("/").replaceAfterLast("/", "").removeSuffix("/").removePrefix("/"))
+            val path = it[DOCKER_NODE_PATH] as String
+            data.add(
+                path.removeSuffix(DOCKER_PRE_SUFFIX).replaceAfterLast(DOCKER_PRE_SUFFIX, EMPTYSTR).removeSuffix(
+                    DOCKER_PRE_SUFFIX
+                ).removePrefix(DOCKER_PRE_SUFFIX)
+            )
         }
         return data.distinct()
     }
@@ -306,15 +331,15 @@ class DockerArtifactRepo @Autowired constructor(
     // get repo tag list
     fun getRepoTagList(context: RequestContext): Map<String, String> {
         with(context) {
-            val projectRule = Rule.QueryRule("projectId", projectId)
-            val repoNameRule = Rule.QueryRule("repoName", repoName)
-            val nameRule = Rule.QueryRule("name", "manifest.json")
-            val pathRule = Rule.QueryRule("path", "/$artifactName/", OperationType.PREFIX)
+            val projectRule = Rule.QueryRule(DOCKER_PROJECT_ID, projectId)
+            val repoNameRule = Rule.QueryRule(DOCKER_REPO_NAME, repoName)
+            val nameRule = Rule.QueryRule(DOCKER_NODE_NAME, DOCKER_MANIFEST)
+            val pathRule = Rule.QueryRule(DOCKER_NODE_PATH, "/$artifactName/", OperationType.PREFIX)
             val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule, pathRule))
             val queryModel = QueryModel(
-                page = PageLimit(0, 100000),
-                sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-                select = mutableListOf("fullPath", "path", "size", "createdBy"),
+                page = PageLimit(DOCKER_SEARCH_INDEX, DOCKER_SEARCH_LIMIT),
+                sort = Sort(listOf(DOCKER_NODE_FULL_PATH), Sort.Direction.ASC),
+                select = mutableListOf(DOCKER_NODE_FULL_PATH, DOCKER_NODE_PATH, DOCKER_NODE_SIZE, DOCKER_CREATE_BY),
                 rule = rule
             )
 
@@ -324,9 +349,9 @@ class DockerArtifactRepo @Autowired constructor(
             }
             val data = mutableMapOf<String, String>()
             result.records.forEach {
-                var path = it["path"] as String
-                val tag = path.removePrefix("/$artifactName/").removeSuffix("/")
-                val user = it["createdBy"] as String
+                var path = it[DOCKER_NODE_PATH] as String
+                val tag = path.removePrefix("/$artifactName/").removeSuffix(DOCKER_PRE_SUFFIX)
+                val user = it[DOCKER_CREATE_BY] as String
                 data[tag] = user
             }
             return data
@@ -335,14 +360,14 @@ class DockerArtifactRepo @Autowired constructor(
 
     // get blob list by digest
     fun getBlobListByDigest(projectId: String, repoName: String, digestName: String): List<Map<String, Any>>? {
-        val projectRule = Rule.QueryRule("projectId", projectId)
-        val repoNameRule = Rule.QueryRule("repoName", repoName)
-        val nameRule = Rule.QueryRule("name", digestName)
+        val projectRule = Rule.QueryRule(DOCKER_PROJECT_ID, projectId)
+        val repoNameRule = Rule.QueryRule(DOCKER_REPO_NAME, repoName)
+        val nameRule = Rule.QueryRule(DOCKER_NODE_NAME, digestName)
         val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule))
         val queryModel = QueryModel(
-            page = PageLimit(0, 9999999),
-            sort = Sort(listOf("path"), Sort.Direction.ASC),
-            select = mutableListOf("path", "size"),
+            page = PageLimit(DOCKER_SEARCH_INDEX, DOCKER_SEARCH_LIMIT),
+            sort = Sort(listOf(DOCKER_NODE_PATH), Sort.Direction.ASC),
+            select = mutableListOf(DOCKER_NODE_PATH, DOCKER_NODE_SIZE),
             rule = rule
         )
         val result = nodeResource.query(queryModel).data ?: run {

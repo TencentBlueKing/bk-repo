@@ -4,6 +4,11 @@ import com.google.common.collect.HashMultimap
 import com.google.common.collect.Multimap
 import com.google.common.collect.Sets
 
+/**
+ * docker tag info
+ * @author: owenlxu
+ * @date: 2019-10-15
+ */
 data class DockerTagInfo(
     var title: String = "",
     var digest: DockerDigest? = null,

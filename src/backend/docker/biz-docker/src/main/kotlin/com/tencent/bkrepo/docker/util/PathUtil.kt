@@ -5,6 +5,11 @@ import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
 
+/**
+ * docker path utility
+ * @author: owenlxu
+ * @date: 2019-11-15
+ */
 class PathUtil {
     companion object {
 

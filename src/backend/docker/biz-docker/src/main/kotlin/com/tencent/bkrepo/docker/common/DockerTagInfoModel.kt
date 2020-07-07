@@ -3,6 +3,11 @@ package com.tencent.bkrepo.docker.common
 import com.google.common.collect.Lists
 import com.google.common.collect.Sets
 
+/**
+ * model to describe docker tag model
+ * @author: owenlxu
+ * @date: 2019-11-12
+ */
 data class DockerTagInfoModel(
     var title: String? = null,
     var digest: String? = null,

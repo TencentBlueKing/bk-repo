@@ -11,11 +11,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
@@ -23,7 +18,6 @@ import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.apache.commons.lang.StringUtils
-import org.apache.http.HttpStatus
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -133,62 +127,6 @@ class HelmLocalRepository : LocalRepository() {
             throw HelmFileNotFoundException("remove $fullPath failed: no such file or directory")
         }
         nodeResource.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
-    }
-
-    // fun searchJson(context: ArtifactSearchContext): String {
-    //     val artifactInfo = context.artifactInfo
-    //     val fullPath = INDEX_CACHE_YAML
-    //     with(artifactInfo) {
-    //         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return EMPTY_CHART_OR_VERSION
-    //         val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
-    //             ?: return EMPTY_CHART_OR_VERSION
-    //         return JsonUtil.searchJson(inputStream, artifactUri)
-    //     }
-    // }
-
-    fun isExists(context: ArtifactSearchContext) {
-        val artifactInfo = context.artifactInfo
-        val response = HttpContextHolder.getResponse()
-        val status: Int = with(artifactInfo) {
-            val projectId = Rule.QueryRule("projectId", projectId)
-            val repoName = Rule.QueryRule("repoName", repoName)
-            val urlList = artifactUri.removePrefix("/").split("/").filter { it.isNotBlank() }
-            val rule: Rule? = when (urlList.size) {
-                // query with name
-                1 -> {
-                    val name = Rule.QueryRule("metadata.name", urlList[0])
-                    Rule.NestedRule(
-                        mutableListOf(repoName, projectId, name),
-                        Rule.NestedRule.RelationType.AND
-                    )
-                }
-                // query with name and version
-                2 -> {
-                    val name = Rule.QueryRule("metadata.name", urlList[0])
-                    val version = Rule.QueryRule("metadata.version", urlList[1])
-                    Rule.NestedRule(
-                        mutableListOf(repoName, projectId, name, version),
-                        Rule.NestedRule.RelationType.AND
-                    )
-                }
-                else -> {
-                    null
-                }
-            }
-            if (rule != null) {
-                val queryModel = QueryModel(
-                    page = PageLimit(0, 5),
-                    sort = Sort(listOf("name"), Sort.Direction.ASC),
-                    select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-                    rule = rule
-                )
-                val nodeList: List<Map<String, Any>>? = nodeResource.query(queryModel).data?.records
-                if (nodeList.isNullOrEmpty()) HttpStatus.SC_NOT_FOUND else HttpStatus.SC_OK
-            } else {
-                HttpStatus.SC_NOT_FOUND
-            }
-        }
-        response.status = status
     }
 
     companion object {

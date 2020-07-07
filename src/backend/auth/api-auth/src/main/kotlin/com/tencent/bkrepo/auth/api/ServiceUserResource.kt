@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @FeignClient(SERVICE_NAME, contextId = "ServiceUserResource")
 @RequestMapping("/user")
 interface ServiceUserResource {
+
     @ApiOperation("创建用户")
     @PostMapping("/create")
     fun createUser(

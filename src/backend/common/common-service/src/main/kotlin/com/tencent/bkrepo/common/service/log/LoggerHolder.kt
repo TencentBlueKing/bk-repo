@@ -46,8 +46,9 @@ object LoggerHolder {
         val userId = request?.getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val accessChannel = determineAccessChannel(request)
         val uri = request?.requestURI
+        val method = request?.method
         val exceptionMessage = message ?: exception.message.orEmpty()
-        val fullMessage = "User[$userId] access [$uri] by [$accessChannel] failed[${exception.javaClass.simpleName}]: $exceptionMessage"
+        val fullMessage = "User[$userId] $method [$uri] by [$accessChannel] failed[${exception.javaClass.simpleName}]: $exceptionMessage"
         if (systemError) {
             exceptionLogger.error(fullMessage, exception)
         } else {

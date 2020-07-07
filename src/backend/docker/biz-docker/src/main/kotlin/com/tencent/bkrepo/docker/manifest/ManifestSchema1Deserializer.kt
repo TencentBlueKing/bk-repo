@@ -1,14 +1,20 @@
 package com.tencent.bkrepo.docker.manifest
 
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.DockerImageMetadata
 import com.tencent.bkrepo.docker.model.ManifestMetadata
-import com.tencent.bkrepo.docker.util.JsonUtil
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import java.io.IOException
 
+/**
+ * to deserialize manifest schema1 manifest
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 class ManifestSchema1Deserializer {
 
     companion object {
@@ -27,8 +33,8 @@ class ManifestSchema1Deserializer {
         private fun applyAttributesFromContent(manifestBytes: ByteArray?, digest: DockerDigest): ManifestMetadata {
             val manifestMetadata = ManifestMetadata()
             if (manifestBytes != null) {
-                val manifest = JsonUtil.readTree(manifestBytes)
-                manifestMetadata.tagInfo.title = manifest.get("name").asText() + ":" + manifest.get("tag").asText()
+                val manifest = JsonUtils.objectMapper.readTree(manifestBytes)
+                manifestMetadata.tagInfo.title = manifest.get(DOCKER_NODE_NAME).asText() + ":" + manifest.get("tag").asText()
                 manifestMetadata.tagInfo.digest = digest
                 var totalSize = 0L
                 val history = manifest.get("history")
@@ -36,7 +42,7 @@ class ManifestSchema1Deserializer {
                 for (i in 0 until history.size()) {
                     val fsLayer = history.get(i)
                     val v1Compatibility = fsLayer.get("v1Compatibility").asText()
-                    val dockerMetadata = JsonUtil.readValue(v1Compatibility.toByteArray(), DockerImageMetadata::class.java)
+                    val dockerMetadata = JsonUtils.objectMapper.readValue(v1Compatibility.toByteArray(), DockerImageMetadata::class.java)
                     val blobDigest = manifest.get("fsLayers").get(i).get("blobSum").asText()
                     val size = dockerMetadata.size
                     totalSize += dockerMetadata.size

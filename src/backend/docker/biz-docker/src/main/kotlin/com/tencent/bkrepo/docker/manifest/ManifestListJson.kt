@@ -3,6 +3,11 @@ package com.tencent.bkrepo.docker.manifest
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.io.Serializable
 
+/**
+ * to deserialize manifest  list json
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ManifestListJson : Serializable {
     var schemaVersion: Int = 0

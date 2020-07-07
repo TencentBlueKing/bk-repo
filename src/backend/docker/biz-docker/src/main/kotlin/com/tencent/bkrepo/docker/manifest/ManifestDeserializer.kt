@@ -6,6 +6,11 @@ import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
 import com.tencent.bkrepo.docker.util.ContentUtil
 
+/**
+ * the entrance for deserialize manifest
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 class ManifestDeserializer {
 
     companion object {

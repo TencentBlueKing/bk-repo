@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.artifact.stream
 
-import com.tencent.bkrepo.common.api.util.randomString
+import com.tencent.bkrepo.common.api.constant.StringPool.randomString
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.nio.charset.Charset
