@@ -271,7 +271,7 @@ class DockerArtifactRepo @Autowired constructor(
             logger.warn("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
         }
-        if (node.nodeInfo.sha256 == null) {
+        node.nodeInfo.sha256 ?: run {
             logger.error("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
         }
