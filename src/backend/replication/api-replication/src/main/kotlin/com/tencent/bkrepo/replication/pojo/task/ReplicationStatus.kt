@@ -5,5 +5,10 @@ enum class ReplicationStatus {
     PAUSED,
     REPLICATING,
     SUCCESS,
-    FAILED
+    INTERRUPTED,
+    FAILED;
+
+    companion object {
+        val UNDO_STATUS_SET = setOf(WAITING, REPLICATING)
+    }
 }

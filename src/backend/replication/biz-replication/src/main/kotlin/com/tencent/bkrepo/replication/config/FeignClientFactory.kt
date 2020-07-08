@@ -15,6 +15,7 @@ import feign.codec.Decoder
 import feign.codec.Encoder
 import feign.codec.ErrorDecoder
 import org.springframework.cloud.openfeign.FeignLoggerFactory
+import java.util.concurrent.TimeUnit
 
 object FeignClientFactory {
 
@@ -45,6 +46,6 @@ object FeignClientFactory {
     private val retryer = SpringContextUtils.getBean(Retryer::class.java)
     private val errorDecoder = SpringContextUtils.getBean(ErrorDecoder::class.java)
     // 设置不超时
-    private val options = Request.Options(DEFAULT_CONNECT_TIMEOUT_MILLIS, DEFAULT_READ_TIMEOUT_MILLIS)
+    private val options = Request.Options(60, TimeUnit.SECONDS, 60, TimeUnit.SECONDS, true)
     private val defaultClient = Client.Default(disableValidationSSLSocketFactory, trustAllHostname)
 }
