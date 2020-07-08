@@ -21,17 +21,17 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
         while (tokenizer.hasMoreTokens()) {
             pathElements.add(tokenizer.nextToken())
         }
-        if (pathElements.size < 3) {
+        if (pathElements.size < pathMinLimit) {
             logger.debug("Cannot build MavenArtifactInfo from '{}'. The groupId, artifactId and version are unreadable.",
                     uri)
             return MavenArtifactInfo("", "", "", "", "", "")
         }
-        var pos = pathElements.size - 2
+        var pos = pathElements.size - groupMark
 
         val version = pathElements[pos--]
         val artifactId = pathElements[pos--]
         val groupIdBuff = StringBuilder()
-        while (pos >= 2) {
+        while (pos >= groupMark) {
             if (groupIdBuff.isNotEmpty()) {
                 groupIdBuff.insert(0, '.')
             }
@@ -51,5 +51,9 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
 
     companion object {
         private val logger = LoggerFactory.getLogger(MavenArtifactInfoResolver::class.java)
+        // artifact uri 最少请求参数
+        private const val pathMinLimit = 3
+        // maven构件请求格式：最后两个的参数固定是版本和包名，构造group(组织名)时去除最后两个字段
+        private const val groupMark = 2
     }
 }

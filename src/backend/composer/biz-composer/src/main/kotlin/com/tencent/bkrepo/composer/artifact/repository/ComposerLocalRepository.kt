@@ -13,8 +13,10 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.composer.ARTIFACT_DIRECT_DOWNLOAD_PREFIX
 import com.tencent.bkrepo.composer.artifact.ComposerArtifactInfo
 import com.tencent.bkrepo.composer.util.DecompressUtil.wrapperJson
+import com.tencent.bkrepo.composer.util.HttpUtil.requestAddr
 import com.tencent.bkrepo.composer.util.JsonUtil
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperJson
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperPackageJson
@@ -43,7 +45,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
                 repoName = repositoryInfo.name,
                 folder = false,
                 overwrite = true,
-                fullPath = "/direct-dists/${filename.removePrefix("/")}",
+                fullPath = "/$ARTIFACT_DIRECT_DOWNLOAD_PREFIX/${filename.removePrefix("/")}",
                 size = context.getArtifactFile().getSize(),
                 sha256 = sha256,
                 md5 = md5,
@@ -99,9 +101,10 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
         )
     }
 
-    // todo 方法拆分
-    @Transactional(rollbackFor = [Throwable::class])
-    override fun onUpload(context: ArtifactUploadContext) {
+    /**
+     *
+     */
+    private fun indexer(context: ArtifactUploadContext) {
         with(context.artifactInfo as ComposerArtifactInfo) {
             // 先读取并保存文件信息。
             val composerJsonNode = context.getArtifactFile().getInputStream().wrapperJson(artifactUri)
@@ -148,6 +151,11 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
                 }
             }
         }
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun onUpload(context: ArtifactUploadContext) {
+        indexer(context)
         val nodeCreateRequest = getCompressNodeCreateRequest(context)
         nodeResource.create(nodeCreateRequest)
         storageService.store(nodeCreateRequest.sha256!!,
@@ -161,7 +169,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
         with(context.artifactInfo) {
             return if (artifactUri.matches(Regex("^/p/(.*)\\.json$"))) {
                 val request = HttpContextHolder.getRequest()
-                val host = "http://${request.remoteHost}:${request.serverPort}/$projectId/$repoName"
+                val host = "${request.requestAddr()}/$projectId/$repoName"
                 val packageName = artifactUri.removePrefix("/p/").removeSuffix(".json")
                 stream2Json(context)?.wrapperJson(host, packageName)
             } else {
@@ -173,8 +181,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
     override fun packages(context: ArtifactSearchContext): String? {
         with(context.artifactInfo) {
             val request = HttpContextHolder.getRequest()
-            // todo http|https
-            val host = "http://${request.remoteHost}:${request.serverPort}/$projectId/$repoName"
+            val host = "${request.requestAddr()}/$projectId/$repoName"
             while (nodeResource.detail(projectId, repoName, artifactUri).data == null) {
                 val byteArrayInputStream = ByteArrayInputStream(INIT_PACKAGES.toByteArray())
                 val artifactFile = ArtifactFileFactory.build(byteArrayInputStream)
@@ -194,18 +201,18 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
      * 加载搜索到的流并返回内容
      */
     private fun stream2Json(context: ArtifactSearchContext): String? {
-        with(context.artifactInfo) {
+        return with(context.artifactInfo) {
             val node = nodeResource.detail(projectId, repoName, artifactUri).data ?: return null
             node.nodeInfo.takeIf { !it.folder } ?: return null
             val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
                     ?: return null
-            val stringBuilder = StringBuilder("")
 
+            val stringBuilder = StringBuilder("")
             BufferedReader(InputStreamReader(inputStream)).use { bufferedReader ->
                 while (bufferedReader.readLine().also { it?.let {
                             stringBuilder.append(it) } } != null) { }
             }
-            return stringBuilder.toString()
+            stringBuilder.toString()
         }
     }
 }

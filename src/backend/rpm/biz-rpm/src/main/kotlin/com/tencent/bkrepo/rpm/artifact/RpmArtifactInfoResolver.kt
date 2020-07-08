@@ -7,7 +7,12 @@ import javax.servlet.http.HttpServletRequest
 
 @Resolver(RpmArtifactInfo::class)
 class RpmArtifactInfoResolver : ArtifactInfoResolver {
-    override fun resolve(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest): ArtifactInfo {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): ArtifactInfo {
         return RpmArtifactInfo(projectId, repoName, artifactUri)
     }
 }

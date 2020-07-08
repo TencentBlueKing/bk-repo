@@ -19,18 +19,14 @@ object RpmFormatReader {
     fun wrapStreamAndRead(sourceStream: InputStream): RpmFormat {
         Channels.newChannel(sourceStream).use { channelIn ->
             val format = getRpmFormat(channelIn)
-            try {
-                IOUtils.copy(sourceStream, NullOutputStream())
-            } catch (e: Exception) {
-                // TODO
-            }
+            IOUtils.copy(sourceStream, NullOutputStream())
             return format
         }
     }
 
     @Throws(IOException::class)
     fun getRpmFormat(channel: ReadableByteChannel): RpmFormat {
-        val format: FormatWithType = FormatWithType()
+        val format = FormatWithType()
         val readableChannelWrapper = ReadableChannelWrapper(channel)
         val headerStartKey = readableChannelWrapper.start()
 
