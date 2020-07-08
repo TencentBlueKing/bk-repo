@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.job
 
 import com.mongodb.client.MongoClient
+import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor
 import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.provider.mongo.MongoLockProvider
 import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock
@@ -24,6 +25,9 @@ class JobAutoConfiguration {
         val collection = database.getCollection(SHED_LOCK_COLLECTION_NAME)
         return MongoLockProvider(collection)
     }
+
+    @Bean
+    fun lockingTaskExecutor(lockProvider: LockProvider) = DefaultLockingTaskExecutor(lockProvider)
 
     companion object {
         const val SHED_LOCK_COLLECTION_NAME = "shed_lock"

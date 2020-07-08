@@ -8,17 +8,24 @@ import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.replication.api.ReplicationClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.model.TReplicationTask
+import com.tencent.bkrepo.replication.model.TReplicationTaskLog
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.task.ReplicationProgress
+import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import okhttp3.OkHttpClient
 import org.springframework.util.Base64Utils
+import java.time.LocalDateTime
 
 class ReplicationContext(val task: TReplicationTask) {
     val authToken: String
     val normalizedUrl: String
     val replicationClient: ReplicationClient
     val httpClient: OkHttpClient
+    val taskLog: TReplicationTaskLog
+    val progress: ReplicationProgress = ReplicationProgress()
+    var status: ReplicationStatus = ReplicationStatus.REPLICATING
     lateinit var projectDetailList: List<ReplicationProjectDetail>
     lateinit var currentProjectDetail: ReplicationProjectDetail
     lateinit var currentRepoDetail: ReplicationRepoDetail
@@ -26,6 +33,13 @@ class ReplicationContext(val task: TReplicationTask) {
     lateinit var remoteRepoName: String
 
     init {
+        taskLog = TReplicationTaskLog(
+            taskKey = task.key,
+            status = status,
+            startTime = LocalDateTime.now(),
+            replicationProgress = progress
+        )
+
         with(task.setting.remoteClusterInfo) {
             authToken = encodeAuthToken(username, password)
             replicationClient = FeignClientFactory.create(ReplicationClient::class.java, this)
@@ -34,6 +48,10 @@ class ReplicationContext(val task: TReplicationTask) {
             ).build()
             normalizedUrl = normalizeUrl(this)
         }
+    }
+
+    fun isCronJob(): Boolean {
+        return task.setting.executionPlan.cronExpression != null
     }
 
     companion object {
