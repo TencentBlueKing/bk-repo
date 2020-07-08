@@ -6,13 +6,10 @@ import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.exception.response.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.rpm.pojo.RpmExceptionResponse
-import groovy.lang.Script
-import groovy.util.GroovyScriptEngine
 import org.springframework.context.annotation.Bean
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 import org.springframework.stereotype.Component
-import org.springframework.util.ResourceUtils
 
 @Component
 class RpmArtifactConfiguration : ArtifactConfiguration {
@@ -23,12 +20,5 @@ class RpmArtifactConfiguration : ArtifactConfiguration {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
             return RpmExceptionResponse(StringPool.EMPTY, payload.message.orEmpty())
         }
-    }
-
-    @Bean
-    fun xmlScript(): Script {
-        val scriptUrl = ResourceUtils.getURL("classpath:script").path
-        val gse = GroovyScriptEngine(scriptUrl).loadScriptByName("xml.groovy")
-        return gse.newInstance() as Script
     }
 }

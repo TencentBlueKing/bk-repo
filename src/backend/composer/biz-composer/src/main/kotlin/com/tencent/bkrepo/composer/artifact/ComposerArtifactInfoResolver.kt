@@ -8,7 +8,12 @@ import javax.servlet.http.HttpServletRequest
 
 @Resolver(ComposerArtifactInfo::class)
 class ComposerArtifactInfoResolver : ArtifactInfoResolver {
-    override fun resolve(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest): ArtifactInfo {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): ArtifactInfo {
         // 包名
         val uri = request.servletPath.removePrefix("/$projectId/$repoName")
         // todo 用户设置的参数,暂未发现作用
