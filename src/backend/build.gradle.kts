@@ -43,6 +43,9 @@ allprojects {
         jcenter()
     }
 
+    // fix issue https://github.com/spring-projects/spring-boot/issues/21934
+    extra["reactor-bom.version"] = "Dysprosium-SR9"
+
     dependencyManagement {
         imports {
             mavenBom("org.springframework.cloud:spring-cloud-dependencies:Hoxton.SR5")
@@ -63,7 +66,6 @@ allprojects {
             dependency("commons-io:commons-io:2.6")
             dependency("net.javacrumbs.shedlock:shedlock-spring:4.12.0")
             dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:4.12.0")
-            dependency("com.novemberain:quartz-mongodb:2.1.0")
             dependency("io.jsonwebtoken:jjwt-api:0.11.1")
             dependency("io.jsonwebtoken:jjwt-impl:0.11.1")
         }
