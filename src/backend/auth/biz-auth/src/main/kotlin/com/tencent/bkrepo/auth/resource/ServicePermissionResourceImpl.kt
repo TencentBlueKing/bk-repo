@@ -23,14 +23,13 @@ class ServicePermissionResourceImpl @Autowired constructor(
 
     override fun createPermission(request: CreatePermissionRequest): Response<Boolean> {
         // todo check request
-
         return ResponseBuilder.success(permissionService.createPermission(request))
     }
 
     override fun checkAdmin(uid: String): Response<Boolean> {
         // todo check request
         val userInfo = userService.getUserById(uid) ?: return ResponseBuilder.success(false)
-        if (userInfo.admin == false) {
+        if (!userInfo.admin) {
             return ResponseBuilder.success(false)
         }
         return ResponseBuilder.success(true)

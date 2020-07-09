@@ -40,6 +40,12 @@ open class JwtUtil {
                 true
             } catch (e: Exception) {
                 false
+            } catch (e: Exception) {
+                false
+            } catch (e: Exception) {
+                false
+            } catch (e: Exception) {
+                false
             }
         }
 
