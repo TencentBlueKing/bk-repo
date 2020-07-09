@@ -48,7 +48,7 @@ class ReplicationJobBean(
     fun execute(taskId: String) {
         logger.info("Start to execute replication task[$taskId].")
         val task = taskRepository.findByIdOrNull(taskId) ?: run {
-            logger.error("Task[$taskId] does not exist, delete job and trigger.")
+            logger.warn("Task[$taskId] does not exist, delete job and trigger.")
             if (scheduleService.checkExists(taskId)) {
                 scheduleService.deleteJob(taskId)
             }
@@ -78,7 +78,7 @@ class ReplicationJobBean(
             // 保存结果
             replicationContext.taskLog.endTime = LocalDateTime.now()
             persistTask(replicationContext)
-            logger.info("Replica task[$taskId] finished, task log: ${replicationContext.taskLog}")
+            logger.info("Replica task[$taskId] finished, task log: ${replicationContext.taskLog}.")
         }
     }
 
@@ -86,7 +86,7 @@ class ReplicationJobBean(
         with(context) {
             val remoteVersion = replicationClient.version(authToken).data!!
             if (version != remoteVersion) {
-                logger.warn("The local cluster's version[$version] is different from remote cluster's version[$remoteVersion]")
+                logger.warn("The local cluster's version[$version] is different from remote cluster's version[$remoteVersion].")
             }
         }
     }
@@ -127,16 +127,21 @@ class ReplicationJobBean(
     private fun startReplica(context: ReplicationContext) {
         checkInterrupted()
         context.projectDetailList.forEach {
+            val localProjectId = it.localProjectInfo.name
+            val remoteProjectId = it.remoteProjectId
+            val repositoryCount = it.repoDetailList.size
+            logger.info("Start to replica project [$localProjectId] to [$remoteProjectId], repository count: $repositoryCount.")
             try {
                 context.currentProjectDetail = it
                 context.remoteProjectId = it.remoteProjectId
                 replicaProject(context)
+                logger.info("Success to replica project [$localProjectId] to [$remoteProjectId].")
                 context.progress.successProject += 1
             } catch (interruptedException: InterruptedException) {
                 throw interruptedException
             } catch (exception: Exception) {
                 context.progress.failedProject += 1
-                logger.error("Replica project[$it] failed.", exception)
+                logger.error("Failed to replica project [$localProjectId] to [$remoteProjectId].", exception)
             } finally {
                 context.progress.replicatedProject += 1
                 persistTaskLog(context)
@@ -159,16 +164,21 @@ class ReplicationJobBean(
             replicaUserAndPermission(context)
             // 同步仓库
             this.repoDetailList.forEach {
+                val formattedLocalRepoName = "${it.localRepoInfo.projectId}/${it.localRepoInfo.name}"
+                val formattedRemoteRepoName = "${context.remoteProjectId}/${it.remoteRepoName}"
+                val fileCount = it.fileCount
+                logger.info("Start to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName], file count: $fileCount.")
                 try {
                     context.currentRepoDetail = it
                     context.remoteRepoName = it.remoteRepoName
                     replicaRepo(context)
                     context.progress.successRepo += 1
+                    logger.info("Success to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].")
                 } catch (interruptedException: InterruptedException) {
                     throw interruptedException
                 } catch (exception: Exception) {
                     context.progress.failedRepo += 1
-                    logger.error("Replica repository[$it] failed.", exception)
+                    logger.error("Failed to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].", exception)
                 } finally {
                     context.progress.replicatedRepo += 1
                     persistTaskLog(context)
@@ -203,7 +213,6 @@ class ReplicationJobBean(
                 with(context) {
                     val nodeCheckRequest = NodeExistCheckRequest(localRepoInfo.projectId, localRepoInfo.name, fullPathList)
                     val existFullPathList = replicationClient.checkNodeExistList(authToken, nodeCheckRequest).data!!
-                    logger.debug("Node path list params [$nodeCheckRequest], result [$existFullPathList]")
                     // 同步不存在的节点
                     fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
                 }
@@ -217,18 +226,19 @@ class ReplicationJobBean(
     private fun replicaNode(node: NodeInfo, context: ReplicationContext, existFullPathList: List<String>) {
         checkInterrupted()
         with(context) {
+            val formattedNodePath = "${node.projectId}/${node.repoName}${node.fullPath}"
             // 节点冲突检查
             if (existFullPathList.contains(node.fullPath)) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> {
-                        logger.warn("Node[$node] conflict, skip it.")
+                        logger.debug("File[$formattedNodePath] conflict, skip it.")
                         progress.conflictedNode += 1
                         return
                     }
                     ConflictStrategy.OVERWRITE -> {
-                        logger.warn("Node[$node] conflict, overwrite it.")
+                        logger.debug("File[$formattedNodePath] conflict, overwrite it.")
                     }
-                    ConflictStrategy.FAST_FAIL -> throw RuntimeException("Node[$node] conflict.")
+                    ConflictStrategy.FAST_FAIL -> throw RuntimeException("File[$formattedNodePath] conflict.")
                 }
             }
             try {
@@ -249,14 +259,14 @@ class ReplicationJobBean(
                     metadata = metadata,
                     operator = node.createdBy
                 )
-                logger.info("Start to replica file $remoteProjectId, $remoteRepoName, ${node.fullPath}")
                 replicationService.replicaFile(context, replicaRequest)
                 progress.successNode += 1
+                logger.info("Success to replica file [$formattedNodePath].")
             } catch (interruptedException: InterruptedException) {
                 throw interruptedException
             } catch (exception: Exception) {
-                logger.error("Replica node[$node] failed.", exception)
                 progress.failedNode += 1
+                logger.error("Failed to replica file [$formattedNodePath].", exception)
             } finally {
                 progress.replicatedNode += 1
                 if (progress.replicatedNode % 50 == 0L) {
