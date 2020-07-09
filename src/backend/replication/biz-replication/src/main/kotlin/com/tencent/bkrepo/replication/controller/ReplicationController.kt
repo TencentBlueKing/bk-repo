@@ -14,6 +14,8 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.permission.Principal
 import com.tencent.bkrepo.common.artifact.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -158,8 +160,13 @@ class ReplicationController : ReplicationClient {
         return permissionResource.listPermission(resourceType, projectId, repoName)
     }
 
-    @PostMapping("/file", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun replicaFile(fileMap: ArtifactFileMap, nodeReplicaRequest: NodeReplicaRequest): Response<NodeInfo> {
+    @PostMapping(FILE_MAPPING_URI, consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun replicaFile(
+        @ArtifactPathVariable
+        artifactInfo: DefaultArtifactInfo,
+        fileMap: ArtifactFileMap,
+        nodeReplicaRequest: NodeReplicaRequest
+    ): Response<NodeInfo> {
         with(nodeReplicaRequest) {
             val file = fileMap["file"]!!
             // 校验
@@ -173,6 +180,8 @@ class ReplicationController : ReplicationClient {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "md5")
             }
             // 保存文件
+            val projectId = artifactInfo.projectId
+            val repoName = artifactInfo.repoName
             val repoInfo = repositoryResource.detail(projectId, repoName).data!!
             storageService.store(sha256, file, repoInfo.storageCredentials)
             // 保存节点
@@ -231,9 +240,8 @@ class ReplicationController : ReplicationClient {
     }
 
     override fun replicaProjectCreateRequest(token: String, request: ProjectCreateRequest): Response<ProjectInfo> {
-        return projectResource.query(request.name).data?.let { ResponseBuilder.success(it) } ?: projectResource.create(
-            request
-        )
+        return projectResource.query(request.name).data?.let { ResponseBuilder.success(it) }
+            ?: projectResource.create(request)
     }
 
     override fun replicaMetadataSaveRequest(token: String, request: MetadataSaveRequest): Response<Void> {
@@ -242,5 +250,9 @@ class ReplicationController : ReplicationClient {
 
     override fun replicaMetadataDeleteRequest(token: String, request: MetadataDeleteRequest): Response<Void> {
         return metadataResource.delete(request)
+    }
+
+    companion object {
+        private const val FILE_MAPPING_URI = "/file/{projectId}/{repoName}/**"
     }
 }
