@@ -12,7 +12,6 @@ dependencies {
         exclude module: "spring-boot-starter-tomcat"
     }
     api "org.springframework.boot:spring-boot-starter-undertow"
-    implementation "com.github.ulisesbocchio:jasypt-spring-boot-starter"
     implementation 'org.apache.skywalking:apm-toolkit-logback-1.x'
     implementation "org.apache.skywalking:apm-toolkit-trace"
 }
