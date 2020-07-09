@@ -33,9 +33,6 @@ class ReplicationService(
             val builder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", request.fullPath, fileRequestBody)
-                .addFormDataPart("projectId", request.projectId)
-                .addFormDataPart("repoName", request.repoName)
-                .addFormDataPart("fullPath", request.fullPath)
                 .addFormDataPart("size", request.size.toString())
                 .addFormDataPart("sha256", request.sha256!!)
                 .addFormDataPart("md5", request.md5!!)
@@ -43,9 +40,10 @@ class ReplicationService(
             request.metadata?.forEach { (key, value) ->
                 builder.addFormDataPart("metadata[$key]", value)
             }
+            val url = "$normalizedUrl/replica/file/${request.projectId}/${request.repoName}${request.fullPath}"
             val requestBody = builder.build()
             val httpRequest = Request.Builder()
-                .url("$normalizedUrl/replica/file")
+                .url(url)
                 .post(requestBody)
                 .build()
             val response = httpClient.newCall(httpRequest).execute()
