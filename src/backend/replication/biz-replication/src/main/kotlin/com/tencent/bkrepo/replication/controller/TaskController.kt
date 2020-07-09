@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Principal(type = PrincipalType.ADMIN)
@@ -37,11 +36,6 @@ class TaskController @Autowired constructor(
     @PostMapping("/create")
     fun create(@RequestAttribute userId: String, @RequestBody request: ReplicationTaskCreateRequest): Response<ReplicationTaskInfo> {
         return ResponseBuilder.success(taskService.create(userId, request))
-    }
-
-    @PostMapping("/create/full")
-    fun createFull(@RequestAttribute userId: String, @RequestParam username: String, @RequestParam password: String, @RequestParam url: String): Response<Boolean> {
-        return ResponseBuilder.success(taskService.createFull(userId, username, password, url))
     }
 
     @GetMapping("/list")
