@@ -94,7 +94,7 @@ abstract class AbstractServiceImpl constructor(
         return false
     }
 
-    fun buildIdQuery(id: String): Query {
+    private fun buildIdQuery(id: String): Query {
         return Query.query(Criteria.where("_id").`is`(id))
     }
 
