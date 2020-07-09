@@ -1,5 +1,16 @@
 rootProject.name = "bk-repo-backend"
 
+pluginManagement {
+    val gradlePluginRepoUrl: String by settings
+    repositories {
+        mavenLocal()
+        maven(url = gradlePluginRepoUrl)
+        gradlePluginPortal()
+        mavenCentral()
+        jcenter()
+    }
+}
+
 include(":boot-assembly")
 
 include(":common")

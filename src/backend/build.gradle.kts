@@ -9,16 +9,6 @@ plugins {
     id("maven-publish")
 }
 
-buildscript {
-    repositories {
-        mavenLocal()
-        maven(url = property("publicMavenRepoUrl")?.toString().orEmpty())
-        maven(url = "https://repo.spring.io/libs-milestone")
-        mavenCentral()
-        jcenter()
-    }
-}
-
 allprojects {
     group = "com.tencent.bkrepo"
     version = "0.7.1"
