@@ -182,6 +182,7 @@ class ReplicationController : ReplicationClient {
             // 保存文件
             val projectId = artifactInfo.projectId
             val repoName = artifactInfo.repoName
+            val fullPath = artifactInfo.artifactUri
             val repoInfo = repositoryResource.detail(projectId, repoName).data!!
             storageService.store(sha256, file, repoInfo.storageCredentials)
             // 保存节点
