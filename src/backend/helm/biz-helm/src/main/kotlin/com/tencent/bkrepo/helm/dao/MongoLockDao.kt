@@ -24,7 +24,8 @@ class MongoLockDao {
      * 返回指定key的数据
      */
     fun getByKey(lockKey: String, lockValue: String): TMongoLock? {
-        val criteria = Criteria.where(TMongoLock::key.name).`is`(lockKey).and(TMongoLock::requestId.name).`is`(lockValue)
+        val criteria = Criteria.where(TMongoLock::key.name).`is`(lockKey)
+            .and(TMongoLock::requestId.name).`is`(lockValue)
         return mongoTemplate.findOne(Query(criteria), TMongoLock::class.java)
     }
 
@@ -49,14 +50,15 @@ class MongoLockDao {
                     Sort.Direction.ASC).expire(expire, TimeUnit.SECONDS))
             val value = mongoTemplate.findAndModify(query, update, options, TMongoLock::class.java)?.value!!
             value == 1
-        } catch (ex: Exception) {
+        } catch (ex: RuntimeException) {
             logger.error("get lock failed,${ex.message}")
             false
         }
     }
 
     fun releaseLock(lockKey: String, lockValue: String): Boolean {
-        val criteria = Criteria.where(TMongoLock::key.name).`is`(lockKey).and(TMongoLock::requestId.name).`is`(lockValue)
+        val criteria = Criteria.where(TMongoLock::key.name).`is`(lockKey)
+            .and(TMongoLock::requestId.name).`is`(lockValue)
         val query = Query(criteria)
         return mongoTemplate.remove(query, TMongoLock::class.java).wasAcknowledged()
     }

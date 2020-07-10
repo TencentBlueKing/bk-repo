@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(tags = ["SERVICE_ACCOUNT"], description = "服务-账号接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceAccountResource")
-@RequestMapping("/account")
+@RequestMapping("/account", "/service/account", "/api/account")
 interface ServiceAccountResource {
 
     @ApiOperation("查询所有账号账号")

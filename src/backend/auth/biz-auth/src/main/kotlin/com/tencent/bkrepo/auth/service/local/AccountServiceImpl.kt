@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.auth.service.local
 
 import com.mongodb.BasicDBObject
+import com.tencent.bkrepo.auth.constant.RANDOM_KEY_LENGTH
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.pojo.Account
@@ -9,6 +10,7 @@ import com.tencent.bkrepo.auth.pojo.CredentialSet
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.service.AccountService
+import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.apache.commons.lang.RandomStringUtils
 import org.slf4j.LoggerFactory
@@ -20,7 +22,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
-import java.util.UUID
 
 @Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
@@ -32,13 +33,13 @@ class AccountServiceImpl @Autowired constructor(
     override fun createAccount(request: CreateAccountRequest): Account? {
         logger.info("create  account  request : [$request]")
         val account = accountRepository.findOneByAppId(request.appId)
-        if (account != null) {
+        account?.let {
             logger.warn("create account [${request.appId}]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_APPID)
         }
 
-        val accessKey = UUID.randomUUID().toString().replace("-", "")
-        val secretKey = RandomStringUtils.randomAlphanumeric(30)
+        val accessKey = IDUtil.genRandomId()
+        val secretKey = RandomStringUtils.randomAlphanumeric(RANDOM_KEY_LENGTH)
         val credentials = CredentialSet(
             accessKey = accessKey,
             secretKey = secretKey,
@@ -72,7 +73,7 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun updateAccountStatus(appId: String, locked: Boolean): Boolean {
-        logger.info("update  account appId : {} , locked : {}", appId, locked)
+        logger.info("update  account appId : [$appId], locked : [$locked]")
         accountRepository.findOneByAppId(appId) ?: run {
             logger.warn("update account [$appId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
@@ -98,8 +99,8 @@ class AccountServiceImpl @Autowired constructor(
 
         val query = Query.query(Criteria.where(TAccount::appId.name).`is`(appId))
         val update = Update()
-        val accessKey = UUID.randomUUID().toString().replace("-", "")
-        val secretKey = RandomStringUtils.randomAlphanumeric(30)
+        val accessKey = IDUtil.genRandomId()
+        val secretKey = RandomStringUtils.randomAlphanumeric(RANDOM_KEY_LENGTH)
         val credentials = CredentialSet(
             accessKey = accessKey,
             secretKey = secretKey,
@@ -148,7 +149,7 @@ class AccountServiceImpl @Autowired constructor(
                 .and("credentials.accessKey").`is`(accessKey)
         )
         val accountResult = mongoTemplate.findOne(accountQuery, TAccount::class.java)
-        if (accountResult != null) {
+        accountResult?.let {
             val query = Query.query(
                 Criteria.where(TAccount::appId.name).`is`(appId)
                     .and("credentials.accessKey").`is`(accessKey)

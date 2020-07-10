@@ -82,7 +82,6 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         val node = nodeResource.detail(projectId, repoName, fullPath).data
         while (node == null) {
             cacheRemoteRepoList(context)
-            Thread.sleep(60)
         }
         node.nodeInfo.takeIf { !it.folder } ?: return null
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")

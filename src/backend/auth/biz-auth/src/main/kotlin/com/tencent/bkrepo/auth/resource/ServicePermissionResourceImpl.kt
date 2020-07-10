@@ -8,8 +8,6 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,18 +17,17 @@ import org.springframework.web.bind.annotation.RestController
 class ServicePermissionResourceImpl @Autowired constructor(
     private val permissionService: PermissionService,
     private val userService: UserService
-) : ServicePermissionResource {
+) : ServicePermissionResource, AbstractPermissionResourceImpl() {
 
     override fun createPermission(request: CreatePermissionRequest): Response<Boolean> {
         // todo check request
-
         return ResponseBuilder.success(permissionService.createPermission(request))
     }
 
     override fun checkAdmin(uid: String): Response<Boolean> {
         // todo check request
         val userInfo = userService.getUserById(uid) ?: return ResponseBuilder.success(false)
-        if (userInfo.admin == false) {
+        if (!userInfo.admin) {
             return ResponseBuilder.success(false)
         }
         return ResponseBuilder.success(true)
@@ -75,38 +72,5 @@ class ServicePermissionResourceImpl @Autowired constructor(
 
     override fun removePermissionRole(id: String, rid: String): Response<Boolean> {
         return ResponseBuilder.success(permissionService.removeRolePermission(id, rid))
-    }
-
-    private fun checkRequest(request: CheckPermissionRequest) {
-        with(request) {
-            when (resourceType) {
-                ResourceType.SYSTEM -> {
-                }
-                ResourceType.PROJECT -> {
-                    if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
-                    }
-                }
-                ResourceType.REPO -> {
-                    if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
-                    }
-                    if (repoName.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoId")
-                    }
-                }
-                ResourceType.NODE -> {
-                    if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "node")
-                    }
-                    if (repoName.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoId")
-                    }
-                    if (path.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "node")
-                    }
-                }
-            }
-        }
     }
 }

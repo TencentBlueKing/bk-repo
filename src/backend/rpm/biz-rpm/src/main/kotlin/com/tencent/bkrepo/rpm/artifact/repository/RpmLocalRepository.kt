@@ -21,26 +21,28 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.rpm.INDEXER
 import com.tencent.bkrepo.rpm.NO_INDEXER
 import com.tencent.bkrepo.rpm.artifact.SurplusNodeCleaner
+import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
 import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
 import com.tencent.bkrepo.rpm.util.GZipUtil.unGzipInputStream
 import com.tencent.bkrepo.rpm.util.GZipUtil.gZip
+import com.tencent.bkrepo.rpm.util.XmlStrUtil
 import com.tencent.bkrepo.rpm.util.redline.model.RpmMetadataWithOldStream
-import com.tencent.bkrepo.rpm.util.redline.model.RpmRepoMd
 import com.tencent.bkrepo.rpm.util.rpm.RpmFormatInterpreter
 import com.tencent.bkrepo.rpm.util.rpm.RpmFormatReader
-import groovy.lang.Script
+import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChecksum
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
+import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoData
+import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.io.FileInputStream
-import java.lang.StringBuilder
 
 @Component
 class RpmLocalRepository : LocalRepository() {
-
-    @Autowired
-    private lateinit var xmlScript: Script
 
     @Autowired
     lateinit var surplusNodeCleaner: SurplusNodeCleaner
@@ -102,40 +104,20 @@ class RpmLocalRepository : LocalRepository() {
     }
 
     /**
-     * 按照仓库设置的repodata 深度分割请求参数
-     * @return map["repodataPath"] 契合本次请求的repodata_depth 目录路径
-     * @return map["artifactRelativePath"] 构件相对于索引文件的保存路径
-     */
-    private fun splitUriByDepth(uri: String, depth: Int): Map<String, String> {
-        val uriList = uri.removePrefix("/").split("/")
-        val repodataPath = StringBuilder()
-        for (i in 0 until depth) {
-            repodataPath.append(uriList[i]).append("/")
-        }
-        val artifactRelativePath = uri.removePrefix("/").split(repodataPath.toString())[1]
-        return mapOf("repodataPath" to repodataPath.toString(),
-                "artifactRelativePath" to artifactRelativePath)
-    }
-
-    /**
      * 生成构件索引
      */
-    private fun indexer(context: ArtifactUploadContext) {
+    private fun indexer(context: ArtifactUploadContext, repeat: ArtifactRepeat) {
 
         val repodataDepth = searchRpmRepoDataDepth(context)
-        val uriMap = splitUriByDepth(context.artifactInfo.artifactUri, repodataDepth)
-        val repodataPath = uriMap["repodataPath"]
+        val uriMap = XmlStrUtil.splitUriByDepth(context.artifactInfo.artifactUri, repodataDepth)
+        val repodataPath = uriMap.repodataPath
 
         val artifactFile = context.getArtifactFile()
         val rpmFormat = RpmFormatReader.wrapStreamAndRead(artifactFile.getInputStream())
-        val rpmMetadata = RpmFormatInterpreter().interpret(rpmFormat)
-        rpmMetadata.size = artifactFile.getSize()
 
-        // rpm 包额外计算的信息
-        artifactFile.getInputStream().sha1().let { rpmMetadata.sha1Digest = it }
-        val artifactRelativePath = uriMap["artifactRelativePath"]
-
-        artifactRelativePath?.let { rpmMetadata.artifactRelativePath = it }
+        val sha1Digest = artifactFile.getInputStream().sha1()
+        val artifactRelativePath = uriMap.artifactRelativePath
+        val rpmMetadata = RpmFormatInterpreter().interpret(rpmFormat, artifactFile.getSize(), sha1Digest, artifactRelativePath)
 
         with(context.repositoryInfo) {
             // repodata下'-primary.xml.gz'最新节点。
@@ -144,16 +126,19 @@ class RpmLocalRepository : LocalRepository() {
 
             val targetXmlString = if (!primaryNodelist.isNullOrEmpty()) {
                 val latestPrimaryNode = primaryNodelist[0]
-                storageService.load(latestPrimaryNode.sha256!!, Range.ofFull(latestPrimaryNode.size), context.storageCredentials)?.unGzipInputStream().use { inputStream ->
-                    val rpmMetadataWithOldStream = inputStream?.let { RpmMetadataWithOldStream(rpmMetadata, it) }
-                    // 更新primary.xml
-                    xmlScript.invokeMethod("updataPrimaryXml", rpmMetadataWithOldStream) as String
+                val inputStream = storageService.load(latestPrimaryNode.sha256!!, Range.ofFull(latestPrimaryNode.size), context.storageCredentials) ?: return
+                val rpmMetadataWithOldStream = RpmMetadataWithOldStream(rpmMetadata, inputStream.unGzipInputStream())
+                // 更新primary.xml
+                if (repeat == ArtifactRepeat.NONE) {
+                    XmlStrUtil.insertPackage(rpmMetadataWithOldStream)
+                } else {
+                    XmlStrUtil.updatePackage(rpmMetadataWithOldStream)
                 }
             } else {
                 // first upload
-                xmlScript.invokeMethod("xmlPackageInit", rpmMetadata) as String
+                XStreamUtil.objectToXml(rpmMetadata)
             }
-            storeXmlNode(targetXmlString, repodataPath!!, context)
+            storeXmlNode(targetXmlString, repodataPath, context)
             // 删除多余索引节点
             GlobalScope.launch {
                 primaryNodelist?.let { surplusNodeCleaner.deleteSurplusNode(it) }
@@ -163,11 +148,13 @@ class RpmLocalRepository : LocalRepository() {
 
     /**
      * 保存索引节点
+     * @param xmlStr "-primary.xml" 索引文件内容
+     * @param repodataPath 契合本次请求的repodata_depth 目录路径
      */
     private fun storeXmlNode(xmlStr: String, repodataPath: String, context: ArtifactUploadContext) {
         (xmlStr.toByteArray()).let { ByteInputStream(it, it.size) }.use { xmlInputStream ->
             // 处理xml节点
-
+            val xmlFileSize = xmlInputStream.bytes.size
             // xml.gz文件sha1
             val xmlGZFile = xmlInputStream.bytes.gZip()
             val xmlGZFileSha1 = FileInputStream(xmlGZFile).sha1()
@@ -186,25 +173,27 @@ class RpmLocalRepository : LocalRepository() {
             // 更新repomd.xml
             // xml文件sha1
             val xmlFileSha1 = xmlInputStream.sha1()
-            storeRepomdNode(xmlGZFileSha1, xmlGZArtifact, xmlFileSha1, repodataPath, context)
+            storeRepomdNode(xmlFileSize, xmlGZFileSha1, xmlGZArtifact, xmlFileSha1, repodataPath, context)
         }
     }
 
     /**
      * 更新repomd.xml
      */
-    private fun storeRepomdNode(xmlGZFileSha1: String, xmlGZArtifact: ArtifactFile, xmlFileSha1: String, repodataPath: String, context: ArtifactUploadContext) {
+    private fun storeRepomdNode(xmlFileSize: Int, xmlGZFileSha1: String, xmlGZArtifact: ArtifactFile, xmlFileSha1: String, repodataPath: String, context: ArtifactUploadContext) {
         val repoMdPath = "repodata/$xmlGZFileSha1-primary.xml.gz"
-        val rpmRepoMd = RpmRepoMd(
-                type = "primary",
-                location = repoMdPath,
-                size = xmlGZArtifact.getSize(),
-                lastModified = System.currentTimeMillis().toString(),
-                xmlFileSha1 = xmlFileSha1,
-                xmlGZFileSha1 = xmlGZFileSha1
+        val repomd = Repomd(
+                listOf(RepoData(
+                        type = "primary",
+                        location = RpmLocation(repoMdPath),
+                        checksum = RpmChecksum(xmlGZFileSha1),
+                        size = xmlGZArtifact.getSize(),
+                        timestamp = System.currentTimeMillis().toString(),
+                        openChecksum = RpmChecksum(xmlFileSha1),
+                        openSize = xmlFileSize
+                ))
         )
-
-        val xmlRepodataString = xmlScript.invokeMethod("wrapperRepomd", listOf(rpmRepoMd)) as String
+        val xmlRepodataString = XStreamUtil.objectToXml(repomd)
         (xmlRepodataString.toByteArray()).let { ByteInputStream(it, it.size) }.use { xmlRepodataInputStream ->
             val xmlRepodataArtifact = ArtifactFileFactory.build(xmlRepodataInputStream)
             // 保存repodata 节点
@@ -220,29 +209,39 @@ class RpmLocalRepository : LocalRepository() {
     /**
      * 检查上传的构件是否已在仓库中，判断条件：uri && sha256
      * 降低并发对索引文件的影响
-     * @return false 有重复构件，只保存构件
-     * @return true 无重复构件
+     * @return ArtifactRepeat.FULLPATH_SHA256 存在完全相同构件，不操作索引
+     * @return ArtifactRepeat.FULLPATH 请求路径相同，但内容不同，更新索引
+     * @return ArtifactRepeat.NONE 无重复构件
      */
-    private fun checkRepeatArtifact(context: ArtifactUploadContext): Boolean {
+    private fun checkRepeatArtifact(context: ArtifactUploadContext): ArtifactRepeat {
         val artifactUri = context.artifactInfo.artifactUri
         val artifactSha256 = context.getArtifactFile().getFileSha256()
 
         return with(context.artifactInfo) {
             val projectQuery = Rule.QueryRule("projectId", projectId)
             val repositoryQuery = Rule.QueryRule("repoName", repoName)
-            val sha256Query = Rule.QueryRule("sha256", artifactSha256)
+//            val sha256Query = Rule.QueryRule("sha256", artifactSha256)
             val fullPathQuery = Rule.QueryRule("fullPath", artifactUri)
 
-            val queryRule = Rule.NestedRule(mutableListOf(projectQuery, repositoryQuery, sha256Query, fullPathQuery),
+            val queryRule = Rule.NestedRule(mutableListOf(projectQuery, repositoryQuery, fullPathQuery),
                     Rule.NestedRule.RelationType.AND)
             val queryModel = QueryModel(
                     page = PageLimit(0, 10),
                     sort = Sort(listOf("name"), Sort.Direction.ASC),
-                    select = mutableListOf("projectId", "repoName", "fullPath"),
+                    select = mutableListOf("projectId", "repoName", "fullPath", "sha256"),
                     rule = queryRule
             )
             val nodeList = nodeResource.query(queryModel).data?.records
-            nodeList.isNullOrEmpty()
+            if (nodeList.isNullOrEmpty()) {
+                ArtifactRepeat.NONE
+            } else {
+                // 上传时重名构件默认是覆盖操作，所以只会存在一个重名构件。
+                if (nodeList.first()["sha256"] == artifactSha256) {
+                    ArtifactRepeat.FULLPATH_SHA256
+                } else {
+                    ArtifactRepeat.FULLPATH
+                }
+            }
         }
     }
 
@@ -256,12 +255,12 @@ class RpmLocalRepository : LocalRepository() {
         }
     }
 
+    @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
-        val mark: Boolean = checkRequestUri(context)
         // 检查请求路径是否契合仓库repodataDepth 深度设置
-        if (mark && checkRepeatArtifact(context)) {
-            indexer(context)
-        }
+        val mark: Boolean = checkRequestUri(context)
+        val repeat = checkRepeatArtifact(context)
+        if (mark && (repeat != ArtifactRepeat.FULLPATH_SHA256)) { indexer(context, repeat) }
         // 保存rpm 包
         val nodeCreateRequest = rpmNodeCreateRequest(context)
         storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)

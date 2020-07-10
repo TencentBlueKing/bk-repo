@@ -1,14 +1,13 @@
-package com.tencent.bkrepo.replication.stream.handler
+package com.tencent.bkrepo.replication.handler.event
 
 import com.tencent.bkrepo.common.stream.message.project.ProjectCreatedMessage
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import org.springframework.context.event.EventListener
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
 class ProjectMessageHandler : AbstractMessageHandler() {
-    @Async
+
     @EventListener(ProjectCreatedMessage::class)
     fun handle(message: ProjectCreatedMessage) {
         with(message.request) {

@@ -4,7 +4,6 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.auth.core.AnonymousCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
-import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.npm.exception.NpmClientAuthException
 import com.tencent.bkrepo.npm.jwt.JwtUtils
 import org.springframework.stereotype.Component
@@ -16,14 +15,11 @@ class NpmClientAuthHandler : ClientAuthHandler {
     override fun extractAuthCredentials(request: HttpServletRequest): AuthCredentials {
         val bearerAuthHeader = request.getHeader(BEARER_AUTH_HEADER)
         if (bearerAuthHeader.isNullOrBlank()) return AnonymousCredentials()
-        if (!bearerAuthHeader.startsWith(BEARER_AUTH_HEADER_PREFIX)) throw NpmClientAuthException("Authorization value [$bearerAuthHeader] is not a valid scheme")
-
-        return try {
-            val token = bearerAuthHeader.removePrefix(BEARER_AUTH_HEADER_PREFIX)
-            JwtAuthCredentials(token)
-        } catch (ex: RuntimeException) {
-            throw ClientAuthException("Authorization value [$bearerAuthHeader] is not a valid scheme")
+        if (!bearerAuthHeader.startsWith(BEARER_AUTH_HEADER_PREFIX)){
+            throw NpmClientAuthException("Authorization value [$bearerAuthHeader] is not a valid scheme")
         }
+        val token = bearerAuthHeader.removePrefix(BEARER_AUTH_HEADER_PREFIX)
+        return JwtAuthCredentials(token)
     }
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String {

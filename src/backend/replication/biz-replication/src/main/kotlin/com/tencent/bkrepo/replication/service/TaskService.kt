@@ -63,6 +63,14 @@ class TaskService(
         return taskRepository.findByKey(taskKey)?.let { convert(it) }
     }
 
+    fun listAllRemoteTask(type: ReplicationType): List<TReplicationTask> {
+        val typeCriteria = Criteria.where(TReplicationTask::type.name).`is`(type)
+        val statusCriteria = Criteria.where(TReplicationTask::status.name).`in`(ReplicationStatus.WAITING, ReplicationStatus.REPLICATING)
+        val criteria = Criteria().andOperator(typeCriteria, statusCriteria)
+
+        return mongoTemplate.find(Query(criteria), TReplicationTask::class.java)
+    }
+
     fun listRelativeTask(type: ReplicationType, localProjectId: String?, localRepoName: String?): List<TReplicationTask> {
         val typeCriteria = Criteria.where(TReplicationTask::type.name).`is`(type)
         val statusCriteria = Criteria.where(TReplicationTask::status.name).`in`(ReplicationStatus.WAITING, ReplicationStatus.REPLICATING)
@@ -96,7 +104,8 @@ class TaskService(
     }
 
     fun interrupt(taskKey: String) {
-        val task = taskRepository.findByKey(taskKey) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, taskKey)
+        val task =
+            taskRepository.findByKey(taskKey) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, taskKey)
         if (task.status == ReplicationStatus.REPLICATING) {
             task.status = ReplicationStatus.INTERRUPTED
             taskRepository.save(task)
@@ -106,7 +115,8 @@ class TaskService(
     }
 
     fun delete(taskKey: String) {
-        val task = taskRepository.findByKey(taskKey) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, taskKey)
+        val task =
+            taskRepository.findByKey(taskKey) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, taskKey)
         taskRepository.delete(task)
         if (task.type == ReplicationType.FULL) {
             taskLogRepository.deleteByTaskKey(taskKey)

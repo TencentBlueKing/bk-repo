@@ -121,7 +121,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 val rule2 = Rule.NestedRule(mutableListOf(rule1, summaryQuery), Rule.NestedRule.RelationType.OR)
 
                 val queryModel = QueryModel(
-                    page = PageLimit(0, 10),
+                    page = PageLimit(pageLimitCurrent, pageLimitSize),
                     sort = Sort(listOf("name"), Sort.Direction.ASC),
                     select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
                     rule = rule1
@@ -249,7 +249,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 Rule.NestedRule.RelationType.AND
             )
             val queryModel = QueryModel(
-                page = PageLimit(0, 10),
+                page = PageLimit(pageLimitCurrent, pageLimitSize),
                 sort = Sort(listOf("name"), Sort.Direction.ASC),
                 select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
                 rule = rule1
@@ -271,13 +271,13 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         with(context.artifactInfo) {
             val migrateDataInfo = findMigrateResult(projectId, repoName)
             migrateDataInfo?.let {
-                 return PypiMigrateResponse(migrateDataInfo.description,
-                        migrateDataInfo.filesNum,
-                migrateDataInfo.filesNum - migrateDataInfo.errorData.size,
-                        migrateDataInfo.errorData.size,
-                        migrateDataInfo.elapseTimeSeconds,
-                        migrateDataInfo.errorData as Set<String>,
-                        migrateDataInfo.createdDate)
+                return PypiMigrateResponse(it.description,
+                    it.filesNum,
+                    it.filesNum - it.errorData.size,
+                    it.errorData.size,
+                    it.elapseTimeSeconds,
+                    it.errorData as Set<String>,
+                    it.createdDate)
             }
             return PypiMigrateResponse("未找到数据迁移记录，如果已经调用迁移接口{migrate/url},请稍后查询")
         }
@@ -305,7 +305,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
 
         var totalCount: Int
         val cpuCore = cpuCore()
-        val threadPool = ThreadPoolExecutor(cpuCore, cpuCore * 2, 15, TimeUnit.SECONDS,
+        val threadPool = ThreadPoolExecutor(cpuCore, cpuCore.shl(doubleNum), threadAliveTime, TimeUnit.SECONDS,
                 LinkedBlockingQueue(),
                 ThreadFactoryBuilder().setNameFormat("pypiRepo-migrate-thread-%d").build(),
                 PypiMigrateReject())
@@ -330,7 +330,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         threadPool.shutdown()
         while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {}
         val end = System.currentTimeMillis()
-        val elapseTimeSeconds = (end - start) / 1000
+        val elapseTimeSeconds = (end - start) / thousand
         insertMigrateData(context,
                 failSet,
                 limitPackages.toInt(),
@@ -385,12 +385,11 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         try {
             "$verifiedUrl/$packageName/$hrefValue".downloadUrlHttpClient()?.use { inputStream ->
                 val artifactFile = ArtifactFileFactory.build(inputStream)
-                createMigrateNode(context, artifactFile, packageName, filename)?.let { nodeCreateRequest ->
+                val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename)
+                nodeCreateRequest?.let {
                     nodeResource.create(nodeCreateRequest)
-                    artifactFile.let {
-                        storageService.store(nodeCreateRequest.sha256!!,
-                                it, context.storageCredentials)
-                    }
+                    storageService.store(nodeCreateRequest.sha256!!,
+                            artifactFile, context.storageCredentials)
                 }
             }
         } catch (unknownServiceException: UnknownServiceException) {
@@ -403,7 +402,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         // 获取文件版本信息
-        val pypiInfo = filename.fileFormat()?.let { artifactFile.getInputStream().getPkgInfo(it) }
+        val pypiInfo = filename.fileFormat().let { artifactFile.getInputStream().getPkgInfo(it) }
         // 文件fullPath
         val path = "/$packageName/${pypiInfo.version}/$filename"
 
@@ -467,5 +466,10 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 )
             }
         }
+        const val pageLimitCurrent = 0
+        const val pageLimitSize = 10
+        const val threadAliveTime = 15L
+        const val doubleNum = 1
+        const val thousand = 1000
     }
 }

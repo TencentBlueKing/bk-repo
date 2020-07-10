@@ -58,7 +58,7 @@ class DataMigrationService {
     private val url: String = StringPool.EMPTY
 
     @Value("\${npm.migration.package.count: 100}")
-    private val count: Int = 100
+    private val count: Int = DEFAULT_COUNT
 
     @Resource(name = "npmTaskAsyncExecutor")
     private lateinit var asyncExecutor: ThreadPoolTaskExecutor
@@ -78,23 +78,25 @@ class DataMigrationService {
     private val errorSet = mutableSetOf<String>()
 
     private final fun initTotalDataSetByUrl() {
-        if (StringUtils.isNotEmpty(url)) {
-            var response: Response? = null
-            try {
-                val request = Request.Builder().url(url).get().build()
-                response = okHttpClient.newCall(request).execute()
-                if (checkResponse(response)) {
-                    val use = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }
-                    totalDataSet =
-                        use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
-                }
-            } catch (exception: RuntimeException) {
-                logger.error("http send [$url] for get all package name data failed, {}", exception.message)
-                throw exception
-            } finally {
-                response?.body()?.close()
-            }
+        if (StringUtils.isEmpty(url)) {
+            return
         }
+        var response: Response? = null
+        try {
+            val request = Request.Builder().url(url).get().build()
+            response = okHttpClient.newCall(request).execute()
+            if (checkResponse(response)) {
+                val use = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }
+                totalDataSet =
+                    use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
+            }
+        } catch (exception: IOException) {
+            logger.error("http send [$url] for get all package name data failed, {}", exception.message)
+            throw exception
+        } finally {
+            response?.body()?.close()
+        }
+
     }
 
     private final fun initTotalDataSetByFile() {
@@ -144,7 +146,11 @@ class DataMigrationService {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
-    fun dataMigrationByPkgName(artifactInfo: NpmArtifactInfo, useErrorData: Boolean, pkgName: String): NpmDataMigrationResponse<String> {
+    fun dataMigrationByPkgName(
+        artifactInfo: NpmArtifactInfo,
+        useErrorData: Boolean,
+        pkgName: String
+    ): NpmDataMigrationResponse<String> {
         initTotalDataSetByPkgName(pkgName)
         return dataMigration(artifactInfo, useErrorData)
     }
@@ -168,7 +174,10 @@ class DataMigrationService {
         }
         val resultList = submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
-        logger.info("npm history data migration, total size[${totalDataSet.size}], success[${successSet.size}], fail[${errorSet.size}], elapse [${elapseTimeMillis.div(1000L)}] s totally")
+        logger.info(
+            "npm history data migration, total size[${totalDataSet.size}], success[${successSet.size}], " +
+                "fail[${errorSet.size}], elapse [${millisToSecond(elapseTimeMillis)}] s totally."
+        )
         val collect = resultList.stream().flatMap { set -> set.stream() }.collect(Collectors.toSet())
         if (collect.isNotEmpty() && useErrorData) {
             insertErrorData(artifactInfo, collect)
@@ -178,7 +187,7 @@ class DataMigrationService {
             totalDataSet.size,
             successSet.size,
             errorSet.size,
-            elapseTimeMillis.div(1000L),
+            millisToSecond(elapseTimeMillis),
             collect
         )
     }
@@ -186,17 +195,20 @@ class DataMigrationService {
     fun doDataMigration(artifactInfo: NpmArtifactInfo, data: Set<String>) {
         data.forEach { pkgName ->
             try {
-                Thread.sleep(20L)
+                Thread.sleep(SLEEP_MILLIS)
                 migrate(artifactInfo, pkgName)
                 logger.info("npm package name: [$pkgName] migration success!")
                 successSet.add(pkgName)
-                if (successSet.size.rem(10) == 0) {
-                    logger.info("progress rate : successRate:[${successSet.size}/${totalDataSet.size}], failRate[${errorSet.size}/${totalDataSet.size}]")
+                if (isMultipleOfTen(successSet.size)) {
+                    logger.info(
+                        "progress rate : successRate:[${successSet.size}/${totalDataSet.size}], " +
+                            "failRate[${errorSet.size}/${totalDataSet.size}]"
+                    )
                 }
             } catch (exception: IOException) {
                 logger.error("failed to install [$pkgName.json] file, {}", exception.message)
                 errorSet.add(pkgName)
-            } catch (exception: RuntimeException) {
+            } catch (exception: InterruptedException) {
                 logger.error("failed to install [$pkgName.json] file, {}", exception.message)
                 errorSet.add(pkgName)
             }
@@ -227,7 +239,7 @@ class DataMigrationService {
      * @param <T>
      * @return
      */
-    fun <T> submit(callableList: List<Callable<T>>, timeout: Long = 1L): List<T> {
+    fun <T> submit(callableList: List<Callable<T>>, timeout: Long = 10L): List<T> {
         if (callableList.isEmpty()) {
             return emptyList()
         }
@@ -239,7 +251,7 @@ class DataMigrationService {
         }
         futureList.forEach { future ->
             try {
-                val result: T = future.get(timeout, TimeUnit.HOURS)
+                val result: T = future.get(timeout, TimeUnit.MINUTES)
                 result?.let { resultList.add(it) }
             } catch (exception: TimeoutException) {
                 logger.error("async tack result timeout: ${exception.message}")
@@ -295,21 +307,35 @@ class DataMigrationService {
     }
 
     companion object {
-        private const val FILE_NAME = "pkgName.json"
+        const val FILE_NAME = "pkgName.json"
         const val TIMEOUT = 60L
+        const val DEFAULT_COUNT = 100
+        const val MILLIS_RATE = 1000L
+        const val SLEEP_MILLIS = 20L
+
         val logger: Logger = LoggerFactory.getLogger(DataMigrationService::class.java)
 
         fun convert(tMigrationErrorData: TMigrationErrorData?): MigrationErrorDataInfo? {
             return tMigrationErrorData?.let {
                 MigrationErrorDataInfo(
                     counter = it.counter,
-                    errorData = jacksonObjectMapper().readValue(it.errorData, object : TypeReference<MutableSet<String>>() {}),
+                    errorData = jacksonObjectMapper().readValue(
+                        it.errorData, object : TypeReference<MutableSet<String>>() {}
+                    ),
                     projectId = it.projectId,
                     repoName = it.repoName,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
                 )
             }
+        }
+
+        fun millisToSecond(millis: Long): Long {
+            return millis / MILLIS_RATE
+        }
+
+        fun isMultipleOfTen(size: Int): Boolean {
+            return size.rem(10) == 0
         }
     }
 }

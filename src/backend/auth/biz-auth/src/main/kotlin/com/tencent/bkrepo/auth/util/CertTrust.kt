@@ -18,7 +18,7 @@ import javax.net.ssl.X509TrustManager
 
 object CertTrust {
 
-    lateinit var client: OkHttpClient
+    private lateinit var client: OkHttpClient
 
     fun call(addr: String): String {
         val request = Request.Builder().url(addr).build()
@@ -65,7 +65,6 @@ object CertTrust {
         return trustManagers[0] as X509TrustManager
     }
 
-    @Throws(GeneralSecurityException::class)
     private fun newEmptyKeyStore(password: CharArray): KeyStore {
         return try {
             val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
@@ -77,7 +76,7 @@ object CertTrust {
         }
     }
 
-    public fun initClient(cert: String) {
+    fun initClient(cert: String) {
         val trustManager: X509TrustManager
         val sslSocketFactory: SSLSocketFactory
         try {

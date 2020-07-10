@@ -5,5 +5,6 @@ enum class OperateType {
     UPDATE,
     DELETE,
     MOVE,
-    COPY
+    COPY,
+    RENAME
 }
