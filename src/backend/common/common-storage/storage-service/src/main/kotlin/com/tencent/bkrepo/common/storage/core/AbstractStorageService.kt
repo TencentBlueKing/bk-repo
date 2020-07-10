@@ -46,6 +46,9 @@ abstract class AbstractStorageService : StorageService {
     protected lateinit var fileStorage: FileStorage
 
     @Autowired
+    protected lateinit var storageProperties: StorageProperties
+
+    @Autowired
     protected lateinit var monitor: StorageHealthMonitor
 
     private val healthCheckExecutor = Executors.newSingleThreadExecutor()
@@ -86,7 +89,7 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
         try {
             doDelete(path, digest, credentials)
-            logger.info("Success to delete file [$digest] on [$credentials].")
+            logger.info("Success to delete file [$digest].")
         } catch (exception: Exception) {
             logger.error("Failed to delete file [$digest] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.DELETE_ERROR, exception.message.toString())
@@ -118,7 +121,7 @@ abstract class AbstractStorageService : StorageService {
             logger.info("Success to create append id [$appendId].")
             return appendId
         } catch (exception: Exception) {
-            logger.error("Failed to create append id.", exception)
+            logger.error("Failed to create append id on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -131,7 +134,7 @@ abstract class AbstractStorageService : StorageService {
             logger.info("Success to append file [$appendId].")
             return length
         } catch (exception: Exception) {
-            logger.error("Failed to append file [$appendId].", exception)
+            logger.error("Failed to append file [$appendId] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -164,7 +167,7 @@ abstract class AbstractStorageService : StorageService {
             logger.info("Success to create block id [$blockId].")
             return blockId
         } catch (exception: Exception) {
-            logger.error("Failed to create block id.", exception)
+            logger.error("Failed to create block id on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -175,7 +178,7 @@ abstract class AbstractStorageService : StorageService {
         try {
             return tempClient.checkDirectory(blockId)
         } catch (exception: Exception) {
-            logger.error("Failed to check block id.", exception)
+            logger.error("Failed to check block id on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -195,7 +198,7 @@ abstract class AbstractStorageService : StorageService {
             tempClient.store(blockId, "$sequence$SHA256_SUFFIX", digest.byteInputStream(), digest.length.toLong(), overwrite)
             logger.info("Success to store block [$blockId/$sequence].")
         } catch (exception: Exception) {
-            logger.error("Failed to store block [$blockId/$sequence].", exception)
+            logger.error("Failed to store block [$blockId/$sequence] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -233,7 +236,7 @@ abstract class AbstractStorageService : StorageService {
             tempClient.deleteDirectory(CURRENT_PATH, blockId)
             logger.info("Success to delete block id [$blockId].")
         } catch (exception: Exception) {
-            logger.error("Failed to delete block id [$blockId].", exception)
+            logger.error("Failed to delete block id [$blockId] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -249,7 +252,7 @@ abstract class AbstractStorageService : StorageService {
                 Pair(size, sha256)
             }
         } catch (exception: Exception) {
-            logger.error("Failed to list block [$blockId].", exception)
+            logger.error("Failed to list block [$blockId] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -271,7 +274,7 @@ abstract class AbstractStorageService : StorageService {
             doCheckHealth(credentials)
         })
         try {
-            future.get(monitor.monitorConfig.timeout.seconds, TimeUnit.SECONDS)
+            future.get(storageProperties.monitor.timeout.seconds, TimeUnit.SECONDS)
         } catch (timeoutException: TimeoutException) {
             throw RuntimeException(StorageHealthMonitor.IO_TIMEOUT_MESSAGE)
         } catch (exception: Exception) {
@@ -280,7 +283,7 @@ abstract class AbstractStorageService : StorageService {
     }
 
     protected fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
-        return storageCredentials ?: fileStorage.getDefaultCredentials()
+        return storageCredentials ?: storageProperties.defaultStorageCredentials()
     }
 
     private fun storeFile(file: File, credentials: StorageCredentials): FileInfo {
@@ -315,8 +318,9 @@ abstract class AbstractStorageService : StorageService {
 
     open fun doCheckHealth(credentials: StorageCredentials) {
         val filename = System.nanoTime().toString()
-        val inputStream = ZeroInputStream(monitor.monitorConfig.dataSize.toBytes())
-        fileStorage.store(HEALTH_CHECK_PATH, filename, inputStream, credentials)
+        val size = storageProperties.monitor.dataSize.toBytes()
+        val inputStream = ZeroInputStream(size)
+        fileStorage.store(HEALTH_CHECK_PATH, filename, inputStream, size, credentials)
         fileStorage.delete(HEALTH_CHECK_PATH, filename, credentials)
     }
 

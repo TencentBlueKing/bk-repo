@@ -19,11 +19,15 @@ import java.nio.file.Paths
 open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSystemClient>() {
 
     override fun store(path: String, filename: String, file: File, client: FileSystemClient) {
-        client.store(path, filename, file)
+        file.inputStream().use {
+            client.store(path, filename, it, file.length())
+        }
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream, client: FileSystemClient) {
-        client.store(path, filename, inputStream, inputStream.available().toLong())
+    override fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: FileSystemClient) {
+        inputStream.use {
+            client.store(path, filename, it, size)
+        }
     }
 
     override fun load(path: String, filename: String, received: File, client: FileSystemClient): File? {
@@ -48,8 +52,6 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
     override fun exist(path: String, filename: String, client: FileSystemClient): Boolean {
         return client.exist(path, filename)
     }
-
-    override fun getDefaultCredentials() = storageProperties.filesystem
 
     override fun onCreateClient(credentials: FileSystemCredentials) = FileSystemClient(credentials.path)
 

@@ -5,13 +5,11 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.bound
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import org.springframework.beans.factory.annotation.Autowired
 import java.io.InputStream
 import java.nio.file.Paths
 import java.util.concurrent.Executor
@@ -25,22 +23,19 @@ import javax.annotation.Resource
  */
 class CacheStorageService : AbstractStorageService() {
 
-    @Autowired
-    private lateinit var storageProperties: StorageProperties
-
     @Resource
     private lateinit var taskAsyncExecutor: Executor
 
     override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
         when {
             artifactFile.isInMemory() -> {
-                fileStorage.store(path, filename, artifactFile.getInputStream(), credentials)
+                fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)
             }
             artifactFile.isFallback() -> {
                 fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
             }
             else -> {
-                val cachedFile = getCacheClient(credentials).store(path, filename, artifactFile.flushToFile())
+                val cachedFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
                 taskAsyncExecutor.execute {
                     fileStorage.store(path, filename, cachedFile, credentials)
                 }
@@ -52,11 +47,10 @@ class CacheStorageService : AbstractStorageService() {
         val cacheClient = getCacheClient(credentials)
         return if (isLoadCacheFirst(range, credentials)) {
             val cachedFile = cacheClient.load(path, filename) ?: run {
-                cacheClient.touch(path, filename).let {
-                    fileStorage.load(path, filename, it, credentials) ?: run {
-                        cacheClient.delete(path, filename)
-                        null
-                    }
+                val newCacheFile = cacheClient.touch(path, filename)
+                fileStorage.load(path, filename, newCacheFile, credentials) ?: run {
+                    cacheClient.delete(path, filename)
+                    null
                 }
             }
             cachedFile?.bound(range)
@@ -110,12 +104,12 @@ class CacheStorageService : AbstractStorageService() {
      */
     private fun isLoadCacheFirst(range: Range, credentials: StorageCredentials): Boolean {
         val isExceedThreshold = range.total > storageProperties.fileSizeThreshold.toBytes()
-        val isHealth = if (credentials.upload.location == storageProperties.upload.location) {
+        val isHealth = if (credentials == storageProperties.defaultStorageCredentials()) {
             monitor.health.get()
         } else {
             true
         }
-        val cacheFirst = storageProperties.loadCacheFirst
+        val cacheFirst = credentials.cache.loadCacheFirst
         return cacheFirst && isHealth && isExceedThreshold
     }
 

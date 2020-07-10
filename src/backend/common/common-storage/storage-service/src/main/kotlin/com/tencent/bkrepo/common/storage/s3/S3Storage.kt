@@ -41,8 +41,8 @@ open class S3Storage : AbstractFileStorage<S3Credentials, S3Client>() {
         shutdownTransferManager(transferManager)
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream, client: S3Client) {
-        val metadata = ObjectMetadata().apply { contentLength = inputStream.available().toLong() }
+    override fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: S3Client) {
+        val metadata = ObjectMetadata().apply { contentLength = size }
         client.s3Client.putObject(client.bucketName, filename, inputStream, metadata)
     }
 
@@ -101,8 +101,6 @@ open class S3Storage : AbstractFileStorage<S3Credentials, S3Client>() {
 
         return S3Client(credentials.bucket, amazonS3)
     }
-
-    override fun getDefaultCredentials() = storageProperties.s3
 
     private fun getTransferManager(client: S3Client): TransferManager {
         return if (client == defaultClient) {

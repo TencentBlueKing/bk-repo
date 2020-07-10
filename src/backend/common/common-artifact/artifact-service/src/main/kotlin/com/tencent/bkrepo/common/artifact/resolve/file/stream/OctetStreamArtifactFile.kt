@@ -21,18 +21,19 @@ import java.nio.file.NoSuchFileException
 open class OctetStreamArtifactFile(
     private val source: InputStream,
     private val monitor: StorageHealthMonitor,
-    private val storageCredentials: StorageCredentials? = null
+    private val storageProperties: StorageProperties,
+    private val storageCredentials: StorageCredentials
 ) : ArtifactFile {
 
     private var hasInitialized: Boolean = false
     private val listener = DigestCalculateListener()
-    private val storageProperties: StorageProperties = monitor.storageProperties
     private val receiver = createStreamReceiver()
 
     private fun createStreamReceiver(): SmartStreamReceiver {
-        val path = storageCredentials?.upload?.location?.toPath() ?: monitor.getPrimaryPath()
+        val path = storageCredentials.upload.location.toPath()
         val fileSizeThreshold = storageProperties.fileSizeThreshold.toBytes()
-        return SmartStreamReceiver(fileSizeThreshold, generateRandomName(), path, monitor.monitorConfig.enableTransfer)
+        val enableTransfer = storageProperties.monitor.enableTransfer
+        return SmartStreamReceiver(fileSizeThreshold, generateRandomName(), path, enableTransfer)
     }
 
     init {
@@ -106,7 +107,7 @@ open class OctetStreamArtifactFile(
     fun init() {
         if (!hasInitialized) {
             try {
-                if (storageCredentials == null) {
+                if (storageCredentials == storageProperties.defaultStorageCredentials()) {
                     monitor.add(receiver)
                     if (!monitor.health.get()) {
                         receiver.unhealthy(monitor.getFallbackPath(), monitor.reason)

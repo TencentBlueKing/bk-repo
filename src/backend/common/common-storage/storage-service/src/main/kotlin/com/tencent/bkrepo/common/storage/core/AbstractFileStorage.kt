@@ -3,10 +3,10 @@ package com.tencent.bkrepo.common.storage.core
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
-import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -37,7 +37,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     val defaultClient: Client by lazy {
-        onCreateClient(getDefaultCredentials() as Credentials)
+        onCreateClient(storageProperties.defaultStorageCredentials() as Credentials)
     }
 
     override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
@@ -46,18 +46,17 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         val nanoTime = measureNanoTime {
             store(path, filename, file, client)
         }
-        logger.info("Success to persist file [$filename], size: ${HumanReadable.size(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
-            "average: ${HumanReadable.throughput(size, nanoTime)}.")
+        val throughput = Throughput(size, nanoTime)
+        logger.info("Success to persist file [$filename], $throughput.")
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream, storageCredentials: StorageCredentials) {
+    override fun store(path: String, filename: String, inputStream: InputStream, size: Long, storageCredentials: StorageCredentials) {
         val client = getClient(storageCredentials)
-        val size = inputStream.available().toLong()
         val nanoTime = measureNanoTime {
-            store(path, filename, inputStream, client)
+            store(path, filename, inputStream, size, client)
         }
-        logger.info("Success to persist stream [$filename], size: ${HumanReadable.size(size)}, elapse: ${HumanReadable.time(nanoTime)}, " +
-            "average: ${HumanReadable.throughput(size, nanoTime)}.")
+        val throughput = Throughput(size, nanoTime)
+        logger.info("Success to persist stream [$filename], $throughput.")
     }
 
     override fun load(path: String, filename: String, received: File, storageCredentials: StorageCredentials): File? {
@@ -96,20 +95,16 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     private fun getClient(storageCredentials: StorageCredentials): Client {
-        return if (storageCredentials == getDefaultCredentials()) {
+        return if (storageCredentials == storageProperties.defaultStorageCredentials()) {
             defaultClient
         } else {
             clientCache.get(storageCredentials as Credentials)
         }
     }
 
-    private fun getCredentialsOrDefault(storageCredentials: StorageCredentials?): StorageCredentials {
-        return storageCredentials ?: getDefaultCredentials()
-    }
-
     protected abstract fun onCreateClient(credentials: Credentials): Client
     abstract fun store(path: String, filename: String, file: File, client: Client)
-    abstract fun store(path: String, filename: String, inputStream: InputStream, client: Client)
+    abstract fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: Client)
     abstract fun load(path: String, filename: String, received: File, client: Client): File?
     abstract fun load(path: String, filename: String, range: Range, client: Client): InputStream?
     abstract fun delete(path: String, filename: String, client: Client)

@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
@@ -11,6 +12,7 @@ import java.util.concurrent.TimeUnit
 internal class StorageHealthMonitorTest {
 
     private val uploadProperties: UploadProperties = UploadProperties(location = "temp")
+    private val storageCredentials = FileSystemCredentials(upload = uploadProperties)
     private val monitorConfig: MonitorProperties = MonitorProperties(
         enabled = true,
         fallbackLocation = "temp-fallback",
@@ -19,7 +21,7 @@ internal class StorageHealthMonitorTest {
         timesToRestore = 5,
         timesToFallback = 2
     )
-    private val storageProperties: StorageProperties = StorageProperties(upload = uploadProperties, monitor = monitorConfig)
+    private val storageProperties: StorageProperties = StorageProperties(filesystem = storageCredentials, monitor = monitorConfig)
 
     @Test
     fun testCheck() {
@@ -38,7 +40,7 @@ internal class StorageHealthMonitorTest {
             timesToRestore = 5,
             timesToFallback = 2
         )
-        val storageProperties = StorageProperties(upload = uploadProperties, monitor = config)
+        val storageProperties = StorageProperties(filesystem = storageCredentials, monitor = config)
         val monitor = StorageHealthMonitor(storageProperties)
         repeat(2) {
             monitor.add(object : StorageHealthMonitor.Observer {

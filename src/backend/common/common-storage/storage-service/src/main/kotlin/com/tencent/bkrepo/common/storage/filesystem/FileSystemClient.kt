@@ -26,11 +26,7 @@ class FileSystemClient(private val root: String) {
 
     fun touch(dir: String, filename: String): File {
         val filePath = Paths.get(this.root, dir, filename)
-        try {
-            filePath.createFile()
-        } catch (exception: FileAlreadyExistsException) {
-            // ignore
-        }
+        filePath.createFile()
         return filePath.toFile()
     }
 
@@ -50,7 +46,7 @@ class FileSystemClient(private val root: String) {
         return filePath.toFile()
     }
 
-    fun store(dir: String, filename: String, file: File, overwrite: Boolean = false): File {
+    fun move(dir: String, filename: String, file: File, overwrite: Boolean = false): File {
         val source = file.toPath()
         val target = Paths.get(this.root, dir, filename)
         if (overwrite) {

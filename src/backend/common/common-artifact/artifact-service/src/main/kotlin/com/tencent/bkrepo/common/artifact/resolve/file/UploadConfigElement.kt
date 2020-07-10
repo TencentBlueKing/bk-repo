@@ -6,7 +6,7 @@ import javax.servlet.MultipartConfigElement
 
 class UploadConfigElement(
     private val storageProperties: StorageProperties
-) : MultipartConfigElement(storageProperties.upload.location) {
+) : MultipartConfigElement(storageProperties.defaultStorageCredentials().upload.location) {
 
     init {
         if (storageProperties.maxFileSize.isNegative) {
@@ -21,7 +21,7 @@ class UploadConfigElement(
     }
 
     override fun getLocation(): String {
-        return storageProperties.upload.location
+        return storageProperties.defaultStorageCredentials().upload.location
     }
 
     override fun getMaxFileSize(): Long {
