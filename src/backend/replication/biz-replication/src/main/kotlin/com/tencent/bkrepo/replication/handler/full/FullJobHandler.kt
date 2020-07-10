@@ -10,7 +10,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.handler.AbstractHandler
 import com.tencent.bkrepo.replication.job.ReplicationContext
-import com.tencent.bkrepo.replication.model.TReplicaTriggers
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
@@ -24,14 +23,10 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
-import org.quartz.Trigger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 
 class FullJobHandler : AbstractHandler() {
 
@@ -47,17 +42,17 @@ class FullJobHandler : AbstractHandler() {
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
 
-    fun updateTriggerStatus(keyName: String, keyGroup: String) {
-        val query = Query()
-        val update = Update()
-        query.addCriteria(
-            Criteria.where(TReplicaTriggers::keyName.name).`is`(keyName).and(
-                TReplicaTriggers::keyGroup.name
-            ).`is`(keyGroup)
-        )
-        update.set(TReplicaTriggers::state.name, Trigger.TriggerState.NORMAL.name)
-        mongoTemplate.updateFirst(query, update, TReplicaTriggers::class.java)
-    }
+    // fun updateTriggerStatus(keyName: String, keyGroup: String) {
+    //     val query = Query()
+    //     val update = Update()
+    //     query.addCriteria(
+    //         Criteria.where(TReplicaTriggers::keyName.name).`is`(keyName).and(
+    //             TReplicaTriggers::keyGroup.name
+    //         ).`is`(keyGroup)
+    //     )
+    //     update.set(TReplicaTriggers::state.name, Trigger.TriggerState.NORMAL.name)
+    //     mongoTemplate.updateFirst(query, update, TReplicaTriggers::class.java)
+    // }
 
     fun checkVersion(context: ReplicationContext) {
         with(context) {
@@ -68,18 +63,18 @@ class FullJobHandler : AbstractHandler() {
         }
     }
 
-    fun prepare(context: ReplicationContext) {
-        with(context) {
-            projectDetailList = repoDataService.listProject(task.localProjectId).map {
-                convertReplicationProject(it, task.localRepoName, task.remoteProjectId, task.remoteRepoName)
-            }
-            task.replicationProgress.totalProject = projectDetailList.size
-            projectDetailList.forEach { project ->
-                task.replicationProgress.totalRepo += project.repoDetailList.size
-                project.repoDetailList.forEach { repo -> task.replicationProgress.totalNode += repo.fileCount }
-            }
-        }
-    }
+    // fun prepare(context: ReplicationContext) {
+    //     with(context) {
+    //         projectDetailList = repoDataService.listProject(task.localProjectId).map {
+    //             convertReplicationProject(it, task.localRepoName, task.remoteProjectId, task.remoteRepoName)
+    //         }
+    //         task.replicationProgress.totalProject = projectDetailList.size
+    //         projectDetailList.forEach { project ->
+    //             task.replicationProgress.totalRepo += project.repoDetailList.size
+    //             project.repoDetailList.forEach { repo -> task.replicationProgress.totalNode += repo.fileCount }
+    //         }
+    //     }
+    // }
 
     private fun convertReplicationProject(
         localProjectInfo: ProjectInfo,
@@ -105,12 +100,12 @@ class FullJobHandler : AbstractHandler() {
                 context.currentProjectDetail = it
                 context.remoteProjectId = it.remoteProjectId
                 replicaProject(context)
-                context.task.replicationProgress.successProject += 1
+                //context.task.replicationProgress.successProject += 1
             } catch (exception: Exception) {
-                context.task.replicationProgress.failedProject += 1
+                //context.task.replicationProgress.failedProject += 1
                 logger.error("Replica project[$it] failed.", exception)
             } finally {
-                context.task.replicationProgress.replicatedProject += 1
+                //context.task.replicationProgress.replicatedProject += 1
                 taskRepository.save(context.task)
             }
         }
@@ -134,12 +129,12 @@ class FullJobHandler : AbstractHandler() {
                     context.currentRepoDetail = it
                     context.remoteRepoName = it.remoteRepoName
                     replicaRepo(context)
-                    context.task.replicationProgress.successRepo += 1
+                    //context.task.replicationProgress.successRepo += 1
                 } catch (exception: Exception) {
-                    context.task.replicationProgress.failedRepo += 1
+                    //context.task.replicationProgress.failedRepo += 1
                     logger.error("Replica repository[$it] failed.", exception)
                 } finally {
-                    context.task.replicationProgress.replicatedRepo += 1
+                    //context.task.replicationProgress.replicatedRepo += 1
                     taskRepository.save(context.task)
                 }
             }
@@ -189,7 +184,7 @@ class FullJobHandler : AbstractHandler() {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> {
                         logger.debug("Node[$node] conflict, skip it.")
-                        task.replicationProgress.conflictedNode += 1
+                        //task.replicationProgress.conflictedNode += 1
                         return
                     }
                     ConflictStrategy.OVERWRITE -> {
@@ -218,15 +213,15 @@ class FullJobHandler : AbstractHandler() {
                 )
                 logger.info("start to replica file ${replicaRequest.projectId} ,${replicaRequest.repoName}, ${replicaRequest.fullPath}")
                 replicationService.replicaFile(context, replicaRequest)
-                task.replicationProgress.successNode += 1
+                //task.replicationProgress.successNode += 1
             } catch (exception: Exception) {
                 logger.error("Replica node[$node] failed.", exception)
-                task.replicationProgress.failedNode += 1
+                //task.replicationProgress.failedNode += 1
             } finally {
-                task.replicationProgress.replicatedNode += 1
-                if (task.replicationProgress.replicatedNode % 10 == 0L) {
-                    taskRepository.save(task)
-                }
+                //task.replicationProgress.replicatedNode += 1
+                // if (task.replicationProgress.replicatedNode % 10 == 0L) {
+                //     taskRepository.save(task)
+                // }
             }
         }
     }

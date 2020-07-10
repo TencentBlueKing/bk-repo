@@ -13,9 +13,9 @@ import javax.annotation.PreDestroy
 class MetricSourceService(
     private val monitorProperties: MonitorProperties,
     private val instanceRegistry: InstanceRegistry,
-    private val instanceWebClient: InstanceWebClient
+    instanceWebClientBuilder: InstanceWebClient.Builder
 ) {
-
+    private val instanceWebClient = instanceWebClientBuilder.build()
     val metricSourceMap: MutableMap<MetricEndpoint, InstanceMetricSource> = mutableMapOf()
 
     init {

@@ -116,7 +116,7 @@ class CacheStorageService : AbstractStorageService() {
             true
         }
         val cacheFirst = storageProperties.loadCacheFirst
-        return cacheFirst && isHealth && !isExceedThreshold
+        return cacheFirst && isHealth && isExceedThreshold
     }
 
     private fun getCacheClient(credentials: StorageCredentials): FileSystemClient {

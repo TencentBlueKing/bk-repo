@@ -193,7 +193,6 @@ class DataMigrationService {
     }
 
     fun doDataMigration(artifactInfo: NpmArtifactInfo, data: Set<String>) {
-        logger.info("current Thread : ${Thread.currentThread().name}")
         data.forEach { pkgName ->
             try {
                 Thread.sleep(SLEEP_MILLIS)
@@ -300,12 +299,10 @@ class DataMigrationService {
     }
 
     fun find(projectId: String, repoName: String): MigrationErrorDataInfo? {
-        val criteria =
-            Criteria.where(TMigrationErrorData::projectId.name).`is`(projectId).and(TMigrationErrorData::repoName.name)
-                .`is`(repoName)
-        val query = Query.query(criteria)
-            .with(Sort(Sort.Direction.DESC, TMigrationErrorData::counter.name))
-            .limit(0)
+        // repositoryService.checkRepository(projectId, repoName)
+        val criteria = Criteria.where(TMigrationErrorData::projectId.name).`is`(projectId)
+            .and(TMigrationErrorData::repoName.name).`is`(repoName)
+        val query = Query.query(criteria).with(Sort.by(Sort.Direction.DESC, TMigrationErrorData::counter.name)).limit(0)
         return mongoTemplate.findOne(query, TMigrationErrorData::class.java)?.let { convert(it)!! }
     }
 

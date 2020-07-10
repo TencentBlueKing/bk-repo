@@ -49,7 +49,7 @@ class RealTimeJob {
                 logger.info("container running status :[${container.isRunning}]")
                 // get container running status an sleep try
                 isRunning = container.isRunning
-                isRunning.let {
+                if (isRunning) {
                     return
                 }
                 Thread.sleep(30000)
