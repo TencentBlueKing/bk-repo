@@ -68,8 +68,8 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             val response = httpClient.newCall(request).execute()
             return if (checkResponse(response)) {
                 val artifactFile = createTempFile(response.body()!!)
-                val nodeInfo = putArtifactCache(context, artifactFile)
                 val artifactStream = artifactFile.getInputStream().toArtifactStream()
+                val nodeInfo = putArtifactCache(context, artifactFile)
                 return ArtifactResource(artifactStream, determineArtifactName(context), nodeInfo)
             } else null
         }
@@ -107,7 +107,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 将远程拉取的构件缓存本地
      */
-    private fun putArtifactCache(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeInfo? {
+    protected fun putArtifactCache(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeInfo? {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
         return if (cacheConfiguration.cacheEnabled) {

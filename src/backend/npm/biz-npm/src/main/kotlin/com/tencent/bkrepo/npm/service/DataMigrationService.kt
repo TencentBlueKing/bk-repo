@@ -12,6 +12,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateCont
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
+import com.tencent.bkrepo.npm.utils.ThreadPoolManager
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PKG_NAME
@@ -44,10 +45,7 @@ import java.io.InputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.Callable
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import java.util.stream.Collectors
 import javax.annotation.Resource
 
@@ -96,12 +94,11 @@ class DataMigrationService {
         } finally {
             response?.body()?.close()
         }
-
     }
 
     private final fun initTotalDataSetByFile() {
-        val inputStream: InputStream? = this.javaClass.classLoader.getResourceAsStream(FILE_NAME)
-        val use = inputStream!!.use { GsonUtils.transferInputStreamToJson(it) }
+        val inputStream: InputStream = this.javaClass.classLoader.getResourceAsStream(FILE_NAME) ?: return
+        val use = inputStream.use { GsonUtils.transferInputStreamToJson(it) }
         totalDataSet =
             use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
     }
@@ -172,7 +169,7 @@ class DataMigrationService {
                 errorSet
             })
         }
-        val resultList = submit(callableList)
+        val resultList = ThreadPoolManager.submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
         logger.info(
             "npm history data migration, total size[${totalDataSet.size}], success[${successSet.size}], " +
@@ -193,7 +190,6 @@ class DataMigrationService {
     }
 
     fun doDataMigration(artifactInfo: NpmArtifactInfo, data: Set<String>) {
-        logger.info("current Thread : ${Thread.currentThread().name}")
         data.forEach { pkgName ->
             try {
                 Thread.sleep(SLEEP_MILLIS)
@@ -230,39 +226,6 @@ class DataMigrationService {
             return false
         }
         return true
-    }
-
-    /**
-     *
-     * 执行一组有返回值的任务
-     * @param callableList 任务列表
-     * @param timeout 任务超时时间，单位毫秒
-     * @param <T>
-     * @return
-     */
-    fun <T> submit(callableList: List<Callable<T>>, timeout: Long = 10L): List<T> {
-        if (callableList.isEmpty()) {
-            return emptyList()
-        }
-        val resultList = mutableListOf<T>()
-        val futureList = mutableListOf<Future<T>>()
-        callableList.forEach { callable ->
-            val future: Future<T> = asyncExecutor.submit(callable)
-            futureList.add(future)
-        }
-        futureList.forEach { future ->
-            try {
-                val result: T = future.get(timeout, TimeUnit.MINUTES)
-                result?.let { resultList.add(it) }
-            } catch (exception: TimeoutException) {
-                logger.error("async tack result timeout: ${exception.message}")
-            } catch (ex: InterruptedException) {
-                logger.error("get async task result error : ${ex.message}")
-            } catch (ex: ExecutionException) {
-                logger.error("get async task result error : ${ex.message}")
-            }
-        }
-        return resultList
     }
 
     private fun insertErrorData(artifactInfo: NpmArtifactInfo, collect: Set<String>) {

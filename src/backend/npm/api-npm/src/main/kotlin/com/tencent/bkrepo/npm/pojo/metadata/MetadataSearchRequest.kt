@@ -12,9 +12,9 @@ data class MetadataSearchRequest(
     @ApiModelProperty("起始页", required = false)
     val from: Int = 0,
     @ApiModelProperty("质量")
-    val quality: Double,
+    val quality: Double = 0.0,
     @ApiModelProperty("受欢迎程度")
-    val popularity: Double,
+    val popularity: Double = 0.0,
     @ApiModelProperty("贡献度")
-    val maintenance: Double
+    val maintenance: Double = 0.0
 )

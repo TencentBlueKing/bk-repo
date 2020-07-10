@@ -16,12 +16,12 @@ class NpmVirtualRepository : VirtualRepository() {
     override fun list(context: ArtifactListContext): NpmSearchResponse {
         val list = mutableListOf<NpmSearchResponse>()
         val searchRequest = context.contextAttributes[SEARCH_REQUEST] as MetadataSearchRequest
-        val artifactInfo = context.artifactInfo
         val virtualConfiguration = context.repositoryConfiguration as VirtualConfiguration
         val repoList = virtualConfiguration.repositoryList
         val traversedList = getTraversedList(context)
         for (repoIdentify in repoList) {
             if (repoIdentify in traversedList) {
+                if (logger.isDebugEnabled)
                 logger.debug("Repository[$repoIdentify] has been traversed, skip it.")
                 continue
             }
@@ -34,14 +34,14 @@ class NpmVirtualRepository : VirtualRepository() {
                     list.add(map as NpmSearchResponse)
                 }
             } catch (exception: Exception) {
-                logger.error("list Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${exception.message}")
+                logger.error("list Artifact[${context.artifactInfo}] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
         return recordMap(list, searchRequest)
     }
 
     private fun recordMap(list: List<NpmSearchResponse>, searchRequest: MetadataSearchRequest): NpmSearchResponse {
-        if (list.isNullOrEmpty() || list[0].objects.isNullOrEmpty() || list[1].objects.isNullOrEmpty()){
+        if (list.isNullOrEmpty() || list[0].objects.isNullOrEmpty() || list[1].objects.isNullOrEmpty()) {
             return NpmSearchResponse()
         }
         val size = searchRequest.size
@@ -60,6 +60,6 @@ class NpmVirtualRepository : VirtualRepository() {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(VirtualRepository::class.java)
+        private val logger = LoggerFactory.getLogger(NpmVirtualRepository::class.java)
     }
 }

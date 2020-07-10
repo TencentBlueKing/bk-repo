@@ -59,7 +59,7 @@ class ModuleDepsService {
     }
 
     private fun checkParameter(depsCreateRequest: DepsCreateRequest) {
-        with(depsCreateRequest){
+        with(depsCreateRequest) {
             this.takeIf { name.isNotBlank() } ?: throw ErrorCodeException(
                 CommonMessageCode.PARAMETER_MISSING,
                 this::name.name
