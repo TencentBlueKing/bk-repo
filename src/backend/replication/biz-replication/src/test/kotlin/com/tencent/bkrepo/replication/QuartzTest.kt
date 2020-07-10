@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.replication
 
-import com.tencent.bkrepo.common.api.util.uniqueId
+import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.quartz.CronScheduleBuilder
