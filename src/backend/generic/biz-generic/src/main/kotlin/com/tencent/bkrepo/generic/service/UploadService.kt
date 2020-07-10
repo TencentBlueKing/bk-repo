@@ -75,18 +75,17 @@ class UploadService @Autowired constructor(
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun abortBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
-        storageService.deleteBlockId(uploadId, getStorageCredentials())
+        val storageCredentials = getStorageCredentials()
+        checkUploadId(uploadId, storageCredentials)
+
+        storageService.deleteBlockId(uploadId, storageCredentials)
         logger.info("User[$userId] abort upload block [$artifactInfo] success.")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun completeBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
         val storageCredentials = getStorageCredentials()
-        // 判断uploadId是否存在
-        if (!storageService.checkBlockId(uploadId, storageCredentials)) {
-            logger.warn("User[$userId] abort block upload [$artifactInfo] failed: uploadId not found.")
-            throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
-        }
+        checkUploadId(uploadId, storageCredentials)
 
         val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials)
         // 保存节点
@@ -109,11 +108,16 @@ class UploadService @Autowired constructor(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): List<BlockInfo> {
         val storageCredentials = getStorageCredentials()
+        checkUploadId(uploadId, storageCredentials)
+
+        val blockInfoList = storageService.listBlock(uploadId, storageCredentials)
+        return blockInfoList.mapIndexed { index, it -> BlockInfo(size = it.first, sequence = index + 1, sha256 = it.second) }
+    }
+
+    private fun checkUploadId(uploadId: String, storageCredentials: StorageCredentials?) {
         if (!storageService.checkBlockId(uploadId, storageCredentials)) {
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         }
-        val blockInfoList = storageService.listBlock(uploadId, storageCredentials)
-        return blockInfoList.mapIndexed { index, it -> BlockInfo(size = it.first, sequence = index + 1, sha256 = it.second) }
     }
 
     private fun getStorageCredentials(): StorageCredentials? {

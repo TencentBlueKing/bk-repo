@@ -16,6 +16,10 @@ data class CacheProperties(
      */
     var path: String = "data/cached",
     /**
+     * 优先从缓存加载文件
+     */
+    var loadCacheFirst: Boolean = true,
+    /**
      * 缓存文件时间，单位天。小于或等于0则永久存储
      */
     var expireDays: Int = -1

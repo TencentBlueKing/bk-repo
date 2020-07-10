@@ -17,13 +17,13 @@ class SimpleStorageService : AbstractStorageService() {
     override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
         when {
             artifactFile.isInMemory() -> {
-                fileStorage.store(path, filename, artifactFile.getInputStream(), credentials)
+                fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)
             }
             artifactFile.isFallback() -> {
                 fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
             }
             else -> {
-                fileStorage.store(path, filename, artifactFile.getFile()!!, credentials)
+                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
             }
         }
     }

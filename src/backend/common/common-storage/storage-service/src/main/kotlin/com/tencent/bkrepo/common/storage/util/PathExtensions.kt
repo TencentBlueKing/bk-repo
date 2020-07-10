@@ -12,7 +12,11 @@ fun Path.createFile(): File {
         if (this.parent != null) {
             Files.createDirectories(this.parent)
         }
-        Files.createFile(this)
+        try {
+            Files.createFile(this)
+        } catch (exception: java.nio.file.FileAlreadyExistsException) {
+            // ignore
+        }
     }
     return this.toFile()
 }

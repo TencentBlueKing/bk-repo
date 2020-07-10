@@ -43,8 +43,8 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
         shutdownTransferManager(transferManager)
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream, client: InnerCosClient) {
-        val metadata = ObjectMetadata().apply { contentLength = inputStream.available().toLong() }
+    override fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: InnerCosClient) {
+        val metadata = ObjectMetadata().apply { contentLength = size }
         client.cosClient.putObject(client.bucketName, filename, inputStream, metadata)
     }
 
@@ -100,8 +100,6 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
         val cosClient = COSClient(basicCOSCredentials, clientConfig)
         return InnerCosClient(credentials.bucket, cosClient)
     }
-
-    override fun getDefaultCredentials() = storageProperties.innercos
 
     private fun getTransferManager(innerCosClient: InnerCosClient): TransferManager {
         return if (innerCosClient == defaultClient) {

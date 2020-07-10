@@ -1,11 +1,10 @@
 package com.tencent.bkrepo.common.storage.core
 
-import com.tencent.bkrepo.common.storage.config.CacheProperties
-import com.tencent.bkrepo.common.storage.config.UploadProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.HDFSCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.S3Credentials
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -41,26 +40,9 @@ data class StorageProperties(
     var isResolveLazily: Boolean = true,
 
     /**
-     * 优先从缓存加载文件
-     */
-    var loadCacheFirst: Boolean = true,
-
-    /**
      * 存储类型
      */
     var type: StorageType = StorageType.FILESYSTEM,
-
-    /**
-     * 缓存配置
-     */
-    @NestedConfigurationProperty
-    var cache: CacheProperties = CacheProperties(),
-
-    /**
-     * 上传配置
-     */
-    @NestedConfigurationProperty
-    var upload: UploadProperties = UploadProperties(),
 
     /**
      * 磁盘监控配置
@@ -91,4 +73,14 @@ data class StorageProperties(
      */
     @NestedConfigurationProperty
     var s3: S3Credentials = S3Credentials()
-)
+) {
+    fun defaultStorageCredentials(): StorageCredentials {
+        return when (type) {
+            StorageType.FILESYSTEM -> filesystem
+            StorageType.INNERCOS -> innercos
+            StorageType.HDFS -> hdfs
+            StorageType.S3 -> s3
+            else -> filesystem
+        }
+    }
+}
