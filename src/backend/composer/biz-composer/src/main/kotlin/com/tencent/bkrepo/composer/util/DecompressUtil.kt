@@ -6,14 +6,15 @@ import com.google.gson.JsonParser
 import com.tencent.bkrepo.composer.ARTIFACT_DIRECT_DOWNLOAD_PREFIX
 import com.tencent.bkrepo.composer.COMPOSER_JSON
 import com.tencent.bkrepo.composer.exception.ComposerUnSupportCompressException
+import com.tencent.bkrepo.composer.pojo.ComposerMetadata
 import com.tencent.bkrepo.composer.util.JsonUtil.jsonValue
 import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
-import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.util.zip.GZIPInputStream
 import com.tencent.bkrepo.composer.util.pojo.ComposerJsonNode
+import org.apache.commons.compress.archivers.ArchiveEntry
 import java.util.UUID
 
 object DecompressUtil {
@@ -42,8 +43,7 @@ object DecompressUtil {
      * @param format 文件压缩格式
      * @exception
      */
-    @Throws(Exception::class)
-    fun InputStream.getComposerJson(format: String): String {
+    private fun InputStream.getComposerJson(format: String): String {
         return when (format) {
             TAR -> {
                 getTarComposerJson(this)
@@ -60,13 +60,19 @@ object DecompressUtil {
         }
     }
 
+    fun InputStream.getComposerMetadata(uri: String): ComposerMetadata {
+        val uriArgs = UriUtil.getUriArgs(uri)
+        val json = this.getComposerJson(uriArgs.format)
+        val composerMetadata = JsonUtil.mapper.readValue(json, ComposerMetadata::class.java)
+        return composerMetadata
+    }
+
     /**
      * composer package 中'composer.json'添加到服务器上对应%package%.json是需要增加一些信息
      * @param InputStream composer package 的文件流
      * @param uri 请求中的全文件名
      * @return 'packageName': 包名; 'version': 版本; 'json': 增加属性后的json内容
      */
-    @Throws(Exception::class)
     fun InputStream.wrapperJson(uri: String): ComposerJsonNode {
         val uriArgs = UriUtil.getUriArgs(uri)
         val json = this.getComposerJson(uriArgs.format)
@@ -85,18 +91,15 @@ object DecompressUtil {
         }
     }
 
-    @Throws(Exception::class)
-    fun getZipComposerJson(inputStream: InputStream): String {
+    private fun getZipComposerJson(inputStream: InputStream): String {
         return getCompressComposerJson(ZipArchiveInputStream(inputStream))
     }
 
-    @Throws(Exception::class)
-    fun getTgzComposerJson(inputStream: InputStream): String {
+    private fun getTgzComposerJson(inputStream: InputStream): String {
         return getCompressComposerJson(TarArchiveInputStream(GZIPInputStream(inputStream)))
     }
 
-    @Throws(Exception::class)
-    fun getTarComposerJson(inputStream: InputStream): String {
+    private fun getTarComposerJson(inputStream: InputStream): String {
         return getCompressComposerJson(TarArchiveInputStream(inputStream))
     }
 
@@ -107,28 +110,18 @@ object DecompressUtil {
      */
     private fun getCompressComposerJson(archiveInputStream: ArchiveInputStream): String {
         val stringBuilder = StringBuffer("")
+        var zipEntry: ArchiveEntry
         archiveInputStream.use {
-            try {
-                while (archiveInputStream.nextEntry.also { zipEntry ->
-                            zipEntry?.let {
-                                if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == COMPOSER_JSON) {
-                                    var length: Int
-                                    val bytes = ByteArray(BUFFER_SIZE)
-                                    while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
-                                        stringBuilder.append(String(bytes, 0, length))
-                                    }
-                                }
-                            }
-                        } != null) {}
-            } catch (ise: IllegalStateException) {
-                if (ise.message != "it must not be null") {
-                } else {
-                    logger.error(ise.message)
+            while (archiveInputStream.nextEntry.also { zipEntry = it } != null) {
+                if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == COMPOSER_JSON) {
+                    var length: Int
+                    val bytes = ByteArray(BUFFER_SIZE)
+                    while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
+                        stringBuilder.append(String(bytes, 0, length))
+                    }
                 }
             }
         }
         return stringBuilder.toString()
     }
-
-    private val logger = LoggerFactory.getLogger(DecompressUtil::class.java)
 }

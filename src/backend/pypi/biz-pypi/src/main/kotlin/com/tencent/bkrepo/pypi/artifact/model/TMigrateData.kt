@@ -9,7 +9,9 @@ import java.time.LocalDateTime
 
 @ShardingDocument("migration_data")
 @CompoundIndexes(
-        CompoundIndex(name = "migration_data_idx", def = "{'id': 1, 'projectId': 1, 'repoName': 1}", background = true, unique = true)
+        CompoundIndex(name = "migration_data_idx",
+                def = "{'id': 1, 'projectId': 1, 'repoName': 1}",
+                background = true, unique = true)
 )
 data class TMigrateData(
     var id: String? = null,
