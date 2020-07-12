@@ -1,19 +1,16 @@
 package com.tencent.bkrepo.common.storage.core.cache
 
+import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.bound
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import org.springframework.beans.factory.annotation.Autowired
 import java.io.InputStream
-import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.Executor
 import javax.annotation.Resource
@@ -26,26 +23,19 @@ import javax.annotation.Resource
  */
 class CacheStorageService : AbstractStorageService() {
 
-    @Autowired
-    private lateinit var storageProperties: StorageProperties
-
     @Resource
     private lateinit var taskAsyncExecutor: Executor
-
-    private val tempPath: Path by lazy { Paths.get(storageProperties.cache.path, temp) }
-
-    private val cacheClient: FileSystemClient by lazy { FileSystemClient(storageProperties.cache.path) }
 
     override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
         when {
             artifactFile.isInMemory() -> {
-                fileStorage.store(path, filename, artifactFile.getInputStream(), credentials)
+                fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)
             }
             artifactFile.isFallback() -> {
                 fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
             }
             else -> {
-                val cachedFile = cacheClient.store(path, filename, artifactFile.flushToFile())
+                val cachedFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
                 taskAsyncExecutor.execute {
                     fileStorage.store(path, filename, cachedFile, credentials)
                 }
@@ -54,47 +44,49 @@ class CacheStorageService : AbstractStorageService() {
     }
 
     override fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): InputStream? {
-        return if (!isExceedThreshold(range) || !monitor.health.get()) {
-            fileStorage.load(path, filename, range, credentials) ?: run {
-                cacheClient.load(path, filename)?.bound(range)
-            }
-        } else {
+        val cacheClient = getCacheClient(credentials)
+        return if (isLoadCacheFirst(range, credentials)) {
             val cachedFile = cacheClient.load(path, filename) ?: run {
-                cacheClient.touch(path, filename).let {
-                    fileStorage.load(path, filename, it, credentials) ?: run {
-                        Files.deleteIfExists(it.toPath())
-                        null
-                    }
+                val newCacheFile = cacheClient.touch(path, filename)
+                fileStorage.load(path, filename, newCacheFile, credentials) ?: run {
+                    cacheClient.delete(path, filename)
+                    null
                 }
             }
             cachedFile?.bound(range)
+        } else {
+            fileStorage.load(path, filename, range, credentials) ?: run {
+                getCacheClient(credentials).load(path, filename)?.bound(range)
+            }
         }
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
         fileStorage.delete(path, filename, credentials)
-        cacheClient.delete(path, filename)
+        getCacheClient(credentials).delete(path, filename)
     }
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
         return fileStorage.exist(path, filename, credentials)
     }
 
-    override fun doManualRetry(path: String, filename: String, credentials: StorageCredentials) {
-        val cachedFile = cacheClient.load(path, filename) ?: throw RuntimeException("File [$filename] is missing.")
-        fileStorage.store(path, filename, cachedFile, credentials)
+    override fun getTempPath(credentials: StorageCredentials): String {
+        return Paths.get(credentials.cache.path, TEMP).toString()
     }
 
-    override fun getTempPath() = tempPath.toString()
-
-    override fun cleanUp(): CleanupResult {
-        return cacheClient.cleanUp(storageProperties.cache.expireDays)
+    /**
+     * 覆盖父类cleanUp逻辑，还包括清理缓存的文件内容
+     */
+    override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        return getCacheClient(credentials).cleanUp(credentials.cache.expireDays)
     }
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
         val credentials = getCredentialsOrDefault(storageCredentials)
+        val tempPath = Paths.get(credentials.cache.path, TEMP)
         val visitor = FileSynchronizeVisitor(tempPath, fileLocator, fileStorage, credentials)
-        cacheClient.walk(visitor)
+        getCacheClient(credentials).walk(visitor)
         return visitor.checkResult
     }
 
@@ -105,11 +97,23 @@ class CacheStorageService : AbstractStorageService() {
         super.doCheckHealth(credentials)
     }
 
-    private fun isExceedThreshold(range: Range): Boolean {
-        return range.total > monitor.uploadConfig.fileSizeThreshold.toBytes()
+    /**
+     * 判断是否优先从缓存加载数据
+     * 判断规则:
+     * 当cacheFirst开启，并且cache磁盘健康，并且当前文件未超过内存阈值大小
+     */
+    private fun isLoadCacheFirst(range: Range, credentials: StorageCredentials): Boolean {
+        val isExceedThreshold = range.total > storageProperties.fileSizeThreshold.toBytes()
+        val isHealth = if (credentials == storageProperties.defaultStorageCredentials()) {
+            monitor.health.get()
+        } else {
+            true
+        }
+        val cacheFirst = credentials.cache.loadCacheFirst
+        return cacheFirst && isHealth && isExceedThreshold
     }
 
-    companion object {
-        const val temp = "temp"
+    private fun getCacheClient(credentials: StorageCredentials): FileSystemClient {
+        return FileSystemClient(credentials.cache.path)
     }
 }

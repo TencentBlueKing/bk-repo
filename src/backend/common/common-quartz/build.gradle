@@ -1,9 +1,0 @@
-dependencies {
-    api project(":common:common-mongo")
-    api("com.novemberain:quartz-mongodb") {
-        exclude group: "org.clojure", module: "clojure"
-        exclude group: "com.zaxxer", module: "HikariCP-java7"
-    }
-    api "org.springframework:spring-context-support"
-    implementation "org.springframework.boot:spring-boot-starter"
-}

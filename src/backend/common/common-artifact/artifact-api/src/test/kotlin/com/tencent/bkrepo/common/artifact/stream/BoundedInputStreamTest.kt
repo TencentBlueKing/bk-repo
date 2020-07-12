@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.artifact.stream
 
-import com.tencent.bkrepo.common.api.util.randomString
+import com.tencent.bkrepo.common.api.constant.StringPool.randomString
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.nio.charset.Charset
@@ -48,6 +48,17 @@ internal class BoundedInputStreamTest {
         Assertions.assertEquals(wrapper.available(), 0)
         Assertions.assertEquals(-1, wrapper.read())
         Assertions.assertEquals(-1, wrapper.read(ByteArray(1)))
+    }
+
+    @Test
+    fun testOverflowInt() {
+        val size = 10
+        val content = randomString(size)
+        val source = content.byteInputStream()
+        val wrapper = BoundedInputStream(source, Int.MAX_VALUE.toLong() + 1)
+
+        val byteArray = ByteArray(4096)
+        wrapper.read(byteArray)
     }
 
 }

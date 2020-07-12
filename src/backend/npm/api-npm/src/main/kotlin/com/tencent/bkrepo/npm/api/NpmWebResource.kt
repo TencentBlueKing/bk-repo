@@ -13,5 +13,5 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface NpmWebResource {
     @ApiOperation("查询包的相信信息")
     @GetMapping("/query/{projectId}/{repoName}/*")
-    fun getPackageInfo(@ArtifactPathVariable artifactInfo: NpmArtifactInfo): PackageInfoResponse
+    fun queryPackageInfo(@ArtifactPathVariable artifactInfo: NpmArtifactInfo): PackageInfoResponse
 }

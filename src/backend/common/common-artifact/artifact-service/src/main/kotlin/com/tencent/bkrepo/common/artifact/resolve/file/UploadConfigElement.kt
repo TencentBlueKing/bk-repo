@@ -1,42 +1,38 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
-import com.tencent.bkrepo.common.storage.monitor.UploadProperties
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import org.springframework.util.unit.DataSize
 import javax.servlet.MultipartConfigElement
 
 class UploadConfigElement(
-    private val uploadProperties: UploadProperties
-) : MultipartConfigElement(uploadProperties.location) {
+    private val storageProperties: StorageProperties
+) : MultipartConfigElement(storageProperties.defaultStorageCredentials().upload.location) {
 
     init {
-        if (uploadProperties.maxFileSize.isNegative) {
-            uploadProperties.maxFileSize = DataSize.ofBytes(-1)
+        if (storageProperties.maxFileSize.isNegative) {
+            storageProperties.maxFileSize = DataSize.ofBytes(-1)
         }
-        if (uploadProperties.maxRequestSize.isNegative) {
-            uploadProperties.maxRequestSize = DataSize.ofBytes(-1)
+        if (storageProperties.maxRequestSize.isNegative) {
+            storageProperties.maxRequestSize = DataSize.ofBytes(-1)
         }
-        if (uploadProperties.fileSizeThreshold.isNegative) {
-            uploadProperties.maxRequestSize = DataSize.ofBytes(-1)
+        if (storageProperties.fileSizeThreshold.isNegative) {
+            storageProperties.maxRequestSize = DataSize.ofBytes(-1)
         }
     }
 
     override fun getLocation(): String {
-        return uploadProperties.location
+        return storageProperties.defaultStorageCredentials().upload.location
     }
 
     override fun getMaxFileSize(): Long {
-        return uploadProperties.maxFileSize.toBytes()
+        return storageProperties.maxFileSize.toBytes()
     }
 
     override fun getMaxRequestSize(): Long {
-        return uploadProperties.maxRequestSize.toBytes()
+        return storageProperties.maxRequestSize.toBytes()
     }
 
     override fun getFileSizeThreshold(): Int {
-        return uploadProperties.fileSizeThreshold.toBytes().toInt()
-    }
-
-    fun isResolveLazily(): Boolean {
-        return uploadProperties.isResolveLazily
+        return storageProperties.fileSizeThreshold.toBytes().toInt()
     }
 }

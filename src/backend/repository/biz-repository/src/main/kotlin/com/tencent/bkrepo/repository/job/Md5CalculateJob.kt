@@ -53,7 +53,7 @@ class Md5CalculateJob : ApplicationListener<ApplicationReadyEvent> {
         val startTimeMillis = System.currentTimeMillis()
 
         repoRepository.findAll().forEach { repo ->
-            val storageCredentials = repo.storageCredentials?.let { property ->
+            val storageCredentials = repo.credentialsKey?.let { property ->
                 JsonUtils.objectMapper.readValue(property, StorageCredentials::class.java)
             }
 

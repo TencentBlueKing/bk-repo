@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.artifact.health.ArtifactHealhConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.PermissionConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.ResolverConfiguration
+import com.tencent.bkrepo.common.artifact.util.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.webhook.WebHookService
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
@@ -31,7 +32,8 @@ import org.springframework.core.Ordered
     ResolverConfiguration::class,
     ExceptionConfiguration::class,
     ArtifactMetricsConfiguration::class,
-    ArtifactHealhConfiguration::class
+    ArtifactHealhConfiguration::class,
+    ArtifactContextHolder::class
 )
 class ArtifactAutoConfiguration {
 

@@ -1,8 +1,10 @@
 dependencies {
     api project(":replication:api-replication")
     api project(":repository:api-repository")
-    api project(":common:common-quartz")
     api project(":common:common-stream")
     api project(":common:common-job")
     api project(":common:common-artifact:artifact-service")
+    implementation("org.quartz-scheduler:quartz")
+
+    testApi "de.flapdoodle.embed:de.flapdoodle.embed.mongo"
 }

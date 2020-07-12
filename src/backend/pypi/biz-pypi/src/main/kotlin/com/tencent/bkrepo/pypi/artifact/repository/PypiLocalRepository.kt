@@ -284,9 +284,9 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     }
 
     fun findMigrateResult(projectId: String, repoName: String): MigrateDataInfo? {
-        val criteria =
-                Criteria.where(TMigrateData::projectId.name).`is`(projectId).and(TMigrateData::repoName.name)
-                        .`is`(repoName)
+        val criteria = Criteria.where(TMigrateData::projectId.name).`is`(projectId)
+                .and(TMigrateData::repoName.name)
+                .`is`(repoName)
         val query = Query.query(criteria)
                 .with(org.springframework.data.domain.Sort(org.springframework.data.domain.Sort.Direction.DESC,
                         TMigrateData::lastModifiedDate.name)).limit(0)

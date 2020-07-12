@@ -43,12 +43,13 @@ class NpmWebService {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
-    fun getPackageInfo(artifactInfo: NpmArtifactInfo): PackageInfoResponse {
+    fun queryPackageInfo(artifactInfo: NpmArtifactInfo): PackageInfoResponse {
         val pkgName = artifactInfo.artifactUri.trimStart('/')
         val packageJson = searchPkgInfo(pkgName)
         val page = moduleDepsService.page(artifactInfo.projectId, artifactInfo.repoName, PAGE, SIZE, pkgName)
-        val query = downloadStatisticsResource.queryForSpecial(artifactInfo.projectId, artifactInfo.repoName, artifactInfo.artifactUri)
-
+        val query = downloadStatisticsResource.queryForSpecial(
+            artifactInfo.projectId, artifactInfo.repoName, artifactInfo.artifactUri
+        )
         val latestVersion = packageJson.getAsJsonObject(DISTTAGS).get(LATEST).asString
         val versionJsonObject = packageJson.getAsJsonObject(VERSIONS).getAsJsonObject(latestVersion)
         val timeJsonObject = packageJson.getAsJsonObject(TIME)

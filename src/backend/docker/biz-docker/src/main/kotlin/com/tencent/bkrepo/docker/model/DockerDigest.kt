@@ -1,12 +1,17 @@
 package com.tencent.bkrepo.docker.model
 
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import org.apache.commons.lang.StringUtils
 
-class DockerDigest(digest: String?) {
-    var alg: String = ""
-        private set
-    var hex: String = ""
-        private set
+/**
+ * docker digest
+ * @author: owenlxu
+ * @date: 2019-10-15
+ */
+data class DockerDigest(val digest: String?) {
+
+    var alg: String = EMPTYSTR
+    var hex: String = EMPTYSTR
 
     init {
         val sepIndex = StringUtils.indexOf(digest, ":")
@@ -29,5 +34,11 @@ class DockerDigest(digest: String?) {
 
     override fun toString(): String {
         return this.alg + ":" + this.hex
+    }
+
+    companion object {
+        fun fromSha256(sha256: String): DockerDigest {
+            return DockerDigest("sha256:$sha256")
+        }
     }
 }

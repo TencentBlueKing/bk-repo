@@ -2,5 +2,5 @@ dependencies{
     api project(":composer:api-composer")
     api project(":common:common-job")
     api project(":common:common-artifact:artifact-service")
-    implementation("org.apache.commons:commons-compress:1.18")
+    implementation("org.apache.commons:commons-compress")
 }

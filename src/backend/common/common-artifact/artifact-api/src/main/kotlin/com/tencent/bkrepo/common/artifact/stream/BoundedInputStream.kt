@@ -34,7 +34,7 @@ class BoundedInputStream(
         if (pos >= length) {
             return EOF
         }
-        val maxRead = min(len, (length - pos).toInt())
+        val maxRead = min(len.toLong(), length - pos).toInt()
         val bytesRead = source.read(b, off, maxRead)
         if (bytesRead == EOF) {
             return EOF

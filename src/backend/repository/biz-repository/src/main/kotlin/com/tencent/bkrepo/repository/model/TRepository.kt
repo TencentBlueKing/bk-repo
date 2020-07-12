@@ -2,10 +2,10 @@ package com.tencent.bkrepo.repository.model
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
  * 仓库模型
@@ -30,7 +30,7 @@ data class TRepository(
     var public: Boolean,
     var description: String? = null,
     var configuration: String,
-    var storageCredentials: String? = null,
+    var credentialsKey: String? = null,
 
     var projectId: String
 )

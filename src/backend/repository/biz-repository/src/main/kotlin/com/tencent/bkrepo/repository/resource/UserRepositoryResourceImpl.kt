@@ -40,7 +40,7 @@ class UserRepositoryResourceImpl @Autowired constructor(
                 public = public,
                 description = description,
                 configuration = configuration,
-                storageCredentials = storageCredentials,
+                storageCredentialsKey = storageCredentialsKey,
                 operator = userId
             )
         }

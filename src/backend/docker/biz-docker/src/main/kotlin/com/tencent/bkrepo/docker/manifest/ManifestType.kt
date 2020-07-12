@@ -1,9 +1,13 @@
 package com.tencent.bkrepo.docker.manifest
 
-import com.tencent.bkrepo.docker.util.JsonUtil
-import java.io.IOException
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import org.springframework.http.MediaType
 
+/**
+ * to deserialize with manifest type
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 enum class ManifestType private constructor(private val mediaType: String) {
     Schema1("application/vnd.docker.distribution.manifest.v1+json"),
     Schema1Signed("application/vnd.docker.distribution.manifest.v1+prettyjws"),
@@ -34,9 +38,8 @@ enum class ManifestType private constructor(private val mediaType: String) {
             return Schema1Signed
         }
 
-        @Throws(IOException::class)
         fun from(manifestBytes: ByteArray): ManifestType {
-            val manifest = JsonUtil.readTree(manifestBytes)
+            val manifest = JsonUtils.objectMapper.readTree(manifestBytes)
             val schemaVersionNode = manifest.get("schemaVersion")
             if (schemaVersionNode != null) {
                 val schemaVersion = schemaVersionNode.intValue()
@@ -48,7 +51,7 @@ enum class ManifestType private constructor(private val mediaType: String) {
 
             val mediaType = manifest.get("mediaType")
             var contentType = ""
-            if (mediaType != null) {
+            mediaType?.let {
                 contentType = mediaType.textValue()
             }
 

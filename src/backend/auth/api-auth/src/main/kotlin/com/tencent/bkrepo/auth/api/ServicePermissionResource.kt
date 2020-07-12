@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_PERMISSION"], description = "服务-权限接口")
 @FeignClient(SERVICE_NAME, contextId = "ServicePermissionResource")
-@RequestMapping("/permission")
+@RequestMapping("/permission", "/api/permission", "/service/permission")
 interface ServicePermissionResource {
     @ApiOperation("权限列表")
     @GetMapping("/list")

@@ -7,8 +7,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 
 /**
- *  docker image base api
- *
+ * docker image base api
  * @author: owenlxu
  * @date: 2019-11-08
  */
