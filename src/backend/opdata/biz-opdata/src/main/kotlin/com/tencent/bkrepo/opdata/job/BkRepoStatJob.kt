@@ -10,6 +10,12 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.Calendar
 
+/**
+ * stat bkrepo running status at
+ * 00 45 23 * * ?
+ * @author: owenlxu
+ * @date: 2020/01/03
+ */
 @Component
 class BkRepoStatJob {
 

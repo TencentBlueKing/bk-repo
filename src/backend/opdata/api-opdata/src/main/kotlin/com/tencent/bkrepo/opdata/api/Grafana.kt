@@ -33,14 +33,4 @@ interface Grafana {
     @ApiOperation("annotations")
     @PostMapping("/annotations")
     fun annotations(): ResponseEntity<Any>
-
-//    @ApiOperation("tag-keys")
-//    @PostMapping("/tag-keys")
-//    fun tagKeys(
-//    ): Response<String?>
-//
-//    @ApiOperation("tag-values")
-//    @PostMapping("/tag-values")
-//    fun tagValues(
-//    ): Response<String?>
 }

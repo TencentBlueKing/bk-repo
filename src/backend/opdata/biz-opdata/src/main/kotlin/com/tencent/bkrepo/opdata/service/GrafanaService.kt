@@ -1,5 +1,18 @@
 package com.tencent.bkrepo.opdata.service
 
+import com.tencent.bkrepo.opdata.constant.OPDATA_CAP_SIZE
+import com.tencent.bkrepo.opdata.constant.OPDATA_CUSTOM
+import com.tencent.bkrepo.opdata.constant.OPDATA_CUSTOM_NUM
+import com.tencent.bkrepo.opdata.constant.OPDATA_CUSTOM_SIZE
+import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
+import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_STRING
+import com.tencent.bkrepo.opdata.constant.OPDATA_NODE_NUM
+import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE
+import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_NUM
+import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_SIZE
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NUM
+import com.tencent.bkrepo.opdata.constant.OPDATA_STAT_LIMIT
+import com.tencent.bkrepo.opdata.constant.PROJECT_NAME
 import com.tencent.bkrepo.opdata.model.ProjectModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.Columns
@@ -50,6 +63,9 @@ class GrafanaService @Autowired constructor(
                 Metrics.NODENUM -> {
                     dealNodeNum(it, result)
                 }
+                else -> {
+                    dealNodeNum(it, result)
+                }
             }
         }
         return result
@@ -57,7 +73,7 @@ class GrafanaService @Autowired constructor(
 
     private fun dealProjectNum(target: Target, result: MutableList<Any>) {
         val count = projectModel.getProjectNum()
-        val column = Columns("ProjectNum", "number")
+        val column = Columns(OPDATA_PROJECT_NUM, OPDATA_GRAFANA_NUMBER)
         val row = listOf(count)
         val data = QueryResult(listOf(column), listOf(row), target.type)
         result.add(data)
@@ -69,7 +85,7 @@ class GrafanaService @Autowired constructor(
         projects.forEach {
             size += it.capSize
         }
-        val column = Columns("CapSize", "number")
+        val column = Columns(OPDATA_CAP_SIZE, OPDATA_GRAFANA_NUMBER)
         val row = listOf(size)
         val data = QueryResult(listOf(column), listOf(row), target.type)
         result.add(data)
@@ -81,7 +97,7 @@ class GrafanaService @Autowired constructor(
         projects.forEach {
             num += it.nodeNum
         }
-        val column = Columns("NodeNum", "number")
+        val column = Columns(OPDATA_NODE_NUM, OPDATA_GRAFANA_NUMBER)
         val row = listOf(num)
         val data = QueryResult(listOf(column), listOf(row), target.type)
         result.add(data)
@@ -91,24 +107,24 @@ class GrafanaService @Autowired constructor(
         var rows = mutableListOf<List<Any>>()
         var columns = mutableListOf<Columns>()
         val info = projectMetricsRepository.findAll()
-        columns.add(Columns(TProjectMetrics::projectId.name, "string"))
-        columns.add(Columns(TProjectMetrics::nodeNum.name, "number"))
-        columns.add(Columns(TProjectMetrics::capSize.name, "number"))
-        columns.add(Columns("customNum", "number"))
-        columns.add(Columns("customSize", "number"))
-        columns.add(Columns("pipelineNum", "number"))
-        columns.add(Columns("pipelineSize", "number"))
+        columns.add(Columns(TProjectMetrics::projectId.name, OPDATA_GRAFANA_STRING))
+        columns.add(Columns(TProjectMetrics::nodeNum.name, OPDATA_GRAFANA_NUMBER))
+        columns.add(Columns(TProjectMetrics::capSize.name, OPDATA_GRAFANA_NUMBER))
+        columns.add(Columns(OPDATA_CUSTOM_NUM, OPDATA_GRAFANA_NUMBER))
+        columns.add(Columns(OPDATA_CUSTOM_SIZE, OPDATA_GRAFANA_NUMBER))
+        columns.add(Columns(OPDATA_PIPELINE_NUM, OPDATA_GRAFANA_NUMBER))
+        columns.add(Columns(OPDATA_PIPELINE_SIZE, OPDATA_GRAFANA_NUMBER))
         info.forEach {
             var customNum = 0L
             var customSize = 0L
             var pipelineNum = 0L
             var pipelineSize = 0L
             it.repoMetrics.forEach {
-                if (it.repoName == "custom") {
+                if (it.repoName == OPDATA_CUSTOM) {
                     customNum = it.num
                     customSize = it.size
                 }
-                if (it.repoName == "pipeline") {
+                if (it.repoName == OPDATA_PIPELINE) {
                     pipelineNum = it.num
                     pipelineSize = it.size
                 }
@@ -129,15 +145,7 @@ class GrafanaService @Autowired constructor(
                 tmpMap.put(projectId, it.capSize)
             }
         }
-        tmpMap.toList().sortedByDescending { it.second }.subList(0, 29).forEach {
-            val projectId = it.first
-            val data = listOf<Long>(it.second, System.currentTimeMillis())
-            val element = listOf<List<Long>>(data)
-            if (it.second != 0L) {
-                result.add(NodeResult(projectId, element))
-            }
-        }
-        return result
+        return convToDisplayData(tmpMap, result)
     }
 
     private fun dealProjectNodeNum(result: MutableList<Any>): List<Any> {
@@ -145,14 +153,18 @@ class GrafanaService @Autowired constructor(
         var tmpMap = HashMap<String, Long>()
         projects.forEach {
             val projectId = it.projectId
-            if (it.nodeNum != 0L && projectId != "bkrepo") {
+            if (it.nodeNum != 0L && projectId != PROJECT_NAME) {
                 tmpMap.put(projectId, it.nodeNum)
             }
         }
-        tmpMap.toList().sortedByDescending { it.second }.subList(0, 29).forEach {
+        return convToDisplayData(tmpMap, result)
+    }
+
+    private fun convToDisplayData(mapData: HashMap<String, Long>, result: MutableList<Any>): List<Any> {
+        mapData.toList().sortedByDescending { it.second }.subList(0, OPDATA_STAT_LIMIT).forEach {
             val projectId = it.first
-            val data = listOf<Long>(it.second, System.currentTimeMillis())
-            val element = listOf<List<Long>>(data)
+            val data = listOf(it.second, System.currentTimeMillis())
+            val element = listOf(data)
             if (it.second != 0L) {
                 result.add(NodeResult(projectId, element))
             }
