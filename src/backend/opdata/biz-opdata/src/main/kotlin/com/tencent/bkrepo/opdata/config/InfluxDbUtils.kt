@@ -15,15 +15,11 @@ class InfluxDbUtils(
     // database instance
     private var influxDB: InfluxDB? = null
 
-//    // policy
-//    private var retentionPolicy: String? = null
-
     /**
      * connect database
-     *
      * @return influxDb实例
      */
-    public fun getInstance(): InfluxDB? {
+    fun getInstance(): InfluxDB? {
         try {
             if (null == influxDB) {
                 influxDB = InfluxDBFactory.connect(url, userName, password)
@@ -35,7 +31,7 @@ class InfluxDbUtils(
                 influxDB!!.setLogLevel(InfluxDB.LogLevel.BASIC)
             }
         } catch (e: Exception) {
-            logger.error("create influxdb failed, error: {}", e.message)
+            logger.error("create influxdb failed, error: [${e.message}]")
             return null
         }
         return influxDB
