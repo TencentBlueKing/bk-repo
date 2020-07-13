@@ -14,7 +14,7 @@ class NodeModel @Autowired constructor(
         try {
             val result = nodeResource.computeSize(projectId, repoName, "/").data ?: return RepoMetrics(repoName, 0L, 0L)
             return RepoMetrics(repoName, result.size, result.subNodeCount)
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             return RepoMetrics(repoName, 0L, 0L)
         }
     }
