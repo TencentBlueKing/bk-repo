@@ -1,11 +1,20 @@
 package com.tencent.bkrepo.composer.util
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.lang.Exception
 
 object JsonUtil {
+
+    val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule())
+
+    init {
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    }
 
     /**
      * get value with json-param, if string is json-format

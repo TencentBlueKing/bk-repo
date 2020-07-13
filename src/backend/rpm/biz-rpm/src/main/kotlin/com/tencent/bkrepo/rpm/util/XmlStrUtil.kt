@@ -1,14 +1,27 @@
 package com.tencent.bkrepo.rpm.util
 
-import com.tencent.bkrepo.rpm.PACKAGE_START_MARK
-import com.tencent.bkrepo.rpm.METADATA_PREFIX
-import com.tencent.bkrepo.rpm.METADATA_SUFFIX
-import com.tencent.bkrepo.rpm.PACKAGE_END_MARK
 import com.tencent.bkrepo.rpm.pojo.RepodataUri
 import com.tencent.bkrepo.rpm.util.redline.model.RpmMetadataWithOldStream
-import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
+import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
 
 object XmlStrUtil {
+
+    // package 节点开始标识
+    private const val PACKAGE_START_MARK = "  <package type=\"rpm\">"
+    // package 结束开始标识
+    private const val PACKAGE_END_MARK = "</package>\n"
+
+    // RpmMetadata序列化成xml中 metadata 开始字符串
+    private const val METADATA_PREFIX = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\" packages=\"1\">\n" +
+            "  "
+    // RpmMetadata序列化成xml中 metadata 结束字符串
+    private const val METADATA_SUFFIX = "</metadata>"
+
+    // metadata 根接节点中 packages 属性
+    private const val packages = "packages=\""
+    private const val end = ">"
+    private const val nullStr = ""
 
     /**
      * 在原有xml索引文件开头写入新的内容
@@ -22,10 +35,10 @@ object XmlStrUtil {
         // 定位插入字符串的位置
         val start = stringBuilder.indexOf(PACKAGE_START_MARK)
 
-        val metadataXml = XStreamUtil.objectToXml(rpmMetadata)
-        val packageXml = metadataXml.removePrefix(METADATA_PREFIX).removeSuffix(METADATA_SUFFIX)
+        val packageXml = rpmMetadata.rpmMetadataToPackageXml()
 
         stringBuilder.insert(start, "  $packageXml")
+        stringBuilder.packagesPlus()
         return stringBuilder.toString()
     }
 
@@ -44,12 +57,22 @@ object XmlStrUtil {
         val index = stringBuilder.indexOf(locationStr)
         val end = stringBuilder.indexOf(PACKAGE_END_MARK, index) + PACKAGE_END_MARK.length
         val start = stringBuilder.lastIndexOf(PACKAGE_START_MARK, index)
-        // 为了保留xml的缩进格式
-        val metadataXml = XStreamUtil.objectToXml(rpmMetadata)
-        val packageXml = metadataXml.removePrefix(METADATA_PREFIX).removeSuffix(METADATA_SUFFIX)
+
+        val packageXml = rpmMetadata.rpmMetadataToPackageXml()
 
         stringBuilder.replace(start, end, "  $packageXml")
+        stringBuilder.packagesPlus()
         return stringBuilder.toString()
+    }
+
+    /**
+     * 将RpmMetadata 序列化为xml，然后去除metadata根节点。
+     * 不直接序列化Package的目的是为了保留缩进格式。
+     */
+    private fun RpmMetadata.rpmMetadataToPackageXml(): String {
+        return this.objectToXml()
+                .removePrefix(METADATA_PREFIX)
+                .removeSuffix(METADATA_SUFFIX)
     }
 
     /**
@@ -63,5 +86,15 @@ object XmlStrUtil {
         }
         val artifactRelativePath = uri.removePrefix("/").split(repodataPath.toString())[1]
         return RepodataUri(repodataPath.toString(), artifactRelativePath)
+    }
+
+    /**
+     * 更新索引文件中 package 数量+1
+     */
+    fun StringBuilder.packagesPlus(): String {
+        val start = this.indexOf(packages) + packages.length
+        val end = this.indexOf(end, start).dec()
+        val sum = this.substring(start, end).toInt().inc()
+        return this.replace(start, end, nullStr).insert(start, sum).toString()
     }
 }

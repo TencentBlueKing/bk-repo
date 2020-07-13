@@ -284,11 +284,12 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     }
 
     fun findMigrateResult(projectId: String, repoName: String): MigrateDataInfo? {
-        val criteria =
-                Criteria.where(TMigrateData::projectId.name).`is`(projectId).and(TMigrateData::repoName.name)
-                        .`is`(repoName)
-        val sort = org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, TMigrateData::lastModifiedDate.name)
-        val query = Query.query(criteria).with(sort).limit(0)
+        val criteria = Criteria.where(TMigrateData::projectId.name).`is`(projectId)
+                .and(TMigrateData::repoName.name)
+                .`is`(repoName)
+        val query = Query.query(criteria)
+                .with(org.springframework.data.domain.Sort(org.springframework.data.domain.Sort.Direction.DESC,
+                        TMigrateData::lastModifiedDate.name)).limit(0)
         return mongoTemplate.findOne(query, TMigrateData::class.java)?.let { convert(it) }
     }
 
@@ -398,7 +399,12 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         }
     }
 
-    fun createMigrateNode(context: ArtifactMigrateContext, artifactFile: ArtifactFile, packageName: String, filename: String): NodeCreateRequest? {
+    fun createMigrateNode(
+        context: ArtifactMigrateContext,
+        artifactFile: ArtifactFile,
+        packageName: String,
+        filename: String
+    ): NodeCreateRequest? {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         // 获取文件版本信息
