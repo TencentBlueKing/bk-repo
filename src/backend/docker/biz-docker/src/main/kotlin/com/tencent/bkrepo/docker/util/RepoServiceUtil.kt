@@ -97,7 +97,7 @@ class RepoServiceUtil {
             }
         }
 
-        //get return url
+        // get return url
         fun getDockerURI(path: String, httpHeaders: HttpHeaders): URI {
             val hostHeaders = httpHeaders["Host"]
             var host = EMPTYSTR
@@ -117,7 +117,7 @@ class RepoServiceUtil {
             return builder.build()
         }
 
-        //build return manifest path
+        // build return manifest path
         fun buildManifestPath(dockerRepo: String, tag: String, manifestType: ManifestType): String {
             return if (ManifestType.Schema2List == manifestType) {
                 "/$dockerRepo/$tag/$DOCKER_MANIFEST_LIST"
@@ -126,7 +126,7 @@ class RepoServiceUtil {
             }
         }
 
-        //get http protocol from request head
+        // get http protocol from request head
         private fun getProtocol(httpHeaders: HttpHeaders): String {
             val protocolHeaders = httpHeaders[HTTP_FORWARDED_PROTO]
             if (protocolHeaders == null || protocolHeaders.isEmpty()) {
