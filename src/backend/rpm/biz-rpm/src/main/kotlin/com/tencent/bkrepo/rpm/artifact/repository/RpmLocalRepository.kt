@@ -29,7 +29,7 @@ import com.tencent.bkrepo.rpm.util.XmlStrUtil
 import com.tencent.bkrepo.rpm.util.redline.model.RpmMetadataWithOldStream
 import com.tencent.bkrepo.rpm.util.rpm.RpmFormatInterpreter
 import com.tencent.bkrepo.rpm.util.rpm.RpmFormatReader
-import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
+import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChecksum
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoData
@@ -67,7 +67,12 @@ class RpmLocalRepository : LocalRepository() {
         )
     }
 
-    fun xmlPrimaryNodeCreate(userId: String, repositoryInfo: RepositoryInfo, fullPath: String, xmlGZArtifact: ArtifactFile): NodeCreateRequest {
+    fun xmlPrimaryNodeCreate(
+        userId: String,
+        repositoryInfo: RepositoryInfo,
+        fullPath: String,
+        xmlGZArtifact: ArtifactFile
+    ): NodeCreateRequest {
         val sha256 = xmlGZArtifact.getInputStream().sha256()
         val md5 = xmlGZArtifact.getInputStream().md5()
         return NodeCreateRequest(
@@ -98,7 +103,8 @@ class RpmLocalRepository : LocalRepository() {
      */
     private fun checkRequestUri(context: ArtifactUploadContext): Boolean {
         val repodataDepth = (context.repositoryInfo.configuration as RpmLocalConfiguration).repodataDepth
-        val artifactUri = context.artifactInfo.artifactUri.removePrefix("/").split("/").size
+        val artifactUri = context.artifactInfo.artifactUri
+                .removePrefix("/").split("/").size
         repodataDepth?.let { return artifactUri > repodataDepth }
         return false
     }
@@ -117,16 +123,25 @@ class RpmLocalRepository : LocalRepository() {
 
         val sha1Digest = artifactFile.getInputStream().sha1()
         val artifactRelativePath = uriMap.artifactRelativePath
-        val rpmMetadata = RpmFormatInterpreter().interpret(rpmFormat, artifactFile.getSize(), sha1Digest, artifactRelativePath)
+        val rpmMetadata = RpmFormatInterpreter().interpret(rpmFormat,
+                artifactFile.getSize(),
+                sha1Digest,
+                artifactRelativePath)
 
         with(context.repositoryInfo) {
             // repodata下'-primary.xml.gz'最新节点。
-            val nodeList = nodeResource.list(projectId, name, "/${repodataPath}repodata", includeFolder = false, deep = false).data
-            val primaryNodelist = nodeList?.filter { it.name.endsWith("-primary.xml.gz") }?.sortedByDescending { it.createdDate }
+            val nodeList = nodeResource.list(projectId, name,
+                    "/${repodataPath}repodata",
+                    includeFolder = false, deep = false).data
+            val primaryNodelist = nodeList?.filter {
+                it.name.endsWith("-primary.xml.gz") }?.sortedByDescending { it.createdDate
+            }
 
             val targetXmlString = if (!primaryNodelist.isNullOrEmpty()) {
                 val latestPrimaryNode = primaryNodelist[0]
-                val inputStream = storageService.load(latestPrimaryNode.sha256!!, Range.ofFull(latestPrimaryNode.size), context.storageCredentials) ?: return
+                val inputStream = storageService.load(latestPrimaryNode.sha256!!,
+                        Range.ofFull(latestPrimaryNode.size),
+                        context.storageCredentials) ?: return
                 val rpmMetadataWithOldStream = RpmMetadataWithOldStream(rpmMetadata, inputStream.unGzipInputStream())
                 // 更新primary.xml
                 if (repeat == ArtifactRepeat.NONE) {
@@ -136,7 +151,7 @@ class RpmLocalRepository : LocalRepository() {
                 }
             } else {
                 // first upload
-                XStreamUtil.objectToXml(rpmMetadata)
+                rpmMetadata.objectToXml()
             }
             storeXmlNode(targetXmlString, repodataPath, context)
             // 删除多余索引节点
@@ -180,7 +195,14 @@ class RpmLocalRepository : LocalRepository() {
     /**
      * 更新repomd.xml
      */
-    private fun storeRepomdNode(xmlFileSize: Int, xmlGZFileSha1: String, xmlGZArtifact: ArtifactFile, xmlFileSha1: String, repodataPath: String, context: ArtifactUploadContext) {
+    private fun storeRepomdNode(
+        xmlFileSize: Int,
+        xmlGZFileSha1: String,
+        xmlGZArtifact: ArtifactFile,
+        xmlFileSha1: String,
+        repodataPath: String,
+        context: ArtifactUploadContext
+    ) {
         val repoMdPath = "repodata/$xmlGZFileSha1-primary.xml.gz"
         val repomd = Repomd(
                 listOf(RepoData(
@@ -193,7 +215,7 @@ class RpmLocalRepository : LocalRepository() {
                         openSize = xmlFileSize
                 ))
         )
-        val xmlRepodataString = XStreamUtil.objectToXml(repomd)
+        val xmlRepodataString = repomd.objectToXml()
         (xmlRepodataString.toByteArray()).let { ByteInputStream(it, it.size) }.use { xmlRepodataInputStream ->
             val xmlRepodataArtifact = ArtifactFileFactory.build(xmlRepodataInputStream)
             // 保存repodata 节点
@@ -249,8 +271,13 @@ class RpmLocalRepository : LocalRepository() {
         val response = HttpContextHolder.getResponse()
         response.contentType = "application/json; charset=UTF-8"
         with(context.artifactInfo) {
-            val description = if (mark) INDEXER else String.format(NO_INDEXER, "$projectId/$repoName", searchRpmRepoDataDepth(context), artifactUri)
-            val rpmUploadResponse = RpmUploadResponse(projectId, repoName, artifactUri, context.getArtifactFile().getFileSha256(), context.getArtifactFile().getFileMd5(), description)
+            val description = if (mark) {
+                INDEXER
+            } else {
+                String.format(NO_INDEXER, "$projectId/$repoName", searchRpmRepoDataDepth(context), artifactUri)
+            }
+            val rpmUploadResponse = RpmUploadResponse(projectId, repoName, artifactUri,
+                    context.getArtifactFile().getFileSha256(), context.getArtifactFile().getFileMd5(), description)
             response.writer.print(rpmUploadResponse.toJsonString())
         }
     }
