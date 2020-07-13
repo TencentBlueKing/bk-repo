@@ -85,7 +85,7 @@ object CertTrust {
             sslContext.init(null, arrayOf<TrustManager>(trustManager), null)
             sslSocketFactory = sslContext.socketFactory
         } catch (e: GeneralSecurityException) {
-            throw RuntimeException(e)
+            throw GeneralSecurityException(e)
         }
         client = OkHttpClient.Builder().sslSocketFactory(sslSocketFactory, trustManager).build()
     }
