@@ -12,7 +12,19 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import com.tencent.bkrepo.docker.constant.DOCKER_CREATE_BY
+import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_PATH
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
+import com.tencent.bkrepo.docker.constant.DOCKER_PRE_SUFFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
+import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
+import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_INDEX
+import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_LIMIT
+import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_LIMIT_SMALL
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
@@ -33,13 +45,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.InputStream
 
-/**
- * @author: owenlxu
- * @date: 2020-06-10
+/*
  * docker repo storage interface
  * to work with storage module
+ * @author: owenlxu
+ * @date: 2020-06-10
  */
-
 @Service
 class DockerArtifactRepo @Autowired constructor(
     val repositoryResource: RepositoryResource,
@@ -51,14 +62,24 @@ class DockerArtifactRepo @Autowired constructor(
 
     lateinit var userId: String
 
-    fun startAppend(): String {
+    fun startAppend(context: RequestContext): String {
+        // check repository
+        val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+            logger.warn("user [$userId]  download file [$context] repository not found")
+            throw DockerRepoNotFoundException(context.repoName)
+        }
         logger.debug("user [$userId] start to append file ")
-        return storageService.createAppendId()
+        return storageService.createAppendId(repository.storageCredentials)
     }
 
-    fun writeAppend(uuid: String, artifactFile: ArtifactFile): Long {
+    fun writeAppend(uuid: String, artifactFile: ArtifactFile, context: RequestContext): Long {
+        // check repository
+        val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+            logger.warn("user [$userId]  download file [$context] repository not found")
+            throw DockerRepoNotFoundException(context.repoName)
+        }
         logger.debug("user [$userId]  append file id [$uuid]")
-        return this.storageService.append(uuid, artifactFile)
+        return this.storageService.append(uuid, artifactFile, repository.storageCredentials)
     }
 
     // TODO : to implement
@@ -101,10 +122,10 @@ class DockerArtifactRepo @Autowired constructor(
                 folder = false,
                 fullPath = context.fullPath,
                 size = context.artifactFile!!.getSize(),
-                sha256 = FileDigestUtils.fileSha256(context.artifactFile!!.getInputStream()),
-                md5 = FileDigestUtils.fileMd5(context.artifactFile!!.getInputStream()),
+                sha256 = context.artifactFile!!.getFileSha256(),
+                md5 = context.artifactFile!!.getFileMd5(),
                 operator = userId,
-                metadata = emptyMap(),
+                metadata = context.metadata,
                 overwrite = true
             )
         )
@@ -147,35 +168,39 @@ class DockerArtifactRepo @Autowired constructor(
     }
 
     // copy file
-    fun copy(projectId: String, repoName: String, srcPath: String, destPath: String): Boolean {
-        val copyRequest = NodeCopyRequest(
-            srcProjectId = projectId,
-            srcRepoName = repoName,
-            srcFullPath = srcPath,
-            destProjectId = projectId,
-            destRepoName = repoName,
-            destFullPath = destPath,
-            overwrite = true,
-            operator = userId
-        )
-        val result = nodeResource.copy(copyRequest)
-        if (result.isNotOk()) {
-            logger.error("user [$userId] request [$copyRequest] copy file fail")
-            throw DockerMoveFileFailedException("$srcPath->$destPath")
+    fun copy(context: RequestContext, srcPath: String, destPath: String): Boolean {
+        with(context) {
+            val copyRequest = NodeCopyRequest(
+                srcProjectId = projectId,
+                srcRepoName = repoName,
+                srcFullPath = srcPath,
+                destProjectId = projectId,
+                destRepoName = repoName,
+                destFullPath = destPath,
+                overwrite = true,
+                operator = userId
+            )
+            val result = nodeResource.copy(copyRequest)
+            if (result.isNotOk()) {
+                logger.error("user [$userId] request [$copyRequest] copy file fail")
+                throw DockerMoveFileFailedException("$srcPath->$destPath")
+            }
+            return true
         }
-        return true
     }
 
     // move file
-    fun move(projectId: String, repoName: String, from: String, to: String): Boolean {
-        val renameRequest = NodeRenameRequest(projectId, repoName, from, to, userId)
-        logger.debug("rename request [$renameRequest]")
-        val result = nodeResource.rename(renameRequest)
-        if (result.isNotOk()) {
-            logger.error("user [$userId] request [$renameRequest] rename file fail")
-            throw DockerMoveFileFailedException("$from->$to")
+    fun move(context: RequestContext, from: String, to: String): Boolean {
+        with(context) {
+            val renameRequest = NodeRenameRequest(projectId, repoName, from, to, userId)
+            logger.debug("rename request [$renameRequest]")
+            val result = nodeResource.rename(renameRequest)
+            if (result.isNotOk()) {
+                logger.error("user [$userId] request [$renameRequest] rename file fail")
+                throw DockerMoveFileFailedException("$from->$to")
+            }
+            return true
         }
-        return true
     }
 
     // set node attribute
@@ -203,63 +228,67 @@ class DockerArtifactRepo @Autowired constructor(
     }
 
     // check path read permission
-    fun canRead(pathContext: RequestContext): Boolean {
-        try {
-            permissionService.checkPermission(
-                userId,
-                ResourceType.PROJECT,
-                PermissionAction.WRITE,
-                pathContext.projectId,
-                pathContext.repoName
-            )
-        } catch (e: PermissionCheckException) {
-            logger.debug("user: [$userId] ,check read permission fail [$pathContext]")
-            return false
+    fun canRead(context: RequestContext): Boolean {
+        with(context) {
+            try {
+                permissionService.checkPermission(
+                    userId,
+                    ResourceType.PROJECT,
+                    PermissionAction.WRITE,
+                    projectId,
+                    repoName
+                )
+            } catch (e: PermissionCheckException) {
+                logger.debug("user: [$userId] ,check read permission fail [$context]")
+                return false
+            }
+            return true
         }
-        return true
     }
 
     // check user write permission
-    fun canWrite(pathContext: RequestContext): Boolean {
-        try {
-            permissionService.checkPermission(
-                userId,
-                ResourceType.PROJECT,
-                PermissionAction.WRITE,
-                pathContext.projectId,
-                pathContext.repoName
-            )
-        } catch (e: PermissionCheckException) {
-            logger.debug("user: [$userId] ,check write permission fail [$pathContext]")
-            return false
+    fun canWrite(context: RequestContext): Boolean {
+        with(context) {
+            try {
+                permissionService.checkPermission(
+                    userId,
+                    ResourceType.PROJECT,
+                    PermissionAction.WRITE,
+                    projectId,
+                    repoName
+                )
+            } catch (e: PermissionCheckException) {
+                logger.debug("user: [$userId] ,check write permission fail [$context]")
+                return false
+            }
+            return true
         }
-        return true
     }
 
     // get artifact detail
-    fun getArtifact(projectId: String, repoName: String, fullPath: String): Artifact? {
+    fun getArtifact(projectId: String, repoName: String, fullPath: String): DockerArtifact? {
         val node = nodeResource.detail(projectId, repoName, fullPath).data ?: run {
             logger.warn("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
         }
-        if (node.nodeInfo.sha256 == null) {
+        node.nodeInfo.sha256 ?: run {
             logger.error("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
         }
-        return Artifact(projectId, repoName, fullPath).sha256(node.nodeInfo.sha256!!)
+        return DockerArtifact(projectId, repoName, fullPath).sha256(node.nodeInfo.sha256!!)
             .length(node.nodeInfo.size)
     }
 
     // get artifact list by name
     fun getArtifactListByName(projectId: String, repoName: String, fileName: String): List<Map<String, Any>> {
-        val projectRule = Rule.QueryRule("projectId", projectId)
-        val repoNameRule = Rule.QueryRule("repoName", repoName)
-        val nameRule = Rule.QueryRule("name", fileName)
+        val projectRule = Rule.QueryRule(DOCKER_PROJECT_ID, projectId)
+        val repoNameRule = Rule.QueryRule(DOCKER_REPO_NAME, repoName)
+        val nameRule = Rule.QueryRule(DOCKER_NODE_NAME, fileName)
         val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule))
         val queryModel = QueryModel(
-            page = PageLimit(0, 10),
-            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("fullPath", "path", "size"),
+            page = PageLimit(DOCKER_SEARCH_INDEX, DOCKER_SEARCH_LIMIT_SMALL),
+            sort = Sort(listOf(DOCKER_NODE_FULL_PATH), Sort.Direction.ASC),
+            select = mutableListOf(DOCKER_NODE_FULL_PATH, DOCKER_NODE_PATH, DOCKER_NODE_SIZE),
             rule = rule
         )
 
@@ -272,14 +301,14 @@ class DockerArtifactRepo @Autowired constructor(
 
     // get docker image list
     fun getDockerArtifactList(projectId: String, repoName: String): List<String> {
-        val projectRule = Rule.QueryRule("projectId", projectId)
-        val repoNameRule = Rule.QueryRule("repoName", repoName)
-        val nameRule = Rule.QueryRule("name", "manifest.json")
+        val projectRule = Rule.QueryRule(DOCKER_PROJECT_ID, projectId)
+        val repoNameRule = Rule.QueryRule(DOCKER_REPO_NAME, repoName)
+        val nameRule = Rule.QueryRule(DOCKER_NODE_NAME, DOCKER_MANIFEST)
         val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule))
         val queryModel = QueryModel(
-            page = PageLimit(0, 10000),
-            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("fullPath", "path", "size"),
+            page = PageLimit(DOCKER_SEARCH_INDEX, DOCKER_SEARCH_LIMIT),
+            sort = Sort(listOf(DOCKER_NODE_FULL_PATH), Sort.Direction.ASC),
+            select = mutableListOf(DOCKER_NODE_FULL_PATH, DOCKER_NODE_PATH, DOCKER_NODE_SIZE),
             rule = rule
         )
 
@@ -289,55 +318,61 @@ class DockerArtifactRepo @Autowired constructor(
         }
         val data = mutableListOf<String>()
         result.records.forEach {
-            val path = it["path"] as String
-            data.add(path.removeSuffix("/").replaceAfterLast("/", "").removeSuffix("/").removePrefix("/"))
+            val path = it[DOCKER_NODE_PATH] as String
+            data.add(
+                path.removeSuffix(DOCKER_PRE_SUFFIX).replaceAfterLast(DOCKER_PRE_SUFFIX, EMPTYSTR).removeSuffix(
+                    DOCKER_PRE_SUFFIX
+                ).removePrefix(DOCKER_PRE_SUFFIX)
+            )
         }
         return data.distinct()
     }
 
     // get repo tag list
-    fun getRepoTagList(projectId: String, repoName: String, image: String): Map<String, String> {
-        val projectRule = Rule.QueryRule("projectId", projectId)
-        val repoNameRule = Rule.QueryRule("repoName", repoName)
-        val nameRule = Rule.QueryRule("name", "manifest.json")
-        val pathRule = Rule.QueryRule("path", "/$image/", OperationType.PREFIX)
-        val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule, pathRule))
-        val queryModel = QueryModel(
-            page = PageLimit(0, 100000),
-            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("fullPath", "path", "size", "createdBy"),
-            rule = rule
-        )
+    fun getRepoTagList(context: RequestContext): Map<String, String> {
+        with(context) {
+            val projectRule = Rule.QueryRule(DOCKER_PROJECT_ID, projectId)
+            val repoNameRule = Rule.QueryRule(DOCKER_REPO_NAME, repoName)
+            val nameRule = Rule.QueryRule(DOCKER_NODE_NAME, DOCKER_MANIFEST)
+            val pathRule = Rule.QueryRule(DOCKER_NODE_PATH, "/$artifactName/", OperationType.PREFIX)
+            val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule, pathRule))
+            val queryModel = QueryModel(
+                page = PageLimit(DOCKER_SEARCH_INDEX, DOCKER_SEARCH_LIMIT),
+                sort = Sort(listOf(DOCKER_NODE_FULL_PATH), Sort.Direction.ASC),
+                select = mutableListOf(DOCKER_NODE_FULL_PATH, DOCKER_NODE_PATH, DOCKER_NODE_SIZE, DOCKER_CREATE_BY),
+                rule = rule
+            )
 
-        val result = nodeResource.query(queryModel).data ?: run {
-            logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
-            return emptyMap()
+            val result = nodeResource.query(queryModel).data ?: run {
+                logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
+                return emptyMap()
+            }
+            val data = mutableMapOf<String, String>()
+            result.records.forEach {
+                var path = it[DOCKER_NODE_PATH] as String
+                val tag = path.removePrefix("/$artifactName/").removeSuffix(DOCKER_PRE_SUFFIX)
+                val user = it[DOCKER_CREATE_BY] as String
+                data[tag] = user
+            }
+            return data
         }
-        val data = mutableMapOf<String, String>()
-        result.records.forEach {
-            var path = it["path"] as String
-            val tag = path.removePrefix("/$image/").removeSuffix("/")
-            val user = it["createdBy"] as String
-            data[tag] = user
-        }
-        return data
     }
 
     // get blob list by digest
-    fun getBlobListByDigest(projectId: String, repoName: String, digestName: String): List<Map<String, Any>> {
-        val projectRule = Rule.QueryRule("projectId", projectId)
-        val repoNameRule = Rule.QueryRule("repoName", repoName)
-        val nameRule = Rule.QueryRule("name", digestName)
+    fun getBlobListByDigest(projectId: String, repoName: String, digestName: String): List<Map<String, Any>>? {
+        val projectRule = Rule.QueryRule(DOCKER_PROJECT_ID, projectId)
+        val repoNameRule = Rule.QueryRule(DOCKER_REPO_NAME, repoName)
+        val nameRule = Rule.QueryRule(DOCKER_NODE_NAME, digestName)
         val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule))
         val queryModel = QueryModel(
-            page = PageLimit(0, 9999999),
-            sort = Sort(listOf("path"), Sort.Direction.ASC),
-            select = mutableListOf("path", "size"),
+            page = PageLimit(DOCKER_SEARCH_INDEX, DOCKER_SEARCH_LIMIT),
+            sort = Sort(listOf(DOCKER_NODE_PATH), Sort.Direction.ASC),
+            select = mutableListOf(DOCKER_NODE_PATH, DOCKER_NODE_SIZE),
             rule = rule
         )
         val result = nodeResource.query(queryModel).data ?: run {
             logger.warn("find artifacts failed:  $digestName found no node")
-            return emptyList()
+            return null
         }
         return result.records
     }

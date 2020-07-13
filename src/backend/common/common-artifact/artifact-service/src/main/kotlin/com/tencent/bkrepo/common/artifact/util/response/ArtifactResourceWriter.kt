@@ -89,7 +89,7 @@ object ArtifactResourceWriter {
     }
 
     private fun resolveContentRange(range: Range): String {
-        return "bytes ${range.start}-${range.end}/${range.total}"
+        return "$BYTES $range"
     }
 
     private fun resolveLastModified(lastModifiedDate: String): Long {

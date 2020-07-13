@@ -7,6 +7,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.security.MessageDigest
 
+@Deprecated("Use ArtifactFile.sha256() or HashAlgorithm's extension function")
 object FileDigestUtils {
 
     @Throws(IOException::class, IllegalArgumentException::class)

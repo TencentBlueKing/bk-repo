@@ -1,15 +1,13 @@
 package com.tencent.bkrepo.common.job
 
-import com.mongodb.MongoClient
+import com.mongodb.client.MongoClient
+import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor
 import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.provider.mongo.MongoLockProvider
 import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock
 import org.springframework.boot.autoconfigure.mongo.MongoProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.scheduling.annotation.SchedulingConfigurer
-import org.springframework.scheduling.config.ScheduledTaskRegistrar
-import java.util.concurrent.Executors
 
 /**
  *
@@ -22,13 +20,16 @@ class JobAutoConfiguration {
 
     @Bean
     fun lockProvider(mongoClient: MongoClient, mongoProperties: MongoProperties): LockProvider {
-        return MongoLockProvider(mongoClient, mongoProperties.mongoClientDatabase)
+        val databaseName = mongoProperties.mongoClientDatabase
+        val database = mongoClient.getDatabase(databaseName)
+        val collection = database.getCollection(SHED_LOCK_COLLECTION_NAME)
+        return MongoLockProvider(collection)
     }
 
-    @Configuration
-    class ScheduleConfig : SchedulingConfigurer {
-        override fun configureTasks(taskRegistrar: ScheduledTaskRegistrar) {
-            taskRegistrar.setScheduler(Executors.newScheduledThreadPool(5))
-        }
+    @Bean
+    fun lockingTaskExecutor(lockProvider: LockProvider) = DefaultLockingTaskExecutor(lockProvider)
+
+    companion object {
+        const val SHED_LOCK_COLLECTION_NAME = "shed_lock"
     }
 }

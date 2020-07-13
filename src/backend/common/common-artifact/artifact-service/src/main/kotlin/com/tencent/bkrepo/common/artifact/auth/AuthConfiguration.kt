@@ -7,7 +7,6 @@ import com.tencent.bkrepo.common.artifact.auth.jwt.JwtClientAuthHandler
 import com.tencent.bkrepo.common.artifact.auth.jwt.JwtProvider
 import com.tencent.bkrepo.common.artifact.auth.platform.PlatformClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import com.tencent.bkrepo.common.artifact.config.AuthProperties
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean

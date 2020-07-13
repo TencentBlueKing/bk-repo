@@ -14,5 +14,5 @@ data class TOperateLog(
     var operateType: OperateType,
     var userId: String,
     var clientAddress: String,
-    var description: String
+    var description: Map<String, Any>
 )
