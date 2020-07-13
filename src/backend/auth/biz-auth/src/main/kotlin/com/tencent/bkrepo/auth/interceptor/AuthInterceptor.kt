@@ -33,7 +33,7 @@ class AuthInterceptor : HandlerInterceptor {
                 throw AuthHeaderException("check credential fail")
             }
             return true
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
             response.writer.print(authFailStr)
             return false
         }
