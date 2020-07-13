@@ -58,7 +58,7 @@ class ClusterServiceImpl @Autowired constructor(
             CertTrust.call(addr)
             setClusterCredentialStatus(clusterId, true)
             return true
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             logger.warn("ping cluster [$clusterId]  failed.")
             setClusterCredentialStatus(clusterId, false)
             return false
