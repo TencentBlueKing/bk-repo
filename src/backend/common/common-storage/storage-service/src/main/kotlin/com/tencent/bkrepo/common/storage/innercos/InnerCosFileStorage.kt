@@ -22,8 +22,8 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
         client.putFileObject(filename, file)
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream, client: CosClient) {
-        client.putStreamObject(filename, inputStream, inputStream.available().toLong())
+    override fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: CosClient) {
+        client.putStreamObject(filename, inputStream, size)
     }
 
     override fun load(path: String, filename: String, received: File, client: CosClient): File? {
@@ -68,6 +68,4 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
         require(credentials.bucket.isNotBlank())
         return CosClient(credentials)
     }
-
-    override fun getDefaultCredentials() = storageProperties.innercos
 }

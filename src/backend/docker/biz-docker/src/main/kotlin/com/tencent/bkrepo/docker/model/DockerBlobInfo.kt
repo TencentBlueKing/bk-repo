@@ -2,7 +2,12 @@ package com.tencent.bkrepo.docker.model
 
 import org.apache.commons.lang.StringUtils
 
-class DockerBlobInfo(var id: String, var digest: String?, var size: Long, var created: String) {
+/**
+ * docker blob info
+ * @author: owenlxu
+ * @date: 2019-10-15
+ */
+data class DockerBlobInfo(var id: String, var digest: String?, var size: Long, var created: String) {
     var shortId: String? = null
     var command: String? = null
     var commandText: String? = null
@@ -13,10 +18,5 @@ class DockerBlobInfo(var id: String, var digest: String?, var size: Long, var cr
         if (StringUtils.isNotBlank(id)) {
             this.shortId = id.substring(0, 12)
         }
-    }
-
-    companion object {
-        val MEDIA_TYPE_DIFF_LAYER_TGZ = "application/vnd.docker.image.rootfs.diff.tar.gzip"
-        val MEDIA_TYPE_FOREIGN_DIFF_LAYER_TGZ = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"
     }
 }

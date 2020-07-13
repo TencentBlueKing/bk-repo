@@ -22,6 +22,7 @@ import com.tencent.bkrepo.common.storage.innercos.response.handler.InitiateMulti
 import com.tencent.bkrepo.common.storage.innercos.response.handler.PutObjectResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.response.handler.UploadPartResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.response.handler.VoidResponseHandler
+import com.tencent.bkrepo.common.storage.innercos.retry
 import okhttp3.Request
 import java.io.File
 import java.io.InputStream
@@ -119,17 +120,21 @@ class CosClient(private val credentials: InnerCosCredentials) {
     }
 
     private fun uploadPart(cosRequest: UploadPartRequest): Callable<PartETag> {
-        return Callable<PartETag> {
-            val httpRequest = buildHttpRequest(cosRequest)
-            val uploadPartResponse = CosHttpClient.execute(httpRequest, UploadPartResponseHandler())
-            PartETag(cosRequest.partNumber, uploadPartResponse.eTag)
+        return Callable {
+            retry(5) {
+                val httpRequest = buildHttpRequest(cosRequest)
+                val uploadPartResponse = CosHttpClient.execute(httpRequest, UploadPartResponseHandler())
+                PartETag(cosRequest.partNumber, uploadPartResponse.eTag)
+            }
         }
     }
 
     private fun completeMultipartUpload(key: String, uploadId: String, partEtagList: List<PartETag>): PutObjectResponse {
-        val cosRequest = CompleteMultipartUploadRequest(key, uploadId, partEtagList)
-        val httpRequest = buildHttpRequest(cosRequest)
-        return CosHttpClient.execute(httpRequest, CompleteMultipartUploadResponseHandler())
+        retry(5) {
+            val cosRequest = CompleteMultipartUploadRequest(key, uploadId, partEtagList)
+            val httpRequest = buildHttpRequest(cosRequest)
+            return CosHttpClient.execute(httpRequest, CompleteMultipartUploadResponseHandler())
+        }
     }
 
     private fun abortMultipartUpload(key: String, uploadId: String) {

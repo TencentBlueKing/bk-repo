@@ -20,7 +20,7 @@ abstract class AbstractEventListener {
             resourceType = event.getResourceType(),
             resourceKey = event.getResourceKey(),
             operateType = event.getOperateType(),
-            description = event.toString(),
+            description = event.getRequest(),
             userId = event.userId,
             clientAddress = event.clientAddress
         )

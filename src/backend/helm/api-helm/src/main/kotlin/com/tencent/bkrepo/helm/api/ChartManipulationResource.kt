@@ -19,14 +19,22 @@ interface ChartManipulationResource {
     @ApiOperation("helm push")
     @PostMapping(HELM_PUSH_URL)
     @ResponseStatus(HttpStatus.CREATED)
-    fun upload(@ArtifactPathVariable artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): HelmSuccessResponse
+    fun upload(
+        @ArtifactPathVariable artifactInfo: HelmArtifactInfo,
+        artifactFileMap: ArtifactFileMap
+    ): HelmSuccessResponse
 
     @ApiOperation("helm push prov")
     @PostMapping(HELM_PUSH_PROV_URL)
     @ResponseStatus(HttpStatus.CREATED)
-    fun uploadProv(@ArtifactPathVariable artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): HelmSuccessResponse
+    fun uploadProv(
+        @ArtifactPathVariable artifactInfo: HelmArtifactInfo,
+        artifactFileMap: ArtifactFileMap
+    ): HelmSuccessResponse
 
     @ApiOperation("delete chart")
     @DeleteMapping(CHART_DELETE_URL)
-    fun delete(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): HelmSuccessResponse
+    fun delete(
+        @ArtifactPathVariable artifactInfo: HelmArtifactInfo
+    ): HelmSuccessResponse
 }

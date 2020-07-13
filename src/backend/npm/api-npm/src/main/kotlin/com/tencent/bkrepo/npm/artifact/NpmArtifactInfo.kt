@@ -29,10 +29,12 @@ class NpmArtifactInfo(
         const val NPM_UNPUBLISH_SCOPE_MAPPING_URI = "/{projectId}/{repoName}/*/*/-rev/{rev}"
 
         const val NPM_UNPUBLISH_VERSION_MAPPING_URI = "/**/{projectId}/{repoName}/{pkgName}/-/*/-rev/{rev}"
-        const val NPM_UNPUBLISH_VERSION_SCOPE_MAPPING_URI = "/**/{projectId}/{repoName}/{scope}/{pkgName}/-/**/-rev/{rev}"
+        const val NPM_UNPUBLISH_VERSION_SCOPE_MAPPING_URI =
+            "/**/{projectId}/{repoName}/{scope}/{pkgName}/-/**/-rev/{rev}"
 
         // package uri model
-        const val NPM_SCOPE_PACKAGE_VERSION_INFO_MAPPING_URI = "/{projectId}/{repoName}/{scope}/{pkgName}/{version}"
+        const val NPM_SCOPE_PACKAGE_VERSION_INFO_MAPPING_URI =
+            "/{projectId}/{repoName}/{scope}/{pkgName}/{version}"
         const val NPM_PACKAGE_INFO_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}"
         const val NPM_PACKAGE_VERSION_INFO_MAPPING_URI = "/{projectId}/{repoName}/{pkgName}/{version}"
 

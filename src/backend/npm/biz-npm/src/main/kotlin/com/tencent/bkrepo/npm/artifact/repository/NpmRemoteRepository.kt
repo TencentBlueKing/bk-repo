@@ -33,6 +33,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.io.IOException
 import java.io.InputStream
 import java.time.Duration
 import java.time.LocalDateTime
@@ -84,8 +85,8 @@ class NpmRemoteRepository : RemoteRepository() {
         if (!cacheConfiguration.cacheEnabled) return null
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data ?: return null
-        if (node.nodeInfo.folder) return null
+        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+        if (node == null || node.nodeInfo.folder) return null
         val createdDate = LocalDateTime.parse(node.nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
@@ -118,7 +119,7 @@ class NpmRemoteRepository : RemoteRepository() {
             context.contextAttributes[NPM_FILE_FULL_PATH] =
                 String.format(NPM_PKG_VERSION_FULL_PATH, name, name, pkgInfo.second)
             putArtifactCache(context, artifact)
-        } catch (ex: Exception) {
+        } catch (ex: TypeCastException) {
             logger.warn("cache artifact [${pkgInfo.first}-${pkgInfo.second}.json] failed, {}", ex.message)
         }
     }
@@ -146,8 +147,8 @@ class NpmRemoteRepository : RemoteRepository() {
                 putArtifactCache(context, file)
                 transFileToJson(file.getInputStream())
             } else null
-        } catch (exception: Exception) {
-            logger.info("http send [$searchUri] failed, {}", exception.message)
+        } catch (exception: IOException) {
+            logger.error("http send [$searchUri] failed, {}", exception.message)
             throw exception
         } finally {
             if (response != null) {

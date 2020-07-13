@@ -2,7 +2,7 @@ package com.tencent.bkrepo.generic.artifact
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
@@ -52,13 +52,13 @@ class GenericLocalRepository : LocalRepository() {
         if (isBlockUpload(uploadId, sequence)) {
             this.blockUpload(uploadId, sequence!!, context)
             context.response.contentType = StringPool.MEDIA_TYPE_JSON
-            context.response.writer.println(JsonUtils.objectMapper.writeValueAsString(ResponseBuilder.success()))
+            context.response.writer.println(ResponseBuilder.success().toJsonString())
         } else {
             val nodeCreateRequest = getNodeCreateRequest(context)
             storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
             val createResult = nodeResource.create(nodeCreateRequest)
             context.response.contentType = StringPool.MEDIA_TYPE_JSON
-            context.response.writer.println(JsonUtils.objectMapper.writeValueAsString(createResult))
+            context.response.writer.println(createResult.toJsonString())
         }
     }
 
@@ -70,12 +70,12 @@ class GenericLocalRepository : LocalRepository() {
     }
 
     private fun blockUpload(uploadId: String, sequence: Int, context: ArtifactUploadContext) {
-        if (!storageService.checkBlockId(uploadId)) {
+        if (!storageService.checkBlockId(uploadId, context.storageCredentials)) {
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         }
         val calculatedSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
         val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
-        storageService.storeBlock(uploadId, sequence, calculatedSha256, context.getArtifactFile(), overwrite)
+        storageService.storeBlock(uploadId, sequence, calculatedSha256, context.getArtifactFile(), overwrite, context.storageCredentials)
     }
 
     override fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {

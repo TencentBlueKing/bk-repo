@@ -3,6 +3,7 @@ package com.tencent.bkrepo.pypi.util
 import com.tencent.bkrepo.pypi.exception.PypiUnSupportCompressException
 import com.tencent.bkrepo.pypi.util.JsonUtil.jsonValue
 import com.tencent.bkrepo.pypi.util.PropertiesUtil.propInfo
+import com.tencent.bkrepo.pypi.util.pojo.PypiInfo
 import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
@@ -12,13 +13,15 @@ import java.util.zip.GZIPInputStream
 
 object DecompressUtil {
 
+    private const val bufferSize = 2048
+
     /**
      * @param format 文件格式
      * @param this 待解压文件流
-     * @return pypi 包文件信息
+     * @return PypiInfo 包文件信息
      */
     @Throws(Exception::class)
-    fun InputStream.getPkgInfo(format: String): Map<String, String> {
+    fun InputStream.getPkgInfo(format: String): PypiInfo {
         return when (format) {
             "tar" -> {
                 getTarPkgInfo(this)
@@ -39,48 +42,41 @@ object DecompressUtil {
     }
 
     @Throws(Exception::class)
-    fun getWhlMetadata(inputStream: InputStream): Map<String, String> {
+    fun getWhlMetadata(inputStream: InputStream): PypiInfo {
         val metadata = getPkgInfo(ZipArchiveInputStream(inputStream), "metadata.json")
-        return if (metadata.isBlank()) {
-            mapOf()
-        } else {
-            return mapOf("name" to metadata.jsonValue("name"),
-                    "version" to metadata.jsonValue("version"),
-                    "summary" to metadata.jsonValue("summary"))
-        }
+        return PypiInfo(metadata.jsonValue("name"), metadata.jsonValue("version"), metadata.jsonValue("summary"))
     }
 
     @Throws(Exception::class)
-    fun getZipMetadata(inputStream: InputStream): Map<String, String> {
+    fun getZipMetadata(inputStream: InputStream): PypiInfo {
         val propStr = getPkgInfo(ZipArchiveInputStream(inputStream), "PKG-INFO")
         return propStr.propInfo()
     }
 
     @Throws(Exception::class)
-    fun getTgzPkgInfo(inputStream: InputStream): Map<String, String> {
+    fun getTgzPkgInfo(inputStream: InputStream): PypiInfo {
         val propStr = getPkgInfo(TarArchiveInputStream(GZIPInputStream(inputStream, 512)), "PKG-INFO")
         return propStr.propInfo()
     }
 
     @Throws(Exception::class)
-    fun getTarPkgInfo(inputStream: InputStream): Map<String, String> {
+    fun getTarPkgInfo(inputStream: InputStream): PypiInfo {
         val propStr = getPkgInfo(TarArchiveInputStream(inputStream), "PKG-INFO")
         return propStr.propInfo()
     }
 
-    private fun getPkgInfo(tarInputStream: ArchiveInputStream, file: String): String {
+    private fun getPkgInfo(archiveInputStream: ArchiveInputStream, file: String): String {
         val stringBuilder = StringBuffer("")
-        with(tarInputStream) {
+        archiveInputStream.use {
             try {
-                while (nextEntry.also { zipEntry ->
+                while (archiveInputStream.nextEntry.also { zipEntry ->
                             zipEntry?.let {
                                 if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == file) {
                                     var length: Int
-                                    val bytes = ByteArray(2048)
-                                    while ((tarInputStream.read(bytes).also { length = it }) != -1) {
+                                    val bytes = ByteArray(bufferSize)
+                                    while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
                                         stringBuilder.append(String(bytes, 0, length))
                                     }
-                                    return stringBuilder.toString()
                                 }
                             }
                         } != null) {}

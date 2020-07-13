@@ -27,8 +27,10 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
+import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -41,35 +43,35 @@ class PackageDependentService {
     private val url: String = StringPool.EMPTY
 
     @Value("\${npm.migration.package.count: 100}")
-    private val count: Int = 100
+    private val count: Int = DEFAULT_COUNT
 
     @Resource(name = "npmTaskAsyncExecutor")
     private lateinit var asyncExecutor: ThreadPoolTaskExecutor
 
     private val okHttpClient: OkHttpClient by lazy {
-        HttpClientBuilderFactory.create().readTimeout(60L, TimeUnit.SECONDS).build()
+        HttpClientBuilderFactory.create().readTimeout(TIMEOUT, TimeUnit.SECONDS).build()
     }
 
     private final fun initTotalDataSetByUrl() {
-        if (StringUtils.isNotEmpty(url)) {
-            var response: Response? = null
-            try {
-                val request = Request.Builder().url(url).get().build()
-                response = okHttpClient.newCall(request).execute()
-                if (checkResponse(response)) {
-                    val use = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }
-                    totalDataSet =
-                        use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
-                }
-            } catch (exception: Exception) {
-                logger.error(
-                    "http send [$url] for get all package name data failed, {}",
-                    exception.message
-                )
-                throw exception
-            } finally {
-                response?.body()?.close()
+        if (StringUtils.isEmpty(url)) {
+            return
+        }
+        var response: Response? = null
+        try {
+            val request = Request.Builder().url(url).get().build()
+            response = okHttpClient.newCall(request).execute()
+            if (checkResponse(response)) {
+                val use = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }
+                totalDataSet =
+                    use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
             }
+        } catch (exception: IOException) {
+            logger.error(
+                "http send [$url] for get all package name data failed, {}",
+                exception.message
+            )
+        } finally {
+            response?.body()?.close()
         }
     }
 
@@ -112,14 +114,17 @@ class PackageDependentService {
         }
         val resultList = submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
-        logger.info("npm package dependent migrate, total size[${totalDataSet.size}], success[${successSet.size}], fail[${errorSet.size}], elapse [${elapseTimeMillis / 1000}] s totally")
+        logger.info(
+            "npm package dependent migrate, total size[${totalDataSet.size}], success[${successSet.size}], " +
+                "fail[${errorSet.size}], elapse [${millisToSecond(elapseTimeMillis)}] s totally."
+        )
         val collect = resultList.stream().flatMap { set -> set.stream() }.collect(Collectors.toSet())
         return NpmDataMigrationResponse(
             "npm dependent 依赖迁移信息展示：",
             totalDataSet.size,
             successSet.size,
             errorSet.size,
-            elapseTimeMillis / 1000,
+            millisToSecond(elapseTimeMillis),
             collect
         )
     }
@@ -130,10 +135,16 @@ class PackageDependentService {
                 dependentMigrate(artifactInfo, pkgName)
                 logger.info("npm package name: [$pkgName] dependent migration success!")
                 successSet.add(pkgName)
-                if (successSet.size % 10 == 0) {
-                    logger.info("dependent migrate progress rate : successRate:[${successSet.size}/${totalDataSet.size}], failRate[${errorSet.size}/${totalDataSet.size}]")
+                if (isMultipleOfTen(successSet.size)) {
+                    logger.info(
+                        "dependent migrate progress rate : successRate:[${successSet.size}/${totalDataSet.size}], " +
+                            "failRate[${errorSet.size}/${totalDataSet.size}]"
+                    )
                 }
-            } catch (exception: Exception) {
+            } catch (exception: IOException) {
+                logger.error("failed to query [$pkgName.json] file, {}", exception.message)
+                errorSet.add(pkgName)
+            }catch (exception: InterruptedException) {
                 logger.error("failed to query [$pkgName.json] file, {}", exception.message)
                 errorSet.add(pkgName)
             }
@@ -148,7 +159,7 @@ class PackageDependentService {
         (repository as NpmLocalRepository).dependentMigrate(context)
     }
 
-    fun <T> submit(callableList: List<Callable<T>>, timeout: Long = 1L): List<T> {
+    fun <T> submit(callableList: List<Callable<T>>, timeout: Long = 10L): List<T> {
         if (callableList.isEmpty()) {
             return emptyList()
         }
@@ -160,14 +171,14 @@ class PackageDependentService {
         }
         futureList.forEach { future ->
             try {
-                val result: T = future.get(timeout, TimeUnit.HOURS)
+                val result: T = future.get(timeout, TimeUnit.MINUTES)
                 result?.let { resultList.add(it) }
             } catch (exception: TimeoutException) {
                 logger.error("async tack result timeout: ${exception.message}")
-                throw exception
-            } catch (e: Exception) {
+            } catch (e: InterruptedException) {
                 logger.error("get async task result error : ${e.message}")
-                throw e
+            } catch (e: ExecutionException) {
+                logger.error("get async task result error : ${e.message}")
             }
         }
         return resultList
@@ -183,10 +194,20 @@ class PackageDependentService {
 
     companion object {
         private const val FILE_NAME = "pkgName.json"
+        const val TIMEOUT = 60L
+        const val DEFAULT_COUNT = 100
         val logger: Logger = LoggerFactory.getLogger(PackageDependentService::class.java)
 
         private var totalDataSet = mutableSetOf<String>()
         private val successSet = mutableSetOf<String>()
         private val errorSet = mutableSetOf<String>()
+
+        fun millisToSecond(millis: Long): Long {
+            return millis / DataMigrationService.MILLIS_RATE
+        }
+
+        fun isMultipleOfTen(size: Int): Boolean {
+            return size.rem(10) == 0
+        }
     }
 }

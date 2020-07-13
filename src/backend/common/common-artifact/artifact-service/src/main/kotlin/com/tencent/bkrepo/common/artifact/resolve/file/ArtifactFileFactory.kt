@@ -3,6 +3,9 @@ package com.tencent.bkrepo.common.artifact.resolve.file
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.OctetStreamArtifactFile
+import com.tencent.bkrepo.common.artifact.util.ArtifactContextHolder
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST
@@ -18,32 +21,36 @@ import java.io.InputStream
  */
 @Component
 class ArtifactFileFactory(
-    uploadConfigElement: UploadConfigElement,
+    storageProperties: StorageProperties,
     storageHealthMonitor: StorageHealthMonitor
 ) {
 
     init {
-        config = uploadConfigElement
         monitor = storageHealthMonitor
+        properties = storageProperties
     }
 
     companion object {
 
-        private lateinit var config: UploadConfigElement
         private lateinit var monitor: StorageHealthMonitor
+        private lateinit var properties: StorageProperties
 
         const val ARTIFACT_FILES = "artifact.files"
 
         fun build(inputStream: InputStream): ArtifactFile {
-            return OctetStreamArtifactFile(inputStream, monitor, config).apply {
+            return OctetStreamArtifactFile(inputStream, monitor, properties, getStorageCredentials()).apply {
                 track(this)
             }
         }
 
         fun build(multipartFile: MultipartFile): ArtifactFile {
-            return MultipartArtifactFile(multipartFile, monitor, config).apply {
+            return MultipartArtifactFile(multipartFile, monitor, properties, getStorageCredentials()).apply {
                 track(this)
             }
+        }
+
+        private fun getStorageCredentials(): StorageCredentials {
+            return ArtifactContextHolder.getRepositoryInfo()?.storageCredentials ?: properties.defaultStorageCredentials()
         }
 
         @Suppress("UNCHECKED_CAST")

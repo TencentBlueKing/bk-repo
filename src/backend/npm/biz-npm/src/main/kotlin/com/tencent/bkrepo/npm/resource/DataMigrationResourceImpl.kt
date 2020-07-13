@@ -13,11 +13,25 @@ class DataMigrationResourceImpl : DataMigrationResource {
     @Autowired
     private lateinit var dataMigrationService: DataMigrationService
 
-    override fun dataMigrationByFile(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse<String> {
+    override fun dataMigrationByFile(
+        artifactInfo: NpmArtifactInfo,
+        useErrorData: Boolean
+    ): NpmDataMigrationResponse<String> {
         return dataMigrationService.dataMigrationByFile(artifactInfo, useErrorData)
     }
 
-    override fun dataMigrationByUrl(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse<String> {
+    override fun dataMigrationByUrl(
+        artifactInfo: NpmArtifactInfo,
+        useErrorData: Boolean
+    ): NpmDataMigrationResponse<String> {
         return dataMigrationService.dataMigrationByUrl(artifactInfo, useErrorData)
+    }
+
+    override fun dataMigrationByPkgName(
+        artifactInfo: NpmArtifactInfo,
+        useErrorData: Boolean,
+        pkgName: String
+    ): NpmDataMigrationResponse<String> {
+        return dataMigrationService.dataMigrationByPkgName(artifactInfo, useErrorData, pkgName)
     }
 }

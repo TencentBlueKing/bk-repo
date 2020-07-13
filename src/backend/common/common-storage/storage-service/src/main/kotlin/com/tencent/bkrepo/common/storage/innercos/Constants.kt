@@ -32,3 +32,22 @@ fun String.encode(): String {
     }
     return builder.toString()
 }
+
+/**
+ * 重试函数，times表示重试次数，加上第一次执行，总共会执行times+1次，
+ */
+inline fun <R> retry(times: Int, delayInSeconds: Long = 10, block: (Int) -> R): R {
+    var retries = 0
+    while (true) {
+        try {
+            return block(retries)
+        } catch (e: Exception) {
+            if (retries < times) {
+                Thread.sleep(delayInSeconds * 1000)
+                retries += 1
+            } else {
+                throw e
+            }
+        }
+    }
+}

@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import com.tencent.bkrepo.common.artifact.stream.StreamReceiveListener
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
+import com.tencent.bkrepo.common.storage.util.createFile
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -14,7 +15,7 @@ import java.nio.file.Path
 import kotlin.system.measureNanoTime
 
 class SmartStreamReceiver(
-    private val fileSizeThreshold: Int,
+    private val fileSizeThreshold: Long,
     private val filename: String,
     private var path: Path,
     private val enableTransfer: Boolean
@@ -71,7 +72,7 @@ class SmartStreamReceiver(
     @Synchronized
     fun flushToFile(closeStream: Boolean = true) {
         if (isInMemory) {
-            val filePath = path.resolve(filename).apply { Files.createFile(this) }
+            val filePath = path.resolve(filename).apply { this.createFile() }
             val fileOutputStream = Files.newOutputStream(filePath)
             contentBytes.writeTo(fileOutputStream)
             outputStream = fileOutputStream
@@ -108,7 +109,7 @@ class SmartStreamReceiver(
                         // 开Transfer功能时，从NFS转移到本地盘
                         cleanOriginalOutputStream()
                         val originalFile = originalPath.resolve(filename)
-                        val filePath = path.resolve(filename).apply { Files.createFile(this) }
+                        val filePath = path.resolve(filename).apply { this.createFile() }
                         originalFile.toFile().inputStream().use {
                             outputStream = filePath.toFile().outputStream()
                             it.copyTo(outputStream)

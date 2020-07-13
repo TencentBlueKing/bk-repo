@@ -20,8 +20,8 @@ object CosHttpClient {
         val response = try {
             client.newCall(request).execute()
         } catch (exception: Exception) {
-            logResponse(request)
-            throw exception
+            val message = buildMessage(request)
+            throw RuntimeException("Failed to execute http request: $message", exception)
         }
 
         response.useOnCondition(!handler.keepConnection()) {
@@ -35,16 +35,16 @@ object CosHttpClient {
                             return handle404Result
                         }
                     }
-                    throw RuntimeException("Cos request is not successful")
+                    throw RuntimeException("Response status error")
                 }
             } catch (exception: Exception) {
-                logResponse(request, it)
-                throw exception
+                val message = buildMessage(request, it)
+                throw RuntimeException("Failed to execute http request: $message", exception)
             }
         }
     }
 
-    private fun logResponse(request: Request, response: Response? = null) {
+    private fun buildMessage(request: Request, response: Response? = null): String {
         val requestTitle = "${request.method()} ${request.url()} ${response?.protocol()}"
 
         val builder = StringBuilder()
@@ -60,7 +60,8 @@ object CosHttpClient {
                 .appendln(response.headers())
                 .appendln(response.body()?.bytes()?.toString(Charset.forName("GB2312")))
         }
-
-        logger.warn(builder.toString())
+        val message = builder.toString()
+        logger.warn(message)
+        return message
     }
 }

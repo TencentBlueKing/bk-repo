@@ -19,7 +19,7 @@ class ErrorCodeDecoder : ErrorDecoder {
     override fun decode(methodKey: String, feignResponse: Response): Exception {
         if (feignResponse.status() == BAD_REQUEST) {
             return try {
-                val response = JsonUtils.objectMapper.readValue<com.tencent.bkrepo.common.api.pojo.Response<Any>>(feignResponse.body().asReader())
+                val response = JsonUtils.objectMapper.readValue<com.tencent.bkrepo.common.api.pojo.Response<Any>>(feignResponse.body().asInputStream())
                 ExternalErrorCodeException(
                     methodKey,
                     response.code,

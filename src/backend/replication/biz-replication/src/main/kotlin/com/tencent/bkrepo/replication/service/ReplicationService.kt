@@ -2,8 +2,8 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
-import com.tencent.bkrepo.replication.pojo.request.RequestBodyUtil
 import com.tencent.bkrepo.replication.job.ReplicationContext
+import com.tencent.bkrepo.replication.pojo.request.RequestBodyUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
@@ -22,20 +22,16 @@ import okhttp3.Request
 import org.springframework.stereotype.Service
 
 @Service
-class ReplicationService(
-    val repoDataService: RepoDataService
-) {
+class ReplicationService(val repoDataService: RepoDataService) {
+
     fun replicaFile(context: ReplicationContext, request: NodeCreateRequest) {
         with(context) {
             // 查询文件
             val inputStream = repoDataService.getFile(request.sha256!!, request.size!!, currentRepoDetail.localRepoInfo)
-            val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM!!, inputStream)
+            val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM!!, inputStream, request.size!!)
             val builder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", request.fullPath, fileRequestBody)
-                .addFormDataPart("projectId", request.projectId)
-                .addFormDataPart("repoName", request.repoName)
-                .addFormDataPart("fullPath", request.fullPath)
                 .addFormDataPart("size", request.size.toString())
                 .addFormDataPart("sha256", request.sha256!!)
                 .addFormDataPart("md5", request.md5!!)
@@ -43,9 +39,10 @@ class ReplicationService(
             request.metadata?.forEach { (key, value) ->
                 builder.addFormDataPart("metadata[$key]", value)
             }
+            val url = "$normalizedUrl/replica/file/${request.projectId}/${request.repoName}${request.fullPath}"
             val requestBody = builder.build()
             val httpRequest = Request.Builder()
-                .url("$normalizedUrl/replica/file")
+                .url(url)
                 .post(requestBody)
                 .build()
             val response = httpClient.newCall(httpRequest).execute()

@@ -6,6 +6,7 @@ import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 
 interface UserService {
+
     fun getUserById(userId: String): User?
 
     fun createUser(request: CreateUserRequest): Boolean
@@ -20,11 +21,11 @@ interface UserService {
 
     fun addUserToRole(userId: String, roleId: String): User?
 
-    fun addUserToRoleBatch(IdList: List<String>, roleId: String): Boolean
+    fun addUserToRoleBatch(idList: List<String>, roleId: String): Boolean
 
     fun removeUserFromRole(userId: String, roleId: String): User?
 
-    fun removeUserFromRoleBatch(IdList: List<String>, roleId: String): Boolean
+    fun removeUserFromRoleBatch(idList: List<String>, roleId: String): Boolean
 
     fun createToken(userId: String): User?
 
