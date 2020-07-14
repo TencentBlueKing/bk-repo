@@ -33,7 +33,7 @@ abstract class AbstractService {
         try {
             val repoManagerRoleId = roleResource.createRepoManage(projectId, repoName).data!!
             userResource.addUserRole(userId, repoManagerRoleId)
-        } catch (exception: Exception) {
+        } catch (exception: RuntimeException) {
             if (authProperties.enabled) {
                 throw exception
             } else {
@@ -46,7 +46,7 @@ abstract class AbstractService {
         try {
             val projectManagerRoleId = roleResource.createProjectManage(projectId).data!!
             userResource.addUserRole(operator, projectManagerRoleId)
-        } catch (exception: Exception) {
+        } catch (exception: RuntimeException) {
             if (authProperties.enabled) {
                 throw exception
             } else {

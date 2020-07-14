@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.storage.filesystem
 
 import java.io.File
+import java.io.IOException
 import java.io.InputStream
 import java.io.RandomAccessFile
 import java.nio.channels.Channels
@@ -22,8 +23,8 @@ object FileLockExecutor {
             val lock = acquireLock(channel, shared)
             try {
                 block(channel)
-            } catch (exception: Exception) {
-                throw exception
+            } catch (ignored: RuntimeException) {
+                throw ignored
             } finally {
                 releaseLock(lock)
             }
@@ -39,8 +40,8 @@ object FileLockExecutor {
                 val lock = acquireLock(it, true)
                 try {
                     block(it)
-                } catch (exception: Exception) {
-                    throw exception
+                } catch (ignored: RuntimeException) {
+                    throw ignored
                 } finally {
                     releaseLock(lock)
                 }
@@ -55,7 +56,7 @@ object FileLockExecutor {
             try {
                 channel.tryLock(0L, Long.MAX_VALUE, shared)?.let { return it }
                 Thread.sleep(200)
-            } catch (exception: OverlappingFileLockException) {
+            } catch (ignored: OverlappingFileLockException) {
                 // locked by the same JVM, ignore
             }
         }
@@ -64,12 +65,12 @@ object FileLockExecutor {
     private fun releaseLock(lock: FileLock) {
         try {
             lock.release()
-        } catch (exception: Exception) {
+        } catch (ignored: IOException) {
             // ignore
         } finally {
             try {
                 lock.channel()?.close()
-            } catch (exception: Exception) {
+            } catch (ignored: IOException) {
                 // ignore
             }
         }

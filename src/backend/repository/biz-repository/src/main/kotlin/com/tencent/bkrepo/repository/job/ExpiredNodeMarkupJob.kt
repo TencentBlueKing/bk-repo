@@ -55,8 +55,8 @@ class ExpiredNodeMarkupJob {
             }
             val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
             logger.info("[$markupCount] nodes has been marked up with deleted status, elapse [$elapseTimeMillis] ms totally.")
-        } catch (exception: Exception) {
-            logger.error("Mark up deleted expired error.", exception)
+        } catch (ignored: RuntimeException) {
+            logger.error("Mark up deleted expired error.", ignored)
         }
     }
 
