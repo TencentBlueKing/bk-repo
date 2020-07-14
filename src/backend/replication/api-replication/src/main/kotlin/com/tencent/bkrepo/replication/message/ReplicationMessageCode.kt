@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.replication.constant
+package com.tencent.bkrepo.replication.message
 
 import com.tencent.bkrepo.common.api.message.MessageCode
 

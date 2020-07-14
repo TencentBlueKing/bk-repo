@@ -2,7 +2,6 @@ package com.tencent.bkrepo.common.artifact.auth.jwt
 
 import com.tencent.bkrepo.common.artifact.auth.AuthProperties
 import io.jsonwebtoken.Claims
-import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jws
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
@@ -41,12 +40,6 @@ class JwtProvider {
     }
 
     fun validateToken(token: String): Jws<Claims> {
-        try {
-            return Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token)
-        } catch (exception: ExpiredJwtException) {
-            throw RuntimeException("Expired token.")
-        } catch (exception: Exception) {
-            throw RuntimeException("Invalid token.")
-        }
+        return Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token)
     }
 }

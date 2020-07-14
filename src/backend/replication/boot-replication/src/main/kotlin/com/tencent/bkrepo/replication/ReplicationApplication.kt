@@ -6,6 +6,6 @@ import org.springframework.boot.runApplication
 @MicroService
 class ReplicationApplication
 
-fun main(args: Array<String>) {
-    runApplication<ReplicationApplication>(*args)
+fun main() {
+    runApplication<ReplicationApplication>()
 }

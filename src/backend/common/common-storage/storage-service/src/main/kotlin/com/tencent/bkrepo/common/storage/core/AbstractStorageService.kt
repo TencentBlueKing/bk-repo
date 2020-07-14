@@ -16,6 +16,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import com.tencent.bkrepo.common.storage.message.HealthCheckFailedException
 import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
@@ -279,9 +280,9 @@ abstract class AbstractStorageService : StorageService {
         try {
             future.get(storageProperties.monitor.timeout.seconds, TimeUnit.SECONDS)
         } catch (timeoutException: TimeoutException) {
-            throw RuntimeException(StorageHealthMonitor.IO_TIMEOUT_MESSAGE)
+            throw HealthCheckFailedException(StorageHealthMonitor.IO_TIMEOUT_MESSAGE)
         } catch (exception: Exception) {
-            throw RuntimeException(exception.message.orEmpty())
+            throw HealthCheckFailedException(exception.message.orEmpty())
         }
     }
 

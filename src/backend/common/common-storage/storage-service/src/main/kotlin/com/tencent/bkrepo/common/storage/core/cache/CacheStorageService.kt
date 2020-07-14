@@ -92,7 +92,7 @@ class CacheStorageService : AbstractStorageService() {
 
     override fun doCheckHealth(credentials: StorageCredentials) {
         if (!monitor.health.get()) {
-            throw RuntimeException("Cache storage is unhealthy: ${monitor.reason}")
+            throw IllegalStateException("Cache storage is unhealthy: ${monitor.reason}")
         }
         super.doCheckHealth(credentials)
     }

@@ -6,8 +6,8 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.replication.api.ReplicationClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
-import com.tencent.bkrepo.replication.constant.ReplicationMessageCode
 import com.tencent.bkrepo.replication.job.ReplicationContext
+import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicationTask
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.setting.ExecutionPlan
@@ -129,7 +129,7 @@ class TaskService(
                 val replicationService = FeignClientFactory.create(ReplicationClient::class.java, this)
                 val authToken = ReplicationContext.encodeAuthToken(username, password)
                 replicationService.ping(authToken)
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, exception.message ?: UNKNOWN)
             }
         }
