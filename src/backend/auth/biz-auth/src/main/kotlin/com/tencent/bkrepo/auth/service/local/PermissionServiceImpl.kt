@@ -292,7 +292,7 @@ class PermissionServiceImpl @Autowired constructor(
         logger.info("check permission  request : {} ", request.toString())
         val user = userRepository.findFirstByUserId(request.uid)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        if (user.admin) {
+        if (user.admin || !request.appId.isNullOrBlank()) {
             return true
         }
         val roles = user.roles
