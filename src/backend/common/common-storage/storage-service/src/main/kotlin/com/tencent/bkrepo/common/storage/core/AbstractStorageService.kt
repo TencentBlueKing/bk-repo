@@ -121,7 +121,7 @@ abstract class AbstractStorageService : StorageService {
             logger.info("Success to create append id [$appendId].")
             return appendId
         } catch (exception: Exception) {
-            logger.error("Failed to create append id on [$credentials].", exception)
+            logger.error("Failed to create append id [$appendId] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -143,8 +143,11 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
         try {
-            return tempClient.load(CURRENT_PATH, appendId)?.let { storeFile(it, credentials) }
+            val fileInfo = tempClient.load(CURRENT_PATH, appendId)?.let { storeFile(it, credentials) }
                 ?: throw IllegalArgumentException("Append file does not exist.")
+            tempClient.delete(CURRENT_PATH, appendId)
+            logger.info("Success to finish append file [$appendId], file info [$fileInfo].")
+            return fileInfo
         } catch (exception: Exception) {
             logger.error("Failed to finish append file [$appendId] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
@@ -164,10 +167,10 @@ abstract class AbstractStorageService : StorageService {
         val tempClient = getTempClient(credentials)
         try {
             tempClient.createDirectory(CURRENT_PATH, blockId)
-            logger.info("Success to create block id [$blockId].")
+            logger.info("Success to create block [$blockId].")
             return blockId
         } catch (exception: Exception) {
-            logger.error("Failed to create block id on [$credentials].", exception)
+            logger.error("Failed to create block [$blockId] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -178,7 +181,7 @@ abstract class AbstractStorageService : StorageService {
         try {
             return tempClient.checkDirectory(blockId)
         } catch (exception: Exception) {
-            logger.error("Failed to check block id on [$credentials].", exception)
+            logger.error("Failed to check block [$blockId] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
         }
     }
@@ -216,15 +219,15 @@ abstract class AbstractStorageService : StorageService {
                 }
             }
             val mergedFile = tempClient.mergeFiles(blockFileList, tempClient.touch(blockId, MERGED_FILENAME))
-            val storeFile = storeFile(mergedFile, credentials)
+            val fileInfo = storeFile(mergedFile, credentials)
             tempClient.deleteDirectory(CURRENT_PATH, blockId)
             logger.info("Success to merge block [$blockId].")
-            return storeFile
+            return fileInfo
         } catch (storageException: StorageException) {
-            logger.error("Failed to combine block id [$blockId] on [$credentials]: ${storageException.messageCode}")
+            logger.error("Failed to merge block [$blockId] on [$credentials]: ${storageException.messageCode}")
             throw storageException
         } catch (exception: Exception) {
-            logger.error("Failed to combine block id [$blockId] on [$credentials].", exception)
+            logger.error("Failed to merge block [$blockId] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.orEmpty())
         }
     }
@@ -294,6 +297,8 @@ abstract class AbstractStorageService : StorageService {
         val path = fileLocator.locate(sha256)
         if (!doExist(path, sha256, credentials)) {
             doStore(path, sha256, file.toArtifactFile(), credentials)
+        } else {
+            logger.info("File [$sha256] exist, skip store.")
         }
         return fileInfo
     }
