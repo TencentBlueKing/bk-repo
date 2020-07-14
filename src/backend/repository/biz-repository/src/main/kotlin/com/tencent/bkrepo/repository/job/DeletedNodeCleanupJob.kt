@@ -69,8 +69,8 @@ class DeletedNodeCleanupJob {
                                 .and(TNode::deleted.name).`is`(node.deleted)
                             )
                             nodeDao.remove(nodeQuery)
-                        } catch (exception: Exception) {
-                            logger.error("Clean up deleted node[$node] failed.", exception)
+                        } catch (ignored: Exception) {
+                            logger.error("Clean up deleted node[$node] failed.", ignored)
                             if (fileReferenceChange) {
                                 fileReferenceService.increment(node, repo)
                             }

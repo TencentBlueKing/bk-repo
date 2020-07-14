@@ -33,6 +33,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
+@Suppress("TooGenericExceptionCaught")
 @Component
 class ReplicationJobBean(
     private val taskRepository: TaskRepository,
@@ -45,7 +46,6 @@ class ReplicationJobBean(
     @Value("\${spring.application.version}")
     private var version: String = DEFAULT_VERSION
 
-    @Suppress("TooGenericExceptionCaught")
     fun execute(taskId: String) {
         logger.info("Start to execute replication task[$taskId].")
         val task = taskRepository.findByIdOrNull(taskId) ?: run {

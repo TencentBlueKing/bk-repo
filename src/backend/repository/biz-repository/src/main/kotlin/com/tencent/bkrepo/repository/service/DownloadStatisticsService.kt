@@ -35,11 +35,7 @@ class DownloadStatisticsService : AbstractService() {
             }
             val query = Query(criteria)
             val update = Update().apply { inc(TDownloadStatistics::count.name, 1) }
-            try {
-                mongoTemplate.upsert(query, update, TDownloadStatistics::class.java)
-            } catch (ex: Exception) {
-                logger.warn("Upsert download statistics record failed: ${ex.message}")
-            }
+            mongoTemplate.upsert(query, update, TDownloadStatistics::class.java)
             logger.info("Create artifact download statistics [$statisticsAddRequest] success.")
         }
     }
