@@ -123,6 +123,7 @@ class TaskService(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun tryConnect(remoteClusterInfo: RemoteClusterInfo) {
         with(remoteClusterInfo) {
             try {
