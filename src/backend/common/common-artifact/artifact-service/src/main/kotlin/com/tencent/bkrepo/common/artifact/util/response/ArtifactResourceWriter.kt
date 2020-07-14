@@ -64,7 +64,7 @@ object ArtifactResourceWriter {
 
         try {
             writeRangeStream(resource.inputStream, response)
-            response.flushBuffer()
+            //response.flushBuffer()
         } catch (exception: Exception) {
             val message = exception.message.orEmpty()
             when {
@@ -108,7 +108,7 @@ object ArtifactResourceWriter {
                 Metrics.counter(ARTIFACT_DOWNLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
                 logger.info("Response artifact file, $throughput.")
             }
-            output.flush()
+            //output.flush()
         }
     }
 

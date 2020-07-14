@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.common.storage.filesystem
 
+import com.tencent.bkrepo.common.artifact.stream.closeQuietly
+import com.tencent.bkrepo.common.artifact.stream.releaseQuietly
 import java.io.File
 import java.io.InputStream
 import java.io.RandomAccessFile
@@ -62,16 +64,7 @@ object FileLockExecutor {
     }
 
     private fun releaseLock(lock: FileLock) {
-        try {
-            lock.release()
-        } catch (exception: Exception) {
-            // ignore
-        } finally {
-            try {
-                lock.channel()?.close()
-            } catch (exception: Exception) {
-                // ignore
-            }
-        }
+        lock.releaseQuietly()
+        lock.channel().closeQuietly()
     }
 }

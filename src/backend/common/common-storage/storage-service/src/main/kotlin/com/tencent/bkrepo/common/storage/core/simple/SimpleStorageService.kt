@@ -1,10 +1,11 @@
 package com.tencent.bkrepo.common.storage.core.simple
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import java.io.InputStream
 
 /**
  * 存储服务简单实现
@@ -28,8 +29,8 @@ class SimpleStorageService : AbstractStorageService() {
         }
     }
 
-    override fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): InputStream? {
-        return fileStorage.load(path, filename, range, credentials)
+    override fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): ArtifactInputStream? {
+        return fileStorage.load(path, filename, range, credentials)?.toArtifactStream(range)
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {

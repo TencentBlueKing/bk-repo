@@ -16,6 +16,10 @@ class Range(startPosition: Long, endPosition: Long, val total: Long) {
         return length != total
     }
 
+    fun isFullContent(): Boolean {
+        return length == total
+    }
+
     fun isEmpty(): Boolean {
         return length == 0L
     }
@@ -25,6 +29,9 @@ class Range(startPosition: Long, endPosition: Long, val total: Long) {
     }
 
     companion object {
+        @Deprecated(message = "Replace with Range.full", replaceWith = ReplaceWith("full"))
         fun ofFull(total: Long) = Range(0, total - 1, total)
+
+        fun full(total: Long) = Range(0, total - 1, total)
     }
 }
