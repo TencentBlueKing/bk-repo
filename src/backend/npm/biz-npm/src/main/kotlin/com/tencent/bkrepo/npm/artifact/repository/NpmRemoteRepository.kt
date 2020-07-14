@@ -12,7 +12,6 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.ID
 import com.tencent.bkrepo.npm.constants.NAME
@@ -63,19 +62,9 @@ class NpmRemoteRepository : RemoteRepository() {
     }
 
     override fun getCacheNodeCreateRequest(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeCreateRequest {
-        val repositoryInfo = context.repositoryInfo
-        val sha256 = FileDigestUtils.fileSha256(listOf(artifactFile.getInputStream()))
-        val md5 = FileDigestUtils.fileMd5(listOf(artifactFile.getInputStream()))
-        return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
-            folder = false,
-            fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String,
-            size = artifactFile.getSize(),
-            sha256 = sha256,
-            md5 = md5,
-            overwrite = true,
-            operator = context.userId
+        val nodeCreateRequest = super.getCacheNodeCreateRequest(context, artifactFile)
+        return nodeCreateRequest.copy(
+            fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         )
     }
 
@@ -111,7 +100,7 @@ class NpmRemoteRepository : RemoteRepository() {
         context.contextAttributes[NPM_FILE_FULL_PATH] =
             String.format(NPM_PKG_FULL_PATH, pkgInfo.first)
         try {
-            val artifactResource = getCacheArtifactResource(context)!!
+            val artifactResource = getCacheArtifactResource(context) ?: return
             val jsonFile = transFileToJson(artifactResource.inputStream)
             val versionFile = jsonFile.getAsJsonObject(VERSIONS).getAsJsonObject(pkgInfo.second)
             val artifact = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
@@ -125,9 +114,12 @@ class NpmRemoteRepository : RemoteRepository() {
     }
 
     private fun parseArtifactInfo(tgzFullPath: String): Pair<String, String> {
-        val pkgVersion = tgzFullPath.substringAfterLast('/').substringBeforeLast(".tgz")
-        val pkgName = tgzFullPath.substringBeforeLast("/-/").trimStart('/')
-        val version = pkgVersion.substringAfterLast('-')
+        val pkgList = tgzFullPath.split('/').filter { it.isNotBlank() }.map { it.trim() }.toList()
+        var pkgName = pkgList[0]
+        if (pkgList[1].contains('@')) {
+            pkgName = pkgList[0] + pkgList[1]
+        }
+        val version = pkgList.last().substringAfterLast('-').substringBeforeLast(".tgz")
         return Pair(pkgName, version)
     }
 
@@ -144,8 +136,11 @@ class NpmRemoteRepository : RemoteRepository() {
             response = httpClient.newCall(request).execute()
             if (checkResponse(response)) {
                 val file = createTempFile(response.body()!!)
-                putArtifactCache(context, file)
-                transFileToJson(file.getInputStream())
+                val downloadContext = ArtifactDownloadContext()
+                downloadContext.contextAttributes = context.contextAttributes
+                val resultJson = transFileToJson(file.getInputStream())
+                putArtifactCache(downloadContext, file)
+                resultJson
             } else null
         } catch (exception: IOException) {
             logger.error("http send [$searchUri] failed, {}", exception.message)
@@ -188,40 +183,11 @@ class NpmRemoteRepository : RemoteRepository() {
         return "$replace/$projectId/$repoName"
     }
 
-    private fun putArtifactCache(context: ArtifactTransferContext, file: ArtifactFile) {
-        val jsonObj = GsonUtils.transferInputStreamToJson(file.getInputStream())
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
-        val cacheConfiguration = remoteConfiguration.cacheConfiguration
-        val pkgFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(jsonObj).byteInputStream())
-        if (cacheConfiguration.cacheEnabled) {
-            val nodeCreateRequest = getNodeCreateRequest(context, pkgFile)
-            nodeResource.create(nodeCreateRequest)
-            storageService.store(nodeCreateRequest.sha256!!, pkgFile, context.storageCredentials)
-        }
-    }
-
     private fun generateRemoteSearchUrl(context: ArtifactSearchContext): String {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val tarballPrefix = getTarballPrefix(context)
         val requestURL = context.request.requestURL.toString()
         return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
-    }
-
-    private fun getNodeCreateRequest(context: ArtifactTransferContext, file: ArtifactFile): NodeCreateRequest {
-        val repositoryInfo = context.repositoryInfo
-        val sha256 = FileDigestUtils.fileSha256(listOf(file.getInputStream()))
-        val md5 = FileDigestUtils.fileMd5(listOf(file.getInputStream()))
-        return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
-            folder = false,
-            fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String,
-            size = file.getSize(),
-            sha256 = sha256,
-            md5 = md5,
-            overwrite = true,
-            operator = context.userId
-        )
     }
 
     override fun list(context: ArtifactListContext): NpmSearchResponse {
@@ -231,7 +197,9 @@ class NpmRemoteRepository : RemoteRepository() {
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
         return if (checkResponse(response)) {
-            NpmSearchResponse(GsonUtils.gsonToMaps<Any>(response.body()!!.string())?.get(OBJECTS) as MutableList<Map<String, Any>>)
+            NpmSearchResponse(
+                GsonUtils.gsonToMaps<MutableList<Map<String, Any>>>(response.body()!!.string())?.get(OBJECTS)!!
+            )
         } else NpmSearchResponse()
     }
 

@@ -127,10 +127,6 @@ class RpmFormatInterpreter {
         return getStringHeader(header, Header.HeaderTag.LICENSE)
     }
 
-    private fun getFilemTime(header: Header): Int {
-        return getIntHeader(header, Header.HeaderTag.FILEMTIMES)
-    }
-
     private fun getVendor(header: Header): String? {
         return getStringHeader(header, Header.HeaderTag.VENDOR)
     }
@@ -147,7 +143,12 @@ class RpmFormatInterpreter {
         return getStringHeader(header, Header.HeaderTag.BUILDHOST)
     }
 
-    private fun resolveEntriesEntries(header: Header, namesTag: Header.HeaderTag, flagsTag: Header.HeaderTag, versionsTag: Header.HeaderTag): LinkedList<RpmEntry> {
+    private fun resolveEntriesEntries(
+        header: Header,
+        namesTag: Header.HeaderTag,
+        flagsTag: Header.HeaderTag,
+        versionsTag: Header.HeaderTag
+    ): LinkedList<RpmEntry> {
         val entries: LinkedList<RpmEntry> = Lists.newLinkedList()
         val entryNames = getStringArrayHeader(header, namesTag)
         val entryFlags = getIntArrayHeader(header, flagsTag)

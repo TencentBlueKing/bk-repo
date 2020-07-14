@@ -5,7 +5,7 @@ import com.tencent.bkrepo.repository.pojo.log.ResourceType
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("operate_log")
+@Document("operation_log")
 data class TOperateLog(
     var id: String? = null,
     var createdDate: LocalDateTime = LocalDateTime.now(),

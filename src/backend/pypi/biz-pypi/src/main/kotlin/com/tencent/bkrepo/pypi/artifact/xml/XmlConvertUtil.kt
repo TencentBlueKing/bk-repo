@@ -8,15 +8,20 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 
 object XmlConvertUtil {
 
-    fun xml2MethodCall(xmlString: String): MethodCall {
-        val xmlMapper = XmlMapper().registerModule(KotlinModule()) as XmlMapper
+    private val xmlMapper = XmlMapper().registerModule(KotlinModule()) as XmlMapper
+
+    init {
         xmlMapper.enable(SerializationFeature.INDENT_OUTPUT)
+    }
+
+    /**
+     * @see XmlConvertUtil
+     */
+    fun xml2MethodCall(xmlString: String): MethodCall {
         return xmlMapper.readValue(xmlString, MethodCall::class.java)
     }
 
     fun xml2MethodResponse(xmlString: String): MethodResponse {
-        val xmlMapper = XmlMapper().registerModule(KotlinModule()) as XmlMapper
-        xmlMapper.enable(SerializationFeature.INDENT_OUTPUT)
         return xmlMapper.readValue(xmlString, MethodResponse::class.java)
     }
 

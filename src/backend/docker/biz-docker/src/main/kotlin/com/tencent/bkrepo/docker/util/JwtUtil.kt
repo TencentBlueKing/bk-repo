@@ -2,6 +2,7 @@ package com.tencent.bkrepo.docker.util
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwt.exceptions.JWTVerificationException
 import com.auth0.jwt.interfaces.Claim
 import java.util.Date
 
@@ -38,15 +39,11 @@ open class JwtUtil {
             return try {
                 JWT.require(Algorithm.HMAC512(secret)).build().verify(token)
                 true
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
                 false
-            } catch (e: Exception) {
+            } catch (e: JWTVerificationException) {
                 false
-            } catch (e: Exception) {
-                false
-            } catch (e: Exception) {
-                false
-            }
+            } 
         }
 
         fun getUserName(token: String): String {

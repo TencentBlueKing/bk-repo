@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.opdata.model
 
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NAME
+import com.tencent.bkrepo.opdata.constant.OPDATA_REPOSITORY
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -13,12 +16,12 @@ class RepoModel @Autowired constructor(
 
     fun getRepoListByProjectId(projectId: String): List<String> {
         val query = Query(
-            Criteria.where("projectId").`is`(projectId)
+            Criteria.where(OPDATA_PROJECT_ID).`is`(projectId)
         )
-        var data = mutableListOf<String>()
-        val results = mongoTemplate.find(query, MutableMap::class.java, "repository")
+        val data = mutableListOf<String>()
+        val results = mongoTemplate.find(query, MutableMap::class.java, OPDATA_REPOSITORY)
         results.forEach {
-            val repoName = it.get("name") as String
+            val repoName = it[OPDATA_PROJECT_NAME] as String
             data.add(repoName)
         }
         return data

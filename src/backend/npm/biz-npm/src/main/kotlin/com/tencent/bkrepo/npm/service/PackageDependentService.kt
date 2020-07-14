@@ -15,6 +15,7 @@ import com.tencent.bkrepo.npm.constants.PKG_NAME
 import com.tencent.bkrepo.npm.pojo.NpmDataMigrationResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.MigrationUtils
+import com.tencent.bkrepo.npm.utils.ThreadPoolManager
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -30,10 +31,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.Callable
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import java.util.stream.Collectors
 import javax.annotation.Resource
 
@@ -76,8 +74,8 @@ class PackageDependentService {
     }
 
     private final fun initTotalDataSetByFile() {
-        val inputStream: InputStream? = this.javaClass.classLoader.getResourceAsStream(FILE_NAME)
-        val use = inputStream!!.use { GsonUtils.transferInputStreamToJson(it) }
+        val inputStream: InputStream = this.javaClass.classLoader.getResourceAsStream(FILE_NAME) ?: return
+        val use = inputStream.use { GsonUtils.transferInputStreamToJson(it) }
         totalDataSet =
             use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
     }
@@ -112,7 +110,7 @@ class PackageDependentService {
                 errorSet
             })
         }
-        val resultList = submit(callableList)
+        val resultList = ThreadPoolManager.submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
         logger.info(
             "npm package dependent migrate, total size[${totalDataSet.size}], success[${successSet.size}], " +
@@ -144,7 +142,7 @@ class PackageDependentService {
             } catch (exception: IOException) {
                 logger.error("failed to query [$pkgName.json] file, {}", exception.message)
                 errorSet.add(pkgName)
-            }catch (exception: InterruptedException) {
+            } catch (exception: InterruptedException) {
                 logger.error("failed to query [$pkgName.json] file, {}", exception.message)
                 errorSet.add(pkgName)
             }
@@ -157,31 +155,6 @@ class PackageDependentService {
         context.contextAttributes[PKG_NAME] = pkgName
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         (repository as NpmLocalRepository).dependentMigrate(context)
-    }
-
-    fun <T> submit(callableList: List<Callable<T>>, timeout: Long = 10L): List<T> {
-        if (callableList.isEmpty()) {
-            return emptyList()
-        }
-        val resultList = mutableListOf<T>()
-        val futureList = mutableListOf<Future<T>>()
-        callableList.forEach { callable ->
-            val future: Future<T> = asyncExecutor.submit(callable)
-            futureList.add(future)
-        }
-        futureList.forEach { future ->
-            try {
-                val result: T = future.get(timeout, TimeUnit.MINUTES)
-                result?.let { resultList.add(it) }
-            } catch (exception: TimeoutException) {
-                logger.error("async tack result timeout: ${exception.message}")
-            } catch (e: InterruptedException) {
-                logger.error("get async task result error : ${e.message}")
-            } catch (e: ExecutionException) {
-                logger.error("get async task result error : ${e.message}")
-            }
-        }
-        return resultList
     }
 
     fun checkResponse(response: Response): Boolean {

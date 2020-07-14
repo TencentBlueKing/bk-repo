@@ -29,7 +29,7 @@ class RealTimeJob {
 
     private lateinit var container: MessageListenerContainer
 
-    private val collectionName = "operate_log"
+    private val collectionName = "operation_log"
 
     @PostConstruct
     fun run() {

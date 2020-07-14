@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
 import com.tencent.bkrepo.docker.constant.EMPTYSTR
+import com.tencent.bkrepo.docker.exception.DockerManifestDeseriFailException
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.DockerImageMetadata
@@ -33,7 +34,7 @@ class ManifestSchema2Deserializer {
                 return applyAttributesFromContent(manifestBytes, jsonBytes, manifestMetadata)
             } catch (exception: IOException) {
                 logger.error("Unable to deserialize the manifest.json file: [$exception]")
-                throw RuntimeException(exception)
+                throw DockerManifestDeseriFailException(exception.message!!)
             }
         }
 

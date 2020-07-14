@@ -58,7 +58,7 @@ class ClusterServiceImpl @Autowired constructor(
             CertTrust.call(addr)
             setClusterCredentialStatus(clusterId, true)
             return true
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             logger.warn("ping cluster [$clusterId]  failed.")
             setClusterCredentialStatus(clusterId, false)
             return false
@@ -77,7 +77,7 @@ class ClusterServiceImpl @Autowired constructor(
 
     override fun updateCluster(clusterId: String, request: UpdateClusterRequest): Boolean {
         logger.info("update  cluster clusterId : {} , request :{}", clusterId, request.toString())
-        val cluster = clusterRepository.findOneByClusterId(clusterId) ?: run {
+        clusterRepository.findOneByClusterId(clusterId) ?: run {
             logger.warn("update cluster [$clusterId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_CLUSTER_NOT_EXIST)
         }

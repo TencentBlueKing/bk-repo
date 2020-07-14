@@ -10,13 +10,17 @@ import java.io.OutputStreamWriter
 import java.io.Writer
 
 object XStreamUtil {
-    fun objectToXml(obj: Any): String {
+    /**
+     * @param Any 转 xml 字符串
+     */
+    fun Any.objectToXml(): String {
         val xStream = XStream()
         val outputStream = ByteArrayOutputStream()
         val writer: Writer = OutputStreamWriter(outputStream, "UTF-8")
-        if (obj is RpmMetadata) { writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n") }
+        // 如果Any is RpmMetadata 添加xml声明
+        if (this is RpmMetadata) { writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n") }
         xStream.autodetectAnnotations(true)
-        xStream.toXML(obj, writer)
+        xStream.toXML(this, writer)
         return String(outputStream.toByteArray())
     }
 

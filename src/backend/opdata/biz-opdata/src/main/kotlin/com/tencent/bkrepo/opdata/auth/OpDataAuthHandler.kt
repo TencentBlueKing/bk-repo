@@ -38,7 +38,7 @@ open class OpDataAuthHandler : ClientAuthHandler {
                 parts[0],
                 parts[1]
             )
-        } catch (exception: Exception) {
+        } catch (exception: IllegalArgumentException) {
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
     }
