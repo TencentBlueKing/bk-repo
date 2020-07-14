@@ -67,12 +67,6 @@ class UserServiceImpl @Autowired constructor(
     override fun createUserToProject(request: CreateUserToProjectRequest): Boolean {
         // todo 校验
         logger.info("create user to project request : [$request]")
-        // user not exist, create user
-        val userResult = createUser(convCreateUserRequest(request))
-        if (!userResult) {
-            logger.warn("create user fail [$userResult]")
-            return false
-        }
 
         val query = Query()
         query.addCriteria(Criteria.where("name").`is`(request.projectId))
@@ -80,6 +74,12 @@ class UserServiceImpl @Autowired constructor(
         if (result == 0L) {
             logger.warn("user [${request.projectId}]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PROJECT_NOT_EXIST)
+        }
+        // user not exist, create user
+        val userResult = createUser(convCreateUserRequest(request))
+        if (!userResult) {
+            logger.warn("create user fail [$userResult]")
+            return false
         }
 
         return true
@@ -97,7 +97,7 @@ class UserServiceImpl @Autowired constructor(
     override fun deleteById(userId: String): Boolean {
         logger.info("delete user userId : [$userId]")
         checkUserExist(userId)
-        userRepository.findFirstByUserId(userId)
+        userRepository.deleteById(userId)
         return true
     }
 
