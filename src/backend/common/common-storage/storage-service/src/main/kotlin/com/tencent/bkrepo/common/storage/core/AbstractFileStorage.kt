@@ -20,7 +20,7 @@ import kotlin.system.measureNanoTime
  * @author: carrypan
  * @date: 2019/12/26
  */
-@Suppress("UNCHECKED_CAST")
+@Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught")
 abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : FileStorage {
 
     @Autowired

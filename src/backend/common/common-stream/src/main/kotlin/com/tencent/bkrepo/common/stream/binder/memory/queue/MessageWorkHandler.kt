@@ -12,6 +12,7 @@ class MessageWorkHandler(private val queue: BlockingQueue<QueueItem>) : Runnable
         isRunning = false
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun run() {
         isRunning = true
         while (isRunning) {

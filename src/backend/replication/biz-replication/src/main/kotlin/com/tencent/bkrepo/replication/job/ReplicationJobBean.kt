@@ -45,6 +45,7 @@ class ReplicationJobBean(
     @Value("\${spring.application.version}")
     private var version: String = DEFAULT_VERSION
 
+    @Suppress("TooGenericExceptionCaught")
     fun execute(taskId: String) {
         logger.info("Start to execute replication task[$taskId].")
         val task = taskRepository.findByIdOrNull(taskId) ?: run {
