@@ -50,6 +50,10 @@ class RepoDataService @Autowired constructor(
         }
     }
 
+    fun getRepositoryDetail(projectId: String, repoName: String): RepositoryInfo? {
+        return repositoryResource.detail(projectId, repoName).data
+    }
+
     fun countFileNode(repositoryInfo: RepositoryInfo): Long {
         return nodeResource.countFileNode(repositoryInfo.projectId, repositoryInfo.name, ROOT).data!!
     }
@@ -63,7 +67,8 @@ class RepoDataService @Autowired constructor(
     }
 
     fun getFile(sha256: String, length: Long, repoInfo: RepositoryInfo): InputStream {
-        return storageService.load(sha256, Range.ofFull(length), repoInfo.storageCredentials)!!
+        return storageService.load(sha256, Range.ofFull(length), repoInfo.storageCredentials) ?:
+            throw RuntimeException("File data does not exist")
     }
 
     fun listRole(projectId: String, repoName: String?): List<Role> {

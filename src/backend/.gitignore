@@ -8,9 +8,6 @@ reports/
 *.iml
 .DS_Store
 *.log
-gradle/
-gradlew
-gradlew.bat
 
 data/
 http-client.private.env.json

@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.auth.service.local
 
 import com.mongodb.BasicDBObject
+import com.tencent.bkrepo.auth.constant.RANDOM_KEY_LENGTH
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.pojo.Account
@@ -9,9 +10,8 @@ import com.tencent.bkrepo.auth.pojo.CredentialSet
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.service.AccountService
+import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import java.time.LocalDateTime
-import java.util.UUID
 import org.apache.commons.lang.RandomStringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,6 +21,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
@@ -30,15 +31,15 @@ class AccountServiceImpl @Autowired constructor(
 ) : AccountService {
 
     override fun createAccount(request: CreateAccountRequest): Account? {
-        logger.info("create  account  request : {}", request.toString())
+        logger.info("create  account  request : [$request]")
         val account = accountRepository.findOneByAppId(request.appId)
-        if (account != null) {
+        account?.let {
             logger.warn("create account [${request.appId}]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_APPID)
         }
 
-        val accessKey = UUID.randomUUID().toString().replace("-", "")
-        val secretKey = RandomStringUtils.randomAlphanumeric(30)
+        val accessKey = IDUtil.genRandomId()
+        val secretKey = RandomStringUtils.randomAlphanumeric(RANDOM_KEY_LENGTH)
         val credentials = CredentialSet(
             accessKey = accessKey,
             secretKey = secretKey,
@@ -72,9 +73,8 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun updateAccountStatus(appId: String, locked: Boolean): Boolean {
-        logger.info("update  account appId : {} , locked : {}", appId, locked)
-        val account = accountRepository.findOneByAppId(appId)
-        if (account == null) {
+        logger.info("update  account appId : [$appId], locked : [$locked]")
+        accountRepository.findOneByAppId(appId) ?: run {
             logger.warn("update account [$appId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
         }
@@ -92,16 +92,15 @@ class AccountServiceImpl @Autowired constructor(
 
     override fun createCredential(appId: String): List<CredentialSet> {
         logger.info("create  credential appId : {} ", appId)
-        val account = accountRepository.findOneByAppId(appId)
-        if (account == null) {
+        accountRepository.findOneByAppId(appId) ?: run {
             logger.warn("account [$appId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
         }
 
         val query = Query.query(Criteria.where(TAccount::appId.name).`is`(appId))
         val update = Update()
-        val accessKey = UUID.randomUUID().toString().replace("-", "")
-        val secretKey = RandomStringUtils.randomAlphanumeric(30)
+        val accessKey = IDUtil.genRandomId()
+        val secretKey = RandomStringUtils.randomAlphanumeric(RANDOM_KEY_LENGTH)
         val credentials = CredentialSet(
             accessKey = accessKey,
             secretKey = secretKey,
@@ -116,8 +115,7 @@ class AccountServiceImpl @Autowired constructor(
 
     override fun listCredentials(appId: String): List<CredentialSet> {
         logger.info("list  credential appId : {} ", appId)
-        val account = accountRepository.findOneByAppId(appId)
-        if (account == null) {
+        val account = accountRepository.findOneByAppId(appId) ?: run {
             logger.warn("update account [$appId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
         }
@@ -125,13 +123,11 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun deleteCredential(appId: String, accessKey: String): List<CredentialSet> {
-        logger.info("delete  credential appId : {} , accessKey: {} ", appId, accessKey)
-        val account = accountRepository.findOneByAppId(appId)
-        if (account == null) {
+        logger.info("delete  credential appId : [$appId] , accessKey: [$accessKey]")
+        accountRepository.findOneByAppId(appId) ?: run {
             logger.warn("appId [$appId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
-
         val query = Query.query(Criteria.where(TAccount::appId.name).`is`(appId))
         val s = BasicDBObject()
         s["accessKey"] = accessKey
@@ -143,14 +139,8 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun updateCredentialStatus(appId: String, accessKey: String, status: CredentialStatus): Boolean {
-        logger.info(
-            "update  credential status appId : {} , accessKey: {},status :{} ",
-            appId,
-            accessKey,
-            status.toString()
-        )
-        val account = accountRepository.findOneByAppId(appId)
-        if (account == null) {
+        logger.info("update  credential status appId : [$appId] , accessKey: [$accessKey],status :[$status]")
+        accountRepository.findOneByAppId(appId) ?: run {
             logger.warn("update account status  [$appId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
         }
@@ -159,7 +149,7 @@ class AccountServiceImpl @Autowired constructor(
                 .and("credentials.accessKey").`is`(accessKey)
         )
         val accountResult = mongoTemplate.findOne(accountQuery, TAccount::class.java)
-        if (accountResult != null) {
+        accountResult?.let {
             val query = Query.query(
                 Criteria.where(TAccount::appId.name).`is`(appId)
                     .and("credentials.accessKey").`is`(accessKey)
@@ -175,7 +165,7 @@ class AccountServiceImpl @Autowired constructor(
     }
 
     override fun checkCredential(accessKey: String, secretKey: String): String? {
-        logger.info("check  credential  accessKey : {} , secretKey: {}", accessKey, secretKey)
+        logger.info("check  credential  accessKey : [$accessKey] , secretKey: [$secretKey]")
         val query = Query.query(
             Criteria.where("credentials.secretKey").`is`(secretKey)
                 .and("credentials.accessKey").`is`(accessKey)

@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.opdata.model
 
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -11,12 +12,11 @@ class ProjectModel @Autowired constructor(
 ) {
 
     fun getProjectNum(): Long {
-        val results = mongoTemplate.findAll(MutableMap::class.java, "project")
+        val results = mongoTemplate.findAll(MutableMap::class.java, OPDATA_PROJECT)
         return results.size.toLong()
     }
 
     fun getProjectList(): List<ProjectInfo> {
-        val results = mongoTemplate.findAll(ProjectInfo::class.java, "project")
-        return results
+        return mongoTemplate.findAll(ProjectInfo::class.java, OPDATA_PROJECT)
     }
 }

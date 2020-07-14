@@ -13,7 +13,7 @@ class NpmWebResourceImpl : NpmWebResource {
     @Autowired
     private lateinit var npmWebService: NpmWebService
 
-    override fun getPackageInfo(artifactInfo: NpmArtifactInfo): PackageInfoResponse {
-        return npmWebService.getPackageInfo(artifactInfo)
+    override fun queryPackageInfo(artifactInfo: NpmArtifactInfo): PackageInfoResponse {
+        return npmWebService.queryPackageInfo(artifactInfo)
     }
 }

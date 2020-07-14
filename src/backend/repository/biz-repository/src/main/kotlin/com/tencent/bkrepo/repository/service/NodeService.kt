@@ -24,13 +24,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeDeleteUpdate
-import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeExpireDateUpdate
-import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeListCriteria
-import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeListQuery
-import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePageQuery
-import com.tencent.bkrepo.repository.service.util.QueryHelper.nodePathUpdate
-import com.tencent.bkrepo.repository.service.util.QueryHelper.nodeQuery
 import com.tencent.bkrepo.repository.util.NodeUtils
 import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 import com.tencent.bkrepo.repository.util.NodeUtils.combineFullPath
@@ -42,6 +35,13 @@ import com.tencent.bkrepo.repository.util.NodeUtils.getName
 import com.tencent.bkrepo.repository.util.NodeUtils.getParentPath
 import com.tencent.bkrepo.repository.util.NodeUtils.isRootPath
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
+import com.tencent.bkrepo.repository.util.QueryHelper.nodeDeleteUpdate
+import com.tencent.bkrepo.repository.util.QueryHelper.nodeExpireDateUpdate
+import com.tencent.bkrepo.repository.util.QueryHelper.nodeListCriteria
+import com.tencent.bkrepo.repository.util.QueryHelper.nodeListQuery
+import com.tencent.bkrepo.repository.util.QueryHelper.nodePageQuery
+import com.tencent.bkrepo.repository.util.QueryHelper.nodePathUpdate
+import com.tencent.bkrepo.repository.util.QueryHelper.nodeQuery
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -70,9 +70,6 @@ class NodeService : AbstractService() {
 
     @Autowired
     private lateinit var fileReferenceService: FileReferenceService
-
-//    @Autowired
-//    private lateinit var notifyService: NotifyService
 
     /**
      * 查询节点详情
@@ -139,15 +136,7 @@ class NodeService : AbstractService() {
     /**
      * 分页查询节点
      */
-    fun page(
-        projectId: String,
-        repoName: String,
-        path: String,
-        page: Int,
-        size: Int,
-        includeFolder: Boolean,
-        deep: Boolean
-    ): Page<NodeInfo> {
+    fun page(projectId: String, repoName: String, path: String, page: Int, size: Int, includeFolder: Boolean, deep: Boolean): Page<NodeInfo> {
         page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
         size.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
         repositoryService.checkRepository(projectId, repoName)
@@ -172,11 +161,8 @@ class NodeService : AbstractService() {
     /**
      * 判断节点列表是否存在
      */
-    fun listExistfullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String> {
-        var formatFullPathList = mutableListOf<String>()
-        fullPathList.forEach {
-            formatFullPathList.add(formatFullPath(it))
-        }
+    fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String> {
+        val formatFullPathList = fullPathList.map { formatFullPath(it) }
         val query = nodeListQuery(projectId, repoName, formatFullPathList)
 
         return nodeDao.find(query).map { it.fullPath }
@@ -188,14 +174,12 @@ class NodeService : AbstractService() {
     @Transactional(rollbackFor = [Throwable::class])
     fun create(createRequest: NodeCreateRequest): NodeInfo {
         with(createRequest) {
-            logger.info("Receive node create request[$createRequest]")
             this.takeIf { folder || !sha256.isNullOrBlank() }
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
             this.takeIf { folder || !md5.isNullOrBlank() }
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::md5.name)
             val fullPath = parseFullPath(fullPath)
             val repo = repositoryService.checkRepository(projectId, repoName)
-            logger.info("Check repository success.")
             // 路径唯一性校验
             queryNode(projectId, repoName, fullPath)?.let {
                 if (!overwrite) {
@@ -206,10 +190,8 @@ class NodeService : AbstractService() {
                     deleteByPath(projectId, repoName, fullPath, operator)
                 }
             }
-            logger.info("Query node success.")
             // 判断父目录是否存在，不存在先创建
             mkdirs(projectId, repoName, getParentPath(fullPath), operator)
-            logger.info("Mkdir success.")
             // 创建节点
             val node = TNode(
                 folder = folder,
@@ -450,7 +432,7 @@ class NodeService : AbstractService() {
                 throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
             }
             // 只允许相同存储仓库操作
-            if (srcRepository.storageCredentials != destRepository.storageCredentials) {
+            if (srcRepository.credentialsKey != destRepository.credentialsKey) {
                 throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
             }
             val srcNode = queryNode(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(

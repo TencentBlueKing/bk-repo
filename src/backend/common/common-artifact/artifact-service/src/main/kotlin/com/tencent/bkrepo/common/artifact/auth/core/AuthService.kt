@@ -2,7 +2,7 @@ package com.tencent.bkrepo.common.artifact.auth.core
 
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
-import com.tencent.bkrepo.common.artifact.config.AuthProperties
+import com.tencent.bkrepo.common.artifact.auth.AuthProperties
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

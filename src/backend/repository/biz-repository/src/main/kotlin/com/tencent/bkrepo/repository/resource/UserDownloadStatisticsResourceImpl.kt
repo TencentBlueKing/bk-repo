@@ -20,17 +20,33 @@ class UserDownloadStatisticsResourceImpl @Autowired constructor(
 ) : UserDownloadStatisticsResource {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    override fun query(userId: String, artifactInfo: ArtifactInfo, artifact: String, version: String?, startDate: LocalDate, endDate: LocalDate): Response<DownloadStatisticsResponse> {
+    override fun query(
+        userId: String,
+        artifactInfo: ArtifactInfo,
+        artifact: String,
+        version: String?,
+        startDate: LocalDate,
+        endDate: LocalDate
+    ): Response<DownloadStatisticsResponse> {
         with(artifactInfo) {
-            val downloadStatisticsInfo = downloadStatisticsService.query(projectId, repoName, artifact, version, startDate, endDate)
+            val downloadStatisticsInfo = downloadStatisticsService.query(
+                projectId, repoName, artifact, version, startDate, endDate
+            )
             return ResponseBuilder.success(downloadStatisticsInfo)
         }
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    override fun queryForSpecial(userId: String, artifactInfo: ArtifactInfo, artifact: String, version: String?): Response<DownloadStatisticsMetricResponse> {
+    override fun queryForSpecial(
+        userId: String,
+        artifactInfo: ArtifactInfo,
+        artifact: String,
+        version: String?
+    ): Response<DownloadStatisticsMetricResponse> {
         with(artifactInfo) {
-            val downloadStatisticsInfo = downloadStatisticsService.queryForSpecial(projectId, repoName, artifact, version)
+            val downloadStatisticsInfo = downloadStatisticsService.queryForSpecial(
+                projectId, repoName, artifact, version
+            )
             return ResponseBuilder.success(downloadStatisticsInfo)
         }
     }

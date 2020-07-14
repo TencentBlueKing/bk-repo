@@ -1,9 +1,7 @@
 package com.tencent.bkrepo.pypi.artifact.xml
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 
-@JacksonXmlRootElement(localName = "value")
 data class Value constructor(
     @JacksonXmlProperty(localName = "string")
     val string: String?,

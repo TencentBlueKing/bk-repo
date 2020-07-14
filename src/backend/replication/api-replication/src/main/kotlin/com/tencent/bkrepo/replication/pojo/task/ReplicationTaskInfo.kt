@@ -3,7 +3,8 @@ package com.tencent.bkrepo.replication.pojo.task
 import com.tencent.bkrepo.replication.pojo.setting.ReplicationSetting
 
 data class ReplicationTaskInfo(
-    var id: String,
+    val id: String,
+    val key: String,
     var createdBy: String,
     var createdDate: String,
     var lastModifiedBy: String,
@@ -17,9 +18,5 @@ data class ReplicationTaskInfo(
 
     val type: ReplicationType,
     val setting: ReplicationSetting,
-    val status: ReplicationStatus,
-    val replicationProgress: ReplicationProgress,
-    val startTime: String? = null,
-    val endTime: String? = null,
-    val errorReason: String? = null
+    val status: ReplicationStatus
 )

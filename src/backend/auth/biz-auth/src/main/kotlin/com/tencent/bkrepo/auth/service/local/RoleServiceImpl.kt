@@ -20,19 +20,18 @@ class RoleServiceImpl @Autowired constructor(
 ) : RoleService {
 
     override fun createRole(request: CreateRoleRequest): String? {
-        logger.info("create  role  request : {} ", request.toString())
-        var role: TRole?
-        if (request.type == RoleType.REPO) {
-            role = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(
+        logger.info("create  role  request : [$request] ")
+        var role: TRole? = if (request.type == RoleType.REPO) {
+            roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(
                 request.roleId,
                 request.projectId,
                 request.repoName!!
             )
         } else {
-            role = roleRepository.findFirstByRoleIdAndProjectId(request.roleId, request.projectId)
+            roleRepository.findFirstByRoleIdAndProjectId(request.roleId, request.projectId)
         }
 
-        if (role != null) {
+        role?.let {
             logger.warn("create role [${request.roleId} , ${request.projectId} ]  is exist.")
             return role.id
         }
@@ -51,25 +50,25 @@ class RoleServiceImpl @Autowired constructor(
     }
 
     override fun detail(id: String): Role? {
-        logger.info("get role detail : {} ", id)
+        logger.info("get role detail : [$id] ")
         val result = roleRepository.findFirstById(id) ?: return null
         return transfer(result)
     }
 
     override fun detail(rid: String, projectId: String): Role? {
-        logger.info("get  role  detail rid : {} , projectId : {} ", rid, projectId)
+        logger.info("get  role  detail rid : [$rid] , projectId : [$projectId] ")
         val result = roleRepository.findFirstByRoleIdAndProjectId(rid, projectId) ?: return null
         return transfer(result)
     }
 
     override fun detail(rid: String, projectId: String, repoName: String): Role? {
-        logger.info("get  role  detail rid : {} , projectId : {}, repoName: {}", rid, projectId, repoName)
+        logger.info("get  role  detail rid : [$rid] , projectId : [$projectId], repoName: [$repoName]")
         val result = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(rid, projectId, repoName) ?: return null
         return transfer(result)
     }
 
     override fun listRoleByProject(type: RoleType?, projectId: String?, repoName: String?): List<Role> {
-        logger.info("list  role  type : {} , projectId : {}, repoName: {}", type.toString(), projectId, repoName)
+        logger.info("list  role  type : [$type] , projectId : [$projectId], repoName: [$repoName]")
         if (type == null && projectId == null) {
             return roleRepository.findAll().map { transfer(it) }
         } else if (type != null && projectId == null) {
@@ -85,9 +84,8 @@ class RoleServiceImpl @Autowired constructor(
     }
 
     override fun deleteRoleByid(id: String): Boolean {
-        logger.info("delete  role  id : {}", id)
-        val role = roleRepository.findFirstById(id)
-        if (role == null) {
+        logger.info("delete  role  id : [$id]")
+        roleRepository.findFirstById(id) ?: run {
             logger.warn("delete role [$id ] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         }

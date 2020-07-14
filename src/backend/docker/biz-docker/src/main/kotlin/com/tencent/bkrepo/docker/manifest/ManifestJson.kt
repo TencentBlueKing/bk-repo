@@ -5,6 +5,11 @@ import com.fasterxml.jackson.annotation.JsonAnySetter
 import com.fasterxml.jackson.databind.JsonNode
 import java.io.Serializable
 
+/**
+ * to deserialize manifest json
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 class ManifestJson : Serializable {
     var mediaType: String = ""
     private val other: MutableMap<String, Any>? = null

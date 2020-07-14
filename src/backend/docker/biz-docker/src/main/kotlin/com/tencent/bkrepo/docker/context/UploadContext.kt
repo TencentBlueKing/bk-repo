@@ -1,36 +1,20 @@
 package com.tencent.bkrepo.docker.context
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import java.io.InputStream
 
-class UploadContext(projectId: String, repoName: String, path: String) {
+/**
+ * docker registry upload context
+ * @author: owenlxu
+ * @date: 2019-12-01
+ */
+data class UploadContext(var projectId: String, var repoName: String, var fullPath: String) {
 
-    // full path
-    var path: String = ""
-    var content: InputStream? = null
-    var sha256: String = ""
-    var projectId: String = ""
-    var repoName: String = ""
     var artifactFile: ArtifactFile? = null
-
-    init {
-        this.projectId = projectId
-        this.repoName = repoName
-        this.path = path
-    }
-
-    fun path(path: String): UploadContext {
-        this.path = path
-        return this
-    }
+    var sha256: String = ""
+    var metadata: Map<String, String> = emptyMap()
 
     fun artifactFile(artifactFile: ArtifactFile): UploadContext {
         this.artifactFile = artifactFile
-        return this
-    }
-
-    fun content(content: InputStream): UploadContext {
-        this.content = content
         return this
     }
 
@@ -39,13 +23,8 @@ class UploadContext(projectId: String, repoName: String, path: String) {
         return this
     }
 
-    fun projectId(projectId: String): UploadContext {
-        this.projectId = projectId
-        return this
-    }
-
-    fun repoName(repoName: String): UploadContext {
-        this.repoName = repoName
+    fun metadata(metadata: Map<String, String>): UploadContext {
+        this.metadata = metadata
         return this
     }
 }

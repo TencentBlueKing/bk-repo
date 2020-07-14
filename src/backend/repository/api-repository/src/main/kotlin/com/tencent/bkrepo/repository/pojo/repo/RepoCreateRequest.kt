@@ -3,7 +3,6 @@ package com.tencent.bkrepo.repository.pojo.repo
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -30,8 +29,8 @@ data class RepoCreateRequest(
     val description: String? = null,
     @ApiModelProperty("仓库配置", required = true)
     val configuration: RepositoryConfiguration,
-    @ApiModelProperty("存储身份信息", required = false)
-    var storageCredentials: StorageCredentials? = null,
+    @ApiModelProperty("存储凭证key", required = false)
+    val storageCredentialsKey: String? = null,
 
     @ApiModelProperty("操作用户", required = false)
     val operator: String = SYSTEM_USER

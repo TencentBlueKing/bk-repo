@@ -1,9 +1,15 @@
 package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
+import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -12,10 +18,21 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServiceUserResourceImpl @Autowired constructor(
-    private val userService: UserService
+    private val userService: UserService,
+    private val roleService: RoleService
 ) : ServiceUserResource {
+
     override fun createUser(request: CreateUserRequest): Response<Boolean> {
         userService.createUser(request)
+        return ResponseBuilder.success(true)
+    }
+
+    override fun createUserToProject(request: CreateUserToProjectRequest): Response<Boolean> {
+        userService.createUserToProject(request)
+        val createRoleRequest =
+            CreateRoleRequest(PROJECT_MANAGE_ID, PROJECT_MANAGE_NAME, RoleType.PROJECT, request.projectId, null, true)
+        val roleId = roleService.createRole(createRoleRequest)
+        userService.addUserToRole(request.userId, roleId!!)
         return ResponseBuilder.success(true)
     }
 

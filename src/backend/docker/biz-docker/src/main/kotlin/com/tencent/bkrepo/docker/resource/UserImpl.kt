@@ -22,14 +22,10 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         repoName: String,
         tag: String
     ): Response<String> {
-        dockerRepo.userId = UserUtil.getContextUserId(userId)
-        val imageName = PathUtil.userArtifactName(request, projectId, repoName, tag)
-        val result = dockerRepo.getManifestString(
-            RequestContext(
-                projectId,
-                repoName,
-                imageName
-            ), tag)
+        val artifactName = PathUtil.userArtifactName(request, projectId, repoName, tag)
+        val uId = UserUtil.getContextUserId(userId)
+        val context = RequestContext(uId, projectId, repoName, artifactName)
+        val result = dockerRepo.getManifestString(context, tag)
         return ResponseBuilder.success(result)
     }
 
@@ -40,14 +36,10 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         repoName: String,
         id: String
     ): ResponseEntity<Any> {
-        dockerRepo.userId = UserUtil.getContextUserId(userId)
-        val imageName = PathUtil.layerArtifactName(request, projectId, repoName, id)
-        return dockerRepo.buildLayerResponse(
-            RequestContext(
-                projectId,
-                repoName,
-                imageName
-            ), id)
+        val uId = UserUtil.getContextUserId(userId)
+        val artifactName = PathUtil.layerArtifactName(request, projectId, repoName, id)
+        val context = RequestContext(uId, projectId, repoName, artifactName)
+        return dockerRepo.buildLayerResponse(context, id)
     }
 
     override fun getRepo(
@@ -56,8 +48,9 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         projectId: String,
         repoName: String
     ): Response<List<String>> {
-        dockerRepo.userId = UserUtil.getContextUserId(userId)
-        val result = dockerRepo.getRepoList(projectId, repoName)
+        val uId = UserUtil.getContextUserId(userId)
+        val context = RequestContext(uId, projectId, repoName, "")
+        val result = dockerRepo.getRepoList(context)
         return ResponseBuilder.success(result)
     }
 
@@ -67,9 +60,10 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         projectId: String,
         repoName: String
     ): Response<Map<String, String>> {
-        dockerRepo.userId = UserUtil.getContextUserId(userId)
-        val imageName = PathUtil.tagArtifactName(request, projectId, repoName)
-        val result = dockerRepo.getRepoTagList(projectId, repoName, imageName)
+        val uId = UserUtil.getContextUserId(userId)
+        val artifactName = PathUtil.tagArtifactName(request, projectId, repoName)
+        val context = RequestContext(uId, projectId, repoName, artifactName)
+        val result = dockerRepo.getRepoTagList(context)
         return ResponseBuilder.success(result)
     }
 }

@@ -36,15 +36,10 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
                 continue
             }
             traversedList.add(repoIdentify)
-            try {
-                val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = RepositoryHolder.getRepository(subRepoInfo.category)
-                val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactListContext
-                repository.list(subContext)
-            } catch (exception: Exception) {
-                with(artifactInfo) { "$projectId/$repoName$artifactUri" }
-                logger.warn("Download Artifact[${with(artifactInfo) { "$projectId/$repoName$artifactUri" }}] from Repository[$repoIdentify] failed: ${exception.message}")
-            }
+            val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
+            val repository = RepositoryHolder.getRepository(subRepoInfo.category)
+            val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactListContext
+            repository.list(subContext)
         }
     }
 
@@ -60,16 +55,12 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
                 continue
             }
             traversedList.add(repoIdentify)
-            try {
-                val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = RepositoryHolder.getRepository(subRepoInfo.category) as PypiRepository
-                val subContext = context.copy(subRepoInfo) as ArtifactSearchContext
-                val subValueList = repository.searchNodeList(subContext, xmlString)
-                subValueList?.let {
-                    valueList.addAll(it)
-                }
-            } catch (exception: Exception) {
-                logger.warn("Download Artifact[${with(artifactInfo) { "$projectId/$repoName$artifactUri" }}] from Repository[$repoIdentify] failed: ${exception.message}")
+            val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
+            val repository = RepositoryHolder.getRepository(subRepoInfo.category) as PypiRepository
+            val subContext = context.copy(subRepoInfo) as ArtifactSearchContext
+            val subValueList = repository.searchNodeList(subContext, xmlString)
+            subValueList?.let {
+                valueList.addAll(it)
             }
         }
         return valueList

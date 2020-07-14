@@ -42,7 +42,6 @@ class DownloadStatisticsService : AbstractService() {
             }
             logger.info("Create artifact download statistics [$statisticsAddRequest] success.")
         }
-
     }
 
     fun query(

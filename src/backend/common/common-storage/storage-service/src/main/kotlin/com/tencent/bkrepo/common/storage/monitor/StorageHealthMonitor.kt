@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.storage.monitor
 
-import com.tencent.bkrepo.common.api.util.toPath
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
@@ -13,11 +14,12 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 class StorageHealthMonitor(
-    val uploadConfig: UploadProperties,
-    val monitorConfig: MonitorProperties
+    storageProperties: StorageProperties
 ) {
     var health: AtomicBoolean = AtomicBoolean(true)
     var reason: String? = null
+    private val monitorConfig = storageProperties.monitor
+    private val storageCredentials = storageProperties.defaultStorageCredentials()
     private val executorService = Executors.newSingleThreadExecutor()
     private val observerList = mutableListOf<Observer>()
     private var healthyThroughputCount: AtomicInteger = AtomicInteger(0)
@@ -27,10 +29,10 @@ class StorageHealthMonitor(
         require(!monitorConfig.timeout.isNegative && !monitorConfig.timeout.isZero)
         require(!monitorConfig.interval.isNegative && !monitorConfig.interval.isZero)
         require(monitorConfig.timesToRestore > 0)
-        Files.createDirectories(Paths.get(uploadConfig.location))
+        Files.createDirectories(getPrimaryPath())
         monitorConfig.fallbackLocation?.let { Files.createDirectories(Paths.get(it)) }
         start()
-        logger.info("Start up storage monitor for path[${uploadConfig.location}]")
+        logger.info("Start up storage monitor for path[${storageCredentials.upload.location}]")
     }
 
     private fun start() {
@@ -38,7 +40,7 @@ class StorageHealthMonitor(
             while (true) {
                 var sleep = true
                 if (monitorConfig.enabled) {
-                    val checker = StorageHealthChecker(Paths.get(uploadConfig.location), monitorConfig.dataSize)
+                    val checker = StorageHealthChecker(getPrimaryPath(), monitorConfig.dataSize)
                     val future = executorService.submit(checker)
                     sleep = try {
                         future.get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
@@ -72,9 +74,9 @@ class StorageHealthMonitor(
         observerList.remove(observer)
     }
 
-    fun getPrimaryPath(): Path = uploadConfig.location.toPath()
-
     fun getFallbackPath(): Path? = monitorConfig.fallbackLocation?.toPath()
+
+    private fun getPrimaryPath(): Path = storageCredentials.upload.location.toPath()
 
     private fun changeToUnhealthy(message: String): Boolean {
         var sleep = true

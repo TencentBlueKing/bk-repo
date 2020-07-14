@@ -49,28 +49,25 @@ object DecompressUtil {
         return getArchiversContent(TarArchiveInputStream(inputStream))
     }
 
-    private fun getArchiversContent(tarInputStream: ArchiveInputStream): String {
+    private fun getArchiversContent(archiveInputStream: ArchiveInputStream): String {
         val stringBuilder = StringBuffer()
-        with(tarInputStream) {
+        archiveInputStream.use { it ->
             try {
-                while (nextEntry.also { zipEntry ->
-                        zipEntry?.let {
-                            if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == FILE_NAME) {
+                val nextEntry = it.nextEntry
+                while (nextEntry != null) {
+                    nextEntry.let {
+                            if ((!it.isDirectory) && it.name.split("/").last() == FILE_NAME) {
                                 var length: Int
                                 val bytes = ByteArray(BUFFER_SIZE)
-                                while ((tarInputStream.read(bytes).also { length = it }) != -1) {
+                                while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
                                     stringBuilder.append(String(bytes, 0, length))
                                 }
                                 return stringBuilder.toString()
                             }
                         }
-                    } != null) {
-                }
+                    }
             } catch (ise: IllegalStateException) {
-                if (ise.message != "it must not be null") {
-                } else {
-                    logger.error(ise.message)
-                }
+                logger.error("get archivers content error : ${ise.message}")
             }
         }
         return stringBuilder.toString()
