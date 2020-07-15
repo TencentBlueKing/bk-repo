@@ -88,7 +88,7 @@ object XmlUtil {
         return (XmlConvertUtil.methodResponse2Xml(methodResponse))
     }
 
-    fun getMembers(metadata: Map<String, String>): List<Member> {
+    private fun getMembers(metadata: Map<String, String>): List<Member> {
         val members: MutableList<Member> = ArrayList()
         members.add(
             Member(

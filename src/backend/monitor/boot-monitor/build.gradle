@@ -1,6 +1,11 @@
+repositories {
+    maven{ url "https://oss.sonatype.org/content/repositories/snapshots/" }
+}
+
 dependencies {
     api project(":common:common-service")
-    api "de.codecentric:spring-boot-admin-starter-server:2.1.6"
+    api "de.codecentric:spring-boot-admin-starter-server:2.3.0-SNAPSHOT"
+    api "org.springframework.boot:spring-boot-starter-security"
 }
 
 task npmInstall(type: Exec) {

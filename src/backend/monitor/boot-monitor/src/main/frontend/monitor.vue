@@ -19,7 +19,6 @@ import MonitorContainer from "./components/monitor-container";
 import MonitorPanel from "./components/monitor-panel";
 import MetricMonitor from "./monitor/metric/metric-monitor";
 import HealthMonitor from "./monitor/health/health-monitor";
-import axios from "axios";
 
 export default {
   components: {
@@ -32,7 +31,11 @@ export default {
   props: {
     applications: {
       type: Array,
-      default: () => []
+      required: true
+    },
+    instance: { 
+      type: Object,
+      required: true
     }
   },
 
@@ -47,6 +50,9 @@ export default {
   },
 
   created() {
+    console.log(this.applications[0].instances[0].id)
+    console.log("id: ", this.applications[0].instances[0].id)
+    console.log(this.applications[0].instances[0].id.value)
     this.getConfig().then(response => {
       this.metricList = Object.keys(response.data.metrics)
       this.healthList = Object.keys(response.data.health)
@@ -55,7 +61,7 @@ export default {
 
   methods: {
     async getConfig() {
-      return await axios.get("monitor/config")
+      return await this.$axios.get("monitor/config")
     }
   }
   

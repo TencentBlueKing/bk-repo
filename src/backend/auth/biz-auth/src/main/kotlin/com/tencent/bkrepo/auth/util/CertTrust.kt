@@ -18,13 +18,10 @@ import javax.net.ssl.X509TrustManager
 
 object CertTrust {
 
-    public lateinit var client: OkHttpClient
+    private lateinit var client: OkHttpClient
 
-    @Throws(Exception::class)
     fun call(addr: String): String {
-        val request = Request.Builder()
-            .url(addr)
-            .build()
+        val request = Request.Builder().url(addr).build()
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Unexpected code $response")
             val responseHeaders = response.headers()
@@ -36,24 +33,19 @@ object CertTrust {
     }
 
     private fun trustedCertificatesInputStream(cert: String): InputStream {
-        return Buffer()
-            .writeUtf8(cert)
-            .inputStream()
+        return Buffer().writeUtf8(cert).inputStream()
     }
 
     @Throws(GeneralSecurityException::class)
     private fun trustManagerForCertificates(input: InputStream): X509TrustManager {
-        val certificateFactory =
-            CertificateFactory.getInstance("X.509")
-        val certificates =
-            certificateFactory.generateCertificates(input)
+        val certificateFactory = CertificateFactory.getInstance("X.509")
+        val certificates = certificateFactory.generateCertificates(input)
         require(!certificates.isEmpty()) { "expected non-empty set of trusted certificates" }
         // Put the certificates a key store.
         val password = "password".toCharArray() // Any password will work.
         val keyStore = newEmptyKeyStore(password)
-        var index = 0
-        for (certificate in certificates) {
-            val certificateAlias = Integer.toString(index++)
+        for ((index, certificate) in certificates.withIndex()) {
+            val certificateAlias = Integer.toString(index)
             keyStore.setCertificateEntry(certificateAlias, certificate)
         }
         // Use it to build an X509 trust manager.
@@ -73,11 +65,9 @@ object CertTrust {
         return trustManagers[0] as X509TrustManager
     }
 
-    @Throws(GeneralSecurityException::class)
     private fun newEmptyKeyStore(password: CharArray): KeyStore {
         return try {
-            val keyStore =
-                KeyStore.getInstance(KeyStore.getDefaultType())
+            val keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
             val input: InputStream? = null // By convention, 'null' creates an empty key store.
             keyStore.load(input, password)
             keyStore
@@ -86,7 +76,7 @@ object CertTrust {
         }
     }
 
-    public fun initClient(cert: String) {
+    fun initClient(cert: String) {
         val trustManager: X509TrustManager
         val sslSocketFactory: SSLSocketFactory
         try {
@@ -95,10 +85,8 @@ object CertTrust {
             sslContext.init(null, arrayOf<TrustManager>(trustManager), null)
             sslSocketFactory = sslContext.socketFactory
         } catch (e: GeneralSecurityException) {
-            throw RuntimeException(e)
+            throw GeneralSecurityException(e)
         }
-        client = OkHttpClient.Builder()
-            .sslSocketFactory(sslSocketFactory, trustManager)
-            .build()
+        client = OkHttpClient.Builder().sslSocketFactory(sslSocketFactory, trustManager).build()
     }
 }

@@ -35,4 +35,3 @@ const val PKG_NAME = "pkg_name"
 
 // constants map
 val ERROR_MAP = mapOf("error" to "not_found", "reason" to "document not found")
-val SEARCH_MAP = mapOf(Pair("objects", emptyList<Void>()))

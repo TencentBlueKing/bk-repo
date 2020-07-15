@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.npm.artifact
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.npm.constants.FILE_SEPARATOR
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -18,11 +20,10 @@ class NpmArtifactInfoResolver : ArtifactInfoResolver {
         artifactUri: String,
         request: HttpServletRequest
     ): NpmArtifactInfo {
-        val uri = URLDecoder.decode(request.requestURI, "utf-8")
+        val uri = URLDecoder.decode(request.requestURI, characterEncoding)
 
         val pathElements = LinkedList<String>()
-        val stringTokenizer = StringTokenizer(uri.substringBefore("/-rev"), "/")
-        // val stringTokenizer = StringTokenizer(uri, "/")
+        val stringTokenizer = StringTokenizer(uri.substringBefore(delimiter), FILE_SEPARATOR)
         while (stringTokenizer.hasMoreTokens()) {
             pathElements.add(stringTokenizer.nextToken())
         }
@@ -33,14 +34,17 @@ class NpmArtifactInfoResolver : ArtifactInfoResolver {
             )
             return NpmArtifactInfo("", "", "")
         }
-        val scope = if (pathElements[2].contains('@')) pathElements[2] else ""
-        val pkgName = if (scope.contains('@')) pathElements[3] else pathElements[2]
+        val scope = if (pathElements[2].contains(AT)) pathElements[2] else StringPool.EMPTY
+        val pkgName = if (scope.contains(AT)) pathElements[3] else pathElements[2]
         val version =
-            if (pathElements.size > 4) pathElements[4] else (if (StringUtils.isBlank(scope) && pathElements.size == 4) pathElements[3] else "")
+            if (pathElements.size > 4) pathElements[4] else (if (StringUtils.isBlank(scope) && pathElements.size == 4) pathElements[3] else StringPool.EMPTY)
         return NpmArtifactInfo(projectId, repoName, artifactUri, scope, pkgName, version)
     }
 
     companion object {
+        const val characterEncoding: String = "utf-8"
+        const val delimiter: String = "/-rev"
+        const val AT: Char = '@'
         val logger: Logger = LoggerFactory.getLogger(NpmArtifactInfo::class.java)
     }
 }

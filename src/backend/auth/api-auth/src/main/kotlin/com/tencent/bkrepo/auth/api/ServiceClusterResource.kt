@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.PutMapping
 
 @Api(tags = ["SERVICE_CLUSTER"], description = "服务-集群管理接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceClustersource")
-@RequestMapping("/cluster")
+@RequestMapping("/api/cluster")
 interface ServiceClusterResource {
 
     @ApiOperation("添加集群")

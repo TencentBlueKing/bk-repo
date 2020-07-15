@@ -1,10 +1,8 @@
 package com.tencent.bkrepo.common.storage.monitor
 
-import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.util.unit.DataSize
 import java.time.Duration
 
-@ConfigurationProperties("upload.monitor")
 data class MonitorProperties(
     var enabled: Boolean = false,
     var fallbackLocation: String? = null,

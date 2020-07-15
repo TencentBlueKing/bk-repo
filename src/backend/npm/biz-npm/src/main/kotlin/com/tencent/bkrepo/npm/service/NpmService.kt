@@ -14,8 +14,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.async.NpmDependentHandler
 import com.tencent.bkrepo.npm.constants.APPLICATION_OCTET_STEAM
@@ -29,6 +29,7 @@ import com.tencent.bkrepo.npm.constants.DISTTAGS
 import com.tencent.bkrepo.npm.constants.ERROR_MAP
 import com.tencent.bkrepo.npm.constants.FILE_DASH
 import com.tencent.bkrepo.npm.constants.FILE_SUFFIX
+import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -167,7 +168,9 @@ class NpmService @Autowired constructor(
         val distTags = getDistTags(jsonObj)!!
         val name = jsonObj.get(NAME).asString
         val versionJsonObj = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(distTags.second)
-        val packageJsonWithVersionFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(versionJsonObj).byteInputStream())
+        val packageJsonWithVersionFile = ArtifactFileFactory.build(
+            GsonUtils.gson.toJson(versionJsonObj).byteInputStream()
+        )
         artifactFileMap[NPM_PACKAGE_VERSION_JSON_FILE] = packageJsonWithVersionFile
         // 添加相关属性
         attributesMap[ATTRIBUTE_OCTET_STREAM_SHA1] = versionJsonObj.getAsJsonObject(DIST).get(SHASUM).asString
@@ -214,10 +217,34 @@ class NpmService @Autowired constructor(
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     fun searchPackageInfo(artifactInfo: NpmArtifactInfo): JsonObject? {
+        if (StringUtils.equals(artifactInfo.version, LATEST)) {
+            return searchLatestVersionMetadata(artifactInfo)
+        }
+        return searchVersionMetadata(artifactInfo)
+    }
+
+    private fun searchVersionMetadata(artifactInfo: NpmArtifactInfo): JsonObject? {
         val context = ArtifactSearchContext()
         context.contextAttributes[NPM_FILE_FULL_PATH] = getFileFullPath(artifactInfo)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         return repository.search(context) as? JsonObject
+    }
+
+    private fun searchLatestVersionMetadata(artifactInfo: NpmArtifactInfo): JsonObject? {
+        with(artifactInfo) {
+            val scopePkg = if (StringUtils.isEmpty(scope)) pkgName else "$scope/$pkgName"
+            val fullPath = String.format(NPM_PKG_FULL_PATH, scopePkg)
+            val context = ArtifactSearchContext()
+            context.contextAttributes[NPM_FILE_FULL_PATH] = fullPath
+            val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+            val npmMetaData = repository.search(context) as? JsonObject
+                ?: throw NpmArtifactNotFoundException("document not found!")
+            val latestPackageVersion = npmMetaData.getAsJsonObject(DISTTAGS)[LATEST].asString
+            val npmArtifactInfo = NpmArtifactInfo(
+                projectId, repoName, artifactUri, scope, pkgName, latestPackageVersion
+            )
+            return searchVersionMetadata(npmArtifactInfo)
+        }
     }
 
     private fun getFileFullPath(artifactInfo: NpmArtifactInfo): String {
@@ -246,7 +273,8 @@ class NpmService @Autowired constructor(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun unpublish(userId: String, artifactInfo: NpmArtifactInfo): NpmDeleteResponse {
         val fullPathList = mutableListOf<String>()
-        val pkgInfo = searchPackageInfo(artifactInfo) ?: throw NpmArtifactNotFoundException("document not found")
+        val pkgInfo = searchPackageInfo(artifactInfo)
+            ?: throw NpmArtifactNotFoundException("document not found")
         val name = pkgInfo[NAME].asString
         pkgInfo.getAsJsonObject(VERSIONS).keySet().forEach { version ->
             fullPathList.add(String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version))

@@ -21,11 +21,27 @@ class DownloadStatisticsResourceImpl @Autowired constructor(
         return ResponseBuilder.success()
     }
 
-    override fun query(projectId: String, repoName: String, artifact: String, version: String?, startDay: LocalDate, endDay: LocalDate): Response<DownloadStatisticsResponse> {
-        return ResponseBuilder.success(downloadStatisticsService.query(projectId, repoName, artifact, version, startDay, endDay))
+    override fun query(
+        projectId: String,
+        repoName: String,
+        artifact: String,
+        version: String?,
+        startDay: LocalDate,
+        endDay: LocalDate
+    ): Response<DownloadStatisticsResponse> {
+        return ResponseBuilder.success(
+            downloadStatisticsService.query(projectId, repoName, artifact, version, startDay, endDay)
+        )
     }
 
-    override fun queryForSpecial(projectId: String, repoName: String, artifact: String, version: String?): Response<DownloadStatisticsMetricResponse> {
-        return ResponseBuilder.success(downloadStatisticsService.queryForSpecial(projectId, repoName, artifact, version))
+    override fun queryForSpecial(
+        projectId: String,
+        repoName: String,
+        artifact: String,
+        version: String?
+    ): Response<DownloadStatisticsMetricResponse> {
+        return ResponseBuilder.success(
+            downloadStatisticsService.queryForSpecial(projectId, repoName, artifact, version)
+        )
     }
 }

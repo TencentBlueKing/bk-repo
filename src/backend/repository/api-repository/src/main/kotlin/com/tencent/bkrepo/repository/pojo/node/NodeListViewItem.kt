@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.pojo.node
 
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.repository.util.NodeUtils
-import org.apache.commons.io.FileUtils
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -29,7 +29,7 @@ data class NodeListViewItem(
         private val formatters = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
         fun from(nodeInfo: NodeInfo): NodeListViewItem {
             val normalizedName = if (nodeInfo.folder) nodeInfo.name + NodeUtils.FILE_SEPARATOR else nodeInfo.name
-            val normalizedSize = if (nodeInfo.folder) "-" else FileUtils.byteCountToDisplaySize(nodeInfo.size)
+            val normalizedSize = if (nodeInfo.folder) "-" else HumanReadable.size(nodeInfo.size)
             val localDateTime = LocalDateTime.parse(nodeInfo.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
             val lastModified = formatters.format(localDateTime)
             return NodeListViewItem(normalizedName, lastModified, nodeInfo.createdBy, normalizedSize, nodeInfo.folder)

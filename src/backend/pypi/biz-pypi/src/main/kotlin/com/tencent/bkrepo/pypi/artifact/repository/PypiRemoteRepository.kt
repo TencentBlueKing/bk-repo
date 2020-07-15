@@ -82,7 +82,6 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         val node = nodeResource.detail(projectId, repoName, fullPath).data
         while (node == null) {
             cacheRemoteRepoList(context)
-            Thread.sleep(60)
         }
         node.nodeInfo.takeIf { !it.folder } ?: return null
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
@@ -160,14 +159,10 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
             .post(body)
             .build()
         val htmlContent: String? = okHttpClient.newCall(build).execute().body()?.string()
-        htmlContent?.let {
-            try {
-                val methodResponse = XmlConvertUtil.xml2MethodResponse(it)
-                return methodResponse.params.paramList[0].value.array?.data?.valueList
-            } catch (e: Exception) {
-            }
-        }
-        return null
+        return htmlContent?.let {
+                    val methodResponse = XmlConvertUtil.xml2MethodResponse(it)
+                    return methodResponse.params.paramList[0].value.array?.data?.valueList
+                }
     }
 
     companion object {

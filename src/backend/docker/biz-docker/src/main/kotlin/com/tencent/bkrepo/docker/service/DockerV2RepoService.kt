@@ -3,38 +3,42 @@ package com.tencent.bkrepo.docker.service
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.model.DockerDigest
-import org.springframework.http.ResponseEntity
+import com.tencent.bkrepo.docker.response.DockerResponse
 
+/**
+ * docker v2 protocol interface
+ * @author: owenlxu
+ * @date: 2019-10-15
+ */
 interface DockerV2RepoService {
-    fun ping(): ResponseEntity<Any>
 
-    fun isBlobExists(pathContext: RequestContext, digest: DockerDigest): ResponseEntity<Any>
+    fun ping(): DockerResponse
 
-    fun getBlob(pathContext: RequestContext, digest: DockerDigest): ResponseEntity<Any>
+    fun isBlobExists(context: RequestContext, digest: DockerDigest): DockerResponse
 
-    fun startBlobUpload(pathContext: RequestContext, mount: String?): ResponseEntity<Any>
+    fun getBlob(context: RequestContext, digest: DockerDigest): DockerResponse
 
-    fun patchUpload(pathContext: RequestContext, uuid: String, artifactFile: ArtifactFile): ResponseEntity<Any>
+    fun startBlobUpload(context: RequestContext, mount: String?): DockerResponse
 
-    fun uploadBlob(
-        pathContext: RequestContext,
-        digest: DockerDigest,
-        uuid: String,
-        artifactFile: ArtifactFile
-    ): ResponseEntity<Any>
+    fun patchUpload(context: RequestContext, uuid: String, file: ArtifactFile): DockerResponse
 
-    fun uploadManifest(
-        pathContext: RequestContext,
-        tag: String,
-        mediaType: String,
-        artifactFile: ArtifactFile
-    ): ResponseEntity<Any>
+    fun uploadBlob(context: RequestContext, digest: DockerDigest, uuid: String, file: ArtifactFile): DockerResponse
 
-    fun getManifest(pathContext: RequestContext, reference: String): ResponseEntity<Any>
+    fun uploadManifest(context: RequestContext, tag: String, mediaType: String, file: ArtifactFile): DockerResponse
 
-    fun deleteManifest(pathContext: RequestContext, reference: String): ResponseEntity<Any>
+    fun getManifest(context: RequestContext, reference: String): DockerResponse
 
-    fun getTags(pathContext: RequestContext, maxEntries: Int, lastEntry: String): ResponseEntity<Any>
+    fun deleteManifest(context: RequestContext, reference: String): DockerResponse
 
-    fun catalog(projectId: String, name: String, maxEntries: Int, lastEntry: String): ResponseEntity<Any>
+    fun getTags(context: RequestContext, maxEntries: Int, lastEntry: String): DockerResponse
+
+    fun catalog(context: RequestContext, maxEntries: Int, lastEntry: String): DockerResponse
+
+    fun getRepoList(context: RequestContext): List<String>
+
+    fun getRepoTagList(context: RequestContext): Map<String, String>
+
+    fun buildLayerResponse(context: RequestContext, layerId: String): DockerResponse
+
+    fun getManifestString(context: RequestContext, tag: String): String
 }

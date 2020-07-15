@@ -1,26 +1,33 @@
 package com.tencent.bkrepo.docker.manifest
 
-import com.tencent.bkrepo.docker.artifact.DockerArtifactoryService
+import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
-import com.tencent.bkrepo.docker.util.DockerSchemaUtils
+import com.tencent.bkrepo.docker.util.ContentUtil
 
+/**
+ * the entrance for deserialize manifest
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 class ManifestDeserializer {
+
     companion object {
 
-        fun deserialize(repo: DockerArtifactoryService, pathContext: RequestContext, tag: String, manifestType: ManifestType, bytes: ByteArray, digest: DockerDigest): ManifestMetadata {
+        fun deserialize(repo: DockerArtifactRepo, context: RequestContext, tag: String, manifestType: ManifestType, bytes: ByteArray, digest: DockerDigest): ManifestMetadata {
             var manifestBytes = bytes
+            val contentUtil = ContentUtil(repo)
             when (manifestType) {
                 ManifestType.Schema1 -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 ManifestType.Schema1Signed -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 ManifestType.Schema2 -> {
-                    val manifestJsonBytes = DockerSchemaUtils.fetchSchema2ManifestConfig(repo, pathContext.projectId, pathContext.repoName, manifestBytes, pathContext.dockerRepo, tag)
-                    return ManifestSchema2Deserializer.deserialize(manifestBytes, manifestJsonBytes, pathContext.dockerRepo, tag, digest)
+                    val manifestJsonBytes = contentUtil.getSchema2ManifestConfigContent(context, manifestBytes, tag)
+                    return ManifestSchema2Deserializer.deserialize(manifestBytes, manifestJsonBytes, context.artifactName, tag, digest)
                 }
                 ManifestType.Schema2List -> {
-                    val schema2Path = DockerSchemaUtils.fetchSchema2Path(repo, pathContext.projectId, pathContext.repoName, pathContext.dockerRepo, manifestBytes, true)
-                    manifestBytes = DockerSchemaUtils.fetchSchema2Manifest(repo, schema2Path)
+                    val schema2Path = contentUtil.getSchema2Path(context, manifestBytes)
+                    manifestBytes = contentUtil.getSchema2ManifestContent(context, schema2Path)
                     return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
                 }
                 else -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)

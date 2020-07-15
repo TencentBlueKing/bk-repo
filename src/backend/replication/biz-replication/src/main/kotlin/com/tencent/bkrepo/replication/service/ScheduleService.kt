@@ -1,77 +1,62 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
-import com.tencent.bkrepo.replication.constant.TASK_ID_KEY
-import com.tencent.bkrepo.replication.job.FullReplicationJob
-import com.tencent.bkrepo.replication.model.TReplicationTask
-import org.joda.time.DateTime
-import org.quartz.CronScheduleBuilder
-import org.quartz.JobBuilder
+import org.quartz.JobDetail
 import org.quartz.JobKey
 import org.quartz.Scheduler
+import org.quartz.SchedulerException
 import org.quartz.Trigger
-import org.quartz.TriggerBuilder
+import org.quartz.UnableToInterruptJobException
+import org.quartz.impl.matchers.GroupMatcher
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.time.ZoneId
-import java.util.Date
 
 @Service
-class ScheduleService @Autowired constructor(
+class ScheduleService(
     private val scheduler: Scheduler
 ) {
-    fun createJob(task: TReplicationTask) {
-        createFullReplicaJob(task)
-    }
 
-    private fun createFullReplicaJob(task: TReplicationTask) {
-        val jobDetail = JobBuilder.newJob(FullReplicationJob::class.java)
-            .withIdentity(task.id, DEFAULT_GROUP_ID)
-            .usingJobData(TASK_ID_KEY, task.id)
-            .requestRecovery()
-            .build()
-        val trigger = createTrigger(task)
-        scheduler.scheduleJob(jobDetail, trigger)
-        logger.info("Create full replication job success!")
-    }
-
-    private fun createTrigger(task: TReplicationTask): Trigger {
-        with(task.setting.executionPlan) {
-            return when {
-                executeImmediately -> {
-                    val date = DateTime.now().plusSeconds(10).toDate()
-                    TriggerBuilder.newTrigger()
-                        .withIdentity(task.id, DEFAULT_GROUP_ID)
-                        .startAt(date)
-                        .build()
-                }
-                executeTime != null -> {
-                    TriggerBuilder.newTrigger()
-                        .withIdentity(task.id, DEFAULT_GROUP_ID)
-                        .startAt(Date.from(executeTime!!.atZone(ZoneId.systemDefault()).toInstant()))
-                        .build()
-                }
-                else -> {
-                    TriggerBuilder.newTrigger()
-                        .withIdentity(task.id, DEFAULT_GROUP_ID)
-                        .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
-                        .build()
-                }
-            }
+    fun scheduleJob(jobDetail: JobDetail, trigger: Trigger) {
+        try {
+            scheduler.scheduleJob(jobDetail, trigger)
+            logger.info("Success to schedule job[${jobDetail.key}]")
+        } catch (exception: SchedulerException) {
+            logger.error("Failed to schedule job[${jobDetail.key}]", exception)
         }
     }
 
-    fun pauseJob(id: String) {
-        scheduler.pauseJob(JobKey.jobKey(id, DEFAULT_GROUP_ID))
+    fun listJobKeys(): Set<JobKey> {
+        return scheduler.getJobKeys(GroupMatcher.jobGroupEquals(DEFAULT_GROUP_ID))
     }
 
-    fun resumeJob(id: String) {
-        scheduler.resumeJob(JobKey.jobKey(id, DEFAULT_GROUP_ID))
+    fun interruptJob(id: String) {
+        val jobKey = JobKey.jobKey(id, DEFAULT_GROUP_ID)
+        try {
+            scheduler.interrupt(jobKey)
+            logger.info("Success to interrupt job[$jobKey]")
+        } catch (exception: UnableToInterruptJobException) {
+            logger.error("Failed to interrupt job[$id]", exception)
+        }
     }
 
     fun deleteJob(id: String) {
-        scheduler.deleteJob(JobKey.jobKey(id, DEFAULT_GROUP_ID))
+        val jobKey = JobKey.jobKey(id, DEFAULT_GROUP_ID)
+        try {
+            interruptJob(id)
+            scheduler.deleteJob(jobKey)
+            logger.info("Success to delete job[$jobKey]")
+        } catch (exception: SchedulerException) {
+            logger.error("Failed to delete job[$id]", exception)
+        }
+    }
+
+    fun checkExists(id: String): Boolean {
+        return try {
+            scheduler.checkExists(JobKey.jobKey(id, DEFAULT_GROUP_ID))
+        } catch (exception: SchedulerException) {
+            logger.error("Failed to check exist job[$id].", exception)
+            false
+        }
     }
 
     companion object {

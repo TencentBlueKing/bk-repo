@@ -1,22 +1,30 @@
 package com.tencent.bkrepo.docker.manifest
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
+import com.tencent.bkrepo.docker.exception.DockerManifestDeseriFailException
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.DockerImageMetadata
 import com.tencent.bkrepo.docker.model.ManifestMetadata
-import com.tencent.bkrepo.docker.util.JsonUtil
-import java.io.IOException
-import java.nio.charset.StandardCharsets
-import java.util.Collections
-import java.util.stream.StreamSupport
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
+import java.io.IOException
+import java.nio.charset.StandardCharsets
+import java.util.stream.StreamSupport
 
+/**
+ * to deserialize manifest schema2 manifest
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 class ManifestSchema2Deserializer {
     companion object {
         private val logger = LoggerFactory.getLogger(ManifestSchema2Deserializer::class.java)
-        private val CIRCUIT_BREAKER_THRESHOLD = 5000
+        private const val CIRCUIT_BREAKER_THRESHOLD = 5000
 
         fun deserialize(manifestBytes: ByteArray, jsonBytes: ByteArray, dockerRepo: String, tag: String, digest: DockerDigest): ManifestMetadata {
             try {
@@ -25,19 +33,18 @@ class ManifestSchema2Deserializer {
                 manifestMetadata.tagInfo.digest = digest
                 return applyAttributesFromContent(manifestBytes, jsonBytes, manifestMetadata)
             } catch (exception: IOException) {
-                logger.error("Unable to deserialize the manifest.json file: {}", exception.message, exception)
-                throw RuntimeException(exception)
+                logger.error("Unable to deserialize the manifest.json file: [$exception]")
+                throw DockerManifestDeseriFailException(exception.message!!)
             }
         }
 
-        @Throws(IOException::class)
         private fun applyAttributesFromContent(manifestBytes: ByteArray, jsonBytes: ByteArray, manifestMetadata: ManifestMetadata): ManifestMetadata {
-            val config = JsonUtil.readTree(jsonBytes)
-            val manifest = JsonUtil.readTree(manifestBytes)
+            val config = JsonUtils.objectMapper.readTree(jsonBytes)
+            val manifest = JsonUtils.objectMapper.readTree(manifestBytes)
             var totalSize = 0L
             val history = config.get("history")
             val layers = manifest.get("layers")
-            val historySize = if (history == null) 0 else history.size()
+            val historySize = history?.size() ?: 0
             var historyCounter = 0L
             if (history != null) {
                 // TODO: resolve params pass
@@ -50,14 +57,14 @@ class ManifestSchema2Deserializer {
 
             var layersIndex = 0
             while (historyIndex < historySize || layersIndex < layers.size()) {
-                val historyLayer = if (history == null) null else history.get(historyIndex)
+                val historyLayer = history?.get(historyIndex)
                 val layer = layers.get(layersIndex)
                 var size = 0L
                 var digest: String? = null
                 if (notEmptyHistoryLayer(historyLayer) || !foreignHasHistory && isForeignLayer(layer)) {
-                    size = layer.get("size").asLong()
+                    size = layer.get(DOCKER_NODE_SIZE).asLong()
                     totalSize += size
-                    digest = layer.get("digest").asText()
+                    digest = layer.get(DOCKER_DIGEST).asText()
                     ++layersIndex
                 }
 
@@ -70,7 +77,7 @@ class ManifestSchema2Deserializer {
                     created = historyLayer["created"].asText()
                 }
 
-                val blobInfo = DockerBlobInfo("", digest, size, created)
+                val blobInfo = DockerBlobInfo(EMPTYSTR, digest, size, created)
                 if (!isForeignLayer(layer)) {
                     populateWithCommand(historyLayer, blobInfo)
                 }
@@ -83,22 +90,22 @@ class ManifestSchema2Deserializer {
                 checkCircuitBreaker(manifestBytes, jsonBytes, iterationsCounter)
                 ++iterationsCounter
             }
-            Collections.reverse(manifestMetadata.blobsInfo)
+            manifestMetadata.blobsInfo.reverse()
             manifestMetadata.tagInfo.totalSize = totalSize
-            val dockerMetadata = JsonUtil.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
-            populatePorts(manifestMetadata, dockerMetadata)
-            populateVolumes(manifestMetadata, dockerMetadata)
-            populateLabels(manifestMetadata, dockerMetadata)
+            val dockerMetadata = JsonUtils.objectMapper.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
+            ManifestUtil.populatePorts(manifestMetadata, dockerMetadata)
+            ManifestUtil.populateVolumes(manifestMetadata, dockerMetadata)
+            ManifestUtil.populateLabels(manifestMetadata, dockerMetadata)
             return manifestMetadata
         }
 
         private fun checkCircuitBreaker(manifestBytes: ByteArray, jsonBytes: ByteArray, iterationsCounter: Int) {
-            if (iterationsCounter > 5000) {
-                breakeCircuit(manifestBytes, jsonBytes, "5000 Iterations ware performed")
+            if (iterationsCounter > CIRCUIT_BREAKER_THRESHOLD) {
+                breakCircuit(manifestBytes, jsonBytes, "$CIRCUIT_BREAKER_THRESHOLD Iterations ware performed")
             }
         }
 
-        private fun breakeCircuit(manifestBytes: ByteArray, jsonBytes: ByteArray, reason: String) {
+        private fun breakCircuit(manifestBytes: ByteArray, jsonBytes: ByteArray, reason: String) {
             val msg = "ManifestSchema2Deserializer CIRCUIT BREAKER: " + reason + " breaking operation.\nManifest: " + String(manifestBytes, StandardCharsets.UTF_8) + "\njsonBytes:" + String(jsonBytes, StandardCharsets.UTF_8)
             logger.error(msg)
             throw IllegalArgumentException("Circuit Breaker Threshold Reached, Breaking Operation. see log output for manifest details.")
@@ -117,7 +124,7 @@ class ManifestSchema2Deserializer {
                 var command = layerHistory.get("created_by").asText()
                 if (StringUtils.contains(command, "(nop)")) {
                     command = StringUtils.substringAfter(command, "(nop) ")
-                    val dockerCmd = StringUtils.substringBefore(command.trim({ it <= ' ' }), " ")
+                    val dockerCmd = StringUtils.substringBefore(command.trim { it <= ' ' }, " ")
                     command = StringUtils.substringAfter(command, " ")
                     blobInfo.command = dockerCmd
                     blobInfo.commandText = command
@@ -135,69 +142,8 @@ class ManifestSchema2Deserializer {
                 }
 
                 if (layerNode.has("urls")) {
-                    blobInfo.urls = mutableListOf<String>()
+                    blobInfo.urls = mutableListOf()
                     layerNode.get("urls").forEach { jsonNode -> blobInfo.urls!!.add(jsonNode.asText()) }
-                }
-            }
-        }
-
-        private fun populatePorts(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
-            if (dockerMetadata.config != null) {
-                addPorts(manifestMetadata, dockerMetadata.config!!.exposedPorts)
-            }
-
-            if (dockerMetadata.containerConfig != null) {
-                addPorts(manifestMetadata, dockerMetadata.containerConfig!!.exposedPorts)
-            }
-        }
-
-        private fun addPorts(manifestMetadata: ManifestMetadata, exposedPorts: JsonNode?) {
-            if (exposedPorts != null) {
-                val iterPorts = exposedPorts.fieldNames()
-
-                while (iterPorts.hasNext()) {
-                    manifestMetadata.tagInfo.ports.add(iterPorts.next())
-                }
-            }
-        }
-
-        private fun populateVolumes(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
-            if (dockerMetadata.config != null) {
-                addVolumes(manifestMetadata, dockerMetadata.config!!.volumes)
-            }
-
-            if (dockerMetadata.containerConfig != null) {
-                addVolumes(manifestMetadata, dockerMetadata.containerConfig!!.volumes)
-            }
-        }
-
-        private fun addVolumes(manifestMetadata: ManifestMetadata, volumes: JsonNode?) {
-            if (volumes != null) {
-                val iterVolume = volumes.fieldNames()
-
-                while (iterVolume.hasNext()) {
-                    manifestMetadata.tagInfo.volumes.add(iterVolume.next())
-                }
-            }
-        }
-
-        private fun populateLabels(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
-            if (dockerMetadata.config != null) {
-                addLabels(manifestMetadata, dockerMetadata.config!!.labels)
-            }
-
-            if (dockerMetadata.containerConfig != null) {
-                addLabels(manifestMetadata, dockerMetadata.containerConfig!!.labels)
-            }
-        }
-
-        private fun addLabels(manifestMetadata: ManifestMetadata, labels: Map<String, String>?) {
-            if (labels != null) {
-                val iter = labels.entries.iterator()
-
-                while (iter.hasNext()) {
-                    val label = iter.next()
-                    manifestMetadata.tagInfo.labels.put(label.key, label.value)
                 }
             }
         }

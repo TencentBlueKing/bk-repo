@@ -6,22 +6,17 @@ import okhttp3.internal.Util
 import okio.BufferedSink
 import okio.Okio
 import okio.Source
-import java.io.IOException
 import java.io.InputStream
 
 object RequestBodyUtil {
-    fun create(mediaType: MediaType, inputStream: InputStream): RequestBody {
+    fun create(mediaType: MediaType, inputStream: InputStream, length: Long): RequestBody {
         return object : RequestBody() {
             override fun contentType(): MediaType {
                 return mediaType
             }
 
             override fun contentLength(): Long {
-                return try {
-                    inputStream.available().toLong()
-                } catch (e: IOException) {
-                    return 0L
-                }
+                return length
             }
 
             override fun writeTo(sink: BufferedSink) {

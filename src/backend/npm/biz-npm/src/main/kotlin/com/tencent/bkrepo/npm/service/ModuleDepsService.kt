@@ -31,17 +31,10 @@ class ModuleDepsService {
     /**
      * 创建依赖关系
      */
-    @Transactional(rollbackFor = [Throwable::class])
+    @Transactional(rollbackFor = [Exception::class])
     fun create(depsCreateRequest: DepsCreateRequest): ModuleDepsInfo {
         with(depsCreateRequest) {
-            this.takeIf { name.isNotBlank() } ?: throw ErrorCodeException(
-                CommonMessageCode.PARAMETER_MISSING,
-                this::name.name
-            )
-            this.takeIf { deps.isNotBlank() } ?: throw ErrorCodeException(
-                CommonMessageCode.PARAMETER_MISSING,
-                this::deps.name
-            )
+            checkParameter(this)
             if (exist(projectId, repoName, name, deps)) {
                 if (!overwrite) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, name)
@@ -65,20 +58,26 @@ class ModuleDepsService {
         }
     }
 
-    @Transactional(rollbackFor = [Throwable::class])
+    private fun checkParameter(depsCreateRequest: DepsCreateRequest) {
+        with(depsCreateRequest) {
+            this.takeIf { name.isNotBlank() } ?: throw ErrorCodeException(
+                CommonMessageCode.PARAMETER_MISSING,
+                this::name.name
+            )
+            this.takeIf { deps.isNotBlank() } ?: throw ErrorCodeException(
+                CommonMessageCode.PARAMETER_MISSING,
+                this::deps.name
+            )
+        }
+    }
+
+    @Transactional(rollbackFor = [Exception::class])
     fun batchCreate(depsCreateRequestList: List<DepsCreateRequest>) {
         depsCreateRequestList.takeUnless { it.isNullOrEmpty() }
         val createList = mutableListOf<TModuleDeps>()
         depsCreateRequestList.forEach continuing@{
             with(it) {
-                this.takeIf { name.isNotBlank() } ?: throw ErrorCodeException(
-                    CommonMessageCode.PARAMETER_MISSING,
-                    this::name.name
-                )
-                this.takeIf { deps.isNotBlank() } ?: throw ErrorCodeException(
-                    CommonMessageCode.PARAMETER_MISSING,
-                    this::deps.name
-                )
+                checkParameter(it)
                 if (exist(projectId, repoName, name, deps)) {
                     if (!overwrite) {
                         throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, name)

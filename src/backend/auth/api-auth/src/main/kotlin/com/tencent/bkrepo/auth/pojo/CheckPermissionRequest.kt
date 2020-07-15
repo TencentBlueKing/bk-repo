@@ -20,5 +20,7 @@ data class CheckPermissionRequest(
     @ApiModelProperty("路径")
     val path: String? = null,
     @ApiModelProperty("角色")
-    val role: String? = null
+    val role: String? = null,
+    @ApiModelProperty("AppId")
+    val appId: String? = null
 )

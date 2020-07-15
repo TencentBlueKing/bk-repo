@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.artifact.auth.jwt
 
-import com.tencent.bkrepo.common.artifact.config.AuthProperties
+import com.tencent.bkrepo.common.artifact.auth.AuthProperties
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jws

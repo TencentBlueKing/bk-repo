@@ -15,7 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest
  */
 @DisplayName("项目服务测试")
 @Disabled
-@SpringBootTest
+@SpringBootTest(properties = ["auth.enabled=false"])
 internal class ProjectServiceTest @Autowired constructor(
     private val projectService: ProjectService
 ) {

@@ -1,17 +1,17 @@
 package com.tencent.bkrepo.docker.manifest
 
-import com.tencent.bkrepo.docker.util.JsonUtil
-import java.io.IOException
-import org.slf4j.LoggerFactory
+import com.tencent.bkrepo.common.api.util.JsonUtils
 
+/**
+ * to deserialize manifest schema2 manifestlist
+ * @author: owenlxu
+ * @date: 2020-02-05
+ */
 class ManifestListSchema2Deserializer {
-    companion object {
-        private val log = LoggerFactory.getLogger(ManifestListSchema2Deserializer::class.java)
 
-        @Throws(IOException::class)
+    companion object {
         fun deserialize(manifestBytes: ByteArray): ManifestListJson? {
-            val result = JsonUtil.readValue(manifestBytes, ManifestListJson::class.java)
-            return result
+            return JsonUtils.objectMapper.readValue(manifestBytes, ManifestListJson::class.java)
         }
     }
 }

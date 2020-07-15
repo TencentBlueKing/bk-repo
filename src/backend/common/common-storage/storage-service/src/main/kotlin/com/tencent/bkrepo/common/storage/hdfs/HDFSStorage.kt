@@ -24,7 +24,7 @@ open class HDFSStorage : AbstractFileStorage<HDFSCredentials, HDFSClient>() {
         client.fileSystem.copyFromLocalFile(localPath, remotePath)
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream, client: HDFSClient) {
+    override fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: HDFSClient) {
         val remotePath = concatRemotePath(path, filename, client)
         val outputStream = client.fileSystem.create(remotePath, true)
         outputStream.use { inputStream.copyTo(outputStream) }
@@ -82,6 +82,4 @@ open class HDFSStorage : AbstractFileStorage<HDFSCredentials, HDFSClient>() {
         val fileSystem = FileSystem.get(URI.create(url), configuration, username)
         return HDFSClient(workingPath, fileSystem)
     }
-
-    override fun getDefaultCredentials() = storageProperties.hdfs
 }

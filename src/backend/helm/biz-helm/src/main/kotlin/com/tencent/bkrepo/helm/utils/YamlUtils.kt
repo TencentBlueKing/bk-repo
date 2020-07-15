@@ -9,7 +9,6 @@ import org.yaml.snakeyaml.introspector.BeanAccess
 import org.yaml.snakeyaml.introspector.PropertyUtils
 import org.yaml.snakeyaml.nodes.Tag
 import org.yaml.snakeyaml.representer.Representer
-import java.io.IOException
 import java.io.InputStream
 
 object YamlUtils {
@@ -43,16 +42,12 @@ object YamlUtils {
         return getYaml().loadAs(yaml, T::class.java)
     }
 
-    fun <T> transEntity2File(v: T): String {
-        return getYaml().dump(v)
+    fun <T> transEntityToStream(v: T): InputStream {
+        return getYaml().dump(v).byteInputStream()
     }
 
     fun yaml2Json(inputStream: InputStream): String {
-        var loaded = mutableMapOf<String, Any>()
-        try {
-            loaded = getYaml().load(inputStream)
-        } catch (ioe: IOException) {
-        }
+        val loaded: MutableMap<String, Any> = getYaml().load(inputStream)
         return Gson().toJson(loaded)
     }
 }
