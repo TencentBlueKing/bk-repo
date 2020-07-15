@@ -6,6 +6,11 @@ import com.tencent.bkrepo.replication.job.ReplicationContext
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
+/**
+ * handler metadata message and replicate
+ * @author: owenlxu
+ * @date: 2020/05/20
+ */
 @Component
 class MetadataMessageHandler : AbstractMessageHandler() {
 

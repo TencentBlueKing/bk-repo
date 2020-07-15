@@ -18,6 +18,11 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import javax.annotation.PostConstruct
 
+/**
+ * real time job tail from the caped collection
+ * @author: owenlxu
+ * @date: 2020/05/20
+ */
 @Service
 class RealTimeJob {
 
@@ -28,8 +33,6 @@ class RealTimeJob {
     private lateinit var nodeConsumer: NodeEventConsumer
 
     private lateinit var container: MessageListenerContainer
-
-    private val collectionName = "operation_log"
 
     @PostConstruct
     fun run() {
@@ -50,9 +53,10 @@ class RealTimeJob {
                 // get container running status an sleep try
                 isRunning = container.isRunning
                 if (isRunning) {
+                    // register success ,should return
                     return
                 }
-                Thread.sleep(30000)
+                Thread.sleep(retryInterVal)
             }
         }
     }
@@ -95,7 +99,13 @@ class RealTimeJob {
             .build()
     }
 
+    fun getContainerStatus(): Boolean {
+        return this.container.isRunning
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(RealTimeJob::class.java)
+        const val collectionName = "operation_log"
+        const val retryInterVal = 30000L
     }
 }

@@ -21,6 +21,7 @@ import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 class ReplicationContext(val task: TReplicationTask) {
+
     val authToken: String
     val normalizedUrl: String
     val replicationClient: ReplicationClient

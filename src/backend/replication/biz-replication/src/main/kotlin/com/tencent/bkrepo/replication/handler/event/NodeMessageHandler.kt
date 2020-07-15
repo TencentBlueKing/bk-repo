@@ -11,6 +11,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
+/**
+ * handler node message and replicate
+ * include create ,copy ,rename,move
+ * @author: owenlxu
+ * @date: 2020/05/20
+ */
 @Component
 class NodeMessageHandler : AbstractMessageHandler() {
 

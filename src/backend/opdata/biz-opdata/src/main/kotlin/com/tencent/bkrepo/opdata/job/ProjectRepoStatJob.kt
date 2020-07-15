@@ -38,7 +38,7 @@ class ProjectRepoStatJob {
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT1H")
     fun statProjectRepoSize() {
         logger.info("start to stat project metrics")
-        val inluxdDb = influxDbConfig.influxDbUtils().getInstance() ?: kotlin.run {
+        val inluxdDb = influxDbConfig.influxDbUtils().getInstance() ?: run {
             logger.error("init influxdb fail")
             return
         }

@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.replication.handler.full
+package com.tencent.bkrepo.replication.handler.job
 
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
@@ -10,108 +10,140 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.handler.AbstractHandler
 import com.tencent.bkrepo.replication.job.ReplicationContext
-import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.replication.pojo.setting.ConflictStrategy
+import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
+import com.tencent.bkrepo.replication.repository.TaskLogRepository
 import com.tencent.bkrepo.replication.repository.TaskRepository
 import com.tencent.bkrepo.replication.service.ReplicationService
+import com.tencent.bkrepo.replication.service.ScheduleService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.repository.findByIdOrNull
+import java.time.LocalDateTime
 
-class FullJobHandler : AbstractHandler() {
-
+class ReplicationJobHandler(
+    private val taskRepository: TaskRepository,
+    private val taskLogRepository: TaskLogRepository,
+    private val replicationService: ReplicationService,
+    private val scheduleService: ScheduleService
+) : AbstractHandler() {
     @Value("\${spring.application.version}")
     private var version: String = DEFAULT_VERSION
 
-    @Autowired
-    private lateinit var taskRepository: TaskRepository
+    fun execute(taskId: String) {
+        logger.info("Start to execute replication task[$taskId].")
+        val task = taskRepository.findByIdOrNull(taskId) ?: run {
+            logger.warn("Task[$taskId] does not exist, delete job and trigger.")
+            if (scheduleService.checkExists(taskId)) {
+                scheduleService.deleteJob(taskId)
+            }
+            return
+        }
+        if (task.status == ReplicationStatus.PAUSED) {
+            logger.info("Task[$taskId] status is paused, skip execute.")
+        }
+        // 创建context
+        val replicationContext = ReplicationContext(task)
+        try {
+            // 检查版本
+            checkVersion(replicationContext)
+            // 准备同步详情信息
+            prepare(replicationContext)
+            // 更新task
+            persistTask(replicationContext)
+            // 开始同步
+            startReplica(replicationContext)
+            // 完成同步
+            completeReplica(replicationContext, ReplicationStatus.SUCCESS)
+        } catch (exception: Exception) {
+            // 记录异常
+            replicationContext.taskLog.errorReason = exception.message
+            completeReplica(replicationContext, ReplicationStatus.FAILED)
+        } finally {
+            // 保存结果
+            replicationContext.taskLog.endTime = LocalDateTime.now()
+            persistTask(replicationContext)
+            logger.info("Replica task[$taskId] finished, task log: ${replicationContext.taskLog}.")
+        }
+    }
 
-    @Autowired
-    private lateinit var replicationService: ReplicationService
-
-    @Autowired
-    private lateinit var mongoTemplate: MongoTemplate
-
-    // fun updateTriggerStatus(keyName: String, keyGroup: String) {
-    //     val query = Query()
-    //     val update = Update()
-    //     query.addCriteria(
-    //         Criteria.where(TReplicaTriggers::keyName.name).`is`(keyName).and(
-    //             TReplicaTriggers::keyGroup.name
-    //         ).`is`(keyGroup)
-    //     )
-    //     update.set(TReplicaTriggers::state.name, Trigger.TriggerState.NORMAL.name)
-    //     mongoTemplate.updateFirst(query, update, TReplicaTriggers::class.java)
-    // }
-
-    fun checkVersion(context: ReplicationContext) {
+    private fun checkVersion(context: ReplicationContext) {
         with(context) {
             val remoteVersion = replicationClient.version(authToken).data!!
             if (version != remoteVersion) {
-                logger.warn("The local cluster's version[$version] is different from remote cluster's version[$remoteVersion]")
+                logger.warn("The local cluster's version[$version] is different from remote cluster's version[$remoteVersion].")
             }
         }
     }
 
-    // fun prepare(context: ReplicationContext) {
-    //     with(context) {
-    //         projectDetailList = repoDataService.listProject(task.localProjectId).map {
-    //             convertReplicationProject(it, task.localRepoName, task.remoteProjectId, task.remoteRepoName)
-    //         }
-    //         task.replicationProgress.totalProject = projectDetailList.size
-    //         projectDetailList.forEach { project ->
-    //             task.replicationProgress.totalRepo += project.repoDetailList.size
-    //             project.repoDetailList.forEach { repo -> task.replicationProgress.totalNode += repo.fileCount }
-    //         }
-    //     }
-    // }
-
-    private fun convertReplicationProject(
-        localProjectInfo: ProjectInfo,
-        localRepoName: String? = null,
-        remoteProjectId: String? = null,
-        remoteRepoName: String? = null
-    ): ReplicationProjectDetail {
-        return with(localProjectInfo) {
-            val repoDetailList = repoDataService.listRepository(this.name, localRepoName).map {
-                convertReplicationRepo(it, remoteRepoName)
+    private fun prepare(context: ReplicationContext) {
+        with(context) {
+            projectDetailList = repoDataService.listProject(task.localProjectId).map {
+                convertReplicationProject(it, task.localRepoName, task.remoteProjectId, task.remoteRepoName)
             }
-            ReplicationProjectDetail(
-                localProjectInfo = this,
-                remoteProjectId = remoteProjectId ?: this.name,
-                repoDetailList = repoDetailList
-            )
+            context.progress.totalProject = projectDetailList.size
+            projectDetailList.forEach { project ->
+                context.progress.totalRepo += project.repoDetailList.size
+                project.repoDetailList.forEach { repo -> context.progress.totalNode += repo.fileCount }
+            }
         }
     }
 
-    fun startReplica(context: ReplicationContext) {
+    private fun completeReplica(context: ReplicationContext, status: ReplicationStatus) {
+        if (context.isCronJob()) {
+            context.status = ReplicationStatus.WAITING
+        } else {
+            context.status = status
+        }
+    }
+
+    private fun persistTask(context: ReplicationContext) {
+        context.task.status = context.status
+        taskRepository.save(context.task)
+        persistTaskLog(context)
+    }
+
+    private fun persistTaskLog(context: ReplicationContext) {
+        context.taskLog.status = context.status
+        context.taskLog.replicationProgress = context.progress
+        taskLogRepository.save(context.taskLog)
+    }
+
+    private fun startReplica(context: ReplicationContext) {
+        checkInterrupted()
         context.projectDetailList.forEach {
+            val localProjectId = it.localProjectInfo.name
+            val remoteProjectId = it.remoteProjectId
+            val repositoryCount = it.repoDetailList.size
+            logger.info("Start to replica project [$localProjectId] to [$remoteProjectId], repository count: $repositoryCount.")
             try {
                 context.currentProjectDetail = it
                 context.remoteProjectId = it.remoteProjectId
                 replicaProject(context)
-                //context.task.replicationProgress.successProject += 1
+                logger.info("Success to replica project [$localProjectId] to [$remoteProjectId].")
+                context.progress.successProject += 1
+            } catch (interruptedException: InterruptedException) {
+                throw interruptedException
             } catch (exception: Exception) {
-                //context.task.replicationProgress.failedProject += 1
-                logger.error("Replica project[$it] failed.", exception)
+                context.progress.failedProject += 1
+                logger.error("Failed to replica project [$localProjectId] to [$remoteProjectId].", exception)
             } finally {
-                //context.task.replicationProgress.replicatedProject += 1
-                taskRepository.save(context.task)
+                context.progress.replicatedProject += 1
+                persistTaskLog(context)
             }
         }
     }
 
     private fun replicaProject(context: ReplicationContext) {
+        checkInterrupted()
         with(context.currentProjectDetail) {
             // 创建项目
             val request = ProjectCreateRequest(
@@ -125,23 +157,34 @@ class FullJobHandler : AbstractHandler() {
             replicaUserAndPermission(context)
             // 同步仓库
             this.repoDetailList.forEach {
+                val formattedLocalRepoName = "${it.localRepoInfo.projectId}/${it.localRepoInfo.name}"
+                val formattedRemoteRepoName = "${context.remoteProjectId}/${it.remoteRepoName}"
+                val fileCount = it.fileCount
+                logger.info("Start to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName], file count: $fileCount.")
                 try {
                     context.currentRepoDetail = it
                     context.remoteRepoName = it.remoteRepoName
                     replicaRepo(context)
-                    //context.task.replicationProgress.successRepo += 1
+                    context.progress.successRepo += 1
+                    logger.info("Success to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].")
+                } catch (interruptedException: InterruptedException) {
+                    throw interruptedException
                 } catch (exception: Exception) {
-                    //context.task.replicationProgress.failedRepo += 1
-                    logger.error("Replica repository[$it] failed.", exception)
+                    context.progress.failedRepo += 1
+                    logger.error(
+                        "Failed to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].",
+                        exception
+                    )
                 } finally {
-                    //context.task.replicationProgress.replicatedRepo += 1
-                    taskRepository.save(context.task)
+                    context.progress.replicatedRepo += 1
+                    persistTaskLog(context)
                 }
             }
         }
     }
 
     private fun replicaRepo(context: ReplicationContext) {
+        checkInterrupted()
         with(context.currentRepoDetail) {
             // 创建仓库
             val replicaRequest = RepoCreateRequest(
@@ -159,38 +202,46 @@ class FullJobHandler : AbstractHandler() {
             replicaUserAndPermission(context, true)
             // 同步节点
             var page = 0
-            var fileNodeList = repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, StringPool.ROOT, page, pageSize)
+            var fileNodeList = repoDataService.listFileNode(
+                localRepoInfo.projectId, localRepoInfo.name, StringPool.ROOT, page,
+                pageSize
+            )
             while (fileNodeList.isNotEmpty()) {
-                var fullPathList = mutableListOf<String>()
+                val fullPathList = mutableListOf<String>()
                 fileNodeList.forEach { fullPathList.add(it.fullPath) }
                 with(context) {
-                    val nodeCheckRequest = NodeExistCheckRequest(localRepoInfo.projectId, localRepoInfo.name, fullPathList)
+                    val nodeCheckRequest =
+                        NodeExistCheckRequest(localRepoInfo.projectId, localRepoInfo.name, fullPathList)
                     val existFullPathList = replicationClient.checkNodeExistList(authToken, nodeCheckRequest).data!!
-                    logger.debug("node path list params [$nodeCheckRequest], result [$existFullPathList]")
                     // 同步不存在的节点
                     fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
                 }
 
                 page += 1
-                fileNodeList = repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, StringPool.ROOT, page, pageSize)
+                fileNodeList = repoDataService.listFileNode(
+                    localRepoInfo.projectId, localRepoInfo.name, StringPool.ROOT, page,
+                    pageSize
+                )
             }
         }
     }
 
     private fun replicaNode(node: NodeInfo, context: ReplicationContext, existFullPathList: List<String>) {
+        checkInterrupted()
         with(context) {
+            val formattedNodePath = "${node.projectId}/${node.repoName}${node.fullPath}"
             // 节点冲突检查
             if (existFullPathList.contains(node.fullPath)) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> {
-                        logger.debug("Node[$node] conflict, skip it.")
-                        //task.replicationProgress.conflictedNode += 1
+                        logger.debug("File[$formattedNodePath] conflict, skip it.")
+                        progress.conflictedNode += 1
                         return
                     }
                     ConflictStrategy.OVERWRITE -> {
-                        logger.debug("Node[$node] conflict, overwrite it.")
+                        logger.debug("File[$formattedNodePath] conflict, overwrite it.")
                     }
-                    ConflictStrategy.FAST_FAIL -> throw RuntimeException("Node[$node] conflict.")
+                    ConflictStrategy.FAST_FAIL -> throw RuntimeException("File[$formattedNodePath] conflict.")
                 }
             }
             try {
@@ -211,17 +262,19 @@ class FullJobHandler : AbstractHandler() {
                     metadata = metadata,
                     operator = node.createdBy
                 )
-                logger.info("start to replica file ${replicaRequest.projectId} ,${replicaRequest.repoName}, ${replicaRequest.fullPath}")
                 replicationService.replicaFile(context, replicaRequest)
-                //task.replicationProgress.successNode += 1
+                progress.successNode += 1
+                logger.info("Success to replica file [$formattedNodePath].")
+            } catch (interruptedException: InterruptedException) {
+                throw interruptedException
             } catch (exception: Exception) {
-                logger.error("Replica node[$node] failed.", exception)
-                //task.replicationProgress.failedNode += 1
+                progress.failedNode += 1
+                logger.error("Failed to replica file [$formattedNodePath].", exception)
             } finally {
-                //task.replicationProgress.replicatedNode += 1
-                // if (task.replicationProgress.replicatedNode % 10 == 0L) {
-                //     taskRepository.save(task)
-                // }
+                progress.replicatedNode += 1
+                if (progress.replicatedNode % 50 == 0L) {
+                    taskRepository.save(task)
+                }
             }
         }
     }
@@ -300,7 +353,12 @@ class FullJobHandler : AbstractHandler() {
         }
     }
 
-    private fun createRole(context: ReplicationContext, role: Role, projectId: String, repoName: String? = null): String {
+    private fun createRole(
+        context: ReplicationContext,
+        role: Role,
+        projectId: String,
+        repoName: String? = null
+    ): String {
         with(context) {
             val request = RoleReplicaRequest(
                 roleId = role.roleId,
@@ -314,7 +372,11 @@ class FullJobHandler : AbstractHandler() {
         }
     }
 
-    private fun createUserRoleRelationShip(context: ReplicationContext, remoteRoleId: String, userIdList: List<String>) {
+    private fun createUserRoleRelationShip(
+        context: ReplicationContext,
+        remoteRoleId: String,
+        userIdList: List<String>
+    ) {
         with(context) {
             replicationClient.replicaUserRoleRelationShip(authToken, remoteRoleId, userIdList)
         }
@@ -343,7 +405,7 @@ class FullJobHandler : AbstractHandler() {
         }
     }
 
-    fun containsPermission(permission: Permission, permissionList: List<Permission>): Boolean {
+    private fun containsPermission(permission: Permission, permissionList: List<Permission>): Boolean {
         permissionList.forEach {
             if (it.projectId == permission.projectId && it.permName == permission.permName) {
                 return true
@@ -352,8 +414,14 @@ class FullJobHandler : AbstractHandler() {
         return false
     }
 
+    private fun checkInterrupted() {
+        if (Thread.interrupted()) {
+            throw InterruptedException("Interrupted by user")
+        }
+    }
+
     companion object {
-        private val logger = LoggerFactory.getLogger(FullJobHandler::class.java)
+        private val logger = LoggerFactory.getLogger(ReplicationJobHandler::class.java)
         private const val pageSize = 500
     }
 }
