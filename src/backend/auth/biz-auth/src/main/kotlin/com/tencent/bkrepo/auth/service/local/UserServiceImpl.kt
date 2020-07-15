@@ -97,7 +97,7 @@ class UserServiceImpl @Autowired constructor(
     override fun deleteById(userId: String): Boolean {
         logger.info("delete user userId : [$userId]")
         checkUserExist(userId)
-        userRepository.deleteById(userId)
+        userRepository.deleteByUserId(userId)
         return true
     }
 
