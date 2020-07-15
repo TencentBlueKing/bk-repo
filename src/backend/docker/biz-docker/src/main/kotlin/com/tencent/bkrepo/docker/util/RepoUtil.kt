@@ -30,7 +30,7 @@ class RepoUtil constructor(repo: DockerArtifactRepo) {
     private fun isRepoExist(repo: DockerArtifactRepo, projectId: String, repoName: String) {
         // check repository
         repo.repositoryResource.detail(projectId, repoName, REPO_TYPE).data ?: run {
-            logger.error("get repository detail exception [$projectId] , [$repoName] ")
+            logger.error("get repository detail exception [$projectId,$repoName] ")
             throw DockerRepoNotFoundException(repoName)
         }
     }

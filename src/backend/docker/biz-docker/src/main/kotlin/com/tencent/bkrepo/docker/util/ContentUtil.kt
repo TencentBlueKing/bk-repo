@@ -36,32 +36,6 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
 
     val repo = repo
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(ContentUtil::class.java)
-        val EMPTY_BLOB_CONTENT: ByteArray = DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")
-
-        fun isEmptyBlob(digest: DockerDigest): Boolean {
-            return digest.toString() == emptyBlobDigest().toString()
-        }
-
-        fun emptyBlobDigest(): DockerDigest {
-            return DockerDigest("sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4")
-        }
-
-        fun emptyBlobHeadResponse(): DockerResponse {
-            return ResponseEntity.ok().header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
-                .header(DOCKER_CONTENT_DIGEST, emptyBlobDigest().toString()).header(CONTENT_LENGTH, "32")
-                .header(CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).build()
-        }
-
-        fun emptyBlobGetResponse(): DockerResponse {
-            return ResponseEntity.ok().header(CONTENT_LENGTH, "32")
-                .header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
-                .header(DOCKER_CONTENT_DIGEST, emptyBlobDigest().toString())
-                .header(CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).body(EMPTY_BLOB_CONTENT)
-        }
-    }
-
     fun getManifestType(projectId: String, repoName: String, manifestPath: String): String? {
         return repo.getAttribute(projectId, repoName, manifestPath, "docker.manifest.type")
     }
@@ -96,20 +70,20 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
         val manifestList = JsonUtils.objectMapper.readTree(bytes)
         val manifests = manifestList.get("manifests")
         val maniIter = manifests.iterator()
-            while (maniIter.hasNext()) {
-                val manifest = maniIter.next() as JsonNode
-                val platform = manifest.get("platform")
-                val architecture = platform.get("architecture").asText()
-                val os = platform.get("os").asText()
-                if (StringUtils.equals(architecture, "amd64") && StringUtils.equals(os, "linux")) {
-                    val digest = manifest.get(DOCKER_DIGEST).asText()
-                    val fileName = DockerDigest(digest).fileName()
-                    val manifestFile = ArtifactUtil.getBlobByName(repo, context, fileName) ?: run {
-                        return EMPTYSTR
-                    }
-                    return ArtifactUtil.getFullPath(manifestFile)
+        while (maniIter.hasNext()) {
+            val manifest = maniIter.next() as JsonNode
+            val platform = manifest.get("platform")
+            val architecture = platform.get("architecture").asText()
+            val os = platform.get("os").asText()
+            if (StringUtils.equals(architecture, "amd64") && StringUtils.equals(os, "linux")) {
+                val digest = manifest.get(DOCKER_DIGEST).asText()
+                val fileName = DockerDigest(digest).fileName()
+                val manifestFile = ArtifactUtil.getBlobByName(repo, context, fileName) ?: run {
+                    return EMPTYSTR
                 }
+                return ArtifactUtil.getFullPath(manifestFile)
             }
+        }
         return EMPTYSTR
     }
 
@@ -126,7 +100,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
         val config = manifest.get("config")
         config?.let {
             val digest = config.get(DOCKER_DIGEST).asText()
-            val blobInfo = DockerBlobInfo("", digest, 0L, "")
+            val blobInfo = DockerBlobInfo(EMPTYSTR, digest, 0L, EMPTYSTR)
             metadata.blobsInfo.add(blobInfo)
         }
     }
@@ -139,11 +113,11 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
         while (manifest.hasNext()) {
             val manifestNode = manifest.next() as JsonNode
             val digestString = manifestNode.get("platform").get(DOCKER_DIGEST).asText()
-            val dockerBlobInfo = DockerBlobInfo("", digestString, 0L, "")
+            val dockerBlobInfo = DockerBlobInfo(EMPTYSTR, digestString, 0L, EMPTYSTR)
             metadata.blobsInfo.add(dockerBlobInfo)
             val manifestFileName = DockerDigest(digestString).fileName()
             val manifestFile = ArtifactUtil.getManifestByName(repo, context, manifestFileName)
-            if (manifestFile != null) {
+            manifestFile?.let {
                 val fullPath = ArtifactUtil.getFullPath(manifestFile)
                 val configBytes = getSchema2ManifestContent(context, fullPath)
                 addSchema2Blob(configBytes, metadata)
@@ -165,5 +139,32 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
         }
         logger.info("file [$digest] result length [$length] type [$contentType]")
         return ResponseEntity.ok().headers(httpHeaders).contentLength(length).body(inputStreamResource)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ContentUtil::class.java)
+        val EMPTY_BLOB_CONTENT: ByteArray =
+            DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")
+
+        fun isEmptyBlob(digest: DockerDigest): Boolean {
+            return digest.toString() == emptyBlobDigest().toString()
+        }
+
+        fun emptyBlobDigest(): DockerDigest {
+            return DockerDigest("sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4")
+        }
+
+        fun emptyBlobHeadResponse(): DockerResponse {
+            return ResponseEntity.ok().header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+                .header(DOCKER_CONTENT_DIGEST, emptyBlobDigest().toString()).header(CONTENT_LENGTH, "32")
+                .header(CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).build()
+        }
+
+        fun emptyBlobGetResponse(): DockerResponse {
+            return ResponseEntity.ok().header(CONTENT_LENGTH, "32")
+                .header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+                .header(DOCKER_CONTENT_DIGEST, emptyBlobDigest().toString())
+                .header(CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).body(EMPTY_BLOB_CONTENT)
+        }
     }
 }

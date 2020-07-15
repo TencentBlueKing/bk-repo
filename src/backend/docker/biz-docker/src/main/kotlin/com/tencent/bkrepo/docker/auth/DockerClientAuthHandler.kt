@@ -39,8 +39,7 @@ import javax.ws.rs.core.MediaType
  * @date: 2019-11-12
  */
 @Component
-class DockerClientAuthHandler(val userResource: ServiceUserResource) :
-    ClientAuthHandler {
+class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAuthHandler {
 
     @Value("\${auth.url}")
     private var authUrl: String = EMPTYSTR

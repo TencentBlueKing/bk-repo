@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.docker.artifact
 
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
+
 /**
  * docker artifact describe class
  * @author: owenlxu
@@ -7,13 +9,13 @@ package com.tencent.bkrepo.docker.artifact
  */
 class DockerArtifact(projectId: String, repoName: String, artifactName: String) {
 
-    var projectId: String = ""
-    var repoName: String = ""
-    var artifactName: String = ""
+    var projectId: String = EMPTYSTR
+    var repoName: String = EMPTYSTR
+    var artifactName: String = EMPTYSTR
 
     var sha256: String? = null
     var length: Long = 0L
-    var fullPath: String = ""
+    var fullPath: String = EMPTYSTR
 
     init {
         this.projectId = projectId

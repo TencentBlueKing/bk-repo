@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.docker.context
 
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
+
 /**
  * docker registry download context
  * @author: owenlxu
@@ -9,7 +11,7 @@ data class DownloadContext(val requestContext: RequestContext) {
 
     var context: RequestContext = requestContext
     var length: Long = 0L
-    var sha256: String = ""
+    var sha256: String = EMPTYSTR
 
     fun sha256(sha256: String): DownloadContext {
         this.sha256 = sha256

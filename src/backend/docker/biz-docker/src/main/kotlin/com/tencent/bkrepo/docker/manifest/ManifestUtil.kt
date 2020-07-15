@@ -5,72 +5,66 @@ import com.tencent.bkrepo.docker.model.DockerImageMetadata
 import com.tencent.bkrepo.docker.model.ManifestMetadata
 
 /**
- * manifest util with each schema
+ * manifest utility with each schema
  * @author: owenlxu
  * @date: 2020-02-05
  */
-class ManifestUtil {
+object ManifestUtil {
 
-    companion object {
-
-        fun populatePorts(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
-            if (dockerMetadata.config != null) {
-                addPorts(manifestMetadata, dockerMetadata.config!!.exposedPorts)
-            }
-
-            if (dockerMetadata.containerConfig != null) {
-                addPorts(manifestMetadata, dockerMetadata.containerConfig!!.exposedPorts)
-            }
+    fun populatePorts(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
+        dockerMetadata.config?.let {
+            addPorts(manifestMetadata, dockerMetadata.config!!.exposedPorts)
         }
 
-        fun populateVolumes(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
-            if (dockerMetadata.config != null) {
-                addVolumes(manifestMetadata, dockerMetadata.config!!.volumes)
-            }
+        dockerMetadata.containerConfig?.let {
+            addPorts(manifestMetadata, dockerMetadata.containerConfig!!.exposedPorts)
+        }
+    }
 
-            if (dockerMetadata.containerConfig != null) {
-                addVolumes(manifestMetadata, dockerMetadata.containerConfig!!.volumes)
-            }
+    fun populateVolumes(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
+        dockerMetadata.config?.let {
+            addVolumes(manifestMetadata, dockerMetadata.config!!.volumes)
         }
 
-        fun populateLabels(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
-            if (dockerMetadata.config != null) {
-                addLabels(manifestMetadata, dockerMetadata.config!!.labels)
-            }
+        dockerMetadata.containerConfig?.let {
+            addVolumes(manifestMetadata, dockerMetadata.containerConfig!!.volumes)
+        }
+    }
 
-            if (dockerMetadata.containerConfig != null) {
-                addLabels(manifestMetadata, dockerMetadata.containerConfig!!.labels)
-            }
+    fun populateLabels(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
+        dockerMetadata.config?.let {
+            addLabels(manifestMetadata, dockerMetadata.config!!.labels)
         }
 
-        private fun addPorts(manifestMetadata: ManifestMetadata, exposedPorts: JsonNode?) {
-            if (exposedPorts != null) {
-                val iterPorts = exposedPorts.fieldNames()
+        dockerMetadata.containerConfig?.let {
+            addLabels(manifestMetadata, dockerMetadata.containerConfig!!.labels)
+        }
+    }
 
-                while (iterPorts.hasNext()) {
-                    manifestMetadata.tagInfo.ports.add(iterPorts.next())
-                }
+    private fun addPorts(manifestMetadata: ManifestMetadata, exposedPorts: JsonNode?) {
+        exposedPorts?.let {
+            val iterPorts = exposedPorts.fieldNames()
+            while (iterPorts.hasNext()) {
+                manifestMetadata.tagInfo.ports.add(iterPorts.next())
             }
         }
+    }
 
-        private fun addVolumes(manifestMetadata: ManifestMetadata, volumes: JsonNode?) {
-            if (volumes != null) {
-                val iterVolume = volumes.fieldNames()
-
-                while (iterVolume.hasNext()) {
-                    manifestMetadata.tagInfo.volumes.add(iterVolume.next())
-                }
+    private fun addVolumes(manifestMetadata: ManifestMetadata, volumes: JsonNode?) {
+        volumes?.let {
+            val iterVolume = volumes.fieldNames()
+            while (iterVolume.hasNext()) {
+                manifestMetadata.tagInfo.volumes.add(iterVolume.next())
             }
         }
+    }
 
-        private fun addLabels(manifestMetadata: ManifestMetadata, labels: Map<String, String>?) {
-            if (labels != null) {
-                val iter = labels.entries.iterator()
-
-                while (iter.hasNext()) {
-                    val label = iter.next()
-                    manifestMetadata.tagInfo.labels.put(label.key, label.value)
-                }
+    private fun addLabels(manifestMetadata: ManifestMetadata, labels: Map<String, String>?) {
+        labels?.let {
+            val iter = labels.entries.iterator()
+            while (iter.hasNext()) {
+                val label = iter.next()
+                manifestMetadata.tagInfo.labels.put(label.key, label.value)
             }
         }
     }

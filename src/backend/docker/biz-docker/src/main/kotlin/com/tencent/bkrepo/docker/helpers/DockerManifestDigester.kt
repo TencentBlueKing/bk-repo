@@ -22,8 +22,7 @@ object DockerManifestDigester {
 
     fun calc(jsonBytes: ByteArray): DockerDigest? {
         val manifest = mapper().readTree(jsonBytes)
-        val schemaVersion = manifest.get("schemaVersion")
-        if (schemaVersion == null) {
+        val schemaVersion = manifest.get("schemaVersion") ?: run {
             logger.warn("unable to determine the schema version of the manifest")
             return null
         }
@@ -49,19 +48,19 @@ object DockerManifestDigester {
     private fun schema1Digest(jsonBytes: ByteArray, manifest: JsonNode): String {
         var formatLength = 0
         var formatTail = EMPTYSTR
-        val signatures = manifest.get("signatures")
-        signatures?.let {
-            val sig = signatures.iterator()
-            while (sig.hasNext()) {
-                val signature = sig.next() as JsonNode
-                var protectedJson = signature.get("protected")
-                protectedJson?.let {
-                    val protectedBytes = Base64.decodeBase64(protectedJson.asText())
-                    protectedJson = mapper().readTree(protectedBytes)
-                    formatLength = protectedJson.get("formatLength").asInt()
-                    formatTail = protectedJson.get("formatTail").asText()
-                    formatTail = String(Base64.decodeBase64(formatTail), Charsets.UTF_8)
-                }
+        val signatures = manifest.get("signatures") ?: run {
+            return getHexDigest(jsonBytes, formatLength, formatTail)
+        }
+        val sig = signatures.iterator()
+        while (sig.hasNext()) {
+            val signature = sig.next() as JsonNode
+            var protectedJson = signature.get("protected")
+            protectedJson?.let {
+                val protectedBytes = Base64.decodeBase64(protectedJson.asText())
+                protectedJson = mapper().readTree(protectedBytes)
+                formatLength = protectedJson.get("formatLength").asInt()
+                formatTail = protectedJson.get("formatTail").asText()
+                formatTail = String(Base64.decodeBase64(formatTail), Charsets.UTF_8)
             }
         }
 

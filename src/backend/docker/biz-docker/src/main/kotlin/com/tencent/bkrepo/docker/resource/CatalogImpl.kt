@@ -21,14 +21,14 @@ class CatalogImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServic
     ): ResponseEntity<Any> {
         var maxEntries = 0
         var index = EMPTYSTR
-        if (n != null) {
+        n?.let {
             maxEntries = n
         }
-        if (last != null) {
+        last?.let {
             index = last
         }
         val uId = UserUtil.getContextUserId(userId)
-        val pathContext = RequestContext(uId, projectId, repoName, "")
+        val pathContext = RequestContext(uId, projectId, repoName, EMPTYSTR)
         return dockerRepo.catalog(pathContext, maxEntries, index)
     }
 }

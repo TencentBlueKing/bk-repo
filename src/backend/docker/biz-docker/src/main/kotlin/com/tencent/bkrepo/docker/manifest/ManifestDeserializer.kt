@@ -11,26 +11,28 @@ import com.tencent.bkrepo.docker.util.ContentUtil
  * @author: owenlxu
  * @date: 2020-02-05
  */
-class ManifestDeserializer {
+object ManifestDeserializer {
 
-    companion object {
-
-        fun deserialize(repo: DockerArtifactRepo, context: RequestContext, tag: String, manifestType: ManifestType, bytes: ByteArray, digest: DockerDigest): ManifestMetadata {
-            var manifestBytes = bytes
-            val contentUtil = ContentUtil(repo)
-            when (manifestType) {
-                ManifestType.Schema1 -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
-                ManifestType.Schema1Signed -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
-                ManifestType.Schema2 -> {
-                    val manifestJsonBytes = contentUtil.getSchema2ManifestConfigContent(context, manifestBytes, tag)
-                    return ManifestSchema2Deserializer.deserialize(manifestBytes, manifestJsonBytes, context.artifactName, tag, digest)
-                }
-                ManifestType.Schema2List -> {
-                    val schema2Path = contentUtil.getSchema2Path(context, manifestBytes)
-                    manifestBytes = contentUtil.getSchema2ManifestContent(context, schema2Path)
-                    return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
-                }
-                else -> return ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
+    fun deserialize(repo: DockerArtifactRepo, context: RequestContext, tag: String, manifestType: ManifestType, bytes: ByteArray, digest: DockerDigest): ManifestMetadata {
+        var manifestBytes = bytes
+        val contentUtil = ContentUtil(repo)
+        return when (manifestType) {
+            ManifestType.Schema1 -> ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
+            ManifestType.Schema1Signed -> ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
+            ManifestType.Schema2 -> {
+                val manifestJsonBytes = contentUtil.getSchema2ManifestConfigContent(context, manifestBytes, tag)
+                ManifestSchema2Deserializer.deserialize(
+                    manifestBytes,
+                    manifestJsonBytes,
+                    context.artifactName,
+                    tag,
+                    digest
+                )
+            }
+            ManifestType.Schema2List -> {
+                val schema2Path = contentUtil.getSchema2Path(context, manifestBytes)
+                manifestBytes = contentUtil.getSchema2ManifestContent(context, schema2Path)
+                ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
             }
         }
     }

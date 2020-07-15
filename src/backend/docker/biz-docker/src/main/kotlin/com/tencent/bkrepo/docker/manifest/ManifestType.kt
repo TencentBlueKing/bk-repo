@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.docker.manifest
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import org.springframework.http.MediaType
 
 /**
@@ -8,7 +9,8 @@ import org.springframework.http.MediaType
  * @author: owenlxu
  * @date: 2020-02-05
  */
-enum class ManifestType private constructor(private val mediaType: String) {
+enum class ManifestType(private val mediaType: String) {
+
     Schema1("application/vnd.docker.distribution.manifest.v1+json"),
     Schema1Signed("application/vnd.docker.distribution.manifest.v1+prettyjws"),
     Schema2("application/vnd.docker.distribution.manifest.v2+json"),
@@ -20,10 +22,12 @@ enum class ManifestType private constructor(private val mediaType: String) {
 
     companion object {
 
+        //calculate manifest type from media  type
         fun from(mediaType: MediaType?): ManifestType {
             return from(mediaType.toString())
         }
 
+        //calculate manifest type from content type
         fun from(contentType: String): ManifestType {
             val values = values()
             val size = values.size
@@ -38,23 +42,21 @@ enum class ManifestType private constructor(private val mediaType: String) {
             return Schema1Signed
         }
 
+        //calculate manifest type from  manifest byte
         fun from(manifestBytes: ByteArray): ManifestType {
             val manifest = JsonUtils.objectMapper.readTree(manifestBytes)
             val schemaVersionNode = manifest.get("schemaVersion")
             if (schemaVersionNode != null) {
                 val schemaVersion = schemaVersionNode.intValue()
                 if (schemaVersion == 1) {
-/*                    val signatures = manifest.get("signatures") ?: return Schema1*/
                     return Schema1Signed
                 }
             }
-
             val mediaType = manifest.get("mediaType")
-            var contentType = ""
+            var contentType = EMPTYSTR
             mediaType?.let {
                 contentType = mediaType.textValue()
             }
-
             return from(contentType)
         }
     }

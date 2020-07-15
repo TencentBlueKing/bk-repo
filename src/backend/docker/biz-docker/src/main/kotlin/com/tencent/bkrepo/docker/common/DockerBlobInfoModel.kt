@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.docker.common
 
+import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import org.apache.commons.lang.StringUtils
 
 /**
@@ -8,9 +9,9 @@ import org.apache.commons.lang.StringUtils
  * @date: 2019-11-12
  */
 class DockerBlobInfoModel(var id: String, var digest: String, var size: String, var created: String) {
-    var shortId: String = ""
-    var command: String = ""
-    var commandText: String = ""
+    var shortId: String = EMPTYSTR
+    var command: String = EMPTYSTR
+    var commandText: String = EMPTYSTR
 
     init {
         if (StringUtils.isNotBlank(id)) {
