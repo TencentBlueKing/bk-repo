@@ -97,7 +97,7 @@ class UserServiceImpl @Autowired constructor(
     override fun deleteById(userId: String): Boolean {
         logger.info("delete user userId : [$userId]")
         checkUserExist(userId)
-        userRepository.deleteById(userId)
+        userRepository.deleteByUserId(userId)
         return true
     }
 
@@ -123,11 +123,8 @@ class UserServiceImpl @Autowired constructor(
         val update = Update()
         query.addCriteria(Criteria.where(TUser::userId.name).`in`(idList))
         update.addToSet(TUser::roles.name, roleId)
-        val result = mongoTemplate.upsert(query, update, TUser::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
-        return false
+        mongoTemplate.updateMulti(query, update, TUser::class.java)
+        return true
     }
 
     override fun removeUserFromRole(userId: String, roleId: String): User? {
@@ -152,7 +149,7 @@ class UserServiceImpl @Autowired constructor(
         val update = Update()
         query.addCriteria(Criteria.where(TUser::userId.name).`in`(idList).and(TUser::roles.name).`is`(roleId))
         update.unset("roles.$")
-        val result = mongoTemplate.upsert(query, update, TUser::class.java)
+        val result = mongoTemplate.updateMulti(query, update, TUser::class.java)
         if (result.modifiedCount == 1L) {
             return true
         }
