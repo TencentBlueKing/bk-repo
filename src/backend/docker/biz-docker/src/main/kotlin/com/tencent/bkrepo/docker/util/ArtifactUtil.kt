@@ -46,15 +46,15 @@ object ArtifactUtil {
     }
 
     // get blob by file name cross repo
-    fun getBlobByName(repo: DockerArtifactRepo, pathContext: RequestContext, fileName: String): DockerArtifact? {
-        val result = repo.getArtifactListByName(pathContext.projectId, pathContext.repoName, fileName)
+    fun getBlobByName(repo: DockerArtifactRepo, context: RequestContext, fileName: String): DockerArtifact? {
+        val result = repo.getArtifactListByName(context.projectId, context.repoName, fileName)
         if (result.isEmpty()) {
             return null
         }
         val blob = result[0]
         val length = blob[DOCKER_NODE_SIZE] as Int
         val fullPath = blob[DOCKER_NODE_FULL_PATH] as String
-        with(pathContext) {
+        with(context) {
             return DockerArtifact(projectId, repoName, artifactName).sha256(sha256FromFileName(fileName))
                 .length(length.toLong()).fullPath(fullPath)
         }

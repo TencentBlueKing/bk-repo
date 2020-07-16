@@ -5,6 +5,7 @@ import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_CONTENT_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
+import com.tencent.bkrepo.docker.constant.DOCKER_LINK
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_LIST
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
@@ -106,7 +107,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
             val last = tagsResponse.tags.last() as String
             val name = context.artifactName
             val link = "</v2/$name/tags/list?last=$last&n=$maxEntries>; rel=\"next\""
-            httpHeaders.set("Link", link)
+            httpHeaders.set(DOCKER_LINK, link)
         }
         return ResponseEntity(tagsResponse, httpHeaders, HttpStatus.OK)
     }
@@ -242,7 +243,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
 
     // delete a manifest file by digest then
     private fun deleteManifestByDigest(context: RequestContext, digest: DockerDigest): DockerResponse {
-        logger.info("delete docker manifest for  [$context}] digest [$digest] ")
+        logger.info("delete docker manifest for digest [$context, $digest] ")
         val manifests = repo.getArtifactListByName(context.projectId, context.repoName, DOCKER_MANIFEST)
         val manifestIter = manifests.iterator()
 
@@ -357,6 +358,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         repoUtil.loadContext(context)
         logger.info("start upload blob : [$context]")
         if (!repo.canWrite(context)) {
+            logger.warn("start blob upload unauthorizedUpload [$context]")
             return DockerV2Errors.unauthorizedUpload()
         }
         mount?.let {
@@ -410,8 +412,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         }
         logger.info("deploy docker blob [$blobPath] into [$context]")
         val uploadContext = UploadContext(context.projectId, context.repoName, blobPath).sha256(digest.getDigestHex()).artifactFile(file)
-        val result = repo.upload(uploadContext)
-        if (!result) {
+        if (!repo.upload(uploadContext)) {
             logger.warn("error upload blob [$blobPath]")
             return DockerV2Errors.blobUploadInvalid(context.artifactName)
         }
@@ -427,7 +428,10 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         val blobPath = "/${context.artifactName}/_uploads/$fileName"
         val uploadContext = UploadContext(context.projectId, context.repoName, blobPath)
         repo.finishAppend(uuid, uploadContext)
-        val url = "${context.projectId}/$context.repoName}/${context.artifactName}/blobs/$digest"
+        var url = EMPTYSTR
+        with(context) {
+            url = "$projectId/$repoName/$artifactName/blobs/$digest"
+        }
         val location = RepoServiceUtil.getDockerURI(url, httpHeaders)
         return ResponseEntity.created(location).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
             .header(CONTENT_LENGTH, "0").header(DOCKER_CONTENT_DIGEST, digest.toString()).build()
@@ -505,7 +509,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         logger.info("get manifest by tag params [$context,$manifestPath]")
         if (!repo.canRead(context)) {
             logger.warn("do not have permission to get [$context,$manifestPath]")
-            return DockerV2Errors.unauthorizedManifest(manifestPath, null as String?)
+            return DockerV2Errors.unauthorizedManifest(manifestPath)
         }
         val manifest = repo.getArtifact(context.projectId, context.repoName, manifestPath) ?: run {
             logger.warn("the node not exist [$context,$manifestPath]")

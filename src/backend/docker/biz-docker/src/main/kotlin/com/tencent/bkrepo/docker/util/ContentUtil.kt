@@ -36,12 +36,14 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
 
     val repo = repo
 
+    private val objectMapper = JsonUtils.objectMapper
+
     fun getManifestType(projectId: String, repoName: String, manifestPath: String): String? {
         return repo.getAttribute(projectId, repoName, manifestPath, "docker.manifest.type")
     }
 
     fun getSchema2ManifestConfigContent(context: RequestContext, bytes: ByteArray, tag: String): ByteArray {
-        val manifest = JsonUtils.objectMapper.readTree(bytes)
+        val manifest = objectMapper.readTree(bytes)
         val digest = manifest.get("config").get(DOCKER_DIGEST).asText()
         val fileName = DockerDigest(digest).fileName()
         val configFile = ArtifactUtil.getManifestConfigBlob(repo, fileName, context, tag) ?: run {
@@ -67,7 +69,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
     }
 
     fun getSchema2Path(context: RequestContext, bytes: ByteArray): String {
-        val manifestList = JsonUtils.objectMapper.readTree(bytes)
+        val manifestList = objectMapper.readTree(bytes)
         val manifests = manifestList.get("manifests")
         val maniIter = manifests.iterator()
         while (maniIter.hasNext()) {
@@ -96,7 +98,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
     }
 
     private fun addSchema2Blob(bytes: ByteArray, metadata: ManifestMetadata) {
-        val manifest = JsonUtils.objectMapper.readTree(bytes)
+        val manifest = objectMapper.readTree(bytes)
         val config = manifest.get("config")
         config?.let {
             val digest = config.get(DOCKER_DIGEST).asText()

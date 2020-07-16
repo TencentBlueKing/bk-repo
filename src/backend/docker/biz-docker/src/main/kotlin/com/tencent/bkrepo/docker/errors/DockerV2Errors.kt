@@ -41,25 +41,39 @@ class DockerV2Errors {
         fun blobUnknown(digest: String): DockerResponse {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
                 .contentType(MediaType.APPLICATION_JSON).header(CONTENT_LENGTH, "157")
-                .body(String.format(ERROR_MESSAGE, "BLOB_UNKNOWN", "blob unknown to registry", "\"blobSum\":\"$digest\""))
+                .body(String.format(ERROR_MESSAGE, "BLOB_UNKNOWN", "blob unknown to registry blobSum", digest))
         }
 
         fun blobUploadInvalid(message: Any): DockerResponse {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(String.format(ERROR_MESSAGE, "BLOB_UPLOAD_INVALID", "There was an error processing the upload and it must be restarted.", "\"description\":\"$message\""))
+                .body(
+                    String.format(
+                        ERROR_MESSAGE,
+                        "BLOB_UPLOAD_INVALID",
+                        "There was an error processing the upload and it must be restarted.description",
+                        message
+                    )
+                )
         }
 
         fun manifestInvalid(message: Any): DockerResponse {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(String.format(ERROR_MESSAGE, "MANIFEST_INVALID", "manifest invalid", "\"description\":\"$message\""))
+                .body(String.format(ERROR_MESSAGE, "MANIFEST_INVALID", "manifest invalid description", message))
         }
 
         fun manifestUnknown(manifest: String): DockerResponse {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(String.format(ERROR_MESSAGE, "MANIFEST_UNKNOWN", "The named manifest is not known to the registry.", "\"manifest\":\"$manifest\""))
+                .body(
+                    String.format(
+                        ERROR_MESSAGE,
+                        "MANIFEST_UNKNOWN",
+                        "The named manifest is not known to the registry.manifest",
+                        manifest
+                    )
+                )
         }
 
         fun unauthorizedUpload(): DockerResponse {
@@ -76,22 +90,43 @@ class DockerV2Errors {
                 .body(String.format(ERROR_MESSAGE_EMPTY, "UNAUTHORIZED", "authentication required"))
         }
 
-        fun unauthorizedManifest(manifest: String, err: String?): DockerResponse {
+        fun unauthorizedManifest(manifest: String): DockerResponse {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(String.format(ERROR_MESSAGE, "UNAUTHORIZED", "The client does not have permission for manifest" + if (err != null) ": $err" else "", "\"manifest\":\"$manifest\""))
+                .body(
+                    String.format(
+                        ERROR_MESSAGE,
+                        "UNAUTHORIZED",
+                        "The client does not have permission for manifest:",
+                        manifest
+                    )
+                )
         }
 
         fun nameUnknown(dockerRepo: String): DockerResponse {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(String.format(ERROR_MESSAGE, "NAME_UNKNOWN", "Repository name not known to registry.", "\"name\":\"$dockerRepo\""))
+                .body(
+                    String.format(
+                        ERROR_MESSAGE,
+                        "NAME_UNKNOWN",
+                        "Repository name not known to registry. name:",
+                        dockerRepo
+                    )
+                )
         }
 
         fun manifestConcurrent(message: Any): DockerResponse {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(String.format(ERROR_MESSAGE, "MANIFEST_INVALID", "MANIFEST-CONCURRENT-EXCEPTION", "\"description\":\"$message\""))
+                .body(
+                    String.format(
+                        ERROR_MESSAGE,
+                        "MANIFEST_INVALID",
+                        "MANIFEST-CONCURRENT-EXCEPTION description",
+                        message
+                    )
+                )
         }
     }
 }

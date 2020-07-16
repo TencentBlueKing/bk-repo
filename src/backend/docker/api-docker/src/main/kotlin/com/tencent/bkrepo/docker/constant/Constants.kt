@@ -73,3 +73,5 @@ const val DOCKER_MANIFEST_DIGEST = "docker.manifest.digest"
 const val DOCKER_MANIFEST_NAME = "docker.manifest"
 const val DOCKER_NAME_REPO = "docker.repoName"
 const val DOCKER_MANIFEST_TYPE = "docker.manifest.type"
+
+const val DOCKER_LINK = "Link"

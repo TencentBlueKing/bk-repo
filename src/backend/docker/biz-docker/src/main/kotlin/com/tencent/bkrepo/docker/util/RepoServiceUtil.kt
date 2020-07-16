@@ -95,10 +95,10 @@ object RepoServiceUtil {
         }
     }
 
-    // get return url
+    // get docker return url
     fun getDockerURI(path: String, httpHeaders: HttpHeaders): URI {
         val hostHeaders = httpHeaders["Host"]
-        var host = EMPTYSTR
+        var host = "localhost"
         var port: Int? = null
         if (hostHeaders != null && hostHeaders.isNotEmpty()) {
             val parts = (hostHeaders[0] as String).split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
@@ -108,7 +108,7 @@ object RepoServiceUtil {
             }
         }
 
-        val builder = UriBuilder.fromPath("v2/$path").host(host).scheme(RepoServiceUtil.getProtocol(httpHeaders))
+        val builder = UriBuilder.fromPath("v2/$path").host(host).scheme(getProtocol(httpHeaders))
         port?.let {
             builder.port(port)
         }
@@ -124,7 +124,10 @@ object RepoServiceUtil {
         }
     }
 
-    // get http protocol from request head
+    /**
+     * determine to return http protocol prefix or
+     * https prefix
+     */
     private fun getProtocol(httpHeaders: HttpHeaders): String {
         val protocolHeaders = httpHeaders[HTTP_FORWARDED_PROTO]
         if (protocolHeaders == null || protocolHeaders.isEmpty()) {
