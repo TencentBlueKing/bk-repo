@@ -8,7 +8,6 @@ import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_LIST
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_NAME
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_TYPE
 import com.tencent.bkrepo.docker.constant.DOCKER_NAME_REPO
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.HTTP_FORWARDED_PROTO
 import com.tencent.bkrepo.docker.constant.HTTP_PROTOCOL_HTTP
 import com.tencent.bkrepo.docker.constant.HTTP_PROTOCOL_HTTPS

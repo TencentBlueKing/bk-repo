@@ -22,12 +22,12 @@ enum class ManifestType(private val mediaType: String) {
 
     companion object {
 
-        //calculate manifest type from media  type
+        // calculate manifest type from media  type
         fun from(mediaType: MediaType?): ManifestType {
             return from(mediaType.toString())
         }
 
-        //calculate manifest type from content type
+        // calculate manifest type from content type
         fun from(contentType: String): ManifestType {
             val values = values()
             val size = values.size
@@ -42,7 +42,7 @@ enum class ManifestType(private val mediaType: String) {
             return Schema1Signed
         }
 
-        //calculate manifest type from  manifest byte
+        // calculate manifest type from  manifest byte
         fun from(manifestBytes: ByteArray): ManifestType {
             val manifest = JsonUtils.objectMapper.readTree(manifestBytes)
             val schemaVersionNode = manifest.get("schemaVersion")

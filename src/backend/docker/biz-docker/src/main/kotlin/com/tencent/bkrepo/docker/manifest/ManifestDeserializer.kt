@@ -13,7 +13,7 @@ import com.tencent.bkrepo.docker.util.ContentUtil
  */
 object ManifestDeserializer {
 
-    //deserialize manifest file and get manifest metadata
+    // deserialize manifest file and get manifest metadata
     fun deserialize(repo: DockerArtifactRepo, context: RequestContext, tag: String, manifestType: ManifestType, bytes: ByteArray, digest: DockerDigest): ManifestMetadata {
         var manifestBytes = bytes
         val contentUtil = ContentUtil(repo)

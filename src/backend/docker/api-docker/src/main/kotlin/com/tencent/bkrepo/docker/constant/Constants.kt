@@ -9,6 +9,7 @@ const val MANIFEST_PATTERN = "/manifests"
 
 const val EMPTYSTR = ""
 
+const val BASIC_SPLITE = ":"
 const val USER_API_PREFIX = "/api"
 const val DOCKER_API_PREFIX = "/v2"
 const val DOCKER_API_SUFFIX = "/auth"
