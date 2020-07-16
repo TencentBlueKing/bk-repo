@@ -38,6 +38,8 @@ class UserServiceTest {
     private val testProjectId = "projectId_unit_test"
     private val testRepoName = "repoId_unit_test"
 
+    private val repeatTimes = 10
+
     @BeforeEach
     fun setUp() {
         userService.getUserById(userId)?.let {
@@ -55,6 +57,11 @@ class UserServiceTest {
         }
         roleService.detail(roleId, testProjectId)?.let {
             roleService.deleteRoleByid(it.id!!)
+        }
+        repeat(repeatTimes) {
+            userService.getUserById(userId + "_" + it)?.let {
+                userService.deleteById(it.userId)
+            }
         }
     }
 
@@ -156,7 +163,7 @@ class UserServiceTest {
     @DisplayName("批量添加用户到角色测试用例")
     fun addUserToRoleBatchTest() {
         val idList = mutableListOf<String>()
-        repeat(10) {
+        repeat(repeatTimes) {
             val userId = userId + "_" + it
             userService.createUser(createUserRequest(id = userId))
             idList.add(userId)
@@ -167,7 +174,6 @@ class UserServiceTest {
         val roleId = roleService.createRole(roleRequest)!!
         val isSuccess = userService.addUserToRoleBatch(idList, roleId)
         Assertions.assertTrue(isSuccess)
-        deleteAllUser()
     }
 
     @Test
@@ -187,7 +193,7 @@ class UserServiceTest {
     @DisplayName("删除用户的角色测试用例")
     fun removeUserFromRoleBatchTest() {
         val idList = mutableListOf<String>()
-        repeat(10) {
+        repeat(repeatTimes) {
             val userId = userId + "_" + it
             userService.createUser(createUserRequest(id = userId))
             idList.add(userId)
@@ -199,7 +205,6 @@ class UserServiceTest {
         Assertions.assertTrue(isSuccess)
         val removeUserFromRoleBatch = userService.removeUserFromRoleBatch(idList, roleId)
         Assertions.assertTrue(removeUserFromRoleBatch)
-        deleteAllUser()
     }
 
     @Test
@@ -271,11 +276,5 @@ class UserServiceTest {
     private fun createRole(): String? {
         val roleRequest = CreateRoleRequest(roleId, roleName, RoleType.PROJECT, testProjectId, null, false)
         return roleService.createRole(roleRequest)
-    }
-
-    private fun deleteAllUser() {
-        repeat(10) {
-            userService.deleteById(userId + "_" + it)
-        }
     }
 }
