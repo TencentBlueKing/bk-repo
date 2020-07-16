@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.docker.resource
 
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.docker.api.User
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.PathUtil
@@ -50,7 +50,7 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         repoName: String
     ): Response<List<String>> {
         val uId = UserUtil.getContextUserId(userId)
-        val context = RequestContext(uId, projectId, repoName, EMPTYSTR)
+        val context = RequestContext(uId, projectId, repoName, EMPTY)
         val result = dockerRepo.getRepoList(context)
         return ResponseBuilder.success(result)
     }

@@ -5,6 +5,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_FAILED_RESPONSE
 import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import org.apache.http.HttpStatus
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor
@@ -27,7 +28,7 @@ class AuthInterceptor : HandlerInterceptor {
             }
             val encodedCredentials = basicAuthHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
-            val parts = decodedHeader.split(StringPool.COLON)
+            val parts = decodedHeader.split(COLON)
             require(parts.size == 2)
             accountService.checkCredential(parts[0], parts[1]) ?: run {
                 throw IllegalArgumentException("check credential fail")

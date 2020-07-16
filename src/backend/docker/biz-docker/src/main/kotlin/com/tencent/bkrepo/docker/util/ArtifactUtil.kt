@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.docker.util
 
 import com.google.common.base.Joiner
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
+import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.docker.artifact.DockerArtifact
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
-import com.tencent.bkrepo.docker.constant.DOCKER_PRE_SUFFIX
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.context.RequestContext
 import org.slf4j.LoggerFactory
 
@@ -23,7 +23,7 @@ object ArtifactUtil {
     private const val JSON_FILENAME = "json.json"
     private const val REPOSITORIES_DIR = "repositories"
     private const val TAG_FILENAME = "tag.json"
-    private const val PATH_DELIMITER = DOCKER_PRE_SUFFIX
+    private const val PATH_DELIMITER = SLASH
 
     private fun imagePath(imageId: String): String {
         return IMAGES_DIR + imageId.substring(0, 2) + PATH_DELIMITER + imageId
@@ -69,7 +69,7 @@ object ArtifactUtil {
 
     // get manifest config blob data
     fun getManifestConfigBlob(repo: DockerArtifactRepo, filename: String, context: RequestContext, tag: String): DockerArtifact? {
-        val configPath = Joiner.on(DOCKER_PRE_SUFFIX).join(context.artifactName, tag, filename)
+        val configPath = Joiner.on(SLASH).join(context.artifactName, tag, filename)
         // search blob by full tag path
         logger.info("search manifest config blob in: [$configPath]")
         if (repo.exists(context.projectId, context.repoName, configPath)) {
@@ -95,7 +95,7 @@ object ArtifactUtil {
     }
 
     private fun sha256FromFileName(fileName: String): String {
-        return fileName.replace("sha256__", EMPTYSTR)
+        return fileName.replace("sha256__", EMPTY)
     }
 
     private fun repositoryPath(namespace: String, repoName: String): String {

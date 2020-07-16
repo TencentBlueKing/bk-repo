@@ -2,6 +2,8 @@ package com.tencent.bkrepo.docker.artifact
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
+import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
 import com.tencent.bkrepo.common.artifact.permission.PermissionService
@@ -18,13 +20,11 @@ import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
-import com.tencent.bkrepo.docker.constant.DOCKER_PRE_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
 import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
 import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_INDEX
 import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_LIMIT
 import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_LIMIT_SMALL
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
@@ -130,7 +130,7 @@ class DockerArtifactRepo @Autowired constructor(
             )
         )
         if (result.isNotOk()) {
-            logger.error("user [$userId]  upload file [${context.fullPath}] failed: [${result.code}, ${result.message}]")
+            logger.error("user [$userId]  upload file [${context.fullPath}] failed: [$result]")
             throw DockerFileSaveFailedException(context.fullPath)
         }
         logger.debug("user [$userId]  upload file [${context.fullPath}] success")
@@ -160,7 +160,7 @@ class DockerArtifactRepo @Autowired constructor(
         // save node
         val result = nodeResource.create(node)
         if (result.isNotOk()) {
-            logger.error("user [$userId] finish upload file  [${context.fullPath}] failed: [${result.code}, ${result.message}]")
+            logger.error("user [$userId] finish upload file  [${context.fullPath}] failed: [$result]")
             throw DockerFileSaveFailedException(context.fullPath)
         }
         logger.debug("user [$userId] finish append file  [${context.fullPath} , ${file.sha256}] success")
@@ -319,11 +319,7 @@ class DockerArtifactRepo @Autowired constructor(
         val data = mutableListOf<String>()
         result.records.forEach {
             val path = it[DOCKER_NODE_PATH] as String
-            data.add(
-                path.removeSuffix(DOCKER_PRE_SUFFIX).replaceAfterLast(DOCKER_PRE_SUFFIX, EMPTYSTR).removeSuffix(
-                    DOCKER_PRE_SUFFIX
-                ).removePrefix(DOCKER_PRE_SUFFIX)
-            )
+            data.add(path.removeSuffix(SLASH).replaceAfterLast(SLASH, EMPTY).removeSuffix(SLASH).removePrefix(SLASH))
         }
         return data.distinct()
     }
@@ -350,7 +346,7 @@ class DockerArtifactRepo @Autowired constructor(
             val data = mutableMapOf<String, String>()
             result.records.forEach {
                 var path = it[DOCKER_NODE_PATH] as String
-                val tag = path.removePrefix("/$artifactName/").removeSuffix(DOCKER_PRE_SUFFIX)
+                val tag = path.removePrefix("/$artifactName/").removeSuffix(SLASH)
                 val user = it[DOCKER_CREATE_BY] as String
                 data[tag] = user
             }

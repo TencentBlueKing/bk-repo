@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.docker.auth
 
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.artifact.auth.basic.BasicAuthCredentials
 import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE_TOKEN
-import com.tencent.bkrepo.docker.constant.BASIC_SPLITE
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_UNAUTHED_BODY
@@ -42,7 +42,7 @@ class AuthUtil {
     /**
      * check first docker login user,password
      *  check success return bareer token
-     *  and will in other request
+     *  and will carry in other request
      */
     fun authUser(request: HttpServletRequest, response: HttpServletResponse): DockerResponse {
         return try {
@@ -72,7 +72,7 @@ class AuthUtil {
             if (!basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
             val encodedCredentials = basicAuthHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
-            val parts = decodedHeader.split(BASIC_SPLITE)
+            val parts = decodedHeader.split(COLON)
             require(parts.size >= 2)
             if (authEnable) {
                 if (!serviceUserResource.checkUserToken(

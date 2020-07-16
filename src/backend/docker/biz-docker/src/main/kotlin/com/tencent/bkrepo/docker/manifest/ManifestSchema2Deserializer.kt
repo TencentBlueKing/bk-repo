@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.docker.manifest
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.exception.DockerManifestDeseriFailException
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
@@ -77,7 +77,7 @@ object ManifestSchema2Deserializer {
                 created = historyLayer["created"].asText()
             }
 
-            val blobInfo = DockerBlobInfo(EMPTYSTR, digest, size, created)
+            val blobInfo = DockerBlobInfo(EMPTY, digest, size, created)
             if (!isForeignLayer(layer)) {
                 populateWithCommand(historyLayer, blobInfo)
             }

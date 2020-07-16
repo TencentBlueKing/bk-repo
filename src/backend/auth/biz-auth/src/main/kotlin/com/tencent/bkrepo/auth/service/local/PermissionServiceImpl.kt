@@ -44,7 +44,7 @@ class PermissionServiceImpl @Autowired constructor(
             permissionRepository.findAll().map { transferPermission(it) }
         } else if (projectId == null && resourceType != null) {
             permissionRepository.findByResourceType(resourceType).map { transferPermission(it) }
-        } else if (projectId != null && resourceType != null) {
+        } else if (projectId != null && resourceType != null&& repoName == null) {
             permissionRepository.findByResourceTypeAndProjectId(resourceType, projectId).map { transferPermission(it) }
         } else if (projectId != null && resourceType != null && repoName != null) {
             permissionRepository.findByResourceTypeAndProjectIdAndRepos(resourceType, projectId, repoName)

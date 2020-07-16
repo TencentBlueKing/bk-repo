@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.auth.api
 
+import com.tencent.bkrepo.auth.constant.AUTH_ACCOUNT_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ACCOUNT_PREFIX
 import com.tencent.bkrepo.auth.constant.SERVICE_NAME
 import com.tencent.bkrepo.auth.pojo.Account
 import com.tencent.bkrepo.auth.pojo.CreateAccountRequest
@@ -20,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(tags = ["SERVICE_ACCOUNT"], description = "服务-账号接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceAccountResource")
-@RequestMapping("/account", "/service/account", "/api/account")
+@RequestMapping(AUTH_ACCOUNT_PREFIX, AUTH_SERVICE_ACCOUNT_PREFIX, AUTH_API_ACCOUNT_PREFIX)
 interface ServiceAccountResource {
 
     @ApiOperation("查询所有账号账号")

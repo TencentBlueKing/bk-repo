@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.docker.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
+import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
@@ -11,9 +13,7 @@ import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_LIST
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
-import com.tencent.bkrepo.docker.constant.DOCKER_PRE_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_UPLOAD_UUID
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.context.UploadContext
@@ -87,11 +87,11 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         manifests.forEach {
             val path = it[DOCKER_NODE_PATH] as String
             val tagName = path.apply {
-                replaceAfterLast(DOCKER_PRE_SUFFIX, EMPTYSTR)
+                replaceAfterLast(SLASH, EMPTY)
             }.apply {
-                removeSuffix(DOCKER_PRE_SUFFIX)
+                removeSuffix(SLASH)
             }.apply {
-                removePrefix(DOCKER_PRE_SUFFIX + context.artifactName + DOCKER_PRE_SUFFIX)
+                removePrefix(SLASH + context.artifactName + SLASH)
             }
             elementsHolder.elements.add(tagName)
         }
@@ -119,9 +119,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
 
         manifests.forEach {
             val path = it[DOCKER_NODE_PATH] as String
-            val repoName =
-                path.replaceAfterLast(DOCKER_PRE_SUFFIX, EMPTYSTR).replaceAfterLast(DOCKER_PRE_SUFFIX, EMPTYSTR)
-                    .removeSuffix(DOCKER_PRE_SUFFIX)
+            val repoName = path.replaceAfterLast(SLASH, EMPTY).replaceAfterLast(SLASH, EMPTY).removeSuffix(SLASH)
             if (StringUtils.isNotBlank(repoName)) {
                 elementsHolder.addElement(repoName)
             }
@@ -155,7 +153,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         val manifestPath = RepoServiceUtil.buildManifestPath(context.artifactName, tag, useManifestType)
         val manifest = repo.getArtifact(context.projectId, context.repoName, manifestPath) ?: run {
             logger.warn("node not exist [$context]")
-            return EMPTYSTR
+            return EMPTY
         }
         val downloadContext = DownloadContext(context).sha256(manifest.sha256!!).length(manifest.length)
         val inputStream = repo.download(downloadContext)
@@ -406,7 +404,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
 
     // upload not with patch but direct from the put
     private fun uploadBlobFromPut(context: RequestContext, digest: DockerDigest, file: ArtifactFile): DockerResponse {
-        val blobPath = context.artifactName + DOCKER_PRE_SUFFIX + "_uploads" + DOCKER_PRE_SUFFIX + digest.fileName()
+        val blobPath = context.artifactName + SLASH + "_uploads" + SLASH + digest.fileName()
         if (!repo.canWrite(context)) {
             return RepoServiceUtil.consumeStreamAndReturnError(file.getInputStream())
         }
@@ -428,7 +426,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         val blobPath = "/${context.artifactName}/_uploads/$fileName"
         val uploadContext = UploadContext(context.projectId, context.repoName, blobPath)
         repo.finishAppend(uuid, uploadContext)
-        var url = EMPTYSTR
+        var url = EMPTY
         with(context) {
             url = "$projectId/$repoName/$artifactName/blobs/$digest"
         }

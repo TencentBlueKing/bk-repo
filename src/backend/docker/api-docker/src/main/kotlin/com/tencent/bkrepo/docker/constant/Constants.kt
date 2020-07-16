@@ -3,13 +3,10 @@ package com.tencent.bkrepo.docker.constant
 const val REPO_TYPE = "DOCKER"
 
 const val BLOB_PATTERN = "/blobs"
-const val DOCKER_PRE_SUFFIX = "/"
 
 const val MANIFEST_PATTERN = "/manifests"
 
-const val EMPTYSTR = ""
 
-const val BASIC_SPLITE = ":"
 const val USER_API_PREFIX = "/api"
 const val DOCKER_API_PREFIX = "/v2"
 const val DOCKER_API_SUFFIX = "/auth"
@@ -32,9 +29,6 @@ const val DOCKER_CATALOG_SUFFIX = "_catalog"
 const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
 const val HTTP_PROTOCOL_HTTP = "http"
 const val HTTP_PROTOCOL_HTTPS = "https"
-
-const val AUTH_ENABLE = "enable"
-const val AUTH_DISABLE = "disable"
 
 const val REGISTRY_SERVICE = "bkrepo"
 

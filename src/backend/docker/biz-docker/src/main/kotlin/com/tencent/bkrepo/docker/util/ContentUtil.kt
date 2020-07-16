@@ -1,13 +1,13 @@
 package com.tencent.bkrepo.docker.util
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_CONTENT_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.manifest.ManifestType
@@ -32,9 +32,7 @@ import javax.xml.bind.DatatypeConverter
  * @author: owenlxu
  * @date: 2019-10-15
  */
-class ContentUtil constructor(repo: DockerArtifactRepo) {
-
-    val repo = repo
+class ContentUtil constructor(val repo: DockerArtifactRepo) {
 
     private val objectMapper = JsonUtils.objectMapper
 
@@ -81,12 +79,12 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
                 val digest = manifest.get(DOCKER_DIGEST).asText()
                 val fileName = DockerDigest(digest).fileName()
                 val manifestFile = ArtifactUtil.getBlobByName(repo, context, fileName) ?: run {
-                    return EMPTYSTR
+                    return EMPTY
                 }
                 return ArtifactUtil.getFullPath(manifestFile)
             }
         }
-        return EMPTYSTR
+        return EMPTY
     }
 
     fun addManifestsBlobs(context: RequestContext, type: ManifestType, bytes: ByteArray, metadata: ManifestMetadata) {
@@ -102,7 +100,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
         val config = manifest.get("config")
         config?.let {
             val digest = config.get(DOCKER_DIGEST).asText()
-            val blobInfo = DockerBlobInfo(EMPTYSTR, digest, 0L, EMPTYSTR)
+            val blobInfo = DockerBlobInfo(EMPTY, digest, 0L, EMPTY)
             metadata.blobsInfo.add(blobInfo)
         }
     }
@@ -115,7 +113,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
         while (manifest.hasNext()) {
             val manifestNode = manifest.next() as JsonNode
             val digestString = manifestNode.get("platform").get(DOCKER_DIGEST).asText()
-            val dockerBlobInfo = DockerBlobInfo(EMPTYSTR, digestString, 0L, EMPTYSTR)
+            val dockerBlobInfo = DockerBlobInfo(EMPTY, digestString, 0L, EMPTY)
             metadata.blobsInfo.add(dockerBlobInfo)
             val manifestFileName = DockerDigest(digestString).fileName()
             val manifestFile = ArtifactUtil.getManifestByName(repo, context, manifestFileName)
@@ -144,6 +142,7 @@ class ContentUtil constructor(repo: DockerArtifactRepo) {
     }
 
     companion object {
+
         private val logger = LoggerFactory.getLogger(ContentUtil::class.java)
         val EMPTY_BLOB_CONTENT: ByteArray =
             DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")

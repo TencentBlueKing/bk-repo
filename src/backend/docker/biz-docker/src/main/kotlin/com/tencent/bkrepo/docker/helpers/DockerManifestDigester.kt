@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.base.Charsets
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.docker.model.DockerDigest
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.codec.binary.Hex
@@ -47,7 +47,7 @@ object DockerManifestDigester {
 
     private fun schema1Digest(jsonBytes: ByteArray, manifest: JsonNode): String {
         var formatLength = 0
-        var formatTail = EMPTYSTR
+        var formatTail = EMPTY
         val signatures = manifest.get("signatures") ?: run {
             return getHexDigest(jsonBytes, formatLength, formatTail)
         }

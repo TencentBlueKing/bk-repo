@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.auth.api
 
+import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_USER_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.SERVICE_NAME
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
@@ -21,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(tags = ["SERVICE_USER"], description = "服务-用户接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceUserResource")
-@RequestMapping("/user", "/api/user", "/service/user")
+@RequestMapping(AUTH_USER_PREFIX, AUTH_API_USER_PREFIX, AUTH_SERVICE_USER_PREFIX)
 interface ServiceUserResource {
 
     @ApiOperation("创建项目用户")

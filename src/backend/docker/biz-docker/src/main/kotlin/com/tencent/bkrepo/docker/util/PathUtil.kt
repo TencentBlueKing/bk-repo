@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.docker.util
 
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
@@ -14,7 +14,7 @@ object PathUtil {
 
     fun artifactName(request: HttpServletRequest, pattern: String, projectId: String, repoName: String): String {
         val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
-        return restOfTheUrl.replaceAfterLast(pattern, EMPTYSTR).removeSuffix(pattern)
+        return restOfTheUrl.replaceAfterLast(pattern, EMPTY).removeSuffix(pattern)
             .removePrefix(prefix(projectId, repoName))
     }
 

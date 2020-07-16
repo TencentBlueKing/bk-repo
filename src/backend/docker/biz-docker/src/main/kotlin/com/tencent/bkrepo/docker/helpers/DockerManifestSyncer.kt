@@ -32,7 +32,7 @@ object DockerManifestSyncer {
             val blobInfo = manifestInfos.next()
             logger.info("sync docker blob digest [${blobInfo.digest}]")
             if (blobInfo.digest == null || !this.isForeignLayer(blobInfo)) {
-                logger.warn("blob format error [$blobInfo]")
+                logger.info("blob format error [$blobInfo]")
                 continue
             }
             val blobDigest = DockerDigest(blobInfo.digest!!)

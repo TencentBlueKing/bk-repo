@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.docker.manifest
 
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import org.springframework.http.MediaType
 
 /**
@@ -53,7 +53,7 @@ enum class ManifestType(private val mediaType: String) {
                 }
             }
             val mediaType = manifest.get("mediaType")
-            var contentType = EMPTYSTR
+            var contentType = EMPTY
             mediaType?.let {
                 contentType = mediaType.textValue()
             }

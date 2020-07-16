@@ -5,6 +5,9 @@ import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.common.api.constant.APP_KEY
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.COLON
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.AuthService
@@ -15,10 +18,8 @@ import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.artifact.config.BEARER_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE_SERVICE_SCOPE
-import com.tencent.bkrepo.docker.constant.BASIC_SPLITE
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.ERROR_MESSAGE
 import com.tencent.bkrepo.docker.constant.REGISTRY_SERVICE
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
@@ -43,7 +44,7 @@ import javax.ws.rs.core.MediaType
 class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAuthHandler {
 
     @Value("\${auth.url}")
-    private var authUrl: String = EMPTYSTR
+    private var authUrl: String = EMPTY
 
     @Autowired
     private lateinit var authService: AuthService
@@ -110,7 +111,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         if (request.requestURI.startsWith(USER_API_PREFIX)) {
             val encodedCredentials = basicAuthHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
-            val parts = decodedHeader.split(BASIC_SPLITE)
+            val parts = decodedHeader.split(COLON)
             require(parts.size >= 2)
             return PlatformAuthCredentials(parts[0], parts[1])
         }
