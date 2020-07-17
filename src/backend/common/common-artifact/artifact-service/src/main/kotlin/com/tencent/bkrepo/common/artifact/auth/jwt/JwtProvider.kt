@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.auth.jwt
 
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.auth.AuthProperties
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
@@ -33,7 +34,8 @@ class JwtProvider(
         private lateinit var jwtProperties: AuthProperties.JwtProperties
         private lateinit var secretKey: SecretKey
 
-        fun generateToken(userId: String, claims: Map<String, Any>): String {
+        fun generateToken(userId: String, claims: MutableMap<String, Any>): String {
+            claims[USER_KEY] = userId
             val now = Date()
             val expiration = jwtProperties.expireSeconds.takeIf { it > 0 }?.let { Date(now.time + it * 1000) }
             return Jwts.builder()
