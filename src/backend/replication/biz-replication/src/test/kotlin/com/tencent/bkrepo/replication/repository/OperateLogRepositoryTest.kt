@@ -11,7 +11,7 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import java.time.LocalDateTime
 
 @DataMongoTest
-class OperateLogRepositoryTest {
+internal class OperateLogRepositoryTest {
 
     @Autowired
     private lateinit var opLogRepository: OperateLogRepository

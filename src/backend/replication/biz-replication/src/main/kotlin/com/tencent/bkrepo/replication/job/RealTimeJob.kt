@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import javax.annotation.PostConstruct
 
+
 /**
  * real time job tail from the caped collection
  * @author: owenlxu

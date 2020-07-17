@@ -35,6 +35,7 @@ class ReplicationJobHandler(
     private val replicationService: ReplicationService,
     private val scheduleService: ScheduleService
 ) : AbstractHandler() {
+
     @Value("\${spring.application.version}")
     private var version: String = DEFAULT_VERSION
 

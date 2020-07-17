@@ -66,7 +66,7 @@ class NodeEventConsumer : AbstractHandler() {
     }
 
     fun dealWithNodeUpdateEvent(description: Map<String, Any>) {
-        val request = description["request"] as String
+        val request = description[NODE_REQUEST] as String
         JsonUtils.objectMapper.readValue(request, NodeUpdateRequest::class.java).also {
             eventPublisher.publishEvent(NodeUpdatedMessage(it))
         }
