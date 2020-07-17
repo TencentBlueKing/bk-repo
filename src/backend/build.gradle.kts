@@ -57,6 +57,11 @@ allprojects {
             dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:4.12.0")
             dependency("io.jsonwebtoken:jjwt-api:0.11.1")
             dependency("io.jsonwebtoken:jjwt-impl:0.11.1")
+            // fix issue https://github.com/spring-projects/spring-boot/issues/16407
+            // https://issues.redhat.com/browse/UNDERTOW-1743
+            dependency("io.undertow:undertow-core:2.1.1.Final")
+            dependency("io.undertow:undertow-servlet:2.1.1.Final")
+            dependency("io.undertow:undertow-websockets-jar:2.1.1.Final")
         }
     }
 
