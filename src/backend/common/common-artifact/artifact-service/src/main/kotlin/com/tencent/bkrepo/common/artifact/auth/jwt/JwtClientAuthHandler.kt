@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.auth.jwt
 
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.auth.core.AnonymousCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
@@ -28,7 +29,7 @@ open class JwtClientAuthHandler : ClientAuthHandler {
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String {
         with(authCredentials as JwtAuthCredentials) {
             try {
-                return JwtProvider.validateToken(token).body.subject
+                return JwtProvider.validateToken(token).body[USER_KEY] as String
             } catch (exception: Exception) {
                 throw ClientAuthException(exception.message.orEmpty())
             }

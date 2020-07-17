@@ -10,6 +10,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.constants.ID
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.PASSWORD
+import com.tencent.bkrepo.npm.constants.USERNAME
 import com.tencent.bkrepo.npm.exception.NpmClientAuthException
 import com.tencent.bkrepo.npm.exception.NpmLoginFailException
 import com.tencent.bkrepo.npm.pojo.auth.NpmAuthResponse
@@ -34,8 +35,8 @@ class NpmAuthService {
         val password = userInfo[PASSWORD].asString
         val response = serviceUserResource.checkUserToken(username, password)
         return if (response.data == true) {
-            val claims = mapOf<String,Any>("username" to username)
-            val token = JwtProvider.generateToken(username,claims)
+            val claims = mutableMapOf<String, Any>("username" to username)
+            val token = JwtProvider.generateToken(username, claims)
             NpmAuthResponse.success(id, token)
         } else {
             logger.error("login failed,username or password error!")
@@ -54,19 +55,18 @@ class NpmAuthService {
         if (!bearerAuthHeader.startsWith(BEARER_AUTH_HEADER_PREFIX)) {
             throw NpmClientAuthException("Authorization value [$bearerAuthHeader] is not a valid scheme")
         }
-        //val token = bearerAuthHeader.removePrefix(BEARER_AUTH_HEADER_PREFIX)
+        val token = bearerAuthHeader.removePrefix(BEARER_AUTH_HEADER_PREFIX)
         // 获取不到说明token异常，直接报错
-        // JwtUtils.getUserName(token)
+        JwtProvider.validateToken(token)
         return NpmAuthResponse.success()
     }
 
     fun whoami(): Map<String, String> {
         val bearerAuthHeader = HttpContextHolder.getRequest().getHeader(AUTHORIZATION)
         val token = bearerAuthHeader.removePrefix(BEARER_AUTH_HEADER_PREFIX)
-        // val username = JwtUtils.getUserName(token)
         val claims = JwtProvider.validateToken(token).body
-        val username = claims["username"] as String
-        return mapOf(Pair("username", username))
+        val username = claims[USERNAME] as String
+        return mapOf(Pair(USERNAME, username))
     }
 
     companion object {
