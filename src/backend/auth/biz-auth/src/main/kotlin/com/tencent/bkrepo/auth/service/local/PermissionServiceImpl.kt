@@ -159,7 +159,7 @@ class PermissionServiceImpl @Autowired constructor(
         val user = userRepository.findFirstByUserId(request.uid) ?: run {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
-        if (user.admin) {
+        if (user.admin || !request.appId.isNullOrBlank()) {
             return true
         }
         val roles = user.roles
