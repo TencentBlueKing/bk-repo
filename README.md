@@ -19,8 +19,9 @@
     - frontend 前端目录
     - backend  后端目录
     - gradle 构建工具
+- support-files 系统初始化与交互代码
 
-#### 系统微服务模块
+#### 微服务模块
 - generic
 - repository
 - docker
