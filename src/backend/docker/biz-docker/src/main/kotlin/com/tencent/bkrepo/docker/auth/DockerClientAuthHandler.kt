@@ -93,7 +93,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
     override fun onAuthenticateFailed(response: HttpServletResponse, clientAuthException: ClientAuthException) {
         response.status = SC_UNAUTHORIZED
         response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
-        val scopeStr = "repository:bkrepo/docker-local/tb:push,pull"
+        val scopeStr = "repository:*/*/tb:push,pull"
         response.setHeader(
             BASIC_AUTH_RESPONSE_HEADER,
             String.format(AUTH_CHALLENGE_SERVICE_SCOPE, authUrl, REGISTRY_SERVICE, scopeStr)

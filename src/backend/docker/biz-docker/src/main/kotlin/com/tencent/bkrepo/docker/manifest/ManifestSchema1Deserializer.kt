@@ -2,7 +2,16 @@ package com.tencent.bkrepo.docker.manifest
 
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.docker.constant.DOCKER_BLOB_SUM
+import com.tencent.bkrepo.docker.constant.DOCKER_COM_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_EMPTY_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_FS_LAYER
+import com.tencent.bkrepo.docker.constant.DOCKER_HISTORY_CMD
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
+import com.tencent.bkrepo.docker.constant.DOCKER_NOP_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_NOP_SPACE_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_RUN_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_TAG
 import com.tencent.bkrepo.docker.exception.DockerManifestDeseriFailException
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
@@ -22,6 +31,12 @@ object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
     private val logger = LoggerFactory.getLogger(ManifestSchema1Deserializer::class.java)
     private val objectMapper = JsonUtils.objectMapper
 
+    /**
+     * deserialize schema v2
+     * @param manifestBytes byte array data of manifest
+     * @param digest docker manifest file image
+     * @return ManifestMetadata the upload manifest digest
+     */
     fun deserialize(manifestBytes: ByteArray, digest: DockerDigest): ManifestMetadata {
         try {
             return applyAttributesFromContent(manifestBytes, digest)
@@ -31,22 +46,29 @@ object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
         }
     }
 
+    /**
+     * apply attributes from manifest byte array data
+     * @param manifestBytes byte array data of manifest
+     * @param digest docker manifest file image
+     * @return ManifestMetadata the upload manifest digest
+     */
     private fun applyAttributesFromContent(manifestBytes: ByteArray?, digest: DockerDigest): ManifestMetadata {
         val manifestMetadata = ManifestMetadata()
         manifestBytes ?: run {
             return manifestMetadata
         }
         val manifest = objectMapper.readTree(manifestBytes)
-        manifestMetadata.tagInfo.title = manifest.get(DOCKER_NODE_NAME).asText() + COLON + manifest.get("tag").asText()
+        manifestMetadata.tagInfo.title =
+            manifest.get(DOCKER_NODE_NAME).asText() + COLON + manifest.get(DOCKER_TAG).asText()
         manifestMetadata.tagInfo.digest = digest
         var totalSize = 0L
-        val history = manifest.get("history")
+        val history = manifest.get(DOCKER_HISTORY_CMD)
 
         for (i in 0 until history.size()) {
             val fsLayer = history.get(i)
-            val v1Compatibility = fsLayer.get("v1Compatibility").asText()
+            val v1Compatibility = fsLayer.get(DOCKER_COM_CMD).asText()
             val dockerMetadata = objectMapper.readValue(v1Compatibility.toByteArray(), DockerImageMetadata::class.java)
-            val blobDigest = manifest.get("fsLayers").get(i).get("blobSum").asText()
+            val blobDigest = manifest.get(DOCKER_FS_LAYER).get(i).get(DOCKER_BLOB_SUM).asText()
             val size = dockerMetadata.size
             totalSize += dockerMetadata.size
             val blobInfo = DockerBlobInfo(dockerMetadata.id!!, blobDigest, size, dockerMetadata.created!!)
@@ -61,20 +83,30 @@ object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
         return manifestMetadata
     }
 
+    /**
+     * populate with command
+     * @param dockerMetadata image metadata
+     * @param blobInfo docker blob info
+     */
     private fun populateWithCommand(dockerMetadata: DockerImageMetadata, blobInfo: DockerBlobInfo) {
         var command = getCommand(dockerMetadata)
-        if (StringUtils.contains(command, "(nop)")) {
-            command = StringUtils.substringAfter(command, "(nop) ")
-            val dockerCmd = StringUtils.substringBefore(command, " ")
-            command = StringUtils.substringAfter(command, " ")
+        if (StringUtils.contains(command, DOCKER_NOP_CMD)) {
+            command = StringUtils.substringAfter(command, DOCKER_NOP_SPACE_CMD)
+            val dockerCmd = StringUtils.substringBefore(command, DOCKER_EMPTY_CMD)
+            command = StringUtils.substringAfter(command, DOCKER_EMPTY_CMD)
             blobInfo.command = dockerCmd
             blobInfo.commandText = command
         } else if (StringUtils.isNotBlank(command)) {
-            blobInfo.command = "RUN"
+            blobInfo.command = DOCKER_RUN_CMD
             blobInfo.commandText = command
         }
     }
 
+    /**
+     * get command from docker meta data
+     * @param dockerMetadata docker image metadata
+     * @return String the command get from metadata
+     */
     private fun getCommand(dockerMetadata: DockerImageMetadata): String? {
         var command: String? = null
         if (dockerMetadata.containerConfig != null && dockerMetadata.containerConfig!!.cmd != null) {
@@ -92,7 +124,6 @@ object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
                 dockerMetadata.config!!.cmd.toString()
             }
         }
-
         return command
     }
 }

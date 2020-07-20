@@ -10,6 +10,12 @@ import java.util.TreeSet
  */
 object DockerCatalogTagsSlicer {
 
+    /**
+     * slice catalog
+     * @param elementsHolder elements holder
+     * @param maxEntries max entity
+     * @param lastEntry the last entry
+     */
     fun sliceCatalog(elementsHolder: DockerPaginationElementsHolder, maxEntries: Int, lastEntry: String) {
         if (elementsHolder.elements.isEmpty()) {
             return

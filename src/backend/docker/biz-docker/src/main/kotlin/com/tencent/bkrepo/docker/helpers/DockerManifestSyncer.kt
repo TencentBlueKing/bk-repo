@@ -9,7 +9,7 @@ import com.tencent.bkrepo.docker.exception.DockerFileSaveFailedException
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
-import com.tencent.bkrepo.docker.util.BlobUtil
+import com.tencent.bkrepo.docker.util.BlobUtil.getBlobByName
 import com.tencent.bkrepo.docker.util.ResponseUtil.EMPTY_BLOB_CONTENT
 import com.tencent.bkrepo.docker.util.ResponseUtil.emptyBlobDigest
 import com.tencent.bkrepo.docker.util.ResponseUtil.isEmptyBlob
@@ -25,7 +25,15 @@ import java.io.ByteArrayInputStream
  */
 object DockerManifestSyncer {
 
-    fun sync(repo: DockerArtifactRepo, info: ManifestMetadata, context: RequestContext, tag: String): Boolean {
+    /**
+     * move blob file from temp path to final path
+     * @param context docker request context
+     * @param repo docker storage interface
+     * @param info manifest metadata
+     * @param tag  docker image  tag
+     * @return Boolean the sync result
+     */
+    fun sync(context: RequestContext, repo: DockerArtifactRepo, info: ManifestMetadata, tag: String): Boolean {
         logger.info("start to sync docker repository blobs [${info.toJsonString()}]")
         val manifestInfos = info.blobsInfo.iterator()
         while (manifestInfos.hasNext()) {
@@ -68,7 +76,7 @@ object DockerManifestSyncer {
             }
             // copy from other blob
             logger.info("blob temp file [$tempPath] doesn't exist in temp, try to copy")
-            if (!copyBlobFromFirstRepo(repo, context, fileName, finalPath)) {
+            if (!copyBlobFrom(context, repo, fileName, finalPath)) {
                 logger.warn("copy file from other path failed [$finalPath]")
                 throw DockerFileSaveFailedException(finalPath)
             }
@@ -77,13 +85,21 @@ object DockerManifestSyncer {
         return true
     }
 
-    private fun copyBlobFromFirstRepo(
-        repo: DockerArtifactRepo, context: RequestContext, fileName: String,
+    /**
+     * move blob file from temp path to final path
+     * @param context docker request context
+     * @param repo docker storage interface
+     * @param fileName file name metadata
+     * @param targetPath target final path
+     * @return Boolean the sync result
+     */
+    private fun copyBlobFrom(
+        context: RequestContext,
+        repo: DockerArtifactRepo,
+        fileName: String,
         targetPath: String
     ): Boolean {
-        val blob = BlobUtil.getBlobByName(repo, context, fileName) ?: run {
-            return false
-        }
+        val blob = getBlobByName(repo, context, fileName) ?: return false
         val sourcePath = blob.fullPath
         if (StringUtils.equals(sourcePath, targetPath)) {
             return true

@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import org.springframework.http.MediaType
 
 /**
- * to deserialize with manifest type
+ * enum type of manifest
  * @author: owenlxu
  * @date: 2020-02-05
  */
@@ -22,12 +22,20 @@ enum class ManifestType(private val mediaType: String) {
 
     companion object {
 
-        // calculate manifest type from media  type
+        /**
+         * get ManifestType from http media type
+         * @param mediaType http MediaType
+         * @return ManifestType manifest type result
+         */
         fun from(mediaType: MediaType?): ManifestType {
             return from(mediaType.toString())
         }
 
-        // calculate manifest type from content type
+        /**
+         * get ManifestType from content type
+         * @param contentType
+         * @return ManifestType manifest type result
+         */
         fun from(contentType: String): ManifestType {
             val values = values()
             val size = values.size
@@ -42,11 +50,15 @@ enum class ManifestType(private val mediaType: String) {
             return Schema1Signed
         }
 
-        // calculate manifest type from  manifest byte
+        /**
+         * get ManifestType from manifest byte data
+         * @param manifestBytes manifest byte data
+         * @return ManifestType manifest type result
+         */
         fun from(manifestBytes: ByteArray): ManifestType {
             val manifest = JsonUtils.objectMapper.readTree(manifestBytes)
             val schemaVersionNode = manifest.get("schemaVersion")
-            if (schemaVersionNode != null) {
+            schemaVersionNode?.let {
                 val schemaVersion = schemaVersionNode.intValue()
                 if (schemaVersion == 1) {
                     return Schema1Signed

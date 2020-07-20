@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.docker.artifact.DockerArtifact
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
@@ -12,25 +11,25 @@ import com.tencent.bkrepo.docker.constant.DOCKER_CONTENT_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
-import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_LIST
-import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_NAME
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_TYPE
-import com.tencent.bkrepo.docker.constant.DOCKER_NAME_REPO
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
-import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.errors.DockerV2Errors
 import com.tencent.bkrepo.docker.exception.DockerFileSaveFailedException
 import com.tencent.bkrepo.docker.exception.DockerNotFoundException
 import com.tencent.bkrepo.docker.exception.DockerSyncManifestException
 import com.tencent.bkrepo.docker.helpers.DockerManifestDigester
 import com.tencent.bkrepo.docker.helpers.DockerManifestSyncer
+import com.tencent.bkrepo.docker.manifest.ManifestContext.buildManifestListUploadContext
+import com.tencent.bkrepo.docker.manifest.ManifestContext.buildPropertyMap
+import com.tencent.bkrepo.docker.manifest.ManifestContext.buildUploadContext
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
 import com.tencent.bkrepo.docker.response.DockerResponse
 import com.tencent.bkrepo.docker.util.BlobUtil
+import com.tencent.bkrepo.docker.util.BlobUtil.getBlobByName
 import com.tencent.bkrepo.docker.util.BlobUtil.getManifestConfigBlob
 import com.tencent.bkrepo.docker.util.ResponseUtil
 import org.apache.commons.io.IOUtils
@@ -42,8 +41,8 @@ import org.springframework.http.HttpHeaders.CONTENT_TYPE
 import org.springframework.http.ResponseEntity
 
 /**
- * docker content  utility
- * to get detail of manifest or blob
+ * docker image manifest process
+ * to upload the manifest to repository and store it
  * @author: owenlxu
  * @date: 2019-10-15
  */
@@ -55,7 +54,15 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         private val logger = LoggerFactory.getLogger(ManifestProcess::class.java)
     }
 
-    // upload a manifest file by type
+    /**
+     * upload manifest by manifest type
+     * @param context docker image request context
+     * @param tag docker tag
+     * @param manifestPath the current path of manifest
+     * @param manifestType docker image manifest type
+     * @param artifactFile file object of docker image
+     * @return DockerDigest the upload manifest digest
+     */
     fun uploadManifestByType(
         context: RequestContext,
         tag: String,
@@ -74,7 +81,7 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         // process scheme2 manifest
         val metadata = ManifestDeserializer.deserialize(repo, context, tag, manifestType, manifestBytes, digest!!)
         addManifestsBlobs(context, manifestType, manifestBytes, metadata)
-        if (!DockerManifestSyncer.sync(repo, metadata, context, tag)) {
+        if (!DockerManifestSyncer.sync(context, repo, metadata, tag)) {
             val msg = "fail to sync manifest blobs, cancel manifest upload"
             logger.error(msg)
             throw DockerSyncManifestException(msg)
@@ -95,12 +102,26 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         return digest
     }
 
+    /**
+     * get manifest from repo storage
+     * @param projectId the project id
+     * @param repoName the repository name
+     * @param manifestPath manifest path
+     * @return String the type of manifest
+     */
     fun getManifestType(projectId: String, repoName: String, manifestPath: String): String? {
         return repo.getAttribute(projectId, repoName, manifestPath, DOCKER_MANIFEST_TYPE)
     }
 
-    fun getSchema2ManifestConfigContent(context: RequestContext, bytes: ByteArray, tag: String): ByteArray {
-        val manifest = objectMapper.readTree(bytes)
+    /**
+     * get manifest config content which the schema is v2
+     * @param context the  request context
+     * @param manifestBytes the byte data of manifest
+     * @param tag the tag of docker images
+     * @return ByteArray byte data of manifest config file
+     */
+    fun getSchema2ManifestConfigContent(context: RequestContext, manifestBytes: ByteArray, tag: String): ByteArray {
+        val manifest = objectMapper.readTree(manifestBytes)
         val digest = manifest.get("config").get(DOCKER_DIGEST).asText()
         val fileName = DockerDigest(digest).fileName()
         val configFile = getManifestConfigBlob(repo, fileName, context, tag) ?: run {
@@ -114,6 +135,12 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         }
     }
 
+    /**
+     * get manifest file content which the schema is v2
+     * @param context the  request context
+     * @param schema2Path the path of the file
+     * @return ByteArray byte data of manifest
+     */
     fun getSchema2ManifestContent(context: RequestContext, schema2Path: String): ByteArray {
         val manifest = getManifestByName(context, schema2Path) ?: run {
             return ByteArray(0)
@@ -125,6 +152,12 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         }
     }
 
+    /**
+     * get manifest path which the schema is v2
+     * @param context the  request context
+     * @param bytes the byte data of manifest
+     * @return String the path of manifest
+     */
     fun getSchema2Path(context: RequestContext, bytes: ByteArray): String {
         val manifestList = objectMapper.readTree(bytes)
         val manifests = manifestList.get("manifests")
@@ -137,15 +170,20 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
             if (StringUtils.equals(architecture, "amd64") && StringUtils.equals(os, "linux")) {
                 val digest = manifest.get(DOCKER_DIGEST).asText()
                 val fileName = DockerDigest(digest).fileName()
-                val manifestFile = BlobUtil.getBlobByName(repo, context, fileName) ?: run {
-                    return EMPTY
-                }
+                val manifestFile = BlobUtil.getBlobByName(repo, context, fileName) ?: return EMPTY
                 return BlobUtil.getFullPath(manifestFile)
             }
         }
         return EMPTY
     }
 
+    /**
+     * add metadata to manifest
+     * @param context the  request context
+     * @param type the type of manifest file
+     * @param bytes the byte data of manifest
+     * @param metadata the manifest metadata
+     */
     private fun addManifestsBlobs(
         context: RequestContext,
         type: ManifestType,
@@ -159,16 +197,18 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         }
     }
 
-    // determine the manifest type of the file
+    /**
+     * determine the manifest type of the file
+     * @param context the  request context
+     * @param tag the tag of manifest
+     * @param httpHeaders request head
+     * @return ManifestType type of manifest
+     */
     fun chooseManifestType(context: RequestContext, tag: String, httpHeaders: HttpHeaders): ManifestType {
         val acceptable = ResponseUtil.getAcceptableManifestTypes(httpHeaders)
         if (acceptable.contains(ManifestType.Schema2List)) {
             with(context) {
-                val manifestPath = ResponseUtil.buildManifestPath(
-                    artifactName,
-                    tag,
-                    ManifestType.Schema2List
-                )
+                val manifestPath = ResponseUtil.buildManifestPath(artifactName, tag, ManifestType.Schema2List)
                 if (repo.exists(projectId, repoName, manifestPath)) {
                     return ManifestType.Schema2List
                 }
@@ -184,7 +224,13 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         }
     }
 
-    // first get manifest from digest
+    /**
+     * first get manifest from digest
+     * @param context the  request context
+     * @param digest the digest of docker image
+     * @param httpHeaders request head
+     * @return DockerResponse  http repsponse of manifest
+     */
     fun getManifestByDigest(context: RequestContext, digest: DockerDigest, headers: HttpHeaders): DockerResponse {
         logger.info("fetch docker manifest [$context}] and digest [$digest] ")
         var artifact = getManifestByName(context, DOCKER_MANIFEST)
@@ -197,10 +243,16 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
                 }
             }
         }
-        return buildManifestResponse(headers, context, context.artifactName, digest, artifact!!.length)
+        return buildManifestResponse(context, context.artifactName, digest, artifact!!.length, headers)
     }
 
-    // then get manifest with tag
+    /**
+     * then get manifest with tag
+     * @param context the  request context
+     * @param tag the tag of docker image
+     * @param httpHeaders request head
+     * @return DockerResponse  http repsponse of manifest
+     */
     fun getManifestByTag(context: RequestContext, tag: String, headers: HttpHeaders): DockerResponse {
         val useManifestType = chooseManifestType(context, tag, headers)
         val manifestPath = ResponseUtil.buildManifestPath(context.artifactName, tag, useManifestType)
@@ -215,10 +267,17 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         }
         logger.debug("get manifest by tag result [$manifest]")
         val digest = DockerDigest.fromSha256(manifest.sha256!!)
-        return buildManifestResponse(headers, context, manifestPath, digest, manifest.length)
+        return buildManifestResponse(context, manifestPath, digest, manifest.length, headers)
     }
 
-    // process with manifest list
+    /**
+     * process with manifest list
+     * @param context the  request context
+     * @param tag the tag of docker image
+     * @param manifestPath the path of manifest
+     * @param digest the digest of docker image
+     * @param manifestBytes the byte data of manifest
+     */
     private fun processManifestList(
         context: RequestContext,
         tag: String,
@@ -234,23 +293,26 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
                 val manifest = iter.next()
                 val mDigest = manifest.digest
                 val manifestFileName = DockerDigest(mDigest!!).fileName()
-                BlobUtil.getBlobByName(repo, context, manifestFileName) ?: run {
+                getBlobByName(repo, context, manifestFileName) ?: run {
                     logger.warn("manifest not found [$context, $digest]")
                     throw DockerNotFoundException("manifest list [$digest] miss manifest digest $mDigest. ==>$manifest")
                 }
             }
         }
-        with(context) {
-            val uploadContext = buildManifestListUploadContext(context, digest, manifestPath, manifestBytes)
-            val params = buildPropertyMap(artifactName, tag, digest, ManifestType.Schema2List)
-            uploadContext.metadata(params)
-            if (!repo.upload(uploadContext)) {
-                logger.warn("upload manifest list fail [$uploadContext]")
-                throw DockerFileSaveFailedException(manifestPath)
-            }
+        val uploadContext = buildManifestListUploadContext(context, digest, manifestPath, manifestBytes)
+        val params = buildPropertyMap(context.artifactName, tag, digest, ManifestType.Schema2List)
+        uploadContext.metadata(params)
+        if (!repo.upload(uploadContext)) {
+            logger.warn("upload manifest list fail [$uploadContext]")
+            throw DockerFileSaveFailedException(manifestPath)
         }
     }
 
+    /**
+     * add schema 2 blob data
+     * @param bytes the manifest byte data
+     * @param metadata the metadata of manifest
+     */
     private fun addSchema2Blob(bytes: ByteArray, metadata: ManifestMetadata) {
         val manifest = objectMapper.readTree(bytes)
         val config = manifest.get("config")
@@ -261,6 +323,12 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         }
     }
 
+    /**
+     * add schema  list 2 blob data
+     * @param context the request context
+     * @param bytes the manifest byte data
+     * @param metadata the metadata of manifest
+     */
     private fun addSchema2ListBlobs(context: RequestContext, bytes: ByteArray, metadata: ManifestMetadata) {
         val manifestList = JsonUtils.objectMapper.readTree(bytes)
         val manifests = manifestList.get("manifests")
@@ -281,29 +349,20 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         }
     }
 
-    // build the manifest upload context
-    private fun buildUploadContext(
-        context: RequestContext,
-        type: ManifestType,
-        metadata: ManifestMetadata,
-        path: String,
-        file: ArtifactFile
-    ): UploadContext {
-        with(context) {
-            val uploadContext = UploadContext(projectId, repoName, path).artifactFile(file)
-            if ((type == ManifestType.Schema2 || type == ManifestType.Schema2List)) {
-                uploadContext.sha256(metadata.tagInfo.digest!!.getDigestHex())
-            }
-            return uploadContext
-        }
-    }
-
+    /**
+     * build manifest response
+     * @param context the request context
+     * @param manifestPath the manifest path of file
+     * @param digest the digest of docker image
+     * @param length length of file
+     * @param httpHeaders the request http header
+     */
     private fun buildManifestResponse(
-        httpHeaders: HttpHeaders,
         context: RequestContext,
         manifestPath: String,
         digest: DockerDigest,
-        length: Long
+        length: Long,
+        httpHeaders: HttpHeaders
     ): DockerResponse {
         val downloadContext = DownloadContext(context).length(length).sha256(digest.getDigestHex())
         val inputStream = repo.download(downloadContext)
@@ -320,41 +379,14 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         return ResponseEntity.ok().headers(httpHeaders).contentLength(length).body(inputStreamResource)
     }
 
+    /**
+     * build manifest artifact
+     * @param context the request context
+     * @param fileName file name
+     * @param DockerArtifact the docker artifact object
+     */
     private fun getManifestByName(context: RequestContext, fileName: String): DockerArtifact? {
         val fullPath = "/${context.artifactName}/$fileName"
         return repo.getArtifact(context.projectId, context.repoName, fullPath) ?: null
-    }
-
-    private fun buildManifestListUploadContext(
-        context: RequestContext,
-        digest: DockerDigest,
-        path: String,
-        bytes: ByteArray
-    ): UploadContext {
-        with(context) {
-            val artifactFile = ArtifactFileFactory.build(bytes.inputStream())
-            return UploadContext(projectId, repoName, path).artifactFile(artifactFile).sha256(digest.getDigestHex())
-        }
-    }
-
-    private fun buildPropertyMap(
-        dockerRepo: String,
-        tag: String,
-        digest: DockerDigest,
-        type: ManifestType
-    ): HashMap<String, String> {
-        var map = HashMap<String, String>()
-        map.apply {
-            set(digest.getDigestAlg(), digest.getDigestHex())
-        }.apply {
-            set(DOCKER_MANIFEST_DIGEST, digest.toString())
-        }.apply {
-            set(DOCKER_MANIFEST_NAME, tag)
-        }.apply {
-            set(DOCKER_NAME_REPO, dockerRepo)
-        }.apply {
-            set(DOCKER_MANIFEST_TYPE, type.toString())
-        }
-        return map
     }
 }

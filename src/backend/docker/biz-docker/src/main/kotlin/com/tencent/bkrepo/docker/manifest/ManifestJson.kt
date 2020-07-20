@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.docker.manifest
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter
 import com.fasterxml.jackson.annotation.JsonAnySetter
 import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
@@ -18,14 +17,6 @@ class ManifestJson : Serializable {
     var size: Int? = null
     var digest: String? = null
     var platform: JsonNode? = null
-
-    val manifestType: ManifestType
-        get() = ManifestType.from(this.mediaType)
-
-    @JsonAnyGetter
-    fun any(): Map<String, Any>? {
-        return this.other
-    }
 
     @JsonAnySetter
     operator fun set(name: String, value: Any) {

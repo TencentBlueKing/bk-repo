@@ -3,8 +3,19 @@ package com.tencent.bkrepo.docker.manifest
 import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.docker.constant.DOCKER_CREATED_BY_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_CREATED_CMD
 import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_EMPTY_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_EMPTY_LAYER_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_HISTORY_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_LAYER_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_MEDIA_TYPE
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
+import com.tencent.bkrepo.docker.constant.DOCKER_NOP_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_NOP_SPACE_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_RUN_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_URLS_CMD
 import com.tencent.bkrepo.docker.exception.DockerManifestDeseriFailException
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
@@ -27,24 +38,51 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
     private val objectMapper = JsonUtils.objectMapper
     private const val CIRCUIT_BREAKER_THRESHOLD = 5000
 
-    fun deserialize(manifestBytes: ByteArray, jsonBytes: ByteArray, dockerRepo: String, tag: String, digest: DockerDigest): ManifestMetadata {
+    /**
+     * deserialize manifest bytes from schema v2
+     * @param manifestBytes byte array data of manifest
+     * @param configBytes docker manifest file image
+     * @param dockerRepo docker image repo name
+     * @param tag docker image tag
+     * @param digest docker manifest digest
+     * @return ManifestMetadata the upload manifest digest
+     */
+    fun deserialize(
+        manifestBytes: ByteArray,
+        configBytes: ByteArray,
+        dockerRepo: String,
+        tag: String,
+        digest: DockerDigest
+    ): ManifestMetadata {
         try {
             val manifestMetadata = ManifestMetadata()
             manifestMetadata.tagInfo.title = "$dockerRepo:$tag"
             manifestMetadata.tagInfo.digest = digest
-            return applyAttributesFromContent(manifestBytes, jsonBytes, manifestMetadata)
+            return applyAttributesFromContent(manifestBytes, configBytes, manifestMetadata)
         } catch (exception: IOException) {
             logger.error("Unable to deserialize the manifest.json file: [$exception]")
             throw DockerManifestDeseriFailException(exception.message!!)
         }
     }
 
-    private fun applyAttributesFromContent(manifestBytes: ByteArray, jsonBytes: ByteArray, manifestMetadata: ManifestMetadata): ManifestMetadata {
-        val config = objectMapper.readTree(jsonBytes)
+    /**
+     * apply attributes from  manifest bytes  content
+     * @param manifestBytes byte array data of manifest
+     * @param configBytes docker manifest file image
+     * @param dockerRepo docker image repo name
+     * @param manifestMetadata manifest meta data
+     * @return ManifestMetadata the upload manifest digest
+     */
+    private fun applyAttributesFromContent(
+        manifestBytes: ByteArray,
+        configBytes: ByteArray,
+        manifestMetadata: ManifestMetadata
+    ): ManifestMetadata {
+        val config = objectMapper.readTree(configBytes)
         val manifest = objectMapper.readTree(manifestBytes)
         var totalSize = 0L
-        val history = config.get("history")
-        val layers = manifest.get("layers")
+        val history = config.get(DOCKER_HISTORY_CMD)
+        val layers = manifest.get(DOCKER_LAYER_CMD)
         val historySize = history?.size() ?: 0
         var historyCounter = 0L
         history?.let {
@@ -72,9 +110,9 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
                 ++historyIndex
             }
 
-            var created = config.get("created").asText()
+            var created = config.get(DOCKER_CREATED_CMD).asText()
             if (historyLayer != null && !isForeignLayer(layer)) {
-                created = historyLayer["created"].asText()
+                created = historyLayer[DOCKER_CREATED_CMD].asText()
             }
 
             val blobInfo = DockerBlobInfo(EMPTY, digest, size, created)
@@ -84,63 +122,79 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
 
             populateWithMediaType(layer, blobInfo)
             manifestMetadata.blobsInfo.add(blobInfo)
-            checkCircuitBreaker(manifestBytes, jsonBytes, iterationsCounter)
+            checkCircuitBreaker(manifestBytes, configBytes, iterationsCounter)
             ++iterationsCounter
         }
         manifestMetadata.blobsInfo.reverse()
         manifestMetadata.tagInfo.totalSize = totalSize
-        val dockerMetadata = JsonUtils.objectMapper.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
+        val dockerMetadata = objectMapper.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
         populatePorts(manifestMetadata, dockerMetadata)
         populateVolumes(manifestMetadata, dockerMetadata)
         populateLabels(manifestMetadata, dockerMetadata)
         return manifestMetadata
     }
 
-    private fun checkCircuitBreaker(manifestBytes: ByteArray, jsonBytes: ByteArray, iterationsCounter: Int) {
+    /**
+     * circuit break to avoid loop
+     * @param manifestBytes byte array data of manifest
+     * @param configBytes docker manifest file image
+     * @param iterationsCounter count
+     */
+    private fun checkCircuitBreaker(manifestBytes: ByteArray, configBytes: ByteArray, iterationsCounter: Int) {
         if (iterationsCounter > CIRCUIT_BREAKER_THRESHOLD) {
-            breakCircuit(manifestBytes, jsonBytes, "$CIRCUIT_BREAKER_THRESHOLD Iterations ware performed")
+            val reason = "$CIRCUIT_BREAKER_THRESHOLD Iterations ware performed"
+            val msg = "ManifestSchema2Deserializer CIRCUIT BREAKER: $reason breaking operation.\nManifest: " +
+                String(manifestBytes, StandardCharsets.UTF_8) + "\njsonBytes:" +
+                String(configBytes, StandardCharsets.UTF_8)
+            logger.error(msg)
+            throw IllegalArgumentException("Circuit Breaker Threshold Reached, Breaking Operation. see log output for manifest details.")
         }
-    }
-
-    private fun breakCircuit(manifestBytes: ByteArray, jsonBytes: ByteArray, reason: String) {
-        val msg = "ManifestSchema2Deserializer CIRCUIT BREAKER: " + reason + " breaking operation.\nManifest: " + String(manifestBytes, StandardCharsets.UTF_8) + "\njsonBytes:" + String(jsonBytes, StandardCharsets.UTF_8)
-        logger.error(msg)
-        throw IllegalArgumentException("Circuit Breaker Threshold Reached, Breaking Operation. see log output for manifest details.")
     }
 
     private fun isForeignLayer(layer: JsonNode?): Boolean {
-        return layer != null && layer.has("mediaType") && "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == layer.get("mediaType").asText()
+        return layer != null && layer.has(DOCKER_MEDIA_TYPE) &&
+            "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == layer.get(DOCKER_MEDIA_TYPE).asText()
     }
 
     private fun notEmptyHistoryLayer(historyLayer: JsonNode?): Boolean {
-        return historyLayer != null && historyLayer.get("empty_layer") == null
+        return historyLayer != null && historyLayer.get(DOCKER_EMPTY_LAYER_CMD) == null
     }
 
+    /**
+     * populate with command
+     * @param layerHistory the json node
+     * @param blobInfo docker blob info
+     */
     private fun populateWithCommand(layerHistory: JsonNode?, blobInfo: DockerBlobInfo) {
-        if (layerHistory != null && layerHistory.has("created_by")) {
-            var command = layerHistory.get("created_by").asText()
-            if (StringUtils.contains(command, "(nop)")) {
-                command = StringUtils.substringAfter(command, "(nop) ")
-                val dockerCmd = StringUtils.substringBefore(command.trim { it <= ' ' }, " ")
-                command = StringUtils.substringAfter(command, " ")
+        if (layerHistory != null && layerHistory.has(DOCKER_CREATED_BY_CMD)) {
+            var command = layerHistory.get(DOCKER_CREATED_BY_CMD).asText()
+            if (StringUtils.contains(command, DOCKER_NOP_CMD)) {
+                command = StringUtils.substringAfter(command, DOCKER_NOP_SPACE_CMD)
+                val dockerCmd = StringUtils.substringBefore(command.trim { it <= ' ' }, DOCKER_EMPTY_CMD)
+                command = StringUtils.substringAfter(command, DOCKER_EMPTY_CMD)
                 blobInfo.command = dockerCmd
                 blobInfo.commandText = command
             } else if (StringUtils.isNotBlank(command)) {
-                blobInfo.command = "RUN"
+                blobInfo.command = DOCKER_RUN_CMD
                 blobInfo.commandText = command
             }
         }
     }
 
+    /**
+     * populate with media type
+     * @param layerNode the json node
+     * @param blobInfo docker blob info
+     */
     private fun populateWithMediaType(layerNode: JsonNode?, blobInfo: DockerBlobInfo) {
         layerNode?.let {
-            if (layerNode.has("mediaType")) {
-                blobInfo.mediaType = layerNode.get("mediaType").asText()
+            if (layerNode.has(DOCKER_MEDIA_TYPE)) {
+                blobInfo.mediaType = layerNode.get(DOCKER_MEDIA_TYPE).asText()
             }
 
-            if (layerNode.has("urls")) {
+            if (layerNode.has(DOCKER_URLS_CMD)) {
                 blobInfo.urls = mutableListOf()
-                layerNode.get("urls").forEach { jsonNode -> blobInfo.urls!!.add(jsonNode.asText()) }
+                layerNode.get(DOCKER_URLS_CMD).forEach { jsonNode -> blobInfo.urls!!.add(jsonNode.asText()) }
             }
         }
     }
