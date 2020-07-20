@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.generic.resource
+package com.tencent.bkrepo.generic.controller
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo

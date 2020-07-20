@@ -1,65 +1,83 @@
-package com.tencent.bkrepo.generic.api
+package com.tencent.bkrepo.generic.controller
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BLOCK_MAPPING_URI
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import com.tencent.bkrepo.generic.service.DownloadService
+import com.tencent.bkrepo.generic.service.UploadService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * 上传接口
- *
- * @author: carrypan
- * @date: 2019-09-27
- */
-@Api("上传接口")
-interface UploadResource {
+@RestController
+class GenericController(
+    private val uploadService: UploadService,
+    private val downloadService: DownloadService
+) {
 
-    @ApiOperation("上传")
     @PutMapping(GENERIC_MAPPING_URI)
-    fun upload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile)
+    fun upload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
+        uploadService.upload(artifactInfo, file)
+    }
 
-    @ApiOperation("开启分块上传")
+    @DeleteMapping(GENERIC_MAPPING_URI)
+    fun delete(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
+        uploadService.delete(userId, artifactInfo)
+    }
+
+    @GetMapping(GENERIC_MAPPING_URI)
+    fun download(
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
+        downloadService.download(artifactInfo)
+    }
+
     @PostMapping(BLOCK_MAPPING_URI)
     fun startBlockUpload(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo
-    ): Response<UploadTransactionInfo>
+    ): Response<UploadTransactionInfo> {
+        return ResponseBuilder.success(uploadService.startBlockUpload(userId, artifactInfo))
+    }
 
-    @ApiOperation("取消分块上传")
     @DeleteMapping(BLOCK_MAPPING_URI)
     fun abortBlockUpload(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo
-    ): Response<Void>
+    ): Response<Void> {
+        uploadService.abortBlockUpload(userId, uploadId, artifactInfo)
+        return ResponseBuilder.success()
+    }
 
-    @ApiOperation("完成分块上传")
     @PutMapping(BLOCK_MAPPING_URI)
     fun completeBlockUpload(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo
-    ): Response<Void>
+    ): Response<Void> {
+        uploadService.completeBlockUpload(userId, uploadId, artifactInfo)
+        return ResponseBuilder.success()
+    }
 
-    @ApiOperation("查询上传分块")
     @GetMapping(BLOCK_MAPPING_URI)
     fun listBlock(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo
-    ): Response<List<BlockInfo>>
-
+    ): Response<List<BlockInfo>> {
+        return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
+    }
 }

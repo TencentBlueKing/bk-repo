@@ -134,7 +134,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
                 Range(start, end, total)
             }
         } catch (ex: Exception) {
-            logger.warn("Failed to parse range header: $rangeHeader, ex: ${ex.message}")
+            logger.warn("Failed to parse range header: $rangeHeader, message: ${ex.message}")
             throw ArtifactException("Invalid range header", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE.value())
         }
     }
