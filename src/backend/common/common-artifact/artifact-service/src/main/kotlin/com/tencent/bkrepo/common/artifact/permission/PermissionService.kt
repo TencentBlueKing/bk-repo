@@ -73,9 +73,6 @@ class PermissionService {
         return if (!authProperties.enabled) {
             logger.debug("Auth disabled, skip checking permission")
             true
-        } else if (isPlatformUser()) {
-            logger.debug("Platform user, skip checking permission")
-            true
         } else {
             false
         }
@@ -89,11 +86,12 @@ class PermissionService {
     private fun checkRepoPermission(userId: String, type: ResourceType, action: PermissionAction, repositoryInfo: RepositoryInfo) {
         // public仓库且为READ操作，直接跳过
         if (type == ResourceType.REPO && action == PermissionAction.READ && repositoryInfo.public) return
+        val appId = HttpContextHolder.getRequest().getAttribute(APP_KEY) as? String
         // 匿名用户，提示登录
-        if (userId == ANONYMOUS_USER) throw ClientAuthException()
+        if (userId == ANONYMOUS_USER && appId == null) throw ClientAuthException()
         // auth 校验
         with(repositoryInfo) {
-            val checkRequest = CheckPermissionRequest(userId, type, action, projectId, name)
+            val checkRequest = CheckPermissionRequest(userId, type, action, projectId, name, null, null, appId)
             checkPermission(checkRequest)
         }
     }
