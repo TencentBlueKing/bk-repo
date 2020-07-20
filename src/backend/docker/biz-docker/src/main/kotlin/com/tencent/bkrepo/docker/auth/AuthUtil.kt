@@ -41,8 +41,8 @@ class AuthUtil {
 
     /**
      * check first docker login user,password
-     *  check success return bareer token
-     *  and will carry in other request
+     * check success return bareer token
+     * and will carry in other request
      */
     fun authUser(request: HttpServletRequest, response: HttpServletResponse): DockerResponse {
         return try {
@@ -75,11 +75,7 @@ class AuthUtil {
             val parts = decodedHeader.split(COLON)
             require(parts.size >= 2)
             if (authEnable) {
-                if (!serviceUserResource.checkUserToken(
-                    parts[0],
-                    parts[1]
-                ).data!!
-                ) {
+                if (!serviceUserResource.checkUserToken(parts[0], parts[1]).data!!) {
                     throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
                 }
             }

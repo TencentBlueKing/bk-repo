@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.docker.manifest
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import java.io.Serializable
 
 /**
@@ -10,8 +11,9 @@ import java.io.Serializable
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ManifestListJson : Serializable {
+
     var schemaVersion: Int = 0
-    var mediaType: String = ""
+    var mediaType: String = EMPTY
     var manifests: List<ManifestJson> = emptyList()
 
     val manifestType: ManifestType

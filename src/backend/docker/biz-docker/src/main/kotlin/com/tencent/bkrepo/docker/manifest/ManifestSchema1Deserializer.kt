@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.docker.manifest
 
+import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
 import com.tencent.bkrepo.docker.exception.DockerManifestDeseriFailException
@@ -12,11 +13,11 @@ import org.slf4j.LoggerFactory
 import java.io.IOException
 
 /**
- * to deserialize manifest schema1 manifest
+ * deserialize manifest schema1 manifest
  * @author: owenlxu
  * @date: 2020-02-05
  */
-object ManifestSchema1Deserializer {
+object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
 
     private val logger = LoggerFactory.getLogger(ManifestSchema1Deserializer::class.java)
     private val objectMapper = JsonUtils.objectMapper
@@ -36,7 +37,7 @@ object ManifestSchema1Deserializer {
             return manifestMetadata
         }
         val manifest = objectMapper.readTree(manifestBytes)
-        manifestMetadata.tagInfo.title = manifest.get(DOCKER_NODE_NAME).asText() + ":" + manifest.get("tag").asText()
+        manifestMetadata.tagInfo.title = manifest.get(DOCKER_NODE_NAME).asText() + COLON + manifest.get("tag").asText()
         manifestMetadata.tagInfo.digest = digest
         var totalSize = 0L
         val history = manifest.get("history")
@@ -51,9 +52,9 @@ object ManifestSchema1Deserializer {
             val blobInfo = DockerBlobInfo(dockerMetadata.id!!, blobDigest, size, dockerMetadata.created!!)
             populateWithCommand(dockerMetadata, blobInfo)
             manifestMetadata.blobsInfo.add(blobInfo)
-            ManifestUtil.populatePorts(manifestMetadata, dockerMetadata)
-            ManifestUtil.populateVolumes(manifestMetadata, dockerMetadata)
-            ManifestUtil.populateLabels(manifestMetadata, dockerMetadata)
+            populatePorts(manifestMetadata, dockerMetadata)
+            populateVolumes(manifestMetadata, dockerMetadata)
+            populateLabels(manifestMetadata, dockerMetadata)
         }
 
         manifestMetadata.tagInfo.totalSize = totalSize

@@ -82,11 +82,6 @@ class DockerArtifactRepo @Autowired constructor(
         return this.storageService.append(uuid, artifactFile, repository.storageCredentials)
     }
 
-    // TODO : to implement
-    fun delete(path: String): Boolean {
-        return true
-    }
-
     // download file
     fun download(downloadContext: DownloadContext): InputStream {
         // check repository
@@ -371,6 +366,11 @@ class DockerArtifactRepo @Autowired constructor(
             return null
         }
         return result.records
+    }
+
+    // TODO : to implement
+    fun delete(path: String): Boolean {
+        return true
     }
 
     companion object {

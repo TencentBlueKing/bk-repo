@@ -17,11 +17,11 @@ import java.nio.charset.StandardCharsets
 import java.util.stream.StreamSupport
 
 /**
- * to deserialize manifest schema2 manifest
+ * deserialize manifest schema2 manifest
  * @author: owenlxu
  * @date: 2020-02-05
  */
-object ManifestSchema2Deserializer {
+object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
 
     private val logger = LoggerFactory.getLogger(ManifestSchema2Deserializer::class.java)
     private val objectMapper = JsonUtils.objectMapper
@@ -84,18 +84,15 @@ object ManifestSchema2Deserializer {
 
             populateWithMediaType(layer, blobInfo)
             manifestMetadata.blobsInfo.add(blobInfo)
-//                if (historyIndex == historySize && layersIndex == layers.size()) {
-//                    breakeCircuit(manifestBytes, jsonBytes, "Loop Indexes not Incing")
-//                }
             checkCircuitBreaker(manifestBytes, jsonBytes, iterationsCounter)
             ++iterationsCounter
         }
         manifestMetadata.blobsInfo.reverse()
         manifestMetadata.tagInfo.totalSize = totalSize
         val dockerMetadata = JsonUtils.objectMapper.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
-        ManifestUtil.populatePorts(manifestMetadata, dockerMetadata)
-        ManifestUtil.populateVolumes(manifestMetadata, dockerMetadata)
-        ManifestUtil.populateLabels(manifestMetadata, dockerMetadata)
+        populatePorts(manifestMetadata, dockerMetadata)
+        populateVolumes(manifestMetadata, dockerMetadata)
+        populateLabels(manifestMetadata, dockerMetadata)
         return manifestMetadata
     }
 

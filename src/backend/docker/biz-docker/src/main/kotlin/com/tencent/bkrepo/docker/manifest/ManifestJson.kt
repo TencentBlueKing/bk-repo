@@ -3,6 +3,7 @@ package com.tencent.bkrepo.docker.manifest
 import com.fasterxml.jackson.annotation.JsonAnyGetter
 import com.fasterxml.jackson.annotation.JsonAnySetter
 import com.fasterxml.jackson.databind.JsonNode
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import java.io.Serializable
 
 /**
@@ -11,7 +12,8 @@ import java.io.Serializable
  * @date: 2020-02-05
  */
 class ManifestJson : Serializable {
-    var mediaType: String = ""
+
+    var mediaType: String = EMPTY
     private val other: MutableMap<String, Any>? = null
     var size: Int? = null
     var digest: String? = null

@@ -1,32 +1,29 @@
 package com.tencent.bkrepo.docker.util
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
+import com.tencent.bkrepo.docker.constant.DOCKER_CONTENT_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
-import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_LIST
-import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_NAME
-import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_TYPE
-import com.tencent.bkrepo.docker.constant.DOCKER_NAME_REPO
 import com.tencent.bkrepo.docker.constant.HTTP_FORWARDED_PROTO
 import com.tencent.bkrepo.docker.constant.HTTP_PROTOCOL_HTTP
 import com.tencent.bkrepo.docker.constant.HTTP_PROTOCOL_HTTPS
-import com.tencent.bkrepo.docker.context.RequestContext
-import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.errors.DockerV2Errors
 import com.tencent.bkrepo.docker.manifest.ManifestType
 import com.tencent.bkrepo.docker.model.DockerDigest
-import com.tencent.bkrepo.docker.model.ManifestMetadata
 import com.tencent.bkrepo.docker.response.DockerResponse
 import org.apache.commons.io.IOUtils
 import org.apache.commons.io.output.NullOutputStream
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import java.io.InputStream
 import java.net.URI
 import java.util.Objects
 import java.util.regex.Pattern
 import javax.ws.rs.core.UriBuilder
+import javax.xml.bind.DatatypeConverter
 import kotlin.streams.toList
 
 /**
@@ -34,10 +31,35 @@ import kotlin.streams.toList
  * @author: owenlxu
  * @date: 2019-11-15
  */
-object RepoServiceUtil {
+object ResponseUtil {
 
-    private val logger = LoggerFactory.getLogger(RepoServiceUtil::class.java)
+    private val logger = LoggerFactory.getLogger(ResponseUtil::class.java)
+
     private val OLD_USER_AGENT_PATTERN = Pattern.compile("^(?:docker\\/1\\.(?:3|4|5|6|7(?!\\.[0-9]-dev))|Go ).*$")
+
+    val EMPTY_BLOB_CONTENT: ByteArray =
+        DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")
+
+    fun isEmptyBlob(digest: DockerDigest): Boolean {
+        return digest.toString() == emptyBlobDigest().toString()
+    }
+
+    fun emptyBlobDigest(): DockerDigest {
+        return DockerDigest("sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4")
+    }
+
+    fun emptyBlobHeadResponse(): DockerResponse {
+        return ResponseEntity.ok().header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+            .header(DOCKER_CONTENT_DIGEST, emptyBlobDigest().toString()).header(HttpHeaders.CONTENT_LENGTH, "32")
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).build()
+    }
+
+    fun emptyBlobGetResponse(): DockerResponse {
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_LENGTH, "32")
+            .header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+            .header(DOCKER_CONTENT_DIGEST, emptyBlobDigest().toString())
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE).body(EMPTY_BLOB_CONTENT)
+    }
 
     fun putHasStream(httpHeaders: HttpHeaders): Boolean {
         val headerValues = httpHeaders["User-Agent"]
@@ -63,35 +85,6 @@ object RepoServiceUtil {
 
     fun getAcceptableManifestTypes(httpHeaders: HttpHeaders): List<ManifestType> {
         return httpHeaders.accept.stream().filter { Objects.nonNull(it) }.map { ManifestType.from(it) }.toList()
-    }
-
-    fun manifestListUploadContext(context: RequestContext, digest: DockerDigest, path: String, bytes: ByteArray): UploadContext {
-        with(context) {
-            val artifactFile = ArtifactFileFactory.build(bytes.inputStream())
-            val uploadContext = UploadContext(projectId, repoName, path).artifactFile(artifactFile)
-            uploadContext.sha256(digest.getDigestHex())
-            return uploadContext
-        }
-    }
-
-    fun buildManifestPropertyMap(dockerRepo: String, tag: String, digest: DockerDigest, type: ManifestType): HashMap<String, String> {
-        var map = HashMap<String, String>()
-        map[digest.getDigestAlg()] = digest.getDigestHex()
-        map[DOCKER_MANIFEST_DIGEST] = digest.toString()
-        map[DOCKER_MANIFEST_NAME] = tag
-        map[DOCKER_NAME_REPO] = dockerRepo
-        map[DOCKER_MANIFEST_TYPE] = type.toString()
-        return map
-    }
-
-    fun manifestUploadContext(context: RequestContext, type: ManifestType, metadata: ManifestMetadata, path: String, file: ArtifactFile): UploadContext {
-        with(context) {
-            val uploadContext = UploadContext(projectId, repoName, path).artifactFile(file)
-            if ((type == ManifestType.Schema2 || type == ManifestType.Schema2List) && "sha256" == metadata.tagInfo.digest?.getDigestAlg()) {
-                uploadContext.sha256(metadata.tagInfo.digest!!.getDigestHex())
-            }
-            return uploadContext
-        }
     }
 
     // get docker return url
@@ -124,8 +117,8 @@ object RepoServiceUtil {
     }
 
     /**
-     * determine to return http protocol prefix or
-     * https prefix
+     * determine to return http protocol
+     * prefix or https prefix
      */
     private fun getProtocol(httpHeaders: HttpHeaders): String {
         val protocolHeaders = httpHeaders[HTTP_FORWARDED_PROTO]

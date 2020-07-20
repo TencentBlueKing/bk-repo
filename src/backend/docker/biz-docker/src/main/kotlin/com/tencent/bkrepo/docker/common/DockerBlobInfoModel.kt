@@ -9,6 +9,7 @@ import org.apache.commons.lang.StringUtils
  * @date: 2019-11-12
  */
 class DockerBlobInfoModel(var id: String, var digest: String, var size: String, var created: String) {
+
     var shortId: String = EMPTY
     var command: String = EMPTY
     var commandText: String = EMPTY

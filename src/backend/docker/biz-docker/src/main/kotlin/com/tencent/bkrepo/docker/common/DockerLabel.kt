@@ -5,12 +5,5 @@ package com.tencent.bkrepo.docker.common
  * @author: owenlxu
  * @date: 2019-11-12
  */
-class DockerLabel {
-    var key: String? = null
-    var value: String? = null
+data class DockerLabel(var key: String? = null, var value: String? = null)
 
-    constructor(key: String, value: String) {
-        this.key = key
-        this.value = value
-    }
-}

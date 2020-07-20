@@ -15,9 +15,9 @@ import org.slf4j.LoggerFactory
  * @author: owenlxu
  * @date: 2019-10-15
  */
-object ArtifactUtil {
+object BlobUtil {
 
-    private val logger = LoggerFactory.getLogger(ArtifactUtil::class.java)
+    private val logger = LoggerFactory.getLogger(BlobUtil::class.java)
     private const val IMAGES_DIR = ".images"
     private const val LAYER_FILENAME = "layer.tar"
     private const val JSON_FILENAME = "json.json"
@@ -55,15 +55,9 @@ object ArtifactUtil {
         val length = blob[DOCKER_NODE_SIZE] as Int
         val fullPath = blob[DOCKER_NODE_FULL_PATH] as String
         with(context) {
-            return DockerArtifact(projectId, repoName, artifactName).sha256(sha256FromFileName(fileName))
+            return DockerArtifact(projectId, repoName, artifactName)
+                .sha256(sha256FromFileName(fileName))
                 .length(length.toLong()).fullPath(fullPath)
-        }
-    }
-
-    fun getManifestByName(repo: DockerArtifactRepo, context: RequestContext, fileName: String): DockerArtifact? {
-        val fullPath = "/${context.artifactName}/$fileName"
-        return repo.getArtifact(context.projectId, context.repoName, fullPath) ?: run {
-            return null
         }
     }
 
@@ -86,7 +80,7 @@ object ArtifactUtil {
         if (repo.exists(context.projectId, context.repoName, tempBlobPath)) {
             return repo.getArtifact(context.projectId, context.repoName, tempBlobPath)
         }
-        logger.info("attempt to search  blob [$context,$fileName]")
+        logger.debug("attempt to search  blob [$context,$fileName]")
         return getBlobByName(repo, context, fileName)
     }
 

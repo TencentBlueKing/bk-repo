@@ -6,7 +6,6 @@ const val BLOB_PATTERN = "/blobs"
 
 const val MANIFEST_PATTERN = "/manifests"
 
-
 const val USER_API_PREFIX = "/api"
 const val DOCKER_API_PREFIX = "/v2"
 const val DOCKER_API_SUFFIX = "/auth"
@@ -51,6 +50,7 @@ const val DOCKER_MANIFEST_LIST = "list.manifest.json"
 const val DOCKER_SEARCH_INDEX = 0
 const val DOCKER_SEARCH_LIMIT = 9999999
 const val DOCKER_SEARCH_LIMIT_SMALL = 10
+const val DOCKER_LENGTH_EMPTY = "0"
 
 const val DOCKER_PROJECT_ID = "projectId"
 const val DOCKER_REPO_NAME = "repoName"

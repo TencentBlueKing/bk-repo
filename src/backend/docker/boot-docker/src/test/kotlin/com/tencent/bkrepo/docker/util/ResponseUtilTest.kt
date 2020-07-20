@@ -8,12 +8,12 @@ import org.springframework.http.HttpHeaders
 
 @DisplayName("repoServiceUtilTest")
 @SpringBootTest
-class RepoServiceUtilTest {
+class ResponseUtilTest {
 
     @Test
     fun putHasStreamTest() {
         val httpHeader = HttpHeaders()
-        val result = RepoServiceUtil.putHasStream(httpHeader)
+        val result = ResponseUtil.putHasStream(httpHeader)
         Assertions.assertNotEquals(result, true)
         httpHeader.set("User-Agent", "Go-http-client/1.1")
         Assertions.assertNotEquals(result, true)
@@ -23,11 +23,11 @@ class RepoServiceUtilTest {
     fun getDockerURITest() {
         val httpHeader = HttpHeaders()
         val path = "/docker/nginx"
-        var result = RepoServiceUtil.getDockerURI(path, httpHeader)
+        var result = ResponseUtil.getDockerURI(path, httpHeader)
         Assertions.assertNotEquals(result.port, 0)
         Assertions.assertEquals(result.host, "localhost")
         httpHeader.set("Host", "127.0.0.1:80")
-        result = RepoServiceUtil.getDockerURI(path, httpHeader)
+        result = ResponseUtil.getDockerURI(path, httpHeader)
         Assertions.assertNotEquals(result.host, "localhost")
     }
 }

@@ -9,7 +9,7 @@ import com.tencent.bkrepo.docker.model.ManifestMetadata
  * @author: owenlxu
  * @date: 2020-02-05
  */
-object ManifestUtil {
+abstract class AbstractManifestDeserializer {
 
     fun populatePorts(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
         dockerMetadata.config?.let {

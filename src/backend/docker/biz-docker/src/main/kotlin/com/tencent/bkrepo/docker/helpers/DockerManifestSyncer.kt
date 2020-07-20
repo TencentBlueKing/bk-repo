@@ -9,11 +9,12 @@ import com.tencent.bkrepo.docker.exception.DockerFileSaveFailedException
 import com.tencent.bkrepo.docker.model.DockerBlobInfo
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
-import com.tencent.bkrepo.docker.util.ArtifactUtil
-import com.tencent.bkrepo.docker.util.ContentUtil
+import com.tencent.bkrepo.docker.util.BlobUtil
+import com.tencent.bkrepo.docker.util.ResponseUtil.EMPTY_BLOB_CONTENT
+import com.tencent.bkrepo.docker.util.ResponseUtil.emptyBlobDigest
+import com.tencent.bkrepo.docker.util.ResponseUtil.isEmptyBlob
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 
 /**
@@ -22,7 +23,6 @@ import java.io.ByteArrayInputStream
  * @author: owenlxu
  * @date: 2020-02-05
  */
-@Component
 object DockerManifestSyncer {
 
     fun sync(repo: DockerArtifactRepo, info: ManifestMetadata, context: RequestContext, tag: String): Boolean {
@@ -45,12 +45,12 @@ object DockerManifestSyncer {
                 continue
             }
             // check is empty digest
-            if (ContentUtil.isEmptyBlob(blobDigest)) {
+            if (isEmptyBlob(blobDigest)) {
                 logger.info("found empty layer [$fileName] in manifest  ,create blob in path [$finalPath]")
-                val blobContent = ByteArrayInputStream(ContentUtil.EMPTY_BLOB_CONTENT)
+                val blobContent = ByteArrayInputStream(EMPTY_BLOB_CONTENT)
                 val artifactFile = ArtifactFileFactory.build(blobContent)
                 val uploadContext = UploadContext(context.projectId, context.repoName, finalPath)
-                    .sha256(ContentUtil.emptyBlobDigest().getDigestHex()).artifactFile(artifactFile)
+                    .sha256(emptyBlobDigest().getDigestHex()).artifactFile(artifactFile)
                 if (!repo.upload(uploadContext)) {
                     logger.warn("save blob failed [$finalPath]")
                     throw DockerFileSaveFailedException(finalPath)
@@ -77,17 +77,11 @@ object DockerManifestSyncer {
         return true
     }
 
-    private fun isForeignLayer(blobInfo: DockerBlobInfo): Boolean {
-        return "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == blobInfo.mediaType
-    }
-
     private fun copyBlobFromFirstRepo(
-        repo: DockerArtifactRepo,
-        context: RequestContext,
-        fileName: String,
+        repo: DockerArtifactRepo, context: RequestContext, fileName: String,
         targetPath: String
     ): Boolean {
-        val blob = ArtifactUtil.getBlobByName(repo, context, fileName) ?: run {
+        val blob = BlobUtil.getBlobByName(repo, context, fileName) ?: run {
             return false
         }
         val sourcePath = blob.fullPath
@@ -95,6 +89,10 @@ object DockerManifestSyncer {
             return true
         }
         return repo.copy(context, sourcePath, targetPath)
+    }
+
+    private fun isForeignLayer(blobInfo: DockerBlobInfo): Boolean {
+        return "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == blobInfo.mediaType
     }
 
     private val logger = LoggerFactory.getLogger(DockerManifestSyncer::class.java)

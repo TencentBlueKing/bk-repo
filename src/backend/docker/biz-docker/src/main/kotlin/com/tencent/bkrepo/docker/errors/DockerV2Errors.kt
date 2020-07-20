@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.docker.errors
 
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE
 import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE_SCOPE
@@ -84,7 +85,7 @@ object DockerV2Errors {
                     ERROR_MESSAGE,
                     "UNAUTHORIZED",
                     "The client does not have permission to push to the repository.",
-                    ""
+                    EMPTY
                 )
             )
     }
@@ -93,8 +94,8 @@ object DockerV2Errors {
         tokenUrl: String,
         registryService: String,
         scopeType: String? = null,
-        repo: String = "",
-        scope: String = ""
+        repo: String = EMPTY,
+        scope: String = EMPTY
     ): DockerResponse {
         val scopeStr = if (scopeType != null) String.format(AUTH_CHALLENGE_SCOPE, scopeType, repo, scope) else ""
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
