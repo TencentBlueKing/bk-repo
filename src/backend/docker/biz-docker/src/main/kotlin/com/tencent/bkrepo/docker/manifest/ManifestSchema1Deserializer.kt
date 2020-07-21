@@ -76,7 +76,7 @@ object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
             populateWithCommand(dockerMetadata, blobInfo)
             manifestMetadata.blobsInfo.add(blobInfo)
 
-            //populate ports volumes, labels from manifest file
+            // populate ports volumes, labels from manifest file
             populatePorts(manifestMetadata, dockerMetadata)
             populateVolumes(manifestMetadata, dockerMetadata)
             populateLabels(manifestMetadata, dockerMetadata)

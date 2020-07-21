@@ -59,7 +59,8 @@ class DockerClientAuthHandler : ClientAuthHandler {
         if (request.requestURI.startsWith(USER_API_PREFIX)) {
             with(authCredentials as PlatformAuthCredentials) {
                 val appId = authService.checkPlatformAccount(accessKey, secretKey)
-                val userId = request.getHeader(AUTH_HEADER_UID)?.let { checkUserId(it)
+                val userId = request.getHeader(AUTH_HEADER_UID)?.let {
+                    checkUserId(it)
                     it
                 } ?: appId
                 request.setAttribute(APP_KEY, appId)

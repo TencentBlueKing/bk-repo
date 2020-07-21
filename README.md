@@ -22,17 +22,18 @@
 - support-files 系统初始化与交互代码
 
 #### 微服务模块
-- generic
-- repository
-- docker
-- helm
-- npm
-- pypi
-- rpm
-- maven
-- composer
-- opdata
-- monitor
-- replication
+- auth 微服务，实现基于rbac的权限体系
+- generic 通用制品库微服务
+- repository 仓库微服务
+- docker docker镜像仓库微服务
+- helm helm chart仓库微服务
+- npm npm依赖源微服务
+- pypi pypi依赖源微服务
+- rpm rpm依赖源微服务
+- maven maven依赖源微服务
+- composer composer依赖源微服务
+- opdata 运营统计微服务
+- monitor 监控微服务
+- replication 备份复制微服务
 
 
