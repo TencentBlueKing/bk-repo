@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.PATH_DELIMITER
 import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
 import com.tencent.bkrepo.common.storage.innercos.encode
-import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.COS_AUTHORIZATION
+import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.AUTHORIZATION
 import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.HOST
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.common.storage.innercos.sign.CosSigner
@@ -21,25 +21,19 @@ abstract class CosRequest(
     val parameters = TreeMap<String, String?>()
     var url: String = StringPool.EMPTY
 
-    private val requestUri: String = StringBuilder()
-        .append(PATH_DELIMITER)
-        .append(uri.trim(PATH_DELIMITER))
-        .toString()
+    private val requestUri: String = StringBuilder().append(PATH_DELIMITER).append(uri.trim(PATH_DELIMITER)).toString()
 
     open fun buildRequestBody(): RequestBody? = null
 
-    fun sign(credentials: InnerCosCredentials, config: ClientConfig): String {
-        return headers[COS_AUTHORIZATION] ?: run {
-            val endpoint = config.endpointBuilder.buildEndpoint(credentials.region, credentials.bucket)
-            headers[HOST] = endpoint
+    open fun sign(credentials: InnerCosCredentials, config: ClientConfig): String {
+        return headers[AUTHORIZATION] ?: run {
+            val endpoint = config.endpointBuilder.buildEndpoint(credentials.region, credentials.bucket).apply { headers[HOST] = this }
             val resolvedHost = config.endpointResolver.resolveEndpoint(endpoint)
             url = config.httpProtocol.getScheme() + resolvedHost + requestUri
             if (parameters.isNotEmpty()) {
                 url += "?" + getFormatParameters()
             }
-            val signature = CosSigner.sign(this, credentials, config.signExpired)
-            headers[COS_AUTHORIZATION] = signature
-            return signature
+            return CosSigner.sign(this, credentials, config.signExpired).apply { headers[AUTHORIZATION] = this }
         }
     }
 

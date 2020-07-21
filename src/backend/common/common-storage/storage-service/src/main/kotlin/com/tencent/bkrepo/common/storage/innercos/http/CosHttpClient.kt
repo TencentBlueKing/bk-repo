@@ -4,6 +4,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
+import java.io.IOException
 import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
 
@@ -19,7 +20,7 @@ object CosHttpClient {
     fun <T> execute(request: Request, handler: HttpResponseHandler<T>): T {
         val response = try {
             client.newCall(request).execute()
-        } catch (exception: Exception) {
+        } catch (exception: IOException) {
             val message = buildMessage(request)
             throw RuntimeException("Failed to execute http request: $message", exception)
         }
@@ -48,12 +49,12 @@ object CosHttpClient {
         val requestTitle = "${request.method()} ${request.url()} ${response?.protocol()}"
 
         val builder = StringBuilder()
-            .append(">>>>")
+            .append(">>>> ")
             .appendln(requestTitle)
             .appendln(request.headers())
 
         if (response != null) {
-            builder.append("<<<<")
+            builder.append("<<<< ")
                 .append(requestTitle)
                 .append(response.code())
                 .appendln("[${response.message()}]")

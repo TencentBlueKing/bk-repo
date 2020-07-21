@@ -7,8 +7,10 @@ const val PATH_DELIMITER = '/'
 const val PARAMETER_UPLOAD_ID = "uploadid"
 const val PARAMETER_PART_NUMBER = "partnumber"
 const val PARAMETER_UPLOADS = "uploads"
+const val COS_COPY_SOURCE = "x-cos-copy-source"
 
 const val RESPONSE_UPLOAD_ID = "UploadId"
+const val RESPONSE_LAST_MODIFIED = "LastModified"
 
 fun String.encode(): String {
     val encodedString = URLEncoder.encode(this, DEFAULT_ENCODING)
