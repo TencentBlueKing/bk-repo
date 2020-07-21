@@ -26,8 +26,8 @@ class ComposerRemoteRepository : RemoteRepository(), ComposerRepository {
         val remotePackagesUri = "${remoteConfiguration.url.removeSuffix("/")}$artifactUri"
         val okHttpClient = createHttpClient(remoteConfiguration)
         val request = Request.Builder().url(remotePackagesUri)
-                .addHeader("Connection", "keep-alive")
-                .get().build()
+            .addHeader("Connection", "keep-alive")
+            .get().build()
         val result = okHttpClient.newCall(request).execute().body()?.string()
         try {
             JsonParser().parse(result).asJsonObject

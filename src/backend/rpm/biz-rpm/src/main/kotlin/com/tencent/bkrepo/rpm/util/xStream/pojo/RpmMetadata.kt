@@ -12,9 +12,9 @@ class RpmMetadata(
     @XStreamAlias("packages")
     var packageNum: Long
 ) {
-        @XStreamAsAttribute
-        val xmlns: String = "http://linux.duke.edu/metadata/common"
-        @XStreamAsAttribute
-        @XStreamAlias("xmlns:rpm")
-        val rpm: String = "http://linux.duke.edu/metadata/rpm"
+    @XStreamAsAttribute
+    val xmlns: String = "http://linux.duke.edu/metadata/common"
+    @XStreamAsAttribute
+    @XStreamAlias("xmlns:rpm")
+    val rpm: String = "http://linux.duke.edu/metadata/rpm"
 }
