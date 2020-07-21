@@ -174,12 +174,9 @@ class ReplicationJobHandler(
                     logger.info("Success to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].")
                 } catch (interruptedException: InterruptedException) {
                     throw interruptedException
-                } catch (exception: Exception) {
+                } catch (ignored: Exception) {
                     context.progress.failedRepo += 1
-                    logger.error(
-                        "Failed to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].",
-                        exception
-                    )
+                    logger.error("Failed to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].", ignored)
                 } finally {
                     context.progress.replicatedRepo += 1
                     persistTaskLog(context)
