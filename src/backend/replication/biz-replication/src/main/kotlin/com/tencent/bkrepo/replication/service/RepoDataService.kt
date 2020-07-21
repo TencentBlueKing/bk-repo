@@ -11,6 +11,7 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.replication.message.ReplicationException
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.api.ProjectResource
@@ -68,7 +69,7 @@ class RepoDataService @Autowired constructor(
 
     fun getFile(sha256: String, length: Long, repoInfo: RepositoryInfo): InputStream {
         return storageService.load(sha256, Range.ofFull(length), repoInfo.storageCredentials) ?:
-            throw RuntimeException("File data does not exist")
+            throw ReplicationException("File data does not exist")
     }
 
     fun listRole(projectId: String, repoName: String?): List<Role> {

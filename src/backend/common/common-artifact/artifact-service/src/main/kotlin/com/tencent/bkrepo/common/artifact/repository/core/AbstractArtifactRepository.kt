@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired
  * @author: carrypan
  * @date: 2019/11/27
  */
+@Suppress("TooGenericExceptionCaught")
 abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired

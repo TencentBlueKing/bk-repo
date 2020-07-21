@@ -71,7 +71,7 @@ open class S3Storage : AbstractFileStorage<S3Credentials, S3Client>() {
     override fun exist(path: String, filename: String, client: S3Client): Boolean {
         return try {
             client.s3Client.doesObjectExist(client.bucketName, filename)
-        } catch (exception: Exception) {
+        } catch (ignored: Exception) {
             false
         }
     }

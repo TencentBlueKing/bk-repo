@@ -6,6 +6,6 @@ import org.springframework.boot.runApplication
 @MicroService
 class MavenApplication
 
-fun main(args: Array<String>) {
-    runApplication<MavenApplication>(*args)
+fun main() {
+    runApplication<MavenApplication>()
 }

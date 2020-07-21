@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
 import org.springframework.web.util.UriUtils
+import java.io.IOException
+import java.nio.channels.ClosedChannelException
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -65,7 +67,7 @@ object ArtifactResourceWriter {
         try {
             writeRangeStream(resource.inputStream, response)
             response.flushBuffer()
-        } catch (exception: Exception) {
+        } catch (exception: IOException) {
             val message = exception.message.orEmpty()
             when {
                 message.contains("Connection reset by peer") -> {

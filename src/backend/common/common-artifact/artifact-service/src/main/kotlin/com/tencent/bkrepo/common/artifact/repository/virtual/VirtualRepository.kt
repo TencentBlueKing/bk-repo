@@ -42,8 +42,8 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                     logger.debug("Artifact[$artifactInfo] is found it Repository[$repoIdentify].")
                     return jsonObj
                 } ?: logger.debug("Artifact[$artifactInfo] is not found in Repository[$repoIdentify], skipped.")
-            } catch (exception: Exception) {
-                logger.warn("Search Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${exception.message}")
+            } catch (ignored: Exception) {
+                logger.warn("Search Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${ignored.message}")
             }
         }
         return null
@@ -68,8 +68,8 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                     logger.debug("Artifact[$artifactInfo] is found it Repository[$repoIdentify].")
                     return it
                 } ?: logger.debug("Artifact[$artifactInfo] is not found in Repository[$repoIdentify], skipped.")
-            } catch (exception: Exception) {
-                logger.warn("Download Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${exception.message}")
+            } catch (ignored: Exception) {
+                logger.warn("Download Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${ignored.message}")
             }
         }
         return null

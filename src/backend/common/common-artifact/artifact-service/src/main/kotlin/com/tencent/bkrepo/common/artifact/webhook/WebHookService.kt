@@ -12,6 +12,7 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.io.IOException
 
 @Service
 class WebHookService {
@@ -40,7 +41,7 @@ class WebHookService {
             val response = httpClient.newCall(request).execute()
             assert(response.isSuccessful)
             logger.info("Execute web hook[$webHookInfo] success.")
-        } catch (exception: Exception) {
+        } catch (exception: IOException) {
             logger.error("Execute web hook[$webHookInfo] error.", exception)
         }
     }

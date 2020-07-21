@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.service.util
 
 import java.net.InetAddress
 import java.net.NetworkInterface
+import java.net.SocketException
 import java.net.UnknownHostException
 
 object NetUtils {
@@ -47,9 +48,11 @@ object NetUtils {
                 }
             }
             return candidateAddress ?: InetAddress.getLocalHost()
-        } catch (exception: Exception) {
+        } catch (exception: SocketException) {
             val unknownHostException = UnknownHostException("Failed to determine LAN address: $exception")
             unknownHostException.initCause(exception)
+            throw unknownHostException
+        } catch (unknownHostException: UnknownHostException) {
             throw unknownHostException
         }
     }

@@ -12,6 +12,6 @@ import org.springframework.boot.runApplication
 @MicroService
 class RepositoryApplication
 
-fun main(args: Array<String>) {
-    runApplication<RepositoryApplication>(*args)
+fun main() {
+    runApplication<RepositoryApplication>()
 }

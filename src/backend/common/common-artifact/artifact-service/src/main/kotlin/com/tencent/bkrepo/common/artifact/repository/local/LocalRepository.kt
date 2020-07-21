@@ -133,8 +133,8 @@ abstract class LocalRepository : AbstractArtifactRepository() {
                 val end = if (matcher.group(2).isNullOrEmpty()) total - 1 else matcher.group(2).toLong()
                 Range(start, end, total)
             }
-        } catch (ex: Exception) {
-            logger.warn("Failed to parse range header: $rangeHeader, ex: ${ex.message}")
+        } catch (exception: IllegalArgumentException) {
+            logger.warn("Failed to parse range header: $rangeHeader, exception: ${exception.message}")
             throw ArtifactException("Invalid range header", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE.value())
         }
     }

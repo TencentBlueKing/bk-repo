@@ -52,8 +52,8 @@ class FileReferenceCleanupJob {
                         fileMissingCount += 1
                     }
                     fileReferenceDao.determineMongoTemplate().remove(it, collectionName)
-                } catch (exception: Exception) {
-                    logger.error("Failed to delete file[${it.sha256}] on [$storageCredentials].", exception)
+                } catch (ignored: Exception) {
+                    logger.error("Failed to delete file[${it.sha256}] on [$storageCredentials].", ignored)
                     failedCount += 1
                 }
                 totalCount += 1

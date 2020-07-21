@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
 import feign.Response
 import feign.codec.ErrorDecoder
+import java.io.IOException
 
 /**
  * Feign ErrorDecoder
@@ -25,7 +26,7 @@ class ErrorCodeDecoder : ErrorDecoder {
                     response.code,
                     response.message
                 )
-            } catch (exception: Exception) {
+            } catch (exception: IOException) {
                 delegate.decode(methodKey, feignResponse)
             }
         }

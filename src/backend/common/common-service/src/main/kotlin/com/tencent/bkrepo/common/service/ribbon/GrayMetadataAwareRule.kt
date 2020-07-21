@@ -19,7 +19,9 @@ class GrayMetadataAwareRule : PredicateBasedRule() {
     init {
         val metadataAwarePredicate = GrayMetadataAwarePredicate(properties)
         val availabilityPredicate = AvailabilityPredicate(this, null)
-        predicate = createCompositePredicate(metadataAwarePredicate, availabilityPredicate)
+        predicate = CompositePredicate.withPredicates(metadataAwarePredicate, availabilityPredicate)
+            .addFallbackPredicate(AbstractServerPredicate.alwaysTrue())
+            .build()
     }
 
     override fun getPredicate() = predicate
