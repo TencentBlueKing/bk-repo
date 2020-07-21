@@ -8,6 +8,7 @@ import com.tencent.bkrepo.auth.pojo.UpdateClusterRequest
 import com.tencent.bkrepo.auth.repository.ClusterRepository
 import com.tencent.bkrepo.auth.service.ClusterService
 import com.tencent.bkrepo.auth.util.CertTrust
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -28,7 +29,7 @@ class ClusterServiceImpl @Autowired constructor(
     override fun addCluster(request: AddClusterRequest): Boolean {
         logger.info("add  cluster  request : {} ", request.toString())
         val cluster = clusterRepository.findOneByClusterId(request.clusterId)
-        if (cluster != null) {
+        cluster?.let {
             logger.warn("add cluster [${request.clusterId}]  is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_CLUSTERID)
         }
@@ -89,18 +90,17 @@ class ClusterServiceImpl @Autowired constructor(
             update.set(TCluster::credentialStatus.name, request.credentialStatus!!)
         }
 
-        if (request.cert != "") {
+        if (request.cert != EMPTY) {
             update.set(TCluster::cert.name, request.cert)
         }
 
-        if (request.clusterAddr != "") {
+        if (request.clusterAddr != EMPTY) {
             update.set(TCluster::clusterAddr.name, request.clusterAddr)
         }
 
         val result = mongoTemplate.upsert(query, update, TCluster::class.java)
-        if (result.matchedCount == 1L) {
-            return true
-        }
+        if (result.matchedCount == 1L) return true
+
         return false
     }
 
@@ -116,9 +116,7 @@ class ClusterServiceImpl @Autowired constructor(
         val update = Update()
         update.set("credentialStatus", status)
         val result = mongoTemplate.updateFirst(query, update, TCluster::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
+        if (result.modifiedCount == 1L) return true
         return false
     }
 

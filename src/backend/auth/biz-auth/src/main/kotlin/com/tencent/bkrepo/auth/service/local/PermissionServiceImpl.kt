@@ -63,7 +63,7 @@ class PermissionServiceImpl @Autowired constructor(
             request.resourceType
         )
         permission?.let {
-            logger.warn("create permission  [$request  ] is exist.")
+            logger.warn("create permission  [$request] is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_PERMNAME)
         }
         val result = permissionRepository.insert(
@@ -118,9 +118,7 @@ class PermissionServiceImpl @Autowired constructor(
             val update = Update()
             update.set("users.$.action", actions)
             val result = mongoTemplate.updateFirst(query, update, TPermission::class.java)
-            if (result.modifiedCount == 1L) {
-                return true
-            }
+            if (result.modifiedCount == 1L) return true
             logger.warn("update user permission  [$id] , user [$uid] exist .")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_PERMISSION_EXIST)
         }
@@ -159,18 +157,14 @@ class PermissionServiceImpl @Autowired constructor(
         val user = userRepository.findFirstByUserId(request.uid) ?: run {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
-        if (user.admin || !request.appId.isNullOrBlank()) {
-            return true
-        }
+        if (user.admin || !request.appId.isNullOrBlank()) return true
         val roles = user.roles
 
         // check project admin
         if (roles.isNotEmpty() && request.projectId != null && request.resourceType == ResourceType.PROJECT) {
             roles.forEach {
                 val role = roleRepository.findFirstByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
-                if (role != null && role.admin) {
-                        return true
-                    }
+                if (role != null && role.admin) return true
             }
         }
 
@@ -179,9 +173,7 @@ class PermissionServiceImpl @Autowired constructor(
             roles.forEach {
                 // check project admin first
                 val pRole = roleRepository.findFirstByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
-                if (pRole != null && pRole.admin) {
-                        return true
-                }
+                if (pRole != null && pRole.admin) return true
                 // check repo admin then
                 val rRole = roleRepository.findFirstByIdAndProjectIdAndTypeAndRepoName(
                     it,
@@ -189,9 +181,7 @@ class PermissionServiceImpl @Autowired constructor(
                     RoleType.REPO,
                     request.repoName!!
                 )
-                if (rRole != null && rRole.admin) {
-                        return true
-                }
+                if (rRole != null && rRole.admin) return true
             }
         }
 
@@ -209,9 +199,7 @@ class PermissionServiceImpl @Autowired constructor(
         }
         val query = Query.query(celeriac)
         val result = mongoTemplate.count(query, TPermission::class.java)
-        if (result != 0L) {
-            return true
-        }
+        if (result != 0L) return true
         return false
     }
 

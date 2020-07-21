@@ -48,10 +48,16 @@ import org.springframework.http.ResponseEntity
  */
 class ManifestProcess constructor(val repo: DockerArtifactRepo) {
 
-    private val objectMapper = JsonUtils.objectMapper
-
     companion object {
         private val logger = LoggerFactory.getLogger(ManifestProcess::class.java)
+        private val objectMapper = JsonUtils.objectMapper
+        private const val MANIFESTS = "manifests"
+        private const val CONFIG = "config"
+        private const val PLATFORM = "platform"
+        private const val ARCHITECTURE = "architecture"
+        private const val OS = "os"
+        private const val AMD64 = "amd64"
+        private const val LINUX = "linux"
     }
 
     /**
@@ -82,9 +88,8 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         val metadata = ManifestDeserializer.deserialize(repo, context, tag, manifestType, manifestBytes, digest!!)
         addManifestsBlobs(context, manifestType, manifestBytes, metadata)
         if (!DockerManifestSyncer.sync(context, repo, metadata, tag)) {
-            val msg = "fail to sync manifest blobs, cancel manifest upload"
-            logger.error(msg)
-            throw DockerSyncManifestException(msg)
+            logger.warn("fail to sync manifest blobs, cancel manifest upload")
+            throw DockerSyncManifestException(manifestPath)
         }
 
         logger.info("start to upload manifest : [$manifestType]")
@@ -120,13 +125,11 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
      * @param tag the tag of docker images
      * @return ByteArray byte data of manifest config file
      */
-    fun getSchema2ManifestConfigContent(context: RequestContext, manifestBytes: ByteArray, tag: String): ByteArray {
+    fun getSchema2ConfigContent(context: RequestContext, manifestBytes: ByteArray, tag: String): ByteArray {
         val manifest = objectMapper.readTree(manifestBytes)
-        val digest = manifest.get("config").get(DOCKER_DIGEST).asText()
+        val digest = manifest.get(CONFIG).get(DOCKER_DIGEST).asText()
         val fileName = DockerDigest(digest).fileName()
-        val configFile = getManifestConfigBlob(repo, fileName, context, tag) ?: run {
-            return ByteArray(0)
-        }
+        val configFile = getManifestConfigBlob(repo, fileName, context, tag) ?: return ByteArray(0)
         logger.info("get manifest config file [$configFile]")
         val downloadContext = DownloadContext(context).sha256(configFile.sha256!!).length(configFile.length)
         val stream = repo.download(downloadContext)
@@ -142,9 +145,7 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
      * @return ByteArray byte data of manifest
      */
     fun getSchema2ManifestContent(context: RequestContext, schema2Path: String): ByteArray {
-        val manifest = getManifestByName(context, schema2Path) ?: run {
-            return ByteArray(0)
-        }
+        val manifest = getManifestByName(context, schema2Path) ?: return ByteArray(0)
         val downloadContext = DownloadContext(context).sha256(manifest.sha256!!).length(manifest.length)
         val stream = repo.download(downloadContext)
         stream.use {
@@ -160,17 +161,17 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
      */
     fun getSchema2Path(context: RequestContext, bytes: ByteArray): String {
         val manifestList = objectMapper.readTree(bytes)
-        val manifests = manifestList.get("manifests")
+        val manifests = manifestList.get(MANIFESTS)
         val maniIter = manifests.iterator()
         while (maniIter.hasNext()) {
             val manifest = maniIter.next() as JsonNode
-            val platform = manifest.get("platform")
-            val architecture = platform.get("architecture").asText()
-            val os = platform.get("os").asText()
-            if (StringUtils.equals(architecture, "amd64") && StringUtils.equals(os, "linux")) {
+            val platform = manifest.get(PLATFORM)
+            val architecture = platform.get(ARCHITECTURE).asText()
+            val os = platform.get(OS).asText()
+            if (StringUtils.equals(architecture, AMD64) && StringUtils.equals(os, LINUX)) {
                 val digest = manifest.get(DOCKER_DIGEST).asText()
                 val fileName = DockerDigest(digest).fileName()
-                val manifestFile = BlobUtil.getBlobByName(repo, context, fileName) ?: return EMPTY
+                val manifestFile = getBlobByName(repo, context, fileName) ?: return EMPTY
                 return BlobUtil.getFullPath(manifestFile)
             }
         }
@@ -201,11 +202,11 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
      * determine the manifest type of the file
      * @param context the  request context
      * @param tag the tag of manifest
-     * @param httpHeaders request head
+     * @param headers request head
      * @return ManifestType type of manifest
      */
-    fun chooseManifestType(context: RequestContext, tag: String, httpHeaders: HttpHeaders): ManifestType {
-        val acceptable = ResponseUtil.getAcceptableManifestTypes(httpHeaders)
+    fun chooseManifestType(context: RequestContext, tag: String, headers: HttpHeaders): ManifestType {
+        val acceptable = ResponseUtil.getAcceptableManifestTypes(headers)
         if (acceptable.contains(ManifestType.Schema2List)) {
             with(context) {
                 val manifestPath = ResponseUtil.buildManifestPath(artifactName, tag, ManifestType.Schema2List)
@@ -228,11 +229,11 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
      * first get manifest from digest
      * @param context the  request context
      * @param digest the digest of docker image
-     * @param httpHeaders request head
+     * @param headers request head
      * @return DockerResponse  http repsponse of manifest
      */
     fun getManifestByDigest(context: RequestContext, digest: DockerDigest, headers: HttpHeaders): DockerResponse {
-        logger.info("fetch docker manifest [$context}] and digest [$digest] ")
+        logger.info("fetch docker manifest [$context] and digest [$digest] ")
         var artifact = getManifestByName(context, DOCKER_MANIFEST)
         artifact?.let {
             val acceptable = ResponseUtil.getAcceptableManifestTypes(headers)
@@ -250,8 +251,8 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
      * then get manifest with tag
      * @param context the  request context
      * @param tag the tag of docker image
-     * @param httpHeaders request head
-     * @return DockerResponse  http repsponse of manifest
+     * @param headers request head
+     * @return DockerResponse  http response of manifest
      */
     fun getManifestByTag(context: RequestContext, tag: String, headers: HttpHeaders): DockerResponse {
         val useManifestType = chooseManifestType(context, tag, headers)
@@ -315,7 +316,7 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
      */
     private fun addSchema2Blob(bytes: ByteArray, metadata: ManifestMetadata) {
         val manifest = objectMapper.readTree(bytes)
-        val config = manifest.get("config")
+        val config = manifest.get(CONFIG)
         config?.let {
             val digest = config.get(DOCKER_DIGEST).asText()
             val blobInfo = DockerBlobInfo(EMPTY, digest, 0L, EMPTY)
@@ -331,12 +332,12 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
      */
     private fun addSchema2ListBlobs(context: RequestContext, bytes: ByteArray, metadata: ManifestMetadata) {
         val manifestList = JsonUtils.objectMapper.readTree(bytes)
-        val manifests = manifestList.get("manifests")
+        val manifests = manifestList.get(MANIFESTS)
         val manifest = manifests.iterator()
 
         while (manifest.hasNext()) {
             val manifestNode = manifest.next() as JsonNode
-            val digestString = manifestNode.get("platform").get(DOCKER_DIGEST).asText()
+            val digestString = manifestNode.get(PLATFORM).get(DOCKER_DIGEST).asText()
             val dockerBlobInfo = DockerBlobInfo(EMPTY, digestString, 0L, EMPTY)
             metadata.blobsInfo.add(dockerBlobInfo)
             val manifestFileName = DockerDigest(digestString).fileName()

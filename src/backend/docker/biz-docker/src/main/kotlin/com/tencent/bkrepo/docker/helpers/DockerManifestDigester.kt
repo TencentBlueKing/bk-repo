@@ -15,6 +15,7 @@ import org.apache.commons.codec.binary.Base64
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.LoggerFactory
+import java.lang.System.arraycopy
 
 /**
  * to parse manifest digest
@@ -27,7 +28,7 @@ object DockerManifestDigester {
 
     /**
      * calculate digest from config byte data
-     * @param configBytes docker manifest config byte
+     * @param configBytes docker manifest config byte array
      * @return DockerDigest metadata property
      */
     fun calc(configBytes: ByteArray): DockerDigest? {
@@ -49,38 +50,36 @@ object DockerManifestDigester {
         return DockerDigest.fromSha256(digest)
     }
 
-    private fun schema2Digest(jsonBytes: ByteArray): String {
+    private fun schema2Digest(configBytes: ByteArray): String {
         val digest = DigestUtils.getSha256Digest()
-        DigestUtils.updateDigest(digest, jsonBytes)
+        DigestUtils.updateDigest(digest, configBytes)
         return Hex.encodeHexString(digest.digest())
     }
 
-    private fun schema1Digest(jsonBytes: ByteArray, manifest: JsonNode): String {
+    private fun schema1Digest(configBytes: ByteArray, manifest: JsonNode): String {
         var formatLength = 0
         var formatTail = EMPTY
-        val signatures = manifest.get(DOCKER_SIG) ?: run {
-            return getHexDigest(jsonBytes, formatLength, formatTail)
-        }
+        val signatures = manifest.get(DOCKER_SIG) ?: return getHexDigest(configBytes, formatLength, formatTail)
         val sig = signatures.iterator()
         while (sig.hasNext()) {
             val signature = sig.next() as JsonNode
-            var protectedJson = signature.get(DOCKER_PROTECT)
-            protectedJson?.let {
-                val protectedBytes = Base64.decodeBase64(protectedJson.asText())
-                protectedJson = mapper().readTree(protectedBytes)
-                formatLength = protectedJson.get(DOCKER_FORMAT_LENGTH).asInt()
-                formatTail = protectedJson.get(DOCKER_FORMAT_TAIL).asText()
+            var protectJson = signature.get(DOCKER_PROTECT)
+            protectJson?.let {
+                val protectedBytes = Base64.decodeBase64(protectJson.asText())
+                protectJson = mapper().readTree(protectedBytes)
+                formatLength = protectJson.get(DOCKER_FORMAT_LENGTH).asInt()
+                formatTail = protectJson.get(DOCKER_FORMAT_TAIL).asText()
                 formatTail = String(Base64.decodeBase64(formatTail), Charsets.UTF_8)
             }
         }
 
-        return getHexDigest(jsonBytes, formatLength, formatTail)
+        return getHexDigest(configBytes, formatLength, formatTail)
     }
 
-    private fun getHexDigest(jsonBytes: ByteArray, formatLength: Int, formatTail: String): String {
+    private fun getHexDigest(configBytes: ByteArray, formatLength: Int, formatTail: String): String {
         val formatTailLength = formatTail.length
-        val bytes = jsonBytes.copyOf(formatLength + formatTailLength)
-        System.arraycopy(formatTail.toByteArray(), 0, bytes, formatLength, formatTailLength)
+        val bytes = configBytes.copyOf(formatLength + formatTailLength)
+        arraycopy(formatTail.toByteArray(), 0, bytes, formatLength, formatTailLength)
         val digest = DigestUtils.getSha256Digest()
         DigestUtils.updateDigest(digest, bytes)
         return Hex.encodeHexString(digest.digest())

@@ -17,9 +17,8 @@ object DockerCatalogTagsSlicer {
      * @param lastEntry the last entry
      */
     fun sliceCatalog(elementsHolder: DockerPaginationElementsHolder, maxEntries: Int, lastEntry: String) {
-        if (elementsHolder.elements.isEmpty()) {
-            return
-        }
+        if (elementsHolder.elements.isEmpty()) return
+
         val fromElement = calcFromElement(elementsHolder, lastEntry)
         if (StringUtils.isBlank(fromElement)) {
             elementsHolder.elements = TreeSet()
@@ -49,9 +48,8 @@ object DockerCatalogTagsSlicer {
 
     private fun calcToElement(holder: DockerPaginationElementsHolder, element: String, maxEntries: Int): String {
         var toElement = holder.elements.last() as String
-        if (maxEntries <= 0) {
-            return toElement
-        }
+        if (maxEntries <= 0) return toElement
+
         val repos = holder.elements.tailSet(element)
         var repoIndex = 1
         val iter = repos.iterator()

@@ -3,6 +3,8 @@ package com.tencent.bkrepo.docker.helpers
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
+import com.tencent.bkrepo.docker.constant.DOCKER_FOREIGN_KEY
+import com.tencent.bkrepo.docker.constant.DOCKER_TMP_UPLOAD_PATH
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.exception.DockerFileSaveFailedException
@@ -26,7 +28,7 @@ import java.io.ByteArrayInputStream
 object DockerManifestSyncer {
 
     /**
-     * move blob file from temp path to final path
+     * sync blobs file describe in manifest file
      * @param context docker request context
      * @param repo docker storage interface
      * @param info manifest metadata
@@ -39,19 +41,23 @@ object DockerManifestSyncer {
         while (manifestInfos.hasNext()) {
             val blobInfo = manifestInfos.next()
             logger.info("sync docker blob digest [${blobInfo.digest}]")
+
+            // check digest
             if (blobInfo.digest == null || !this.isForeignLayer(blobInfo)) {
                 logger.info("blob format error [$blobInfo]")
                 continue
             }
             val blobDigest = DockerDigest(blobInfo.digest!!)
             val fileName = blobDigest.fileName()
-            val tempPath = "/${context.artifactName}/_uploads/$fileName"
+            val tempPath = "/${context.artifactName}/$DOCKER_TMP_UPLOAD_PATH/$fileName"
             val finalPath = "/${context.artifactName}/$tag/$fileName"
+
             // check path exist
             if (repo.exists(context.projectId, context.repoName, finalPath)) {
                 logger.info("node [$finalPath] exist in the repo")
                 continue
             }
+
             // check is empty digest
             if (isEmptyBlob(blobDigest)) {
                 logger.info("found empty layer [$fileName] in manifest  ,create blob in path [$finalPath]")
@@ -65,6 +71,7 @@ object DockerManifestSyncer {
                 }
                 continue
             }
+
             // temp path exist, move from it to final
             if (repo.exists(context.projectId, context.repoName, tempPath)) {
                 logger.info("move blob from the temp path [$context,$tempPath,$finalPath]")
@@ -74,7 +81,8 @@ object DockerManifestSyncer {
                 }
                 continue
             }
-            // copy from other blob
+
+            // final copy from other blob
             logger.info("blob temp file [$tempPath] doesn't exist in temp, try to copy")
             if (!copyBlobFrom(context, repo, fileName, finalPath)) {
                 logger.warn("copy file from other path failed [$finalPath]")
@@ -101,14 +109,12 @@ object DockerManifestSyncer {
     ): Boolean {
         val blob = getBlobByName(repo, context, fileName) ?: return false
         val sourcePath = blob.fullPath
-        if (StringUtils.equals(sourcePath, targetPath)) {
-            return true
-        }
+        if (StringUtils.equals(blob.fullPath, targetPath)) return true
         return repo.copy(context, sourcePath, targetPath)
     }
 
     private fun isForeignLayer(blobInfo: DockerBlobInfo): Boolean {
-        return "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == blobInfo.mediaType
+        return DOCKER_FOREIGN_KEY == blobInfo.mediaType
     }
 
     private val logger = LoggerFactory.getLogger(DockerManifestSyncer::class.java)

@@ -15,7 +15,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 
 /**
- * define errors to return when exception occur
+ * define errors to return when exception happen
  * @author: owenlxu
  * @date: 2019-12-01
  */

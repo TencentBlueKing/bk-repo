@@ -40,7 +40,7 @@ import javax.ws.rs.core.MediaType
  * @date: 2019-11-12
  */
 @Component
-class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAuthHandler {
+class DockerClientAuthHandler : ClientAuthHandler {
 
     @Value("\${auth.url}")
     private var authUrl: String = EMPTY
@@ -59,8 +59,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
         if (request.requestURI.startsWith(USER_API_PREFIX)) {
             with(authCredentials as PlatformAuthCredentials) {
                 val appId = authService.checkPlatformAccount(accessKey, secretKey)
-                val userId = request.getHeader(AUTH_HEADER_UID)?.let {
-                    checkUserId(it)
+                val userId = request.getHeader(AUTH_HEADER_UID)?.let { checkUserId(it)
                     it
                 } ?: appId
                 request.setAttribute(APP_KEY, appId)
@@ -79,7 +78,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) : ClientAut
     }
 
     private fun checkUserId(userId: String) {
-        if (serviceUserResource.detail(userId).data == null) {
+        serviceUserResource.detail(userId).data ?: run {
             val request = CreateUserRequest(userId = userId, name = userId)
             serviceUserResource.createUser(request)
             logger.info("create user request: [$request] success")

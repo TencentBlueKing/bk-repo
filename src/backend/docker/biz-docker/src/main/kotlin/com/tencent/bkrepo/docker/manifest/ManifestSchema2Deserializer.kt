@@ -8,6 +8,7 @@ import com.tencent.bkrepo.docker.constant.DOCKER_CREATED_CMD
 import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_EMPTY_CMD
 import com.tencent.bkrepo.docker.constant.DOCKER_EMPTY_LAYER_CMD
+import com.tencent.bkrepo.docker.constant.DOCKER_FOREIGN_KEY
 import com.tencent.bkrepo.docker.constant.DOCKER_HISTORY_CMD
 import com.tencent.bkrepo.docker.constant.DOCKER_LAYER_CMD
 import com.tencent.bkrepo.docker.constant.DOCKER_MEDIA_TYPE
@@ -78,6 +79,8 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
         configBytes: ByteArray,
         manifestMetadata: ManifestMetadata
     ): ManifestMetadata {
+
+        // get config object and manifest object
         val config = objectMapper.readTree(configBytes)
         val manifest = objectMapper.readTree(manifestBytes)
         var totalSize = 0L
@@ -91,11 +94,13 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
         }
         val foreignHasHistory = layers.size().toLong() == historyCounter
         var iterationsCounter = 0
-        var historyIndex = 0
+        var hisIndex = 0
         var layersIndex = 0
 
-        while (historyIndex < historySize || layersIndex < layers.size()) {
-            val historyLayer = history?.get(historyIndex)
+        // add layer blobs
+        while (hisIndex < historySize || layersIndex < layers.size()) {
+
+            val historyLayer = history?.get(hisIndex)
             val layer = layers.get(layersIndex)
             var size = 0L
             var digest: String? = null
@@ -105,16 +110,15 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
                 digest = layer.get(DOCKER_DIGEST).asText()
                 ++layersIndex
             }
-
             if (!isForeignLayer(layer) || foreignHasHistory) {
-                ++historyIndex
+                ++hisIndex
             }
 
+            // populate with command
             var created = config.get(DOCKER_CREATED_CMD).asText()
             if (historyLayer != null && !isForeignLayer(layer)) {
                 created = historyLayer[DOCKER_CREATED_CMD].asText()
             }
-
             val blobInfo = DockerBlobInfo(EMPTY, digest, size, created)
             if (!isForeignLayer(layer)) {
                 populateWithCommand(historyLayer, blobInfo)
@@ -125,9 +129,11 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
             checkCircuitBreaker(manifestBytes, configBytes, iterationsCounter)
             ++iterationsCounter
         }
+
         manifestMetadata.blobsInfo.reverse()
         manifestMetadata.tagInfo.totalSize = totalSize
         val dockerMetadata = objectMapper.readValue(config.toString().toByteArray(), DockerImageMetadata::class.java)
+        // populate ports volumes and labels from manifest metadata
         populatePorts(manifestMetadata, dockerMetadata)
         populateVolumes(manifestMetadata, dockerMetadata)
         populateLabels(manifestMetadata, dockerMetadata)
@@ -143,8 +149,8 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
     private fun checkCircuitBreaker(manifestBytes: ByteArray, configBytes: ByteArray, iterationsCounter: Int) {
         if (iterationsCounter > CIRCUIT_BREAKER_THRESHOLD) {
             val reason = "$CIRCUIT_BREAKER_THRESHOLD Iterations ware performed"
-            val msg = "ManifestSchema2Deserializer CIRCUIT BREAKER: $reason breaking operation.\nManifest: " +
-                String(manifestBytes, StandardCharsets.UTF_8) + "\njsonBytes:" +
+            val msg = "ManifestSchema2Deserializer CIRCUIT BREAKER: $reason breaking operation.Manifest: " +
+                String(manifestBytes, StandardCharsets.UTF_8) + "jsonBytes:" +
                 String(configBytes, StandardCharsets.UTF_8)
             logger.error(msg)
             throw IllegalArgumentException("Circuit Breaker Threshold Reached, Breaking Operation. see log output for manifest details.")
@@ -152,8 +158,7 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
     }
 
     private fun isForeignLayer(layer: JsonNode?): Boolean {
-        return layer != null && layer.has(DOCKER_MEDIA_TYPE) &&
-            "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip" == layer.get(DOCKER_MEDIA_TYPE).asText()
+        return layer != null && layer.has(DOCKER_MEDIA_TYPE) && DOCKER_FOREIGN_KEY == layer.get(DOCKER_MEDIA_TYPE).asText()
     }
 
     private fun notEmptyHistoryLayer(historyLayer: JsonNode?): Boolean {
@@ -167,16 +172,16 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
      */
     private fun populateWithCommand(layerHistory: JsonNode?, blobInfo: DockerBlobInfo) {
         if (layerHistory != null && layerHistory.has(DOCKER_CREATED_BY_CMD)) {
-            var command = layerHistory.get(DOCKER_CREATED_BY_CMD).asText()
-            if (StringUtils.contains(command, DOCKER_NOP_CMD)) {
-                command = StringUtils.substringAfter(command, DOCKER_NOP_SPACE_CMD)
-                val dockerCmd = StringUtils.substringBefore(command.trim { it <= ' ' }, DOCKER_EMPTY_CMD)
-                command = StringUtils.substringAfter(command, DOCKER_EMPTY_CMD)
+            var cmd = layerHistory.get(DOCKER_CREATED_BY_CMD).asText()
+            if (StringUtils.contains(cmd, DOCKER_NOP_CMD)) {
+                cmd = StringUtils.substringAfter(cmd, DOCKER_NOP_SPACE_CMD)
+                val dockerCmd = StringUtils.substringBefore(cmd.trim { it <= ' ' }, DOCKER_EMPTY_CMD)
+                cmd = StringUtils.substringAfter(cmd, DOCKER_EMPTY_CMD)
                 blobInfo.command = dockerCmd
-                blobInfo.commandText = command
-            } else if (StringUtils.isNotBlank(command)) {
+                blobInfo.commandText = cmd
+            } else if (StringUtils.isNotBlank(cmd)) {
                 blobInfo.command = DOCKER_RUN_CMD
-                blobInfo.commandText = command
+                blobInfo.commandText = cmd
             }
         }
     }

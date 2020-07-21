@@ -14,6 +14,7 @@ import java.util.Date
  */
 object JwtUtil {
 
+    private const val USER_NAME = "username"
     private const val secret = REGISTRY_SERVICE
     private const val expireTime = 15 * 60 * 1000
 
@@ -26,7 +27,7 @@ object JwtUtil {
             .withHeader(header)
             .withIssuedAt(createDate)
             .withExpiresAt(expireDate)
-            .withClaim("username", username)
+            .withClaim(USER_NAME, username)
             .sign(Algorithm.HMAC512(secret))
     }
 
@@ -46,6 +47,6 @@ object JwtUtil {
     }
 
     fun getUserName(token: String): String {
-        return JWT.decode(token).getClaim("username").asString()
+        return JWT.decode(token).getClaim(USER_NAME).asString()
     }
 }

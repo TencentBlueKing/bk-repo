@@ -54,16 +54,16 @@ object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
      */
     private fun applyAttributesFromContent(manifestBytes: ByteArray?, digest: DockerDigest): ManifestMetadata {
         val manifestMetadata = ManifestMetadata()
-        manifestBytes ?: run {
-            return manifestMetadata
-        }
+        manifestBytes ?: return manifestMetadata
+
         val manifest = objectMapper.readTree(manifestBytes)
-        manifestMetadata.tagInfo.title =
-            manifest.get(DOCKER_NODE_NAME).asText() + COLON + manifest.get(DOCKER_TAG).asText()
+        val title = manifest.get(DOCKER_NODE_NAME).asText() + COLON + manifest.get(DOCKER_TAG).asText()
+        manifestMetadata.tagInfo.title = title
         manifestMetadata.tagInfo.digest = digest
         var totalSize = 0L
         val history = manifest.get(DOCKER_HISTORY_CMD)
 
+        // range history blobs
         for (i in 0 until history.size()) {
             val fsLayer = history.get(i)
             val v1Compatibility = fsLayer.get(DOCKER_COM_CMD).asText()
@@ -72,8 +72,11 @@ object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
             val size = dockerMetadata.size
             totalSize += dockerMetadata.size
             val blobInfo = DockerBlobInfo(dockerMetadata.id!!, blobDigest, size, dockerMetadata.created!!)
+
             populateWithCommand(dockerMetadata, blobInfo)
             manifestMetadata.blobsInfo.add(blobInfo)
+
+            //populate ports volumes, labels from manifest file
             populatePorts(manifestMetadata, dockerMetadata)
             populateVolumes(manifestMetadata, dockerMetadata)
             populateLabels(manifestMetadata, dockerMetadata)
@@ -89,16 +92,16 @@ object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
      * @param blobInfo docker blob info
      */
     private fun populateWithCommand(dockerMetadata: DockerImageMetadata, blobInfo: DockerBlobInfo) {
-        var command = getCommand(dockerMetadata)
-        if (StringUtils.contains(command, DOCKER_NOP_CMD)) {
-            command = StringUtils.substringAfter(command, DOCKER_NOP_SPACE_CMD)
-            val dockerCmd = StringUtils.substringBefore(command, DOCKER_EMPTY_CMD)
-            command = StringUtils.substringAfter(command, DOCKER_EMPTY_CMD)
+        var cmd = getCommand(dockerMetadata)
+        if (StringUtils.contains(cmd, DOCKER_NOP_CMD)) {
+            cmd = StringUtils.substringAfter(cmd, DOCKER_NOP_SPACE_CMD)
+            val dockerCmd = StringUtils.substringBefore(cmd, DOCKER_EMPTY_CMD)
+            cmd = StringUtils.substringAfter(cmd, DOCKER_EMPTY_CMD)
             blobInfo.command = dockerCmd
-            blobInfo.commandText = command
-        } else if (StringUtils.isNotBlank(command)) {
+            blobInfo.commandText = cmd
+        } else if (StringUtils.isNotBlank(cmd)) {
             blobInfo.command = DOCKER_RUN_CMD
-            blobInfo.commandText = command
+            blobInfo.commandText = cmd
         }
     }
 
@@ -108,22 +111,22 @@ object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
      * @return String the command get from metadata
      */
     private fun getCommand(dockerMetadata: DockerImageMetadata): String? {
-        var command: String? = null
+        var cmd: String? = null
         if (dockerMetadata.containerConfig != null && dockerMetadata.containerConfig!!.cmd != null) {
-            command = if (dockerMetadata.containerConfig!!.cmd!!.size == 3) {
+            cmd = if (dockerMetadata.containerConfig!!.cmd!!.size == 3) {
                 dockerMetadata.containerConfig!!.cmd!![2]
             } else {
                 dockerMetadata.containerConfig!!.cmd.toString()
             }
         }
 
-        if (dockerMetadata.config != null && StringUtils.isBlank(command) && dockerMetadata.config!!.cmd != null) {
-            command = if (dockerMetadata.config!!.cmd!!.size == 3) {
+        if (dockerMetadata.config != null && StringUtils.isBlank(cmd) && dockerMetadata.config!!.cmd != null) {
+            cmd = if (dockerMetadata.config!!.cmd!!.size == 3) {
                 dockerMetadata.config!!.cmd!![2]
             } else {
                 dockerMetadata.config!!.cmd.toString()
             }
         }
-        return command
+        return cmd
     }
 }

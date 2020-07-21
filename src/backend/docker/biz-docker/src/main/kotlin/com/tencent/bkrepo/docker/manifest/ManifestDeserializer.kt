@@ -6,7 +6,7 @@ import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.model.ManifestMetadata
 
 /**
- * the enterpoint for deserialize manifest
+ * the enterypoint for deserialize manifest
  * @author: owenlxu
  * @date: 2020-02-05
  */
@@ -29,7 +29,7 @@ object ManifestDeserializer {
             ManifestType.Schema1 -> ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
             ManifestType.Schema1Signed -> ManifestSchema1Deserializer.deserialize(manifestBytes, digest)
             ManifestType.Schema2 -> {
-                val configBytes = manifestProcess.getSchema2ManifestConfigContent(context, manifestBytes, tag)
+                val configBytes = manifestProcess.getSchema2ConfigContent(context, manifestBytes, tag)
                 ManifestSchema2Deserializer.deserialize(manifestBytes, configBytes, context.artifactName, tag, digest)
             }
             ManifestType.Schema2List -> {

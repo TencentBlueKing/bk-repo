@@ -29,6 +29,10 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.repository.findByIdOrNull
 import java.time.LocalDateTime
 
+/**
+ * handler of replication job
+ * dispatch to scheduler
+ */
 class ReplicationJobHandler(
     private val taskRepository: TaskRepository,
     private val taskLogRepository: TaskLogRepository,

@@ -31,7 +31,7 @@ class GrafanaService @Autowired constructor(
     private val projectMetricsRepository: ProjectMetricsRepository
 ) {
     fun search(): List<String> {
-        var data = mutableListOf<String>()
+        val data = mutableListOf<String>()
         for (metric in Metrics.values()) {
             data.add(metric.name)
         }
@@ -114,12 +114,12 @@ class GrafanaService @Autowired constructor(
         columns.add(Columns(OPDATA_CUSTOM_SIZE, OPDATA_GRAFANA_NUMBER))
         columns.add(Columns(OPDATA_PIPELINE_NUM, OPDATA_GRAFANA_NUMBER))
         columns.add(Columns(OPDATA_PIPELINE_SIZE, OPDATA_GRAFANA_NUMBER))
-        info.forEach {
+        info.forEach { repo ->
             var customNum = 0L
             var customSize = 0L
             var pipelineNum = 0L
             var pipelineSize = 0L
-            it.repoMetrics.forEach {
+            repo.repoMetrics.forEach {
                 if (it.repoName == OPDATA_CUSTOM) {
                     customNum = it.num
                     customSize = it.size
@@ -129,7 +129,7 @@ class GrafanaService @Autowired constructor(
                     pipelineSize = it.size
                 }
             }
-            val row = listOf(it.projectId, it.nodeNum, it.capSize, customNum, customSize, pipelineNum, pipelineSize)
+            val row = listOf(repo.projectId, repo.nodeNum, repo.capSize, customNum, customSize, pipelineNum, pipelineSize)
             rows.add(row)
         }
         val data = QueryResult(columns, rows, target.type)
@@ -138,11 +138,11 @@ class GrafanaService @Autowired constructor(
 
     private fun dealProjectNodeSize(result: MutableList<Any>): List<Any> {
         val projects = projectMetricsRepository.findAll()
-        var tmpMap = HashMap<String, Long>()
+        val tmpMap = HashMap<String, Long>()
         projects.forEach {
             val projectId = it.projectId
             if (it.capSize != 0L) {
-                tmpMap.put(projectId, it.capSize)
+                tmpMap[projectId] = it.capSize
             }
         }
         return convToDisplayData(tmpMap, result)
@@ -154,7 +154,7 @@ class GrafanaService @Autowired constructor(
         projects.forEach {
             val projectId = it.projectId
             if (it.nodeNum != 0L && projectId != PROJECT_NAME) {
-                tmpMap.put(projectId, it.nodeNum)
+                tmpMap[projectId] = it.nodeNum
             }
         }
         return convToDisplayData(tmpMap, result)

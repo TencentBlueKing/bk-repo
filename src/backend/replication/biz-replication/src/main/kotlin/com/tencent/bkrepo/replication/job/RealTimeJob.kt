@@ -18,8 +18,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
-import javax.annotation.PostConstruct
-
 
 /**
  * real time job tail from the caped collection
@@ -56,10 +54,7 @@ class RealTimeJob {
                 logger.info("container running status :[${container.isRunning}]")
                 // get container running status an sleep try
                 isRunning = container.isRunning
-                if (isRunning) {
-                    // register success ,should return
-                    return
-                }
+                if (isRunning) return
                 Thread.sleep(retryInterVal)
             }
         }

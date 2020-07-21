@@ -37,6 +37,8 @@ object ResponseUtil {
 
     private val OLD_USER_AGENT_PATTERN = Pattern.compile("^(?:docker\\/1\\.(?:3|4|5|6|7(?!\\.[0-9]-dev))|Go ).*$")
 
+    private const val LOCAL_HOST = "localhost"
+
     val EMPTY_BLOB_CONTENT: ByteArray =
         DatatypeConverter.parseHexBinary("1f8b080000096e8800ff621805a360148c5800080000ffff2eafb5ef00040000")
 
@@ -90,7 +92,7 @@ object ResponseUtil {
     // get docker return url
     fun getDockerURI(path: String, httpHeaders: HttpHeaders): URI {
         val hostHeaders = httpHeaders["Host"]
-        var host = "localhost"
+        var host = LOCAL_HOST
         var port: Int? = null
         if (hostHeaders != null && hostHeaders.isNotEmpty()) {
             val parts = (hostHeaders[0] as String).split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()

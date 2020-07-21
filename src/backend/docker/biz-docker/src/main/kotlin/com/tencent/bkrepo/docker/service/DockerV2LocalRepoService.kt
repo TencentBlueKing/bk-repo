@@ -13,6 +13,8 @@ import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
+import com.tencent.bkrepo.docker.constant.DOCKER_TMP_UPLOAD_PATH
+import com.tencent.bkrepo.docker.constant.DOCKER_TMP_UPLOAD_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_UPLOAD_UUID
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
@@ -28,11 +30,11 @@ import com.tencent.bkrepo.docker.response.CatalogResponse
 import com.tencent.bkrepo.docker.response.DockerResponse
 import com.tencent.bkrepo.docker.response.TagsResponse
 import com.tencent.bkrepo.docker.util.BlobUtil
+import com.tencent.bkrepo.docker.util.RepoUtil
+import com.tencent.bkrepo.docker.util.ResponseUtil
 import com.tencent.bkrepo.docker.util.ResponseUtil.emptyBlobGetResponse
 import com.tencent.bkrepo.docker.util.ResponseUtil.emptyBlobHeadResponse
 import com.tencent.bkrepo.docker.util.ResponseUtil.isEmptyBlob
-import com.tencent.bkrepo.docker.util.RepoUtil
-import com.tencent.bkrepo.docker.util.ResponseUtil
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -325,7 +327,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         RepoUtil.loadContext(repo, context)
         with(context) {
             logger.info("patch upload blob [$context, $uuid]")
-            val appendId = repo.writeAppend(uuid, file, context)
+            val appendId = repo.writeAppend(context, uuid, file)
             val url = "$projectId/$repoName/$artifactName/blobs/uploads/$uuid"
             val location = ResponseUtil.getDockerURI(url, httpHeaders)
             return ResponseEntity.status(HttpStatus.ACCEPTED).apply {
@@ -387,7 +389,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
 
     // upload not with patch but direct from the put
     private fun uploadBlobFromPut(context: RequestContext, digest: DockerDigest, file: ArtifactFile): DockerResponse {
-        val blobPath = context.artifactName + SLASH + "_uploads" + SLASH + digest.fileName()
+        val blobPath = context.artifactName + SLASH + DOCKER_TMP_UPLOAD_PATH + SLASH + digest.fileName()
         if (!repo.canWrite(context)) {
             logger.warn("upload manifest fail [$context , $digest]")
             return ResponseUtil.consumeStreamAndReturnError(file.getInputStream())
@@ -411,9 +413,9 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         logger.debug("finish upload blob [$context, $digest, $uuid]")
         val fileName = digest.fileName()
         var url: String
-        val blobPath = "/${context.artifactName}/_uploads/$fileName"
+        val blobPath = "/${context.artifactName}/$DOCKER_TMP_UPLOAD_PATH/$fileName"
         val uploadContext = UploadContext(context.projectId, context.repoName, blobPath)
-        repo.finishAppend(uuid, uploadContext)
+        repo.finishAppend(uploadContext, uuid)
         with(context) {
             url = "$projectId/$repoName/$artifactName/blobs/$digest"
         }

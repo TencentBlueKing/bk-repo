@@ -10,6 +10,7 @@ import org.quartz.JobExecutionContext
 import java.time.Duration
 
 class ReplicationQuartzJob : InterruptableJob {
+
     private lateinit var currentThread: Thread
     private val lockingTaskExecutor = SpringContextUtils.getBean(LockingTaskExecutor::class.java)
     private val replicationJobBean = SpringContextUtils.getBean(ReplicationJobHandler::class.java)

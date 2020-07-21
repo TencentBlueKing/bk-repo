@@ -30,6 +30,7 @@ const val DOCKER_USER_TAG_SUFFIX = "/repo/tag/{projectId}/{repoName}/**"
 
 const val DOCKER_TAGS_SUFFIX = "/{projectId}/{repoName}/{name}/tags/list"
 const val DOCKER_CATALOG_SUFFIX = "_catalog"
+const val DOCKER_TMP_UPLOAD_PATH = "_uploads"
 
 const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
 const val HTTP_PROTOCOL_HTTP = "http"
@@ -91,3 +92,5 @@ const val DOCKER_EMPTY_LAYER_CMD = "empty_layer"
 const val DOCKER_MEDIA_TYPE = "mediaType"
 const val DOCKER_FS_LAYER = "fsLayers"
 const val DOCKER_BLOB_SUM = "blobSum"
+
+const val DOCKER_FOREIGN_KEY  = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"

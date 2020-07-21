@@ -150,9 +150,7 @@ class UserServiceImpl @Autowired constructor(
         query.addCriteria(Criteria.where(TUser::userId.name).`in`(idList).and(TUser::roles.name).`is`(roleId))
         update.unset("roles.$")
         val result = mongoTemplate.updateMulti(query, update, TUser::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
+        if (result.modifiedCount == 1L) return true
         return false
     }
 
@@ -174,9 +172,7 @@ class UserServiceImpl @Autowired constructor(
             update.set(TUser::name.name, request.name!!)
         }
         val result = mongoTemplate.updateFirst(query, update, TUser::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
+        if (result.modifiedCount == 1L) return true
         return false
     }
 

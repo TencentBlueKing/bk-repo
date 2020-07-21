@@ -7,6 +7,7 @@ import com.tencent.bkrepo.docker.artifact.DockerArtifact
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
+import com.tencent.bkrepo.docker.constant.DOCKER_TMP_UPLOAD_PATH
 import com.tencent.bkrepo.docker.context.RequestContext
 import org.slf4j.LoggerFactory
 
@@ -23,6 +24,7 @@ object BlobUtil {
     private const val JSON_FILENAME = "json.json"
     private const val REPOSITORIES_DIR = "repositories"
     private const val TAG_FILENAME = "tag.json"
+    private const val SHA256_PREFIX = "sha256__"
     private const val PATH_DELIMITER = SLASH
 
     private fun imagePath(imageId: String): String {
@@ -48,9 +50,7 @@ object BlobUtil {
     // get blob by file name cross repo
     fun getBlobByName(repo: DockerArtifactRepo, context: RequestContext, fileName: String): DockerArtifact? {
         val result = repo.getArtifactListByName(context.projectId, context.repoName, fileName)
-        if (result.isEmpty()) {
-            return null
-        }
+        if (result.isEmpty()) return null
         val blob = result[0]
         val length = blob[DOCKER_NODE_SIZE] as Int
         val fullPath = blob[DOCKER_NODE_FULL_PATH] as String
@@ -75,7 +75,7 @@ object BlobUtil {
 
     // get blob from repo path
     fun getBlobFromRepo(repo: DockerArtifactRepo, context: RequestContext, fileName: String): DockerArtifact? {
-        val tempBlobPath = "/${context.artifactName}/_uploads/$fileName"
+        val tempBlobPath = "/${context.artifactName}/$DOCKER_TMP_UPLOAD_PATH/$fileName"
         logger.info("search blob in temp path [$tempBlobPath] first")
         if (repo.exists(context.projectId, context.repoName, tempBlobPath)) {
             return repo.getArtifact(context.projectId, context.repoName, tempBlobPath)
@@ -89,7 +89,7 @@ object BlobUtil {
     }
 
     private fun sha256FromFileName(fileName: String): String {
-        return fileName.replace("sha256__", EMPTY)
+        return fileName.replace(SHA256_PREFIX, EMPTY)
     }
 
     private fun repositoryPath(namespace: String, repoName: String): String {
