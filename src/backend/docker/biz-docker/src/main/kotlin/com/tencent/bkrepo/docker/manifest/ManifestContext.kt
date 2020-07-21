@@ -2,10 +2,7 @@ package com.tencent.bkrepo.docker.manifest
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_DIGEST
-import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_NAME
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST_TYPE
-import com.tencent.bkrepo.docker.constant.DOCKER_NAME_REPO
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.context.UploadContext
 import com.tencent.bkrepo.docker.model.DockerDigest
@@ -18,6 +15,10 @@ import com.tencent.bkrepo.docker.model.ManifestMetadata
  * @date: 2020-02-05
  */
 object ManifestContext {
+
+    private const val DOCKER_MANIFEST_DIGEST = "docker.manifest.digest"
+    private const val DOCKER_MANIFEST_NAME = "docker.manifest"
+    private const val DOCKER_NAME_REPO = "docker.repoName"
 
     /**
      * build the docker image property

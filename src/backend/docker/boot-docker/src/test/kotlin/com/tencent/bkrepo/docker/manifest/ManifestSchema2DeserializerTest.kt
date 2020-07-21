@@ -2,11 +2,13 @@ package com.tencent.bkrepo.docker.manifest
 
 import com.tencent.bkrepo.docker.model.DockerDigest
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 class ManifestSchema2DeserializerTest {
 
     @Test
+    @DisplayName("测试schema v2协议解析")
     fun manifestSchema2Test() {
         val manifest = """{
    "schemaVersion": 2,

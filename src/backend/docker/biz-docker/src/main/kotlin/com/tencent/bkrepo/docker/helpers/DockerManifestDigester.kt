@@ -5,11 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.base.Charsets
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
-import com.tencent.bkrepo.docker.constant.DOCKER_FORMAT_LENGTH
-import com.tencent.bkrepo.docker.constant.DOCKER_FORMAT_TAIL
-import com.tencent.bkrepo.docker.constant.DOCKER_PROTECT
-import com.tencent.bkrepo.docker.constant.DOCKER_SCHEMA_VERSION
-import com.tencent.bkrepo.docker.constant.DOCKER_SIG
 import com.tencent.bkrepo.docker.model.DockerDigest
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.codec.binary.Hex
@@ -26,37 +21,43 @@ object DockerManifestDigester {
 
     private val logger = LoggerFactory.getLogger(DockerManifestDigester::class.java)
 
+    private const val DOCKER_SCHEMA_VERSION = "schemaVersion"
+    private const val DOCKER_SIG = "signatures"
+    private const val DOCKER_PROTECT = "protected"
+    private const val DOCKER_FORMAT_LENGTH = "formatLength"
+    private const val DOCKER_FORMAT_TAIL = "formatTail"
+
     /**
      * calculate digest from config byte data
-     * @param configBytes docker manifest config byte array
+     * @param manifestBytes docker manifest config byte array
      * @return DockerDigest metadata property
      */
-    fun calc(configBytes: ByteArray): DockerDigest? {
-        val manifest = mapper().readTree(configBytes)
+    fun calcDigest(manifestBytes: ByteArray): DockerDigest? {
+        val manifest = mapper().readTree(manifestBytes)
         val schemaVersion = manifest.get(DOCKER_SCHEMA_VERSION) ?: run {
             logger.warn("unable to determine the schema version of the manifest")
             return null
         }
         val schema = schemaVersion.asInt()
         val digest = if (schema == 1) {
-            schema1Digest(configBytes, manifest)
+            getSchema1Digest(manifestBytes, manifest)
         } else {
             if (schema != 2) {
                 logger.warn("unknown schema version [$schema] for manifest file")
                 return null
             }
-            schema2Digest(configBytes)
+            getSchema2Digest(manifestBytes)
         }
         return DockerDigest.fromSha256(digest)
     }
 
-    private fun schema2Digest(configBytes: ByteArray): String {
+    private fun getSchema2Digest(configBytes: ByteArray): String {
         val digest = DigestUtils.getSha256Digest()
         DigestUtils.updateDigest(digest, configBytes)
         return Hex.encodeHexString(digest.digest())
     }
 
-    private fun schema1Digest(configBytes: ByteArray, manifest: JsonNode): String {
+    private fun getSchema1Digest(configBytes: ByteArray, manifest: JsonNode): String {
         var formatLength = 0
         var formatTail = EMPTY
         val signatures = manifest.get(DOCKER_SIG) ?: return getHexDigest(configBytes, formatLength, formatTail)

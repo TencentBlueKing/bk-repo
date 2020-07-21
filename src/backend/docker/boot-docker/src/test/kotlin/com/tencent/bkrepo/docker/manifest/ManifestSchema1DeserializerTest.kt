@@ -2,11 +2,13 @@ package com.tencent.bkrepo.docker.manifest
 
 import com.tencent.bkrepo.docker.model.DockerDigest
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 class ManifestSchema1DeserializerTest {
 
     @Test
+    @DisplayName("测试schema v1协议解析")
     fun manifestSchema1Test() {
         val manifestFile = """{
    "name": "hello-world",

@@ -22,9 +22,6 @@ import com.tencent.bkrepo.docker.constant.DOCKER_NODE_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
 import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
 import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
-import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_INDEX
-import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_LIMIT
-import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_LIMIT_SMALL
 import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
@@ -433,6 +430,9 @@ class DockerArtifactRepo @Autowired constructor(
     }
 
     companion object {
+        private const val DOCKER_SEARCH_INDEX = 0
+        private const val DOCKER_SEARCH_LIMIT = 9999999
+        private const val DOCKER_SEARCH_LIMIT_SMALL = 10
         private val logger = LoggerFactory.getLogger(DockerArtifactRepo::class.java)
     }
 }

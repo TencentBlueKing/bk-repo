@@ -4,7 +4,7 @@ import org.apache.commons.lang.StringUtils
 import java.util.TreeSet
 
 /**
- * catalog sice tags helper
+ * catalog slice tags pagination helper
  * @author: owenlxu
  * @date: 2020-01-05
  */

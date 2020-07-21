@@ -70,7 +70,6 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
      * apply attributes from  manifest bytes  content
      * @param manifestBytes byte array data of manifest
      * @param configBytes docker manifest file image
-     * @param dockerRepo docker image repo name
      * @param manifestMetadata manifest meta data
      * @return ManifestMetadata the upload manifest digest
      */

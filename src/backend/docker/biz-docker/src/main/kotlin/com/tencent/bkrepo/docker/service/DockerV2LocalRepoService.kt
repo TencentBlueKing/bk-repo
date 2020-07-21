@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
+import com.tencent.bkrepo.docker.constant.BLOB_PATTERN
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_CONTENT_DIGEST
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
@@ -282,7 +283,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
             val mountDigest = DockerDigest(mount)
             val mountableBlob = BlobUtil.getBlobByName(repo, context, mountDigest.fileName())
             mountableBlob?.let {
-                val location = ResponseUtil.getDockerURI("${context.artifactName}/blobs/$mount", httpHeaders)
+                val location = ResponseUtil.getDockerURI("${context.artifactName}$BLOB_PATTERN/$mount", httpHeaders)
                 logger.info("found accessible blob at [$mountableBlob] to mount  [$context,$mount]")
                 return ResponseEntity.status(HttpStatus.CREATED).apply {
                     header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
@@ -400,7 +401,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
             logger.warn("error upload blob [$blobPath]")
             return DockerV2Errors.blobUploadInvalid(context.artifactName)
         }
-        val location = ResponseUtil.getDockerURI("${context.artifactName}/blobs/$digest", httpHeaders)
+        val location = ResponseUtil.getDockerURI("${context.artifactName}$BLOB_PATTERN/$digest", httpHeaders)
         return ResponseEntity.created(location).apply {
             header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         }.apply {
@@ -417,7 +418,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         val uploadContext = UploadContext(context.projectId, context.repoName, blobPath)
         repo.finishAppend(uploadContext, uuid)
         with(context) {
-            url = "$projectId/$repoName/$artifactName/blobs/$digest"
+            url = "$projectId/$repoName/$artifactName$BLOB_PATTERN/$digest"
         }
         val location = ResponseUtil.getDockerURI(url, httpHeaders)
         return ResponseEntity.created(location).apply {

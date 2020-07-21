@@ -6,36 +6,28 @@ const val BLOB_PATTERN = "/blobs"
 
 const val MANIFEST_PATTERN = "/manifests"
 
-const val DOCKER_SCHEMA_VERSION = "schemaVersion"
-const val DOCKER_SIG = "signatures"
-const val DOCKER_PROTECT = "protected"
-const val DOCKER_FORMAT_LENGTH = "formatLength"
-const val DOCKER_FORMAT_TAIL = "formatTail"
-
 const val USER_API_PREFIX = "/api"
 const val DOCKER_API_PREFIX = "/v2"
 const val DOCKER_API_SUFFIX = "/auth"
 
+// path pattern prefix
 const val DOCKER_BLOB_SUFFIX = "{projectId}/{repoName}/**/blobs/uploads"
 const val DOCKER_BLOB_UUID_SUFFIX = "{projectId}/{repoName}/**/blobs/uploads/{uuid}"
 const val DOCKER_BLOB_DIGEST_SUFFIX = "{projectId}/{repoName}/**/blobs/{digest}"
-
 const val DOCKER_MANIFEST_TAG_SUFFIX = "/{projectId}/{repoName}/**/manifests/{tag}"
 const val DOCKER_MANIFEST_REFERENCE_SUFFIX = "/{projectId}/{repoName}/**/manifests/{reference}"
-
 const val DOCKER_USER_MANIFEST_SUFFIX = "/manifest/{projectId}/{repoName}/**/{tag}"
 const val DOCKER_USER_LAYER_SUFFIX = "/layer/{projectId}/{repoName}/**/{id}"
 const val DOCKER_USER_REPO_SUFFIX = "/repo/{projectId}/{repoName}"
 const val DOCKER_USER_TAG_SUFFIX = "/repo/tag/{projectId}/{repoName}/**"
-
 const val DOCKER_TAGS_SUFFIX = "/{projectId}/{repoName}/{name}/tags/list"
+
 const val DOCKER_CATALOG_SUFFIX = "_catalog"
 const val DOCKER_TMP_UPLOAD_PATH = "_uploads"
 
 const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
 const val HTTP_PROTOCOL_HTTP = "http"
 const val HTTP_PROTOCOL_HTTPS = "https"
-
 const val REGISTRY_SERVICE = "bkrepo"
 
 const val ERROR_MESSAGE = "{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}"
@@ -54,9 +46,6 @@ const val DOCKER_UPLOAD_UUID = "Docker-Upload-Uuid"
 
 const val DOCKER_MANIFEST = "manifest.json"
 const val DOCKER_MANIFEST_LIST = "list.manifest.json"
-const val DOCKER_SEARCH_INDEX = 0
-const val DOCKER_SEARCH_LIMIT = 9999999
-const val DOCKER_SEARCH_LIMIT_SMALL = 10
 const val DOCKER_LENGTH_EMPTY = "0"
 
 const val DOCKER_PROJECT_ID = "projectId"
@@ -71,9 +60,6 @@ const val DOCKER_REFERENCE = "reference"
 const val DOCKER_UUID = "uuid"
 const val DOCKER_TAG = "tag"
 
-const val DOCKER_MANIFEST_DIGEST = "docker.manifest.digest"
-const val DOCKER_MANIFEST_NAME = "docker.manifest"
-const val DOCKER_NAME_REPO = "docker.repoName"
 const val DOCKER_MANIFEST_TYPE = "docker.manifest.type"
 
 const val DOCKER_LINK = "Link"
@@ -93,4 +79,4 @@ const val DOCKER_MEDIA_TYPE = "mediaType"
 const val DOCKER_FS_LAYER = "fsLayers"
 const val DOCKER_BLOB_SUM = "blobSum"
 
-const val DOCKER_FOREIGN_KEY  = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"
+const val DOCKER_FOREIGN_KEY = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"

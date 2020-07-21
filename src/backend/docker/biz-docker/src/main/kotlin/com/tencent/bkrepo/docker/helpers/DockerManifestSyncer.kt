@@ -35,7 +35,7 @@ object DockerManifestSyncer {
      * @param tag  docker image  tag
      * @return Boolean the sync result
      */
-    fun sync(context: RequestContext, repo: DockerArtifactRepo, info: ManifestMetadata, tag: String): Boolean {
+    fun syncBlobs(context: RequestContext, repo: DockerArtifactRepo, info: ManifestMetadata, tag: String): Boolean {
         logger.info("start to sync docker repository blobs [${info.toJsonString()}]")
         val manifestInfos = info.blobsInfo.iterator()
         while (manifestInfos.hasNext()) {

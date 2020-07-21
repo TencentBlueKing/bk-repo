@@ -77,7 +77,7 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         artifactFile: ArtifactFile
     ): DockerDigest {
         val manifestBytes = IOUtils.toByteArray(artifactFile.getInputStream())
-        val digest = DockerManifestDigester.calc(manifestBytes)
+        val digest = DockerManifestDigester.calcDigest(manifestBytes)
         logger.info("manifest file digest content digest : [$digest]")
         if (ManifestType.Schema2List == manifestType) {
             processManifestList(context, tag, manifestPath, digest!!, manifestBytes)
@@ -87,7 +87,7 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         // process scheme2 manifest
         val metadata = ManifestDeserializer.deserialize(repo, context, tag, manifestType, manifestBytes, digest!!)
         addManifestsBlobs(context, manifestType, manifestBytes, metadata)
-        if (!DockerManifestSyncer.sync(context, repo, metadata, tag)) {
+        if (!DockerManifestSyncer.syncBlobs(context, repo, metadata, tag)) {
             logger.warn("fail to sync manifest blobs, cancel manifest upload")
             throw DockerSyncManifestException(manifestPath)
         }
