@@ -26,21 +26,6 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
         client.putStreamObject(filename, inputStream, size)
     }
 
-    override fun load(path: String, filename: String, received: File, client: CosClient): File? {
-        val request = GetObjectRequest(filename)
-        val cosObject = client.getObject(request)
-        if (cosObject.inputStream == null) {
-            return null
-        } else {
-            cosObject.inputStream.use { input ->
-                received.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-        }
-        return received
-    }
-
     override fun load(path: String, filename: String, range: Range, client: CosClient): InputStream? {
         val request = GetObjectRequest(filename, range.start, range.end)
         return client.getObject(request).inputStream

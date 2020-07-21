@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.storage.stoarge
+package com.tencent.bkrepo.common.storage.core.cache
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -9,7 +9,6 @@ import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
@@ -18,6 +17,7 @@ import org.apache.commons.io.FileUtils
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
@@ -26,6 +26,8 @@ import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.test.context.TestPropertySource
 import java.io.File
+import java.nio.charset.Charset
+import java.nio.file.Paths
 import java.util.concurrent.CyclicBarrier
 import kotlin.concurrent.thread
 
@@ -83,14 +85,14 @@ internal class CacheStorageServiceTest {
         Assertions.assertTrue(cacheClient.exist(path, sha256))
 
         // should load from cache
-        val artifactInputStream = storageService.load(sha256, Range.ofFull(size), null)
+        val artifactInputStream = storageService.load(sha256, Range.full(size), null)
         Assertions.assertNotNull(artifactInputStream)
         Assertions.assertEquals(artifactInputStream!!.sha256(), sha256)
     }
 
     @Test
     fun `should save to cache when load`() {
-        val size = 1024L
+        val size = 10240L
         val artifactFile = createTempArtifactFile(size)
         val sha256 = artifactFile.getFileSha256()
         val path = fileLocator.locate(sha256)
@@ -110,7 +112,7 @@ internal class CacheStorageServiceTest {
         Assertions.assertFalse(cacheClient.exist(path, sha256))
 
         // should load from persist
-        val artifactInputStream = storageService.load(sha256, Range.ofFull(size), null)
+        val artifactInputStream = storageService.load(sha256, Range.full(size.toLong()), null)
         Assertions.assertNotNull(artifactInputStream)
         Assertions.assertEquals(artifactInputStream!!.sha256(), sha256)
 
@@ -120,9 +122,56 @@ internal class CacheStorageServiceTest {
     }
 
     @Test
-    fun `should save to cache once when concurrent load`() {
+    fun `should cache once when loading concurrently`() {
         val size = 1024L
         val artifactFile = createTempArtifactFile(size)
+        println(artifactFile.getFile()!!.readText())
+        val sha256 = artifactFile.getFileSha256()
+        println("sha256: $sha256")
+        val path = fileLocator.locate(sha256)
+        storageService.store(sha256, artifactFile, null)
+
+        // wait to async store
+        Thread.sleep(500)
+
+        // check cache
+        Assertions.assertTrue(cacheClient.exist(path, sha256))
+
+        // check persist
+        Assertions.assertTrue(storageService.exist(sha256, null))
+
+        // remove cache
+        cacheClient.delete(path, sha256)
+        Assertions.assertFalse(cacheClient.exist(path, sha256))
+
+        val count = 10
+        val cyclicBarrier = CyclicBarrier(count)
+        val threadList = mutableListOf<Thread>()
+        repeat(count) {
+            val thread = thread {
+                cyclicBarrier.await()
+                val artifactInputStream = storageService.load(sha256, Range.full(size), null)
+                Assertions.assertNotNull(artifactInputStream)
+                Assertions.assertEquals(artifactInputStream!!.sha256(), sha256)
+            }
+            threadList.add(thread)
+        }
+        threadList.forEach { it.join() }
+        println(Paths.get(storageProperties.filesystem.cache.path, path, sha256))
+        // check cache
+        Assertions.assertTrue(cacheClient.exist(path, sha256))
+        println(cacheClient.load(path, sha256)?.readText())
+        Assertions.assertEquals(sha256, cacheClient.load(path, sha256)?.sha256())
+    }
+
+    @Test
+    fun `should not cache when loading partial content`() {
+        val size = 10240L
+        val rangeSize = 10
+        val artifactFile = createTempArtifactFile(size)
+        val buffer = ByteArray(rangeSize)
+        artifactFile.getInputStream().use { it.read(buffer, 0, rangeSize) }
+        val partialSha256 = buffer.toString(Charset.defaultCharset()).sha256()
         val sha256 = artifactFile.getFileSha256()
         val path = fileLocator.locate(sha256)
         storageService.store(sha256, artifactFile, null)
@@ -146,17 +195,17 @@ internal class CacheStorageServiceTest {
         repeat(count) {
             val thread = thread {
                 cyclicBarrier.await()
-                val artifactInputStream = storageService.load(sha256, Range.ofFull(size), null)
+                val range = Range(0, rangeSize.toLong() - 1, size)
+                val artifactInputStream = storageService.load(sha256, range, null)
                 Assertions.assertNotNull(artifactInputStream)
-                Assertions.assertEquals(artifactInputStream!!.sha256(), sha256)
+                Assertions.assertEquals(artifactInputStream!!.sha256(), partialSha256)
             }
             threadList.add(thread)
         }
         threadList.forEach { it.join() }
 
         // check cache
-        Assertions.assertTrue(cacheClient.exist(path, sha256))
-        Assertions.assertEquals(sha256, cacheClient.load(path, sha256)?.sha256())
+        Assertions.assertFalse(cacheClient.exist(path, sha256))
     }
 
     private fun createTempArtifactFile(size: Long): ArtifactFile {

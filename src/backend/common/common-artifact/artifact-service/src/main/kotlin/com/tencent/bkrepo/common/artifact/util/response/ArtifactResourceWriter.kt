@@ -23,7 +23,6 @@ import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
 import org.springframework.web.util.UriUtils
 import java.io.IOException
-import java.nio.channels.ClosedChannelException
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -66,7 +65,6 @@ object ArtifactResourceWriter {
 
         try {
             writeRangeStream(resource.inputStream, response)
-            response.flushBuffer()
         } catch (exception: IOException) {
             val message = exception.message.orEmpty()
             when {
@@ -110,7 +108,6 @@ object ArtifactResourceWriter {
                 Metrics.counter(ARTIFACT_DOWNLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
                 logger.info("Response artifact file, $throughput.")
             }
-            output.flush()
         }
     }
 

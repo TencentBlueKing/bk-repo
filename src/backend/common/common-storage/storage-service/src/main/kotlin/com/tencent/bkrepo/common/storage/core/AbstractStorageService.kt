@@ -10,7 +10,6 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.ZeroInputStream
-import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
@@ -25,7 +24,6 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
-import java.io.InputStream
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -79,7 +77,7 @@ abstract class AbstractStorageService : StorageService {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
         try {
-            return doLoad(path, digest, range, credentials)?.toArtifactStream(range)
+            return doLoad(path, digest, range, credentials)
         } catch (exception: Exception) {
             logger.error("Failed to load file [$digest] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.LOAD_ERROR, exception.message.toString())
@@ -319,7 +317,7 @@ abstract class AbstractStorageService : StorageService {
     }
 
     protected abstract fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials)
-    protected abstract fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): InputStream?
+    protected abstract fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): ArtifactInputStream?
     protected abstract fun doDelete(path: String, filename: String, credentials: StorageCredentials)
     protected abstract fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean
 

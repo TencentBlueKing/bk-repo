@@ -30,13 +30,6 @@ open class HDFSStorage : AbstractFileStorage<HDFSCredentials, HDFSClient>() {
         outputStream.use { inputStream.copyTo(outputStream) }
     }
 
-    override fun load(path: String, filename: String, received: File, client: HDFSClient): File? {
-        val localPath = Path(received.absolutePath)
-        val remotePath = concatRemotePath(path, filename, client)
-        client.fileSystem.copyToLocalFile(remotePath, localPath)
-        return received
-    }
-
     override fun load(path: String, filename: String, range: Range, client: HDFSClient): InputStream? {
         val remotePath = concatRemotePath(path, filename, client)
         val inputStream = client.fileSystem.open(remotePath)

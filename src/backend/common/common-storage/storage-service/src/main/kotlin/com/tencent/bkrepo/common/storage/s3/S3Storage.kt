@@ -46,15 +46,6 @@ open class S3Storage : AbstractFileStorage<S3Credentials, S3Client>() {
         client.s3Client.putObject(client.bucketName, filename, inputStream, metadata)
     }
 
-    override fun load(path: String, filename: String, received: File, client: S3Client): File? {
-        val transferManager = getTransferManager(client)
-        val getObjectRequest = GetObjectRequest(client.bucketName, filename)
-        val download = transferManager.download(getObjectRequest, received)
-        download.waitForCompletion()
-        shutdownTransferManager(transferManager)
-        return received
-    }
-
     override fun load(path: String, filename: String, range: Range, client: S3Client): InputStream? {
         val getObjectRequest = GetObjectRequest(client.bucketName, filename)
         getObjectRequest.setRange(range.start, range.end)
