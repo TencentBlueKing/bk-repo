@@ -6,13 +6,12 @@ import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
 import com.tencent.bkrepo.replication.service.ReplicationService
 import org.springframework.beans.factory.annotation.Autowired
 
-
 /**
  * AbstractMessageHandler
  * @author: owenlxu
  * @date: 2020/05/20
  */
-abstract class AbstractMessageHandler : AbstractHandler() {
+abstract class AbstractEventHandler : AbstractHandler() {
 
     @Autowired
     lateinit var replicationService: ReplicationService

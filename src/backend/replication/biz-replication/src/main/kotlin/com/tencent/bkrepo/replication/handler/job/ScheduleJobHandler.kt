@@ -32,19 +32,25 @@ import java.time.LocalDateTime
 /**
  * handler of replication job
  * dispatch to scheduler
+ * and handle it
  */
-class ReplicationJobHandler(
+class ScheduleJobHandler(
     private val taskRepository: TaskRepository,
     private val taskLogRepository: TaskLogRepository,
     private val replicationService: ReplicationService,
     private val scheduleService: ScheduleService
 ) : AbstractHandler() {
 
+    companion object {
+        private val logger = LoggerFactory.getLogger(ScheduleJobHandler::class.java)
+        private const val pageSize = 500
+    }
+
     @Value("\${spring.application.version}")
     private var version: String = DEFAULT_VERSION
 
     fun execute(taskId: String) {
-        logger.info("Start to execute replication task[$taskId].")
+        logger.info("Start to execute replication task [$taskId].")
         val task = taskRepository.findByIdOrNull(taskId) ?: run {
             logger.warn("Task[$taskId] does not exist, delete job and trigger.")
             if (scheduleService.checkExists(taskId)) {
@@ -174,11 +180,11 @@ class ReplicationJobHandler(
                     logger.info("Success to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].")
                 } catch (interruptedException: InterruptedException) {
                     throw interruptedException
-                } catch (exception: Exception) {
+                } catch (ignored: Exception) {
                     context.progress.failedRepo += 1
                     logger.error(
                         "Failed to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].",
-                        exception
+                        ignored
                     )
                 } finally {
                     context.progress.replicatedRepo += 1
@@ -423,10 +429,5 @@ class ReplicationJobHandler(
         if (Thread.interrupted()) {
             throw InterruptedException("Interrupted by user")
         }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(ReplicationJobHandler::class.java)
-        private const val pageSize = 500
     }
 }

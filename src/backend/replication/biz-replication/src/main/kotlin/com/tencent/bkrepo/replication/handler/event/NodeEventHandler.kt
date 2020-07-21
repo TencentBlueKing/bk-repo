@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component
  * @date: 2020/05/20
  */
 @Component
-class NodeMessageHandler : AbstractMessageHandler() {
+class NodeEventHandler : AbstractEventHandler() {
 
     @EventListener(NodeCreatedMessage::class)
     fun handle(message: NodeCreatedMessage) {
@@ -107,6 +107,6 @@ class NodeMessageHandler : AbstractMessageHandler() {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(NodeMessageHandler::class.java)
+        private val logger = LoggerFactory.getLogger(NodeEventHandler::class.java)
     }
 }

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component
  * @date: 2020/05/20
  */
 @Component
-class RepoMessageHandler : AbstractMessageHandler() {
+class RepoEventHandler : AbstractEventHandler() {
 
     @EventListener(RepoCreatedMessage::class)
     fun handle(message: RepoCreatedMessage) {

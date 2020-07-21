@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.common.service.async.AsyncConfiguration
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.config.ReplicationConfiguration
-import com.tencent.bkrepo.replication.handler.job.ReplicationJobHandler
+import com.tencent.bkrepo.replication.handler.job.ScheduleJobHandler
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.setting.ExecutionPlan
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
@@ -49,7 +49,7 @@ private class TaskReloadServiceTest {
     private lateinit var taskRepository: TaskRepository
 
     @MockBean
-    private lateinit var replicationJobBean: ReplicationJobHandler
+    private lateinit var replicationJobBean: ScheduleJobHandler
 
     @BeforeAll
     fun setUp() {

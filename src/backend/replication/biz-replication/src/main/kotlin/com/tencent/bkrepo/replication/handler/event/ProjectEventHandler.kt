@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component
  * @date: 2020/05/20
  */
 @Component
-class ProjectMessageHandler : AbstractMessageHandler() {
+class ProjectEventHandler : AbstractEventHandler() {
 
     @EventListener(ProjectCreatedMessage::class)
     fun handle(message: ProjectCreatedMessage) {
