@@ -77,7 +77,12 @@ abstract class AbstractStorageService : StorageService {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
         try {
-            return doLoad(path, digest, range, credentials)
+            return doLoad(path, digest, range, credentials) ?: run {
+                if (credentials != storageProperties.defaultStorageCredentials()) {
+                    logger.info("Fallback to default storage [$digest].")
+                    doLoad(path, digest, range, storageProperties.defaultStorageCredentials())
+                } else null
+            }
         } catch (exception: Exception) {
             logger.error("Failed to load file [$digest] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.LOAD_ERROR, exception.message.toString())
