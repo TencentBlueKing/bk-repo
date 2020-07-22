@@ -2,6 +2,8 @@ package com.tencent.bkrepo.docker.manifest
 
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.docker.constant.DOCKER_MEDIA_TYPE
+import com.tencent.bkrepo.docker.constant.DOCKER_SCHEMA_VERSION
 import org.springframework.http.MediaType
 
 /**
@@ -57,14 +59,14 @@ enum class ManifestType(private val mediaType: String) {
          */
         fun from(manifestBytes: ByteArray): ManifestType {
             val manifest = JsonUtils.objectMapper.readTree(manifestBytes)
-            val schemaVersionNode = manifest.get("schemaVersion")
+            val schemaVersionNode = manifest.get(DOCKER_SCHEMA_VERSION)
             schemaVersionNode?.let {
                 val schemaVersion = schemaVersionNode.intValue()
                 if (schemaVersion == 1) {
                     return Schema1Signed
                 }
             }
-            val mediaType = manifest.get("mediaType")
+            val mediaType = manifest.get(DOCKER_MEDIA_TYPE)
             var contentType = EMPTY
             mediaType?.let {
                 contentType = mediaType.textValue()

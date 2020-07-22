@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.base.Charsets
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
+import com.tencent.bkrepo.docker.constant.DOCKER_SCHEMA_VERSION
 import com.tencent.bkrepo.docker.model.DockerDigest
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.codec.binary.Hex
@@ -21,7 +22,6 @@ object DockerManifestDigester {
 
     private val logger = LoggerFactory.getLogger(DockerManifestDigester::class.java)
 
-    private const val DOCKER_SCHEMA_VERSION = "schemaVersion"
     private const val DOCKER_SIG = "signatures"
     private const val DOCKER_PROTECT = "protected"
     private const val DOCKER_FORMAT_LENGTH = "formatLength"

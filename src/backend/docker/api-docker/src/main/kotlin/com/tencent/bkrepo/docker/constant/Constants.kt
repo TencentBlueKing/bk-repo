@@ -79,4 +79,6 @@ const val DOCKER_MEDIA_TYPE = "mediaType"
 const val DOCKER_FS_LAYER = "fsLayers"
 const val DOCKER_BLOB_SUM = "blobSum"
 
+const val DOCKER_SCHEMA_VERSION = "schemaVersion"
+
 const val DOCKER_FOREIGN_KEY = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"
