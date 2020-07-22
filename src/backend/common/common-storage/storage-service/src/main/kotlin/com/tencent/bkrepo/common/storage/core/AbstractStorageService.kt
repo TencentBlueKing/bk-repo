@@ -79,7 +79,7 @@ abstract class AbstractStorageService : StorageService {
         try {
             return doLoad(path, digest, range, credentials) ?: run {
                 if (credentials != storageProperties.defaultStorageCredentials()) {
-                    logger.info("Fallback to default storage [$digest].")
+                    logger.warn("Fallback to default storage [$digest].")
                     doLoad(path, digest, range, storageProperties.defaultStorageCredentials())
                 } else null
             }
