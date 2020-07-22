@@ -6,6 +6,6 @@ interface Headers {
         const val CONTENT_LENGTH = "Content-Length"
         const val RANGE = "Range"
         const val ETAG = "ETag"
-        const val COS_AUTHORIZATION = "Authorization"
+        const val AUTHORIZATION = "Authorization"
     }
 }

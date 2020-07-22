@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.repository.job
 
-import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.model.TFileReference
+import com.tencent.bkrepo.repository.service.StorageCredentialService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
@@ -28,6 +28,9 @@ class FileReferenceCleanupJob {
     @Autowired
     private lateinit var storageService: StorageService
 
+    @Autowired
+    private lateinit var storageCredentialService: StorageCredentialService
+
     @Scheduled(cron = "0 0 2/3 * * ?")
     @SchedulerLock(name = "FileReferenceCleanupJob", lockAtMostFor = "PT1H")
     fun cleanUp() {
@@ -36,13 +39,18 @@ class FileReferenceCleanupJob {
         var cleanupCount = 0L
         var failedCount = 0L
         var fileMissingCount = 0L
+        val storageCredentialsMap = mutableMapOf<String, StorageCredentials>()
         val startTimeMillis = System.currentTimeMillis()
         val query = Query.query(Criteria.where(TFileReference::count.name).`is`(0))
         for (sequence in 0 until SHARDING_COUNT) {
             val collectionName = fileReferenceDao.parseSequenceToCollectionName(sequence)
             val zeroReferenceList = fileReferenceDao.determineMongoTemplate().find(query, TFileReference::class.java, collectionName)
             zeroReferenceList.forEach {
-                val storageCredentials = it.credentialsKey?.let { value -> objectMapper.readValue(value, StorageCredentials::class.java) }
+                val storageCredentials = it.credentialsKey?.let { key ->
+                    storageCredentialsMap[key] ?: run {
+                        storageCredentialService.findByKey(key)!!.apply { storageCredentialsMap[key] = this }
+                    }
+                }
                 try {
                     if (it.sha256.isNotBlank() && storageService.exist(it.sha256, storageCredentials)) {
                         storageService.delete(it.sha256, storageCredentials)

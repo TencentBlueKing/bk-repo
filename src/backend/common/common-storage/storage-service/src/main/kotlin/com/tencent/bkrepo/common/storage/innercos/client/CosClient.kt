@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.storage.innercos.http.CosHttpClient
 import com.tencent.bkrepo.common.storage.innercos.request.AbortMultipartUploadRequest
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
 import com.tencent.bkrepo.common.storage.innercos.request.CompleteMultipartUploadRequest
+import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.CosRequest
 import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
@@ -13,10 +14,12 @@ import com.tencent.bkrepo.common.storage.innercos.request.PartETag
 import com.tencent.bkrepo.common.storage.innercos.request.PutObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.UploadPartRequest
 import com.tencent.bkrepo.common.storage.innercos.request.UploadPartRequestFactory
+import com.tencent.bkrepo.common.storage.innercos.response.CopyObjectResponse
 import com.tencent.bkrepo.common.storage.innercos.response.CosObject
 import com.tencent.bkrepo.common.storage.innercos.response.PutObjectResponse
 import com.tencent.bkrepo.common.storage.innercos.response.handler.CheckObjectExistResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.response.handler.CompleteMultipartUploadResponseHandler
+import com.tencent.bkrepo.common.storage.innercos.response.handler.CopyObjectResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.response.handler.GetObjectResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.response.handler.InitiateMultipartUploadResponseHandler
 import com.tencent.bkrepo.common.storage.innercos.response.handler.PutObjectResponseHandler
@@ -86,6 +89,14 @@ class CosClient(private val credentials: InnerCosCredentials) {
     fun checkObjectExist(cosRequest: CheckObjectExistRequest): Boolean {
         val httpRequest = buildHttpRequest(cosRequest)
         return CosHttpClient.execute(httpRequest, CheckObjectExistResponseHandler())
+    }
+
+    /**
+     * 复制文件
+     */
+    fun copyObject(cosRequest: CopyObjectRequest): CopyObjectResponse {
+        val httpRequest = buildHttpRequest(cosRequest)
+        return CosHttpClient.execute(httpRequest, CopyObjectResponseHandler())
     }
 
     private fun multipartUpload(key: String, file: File): PutObjectResponse {
