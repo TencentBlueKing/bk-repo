@@ -98,7 +98,7 @@ class StorageInstanceMigrationJob {
             query.with(PageRequest.of(page, size))
             var nodeList = nodeDao.find(query)
             while (nodeList.isNotEmpty()) {
-                logger.info("Retrieved [${nodeList.size}]/$total records to migrate.")
+                logger.info("Retrieved ${nodeList.size} records to migrate, progress: $totalCount/$total.")
                 nodeList.forEach { node ->
                     // 迁移数据，直接操作cos
                     val sha256 = node.sha256!!
