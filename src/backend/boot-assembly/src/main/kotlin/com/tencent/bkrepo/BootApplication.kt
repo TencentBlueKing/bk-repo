@@ -6,6 +6,6 @@ import org.springframework.boot.runApplication
 @SpringBootApplication(scanBasePackages = ["com.tencent.bkrepo"])
 class BootApplication
 
-fun main() {
-    runApplication<BootApplication>()
+fun main(args: Array<String>) {
+    runApplication<BootApplication>(*args)
 }

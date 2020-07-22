@@ -12,6 +12,6 @@ import org.springframework.boot.runApplication
 @MicroService
 class PypiApplication
 
-fun main() {
-    runApplication<PypiApplication>()
+fun main(args: Array<String>) {
+    runApplication<PypiApplication>(*args)
 }

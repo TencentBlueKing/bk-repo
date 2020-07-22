@@ -12,6 +12,6 @@ import org.springframework.boot.runApplication
 @MicroService
 class GenericApplication
 
-fun main() {
-    runApplication<GenericApplication>()
+fun main(args: Array<String>) {
+    runApplication<GenericApplication>(*args)
 }
