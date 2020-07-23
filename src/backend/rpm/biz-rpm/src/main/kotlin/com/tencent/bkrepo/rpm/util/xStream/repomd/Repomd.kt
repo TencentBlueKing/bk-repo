@@ -12,9 +12,9 @@ data class Repomd(
     @XStreamImplicit()
     val repoDatas: List<RepoData>
 ) {
-        @XStreamAsAttribute
-        val xmlns: String = "http://linux.duke.edu/metadata/repo"
-        @XStreamAsAttribute
-        @XStreamAlias("xmlns:rpm")
-        val rpm: String = "http://linux.duke.edu/metadata/rpm"
+    @XStreamAsAttribute
+    val xmlns: String = "http://linux.duke.edu/metadata/repo"
+    @XStreamAsAttribute
+    @XStreamAlias("xmlns:rpm")
+    val rpm: String = "http://linux.duke.edu/metadata/rpm"
 }

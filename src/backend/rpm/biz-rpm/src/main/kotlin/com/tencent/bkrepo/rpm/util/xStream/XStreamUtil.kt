@@ -30,9 +30,13 @@ object XStreamUtil {
         xStream.autodetectAnnotations(true)
         xStream.alias("metadata", RpmMetadata::class.java)
         xStream.alias("repomd", Repomd::class.java)
-        xStream.allowTypes(arrayOf(RpmMetadata::class.java,
+        xStream.allowTypes(
+            arrayOf(
+                RpmMetadata::class.java,
                 RpmEntry::class.java,
-                RpmFile::class.java))
+                RpmFile::class.java
+            )
+        )
         return xStream.fromXML(xml)
     }
 }

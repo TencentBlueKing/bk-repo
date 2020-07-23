@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.PutMapping
 interface RpmResource {
 
     @ApiOperation("rpm deploy")
-    @PutMapping(RPM_DEPLOY, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
+    @PutMapping(RPM_DEPLOY, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun deploy(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo, artifactFile: ArtifactFile)
 
     @ApiOperation("rpm install")

@@ -21,58 +21,68 @@ import org.redline_rpm.header.Signature
 import org.redline_rpm.header.RpmType
 import java.util.LinkedList
 
-class RpmFormatInterpreter {
+class RpmMetadataUtil {
 
     fun interpret(rawFormat: RpmFormat, size: Long, checkSum: String, href: String): RpmMetadata {
         val header: Header = rawFormat.format.header
         val signature: Signature = rawFormat.format.signature
-        return RpmMetadata(setOf(
+        return RpmMetadata(
+            setOf(
                 RpmPackage(
-                        "rpm",
-                        getName(header)!!,
-                        if (rawFormat.type == RpmType.SOURCE) {
-                            "src"
-                        } else {
-                            getArchitecture(header)!!
-                        },
-                        RpmVersion(getEpoch(header), getVersion(header)!!, getRelease(header)!!),
-                        RpmChecksum(checkSum),
-                        getSummary(header),
-                        getDescription(header),
-                        getPackager(header),
-                        getUrl(header),
-                        RpmTime(System.currentTimeMillis(), getBuildTime(header)),
-                        RpmSize(size, getInstalledSize(header), getArchiveSize(signature)),
-                        RpmLocation(href),
-                        com.tencent.bkrepo.rpm.util.xStream.pojo.RpmFormat(
-                                getLicense(header),
-                                getVendor(header),
-                                getGroup(header)!!,
-                                getBuildHost(header)!!,
-                                getSourceRpm(header)!!,
-                                RpmHeaderRange(rawFormat.headerStart, rawFormat.headerEnd),
-                                resolveEntriesEntries(header,
-                                        Header.HeaderTag.PROVIDENAME,
-                                        Header.HeaderTag.PROVIDEFLAGS,
-                                        Header.HeaderTag.PROVIDEVERSION),
-                                resolveEntriesEntries(header,
-                                        Header.HeaderTag.REQUIRENAME,
-                                        Header.HeaderTag.REQUIREFLAGS,
-                                        Header.HeaderTag.REQUIREVERSION),
-                                resolveEntriesEntries(header,
-                                        Header.HeaderTag.CONFLICTNAME,
-                                        Header.HeaderTag.CONFLICTFLAGS,
-                                        Header.HeaderTag.CONFLICTVERSION),
-                                resolveEntriesEntries(header,
-                                        Header.HeaderTag.OBSOLETENAME,
-                                        Header.HeaderTag.OBSOLETEFLAGS,
-                                        Header.HeaderTag.OBSOLETEVERSION),
-                                resolveFiles(header)
+                    "rpm",
+                    getName(header)!!,
+                    if (rawFormat.type == RpmType.SOURCE) {
+                        "src"
+                    } else {
+                        getArchitecture(header)!!
+                    },
+                    RpmVersion(getEpoch(header), getVersion(header)!!, getRelease(header)!!),
+                    RpmChecksum(checkSum),
+                    getSummary(header),
+                    getDescription(header),
+                    getPackager(header),
+                    getUrl(header),
+                    RpmTime(System.currentTimeMillis(), getBuildTime(header)),
+                    RpmSize(size, getInstalledSize(header), getArchiveSize(signature)),
+                    RpmLocation(href),
+                    com.tencent.bkrepo.rpm.util.xStream.pojo.RpmFormat(
+                        getLicense(header),
+                        getVendor(header),
+                        getGroup(header)!!,
+                        getBuildHost(header)!!,
+                        getSourceRpm(header)!!,
+                        RpmHeaderRange(rawFormat.headerStart, rawFormat.headerEnd),
+                        resolveEntriesEntries(
+                            header,
+                            Header.HeaderTag.PROVIDENAME,
+                            Header.HeaderTag.PROVIDEFLAGS,
+                            Header.HeaderTag.PROVIDEVERSION
+                        ),
+                        resolveEntriesEntries(
+                            header,
+                            Header.HeaderTag.REQUIRENAME,
+                            Header.HeaderTag.REQUIREFLAGS,
+                            Header.HeaderTag.REQUIREVERSION
+                        ),
+                        resolveEntriesEntries(
+                            header,
+                            Header.HeaderTag.CONFLICTNAME,
+                            Header.HeaderTag.CONFLICTFLAGS,
+                            Header.HeaderTag.CONFLICTVERSION
+                        ),
+                        resolveEntriesEntries(
+                            header,
+                            Header.HeaderTag.OBSOLETENAME,
+                            Header.HeaderTag.OBSOLETEFLAGS,
+                            Header.HeaderTag.OBSOLETEVERSION
+                        ),
+                        resolveFiles(header)
 //                    resolveChangeLogs(header)
-                        )
+                    )
                 )
-                    ),
-                1L)
+            ),
+            1L
+        )
     }
 
     private fun getName(header: Header): String? {
@@ -156,7 +166,7 @@ class RpmFormatInterpreter {
         for (i in entryNames.indices) {
             val entryName = entryNames[i]
             val rpmEntry = RpmEntry(
-                    entryName
+                entryName
             )
             if (entryFlags.size > i) {
                 val entryFlag = entryFlags[i]
@@ -223,8 +233,9 @@ class RpmFormatInterpreter {
             val file = if (dir) RpmFile("dir", filePath) else RpmFile(null, filePath)
             (file.filePath).let {
                 if (it.startsWith("/etc/") ||
-                        it.startsWith("/usr/bin/") ||
-                        it.startsWith("/usr/sbin"))
+                    it.startsWith("/usr/bin/") ||
+                    it.startsWith("/usr/sbin")
+                )
                     files.add(file)
             }
         }
@@ -238,9 +249,9 @@ class RpmFormatInterpreter {
         val changeLogTexts = getStringArrayHeader(header, Header.HeaderTag.CHANGELOGTEXT)
         for (i in changeLogTexts.indices) {
             val changeLog = RpmChangeLog(
-                    changeLogAuthors[i],
-                    changeLogDates[i],
-                    changeLogTexts[i]
+                changeLogAuthors[i],
+                changeLogDates[i],
+                changeLogTexts[i]
             )
             changeLogs.add(changeLog)
         }

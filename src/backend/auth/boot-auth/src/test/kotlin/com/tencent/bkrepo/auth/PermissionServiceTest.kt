@@ -34,8 +34,8 @@ class PermissionServiceTest {
 
     private val userId = "unit_test_id"
 
-    private val roleId = "manager_unit_test"
-    private val projectId = "test"
+    private val role_id = "manager_unit_test"
+    private val project_id = "test"
 
     @AfterEach
     fun teardown() {
@@ -45,7 +45,7 @@ class PermissionServiceTest {
         }
 
         //删除创建的角色
-        roleService.detail(roleId, projectId)?.let {
+        roleService.detail(role_id, project_id)?.let {
             roleService.deleteRoleByid(it.id!!)
         }
 
@@ -302,14 +302,10 @@ class PermissionServiceTest {
                 userId
             )
         }
-        permissionService.createPermission(
-            createPermissionRequest(
-                permName = "查询信息权限测试", projectId = "test", users = listOf(
-                    PermissionSet(userId, listOf(PermissionAction.DELETE, PermissionAction.UPDATE)),
-                    PermissionSet("test_userId", listOf(PermissionAction.MANAGE, PermissionAction.UPDATE))
-                )
-            )
-        )
+        permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test",users = listOf(
+            PermissionSet(userId, listOf(PermissionAction.DELETE,PermissionAction.UPDATE)),
+            PermissionSet("test_userId", listOf(PermissionAction.MANAGE,PermissionAction.UPDATE))
+        )))
         permissionService.listPermission(ResourceType.REPO, "test", null).forEach {
             val updateStatus = permissionService.removeUserPermission(
                 it.id!!,
@@ -351,14 +347,10 @@ class PermissionServiceTest {
                 rid
             )
         }
-        permissionService.createPermission(
-            createPermissionRequest(
-                permName = "查询信息权限测试", projectId = "test", roles = listOf(
-                    PermissionSet(rid, listOf(PermissionAction.DELETE, PermissionAction.UPDATE)),
-                    PermissionSet("test_roleId", listOf(PermissionAction.READ, PermissionAction.UPDATE))
-                )
-            )
-        )
+        permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test",roles = listOf(
+            PermissionSet(rid, listOf(PermissionAction.DELETE,PermissionAction.UPDATE)),
+            PermissionSet("test_roleId", listOf(PermissionAction.READ,PermissionAction.UPDATE))
+        )))
         permissionService.listPermission(ResourceType.REPO, "test", null).forEach {
             val updateStatus = permissionService.removeRolePermission(
                 it.id!!,
@@ -378,9 +370,9 @@ class PermissionServiceTest {
     }
 
     private fun createRoleRequest(
-        roleId: String = this.roleId,
+        roleId: String = role_id,
         type: RoleType = RoleType.PROJECT,
-        projectId: String = this.projectId,
+        projectId: String = project_id,
         repoName: String? = null,
         admin: Boolean = false
     ): CreateRoleRequest {

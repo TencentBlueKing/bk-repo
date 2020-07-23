@@ -19,21 +19,21 @@ class RoleServiceTest {
     @Autowired
     private lateinit var roleService: RoleService
 
-    private val roleId = "manager_unit_test"
-    private val roleName = "测试项目管理员"
-    private val projectId = "projectId_unit_test"
-    private val repoName = "repo_unit_test"
+    private val ROLE_ID = "manager_unit_test"
+    private val ROLE_NAME = "测试项目管理员"
+    private val PROJECT_ID = "projectId_unit_test"
+    private val REPO_NAME = "repo_unit_test"
 
     @BeforeEach
     fun setUp() {
-        roleService.detail(roleId, projectId)?.let {
+        roleService.detail(ROLE_ID, PROJECT_ID)?.let {
             roleService.deleteRoleByid(it.id!!)
         }
     }
 
     @AfterEach
     fun teardown() {
-        roleService.detail(roleId, projectId)?.let {
+        roleService.detail(ROLE_ID, PROJECT_ID)?.let {
             roleService.deleteRoleByid(it.id!!)
         }
     }
@@ -45,14 +45,14 @@ class RoleServiceTest {
         val id = roleService.createRole(buildRoleRequest())
         Assertions.assertNotNull(id)
         // type -> repo
-        val createRoleId = roleService.createRole(buildRoleRequest(type = RoleType.REPO, repoName = repoName))
+        val createRoleId = roleService.createRole(buildRoleRequest(type = RoleType.REPO, repoName = REPO_NAME))
         Assertions.assertNotNull(createRoleId)
     }
 
     @Test
     @DisplayName("根据主键id删除角色测试")
     fun deleteRoleByidTest() {
-        assertThrows<ErrorCodeException> { roleService.deleteRoleByid(roleId) }
+        assertThrows<ErrorCodeException> { roleService.deleteRoleByid(ROLE_ID) }
         val id = roleService.createRole(buildRoleRequest())!!
         val deleteRoleByid = roleService.deleteRoleByid(id)
         Assertions.assertTrue(deleteRoleByid)
@@ -71,13 +71,13 @@ class RoleServiceTest {
         Assertions.assertTrue(listRoleByProject1.size == 3)
         val listRoleByProject2 = roleService.listRoleByProject(RoleType.REPO, null, null)
         Assertions.assertTrue(listRoleByProject2.size == 1)
-        val listRoleByProject3 = roleService.listRoleByProject(null, projectId, null)
+        val listRoleByProject3 = roleService.listRoleByProject(null, PROJECT_ID, null)
         Assertions.assertTrue(listRoleByProject3.size == 2)
-        val listRoleByProject4 = roleService.listRoleByProject(RoleType.REPO, projectId, null)
+        val listRoleByProject4 = roleService.listRoleByProject(RoleType.REPO, PROJECT_ID, null)
         Assertions.assertTrue(listRoleByProject4.size == 1)
-        val listRoleByProject5 = roleService.listRoleByProject(RoleType.PROJECT, projectId, null)
+        val listRoleByProject5 = roleService.listRoleByProject(RoleType.PROJECT, PROJECT_ID, null)
         Assertions.assertTrue(listRoleByProject5.size == 1)
-        val listRoleByProject6 = roleService.listRoleByProject(RoleType.REPO, projectId, "test_repo")
+        val listRoleByProject6 = roleService.listRoleByProject(RoleType.REPO, PROJECT_ID, "test_repo")
         Assertions.assertTrue(listRoleByProject6.size == 1)
         // has problems -> The last if condition never goes in
         // val listRoleByProject7 = roleService.listRoleByProject(null, "test_projectId_001", "test_repo")
@@ -93,7 +93,7 @@ class RoleServiceTest {
         val id = roleService.createRole(buildRoleRequest())
         val role = roleService.detail(id!!)
         role?.let {
-            Assertions.assertEquals(it.roleId, roleId)
+            Assertions.assertEquals(it.roleId, ROLE_ID)
         }
     }
 
@@ -101,7 +101,7 @@ class RoleServiceTest {
     @DisplayName("角色详情测试")
     fun detailWithProjectIdTest() {
         val id = roleService.createRole(buildRoleRequest())
-        val role = roleService.detail(roleId, projectId)
+        val role = roleService.detail(ROLE_ID, PROJECT_ID)
         role?.let {
             Assertions.assertEquals(it.id!!, id)
         }
@@ -110,18 +110,18 @@ class RoleServiceTest {
     @Test
     @DisplayName("角色详情测试")
     fun detailWithProjectIdAndRepoNameTest() {
-        val id = roleService.createRole(buildRoleRequest(repoName = repoName))
-        val role = roleService.detail(roleId, projectId, repoName)
+        val id = roleService.createRole(buildRoleRequest(repoName = REPO_NAME))
+        val role = roleService.detail(ROLE_ID, PROJECT_ID, REPO_NAME)
         role?.let {
             Assertions.assertEquals(it.id!!, id)
         }
     }
 
     private fun buildRoleRequest(
-        roleId: String = this.roleId,
-        roleName: String = this.roleName,
+        roleId: String = ROLE_ID,
+        roleName: String = ROLE_NAME,
         type: RoleType = RoleType.PROJECT,
-        projectId: String = this.projectId,
+        projectId: String = PROJECT_ID,
         repoName: String? = null,
         admin: Boolean = false
     ): CreateRoleRequest {

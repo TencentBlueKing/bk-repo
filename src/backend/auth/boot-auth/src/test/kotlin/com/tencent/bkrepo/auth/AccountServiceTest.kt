@@ -2,6 +2,7 @@ package com.tencent.bkrepo.auth
 
 import com.tencent.bkrepo.auth.constant.RANDOM_KEY_LENGTH
 import com.tencent.bkrepo.auth.pojo.CreateAccountRequest
+import com.tencent.bkrepo.auth.pojo.CredentialSet
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -21,19 +22,19 @@ class AccountServiceTest {
     @Autowired
     private lateinit var accountService: AccountService
 
-    private val appId = "unit_test_id"
+    private val APP_ID = "unit_test_id"
 
     @BeforeEach
     fun setUp() {
-        accountService.listAccount().filter { appId == it.appId }.forEach { _ ->
-            accountService.deleteAccount(appId)
+        accountService.listAccount().filter { APP_ID.equals(it.appId) }.forEach {
+            accountService.deleteAccount(APP_ID)
         }
     }
 
     @AfterEach
     fun teardown() {
-        accountService.listAccount().filter { appId == it.appId }.forEach { _ ->
-            accountService.deleteAccount(appId)
+        accountService.listAccount().filter { APP_ID.equals(it.appId) }.forEach {
+            accountService.deleteAccount(APP_ID)
         }
     }
 
@@ -42,7 +43,7 @@ class AccountServiceTest {
     fun createAccountTest() {
         val account = accountService.createAccount(buildCreateAccountRequest())!!
         assertThrows<ErrorCodeException> { accountService.createAccount(buildCreateAccountRequest()) }
-        Assertions.assertEquals(account.appId, appId)
+        Assertions.assertEquals(account.appId, APP_ID)
         Assertions.assertFalse(account.locked)
     }
 
@@ -61,26 +62,26 @@ class AccountServiceTest {
     @DisplayName("删除账户测试")
     fun deleteAccountTest() {
         accountService.createAccount(buildCreateAccountRequest())
-        accountService.deleteAccount(appId)
-        assertThrows<ErrorCodeException> { accountService.deleteAccount(appId) }
+        accountService.deleteAccount(APP_ID)
+        assertThrows<ErrorCodeException> { accountService.deleteAccount(APP_ID) }
     }
 
     @Test
     @DisplayName("修改账户状态测试")
     fun updateAccountStatusTest() {
-        assertThrows<ErrorCodeException> { accountService.updateAccountStatus(appId, true) }
+        assertThrows<ErrorCodeException> { accountService.updateAccountStatus(APP_ID, true) }
         accountService.createAccount(buildCreateAccountRequest())
-        val updateAccountStatus = accountService.updateAccountStatus(appId, true)
+        val updateAccountStatus = accountService.updateAccountStatus(APP_ID, true)
         Assertions.assertTrue(updateAccountStatus)
     }
 
     @Test
     @DisplayName("创建ak/sk对测试")
     fun createCredentialTest() {
-        assertThrows<ErrorCodeException> { accountService.createCredential(appId) }
+        assertThrows<ErrorCodeException> { accountService.createCredential(APP_ID) }
         // 创建用户会自带创建一个as/sk对
         accountService.createAccount(buildCreateAccountRequest())
-        val createCredential = accountService.createCredential(appId)
+        val createCredential = accountService.createCredential(APP_ID)
         Assertions.assertTrue(createCredential.size == 2)
         with(createCredential[1]) {
             Assertions.assertTrue(this.accessKey.length == 32)
@@ -92,7 +93,7 @@ class AccountServiceTest {
     @DisplayName("获取as/sk对测试")
     fun listCredentialsTest() {
         accountService.createAccount(buildCreateAccountRequest())
-        val credentialsList = accountService.listCredentials(appId)
+        val credentialsList = accountService.listCredentials(APP_ID)
         Assertions.assertTrue(credentialsList.size == 1)
     }
 
@@ -124,10 +125,10 @@ class AccountServiceTest {
         val checkCredential = accountService.checkCredential("accessKey", "secretKey")
         Assertions.assertNull(checkCredential)
         val credential = accountService.checkCredential(accessKey, secretKey)
-        credential?.let { Assertions.assertEquals(appId, it) }
+        credential?.let { Assertions.assertEquals(APP_ID, it) }
     }
 
-    private fun buildCreateAccountRequest(appId: String = this.appId, locked: Boolean = false): CreateAccountRequest {
+    private fun buildCreateAccountRequest(appId: String = APP_ID, locked: Boolean = false): CreateAccountRequest {
         return CreateAccountRequest(appId, locked)
     }
 }

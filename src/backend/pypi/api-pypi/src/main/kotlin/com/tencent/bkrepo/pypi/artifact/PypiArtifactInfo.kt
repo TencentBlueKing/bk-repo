@@ -10,10 +10,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 class PypiArtifactInfo(
     projectId: String,
     repoName: String,
-    artifactUri: String,
-    val packageName: String?,
-    version: String?,
-    val metadata: Map<String, String>?
+    artifactUri: String
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
         const val PYPI_PACKAGES_MAPPING_URI = "/{projectId}/{repoName}/packages/**"
