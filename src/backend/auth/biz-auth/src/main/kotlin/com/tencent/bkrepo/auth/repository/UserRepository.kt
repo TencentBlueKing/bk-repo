@@ -9,5 +9,4 @@ interface UserRepository : MongoRepository<TUser, String> {
     fun findFirstByUserId(userId: String): TUser?
     fun deleteByUserId(userId: String)
     fun findAllByRolesIn(rids: List<String>): List<TUser>
-    fun deleteByUserId(userId: String): Long
 }
