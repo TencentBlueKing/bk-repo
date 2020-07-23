@@ -10,6 +10,7 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.nio.channels.ClosedChannelException
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.system.measureNanoTime
@@ -53,12 +54,17 @@ class SmartStreamReceiver(
         } catch (exception: IOException) {
             cleanTempFile()
             val message = exception.message.orEmpty()
-            if (message.contains("Remote peer closed connection") ||
-                message.contains("Connection reset by peer")
-            ) {
-                throw ArtifactReceiveException(message)
-            } else {
-                throw exception
+            when {
+                message.contains("Connection reset by peer") -> {
+                    throw ArtifactReceiveException(message)
+                }
+                message.contains("Remote peer closed connection") -> {
+                    throw ArtifactReceiveException(message)
+                }
+                exception is ClosedChannelException -> {
+                    throw ArtifactReceiveException("Channel closed")
+                }
+                else -> throw exception
             }
         } finally {
             cleanOriginalOutputStream()
@@ -154,18 +160,18 @@ class SmartStreamReceiver(
     private fun cleanOriginalOutputStream() {
         try {
             outputStream.flush()
-        } catch (e: Exception) { }
+        } catch (ignored: IOException) { }
 
         try {
             outputStream.close()
-        } catch (e: Exception) { }
+        } catch (ignored: IOException) { }
     }
 
     private fun cleanTempFile() {
         if (!isInMemory) {
             try {
                 Files.deleteIfExists(path.resolve(filename))
-            } catch (ignored: Exception) { }
+            } catch (ignored: IOException) { }
         }
     }
 

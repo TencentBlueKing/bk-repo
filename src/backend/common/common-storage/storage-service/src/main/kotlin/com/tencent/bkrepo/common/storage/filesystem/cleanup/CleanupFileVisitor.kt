@@ -7,6 +7,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
+import java.time.Duration
 
 /**
  *
@@ -49,7 +50,7 @@ class CleanupFileVisitor(
     private fun isExpired(attributes: BasicFileAttributes, expireDays: Int): Boolean {
         val lastAccessTime = attributes.lastAccessTime().toMillis()
         val lastModifiedTime = attributes.lastModifiedTime().toMillis()
-        val expiredTime = System.currentTimeMillis() - expireDays * 24 * 3600 * 1000
+        val expiredTime = System.currentTimeMillis() - Duration.ofDays(expireDays.toLong()).toMillis()
         return lastAccessTime < expiredTime && lastModifiedTime < expiredTime
     }
 }

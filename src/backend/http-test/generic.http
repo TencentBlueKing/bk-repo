@@ -46,7 +46,46 @@ Authorization: Basic {{username}} {{password}}
     });
 %}
 
-###
+### HEAD下载文件
+HEAD http://{{genericHost}}/{{project}}/{{repo}}/test.txt
+Authorization: Basic {{username}} {{password}}
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+        client.assert(response.body.length === 0, 'Response body is not empty');
+    });
+%}
+
+### 删除文件
+DELETE http://{{genericHost}}/{{project}}/{{repo}}/test.txt
+Authorization: Basic {{username}} {{password}}
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+    });
+%}
+
+### 删除不存在文件
+DELETE http://{{genericHost}}/{{project}}/{{repo}}/test.txt
+Authorization: Basic {{username}} {{password}}
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 404, 'Response status is not 404');
+    });
+%}
+
+### 删除非空根目录
+DELETE http://{{genericHost}}/{{project}}/{{repo}}/
+Authorization: Basic {{username}} {{password}}
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 405, 'Response status is not 405');
+    });
+%}
 
 ### 分块上传文件, 获取uploadId
 POST http://{{genericHost}}/block/{{project}}/{{repo}}/block.txt

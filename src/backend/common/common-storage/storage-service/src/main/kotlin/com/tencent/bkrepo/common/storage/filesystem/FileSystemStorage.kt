@@ -30,17 +30,6 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
         }
     }
 
-    override fun load(path: String, filename: String, received: File, client: FileSystemClient): File? {
-        return client.load(path, filename)?.run {
-            FileLockExecutor.executeInLock(this.inputStream()) { input ->
-                FileLockExecutor.executeInLock(received) { output ->
-                    client.transfer(input, output, this.length())
-                }
-            }
-            received
-        }
-    }
-
     override fun load(path: String, filename: String, range: Range, client: FileSystemClient): InputStream? {
         return client.load(path, filename)?.bound(range)
     }

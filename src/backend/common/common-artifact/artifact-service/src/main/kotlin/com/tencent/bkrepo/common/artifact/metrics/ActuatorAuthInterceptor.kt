@@ -36,7 +36,7 @@ class ActuatorAuthInterceptor : HandlerInterceptorAdapter() {
             throw exception
         } catch (exception: PermissionCheckException) {
             throw exception
-        } catch (exception: Exception) {
+        } catch (exception: IllegalArgumentException) {
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme.")
         }
     }

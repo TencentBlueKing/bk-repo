@@ -120,7 +120,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
         val request = context.request
         val rangeHeader = request.getHeader(HttpHeaders.RANGE)?.trim()
         try {
-            if (rangeHeader.isNullOrEmpty()) return Range.ofFull(total)
+            if (rangeHeader.isNullOrEmpty()) return Range.full(total)
             val matcher = RANGE_HEADER.matcher(rangeHeader)
             require(matcher.matches()) { "Invalid range header: $rangeHeader" }
             require(matcher.groupCount() >= 1) { "Invalid range header: $rangeHeader" }
@@ -133,8 +133,8 @@ abstract class LocalRepository : AbstractArtifactRepository() {
                 val end = if (matcher.group(2).isNullOrEmpty()) total - 1 else matcher.group(2).toLong()
                 Range(start, end, total)
             }
-        } catch (ex: Exception) {
-            logger.warn("Failed to parse range header: $rangeHeader, ex: ${ex.message}")
+        } catch (exception: IllegalArgumentException) {
+            logger.warn("Failed to parse range header: $rangeHeader, message: ${exception.message}")
             throw ArtifactException("Invalid range header", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE.value())
         }
     }
