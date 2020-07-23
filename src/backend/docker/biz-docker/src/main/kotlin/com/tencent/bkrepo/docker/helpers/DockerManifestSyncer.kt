@@ -43,7 +43,7 @@ object DockerManifestSyncer {
             logger.info("sync docker blob digest [${blobInfo.digest}]")
 
             // check digest
-            if (blobInfo.digest == null || !this.isForeignLayer(blobInfo)) {
+            if (blobInfo.digest == null || this.isForeignLayer(blobInfo)) {
                 logger.info("blob format error [$blobInfo]")
                 continue
             }
