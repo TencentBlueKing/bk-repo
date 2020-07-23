@@ -176,7 +176,7 @@ interface NodeResource {
     ): Response<Long>
 
     @ApiOperation("列表查询分享链接")
-    @GetMapping("/share/list")
+    @GetMapping("/share/list/{projectId}/{repoName}")
     fun listShareRecord(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,

@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.Metrics
 import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.web.util.UriUtils
 import java.io.IOException
 import java.time.LocalDateTime
@@ -64,7 +65,13 @@ object ArtifactResourceWriter {
         response.setHeader(HttpHeaders.CONTENT_RANGE, resolveContentRange(range))
 
         try {
-            writeRangeStream(resource.inputStream, response)
+            resource.inputStream.use {
+                if (request.method != HttpMethod.HEAD.name) {
+                    writeRangeStream(it, response)
+                } else {
+                    logger.info("Skip writing data to response body because of HEAD request")
+                }
+            }
         } catch (exception: IOException) {
             val message = exception.message.orEmpty()
             when {
@@ -98,16 +105,14 @@ object ArtifactResourceWriter {
     }
 
     private fun writeRangeStream(inputStream: ArtifactInputStream, response: HttpServletResponse) {
-        inputStream.use {
-            val output = response.outputStream
-            executeAndMeasureNanoTime {
-                inputStream.copyTo(output, BUFFER_SIZE)
-            }.apply {
-                val throughput = Throughput(first, second)
-                Metrics.counter(ARTIFACT_DOWNLOADED_BYTES_COUNT).increment(throughput.bytes.toDouble())
-                Metrics.counter(ARTIFACT_DOWNLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
-                logger.info("Response artifact file, $throughput.")
-            }
+        val output = response.outputStream
+        executeAndMeasureNanoTime {
+            inputStream.copyTo(output, BUFFER_SIZE)
+        }.apply {
+            val throughput = Throughput(first, second)
+            Metrics.counter(ARTIFACT_DOWNLOADED_BYTES_COUNT).increment(throughput.bytes.toDouble())
+            Metrics.counter(ARTIFACT_DOWNLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
+            logger.info("Response artifact file, $throughput.")
         }
     }
 
