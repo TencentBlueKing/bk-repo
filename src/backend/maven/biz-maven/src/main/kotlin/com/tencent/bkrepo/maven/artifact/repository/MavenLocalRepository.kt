@@ -1,7 +1,5 @@
 package com.tencent.bkrepo.maven.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.hash.md5
-import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest

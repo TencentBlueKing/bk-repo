@@ -34,9 +34,10 @@ interface PypiResource {
     /**
      * pypi search 接口
      */
-    @PostMapping(PYPI_ROOT_POST_URI,
-            consumes = [MediaType.TEXT_XML_VALUE],
-            produces = [MediaType.TEXT_XML_VALUE]
+    @PostMapping(
+        PYPI_ROOT_POST_URI,
+        consumes = [MediaType.TEXT_XML_VALUE],
+        produces = [MediaType.TEXT_XML_VALUE]
     )
     fun search(
         @ArtifactPathVariable
@@ -61,13 +62,13 @@ interface PypiResource {
      *
      */
     @ApiOperation("数据迁移接口")
-    @GetMapping(PYPI_MIGRATE_URL, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
+    @GetMapping(PYPI_MIGRATE_URL, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun migrateByUrl(@ArtifactPathVariable pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String>
 
     /**
      * 数据迁移结果查询接口
      */
     @ApiOperation("数据迁移结果查询接口")
-    @GetMapping(PYPI_MIGRATE_RESULT, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
+    @GetMapping(PYPI_MIGRATE_RESULT, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun migrateResult(@ArtifactPathVariable pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String>
 }

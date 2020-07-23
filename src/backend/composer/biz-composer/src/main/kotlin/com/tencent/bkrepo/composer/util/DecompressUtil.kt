@@ -63,31 +63,31 @@ object DecompressUtil {
     fun InputStream.getComposerMetadata(uri: String): ComposerMetadata {
         val uriArgs = UriUtil.getUriArgs(uri)
         val json = this.getComposerJson(uriArgs.format)
-        val composerMetadata = JsonUtil.mapper.readValue(json, ComposerMetadata::class.java)
-        return composerMetadata
+        return JsonUtil.mapper.readValue(json, ComposerMetadata::class.java)
     }
 
     /**
-     * composer package 中'composer.json'添加到服务器上对应%package%.json是需要增加一些信息
-     * @param InputStream composer package 的文件流
+     * 读取composer deploy 文件流中name , version 信息
+     * composer package 中'composer.json'添加到服务器上对应%package%.json 需要增加一些信息
      * @param uri 请求中的全文件名
-     * @return 'packageName': 包名; 'version': 版本; 'json': 增加属性后的json内容
+     * @return composerJsonNode
      */
     fun InputStream.wrapperJson(uri: String): ComposerJsonNode {
         val uriArgs = UriUtil.getUriArgs(uri)
         val json = this.getComposerJson(uriArgs.format)
-        JsonParser().parse(json).asJsonObject.let {
-            // todo uid的值从什么地方拿
-            it.addProperty(UID, UUID.randomUUID().toString())
+        JsonParser.parseString(json).asJsonObject.let {
+            it.addProperty(UID, UUID.randomUUID().leastSignificantBits)
             val distObject = JsonObject()
             distObject.addProperty(TYPE, uriArgs.format)
             distObject.addProperty(URL, "$ARTIFACT_DIRECT_DOWNLOAD_PREFIX$uri")
             it.add(DIST, distObject)
             it.addProperty(TYPE, LIBRARY)
 
-            return ComposerJsonNode(packageName = (json jsonValue NAME),
-                    version = (json jsonValue VERSION),
-                    json = GsonBuilder().create().toJson(it))
+            return ComposerJsonNode(
+                packageName = (json jsonValue NAME),
+                version = (json jsonValue VERSION),
+                json = GsonBuilder().create().toJson(it)
+            )
         }
     }
 

@@ -40,13 +40,15 @@ object XmlUtil {
         val values: MutableList<Value> = ArrayList()
         // 过滤掉重复节点，每个节点对应一个Struct
         for (node in nodeList) {
-            values.add(Value(
-                null,
-                null,
-                Struct(getMembers(node["metadata"] as Map<String, String>)),
-                null,
-                null
-            ))
+            values.add(
+                Value(
+                    null,
+                    null,
+                    Struct(getMembers(node["metadata"] as Map<String, String>)),
+                    null,
+                    null
+                )
+            )
         }
         return values
     }
@@ -55,13 +57,15 @@ object XmlUtil {
         val values: MutableList<Value> = ArrayList()
         // 过滤掉重复节点，每个节点对应一个Struct
         for (node in nodeList) {
-            values.add(Value(
-                null,
-                null,
-                Struct(getMembers(node["metadata"] as Map<String, String>)),
-                null,
-                null
-            ))
+            values.add(
+                Value(
+                    null,
+                    null,
+                    Struct(getMembers(node["metadata"] as Map<String, String>)),
+                    null,
+                    null
+                )
+            )
         }
 
         val methodResponse =
