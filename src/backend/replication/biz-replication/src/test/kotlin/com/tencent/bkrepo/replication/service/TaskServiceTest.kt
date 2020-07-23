@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.replication.job.ReplicationJobBean
 import com.tencent.bkrepo.replication.model.TReplicationTask
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
@@ -9,19 +8,10 @@ import com.tencent.bkrepo.replication.pojo.setting.ReplicationSetting
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
 import com.tencent.bkrepo.replication.repository.TaskRepository
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.ArgumentMatchers
-import org.mockito.InjectMocks
-import org.mockito.Mock
-import org.mockito.Mockito.`when`
-import org.mockito.Mockito.anyString
-import org.mockito.Mockito.spy
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import

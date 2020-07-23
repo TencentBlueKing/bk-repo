@@ -8,10 +8,8 @@ import org.springframework.data.mongodb.core.mapping.Document
 @Document("user_role")
 data class TUserRole(
     val id: String? = null,
-
     val userName: String,
     val roleId: String,
-
     val projectId: String,
     val repoId: String?
 )

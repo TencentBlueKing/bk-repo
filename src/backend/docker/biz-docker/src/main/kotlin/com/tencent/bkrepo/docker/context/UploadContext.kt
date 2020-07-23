@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.docker.context
 
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 
 /**
@@ -10,7 +11,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 data class UploadContext(var projectId: String, var repoName: String, var fullPath: String) {
 
     var artifactFile: ArtifactFile? = null
-    var sha256: String = ""
+    var sha256: String = EMPTY
     var metadata: Map<String, String> = emptyMap()
 
     fun artifactFile(artifactFile: ArtifactFile): UploadContext {

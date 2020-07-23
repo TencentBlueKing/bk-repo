@@ -1,17 +1,18 @@
 package com.tencent.bkrepo.opdata.auth
 
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
+import com.tencent.bkrepo.common.api.constant.StringPool.COLON
+import com.tencent.bkrepo.common.artifact.auth.basic.BasicAuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.AnonymousCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
-import com.tencent.bkrepo.common.artifact.auth.basic.BasicAuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
 import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
-import java.util.Base64
-import javax.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.util.Base64
+import javax.servlet.http.HttpServletRequest
 
 /**
  *
@@ -32,12 +33,9 @@ open class OpDataAuthHandler : ClientAuthHandler {
             if (!basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
             val encodedCredentials = basicAuthHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
-            val parts = decodedHeader.split(":")
+            val parts = decodedHeader.split(COLON)
             require(parts.size >= 2)
-            return BasicAuthCredentials(
-                parts[0],
-                parts[1]
-            )
+            return BasicAuthCredentials(parts[0], parts[1])
         } catch (exception: IllegalArgumentException) {
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }

@@ -27,6 +27,6 @@ class PypiArtifactInfoResolver : ArtifactInfoResolver {
                 }
             }
         }
-        return PypiArtifactInfo(projectId, repoName, artifactUri, null, null, null)
+        return PypiArtifactInfo(projectId, repoName, artifactUri)
     }
 }

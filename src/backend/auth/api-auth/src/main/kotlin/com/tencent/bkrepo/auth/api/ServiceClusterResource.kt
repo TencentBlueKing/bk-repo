@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.auth.api
 
+import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PREFIX
 import com.tencent.bkrepo.auth.constant.SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.auth.pojo.AddClusterRequest
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.PutMapping
 
 @Api(tags = ["SERVICE_CLUSTER"], description = "服务-集群管理接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceClustersource")
-@RequestMapping("/api/cluster")
+@RequestMapping(AUTH_CLUSTER_PREFIX)
 interface ServiceClusterResource {
 
     @ApiOperation("添加集群")
