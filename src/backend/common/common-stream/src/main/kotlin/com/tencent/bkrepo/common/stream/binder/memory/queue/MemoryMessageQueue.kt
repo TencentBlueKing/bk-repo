@@ -63,7 +63,7 @@ class MemoryMessageQueue {
 
     fun produce(destination: String, message: Message<*>) {
         if (!isRunning) {
-            throw RuntimeException("MemoryMessageQueue is not running .")
+            throw IllegalStateException("MemoryMessageQueue is not running.")
         }
         var added = false
         while (!added) {

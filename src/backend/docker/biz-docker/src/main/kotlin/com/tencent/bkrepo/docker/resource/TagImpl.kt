@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.docker.resource
 
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.docker.api.Tag
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.response.DockerResponse
@@ -20,11 +21,11 @@ class TagImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) :
         last: String?
     ): DockerResponse {
         var maxEntries = 0
-        var index = ""
-        if (n != null) {
+        var index = EMPTY
+        n?.let {
             maxEntries = n
         }
-        if (last != null) {
+        last?.let {
             index = last
         }
         val uId = UserUtil.getContextUserId(userId)

@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.artifact.resolve.file
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import org.slf4j.LoggerFactory
 import org.springframework.web.servlet.HandlerInterceptor
+import java.io.IOException
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import kotlin.system.measureTimeMillis
@@ -18,8 +19,8 @@ class ArtifactFileCleanInterceptor : HandlerInterceptor {
                     logger.info("Delete temp artifact file [$absolutePath] success, elapse $this ms")
                 }
             }
-        } catch (ex: Exception) {
-            logger.warn("Failed to clean temp artifact file.", ex)
+        } catch (exception: IOException) {
+            logger.warn("Failed to clean temp artifact file.", exception)
         }
     }
 

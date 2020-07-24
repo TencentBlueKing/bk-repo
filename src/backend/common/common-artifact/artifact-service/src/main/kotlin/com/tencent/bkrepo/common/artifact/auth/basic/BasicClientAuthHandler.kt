@@ -34,7 +34,7 @@ open class BasicClientAuthHandler : ClientAuthHandler {
                 val parts = decodedHeader.split(StringPool.COLON)
                 require(parts.size >= 2)
                 BasicAuthCredentials(parts[0], parts[1])
-            } catch (exception: Exception) {
+            } catch (exception: IllegalArgumentException) {
                 throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme.")
             }
         } else AnonymousCredentials()

@@ -23,17 +23,13 @@ class FileSynchronizeJob {
     @Async
     @SchedulerLock(name = "FileSynchronizeJob", lockAtMostFor = "P7D")
     fun run() {
-        try {
-            logger.info("Starting to synchronize file.")
-            val startTimeMillis = System.currentTimeMillis()
-            val result = storageService.synchronizeFile()
-            val elapseSeconds = (System.currentTimeMillis() - startTimeMillis) / 1000
-            logger.info("Synchronize file success. Walked [${result.totalCount}] files totally, synchronized[${result.synchronizedCount}]," +
-                " error[${result.errorCount}], ignored[${result.ignoredCount}]" +
-                ", [${result.totalSize}] bytes totally, elapse [$elapseSeconds] s.")
-        } catch (exception: Exception) {
-            logger.error("Synchronize file failed.", exception)
-        }
+        logger.info("Starting to synchronize file.")
+        val startTimeMillis = System.currentTimeMillis()
+        val result = storageService.synchronizeFile()
+        val elapseSeconds = (System.currentTimeMillis() - startTimeMillis) / 1000
+        logger.info("Synchronize file success. Walked [${result.totalCount}] files totally, synchronized[${result.synchronizedCount}]," +
+            " error[${result.errorCount}], ignored[${result.ignoredCount}]" +
+            ", [${result.totalSize}] bytes totally, elapse [$elapseSeconds] s.")
     }
 
     companion object {

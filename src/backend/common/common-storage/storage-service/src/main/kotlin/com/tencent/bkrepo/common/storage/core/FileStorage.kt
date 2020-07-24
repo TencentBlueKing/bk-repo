@@ -18,7 +18,6 @@ interface FileStorage {
     @Retryable(Exception::class, label = "FileStorage.store", maxAttempts = 5, backoff = Backoff(delay = 60 * 1000, multiplier = 2.0))
     fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials)
     fun store(path: String, filename: String, inputStream: InputStream, size: Long, storageCredentials: StorageCredentials)
-    fun load(path: String, filename: String, received: File, storageCredentials: StorageCredentials): File?
     fun load(path: String, filename: String, range: Range, storageCredentials: StorageCredentials): InputStream?
     fun delete(path: String, filename: String, storageCredentials: StorageCredentials)
     fun exist(path: String, filename: String, storageCredentials: StorageCredentials): Boolean

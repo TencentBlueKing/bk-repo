@@ -3,9 +3,10 @@ package com.tencent.bkrepo.auth.interceptor
 import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.auth.constant.AUTH_FAILED_RESPONSE
 import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
-import com.tencent.bkrepo.auth.exception.AuthHeaderException
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.COLON
+import org.apache.http.HttpStatus
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.ModelAndView
@@ -23,17 +24,18 @@ class AuthInterceptor : HandlerInterceptor {
         val authFailStr = String.format(AUTH_FAILED_RESPONSE, basicAuthHeader)
         try {
             if (!basicAuthHeader.startsWith(PLATFORM_AUTH_HEADER_PREFIX)) {
-                throw AuthHeaderException("platform not found")
+                throw IllegalArgumentException("platform not found")
             }
             val encodedCredentials = basicAuthHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
-            val parts = decodedHeader.split(StringPool.COLON)
+            val parts = decodedHeader.split(COLON)
             require(parts.size == 2)
             accountService.checkCredential(parts[0], parts[1]) ?: run {
-                throw AuthHeaderException("check credential fail")
+                throw IllegalArgumentException("check credential fail")
             }
             return true
         } catch (e: IllegalArgumentException) {
+            response.status = HttpStatus.SC_UNAUTHORIZED
             response.writer.print(authFailStr)
             return false
         }

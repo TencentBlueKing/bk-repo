@@ -123,11 +123,8 @@ class UserServiceImpl @Autowired constructor(
         val update = Update()
         query.addCriteria(Criteria.where(TUser::userId.name).`in`(idList))
         update.addToSet(TUser::roles.name, roleId)
-        val result = mongoTemplate.upsert(query, update, TUser::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
-        return false
+        mongoTemplate.updateMulti(query, update, TUser::class.java)
+        return true
     }
 
     override fun removeUserFromRole(userId: String, roleId: String): User? {
@@ -152,10 +149,8 @@ class UserServiceImpl @Autowired constructor(
         val update = Update()
         query.addCriteria(Criteria.where(TUser::userId.name).`in`(idList).and(TUser::roles.name).`is`(roleId))
         update.unset("roles.$")
-        val result = mongoTemplate.upsert(query, update, TUser::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
+        val result = mongoTemplate.updateMulti(query, update, TUser::class.java)
+        if (result.modifiedCount == 1L) return true
         return false
     }
 
@@ -177,9 +172,7 @@ class UserServiceImpl @Autowired constructor(
             update.set(TUser::name.name, request.name!!)
         }
         val result = mongoTemplate.updateFirst(query, update, TUser::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
+        if (result.modifiedCount == 1L) return true
         return false
     }
 

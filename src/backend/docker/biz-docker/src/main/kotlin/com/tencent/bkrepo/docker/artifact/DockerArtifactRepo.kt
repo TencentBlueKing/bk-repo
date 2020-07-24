@@ -2,6 +2,8 @@ package com.tencent.bkrepo.docker.artifact
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
+import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
 import com.tencent.bkrepo.common.artifact.permission.PermissionService
@@ -18,13 +20,8 @@ import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
-import com.tencent.bkrepo.docker.constant.DOCKER_PRE_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
 import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
-import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_INDEX
-import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_LIMIT
-import com.tencent.bkrepo.docker.constant.DOCKER_SEARCH_LIMIT_SMALL
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.REPO_TYPE
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
@@ -62,6 +59,11 @@ class DockerArtifactRepo @Autowired constructor(
 
     lateinit var userId: String
 
+    /**
+     * start a append upload
+     * @param context the request context params
+     * @return String append Id
+     */
     fun startAppend(context: RequestContext): String {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
@@ -72,76 +74,33 @@ class DockerArtifactRepo @Autowired constructor(
         return storageService.createAppendId(repository.storageCredentials)
     }
 
-    fun writeAppend(uuid: String, artifactFile: ArtifactFile, context: RequestContext): Long {
+    /**
+     * write data in a append upload
+     * @param context the request context params
+     * @param uuid the append id
+     * @param artifactFile file object
+     * @return Long  the size of the file
+     */
+    fun writeAppend(context: RequestContext, uuid: String, artifactFile: ArtifactFile): Long {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
-            logger.warn("user [$userId]  download file [$context] repository not found")
+            logger.warn("user [$userId] append file [$context] repository not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
         logger.debug("user [$userId]  append file id [$uuid]")
         return this.storageService.append(uuid, artifactFile, repository.storageCredentials)
     }
 
-    // TODO : to implement
-    fun delete(path: String): Boolean {
-        return true
-    }
-
-    // download file
-    fun download(downloadContext: DownloadContext): InputStream {
-        // check repository
-        val context = downloadContext.context
-        val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
-            logger.warn("user [$userId]  download file [$context] repository not found")
-            throw DockerRepoNotFoundException(context.repoName)
-        }
-        logger.debug("load file sha256 [${downloadContext.sha256}], length [${downloadContext.length}]")
-        // load file from storage
-        return storageService.load(downloadContext.sha256, Range.ofFull(downloadContext.length), repository.storageCredentials) ?: run {
-            logger.error("user [$userId] fail to load data [$downloadContext] from storage  ")
-            throw DockerFileReadFailedException(context.repoName)
-        }
-    }
-
-    // upload file
-    fun upload(context: UploadContext): Boolean {
+    /**
+     * finish a append upload
+     * @param context the upload context params
+     * @param uuid the append id
+     * @return Boolean is the file upload success
+     */
+    fun finishAppend(context: UploadContext, uuid: String): Boolean {
         // check repository
         val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
-            logger.warn("user [$userId]  upload file  [$context] repository not found")
-            throw DockerRepoNotFoundException(context.repoName)
-        }
-
-        logger.debug("user [$userId] start to store file [${context.sha256}]")
-        // store the file
-        storageService.store(context.sha256, context.artifactFile!!, repository.storageCredentials)
-        // save the node
-        val result = nodeResource.create(
-            NodeCreateRequest(
-                projectId = context.projectId,
-                repoName = context.repoName,
-                folder = false,
-                fullPath = context.fullPath,
-                size = context.artifactFile!!.getSize(),
-                sha256 = context.artifactFile!!.getFileSha256(),
-                md5 = context.artifactFile!!.getFileMd5(),
-                operator = userId,
-                metadata = context.metadata,
-                overwrite = true
-            )
-        )
-        if (result.isNotOk()) {
-            logger.error("user [$userId]  upload file [${context.fullPath}] failed: [${result.code}, ${result.message}]")
-            throw DockerFileSaveFailedException(context.fullPath)
-        }
-        logger.debug("user [$userId]  upload file [${context.fullPath}] success")
-        return true
-    }
-
-    // finish append file
-    fun finishAppend(uuid: String, context: UploadContext): Boolean {
-        // check repository
-        val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
-            logger.warn("user[$userId]  finish append file  [$context.path] failed: ${context.repoName} not found")
+            logger.warn("user[$userId]  finish append file  [$context] not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
         val file = this.storageService.finishAppend(uuid, repository.storageCredentials)
@@ -160,14 +119,79 @@ class DockerArtifactRepo @Autowired constructor(
         // save node
         val result = nodeResource.create(node)
         if (result.isNotOk()) {
-            logger.error("user [$userId] finish upload file  [${context.fullPath}] failed: [${result.code}, ${result.message}]")
+            logger.error("user [$userId] finish append file  [${context.fullPath}] failed: [$result]")
             throw DockerFileSaveFailedException(context.fullPath)
         }
         logger.debug("user [$userId] finish append file  [${context.fullPath} , ${file.sha256}] success")
         return true
     }
 
-    // copy file
+    /**
+     * download a file
+     * @param downloadContext the download context params
+     * @return InputStream the file download inputstream
+     */
+    fun download(downloadContext: DownloadContext): InputStream {
+        // check repository
+        val context = downloadContext.context
+        val repository = repositoryResource.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+            logger.warn("user [$userId]  download file [$context] repository not found")
+            throw DockerRepoNotFoundException(context.repoName)
+        }
+        logger.debug("load file  [$downloadContext]")
+        // load file from storage
+        return storageService.load(downloadContext.sha256, Range.ofFull(downloadContext.length), repository.storageCredentials) ?: run {
+            logger.error("user [$userId] fail to load data [$downloadContext] from storage  ")
+            throw DockerFileReadFailedException(context.repoName)
+        }
+    }
+
+    /**
+     * upload a file
+     * @param uploadContext the upload context params
+     * @return Boolean is the file upload success
+     */
+    fun upload(uploadContext: UploadContext): Boolean {
+        // check repository
+        val repository =
+            repositoryResource.detail(uploadContext.projectId, uploadContext.repoName, REPO_TYPE).data ?: run {
+                logger.warn("user [$userId]  upload file  [$uploadContext] repository not found")
+                throw DockerRepoNotFoundException(uploadContext.repoName)
+            }
+
+        logger.debug("user [$userId] start to store file [${uploadContext.sha256}]")
+        // store the file
+        storageService.store(uploadContext.sha256, uploadContext.artifactFile!!, repository.storageCredentials)
+        // save the node
+        val result = nodeResource.create(
+            NodeCreateRequest(
+                projectId = uploadContext.projectId,
+                repoName = uploadContext.repoName,
+                folder = false,
+                fullPath = uploadContext.fullPath,
+                size = uploadContext.artifactFile!!.getSize(),
+                sha256 = uploadContext.artifactFile!!.getFileSha256(),
+                md5 = uploadContext.artifactFile!!.getFileMd5(),
+                operator = userId,
+                metadata = uploadContext.metadata,
+                overwrite = true
+            )
+        )
+        if (result.isNotOk()) {
+            logger.error("user [$userId]  upload file [${uploadContext.fullPath}] failed: [$result]")
+            throw DockerFileSaveFailedException(uploadContext.fullPath)
+        }
+        logger.debug("user [$userId]  upload file [${uploadContext.fullPath}] success")
+        return true
+    }
+
+    /**
+     * copy a file from source path to destination path
+     * @param context the upload context params
+     * @param srcPath the source path of file
+     * @param destPath the destination file of file
+     * @return Boolean is the file upload success
+     */
     fun copy(context: RequestContext, srcPath: String, destPath: String): Boolean {
         with(context) {
             val copyRequest = NodeCopyRequest(
@@ -189,80 +213,107 @@ class DockerArtifactRepo @Autowired constructor(
         }
     }
 
-    // move file
+    /**
+     * move a file from source path to destination path
+     * @param context the upload context params
+     * @param from the source path of file
+     * @param to the destination file of file
+     * @return Boolean is the file upload success
+     */
     fun move(context: RequestContext, from: String, to: String): Boolean {
         with(context) {
             val renameRequest = NodeRenameRequest(projectId, repoName, from, to, userId)
-            logger.debug("rename request [$renameRequest]")
+            logger.debug("move request [$renameRequest]")
             val result = nodeResource.rename(renameRequest)
             if (result.isNotOk()) {
-                logger.error("user [$userId] request [$renameRequest] rename file fail")
+                logger.error("user [$userId] request [$renameRequest] move file fail")
                 throw DockerMoveFileFailedException("$from->$to")
             }
             return true
         }
     }
 
-    // set node attribute
-    fun setAttributes(projectId: String, repoName: String, path: String, data: Map<String, String>) {
-        logger.info("set attributes request [$projectId,$repoName,$path,$data]")
-        val result = metadataService.save(MetadataSaveRequest(projectId, repoName, path, data))
+    /**
+     * set attributes of a file
+     * @param projectId project of the repo
+     * @param repoName name of the repo
+     * @param fullPath the path of file
+     * @param data metadata
+     */
+    fun setAttributes(projectId: String, repoName: String, fullPath: String, data: Map<String, String>) {
+        logger.info("set attributes request [$projectId,$repoName,$fullPath,$data]")
+        val result = metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, data))
         if (result.isNotOk()) {
-            logger.error("set attribute [$projectId,$repoName,$path,$data] fail")
+            logger.error("set attribute [$projectId,$repoName,$fullPath,$data] fail")
             throw DockerFileSaveFailedException("set attribute fail")
         }
     }
 
-    // get node attribute
+    /**
+     * get attributes of a file
+     * @param projectId project of the repo
+     * @param repoName name of the repo
+     * @param fullPath full path of file
+     * @param key metadata
+     * @return String is the value of the metadata
+     */
     fun getAttribute(projectId: String, repoName: String, fullPath: String, key: String): String? {
         val result = metadataService.query(projectId, repoName, fullPath).data!!
         logger.debug("get attribute params : [$projectId,$repoName,$fullPath,$key] ,result: [$result]")
         return result[key]
     }
 
-    // check node
+    /**
+     * check is the node is exist
+     * @param projectId project of the repo
+     * @param repoName name of the repo
+     * @param fullPath full path of file
+     * @return Boolean is the file exist
+     */
     fun exists(projectId: String, repoName: String, fullPath: String): Boolean {
-        return nodeResource.exist(projectId, repoName, fullPath).data ?: run {
+        return nodeResource.exist(projectId, repoName, fullPath).data ?: return false
+    }
+
+    /**
+     * check is the node can be read
+     * @param context the request context
+     * @return Boolean is the file can be read
+     */
+    fun canRead(context: RequestContext): Boolean {
+        try {
+            permissionService.checkPermission(
+                userId,
+                ResourceType.PROJECT,
+                PermissionAction.WRITE,
+                context.projectId,
+                context.repoName
+            )
+        } catch (e: PermissionCheckException) {
+            logger.debug("user: [$userId] ,check read permission fail [$context]")
             return false
         }
+        return true
     }
 
-    // check path read permission
-    fun canRead(context: RequestContext): Boolean {
-        with(context) {
-            try {
-                permissionService.checkPermission(
-                    userId,
-                    ResourceType.PROJECT,
-                    PermissionAction.WRITE,
-                    projectId,
-                    repoName
-                )
-            } catch (e: PermissionCheckException) {
-                logger.debug("user: [$userId] ,check read permission fail [$context]")
-                return false
-            }
-            return true
-        }
-    }
-
-    // check user write permission
+    /**
+     * check is the node can be write
+     * @param context the request context
+     * @return Boolean is the file can be write
+     */
     fun canWrite(context: RequestContext): Boolean {
-        with(context) {
-            try {
-                permissionService.checkPermission(
-                    userId,
-                    ResourceType.PROJECT,
-                    PermissionAction.WRITE,
-                    projectId,
-                    repoName
-                )
-            } catch (e: PermissionCheckException) {
-                logger.debug("user: [$userId] ,check write permission fail [$context]")
-                return false
-            }
-            return true
+        try {
+            permissionService.checkPermission(
+                userId,
+                ResourceType.PROJECT,
+                PermissionAction.WRITE,
+                context.projectId,
+                context.repoName
+            )
+        } catch (e: PermissionCheckException) {
+            logger.debug("user: [$userId] ,check write permission fail [$context]")
+            return false
         }
+        return true
     }
 
     // get artifact detail
@@ -319,11 +370,7 @@ class DockerArtifactRepo @Autowired constructor(
         val data = mutableListOf<String>()
         result.records.forEach {
             val path = it[DOCKER_NODE_PATH] as String
-            data.add(
-                path.removeSuffix(DOCKER_PRE_SUFFIX).replaceAfterLast(DOCKER_PRE_SUFFIX, EMPTYSTR).removeSuffix(
-                    DOCKER_PRE_SUFFIX
-                ).removePrefix(DOCKER_PRE_SUFFIX)
-            )
+            data.add(path.removeSuffix(SLASH).replaceAfterLast(SLASH, EMPTY).removeSuffix(SLASH).removePrefix(SLASH))
         }
         return data.distinct()
     }
@@ -350,7 +397,7 @@ class DockerArtifactRepo @Autowired constructor(
             val data = mutableMapOf<String, String>()
             result.records.forEach {
                 var path = it[DOCKER_NODE_PATH] as String
-                val tag = path.removePrefix("/$artifactName/").removeSuffix(DOCKER_PRE_SUFFIX)
+                val tag = path.removePrefix("/$artifactName/").removeSuffix(SLASH)
                 val user = it[DOCKER_CREATE_BY] as String
                 data[tag] = user
             }
@@ -377,7 +424,15 @@ class DockerArtifactRepo @Autowired constructor(
         return result.records
     }
 
+    // TODO : to implement
+    fun delete(path: String): Boolean {
+        return true
+    }
+
     companion object {
+        private const val DOCKER_SEARCH_INDEX = 0
+        private const val DOCKER_SEARCH_LIMIT = 9999999
+        private const val DOCKER_SEARCH_LIMIT_SMALL = 10
         private val logger = LoggerFactory.getLogger(DockerArtifactRepo::class.java)
     }
 }

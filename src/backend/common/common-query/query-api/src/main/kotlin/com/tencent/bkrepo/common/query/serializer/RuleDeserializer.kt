@@ -41,7 +41,7 @@ class RuleDeserializer : JsonDeserializer<Rule>() {
 
                 Rule.QueryRule(field, value, operation)
             }
-        } catch (exception: Exception) {
+        } catch (exception: IOException) {
             throw QueryModelException("Failed to resolve rule.", exception)
         }
     }

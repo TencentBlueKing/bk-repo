@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.storage.innercos
 
-import com.tencent.cos.COSClient
+import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 
 /**
  *
@@ -9,5 +9,5 @@ import com.tencent.cos.COSClient
  */
 class InnerCosClient(
     val bucketName: String,
-    val cosClient: COSClient
+    val cosClient: CosClient
 )

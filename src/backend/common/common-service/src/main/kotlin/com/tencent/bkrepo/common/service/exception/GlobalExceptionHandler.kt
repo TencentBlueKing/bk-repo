@@ -14,6 +14,7 @@ import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MissingRequestHeaderException
 import org.springframework.web.bind.MissingServletRequestParameterException
@@ -94,6 +95,15 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     fun handleException(exception: HttpRequestMethodNotSupportedException): Response<Void> {
         val messageCode = CommonMessageCode.OPERATION_UNSUPPORTED
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
+        logBusinessException(exception, "[${messageCode.getCode()}]$errorMessage")
+        return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    fun handleException(exception: HttpMediaTypeNotSupportedException): Response<Void> {
+        val messageCode = CommonMessageCode.MEDIA_TYPE_UNSUPPORTED
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
         logBusinessException(exception, "[${messageCode.getCode()}]$errorMessage")
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)

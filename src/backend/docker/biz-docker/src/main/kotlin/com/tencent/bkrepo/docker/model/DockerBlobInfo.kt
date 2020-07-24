@@ -8,6 +8,7 @@ import org.apache.commons.lang.StringUtils
  * @date: 2019-10-15
  */
 data class DockerBlobInfo(var id: String, var digest: String?, var size: Long, var created: String) {
+
     var shortId: String? = null
     var command: String? = null
     var commandText: String? = null

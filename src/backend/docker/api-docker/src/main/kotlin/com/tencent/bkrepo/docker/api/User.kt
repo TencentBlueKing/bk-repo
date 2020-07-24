@@ -9,10 +9,10 @@ import com.tencent.bkrepo.docker.constant.DOCKER_USER_MANIFEST_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_REPO_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_TAG_SUFFIX
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
+import com.tencent.bkrepo.docker.response.DockerResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -60,7 +60,7 @@ interface User {
         @PathVariable
         @ApiParam(value = "id", required = true)
         id: String
-    ): ResponseEntity<Any>
+    ): DockerResponse
 
     @ApiOperation("获取所有image")
     @GetMapping(DOCKER_USER_REPO_SUFFIX)

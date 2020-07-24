@@ -20,7 +20,7 @@ class InfluxDbUtils(
      * @return influxDb实例
      */
     fun getInstance(): InfluxDB? {
-        if (null == influxDB) {
+        influxDB ?: run {
             influxDB = InfluxDBFactory.connect(url, userName, password)
             if (!influxDB!!.databaseExists(database)) {
                 influxDB!!.createDatabase(database)
