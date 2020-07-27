@@ -46,7 +46,7 @@ interface NpmResource {
         NPM_SCOPE_PACKAGE_VERSION_INFO_MAPPING_URI,
         NPM_PACKAGE_INFO_MAPPING_URI,
         NPM_PACKAGE_VERSION_INFO_MAPPING_URI,
-        produces = [MediaType.APPLICATION_JSON_UTF8_VALUE]
+        produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     fun searchPackageInfo(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo

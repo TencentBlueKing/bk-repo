@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
+import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
@@ -24,7 +25,6 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.storage.util.FileDigestUtils
 import com.tencent.bkrepo.npm.async.NpmDependentHandler
 import com.tencent.bkrepo.npm.constants.APPLICATION_OCTET_STEAM
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
@@ -55,6 +55,7 @@ import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
@@ -70,7 +71,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import java.io.IOException
+import java.io.InputStream
 import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
 
 @Component
 class NpmLocalRepository : LocalRepository() {
@@ -96,10 +99,13 @@ class NpmLocalRepository : LocalRepository() {
         context.artifactFileMap.entries.forEach { (name, file) ->
             if (name == NPM_PACKAGE_TGZ_FILE) {
                 // 校验MIME_TYPE
-                context.contextAttributes[APPLICATION_OCTET_STEAM].takeIf { it == MediaType.APPLICATION_OCTET_STREAM_VALUE }
-                    ?: throw ArtifactValidateException("Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}")
+                context.contextAttributes[APPLICATION_OCTET_STEAM].takeIf {
+                    it == MediaType.APPLICATION_OCTET_STREAM_VALUE }
+                    ?: throw ArtifactValidateException(
+                        "Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}"
+                    )
                 // 计算sha1并校验
-                val calculatedSha1 = FileDigestUtils.fileSha1(listOf(file.getInputStream()))
+                val calculatedSha1 = file.getFile()?.sha1()
                 val uploadSha1 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA1] as String?
                 if (uploadSha1 != null && calculatedSha1 != uploadSha1) {
                     throw ArtifactValidateException("File shasum validate failed.")
@@ -160,7 +166,8 @@ class NpmLocalRepository : LocalRepository() {
     override fun countDownloads(context: ArtifactDownloadContext) {
         val artifactInfo = context.artifactInfo
         val artifact = artifactInfo.artifactUri.substringBefore("/-/").trimStart('/')
-        val version = artifactInfo.artifactUri.substringAfterLast("$artifact${StringPool.DASH}").substringBefore(".tgz")
+        val version = artifactInfo.artifactUri.substringAfterLast("$artifact${StringPool.DASH}")
+            .substringBefore(".tgz")
         downloadStatisticsResource.add(
             DownloadStatisticsAddRequest(
                 artifactInfo.projectId,
@@ -187,9 +194,11 @@ class NpmLocalRepository : LocalRepository() {
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         val node = nodeResource.detail(projectId, repoName, fullPath).data
         if (node == null || node.nodeInfo.folder) return null
-        val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials).also {
-            logger.info("search artifact [$fullPath] success!")
-        }
+        val inputStream =
+            storageService.load(node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size), context.storageCredentials)
+                .also {
+                    logger.info("search artifact [$fullPath] success!")
+                }
         return inputStream?.let { getPkgInfo(context, it) }
     }
 
@@ -304,7 +313,10 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     private fun installTgzFile(context: ArtifactMigrateContext, jsonObject: JsonObject) {
+        val name = jsonObject[NAME].asString
         val versions = jsonObject.getAsJsonObject(VERSIONS)
+        var count = 0
+        val totalSize = versions.keySet().size
         versions.keySet().forEach { version ->
             var response: Response? = null
             val tgzFilePath: String?
@@ -313,6 +325,8 @@ class NpmLocalRepository : LocalRepository() {
             context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
             // hit cache continue
             getCacheArtifact(context)?.let {
+                logger.info("migration package [$name] tgz file ${tgzFilePath} is exists in repository, skip," +
+                    " current process rate: [${++count}/$totalSize]")
                 return@forEach
             }
             val request = Request.Builder().url(tarball).get().build()
@@ -321,6 +335,9 @@ class NpmLocalRepository : LocalRepository() {
                 if (checkResponse(response)) {
                     val artifactFile = createTempFile(response.body()!!)
                     putArtifact(context, artifactFile)
+                    logger.info("migration package [$name] tgz file ${tgzFilePath.substringAfter('/')} success," +
+                        " current process rate: [${++count}/$totalSize]")
+                    deleteTempFile(artifactFile)
                 }
             } catch (exception: IOException) {
                 logger.error("http send url [$tarball] for artifact [$tgzFilePath] failed : ${exception.message}")
@@ -332,8 +349,11 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     private fun searchPkgJson(context: ArtifactMigrateContext): JsonObject {
-        getCacheArtifact(context)?.let {
-            return GsonUtils.transferInputStreamToJson(it)
+        var cacheFileSha256: String? = null
+        var cacheArtifact: InputStream? = null
+        getCacheNodeInfo(context)?.let {
+            cacheFileSha256 = it.nodeInfo.sha256
+            cacheArtifact = getCacheArtifact(context)
         }
         val pkgName = context.contextAttributes[PKG_NAME] as String
         val url = registry.trimEnd('/') + '/' + pkgName
@@ -343,9 +363,18 @@ class NpmLocalRepository : LocalRepository() {
             response = okHttpClient.newCall(request).execute()
             if (checkResponse(response)) {
                 val artifactFile = createTempFile(response.body()!!)
+                if (artifactFile.getFileSha256() == cacheFileSha256) {
+                    val resultJson = GsonUtils.transferInputStreamToJson(cacheArtifact!!)
+                    putVersionArtifact(context, resultJson)
+                    deleteTempFile(artifactFile)
+                    return resultJson
+                }
+
                 putArtifact(context, artifactFile)
-                putVersionArtifact(context, artifactFile)
-                GsonUtils.transferInputStreamToJson(artifactFile.getInputStream())
+                val resultJson = GsonUtils.transferInputStreamToJson(artifactFile.getInputStream())
+                putVersionArtifact(context, resultJson)
+                deleteTempFile(artifactFile)
+                resultJson
             } else throw ArtifactNotFoundException("download from remote for [$pkgName] failed.")
         } catch (exception: IOException) {
             logger.error("http send [$url] for search [$pkgName.json] file failed, {}", exception.message)
@@ -360,26 +389,46 @@ class NpmLocalRepository : LocalRepository() {
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
         if (node == null || node.nodeInfo.folder) return null
-        val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
+        val inputStream =
+            storageService.load(node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size), context.storageCredentials)
         inputStream?.let { logger.debug("Cached remote artifact[$fullPath] is hit") }
         return inputStream
     }
 
-    private fun putVersionArtifact(context: ArtifactMigrateContext, artifactFile: ArtifactFile) {
-        val jsonFile = GsonUtils.transferInputStreamToJson(artifactFile.getInputStream())
+    private fun getCacheNodeInfo(context: ArtifactTransferContext): NodeDetail? {
+        val repositoryInfo = context.repositoryInfo
+        val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
+        return nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+    }
+
+    private fun putVersionArtifact(context: ArtifactMigrateContext, jsonFile: JsonObject) {
         val name = jsonFile[NAME].asString
         val versionsFile = jsonFile.getAsJsonObject(VERSIONS)
+        var count = 0
+        val totalSize = versionsFile.keySet().size
         versionsFile.keySet().forEach { version ->
             val versionFile = versionsFile.getAsJsonObject(version)
             val artifactVersionFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
-            context.contextAttributes[NPM_FILE_FULL_PATH] =
-                String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
+            val fullPath = String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
+            context.contextAttributes[NPM_FILE_FULL_PATH] = fullPath
+            nodeResource.exist(context.artifactInfo.projectId, context.artifactInfo.repoName, fullPath).data?.let {
+                if (it) {
+                    logger.info("package $name-$version.json is exists in repository, skip," +
+                        " current process rate: [$name: ${++count}/$totalSize]")
+                    return@forEach
+                }
+            }
             val nodeCreateRequest = getNodeCreateRequest(context, artifactVersionFile)
             nodeResource.create(nodeCreateRequest)
             storageService.store(nodeCreateRequest.sha256!!, artifactVersionFile, context.storageCredentials)
+            logger.info("migration package $name-$version.json success," +
+                " current process rate: [$name: ${++count}/$totalSize]")
+            deleteTempFile(artifactVersionFile)
         }
         // 添加依赖
-        npmDependentHandler.updatePkgDepts(context.userId, context.artifactInfo, jsonFile, NpmOperationAction.MIGRATION)
+        npmDependentHandler.updatePkgDepts(
+            context.userId, context.artifactInfo, jsonFile, NpmOperationAction.MIGRATION
+        )
     }
 
     private fun putArtifact(context: ArtifactMigrateContext, artifactFile: ArtifactFile) {
@@ -391,8 +440,8 @@ class NpmLocalRepository : LocalRepository() {
 
     private fun getNodeCreateRequest(context: ArtifactTransferContext, file: ArtifactFile): NodeCreateRequest {
         val repositoryInfo = context.repositoryInfo
-        val sha256 = FileDigestUtils.fileSha256(listOf(file.getInputStream()))
-        val md5 = FileDigestUtils.fileMd5(listOf(file.getInputStream()))
+        val sha256 = file.getFileSha256()
+        val md5 = file.getFileMd5()
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
             repoName = repositoryInfo.name,
@@ -409,8 +458,18 @@ class NpmLocalRepository : LocalRepository() {
     /**
      * 创建临时文件并将响应体写入文件
      */
-    protected fun createTempFile(body: ResponseBody): ArtifactFile {
+    private fun createTempFile(body: ResponseBody): ArtifactFile {
         return ArtifactFileFactory.build(body.byteStream())
+    }
+
+    /**
+     * 删除临时文件
+     */
+    private fun deleteTempFile(file: ArtifactFile) {
+        val absolutePath = file.getFile()!!.absolutePath
+        measureTimeMillis { file.delete() }.apply {
+            logger.info("delete temp artifact file [$absolutePath] success, elapse $this ms")
+        }
     }
 
     /**
@@ -426,7 +485,12 @@ class NpmLocalRepository : LocalRepository() {
 
     fun dependentMigrate(context: ArtifactMigrateContext) {
         val pkgJsonFile = searchPkgJson(context)
-        npmDependentHandler.updatePkgDepts(context.userId, context.artifactInfo, pkgJsonFile, NpmOperationAction.MIGRATION)
+        npmDependentHandler.updatePkgDepts(
+            context.userId,
+            context.artifactInfo,
+            pkgJsonFile,
+            NpmOperationAction.MIGRATION
+        )
     }
 
     companion object {
