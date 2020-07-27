@@ -70,7 +70,7 @@ class DataMigrationService {
 
     private final fun initTotalDataSetByUrl(): Set<String> {
         var totalDataSet: Set<String> = emptySet()
-        if (StringUtils.isEmpty(url)) {
+        if (url.isEmpty()) {
             return totalDataSet
         }
         var response: Response? = null
@@ -98,7 +98,7 @@ class DataMigrationService {
     }
 
     private final fun initTotalDataSetByPkgName(pkgName: String): Set<String> {
-        if (StringUtils.isNotBlank(pkgName)) {
+        if (pkgName.isNotBlank()) {
             val pkgNameSet = pkgName.split(',').filter { it.isNotBlank() }.map { it.trim() }.toMutableSet()
             return pkgNameSet
         }

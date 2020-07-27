@@ -73,7 +73,6 @@ import org.springframework.stereotype.Component
 import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
-import kotlin.system.measureTimeMillis
 
 @Component
 class NpmLocalRepository : LocalRepository() {
@@ -337,7 +336,7 @@ class NpmLocalRepository : LocalRepository() {
                     putArtifact(context, artifactFile)
                     logger.info("migration package [$name] tgz file ${tgzFilePath.substringAfter('/')} success," +
                         " current process rate: [${++count}/$totalSize]")
-                    deleteTempFile(artifactFile)
+                    artifactFile.delete()
                 }
             } catch (exception: IOException) {
                 logger.error("http send url [$tarball] for artifact [$tgzFilePath] failed : ${exception.message}")
@@ -366,14 +365,14 @@ class NpmLocalRepository : LocalRepository() {
                 if (artifactFile.getFileSha256() == cacheFileSha256) {
                     val resultJson = GsonUtils.transferInputStreamToJson(cacheArtifact!!)
                     putVersionArtifact(context, resultJson)
-                    deleteTempFile(artifactFile)
+                    artifactFile.delete()
                     return resultJson
                 }
 
                 putArtifact(context, artifactFile)
                 val resultJson = GsonUtils.transferInputStreamToJson(artifactFile.getInputStream())
                 putVersionArtifact(context, resultJson)
-                deleteTempFile(artifactFile)
+                artifactFile.delete()
                 resultJson
             } else throw ArtifactNotFoundException("download from remote for [$pkgName] failed.")
         } catch (exception: IOException) {
@@ -411,19 +410,17 @@ class NpmLocalRepository : LocalRepository() {
             val artifactVersionFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
             val fullPath = String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
             context.contextAttributes[NPM_FILE_FULL_PATH] = fullPath
-            nodeResource.exist(context.artifactInfo.projectId, context.artifactInfo.repoName, fullPath).data?.let {
-                if (it) {
-                    logger.info("package $name-$version.json is exists in repository, skip," +
-                        " current process rate: [$name: ${++count}/$totalSize]")
-                    return@forEach
-                }
+            if(nodeResource.exist(context.artifactInfo.projectId, context.artifactInfo.repoName, fullPath).data!!) {
+                logger.info("package $name-$version.json is exists in repository, skip," +
+                    " current process rate: [$name: ${++count}/$totalSize]")
+                return@forEach
             }
             val nodeCreateRequest = getNodeCreateRequest(context, artifactVersionFile)
-            nodeResource.create(nodeCreateRequest)
             storageService.store(nodeCreateRequest.sha256!!, artifactVersionFile, context.storageCredentials)
+            nodeResource.create(nodeCreateRequest)
             logger.info("migration package $name-$version.json success," +
                 " current process rate: [$name: ${++count}/$totalSize]")
-            deleteTempFile(artifactVersionFile)
+            artifactVersionFile.delete()
         }
         // 添加依赖
         npmDependentHandler.updatePkgDepts(
@@ -465,12 +462,12 @@ class NpmLocalRepository : LocalRepository() {
     /**
      * 删除临时文件
      */
-    private fun deleteTempFile(file: ArtifactFile) {
-        val absolutePath = file.getFile()!!.absolutePath
-        measureTimeMillis { file.delete() }.apply {
-            logger.info("delete temp artifact file [$absolutePath] success, elapse $this ms")
-        }
-    }
+    // private fun deleteTempFile(file: ArtifactFile) {
+    //     val absolutePath = file.getFile()!!.absolutePath
+    //     measureTimeMillis { file.delete() }.apply {
+    //         logger.info("delete temp artifact file [$absolutePath] success, elapse $this ms")
+    //     }
+    // }
 
     /**
      * 检查下载响应
