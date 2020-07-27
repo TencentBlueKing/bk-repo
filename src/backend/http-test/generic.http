@@ -138,6 +138,17 @@ X-BKREPO-SEQUENCE: 2
     });
 %}
 
+### 查询分块
+GET http://{{genericHost}}/block/{{project}}/{{repo}}/block.txt
+Authorization: Basic {{username}} {{password}}
+X-BKREPO-UPLOAD-ID: {{uploadId}}
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+    });
+%}
+
 ### 完成分块上传
 PUT http://{{genericHost}}/block/{{project}}/{{repo}}/block.txt
 Authorization: Basic {{username}} {{password}}

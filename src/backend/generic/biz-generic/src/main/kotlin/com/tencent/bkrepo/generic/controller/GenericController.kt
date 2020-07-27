@@ -34,13 +34,14 @@ class GenericController(
     @DeleteMapping(GENERIC_MAPPING_URI)
     fun delete(
         @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+    ): Response<Void> {
         uploadService.delete(userId, artifactInfo)
+        return ResponseBuilder.success()
     }
 
     @GetMapping(GENERIC_MAPPING_URI)
-    fun download(
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
+    fun download(@ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
         downloadService.download(artifactInfo)
     }
 
