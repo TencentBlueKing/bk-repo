@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.npm.utils
 
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.npm.service.DataMigrationService
+import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
@@ -10,11 +10,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 object ThreadPoolManager {
-    private var asyncExecutor: ThreadPoolTaskExecutor
+    private val logger = LoggerFactory.getLogger(ThreadPoolManager::class.java)
 
-    init {
-        asyncExecutor = SpringContextUtils.getBean(ThreadPoolTaskExecutor::class.java, "npmTaskAsyncExecutor")
-    }
+    private var asyncExecutor: ThreadPoolTaskExecutor = SpringContextUtils.getBean(ThreadPoolTaskExecutor::class.java)
 
     /**
      *
@@ -39,11 +37,12 @@ object ThreadPoolManager {
                 val result: T = future.get(timeout, TimeUnit.MINUTES)
                 result?.let { resultList.add(it) }
             } catch (exception: TimeoutException) {
-                DataMigrationService.logger.error("async tack result timeout: ${exception.message}")
+                logger.error("async tack result timeout: ${exception.message}")
             } catch (ex: InterruptedException) {
-                DataMigrationService.logger.error("get async task result error : ${ex.message}")
+                logger.error("get async task result error with InterruptedException : ${ex.message}")
             } catch (ex: ExecutionException) {
-                DataMigrationService.logger.error("get async task result error : ${ex.message}")
+                logger.error("get async task result error with ExecutionException : ${ex.message}")
+                throw ex
             }
         }
         return resultList

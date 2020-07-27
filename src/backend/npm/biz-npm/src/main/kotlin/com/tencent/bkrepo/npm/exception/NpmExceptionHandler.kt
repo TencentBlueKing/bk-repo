@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.npm.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
@@ -18,6 +19,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import java.util.concurrent.ExecutionException
 
 /**
  * 统一异常处理
@@ -25,6 +27,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 class NpmExceptionHandler {
+
+    @ExceptionHandler(ExecutionException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handlerExecutionException(exception: ExecutionException) {
+        val responseObject = NpmErrorResponse("bad request", exception.message ?: StringPool.EMPTY)
+        npmResponse(responseObject, exception)
+    }
+
     @ExceptionHandler(NpmArgumentResolverException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handlerNpmArgumentResolverException(exception: NpmArgumentResolverException) {

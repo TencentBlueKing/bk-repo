@@ -22,6 +22,7 @@ import okhttp3.Response
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
@@ -43,7 +44,7 @@ class PackageDependentService {
     @Value("\${npm.migration.package.count: 100}")
     private val count: Int = DEFAULT_COUNT
 
-    @Resource(name = "npmTaskAsyncExecutor")
+    @Autowired
     private lateinit var asyncExecutor: ThreadPoolTaskExecutor
 
     private val okHttpClient: OkHttpClient by lazy {
