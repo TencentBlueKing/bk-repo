@@ -7,12 +7,9 @@
 	- English：upload generic artifact file
 
 - 请求体
-
-``` json
 [文件流]
-```
-- 请求参数
 
+- 请求参数
 此接口无请求参数
 
 - 请求字段说明
@@ -97,11 +94,9 @@
 	- English：start block upload
 
 - 请求体
-
 此接口请求体为空
 
 - 请求参数
-
 此接口无请求参数
 
 - 请求字段说明
@@ -160,12 +155,9 @@
 	- English：upload generic artifact file block
 
 - 请求体
-
-``` json
 [文件流]
-```
-- 请求参数
 
+- 请求参数
 此接口无请求参数
 
 - 请求字段说明
@@ -216,11 +208,9 @@
 	- English：complete block upload
 
 - 请求体
-
 此接口请求体为空
 
 - 请求参数
-
 此接口无请求参数
 
 - 请求字段说明
@@ -267,11 +257,9 @@
 	- English：abort block upload
 
 - 请求体
-
 此接口请求体为空
 
 - 请求参数
-
 此接口无请求参数
 
 - 请求字段说明
@@ -318,11 +306,9 @@
 	- English：list upload block
 
 - 请求体
-
 此接口请求体为空
 
 - 请求参数
-
 此接口无请求参数
 
 - 请求字段说明
@@ -385,11 +371,9 @@
 	- English：download generic file
 
 - 请求体
-
 此接口请求体为空
 
 - 请求参数
-
 此接口无请求参数
 
 - 请求字段说明
@@ -423,10 +407,7 @@
 |Last-Modified|string|文件的最近一次上传的时间，例如Mon, 27 Jul 2020 08:51:58 GMT|file last modified time|
 
 - 响应体
-
-``` json
 [文件流]
-```
 
 ### 获取通用制品文件头部信息
 
@@ -437,11 +418,9 @@
 	- English：get generic file head info
 
 - 请求体
-
 此接口请求体为空
 
 - 请求参数
-
 此接口无请求参数
 
 - 请求字段说明
@@ -475,7 +454,6 @@
 |Last-Modified|string|文件的最近一次上传的时间，例如Mon, 27 Jul 2020 08:51:58 GMT|file last modified time|
 
 - 响应体
-
 此接口响应体为空
 
 ### 删除通用制品文件
@@ -487,11 +465,9 @@
 	- English：delete generic file
 
 - 请求体
-
 此接口请求体为空
 
 - 请求参数
-
 此接口无请求参数
 
 - 请求字段说明
