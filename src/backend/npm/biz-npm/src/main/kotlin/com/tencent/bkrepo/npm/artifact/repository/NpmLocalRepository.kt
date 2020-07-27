@@ -324,7 +324,7 @@ class NpmLocalRepository : LocalRepository() {
             context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
             // hit cache continue
             getCacheArtifact(context)?.let {
-                logger.info("migration package [$name] tgz file ${tgzFilePath} is exists in repository, skip," +
+                logger.info("migration package [$name] tgz file $tgzFilePath is exists in repository, skip," +
                     " current process rate: [${++count}/$totalSize]")
                 return@forEach
             }
@@ -458,16 +458,6 @@ class NpmLocalRepository : LocalRepository() {
     private fun createTempFile(body: ResponseBody): ArtifactFile {
         return ArtifactFileFactory.build(body.byteStream())
     }
-
-    /**
-     * 删除临时文件
-     */
-    // private fun deleteTempFile(file: ArtifactFile) {
-    //     val absolutePath = file.getFile()!!.absolutePath
-    //     measureTimeMillis { file.delete() }.apply {
-    //         logger.info("delete temp artifact file [$absolutePath] success, elapse $this ms")
-    //     }
-    // }
 
     /**
      * 检查下载响应
