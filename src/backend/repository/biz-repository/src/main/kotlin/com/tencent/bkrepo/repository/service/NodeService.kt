@@ -45,6 +45,7 @@ import com.tencent.bkrepo.repository.util.QueryHelper.nodeQuery
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -141,9 +142,9 @@ class NodeService : AbstractService() {
         size.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
         repositoryService.checkRepository(projectId, repoName)
 
-        val query = nodePageQuery(projectId, repoName, path, includeFolder, deep, page, size)
-        val listData = nodeDao.find(query).map { convert(it)!! }
+        val query = nodeListQuery(projectId, repoName, path, includeFolder, deep)
         val count = nodeDao.count(query)
+        val listData = nodeDao.find(query.with(PageRequest.of(page, size))).map { convert(it)!! }
 
         return Page(page, size, count, listData)
     }

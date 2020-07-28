@@ -11,13 +11,11 @@ import org.springframework.context.annotation.Import
 
 @DataMongoTest
 @Import(
-    FileReferenceService::class,
     FileReferenceDao::class
 )
-internal class FileReferenceServiceTest {
-
-    @Autowired
-    private lateinit var fileReferenceService: FileReferenceService
+class FileReferenceServiceTest @Autowired constructor(
+    private val fileReferenceService: FileReferenceService
+): ServiceBaseTest() {
 
     @MockBean
     private lateinit var repositoryService: RepositoryService
