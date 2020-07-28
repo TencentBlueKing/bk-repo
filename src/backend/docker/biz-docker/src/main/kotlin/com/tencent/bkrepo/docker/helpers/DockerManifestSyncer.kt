@@ -32,7 +32,7 @@ object DockerManifestSyncer {
      * @param context docker request context
      * @param repo docker storage interface
      * @param info manifest metadata
-     * @param tag  docker image tag
+     * @param tag docker image tag
      * @return Boolean the sync result
      */
     fun syncBlobs(context: RequestContext, repo: DockerArtifactRepo, info: ManifestMetadata, tag: String): Boolean {
