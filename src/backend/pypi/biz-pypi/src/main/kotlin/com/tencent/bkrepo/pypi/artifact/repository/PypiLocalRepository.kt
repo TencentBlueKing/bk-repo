@@ -116,13 +116,10 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 val repoName = Rule.QueryRule("repoName", name)
                 val packageQuery = Rule.QueryRule("metadata.name", packageName, OperationType.MATCH)
                 val filetypeAuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
-                val summaryQuery = Rule.QueryRule("metadata.summary", summary, OperationType.MATCH)
-                // val versionQuery = Rule.QueryRule("metadata.verison", OperationType.EQ)
                 val rule1 = Rule.NestedRule(
                     mutableListOf(repoName, projectId, packageQuery, filetypeAuery),
                     Rule.NestedRule.RelationType.AND
                 )
-                val rule2 = Rule.NestedRule(mutableListOf(rule1, summaryQuery), Rule.NestedRule.RelationType.OR)
 
                 val queryModel = QueryModel(
                     page = PageLimit(pageLimitCurrent, pageLimitSize),
@@ -422,7 +419,6 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         packageName: String,
         filename: String
     ): NodeCreateRequest? {
-        val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         val metadata = context.request.parameterMaps()
         // 获取文件版本信息

@@ -39,17 +39,15 @@ import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoData
 import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.io.FileInputStream
 import java.nio.channels.Channels
 
 @Component
-class RpmLocalRepository : LocalRepository() {
-
-    @Autowired
-    lateinit var surplusNodeCleaner: SurplusNodeCleaner
+class RpmLocalRepository(
+    val surplusNodeCleaner: SurplusNodeCleaner
+) : LocalRepository() {
 
     fun rpmNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val artifactInfo = context.artifactInfo
@@ -151,7 +149,7 @@ class RpmLocalRepository : LocalRepository() {
                 val latestPrimaryNode = primaryNodelist[0]
                 val inputStream = storageService.load(
                     latestPrimaryNode.sha256!!,
-                    Range.ofFull(latestPrimaryNode.size),
+                    Range.full(latestPrimaryNode.size),
                     context.storageCredentials
                 ) ?: return
                 val rpmMetadataWithOldStream = RpmMetadataWithOldStream(rpmMetadata, inputStream.unGzipInputStream())
@@ -260,7 +258,6 @@ class RpmLocalRepository : LocalRepository() {
         return with(context.artifactInfo) {
             val projectQuery = Rule.QueryRule("projectId", projectId)
             val repositoryQuery = Rule.QueryRule("repoName", repoName)
-//            val sha256Query = Rule.QueryRule("sha256", artifactSha256)
             val fullPathQuery = Rule.QueryRule("fullPath", artifactUri)
 
             val queryRule = Rule.NestedRule(

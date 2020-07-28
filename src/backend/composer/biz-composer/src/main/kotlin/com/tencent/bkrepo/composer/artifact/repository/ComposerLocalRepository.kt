@@ -59,7 +59,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
     /**
      *
      */
-    private fun indexer(context: ArtifactUploadContext, repeat: ArtifactRepeat) {
+    private fun indexer(context: ArtifactUploadContext) {
         with(context.artifactInfo) {
             // 先读取并保存文件信息。
             val composerJsonNode = context.getArtifactFile().getInputStream()
@@ -99,7 +99,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
         val repeat = checkRepeatArtifact(context)
-        if (repeat != ArtifactRepeat.FULLPATH_SHA256) { indexer(context, repeat) }
+        if (repeat != ArtifactRepeat.FULLPATH_SHA256) { indexer(context) }
         val nodeCreateRequest = getCompressNodeCreateRequest(context)
         nodeResource.create(nodeCreateRequest)
         storageService.store(
@@ -193,7 +193,11 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
         return with(context.artifactInfo) {
             val node = nodeResource.detail(projectId, repoName, artifactUri).data ?: return null
             node.nodeInfo.takeIf { !it.folder } ?: return null
-            val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
+            val inputStream = storageService.load(
+                node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size),
+                context
+                    .storageCredentials
+            )
                 ?: return null
 
             val stringBuilder = StringBuilder("")

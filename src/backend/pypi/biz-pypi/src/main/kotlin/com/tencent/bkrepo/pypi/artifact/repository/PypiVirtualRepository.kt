@@ -25,7 +25,6 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
      * 整合多个仓库的内容。
      */
     override fun list(context: ArtifactListContext) {
-        val artifactInfo = context.artifactInfo
         val virtualConfiguration = context.repositoryConfiguration as VirtualConfiguration
 
         val repoList = virtualConfiguration.repositoryList
@@ -45,7 +44,6 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
 
     override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
         val valueList: MutableList<Value> = mutableListOf()
-        val artifactInfo = context.artifactInfo
         val virtualConfiguration = context.repositoryConfiguration as VirtualConfiguration
         val repoList = virtualConfiguration.repositoryList
         val traversedList = getTraversedList(context)
