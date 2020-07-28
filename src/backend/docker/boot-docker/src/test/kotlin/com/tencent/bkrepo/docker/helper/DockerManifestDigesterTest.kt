@@ -10,7 +10,8 @@ class DockerManifestDigesterTest {
     @Test
     @DisplayName("测试digest计算")
     fun testCalcDigest() {
-        val manifestV1ConfigFile = """{
+        val manifestV1ConfigFile =
+            """{
    "name": "hello-world",
    "tag": "latest",
    "architecture": "amd64",
@@ -54,7 +55,8 @@ class DockerManifestDigesterTest {
       }
    ]
 }"""
-        val manifest2ConfigFile = """{
+        val manifest2ConfigFile =
+            """{
    "schemaVersion": 2,
    "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
    "config": {

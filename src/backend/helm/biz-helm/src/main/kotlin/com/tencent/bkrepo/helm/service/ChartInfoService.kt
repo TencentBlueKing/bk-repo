@@ -94,7 +94,7 @@ class ChartInfoService {
         response.status = status
     }
 
-    companion object{
+    companion object {
         const val CURRENT_PAGE = 0
         const val SIZE = 5
     }

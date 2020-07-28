@@ -23,12 +23,11 @@ internal class ProjectServiceTest @Autowired constructor(
     private val operator = "system"
 
     @BeforeEach
-    fun setUp() {
+    fun beforeEach() {
     }
 
     @AfterEach
-    fun tearDown() {
-
+    fun afterEach() {
     }
 
     @Test
@@ -36,5 +35,4 @@ internal class ProjectServiceTest @Autowired constructor(
         val request = ProjectCreateRequest("unit-test", "测试项目", "单元测试项目", operator)
         projectService.create(request)
     }
-
 }

@@ -46,7 +46,6 @@ internal class ClientCacheTest {
         val credentials4 = FileSystemCredentials(path = "data").apply { upload.location = "1231" }
         clientCache.get(credentials4)
         Assertions.assertEquals(3, clientCache.size())
-
     }
 
     @Test
@@ -71,11 +70,10 @@ internal class ClientCacheTest {
     @Test
     fun testClassEquals() {
         val fsCredentials = FileSystemCredentials()
-        val fsCredentials2= FileSystemCredentials(path = "data")
+        val fsCredentials2 = FileSystemCredentials(path = "data")
         val innerCredentials = InnerCosCredentials()
 
         Assertions.assertEquals(fsCredentials::class, fsCredentials2::class)
         Assertions.assertNotEquals(fsCredentials::class, innerCredentials::class)
     }
-
 }

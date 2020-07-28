@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfigur
  * RPM仓库个性化属性: repodata_depth  索引目录深度
  */
 class RpmLocalConfiguration(
-        val repodataDepth: Int? = 0
+    val repodataDepth: Int? = 0
 ) : LocalConfiguration() {
     companion object {
         const val type = "rpm-local"

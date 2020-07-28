@@ -56,16 +56,16 @@ object DecompressUtil {
                 val nextEntry = it.nextEntry
                 while (nextEntry != null) {
                     nextEntry.let {
-                            if ((!it.isDirectory) && it.name.split("/").last() == FILE_NAME) {
-                                var length: Int
-                                val bytes = ByteArray(BUFFER_SIZE)
-                                while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
-                                    stringBuilder.append(String(bytes, 0, length))
-                                }
-                                return stringBuilder.toString()
+                        if ((!it.isDirectory) && it.name.split("/").last() == FILE_NAME) {
+                            var length: Int
+                            val bytes = ByteArray(BUFFER_SIZE)
+                            while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
+                                stringBuilder.append(String(bytes, 0, length))
                             }
+                            return stringBuilder.toString()
                         }
                     }
+                }
             } catch (ise: IllegalStateException) {
                 logger.error("get archivers content error : ${ise.message}")
             }

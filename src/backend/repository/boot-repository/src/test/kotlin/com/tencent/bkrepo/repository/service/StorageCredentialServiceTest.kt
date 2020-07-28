@@ -21,7 +21,6 @@ internal class StorageCredentialServiceTest @Autowired constructor(
 
     private val storageCredentialsKey = "unit-test-credentials-key"
 
-
     @BeforeEach
     fun setUp() {
         storageCredentialService.delete(storageCredentialsKey)
@@ -48,15 +47,15 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         Assertions.assertTrue(dbCredentials is FileSystemCredentials)
         dbCredentials as FileSystemCredentials
         Assertions.assertEquals(credential.path, dbCredentials.path)
-        Assertions.assertEquals(credential.cache.enabled, dbCredentials.cache.enabled )
-        Assertions.assertEquals(credential.cache.path, dbCredentials.cache.path )
-        Assertions.assertEquals(credential.cache.expireDays, dbCredentials.cache.expireDays )
+        Assertions.assertEquals(credential.cache.enabled, dbCredentials.cache.enabled)
+        Assertions.assertEquals(credential.cache.path, dbCredentials.cache.path)
+        Assertions.assertEquals(credential.cache.expireDays, dbCredentials.cache.expireDays)
 
-        assertThrows<ErrorCodeException>{
+        assertThrows<ErrorCodeException> {
             storageCredentialService.create("system", createRequest)
         }
 
-        assertThrows<ErrorCodeException>{
+        assertThrows<ErrorCodeException> {
             val createRequest1 = StorageCredentialsCreateRequest("   ", credential)
             storageCredentialService.create("system", createRequest1)
         }
@@ -72,7 +71,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
     @Test
     fun testList() {
         var list = storageCredentialService.list()
-        Assertions.assertEquals(0, list.size )
+        Assertions.assertEquals(0, list.size)
 
         val credential1 = FileSystemCredentials()
         credential1.path = "test"
@@ -84,7 +83,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         storageCredentialService.create("system", createRequest1)
 
         list = storageCredentialService.list()
-        Assertions.assertEquals(1, list.size )
+        Assertions.assertEquals(1, list.size)
 
         val credential2 = InnerCosCredentials()
         credential2.bucket = "test"
@@ -96,12 +95,11 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         storageCredentialService.create("system", createRequest2)
 
         list = storageCredentialService.list()
-        Assertions.assertEquals(2, list.size )
+        Assertions.assertEquals(2, list.size)
 
         storageCredentialService.delete(storageCredentialsKey + "2")
 
         list = storageCredentialService.list()
-        Assertions.assertEquals(1, list.size )
+        Assertions.assertEquals(1, list.size)
     }
-
 }

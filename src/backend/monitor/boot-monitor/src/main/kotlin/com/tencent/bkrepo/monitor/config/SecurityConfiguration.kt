@@ -20,7 +20,7 @@ import java.util.UUID
 
 @Configuration
 @ConfigurationProperties("spring.boot.admin.auth")
-class SecurityConfiguration: WebSecurityConfigurerAdapter() {
+class SecurityConfiguration : WebSecurityConfigurerAdapter() {
 
     @Autowired
     private lateinit var adminServerProperties: AdminServerProperties

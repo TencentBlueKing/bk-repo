@@ -38,7 +38,7 @@ internal class NodeQueryTest @Autowired constructor(
 
     @BeforeEach
     fun setUp() {
-        if(!repositoryService.exist(projectId, repoName)) {
+        if (!repositoryService.exist(projectId, repoName)) {
             repositoryService.create(
                 RepoCreateRequest(
                     projectId = projectId,
@@ -114,7 +114,6 @@ internal class NodeQueryTest @Autowired constructor(
         val metadataMap = node["metadata"] as Map<*, *>
         Assertions.assertEquals("1", metadataMap["key1"])
         Assertions.assertEquals("/a/b/1.txt", node["fullPath"])
-
     }
 
     @Test
@@ -166,7 +165,6 @@ internal class NodeQueryTest @Autowired constructor(
         Assertions.assertEquals(2, result.records.size)
     }
 
-
     private fun createRequest(fullPath: String = "/a/b/c", folder: Boolean = true, size: Long = 1, metadata: Map<String, String>? = null): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = projectId,
@@ -182,5 +180,4 @@ internal class NodeQueryTest @Autowired constructor(
             metadata = metadata
         )
     }
-
 }

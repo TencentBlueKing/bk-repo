@@ -33,8 +33,8 @@ class ListViewService(
 ) {
     fun listNodeView(artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
-            val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(
-                ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
+            val nodeDetail = nodeService.detail(projectId, repoName, artifactUri)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
             val response = HttpContextHolder.getResponse()
             response.contentType = MEDIA_TYPE_HTML
             if (nodeDetail.nodeInfo.folder) {
@@ -173,9 +173,11 @@ class ListViewService(
     companion object {
         private const val GAP = 4
         private const val FOOTER = "BlueKing Repository"
-        private const val BACK_TO = """<a href="../">../</a>"""
+        private const val BACK_TO =
+            """<a href="../">../</a>"""
         private const val EMPTY_CONTENT = "\nEmpty content."
-        private const val FIRST_PART = """
+        private const val FIRST_PART =
+            """
             <!DOCTYPE html>
             <html>
             <head>
@@ -190,7 +192,8 @@ class ListViewService(
                 <pre>
         """
 
-        private const val LAST_PART = """
+        private const val LAST_PART =
+            """
                 </pre>
                 <hr/>
                 <address style="font-size:small;">$FOOTER</address>

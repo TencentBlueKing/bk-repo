@@ -68,8 +68,8 @@ class RepoDataService @Autowired constructor(
     }
 
     fun getFile(sha256: String, length: Long, repoInfo: RepositoryInfo): InputStream {
-        return storageService.load(sha256, Range.ofFull(length), repoInfo.storageCredentials) ?:
-            throw ReplicationException("File data does not exist")
+        return storageService.load(sha256, Range.ofFull(length), repoInfo.storageCredentials)
+            ?: throw ReplicationException("File data does not exist")
     }
 
     fun listRole(projectId: String, repoName: String?): List<Role> {

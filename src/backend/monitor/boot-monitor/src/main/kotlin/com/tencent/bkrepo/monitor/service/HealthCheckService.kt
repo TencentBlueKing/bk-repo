@@ -32,13 +32,14 @@ class HealthCheckService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(HealthCheckService::class.java)
-        val MESSAGE_TEMPLATE = """
+        val MESSAGE_TEMPLATE =
+            """
             <font color="warning">【提醒】</font>服务实例[%s-%s]健康检查失败
              > 集群: %s
              > 组件: %s
              > 状态: %s
              > 详情: %s
              > 时间: %s
-        """.trimIndent()
+            """.trimIndent()
     }
 }

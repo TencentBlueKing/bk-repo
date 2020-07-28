@@ -109,7 +109,7 @@ internal class QuartzJobReloadTest {
         }
     }
 
-    class HelloJob: InterruptableJob {
+    class HelloJob : InterruptableJob {
 
         private lateinit var currentThread: Thread
 

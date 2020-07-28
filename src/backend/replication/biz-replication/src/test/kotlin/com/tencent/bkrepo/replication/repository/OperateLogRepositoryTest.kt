@@ -28,7 +28,7 @@ internal class OperateLogRepositoryTest {
 
     @Test
     fun testInsert() {
-        Assertions.assertEquals(0,opLogRepository.findAll().size)
+        Assertions.assertEquals(0, opLogRepository.findAll().size)
         opLogRepository.insert(createLog("test", "test", "/test/index.txt"))
         opLogRepository.insert(createLog("test", "test", "/test/index2.txt"))
         opLogRepository.insert(createLog("test", "test", "/test/index3.txt"))
@@ -47,5 +47,4 @@ internal class OperateLogRepositoryTest {
             description = description
         )
     }
-
 }

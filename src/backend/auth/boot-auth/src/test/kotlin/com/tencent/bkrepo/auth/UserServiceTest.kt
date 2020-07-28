@@ -59,8 +59,8 @@ class UserServiceTest {
             roleService.deleteRoleByid(it.id!!)
         }
         repeat(repeatTimes) {
-            userService.getUserById(userId + "_" + it)?.let {
-                userService.deleteById(it.userId)
+            userService.getUserById(userId + "_" + it)?.let { user ->
+                userService.deleteById(user.userId)
             }
         }
     }
@@ -105,12 +105,12 @@ class UserServiceTest {
     @Test
     @DisplayName("用户列表测试用例")
     fun listUserTest() {
-        //创建角色
+        // 创建角色
         val roleId = createRole()!!
-        val rids = listOf<String>(roleId)
+        val rids = listOf(roleId)
         var listUser = userService.listUser(rids)
         Assertions.assertTrue(listUser.size >= 0)
-        //创建用户关联角色
+        // 创建用户关联角色
         userService.createUser(createUserRequest())
         userService.addUserToRole(userId, roleId)
         listUser = userService.listUser(rids)
@@ -149,7 +149,7 @@ class UserServiceTest {
         userService.createUser(createUserRequest())
         assertThrows<ErrorCodeException> { userService.addUserToRole(userId, roleId) }
         val roleRequest = CreateRoleRequest(roleId, roleName, RoleType.REPO, testProjectId, testRepoName, false)
-        //创建角色
+        // 创建角色
         val roleId = roleService.createRole(roleRequest)!!
 
         val user = userService.addUserToRole(userId, roleId)
@@ -170,7 +170,7 @@ class UserServiceTest {
         }
         assertThrows<ErrorCodeException> { userService.addUserToRoleBatch(idList, roleId) }
         val roleRequest = CreateRoleRequest(roleId, roleName, RoleType.REPO, testProjectId, testRepoName, false)
-        //创建角色
+        // 创建角色
         val roleId = roleService.createRole(roleRequest)!!
         val isSuccess = userService.addUserToRoleBatch(idList, roleId)
         Assertions.assertTrue(isSuccess)
@@ -199,7 +199,7 @@ class UserServiceTest {
             idList.add(userId)
         }
         val roleRequest = CreateRoleRequest(roleId, roleName, RoleType.REPO, testProjectId, testRepoName, false)
-        //创建角色
+        // 创建角色
         val roleId = roleService.createRole(roleRequest)!!
         val isSuccess = userService.addUserToRoleBatch(idList, roleId)
         Assertions.assertTrue(isSuccess)
@@ -232,7 +232,7 @@ class UserServiceTest {
     fun removeTokenTest() {
         userService.createUser(createUserRequest())
         val userWithToken = userService.createToken(userId)
-        val removeToken = userService.removeToken(userId, userWithToken!!.tokens.get(0).id)
+        val removeToken = userService.removeToken(userId, userWithToken!!.tokens[0].id)
         removeToken?.let {
             Assertions.assertTrue(it.tokens.isEmpty())
         }

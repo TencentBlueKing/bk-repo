@@ -30,7 +30,6 @@ class TaskServiceTest {
     @BeforeEach
     fun beforeEach() {
         taskRepository.deleteAll()
-
     }
 
     @Test
@@ -76,7 +75,6 @@ class TaskServiceTest {
             Assertions.assertEquals(it.type, ReplicationType.FULL)
         }
     }
-
 
     @Test
     fun `delete task`() {
