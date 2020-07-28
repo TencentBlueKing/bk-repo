@@ -19,8 +19,8 @@ object QueryHelper {
 
     fun nodeQuery(projectId: String, repoName: String, fullPath: String? = null, withDetail: Boolean = false): Query {
         val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
-                .and(TNode::repoName.name).`is`(repoName)
-                .and(TNode::deleted.name).`is`(null)
+            .and(TNode::repoName.name).`is`(repoName)
+            .and(TNode::deleted.name).`is`(null)
 
         val query = Query(criteria)
 
@@ -43,9 +43,9 @@ object QueryHelper {
         val formattedPath = NodeUtils.formatPath(path)
         val escapedPath = NodeUtils.escapeRegex(formattedPath)
         val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
-                .and(TNode::repoName.name).`is`(repoName)
-                .and(TNode::deleted.name).`is`(null)
-                .and(TNode::name.name).ne(StringPool.EMPTY)
+            .and(TNode::repoName.name).`is`(repoName)
+            .and(TNode::deleted.name).`is`(null)
+            .and(TNode::name.name).ne(StringPool.EMPTY)
 
         if (deep) {
             criteria.and(TNode::fullPath.name).regex("^$escapedPath")
@@ -75,9 +75,9 @@ object QueryHelper {
 
     fun nodePathUpdate(path: String, name: String, operator: String): Update {
         return update(operator)
-                .set(TNode::path.name, path)
-                .set(TNode::name.name, name)
-                .set(TNode::fullPath.name, path + name)
+            .set(TNode::path.name, path)
+            .set(TNode::name.name, name)
+            .set(TNode::fullPath.name, path + name)
     }
 
     fun nodeExpireDateUpdate(expireDate: LocalDateTime?, operator: String): Update {
@@ -94,7 +94,7 @@ object QueryHelper {
 
     private fun update(operator: String): Update {
         return Update()
-                .set(TNode::lastModifiedDate.name, LocalDateTime.now())
-                .set(TNode::lastModifiedBy.name, operator)
+            .set(TNode::lastModifiedDate.name, LocalDateTime.now())
+            .set(TNode::lastModifiedBy.name, operator)
     }
 }

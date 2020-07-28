@@ -12,7 +12,8 @@ import org.springframework.context.annotation.Configuration
 @ConditionalOnMissingBean(Binder::class)
 @EnableConfigurationProperties(
     MemoryBinderConfigurationProperties::class,
-    MemoryExtendedBindingProperties::class)
+    MemoryExtendedBindingProperties::class
+)
 class MemoryBinderConfiguration {
 
     @Bean

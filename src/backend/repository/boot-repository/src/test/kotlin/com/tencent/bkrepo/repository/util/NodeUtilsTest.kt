@@ -80,11 +80,7 @@ internal class NodeUtilsTest {
         assertEquals("/.*|^/a/", NodeUtils.formatPath("/.*|^/a"))
         assertEquals("/.*|^/a", NodeUtils.formatFullPath("/.*|^/a"))
 
-
         assertEquals("/a/b/", NodeUtils.formatPath("/a/b"))
         assertEquals("/a/b/", NodeUtils.formatPath("/a/b/"))
     }
-
 }
-
-

@@ -34,7 +34,6 @@ import java.io.InputStream
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
-import javax.annotation.Resource
 
 @Service
 class PackageDependentService {
@@ -105,11 +104,13 @@ class PackageDependentService {
         val list = MigrationUtils.split(totalDataSet, count)
         val callableList: MutableList<Callable<Set<String>>> = mutableListOf()
         list.forEach {
-            callableList.add(Callable {
-                RequestContextHolder.setRequestAttributes(attributes)
-                doDependentMigration(artifactInfo, it.toSet())
-                errorSet
-            })
+            callableList.add(
+                Callable {
+                    RequestContextHolder.setRequestAttributes(attributes)
+                    doDependentMigration(artifactInfo, it.toSet())
+                    errorSet
+                }
+            )
         }
         val resultList = ThreadPoolManager.submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start

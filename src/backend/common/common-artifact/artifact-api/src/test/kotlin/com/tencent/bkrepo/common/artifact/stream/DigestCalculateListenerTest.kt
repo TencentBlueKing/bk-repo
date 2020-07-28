@@ -18,7 +18,6 @@ internal class DigestCalculateListenerTest {
         copyTo(content.byteInputStream(), ByteArrayOutputStream(), listener)
         Assertions.assertEquals(md5, listener.md5)
         Assertions.assertEquals(sha256, listener.sha256)
-
     }
 
     private fun copyTo(input: InputStream, out: OutputStream, listener: StreamReceiveListener, bufferSize: Int = DEFAULT_BUFFER_SIZE): Long {
@@ -34,5 +33,4 @@ internal class DigestCalculateListenerTest {
         listener.finished()
         return bytesCopied
     }
-
 }

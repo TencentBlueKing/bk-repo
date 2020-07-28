@@ -49,8 +49,10 @@ class FileReferenceService {
     }
 
     fun increment(sha256: String, credentialsKey: String?): Boolean {
-        val query = Query.query(Criteria.where(TFileReference::sha256.name).`is`(sha256)
-            .and(TFileReference::credentialsKey.name).`is`(credentialsKey))
+        val query = Query.query(
+            Criteria.where(TFileReference::sha256.name).`is`(sha256)
+                .and(TFileReference::credentialsKey.name).`is`(credentialsKey)
+        )
         val update = Update().apply { inc(TFileReference::count.name, 1) }
         fileReferenceDao.upsert(query, update)
         logger.info("Increment reference of file [$sha256] on credentialsKey [$credentialsKey].")
@@ -58,8 +60,10 @@ class FileReferenceService {
     }
 
     fun decrement(sha256: String, credentialsKey: String?): Boolean {
-        val query = Query.query(Criteria.where(TFileReference::sha256.name).`is`(sha256)
-            .and(TFileReference::credentialsKey.name).`is`(credentialsKey))
+        val query = Query.query(
+            Criteria.where(TFileReference::sha256.name).`is`(sha256)
+                .and(TFileReference::credentialsKey.name).`is`(credentialsKey)
+        )
 
         val fileReference = fileReferenceDao.findOne(query) ?: run {
             logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: $sha256 reference not found, create new one.")
@@ -78,8 +82,10 @@ class FileReferenceService {
     }
 
     fun count(sha256: String, credentialsKey: String?): Long {
-        val query = Query.query(Criteria.where(TFileReference::sha256.name).`is`(sha256)
-            .and(TFileReference::credentialsKey.name).`is`(credentialsKey))
+        val query = Query.query(
+            Criteria.where(TFileReference::sha256.name).`is`(sha256)
+                .and(TFileReference::credentialsKey.name).`is`(credentialsKey)
+        )
         return fileReferenceDao.findOne(query)?.count ?: 0
     }
 

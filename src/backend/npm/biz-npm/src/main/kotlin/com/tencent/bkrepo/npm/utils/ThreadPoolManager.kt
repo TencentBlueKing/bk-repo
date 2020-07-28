@@ -48,4 +48,3 @@ object ThreadPoolManager {
         return resultList
     }
 }
-

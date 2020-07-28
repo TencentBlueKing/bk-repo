@@ -26,7 +26,6 @@ import com.tencent.bkrepo.npm.utils.MigrationUtils
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -35,7 +34,6 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
@@ -47,7 +45,6 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
-import javax.annotation.Resource
 
 @Service
 class DataMigrationService {
@@ -171,11 +168,13 @@ class DataMigrationService {
         val list = MigrationUtils.split(totalDataSet, count)
         val callableList: MutableList<Callable<Set<String>>> = mutableListOf()
         list.forEach {
-            callableList.add(Callable {
-                RequestContextHolder.setRequestAttributes(attributes, true)
-                doDataMigration(artifactInfo, it.toSet(), totalDataSet, successSet, errorSet)
-                errorSet
-            })
+            callableList.add(
+                Callable {
+                    RequestContextHolder.setRequestAttributes(attributes, true)
+                    doDataMigration(artifactInfo, it.toSet(), totalDataSet, successSet, errorSet)
+                    errorSet
+                }
+            )
         }
         val resultList = ThreadPoolManager.submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start

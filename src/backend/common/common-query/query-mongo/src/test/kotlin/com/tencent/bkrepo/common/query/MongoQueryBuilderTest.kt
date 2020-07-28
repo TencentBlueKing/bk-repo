@@ -41,9 +41,9 @@ class MongoQueryBuilderTest {
     }
 
     private fun findProjectId(document: Document): Any? {
-        for((key, value) in document) {
-            if(key == "projectId") return value
-            if(key == "\$and") {
+        for ((key, value) in document) {
+            if (key == "projectId") return value
+            if (key == "\$and") {
                 for (element in value as BasicDBList) {
                     findProjectId(element as Document)?.let { return it }
                 }

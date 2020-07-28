@@ -14,7 +14,6 @@ import org.springframework.boot.actuate.endpoint.web.servlet.WebMvcEndpointHandl
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
-import org.springframework.util.StringUtils
 import java.util.ArrayList
 
 @Configuration
@@ -37,13 +36,12 @@ class ActuatorAuthConfiguration {
         allEndpoints.addAll(controllerEndpointsSupplier.endpoints)
         val basePath = webEndpointProperties.basePath
         val endpointMapping = EndpointMapping(basePath)
-        val shouldRegisterLinksMapping = (StringUtils.hasText(basePath)
-            || ManagementPortType.get(environment) == ManagementPortType.DIFFERENT)
+
         val webMvcEndpointHandlerMapping = WebMvcEndpointHandlerMapping(
             endpointMapping, webEndpoints,
             endpointMediaTypes, corsProperties.toCorsConfiguration(),
             EndpointLinksResolver(allEndpoints, basePath),
-            shouldRegisterLinksMapping
+            basePath.isNotBlank() || ManagementPortType.get(environment) == ManagementPortType.DIFFERENT
         )
         webMvcEndpointHandlerMapping.setInterceptors(actuatorAuthInterceptor())
         return webMvcEndpointHandlerMapping

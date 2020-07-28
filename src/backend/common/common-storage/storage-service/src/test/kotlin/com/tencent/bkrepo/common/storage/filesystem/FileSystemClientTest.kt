@@ -33,7 +33,6 @@ class FileSystemClientTest {
                 tempDirectory.delete()
             }
         }
-
     }
 
     @Test
@@ -157,5 +156,4 @@ class FileSystemClientTest {
         fileSystemClient.mergeFiles(listOf(inputFile, inputFile), file)
         assertEquals("Hello, world!Hello, world!", file.readText())
     }
-
 }

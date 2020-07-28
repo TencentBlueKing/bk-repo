@@ -2,7 +2,6 @@ package com.tencent.bkrepo.maven.artifact
 
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.springframework.mock.web.MockHttpServletRequest
 
 class MavenArtifactInfoResolverTest {
@@ -15,10 +14,10 @@ class MavenArtifactInfoResolverTest {
     fun resolverTest() {
         val request = MockHttpServletRequest()
         val mavenArtifactInfo = MavenArtifactInfoResolver().resolve(
-                project,
-                repo,
-                artifactUri,
-                request
+            project,
+            repo,
+            artifactUri,
+            request
         )
         Assertions.assertEquals("org.slf4j", mavenArtifactInfo.groupId)
         Assertions.assertEquals("slf4j-api", mavenArtifactInfo.artifactId)

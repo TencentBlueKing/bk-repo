@@ -26,5 +26,4 @@ object JsonUtils {
     }
 }
 
-
 fun Any.toJsonString() = JsonUtils.objectMapper.writeValueAsString(this).orEmpty()

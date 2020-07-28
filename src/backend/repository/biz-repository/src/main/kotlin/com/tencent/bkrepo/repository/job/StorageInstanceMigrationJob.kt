@@ -79,7 +79,6 @@ class StorageInstanceMigrationJob {
 
             // 校验新文件
             checkNewFile(projectId, repoName, startTime, srcBucket, srcStorageKey, destStorageKey, srcCosClient, destCosClient)
-
         } catch (exception: RuntimeException) {
             logger.error("Migrate storage instance failed.", exception)
         }
@@ -140,13 +139,14 @@ class StorageInstanceMigrationJob {
             } finally {
                 totalCount += 1
             }
-
         }
 
         val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
-        logger.info("Complete check new created files, projectId: $projectId, repoName: $repoName, key: $destStorageKey, " +
-            "total: $totalCount, correct: $correctCount, migrate: $migrateCount, missing data: $dataMissingCount, " +
-            "failed: $failedCount, duration $durationSeconds s totally.")
+        logger.info(
+            "Complete check new created files, projectId: $projectId, repoName: $repoName, key: $destStorageKey, " +
+                "total: $totalCount, correct: $correctCount, migrate: $migrateCount, missing data: $dataMissingCount, " +
+                "failed: $failedCount, duration $durationSeconds s totally."
+        )
     }
 
     private fun migrateOldFile(
@@ -198,9 +198,11 @@ class StorageInstanceMigrationJob {
             nodeList = nodeDao.find(query)
         }
         val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
-        logger.info("Complete migrate old files, projectId: $projectId, repoName: $repoName, key: $destStorageKey, " +
-            "total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally.")
-        assert(total == totalCount) { "$totalCount has been migrated, while $total needs to be migrate."}
+        logger.info(
+            "Complete migrate old files, projectId: $projectId, repoName: $repoName, key: $destStorageKey, " +
+                "total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally."
+        )
+        assert(total == totalCount) { "$totalCount has been migrated, while $total needs to be migrate." }
     }
 
     private fun checkDataExist(sha256: String, cosClient: CosClient): Boolean {

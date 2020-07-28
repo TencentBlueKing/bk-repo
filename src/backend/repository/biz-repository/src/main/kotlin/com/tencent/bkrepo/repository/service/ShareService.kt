@@ -57,10 +57,12 @@ class ShareService(
 
     fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
-            val query = Query.query(Criteria.where(TShareRecord::projectId.name).`is`(artifactInfo.projectId)
-                .and(TShareRecord::repoName.name).`is`(repoName)
-                .and(TShareRecord::fullPath.name).`is`(artifactUri)
-                .and(TShareRecord::token.name).`is`(token))
+            val query = Query.query(
+                Criteria.where(TShareRecord::projectId.name).`is`(artifactInfo.projectId)
+                    .and(TShareRecord::repoName.name).`is`(repoName)
+                    .and(TShareRecord::fullPath.name).`is`(artifactUri)
+                    .and(TShareRecord::token.name).`is`(token)
+            )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, token)
             if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
                 throw ErrorCodeException(CommonMessageCode.PERMISSION_DENIED)
@@ -78,8 +80,8 @@ class ShareService(
     fun list(projectId: String, repoName: String, fullPath: String): List<ShareRecordInfo> {
         val query = Query.query(
             Criteria.where(TShareRecord::projectId.name).`is`(projectId)
-            .and(TShareRecord::repoName.name).`is`(repoName)
-            .and(TShareRecord::fullPath.name).`is`(fullPath)
+                .and(TShareRecord::repoName.name).`is`(repoName)
+                .and(TShareRecord::fullPath.name).`is`(fullPath)
         )
         return mongoTemplate.find(query, TShareRecord::class.java).map { convert(it) }
     }

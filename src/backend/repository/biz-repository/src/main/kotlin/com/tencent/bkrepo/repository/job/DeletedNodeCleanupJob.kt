@@ -47,9 +47,10 @@ class DeletedNodeCleanupJob {
             val expireDate = LocalDateTime.now().minusDays(repositoryProperties.deletedNodeReserveDays)
 
             repoRepository.findAll().forEach { repo ->
-                val query = Query.query(Criteria.where(TNode::projectId.name).`is`(repo.projectId)
-                    .and(TNode::repoName.name).`is`(repo.name)
-                    .and(TNode::deleted.name).lt(expireDate)
+                val query = Query.query(
+                    Criteria.where(TNode::projectId.name).`is`(repo.projectId)
+                        .and(TNode::repoName.name).`is`(repo.name)
+                        .and(TNode::deleted.name).lt(expireDate)
                 ).with(PageRequest.of(0, 1000))
                 var deletedNodeList = nodeDao.find(query)
                 while (deletedNodeList.isNotEmpty()) {
@@ -63,10 +64,11 @@ class DeletedNodeCleanupJob {
                                 fileReferenceChange = fileReferenceService.decrement(node, repo)
                                 fileCleanupCount += 1
                             }
-                            val nodeQuery = Query.query(Criteria.where(TNode::projectId.name).`is`(node.projectId)
-                                .and(TNode::repoName.name).`is`(node.repoName)
-                                .and(TNode::fullPath.name).`is`(node.fullPath)
-                                .and(TNode::deleted.name).`is`(node.deleted)
+                            val nodeQuery = Query.query(
+                                Criteria.where(TNode::projectId.name).`is`(node.projectId)
+                                    .and(TNode::repoName.name).`is`(node.repoName)
+                                    .and(TNode::fullPath.name).`is`(node.fullPath)
+                                    .and(TNode::deleted.name).`is`(node.deleted)
                             )
                             nodeDao.remove(nodeQuery)
                         } catch (ignored: Exception) {
@@ -82,12 +84,13 @@ class DeletedNodeCleanupJob {
                 }
             }
             val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
-            logger.info("[$totalCleanupCount] nodes has been clean up, file[$fileCleanupCount], folder[$folderCleanupCount]" +
-                ", elapse [$elapseTimeMillis] ms totally.")
+            logger.info(
+                "[$totalCleanupCount] nodes has been clean up, file[$fileCleanupCount], folder[$folderCleanupCount]" +
+                    ", elapse [$elapseTimeMillis] ms totally."
+            )
         } else {
             logger.info("Reserve days[${repositoryProperties.deletedNodeReserveDays}] for deleted nodes is less than 0, skip cleaning up.")
         }
-
     }
 
     companion object {

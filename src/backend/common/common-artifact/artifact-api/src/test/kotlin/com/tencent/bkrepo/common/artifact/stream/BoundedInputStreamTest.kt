@@ -60,5 +60,4 @@ internal class BoundedInputStreamTest {
         val byteArray = ByteArray(4096)
         wrapper.read(byteArray)
     }
-
 }

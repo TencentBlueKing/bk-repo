@@ -27,7 +27,7 @@ class MetadataServiceTest @Autowired constructor(
     private val metadataService: MetadataService,
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService
-){
+) {
     private val projectId = "unit-test"
     private val operator = "system"
     private var repoName = "unit-test"
@@ -36,7 +36,7 @@ class MetadataServiceTest @Autowired constructor(
 
     @BeforeEach
     fun setUp() {
-        if(!repositoryService.exist(projectId, repoName)) {
+        if (!repositoryService.exist(projectId, repoName)) {
             repositoryService.create(
                 RepoCreateRequest(
                     projectId = projectId,
@@ -78,7 +78,7 @@ class MetadataServiceTest @Autowired constructor(
         Assertions.assertEquals("value1", dbMetadata["key1"])
         Assertions.assertEquals("value2", dbMetadata["key2"])
     }
-    
+
     @Test
     fun updateTest() {
         val node = nodeService.create(createRequest(defaultMetadata))
@@ -98,7 +98,7 @@ class MetadataServiceTest @Autowired constructor(
         val metadata = mapOf("key1" to "value1", "key2" to "value2", "key3" to "value3")
         val node = nodeService.create(createRequest(metadata))
         // delete
-        metadataService.delete(MetadataDeleteRequest(projectId, repoName,node.fullPath, setOf("key1", "key2", "key0")))
+        metadataService.delete(MetadataDeleteRequest(projectId, repoName, node.fullPath, setOf("key1", "key2", "key0")))
 
         val dbMetadata = metadataService.query(projectId, repoName, node.fullPath)
         Assertions.assertEquals(1, dbMetadata.size)
@@ -120,5 +120,4 @@ class MetadataServiceTest @Autowired constructor(
             operator = operator
         )
     }
-
 }

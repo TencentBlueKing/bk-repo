@@ -99,10 +99,10 @@ class NpmLocalRepository : LocalRepository() {
             if (name == NPM_PACKAGE_TGZ_FILE) {
                 // 校验MIME_TYPE
                 context.contextAttributes[APPLICATION_OCTET_STEAM].takeIf {
-                    it == MediaType.APPLICATION_OCTET_STREAM_VALUE }
-                    ?: throw ArtifactValidateException(
-                        "Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}"
-                    )
+                    it == MediaType.APPLICATION_OCTET_STREAM_VALUE
+                } ?: throw ArtifactValidateException(
+                    "Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}"
+                )
                 // 计算sha1并校验
                 val calculatedSha1 = file.getFile()?.sha1()
                 val uploadSha1 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA1] as String?
@@ -324,8 +324,10 @@ class NpmLocalRepository : LocalRepository() {
             context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
             // hit cache continue
             getCacheArtifact(context)?.let {
-                logger.info("migration package [$name] tgz file $tgzFilePath is exists in repository, skip," +
-                    " current process rate: [${++count}/$totalSize]")
+                logger.info(
+                    "migration package [$name] tgz file $tgzFilePath is exists in repository, skip," +
+                        " current process rate: [${++count}/$totalSize]"
+                )
                 return@forEach
             }
             val request = Request.Builder().url(tarball).get().build()
@@ -334,8 +336,10 @@ class NpmLocalRepository : LocalRepository() {
                 if (checkResponse(response)) {
                     val artifactFile = createTempFile(response.body()!!)
                     putArtifact(context, artifactFile)
-                    logger.info("migration package [$name] tgz file ${tgzFilePath.substringAfter('/')} success," +
-                        " current process rate: [${++count}/$totalSize]")
+                    logger.info(
+                        "migration package [$name] tgz file ${tgzFilePath.substringAfter('/')} success," +
+                            " current process rate: [${++count}/$totalSize]"
+                    )
                     artifactFile.delete()
                 }
             } catch (exception: IOException) {
@@ -410,16 +414,20 @@ class NpmLocalRepository : LocalRepository() {
             val artifactVersionFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
             val fullPath = String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
             context.contextAttributes[NPM_FILE_FULL_PATH] = fullPath
-            if(nodeResource.exist(context.artifactInfo.projectId, context.artifactInfo.repoName, fullPath).data!!) {
-                logger.info("package $name-$version.json is exists in repository, skip," +
-                    " current process rate: [$name: ${++count}/$totalSize]")
+            if (nodeResource.exist(context.artifactInfo.projectId, context.artifactInfo.repoName, fullPath).data!!) {
+                logger.info(
+                    "package $name-$version.json is exists in repository, skip," +
+                        " current process rate: [$name: ${++count}/$totalSize]"
+                )
                 return@forEach
             }
             val nodeCreateRequest = getNodeCreateRequest(context, artifactVersionFile)
             storageService.store(nodeCreateRequest.sha256!!, artifactVersionFile, context.storageCredentials)
             nodeResource.create(nodeCreateRequest)
-            logger.info("migration package $name-$version.json success," +
-                " current process rate: [$name: ${++count}/$totalSize]")
+            logger.info(
+                "migration package $name-$version.json success," +
+                    " current process rate: [$name: ${++count}/$totalSize]"
+            )
             artifactVersionFile.delete()
         }
         // 添加依赖

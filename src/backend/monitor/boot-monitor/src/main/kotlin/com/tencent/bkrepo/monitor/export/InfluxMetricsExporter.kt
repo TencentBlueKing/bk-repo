@@ -44,15 +44,16 @@ class InfluxMetricsExporter(
             .contentType(MediaType.TEXT_PLAIN)
             .body(BodyInserters.fromPublisher(stringSource, String::class.java))
             .exchange()
-            .flatMap { clientResponse -> clientResponse.bodyToMono(String::class.java)
-                .doOnSuccess {
-                    if (clientResponse.statusCode().isError) {
-                        logger.error("Failed to export metrics to influx")
-                        logger.error("HttpStatusCode = {}", clientResponse.statusCode())
-                        logger.error("HttpHeaders = {}", clientResponse.headers().asHttpHeaders())
-                        logger.error("ResponseBody = {}", it)
+            .flatMap { clientResponse ->
+                clientResponse.bodyToMono(String::class.java)
+                    .doOnSuccess {
+                        if (clientResponse.statusCode().isError) {
+                            logger.error("Failed to export metrics to influx")
+                            logger.error("HttpStatusCode = {}", clientResponse.statusCode())
+                            logger.error("HttpHeaders = {}", clientResponse.headers().asHttpHeaders())
+                            logger.error("ResponseBody = {}", it)
+                        }
                     }
-                }
             }.subscribe()
     }
 
@@ -69,18 +70,19 @@ class InfluxMetricsExporter(
         webClient.post()
             .uri("/query?q=$createDatabaseQuery")
             .exchange()
-            .flatMap { clientResponse -> clientResponse.bodyToMono(String::class.java)
-                .doOnSuccess {
-                    if (clientResponse.statusCode().isError) {
-                        logger.error("Unable to create database '{}'", influxExportProperties.db)
-                        logger.error("HttpStatusCode = {}", clientResponse.statusCode())
-                        logger.error("HttpHeaders = {}", clientResponse.headers().asHttpHeaders())
-                        logger.error("ResponseBody = {}", it)
-                    } else {
-                        logger.info("Influx database {} is ready to receive metrics", influxExportProperties.db)
-                        databaseExists = true
+            .flatMap { clientResponse ->
+                clientResponse.bodyToMono(String::class.java)
+                    .doOnSuccess {
+                        if (clientResponse.statusCode().isError) {
+                            logger.error("Unable to create database '{}'", influxExportProperties.db)
+                            logger.error("HttpStatusCode = {}", clientResponse.statusCode())
+                            logger.error("HttpHeaders = {}", clientResponse.headers().asHttpHeaders())
+                            logger.error("ResponseBody = {}", it)
+                        } else {
+                            logger.info("Influx database {} is ready to receive metrics", influxExportProperties.db)
+                            databaseExists = true
+                        }
                     }
-                }
             }.block()
     }
 

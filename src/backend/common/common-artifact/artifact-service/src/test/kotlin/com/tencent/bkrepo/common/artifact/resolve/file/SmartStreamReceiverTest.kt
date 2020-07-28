@@ -22,7 +22,6 @@ internal class SmartStreamReceiverTest {
     private val shortContent = randomString(DEFAULT_BUFFER_SIZE)
     private val longContent = randomString(DEFAULT_BUFFER_SIZE * 20)
 
-    
     @BeforeEach
     fun initAndClean() {
         Files.createDirectories(primaryPath)
@@ -210,7 +209,7 @@ internal class SmartStreamReceiverTest {
 private class RateLimitInputStream(
     private val source: InputStream,
     speed: Int
-): InputStream() {
+) : InputStream() {
 
     private val rateLimiter = RateLimiter.create(speed.toDouble())
 

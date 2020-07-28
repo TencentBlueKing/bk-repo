@@ -17,7 +17,8 @@ class ManifestTypeTest {
     @Test
     @DisplayName("测试通过manifest文件获取type")
     fun manifestFromByteArrayTest() {
-        val data = """{
+        val data =
+            """{
    "schemaVersion": 2,
    "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
    "config": {

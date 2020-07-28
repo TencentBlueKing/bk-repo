@@ -30,15 +30,17 @@ internal class DownloadStatisticsServiceTest @Autowired constructor(
     @Test
     @DisplayName("查询下载量相关测试")
     fun queryTest() {
-        val result = downloadStatisticsService.queryForSpecial("test","npm-local","helloworld-npm-publish",null)
+        val result = downloadStatisticsService.queryForSpecial("test", "npm-local", "helloworld-npm-publish", null)
         System.err.println(result)
     }
 
     @Test
     @DisplayName("查询下载量相关测试")
     fun findTest() {
-        val result = downloadStatisticsService.query("test","npm-local","helloworld-npm-publish",null,LocalDate.now().minusDays(1),
-            LocalDate.now().plusDays(5))
+        val result = downloadStatisticsService.query(
+            "test", "npm-local", "helloworld-npm-publish", null, LocalDate.now().minusDays(1),
+            LocalDate.now().plusDays(5)
+        )
         System.err.println(result)
     }
 }

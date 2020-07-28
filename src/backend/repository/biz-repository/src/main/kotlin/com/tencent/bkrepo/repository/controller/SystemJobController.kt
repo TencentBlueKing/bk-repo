@@ -21,7 +21,6 @@ class SystemJobController(
     private val fileReferenceCleanupJob: FileReferenceCleanupJob
 ) {
 
-
     @GetMapping("/synchronizeFile")
     fun synchronizeFile(): Response<Void> {
         fileSynchronizeJob.run()
@@ -39,8 +38,7 @@ class SystemJobController(
     }
 
     @GetMapping("/cleanup/reference")
-    fun cleanupFileReference(
-    ): Response<Void> {
+    fun cleanupFileReference(): Response<Void> {
         fileReferenceCleanupJob.cleanUp()
         return ResponseBuilder.success()
     }
