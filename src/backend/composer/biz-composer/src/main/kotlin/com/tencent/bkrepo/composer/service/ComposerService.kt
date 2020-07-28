@@ -9,7 +9,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.composer.artifact.ComposerArtifactInfo
-import com.tencent.bkrepo.composer.artifact.repository.ComposerLocalRepository
 import com.tencent.bkrepo.composer.artifact.repository.ComposerRepository
 import org.springframework.stereotype.Service
 

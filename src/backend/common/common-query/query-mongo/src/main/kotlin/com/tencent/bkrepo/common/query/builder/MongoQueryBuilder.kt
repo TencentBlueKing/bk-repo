@@ -66,7 +66,7 @@ open class MongoQueryBuilder {
 
         val query = Query()
         newModel.page.let { query.with(PageRequest.of(it.current, it.size)) }
-        newModel.sort?.let { query.with(Sort(Sort.Direction.fromString(it.direction.name), it.properties)) }
+        newModel.sort?.let { query.with(Sort.by(Sort.Direction.fromString(it.direction.name), *it.properties.toTypedArray())) }
         newModel.select?.forEach { query.fields().include(it) }
         query.addCriteria(resolveRule(queryModel.rule))
 

@@ -2,9 +2,8 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
-import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
-import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.replication.job.ReplicationContext
+import com.tencent.bkrepo.replication.pojo.request.RequestBodyUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
@@ -20,27 +19,19 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.Request
-import okhttp3.RequestBody
 import org.springframework.stereotype.Service
 
 @Service
-class ReplicationService(
-    val repoDataService: RepoDataService
-) {
+class ReplicationService(val repoDataService: RepoDataService) {
+
     fun replicaFile(context: ReplicationContext, request: NodeCreateRequest) {
         with(context) {
             // 查询文件
-            val file = repoDataService.getFile(request.sha256!!, currentRepoDetail.localRepoInfo)
-            if (file.length() != request.size) {
-                throw RuntimeException("File size ${file.length()} does not match node size ${request.size.toString()}")
-            }
-            val fileRequestBody = RequestBody.create(MEDIA_TYPE_STREAM, file)
+            val inputStream = repoDataService.getFile(request.sha256!!, request.size!!, currentRepoDetail.localRepoInfo)
+            val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM!!, inputStream, request.size!!)
             val builder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("file", file.name, fileRequestBody)
-                .addFormDataPart("projectId", request.projectId)
-                .addFormDataPart("repoName", request.repoName)
-                .addFormDataPart("fullPath", request.fullPath)
+                .addFormDataPart("file", request.fullPath, fileRequestBody)
                 .addFormDataPart("size", request.size.toString())
                 .addFormDataPart("sha256", request.sha256!!)
                 .addFormDataPart("md5", request.md5!!)
@@ -48,15 +39,18 @@ class ReplicationService(
             request.metadata?.forEach { (key, value) ->
                 builder.addFormDataPart("metadata[$key]", value)
             }
+            val url = "$normalizedUrl/replica/file/${request.projectId}/${request.repoName}${request.fullPath}"
             val requestBody = builder.build()
-            val request = Request.Builder()
-                .url("$normalizedUrl/replica/file")
+            val httpRequest = Request.Builder()
+                .url(url)
                 .post(requestBody)
                 .build()
-            val response = httpClient.newCall(request).execute()
-            if (!response.isSuccessful) {
-                val responseString = response.body()?.string() ?: UNKNOWN
-                throw RuntimeException("Failed to replica node, response message: $responseString")
+            val response = httpClient.newCall(httpRequest).execute()
+            response.use {
+                if (!response.isSuccessful) {
+                    val responseString = response.body()?.string() ?: UNKNOWN
+                    throw RuntimeException("Failed to replica node, response message: $responseString")
+                }
             }
         }
     }

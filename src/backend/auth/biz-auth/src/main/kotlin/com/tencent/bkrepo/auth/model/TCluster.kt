@@ -4,9 +4,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 
-/**
- * 角色
- */
+// 集群
 @Document("cluster")
 @CompoundIndexes(
     CompoundIndex(name = "clusterId_idx", def = "{'clusterId': 1}", unique = true, background = true)

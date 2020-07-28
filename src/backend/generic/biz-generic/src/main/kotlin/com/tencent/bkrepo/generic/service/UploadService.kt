@@ -57,35 +57,35 @@ class UploadService @Autowired constructor(
 
             expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
             // 判断文件是否存在
-            if (!overwrite && nodeResource.exist(projectId, repoName, fullPath).data == true) {
-                logger.warn("User[$userId] start block upload [${artifactInfo.getFullUri()}] failed: artifact already exists.")
-                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
+            if (!overwrite && nodeResource.exist(projectId, repoName, artifactUri).data == true) {
+                logger.warn("User[$userId] start block upload [$artifactInfo] failed: artifact already exists.")
+                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, artifactUri)
             }
-            val uploadId = storageService.createBlockId()
+
+            val uploadId = storageService.createBlockId(getStorageCredentials())
             val uploadTransaction = UploadTransactionInfo(
                 uploadId = uploadId,
                 expireSeconds = uploadTransactionExpires
             )
 
-            logger.info("User[$userId] start block upload [${artifactInfo.getFullUri()}] success: $uploadTransaction.")
+            logger.info("User[$userId] start block upload [$artifactInfo] success: $uploadTransaction.")
             return uploadTransaction
         }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun abortBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
-        storageService.deleteBlockId(uploadId)
-        logger.info("User[$userId] abort upload block [${artifactInfo.getFullUri()}] success.")
+        val storageCredentials = getStorageCredentials()
+        checkUploadId(uploadId, storageCredentials)
+
+        storageService.deleteBlockId(uploadId, storageCredentials)
+        logger.info("User[$userId] abort upload block [$artifactInfo] success.")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun completeBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
         val storageCredentials = getStorageCredentials()
-        // 判断uploadId是否存在
-        if (!storageService.checkBlockId(uploadId)) {
-            logger.warn("User[$userId] abort block upload [${artifactInfo.getFullUri()}] failed: uploadId not found.")
-            throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
-        }
+        checkUploadId(uploadId, storageCredentials)
 
         val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials)
         // 保存节点
@@ -94,7 +94,7 @@ class UploadService @Autowired constructor(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
                 folder = false,
-                fullPath = artifactInfo.fullPath,
+                fullPath = artifactInfo.artifactUri,
                 sha256 = mergedFileInfo.sha256,
                 md5 = mergedFileInfo.md5,
                 size = mergedFileInfo.size,
@@ -102,18 +102,22 @@ class UploadService @Autowired constructor(
                 operator = userId
             )
         )
-        logger.info("User[$userId] complete upload [${artifactInfo.getFullUri()}] success.")
+        logger.info("User[$userId] complete upload [$artifactInfo] success.")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): List<BlockInfo> {
-        if (!storageService.checkBlockId(uploadId)) throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
-        val blockInfoList = storageService.listBlock(uploadId)
+        val storageCredentials = getStorageCredentials()
+        checkUploadId(uploadId, storageCredentials)
+
+        val blockInfoList = storageService.listBlock(uploadId, storageCredentials)
         return blockInfoList.mapIndexed { index, it -> BlockInfo(size = it.first, sequence = index + 1, sha256 = it.second) }
     }
 
-    fun retry(userId: String, sha256: String) {
-        storageService.manualRetry(sha256, null)
+    private fun checkUploadId(uploadId: String, storageCredentials: StorageCredentials?) {
+        if (!storageService.checkBlockId(uploadId, storageCredentials)) {
+            throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
+        }
     }
 
     private fun getStorageCredentials(): StorageCredentials? {

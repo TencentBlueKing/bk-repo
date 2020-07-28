@@ -8,8 +8,8 @@ package com.tencent.bkrepo.common.artifact.api
 class DefaultArtifactInfo(
     projectId: String,
     repoName: String,
-    fullPath: String
-) : ArtifactInfo(projectId, repoName, fullPath) {
+    artifactUri: String
+) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
         const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
     }

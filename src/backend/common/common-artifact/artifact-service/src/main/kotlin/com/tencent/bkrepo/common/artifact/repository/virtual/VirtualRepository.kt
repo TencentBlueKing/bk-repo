@@ -8,8 +8,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
-import java.io.File
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -39,17 +39,17 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactSearchContext
                 repository.search(subContext)?.let { jsonObj ->
-                    logger.debug("Artifact[${artifactInfo.getFullUri()}] is found it Repository[$repoIdentify].")
+                    logger.debug("Artifact[$artifactInfo] is found it Repository[$repoIdentify].")
                     return jsonObj
-                } ?: logger.debug("Artifact[${artifactInfo.getFullUri()}] is not found in Repository[$repoIdentify], skipped.")
+                } ?: logger.debug("Artifact[$artifactInfo] is not found in Repository[$repoIdentify], skipped.")
             } catch (exception: Exception) {
-                logger.warn("Search Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
+                logger.warn("Search Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
         return null
     }
 
-    override fun onDownload(context: ArtifactDownloadContext): File? {
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         val artifactInfo = context.artifactInfo
         val virtualConfiguration = context.repositoryConfiguration as VirtualConfiguration
         val repoList = virtualConfiguration.repositoryList
@@ -64,12 +64,12 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactDownloadContext
-                repository.onDownload(subContext)?.let { file ->
-                    logger.debug("Artifact[${artifactInfo.getFullUri()}] is found it Repository[$repoIdentify].")
-                    return file
-                } ?: logger.debug("Artifact[${artifactInfo.getFullUri()}] is not found in Repository[$repoIdentify], skipped.")
+                repository.onDownload(subContext)?.let {
+                    logger.debug("Artifact[$artifactInfo] is found it Repository[$repoIdentify].")
+                    return it
+                } ?: logger.debug("Artifact[$artifactInfo] is not found in Repository[$repoIdentify], skipped.")
             } catch (exception: Exception) {
-                logger.warn("Download Artifact[${artifactInfo.getFullUri()}] from Repository[$repoIdentify] failed: ${exception.message}")
+                logger.warn("Download Artifact[$artifactInfo] from Repository[$repoIdentify] failed: ${exception.message}")
             }
         }
         return null

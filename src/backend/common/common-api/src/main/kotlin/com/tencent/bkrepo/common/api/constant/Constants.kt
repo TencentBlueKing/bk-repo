@@ -36,3 +36,8 @@ const val MS_AUTH_HEADER_UID: String = "X-BKREPO-MS-UID"
 const val EXCEPTION_LOGGER_NAME = "ExceptionLogger"
 const val JOB_LOGGER_NAME = "JobLogger"
 const val ACCESS_LOGGER_NAME = "AccessLogger"
+
+/**
+ * Returns the default buffer size when working with buffered streams.
+ */
+const val STREAM_BUFFER_SIZE: Int = 8 * 1024

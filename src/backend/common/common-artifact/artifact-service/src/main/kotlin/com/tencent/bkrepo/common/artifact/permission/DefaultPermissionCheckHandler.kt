@@ -15,7 +15,7 @@ open class DefaultPermissionCheckHandler : PermissionCheckHandler {
     @Autowired
     private lateinit var permissionService: PermissionService
 
-    override fun onPermissionCheck(userId: String, permission: Permission, artifactInfo: ArtifactInfo, repositoryInfo: RepositoryInfo) {
+    override fun onPermissionCheck(userId: String, permission: Permission, repositoryInfo: RepositoryInfo, artifactInfo: ArtifactInfo?) {
         permissionService.checkPermission(userId, permission.type, permission.action, repositoryInfo)
     }
 

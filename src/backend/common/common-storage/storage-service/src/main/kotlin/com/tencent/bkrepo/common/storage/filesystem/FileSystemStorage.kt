@@ -1,8 +1,13 @@
 package com.tencent.bkrepo.common.storage.filesystem
 
+import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.bound
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import java.io.File
+import java.io.InputStream
 import java.nio.file.Paths
 
 /**
@@ -14,7 +19,15 @@ import java.nio.file.Paths
 open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSystemClient>() {
 
     override fun store(path: String, filename: String, file: File, client: FileSystemClient) {
-        client.store(path, filename, file)
+        file.inputStream().use {
+            client.store(path, filename, it, file.length())
+        }
+    }
+
+    override fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: FileSystemClient) {
+        inputStream.use {
+            client.store(path, filename, it, size)
+        }
     }
 
     override fun load(path: String, filename: String, received: File, client: FileSystemClient): File? {
@@ -28,6 +41,10 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
         }
     }
 
+    override fun load(path: String, filename: String, range: Range, client: FileSystemClient): InputStream? {
+        return client.load(path, filename)?.bound(range)
+    }
+
     override fun delete(path: String, filename: String, client: FileSystemClient) {
         client.delete(path, filename)
     }
@@ -36,11 +53,10 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
         return client.exist(path, filename)
     }
 
-    override fun getDefaultCredentials() = storageProperties.filesystem
     override fun onCreateClient(credentials: FileSystemCredentials) = FileSystemClient(credentials.path)
-    override fun getTempPath() = Paths.get(storageProperties.filesystem.path, TEMP).toString()
 
-    companion object {
-        const val TEMP = "temp"
+    override fun getTempPath(storageCredentials: StorageCredentials): String {
+        storageCredentials as FileSystemCredentials
+        return Paths.get(storageCredentials.path, TEMP).toString()
     }
 }

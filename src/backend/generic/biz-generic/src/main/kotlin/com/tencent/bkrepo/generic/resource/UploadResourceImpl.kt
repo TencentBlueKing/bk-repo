@@ -22,9 +22,8 @@ class UploadResourceImpl @Autowired constructor(
     private val uploadService: UploadService
 ) : UploadResource {
 
-    override fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile): Response<Void> {
+    override fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile){
         uploadService.upload(artifactInfo, file)
-        return ResponseBuilder.success()
     }
 
     override fun startBlockUpload(userId: String, artifactInfo: GenericArtifactInfo): Response<UploadTransactionInfo> {
@@ -43,10 +42,5 @@ class UploadResourceImpl @Autowired constructor(
 
     override fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): Response<List<BlockInfo>> {
         return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
-    }
-
-    override fun retry(userId: String, sha256: String): Response<Void> {
-        uploadService.retry(userId, sha256)
-        return ResponseBuilder.success()
     }
 }

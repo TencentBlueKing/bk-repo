@@ -1,19 +1,19 @@
 package com.tencent.bkrepo.common.storage.core.cache
 
+import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.bound
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import org.apache.commons.lang.RandomStringUtils
-import org.springframework.beans.factory.annotation.Autowired
-import java.io.File
-import java.nio.file.Files
-import java.nio.file.Path
+import java.io.InputStream
 import java.nio.file.Paths
+import java.util.concurrent.Executor
+import javax.annotation.Resource
 
 /**
  * 支持缓存的存储服务
@@ -23,92 +23,97 @@ import java.nio.file.Paths
  */
 class CacheStorageService : AbstractStorageService() {
 
-    @Autowired
-    private lateinit var storageProperties: StorageProperties
-
-    private val tempPath: Path by lazy { Paths.get(storageProperties.cache.path, temp) }
-
-    private val cacheClient: FileSystemClient by lazy { FileSystemClient(storageProperties.cache.path) }
+    @Resource
+    private lateinit var taskAsyncExecutor: Executor
 
     override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
-        val cachedFile = cacheClient.store(path, filename, artifactFile.getFile())
-        fileStorage.store(path, filename, cachedFile, credentials)
+        when {
+            artifactFile.isInMemory() -> {
+                fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)
+            }
+            artifactFile.isFallback() -> {
+                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
+            }
+            else -> {
+                val cachedFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
+                taskAsyncExecutor.execute {
+                    fileStorage.store(path, filename, cachedFile, credentials)
+                }
+            }
+        }
     }
 
-    override fun doStore(path: String, filename: String, file: File, credentials: StorageCredentials) {
-        val cachedFile = cacheClient.store(path, filename, file)
-        fileStorage.store(path, filename, cachedFile, credentials)
-    }
-
-    override fun doLoad(path: String, filename: String, credentials: StorageCredentials): File? {
-        return cacheClient.load(path, filename) ?: run {
-            val cachedFile = cacheClient.touch(path, filename)
-            fileStorage.load(path, filename, cachedFile, credentials) ?: run {
-                cachedFile.deleteOnExit()
-                null
+    override fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): InputStream? {
+        val cacheClient = getCacheClient(credentials)
+        return if (isLoadCacheFirst(range, credentials)) {
+            val cachedFile = cacheClient.load(path, filename) ?: run {
+                val newCacheFile = cacheClient.touch(path, filename)
+                fileStorage.load(path, filename, newCacheFile, credentials) ?: run {
+                    cacheClient.delete(path, filename)
+                    null
+                }
+            }
+            cachedFile?.bound(range)
+        } else {
+            fileStorage.load(path, filename, range, credentials) ?: run {
+                getCacheClient(credentials).load(path, filename)?.bound(range)
             }
         }
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
         fileStorage.delete(path, filename, credentials)
-        cacheClient.delete(path, filename)
+        getCacheClient(credentials).delete(path, filename)
     }
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
         return fileStorage.exist(path, filename, credentials)
     }
 
-    override fun doManualRetry(path: String, filename: String, credentials: StorageCredentials) {
-        val cachedFile = cacheClient.load(path, filename) ?: throw RuntimeException("File [$filename] is missing.")
-        fileStorage.store(path, filename, cachedFile, credentials)
+    override fun getTempPath(credentials: StorageCredentials): String {
+        return Paths.get(credentials.cache.path, TEMP).toString()
     }
 
-    override fun getTempPath(): String? {
-        return tempPath.toString()
-    }
-
-    override fun cleanUp(): CleanupResult {
-        return cacheClient.cleanUp(storageProperties.cache.expireDays)
+    /**
+     * 覆盖父类cleanUp逻辑，还包括清理缓存的文件内容
+     */
+    override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        return getCacheClient(credentials).cleanUp(credentials.cache.expireDays)
     }
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
         val credentials = getCredentialsOrDefault(storageCredentials)
+        val tempPath = Paths.get(credentials.cache.path, TEMP)
         val visitor = FileSynchronizeVisitor(tempPath, fileLocator, fileStorage, credentials)
-        cacheClient.walk(visitor)
+        getCacheClient(credentials).walk(visitor)
         return visitor.checkResult
     }
 
     override fun doCheckHealth(credentials: StorageCredentials) {
-        val filename = System.nanoTime().toString()
-        val randomSize = 100
-
-        val content = RandomStringUtils.randomAlphabetic(randomSize)
-        var receiveFile: File? = null
-        try {
-            receiveFile = Files.createTempFile(HEALTH_CHECK_PREFIX, filename).toFile()
-            // 写文件
-            val file = cacheClient.store(HEALTH_CHECK_PATH, filename, content.byteInputStream(), randomSize.toLong(), true)
-            fileStorage.synchronizeStore(HEALTH_CHECK_PATH, filename, file, credentials)
-            // 读文件
-            val cachedFile = cacheClient.load(HEALTH_CHECK_PATH, filename)
-            fileStorage.load(HEALTH_CHECK_PATH, filename, receiveFile, credentials)
-            assert(cachedFile != null) { "Failed to load cached file." }
-            assert(receiveFile != null) { "Failed to load file." }
-            assert(content == receiveFile!!.readText()) {"File content inconsistent."}
-            assert(content == cachedFile!!.readText()) {"File content inconsistent."}
-
-        } catch (exception: Exception) {
-            throw exception
-        } finally {
-            // 删除文件
-            cacheClient.delete(HEALTH_CHECK_PATH, filename)
-            fileStorage.delete(HEALTH_CHECK_PATH, filename, credentials)
-            receiveFile?.deleteOnExit()
+        if (!monitor.health.get()) {
+            throw RuntimeException("Cache storage is unhealthy: ${monitor.reason}")
         }
+        super.doCheckHealth(credentials)
     }
 
-    companion object {
-        const val temp = "temp"
+    /**
+     * 判断是否优先从缓存加载数据
+     * 判断规则:
+     * 当cacheFirst开启，并且cache磁盘健康，并且当前文件未超过内存阈值大小
+     */
+    private fun isLoadCacheFirst(range: Range, credentials: StorageCredentials): Boolean {
+        val isExceedThreshold = range.total > storageProperties.fileSizeThreshold.toBytes()
+        val isHealth = if (credentials == storageProperties.defaultStorageCredentials()) {
+            monitor.health.get()
+        } else {
+            true
+        }
+        val cacheFirst = credentials.cache.loadCacheFirst
+        return cacheFirst && isHealth && isExceedThreshold
+    }
+
+    private fun getCacheClient(credentials: StorageCredentials): FileSystemClient {
+        return FileSystemClient(credentials.cache.path)
     }
 }

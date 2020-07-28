@@ -25,7 +25,7 @@ class WebHookService {
             val configuration = context.repositoryConfiguration as LocalConfiguration
             val artifact = context.artifactInfo
             configuration.webHookConfiguration?.webHookInfoList?.let {
-                val data = ArtifactWebHookData(artifact.projectId, artifact.repoName, artifact.artifactUri, type)
+                val data = ArtifactWebHookData(artifact.projectId, artifact.repoName, artifact.artifact, artifact.version, type)
                 val requestBody = RequestBody.create(jsonMediaType, JsonUtils.objectMapper.writeValueAsString(data))
                 it.forEach { info -> remoteCall(info, requestBody) }
             }

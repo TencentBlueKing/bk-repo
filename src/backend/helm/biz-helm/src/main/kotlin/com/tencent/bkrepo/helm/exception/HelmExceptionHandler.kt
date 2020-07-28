@@ -42,6 +42,13 @@ class HelmExceptionHandler {
         helmResponse(responseObject, exception)
     }
 
+    @ExceptionHandler(HelmErrorInvalidProvenanceFileException::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handlerHelmErrorInvalidProvenanceFileException(exception: HelmErrorInvalidProvenanceFileException) {
+        val responseObject = HelmErrorResponse(exception.message)
+        helmResponse(responseObject, exception)
+    }
+
     @ExceptionHandler(HelmFileNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerHelmFileNotFoundException(exception: HelmFileNotFoundException) {
@@ -60,7 +67,9 @@ class HelmExceptionHandler {
     private fun logHelmException(exception: Exception) {
         val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val uri = HttpContextHolder.getRequest().requestURI
-        logger.warn("User[$userId] access resource[$uri] failed[${exception.javaClass.simpleName}]: ${exception.message}")
+        logger.warn(
+            "User[$userId] access resource[$uri] failed[${exception.javaClass.simpleName}]: ${exception.message}"
+        )
     }
 
     companion object {

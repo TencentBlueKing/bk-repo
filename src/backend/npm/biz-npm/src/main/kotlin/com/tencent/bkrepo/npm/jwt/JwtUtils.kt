@@ -3,6 +3,7 @@ package com.tencent.bkrepo.npm.jwt
 import com.tencent.bkrepo.npm.exception.NpmTokenIllegalException
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
+import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import org.apache.commons.codec.binary.Base64
@@ -65,7 +66,7 @@ object JwtUtils {
                 .parseClaimsJws(token).body
         } catch (expire: ExpiredJwtException) {
             throw NpmTokenIllegalException("token is expired")
-        } catch (e: Exception) {
+        } catch (ex: JwtException) {
             // token 校验失败, 抛出Token验证非法异常
             throw NpmTokenIllegalException("bad props auth token:\nbasictoken=$token")
         }

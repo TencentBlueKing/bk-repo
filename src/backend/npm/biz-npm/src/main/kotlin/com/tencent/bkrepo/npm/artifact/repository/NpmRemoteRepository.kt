@@ -10,30 +10,30 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.util.FileDigestUtils
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.ID
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
+import com.tencent.bkrepo.npm.constants.NPM_PKG_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_FULL_PATH
 import com.tencent.bkrepo.npm.constants.OBJECTS
 import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.VERSIONS
-import com.tencent.bkrepo.npm.exception.NpmArgumentResolverException
-import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.util.NodeUtils
 import okhttp3.Request
 import okhttp3.Response
-import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import java.io.File
+import java.io.IOException
+import java.io.InputStream
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -44,8 +44,8 @@ class NpmRemoteRepository : RemoteRepository() {
     @Value("\${npm.tarball.prefix}")
     private val tarballPrefix: String = StringPool.SLASH
 
-    override fun onDownload(context: ArtifactDownloadContext): File? {
-        getCacheArtifact(context)?.let { return it }
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        getCacheArtifactResource(context)?.let { return it }
         val tgzFile = super.onDownload(context)
         installPkgVersionFile(context)
         return tgzFile
@@ -61,38 +61,34 @@ class NpmRemoteRepository : RemoteRepository() {
         return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
     }
 
-    override fun getCacheNodeCreateRequest(context: ArtifactDownloadContext, file: File): NodeCreateRequest {
-        val repositoryInfo = context.repositoryInfo
-        val sha256 = FileDigestUtils.fileSha256(listOf(file.inputStream()))
-        val md5 = FileDigestUtils.fileMd5(listOf(file.inputStream()))
-        return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
-            folder = false,
-            fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String,
-            size = file.length(),
-            sha256 = sha256,
-            md5 = md5,
-            overwrite = true,
-            operator = context.userId
+    override fun getCacheNodeCreateRequest(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeCreateRequest {
+        val nodeCreateRequest = super.getCacheNodeCreateRequest(context, artifactFile)
+        return nodeCreateRequest.copy(
+            fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         )
     }
 
-    private fun getCacheArtifact(context: ArtifactTransferContext): File? {
+    private fun getCacheArtifactResource(context: ArtifactTransferContext): ArtifactResource? {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
         if (!cacheConfiguration.cacheEnabled) return null
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data ?: return null
-        if (node.nodeInfo.folder) return null
+        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+        if (node == null || node.nodeInfo.folder) return null
         val createdDate = LocalDateTime.parse(node.nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
-            val file = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
-            file?.let { logger.debug("Cached remote artifact[${context.artifactInfo.getFullUri()}] is hit") }
-            file
+            storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)?.run {
+                logger.debug("Cached remote artifact[${context.artifactInfo}] is hit")
+                ArtifactResource(this, determineArtifactName(context), node.nodeInfo)
+            }
         } else null
+    }
+
+    override fun determineArtifactName(context: ArtifactTransferContext): String {
+        val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
+        return NodeUtils.getName(fullPath)
     }
 
     /**
@@ -101,61 +97,35 @@ class NpmRemoteRepository : RemoteRepository() {
     fun installPkgVersionFile(context: ArtifactDownloadContext) {
         val tgzFullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         val pkgInfo = parseArtifactInfo(tgzFullPath)
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
-        val httpClient = createHttpClient(remoteConfiguration)
-        val searchUri = buildRemoteUri(context, pkgInfo)
-        val request = Request.Builder().url(searchUri).build()
-        var response: Response? = null
+        context.contextAttributes[NPM_FILE_FULL_PATH] =
+            String.format(NPM_PKG_FULL_PATH, pkgInfo.first)
         try {
-            response = httpClient.newCall(request).execute()
-            if (checkResponse(response)) {
-                val file = response.body()?.let { createTempFile(it) }
-                    ?: throw NpmArtifactNotFoundException("file $tgzFullPath download failed.")
-                val jsonFile = transFileToJson(file)
-                val versionFile = jsonFile.getAsJsonObject(VERSIONS).getAsJsonObject(pkgInfo.third)
-                val artifactFile = ArtifactFileFactory.build(0)
-                GsonUtils.gsonToInputStream(versionFile).use { input ->
-                    artifactFile.getOutputStream().use { output ->
-                        Streams.copy(input, output, true)
-                    }
-                }
-                val name = jsonFile[NAME].asString
-                context.contextAttributes[NPM_FILE_FULL_PATH] =
-                    String.format(NPM_PKG_VERSION_FULL_PATH, name, name, pkgInfo.third)
-                putArtifactCache(context, artifactFile.getTempFile())
-            }
-        } catch (exception: Exception) {
-            logger.info("http send [$searchUri] failed, ", exception)
-            throw exception
-        } finally {
-            if (response != null) {
-                response.body()?.close()
-            }
+            val artifactResource = getCacheArtifactResource(context) ?: return
+            val jsonFile = transFileToJson(artifactResource.inputStream)
+            val versionFile = jsonFile.getAsJsonObject(VERSIONS).getAsJsonObject(pkgInfo.second)
+            val artifact = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
+            val name = jsonFile[NAME].asString
+            context.contextAttributes[NPM_FILE_FULL_PATH] =
+                String.format(NPM_PKG_VERSION_FULL_PATH, name, name, pkgInfo.second)
+            putArtifactCache(context, artifact)
+        } catch (ex: TypeCastException) {
+            logger.warn("cache artifact [${pkgInfo.first}-${pkgInfo.second}.json] failed, {}", ex.message)
         }
     }
 
-    private fun buildRemoteUri(context: ArtifactTransferContext, pkgInfo: Triple<String, String, String>): String {
-        val projectId = context.artifactInfo.projectId
-        val repoName = context.artifactInfo.repoName
-        val url = HttpContextHolder.getRequest().requestURL.toString().substringBeforeLast("/$projectId/")
-        val remoteUrl = "$url/$projectId/$repoName/${pkgInfo.first}/${pkgInfo.second}"
-        logger.info("request remote url for package info : $remoteUrl")
-        return remoteUrl
-    }
-
-    private fun parseArtifactInfo(tgzFullPath: String): Triple<String, String, String> {
-        val pkgVersion = tgzFullPath.substringAfterLast('/').substringBeforeLast(".tgz")
-        val split = tgzFullPath.trimStart('/').split('/')
-        val scope = if (split[0].startsWith('@')) split[0] else StringPool.EMPTY
-        val pkgName = if (!split[0].startsWith('@')) split[0] else split[1]
-        val version = pkgVersion.substring(pkgName.length + 1)
-        if (split.size < 2) throw NpmArgumentResolverException("artifact $scope/$pkgName/$version resolver failed!")
-        return Triple(scope, pkgName, version)
+    private fun parseArtifactInfo(tgzFullPath: String): Pair<String, String> {
+        val pkgList = tgzFullPath.split('/').filter { it.isNotBlank() }.map { it.trim() }.toList()
+        var pkgName = pkgList[0]
+        if (pkgList[1].contains('@')) {
+            pkgName = pkgList[0] + pkgList[1]
+        }
+        val version = pkgList.last().substringAfterLast('-').substringBeforeLast(".tgz")
+        return Pair(pkgName, version)
     }
 
     override fun search(context: ArtifactSearchContext): JsonObject? {
-        getCacheArtifact(context)?.let {
-            return transFileToJson(it)
+        getCacheArtifactResource(context)?.let {
+            return transFileToJson(it.inputStream)
         }
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val httpClient = createHttpClient(remoteConfiguration)
@@ -166,11 +136,14 @@ class NpmRemoteRepository : RemoteRepository() {
             response = httpClient.newCall(request).execute()
             if (checkResponse(response)) {
                 val file = createTempFile(response.body()!!)
-                putArtifactCache(context, file)
-                transFileToJson(file)
+                val downloadContext = ArtifactDownloadContext()
+                downloadContext.contextAttributes = context.contextAttributes
+                val resultJson = transFileToJson(file.getInputStream())
+                putArtifactCache(downloadContext, file)
+                resultJson
             } else null
-        } catch (exception: Exception) {
-            logger.info("http send [$searchUri] failed, ", exception)
+        } catch (exception: IOException) {
+            logger.error("http send [$searchUri] failed, {}", exception.message)
             throw exception
         } finally {
             if (response != null) {
@@ -179,8 +152,8 @@ class NpmRemoteRepository : RemoteRepository() {
         }
     }
 
-    private fun transFileToJson(file: File): JsonObject {
-        val pkgJson = GsonUtils.transferFileToJson(file)
+    private fun transFileToJson(inputStream: InputStream): JsonObject {
+        val pkgJson = GsonUtils.transferInputStreamToJson(inputStream)
         val name = pkgJson.get(NAME).asString
         val id = pkgJson[ID].asString
         if (id.substring(1).contains('@')) {
@@ -210,40 +183,11 @@ class NpmRemoteRepository : RemoteRepository() {
         return "$replace/$projectId/$repoName"
     }
 
-    private fun putArtifactCache(context: ArtifactTransferContext, file: File) {
-        val jsonObj = GsonUtils.transferFileToJson(file)
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
-        val cacheConfiguration = remoteConfiguration.cacheConfiguration
-        val pkgFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(jsonObj).byteInputStream())
-        if (cacheConfiguration.cacheEnabled) {
-            val nodeCreateRequest = getNodeCreateRequest(context, pkgFile)
-            nodeResource.create(nodeCreateRequest)
-            storageService.store(nodeCreateRequest.sha256!!, pkgFile, context.storageCredentials)
-        }
-    }
-
     private fun generateRemoteSearchUrl(context: ArtifactSearchContext): String {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val tarballPrefix = getTarballPrefix(context)
         val requestURL = context.request.requestURL.toString()
         return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
-    }
-
-    private fun getNodeCreateRequest(context: ArtifactTransferContext, file: ArtifactFile): NodeCreateRequest {
-        val repositoryInfo = context.repositoryInfo
-        val sha256 = FileDigestUtils.fileSha256(listOf(file.getInputStream()))
-        val md5 = FileDigestUtils.fileMd5(listOf(file.getInputStream()))
-        return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
-            folder = false,
-            fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String,
-            size = file.getSize(),
-            sha256 = sha256,
-            md5 = md5,
-            overwrite = true,
-            operator = context.userId
-        )
     }
 
     override fun list(context: ArtifactListContext): NpmSearchResponse {
@@ -253,7 +197,9 @@ class NpmRemoteRepository : RemoteRepository() {
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
         return if (checkResponse(response)) {
-            NpmSearchResponse(GsonUtils.gsonToMaps<Any>(response.body()!!.string())?.get(OBJECTS) as MutableList<Map<String, Any>>)
+            NpmSearchResponse(
+                GsonUtils.gsonToMaps<MutableList<Map<String, Any>>>(response.body()!!.string())?.get(OBJECTS)!!
+            )
         } else NpmSearchResponse()
     }
 

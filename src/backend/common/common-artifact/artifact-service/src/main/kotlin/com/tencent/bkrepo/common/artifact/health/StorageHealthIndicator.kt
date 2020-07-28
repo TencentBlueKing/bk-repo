@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 @Component("storageHealthIndicator")
 class StorageHealthIndicator(
     private val storageService: StorageService
-): AbstractHealthIndicator() {
+) : AbstractHealthIndicator() {
     override fun doHealthCheck(builder: Health.Builder) {
         storageService.checkHealth()
         builder.up()

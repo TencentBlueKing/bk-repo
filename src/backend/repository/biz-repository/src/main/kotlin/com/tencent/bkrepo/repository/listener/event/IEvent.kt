@@ -10,4 +10,5 @@ abstract class IEvent(val userId: String) {
     abstract fun getOperateType(): OperateType
     abstract fun getResourceType(): ResourceType
     abstract fun getResourceKey(): String
+    abstract fun getRequest(): Map<String, Any>
 }

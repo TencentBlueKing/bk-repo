@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.composer.util
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -7,9 +10,16 @@ import java.lang.Exception
 
 object JsonUtil {
 
+    val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule())
+
+    init {
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    }
+
     /**
      * get value with json-param, if string is json-format
-     * @param param
+     * @param this json 字符串
+     * @param param json 属性
      */
     @Throws(Exception::class)
     infix fun String.jsonValue(param: String): String {
@@ -42,10 +52,10 @@ object JsonUtil {
     @Throws(Exception::class)
     fun String.wrapperPackageJson(host: String): String {
         val jsonObject = JsonParser().parse(this).asJsonObject
-        val searchObject = jsonObject.get("search").asString?.let {
+        jsonObject.get("search").asString?.let {
             jsonObject.addProperty("search", "$host$it")
         }
-        val providersUrlObject = jsonObject.get("providers-lazy-url").asString?.let {
+        jsonObject.get("providers-lazy-url").asString?.let {
             jsonObject.addProperty("providers-lazy-url", "$host$it")
         }
         return GsonBuilder().create().toJson(jsonObject)

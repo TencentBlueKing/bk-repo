@@ -13,9 +13,10 @@ import javax.annotation.PreDestroy
 class HealthSourceService(
     private val monitorProperties: MonitorProperties,
     private val instanceRegistry: InstanceRegistry,
-    private val instanceWebClient: InstanceWebClient
+    instanceWebClientBuilder: InstanceWebClient.Builder
 ) {
 
+    private val instanceWebClient = instanceWebClientBuilder.build()
     val healthSourceMap: MutableMap<HealthEndpoint, InstanceHealthSource> = mutableMapOf()
 
     init {

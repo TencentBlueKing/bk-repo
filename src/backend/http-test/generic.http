@@ -1,3 +1,26 @@
+### 上传空文件
+PUT http://{{genericHost}}/{{project}}/{{repo}}/empty
+Authorization: Basic {{username}} {{password}}
+X-BKREPO-OVERWRITE: true
+X-BKREPO-META-key: value
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+    });
+%}
+
+### 下载空文件
+GET http://{{genericHost}}/{{project}}/{{repo}}/empty
+Authorization: Basic {{username}} {{password}}
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 200, 'Response status is not 200');
+        client.assert(response.body === '', 'Response content invalid');
+    });
+%}
+
 ### 上传文件
 PUT http://{{genericHost}}/{{project}}/{{repo}}/test.txt
 Authorization: Basic {{username}} {{password}}
@@ -134,6 +157,43 @@ Range: bytes=-2
         client.assert(response.status === 206, 'Response status is not 206');
         client.assert(response.headers.valueOf("Content-Range") === 'bytes 8-9/10', 'Response Content-Range invalid');
         client.assert(response.body === '22', 'Response content invalid');
+    });
+%}
+
+### 断点续传 full
+GET http://{{genericHost}}/{{project}}/{{repo}}/block.txt
+Authorization: Basic {{username}} {{password}}
+Range: bytes=0-9
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 206, 'Response status is not 206');
+        client.assert(response.headers.valueOf("Content-Range") === 'bytes 0-9/10', 'Response Content-Range invalid');
+        client.assert(response.body === '1111122222', 'Response content invalid');
+    });
+%}
+
+### 断点续传 full + 1
+GET http://{{genericHost}}/{{project}}/{{repo}}/block.txt
+Authorization: Basic {{username}} {{password}}
+Range: bytes=0-10
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 206, 'Response status is not 206');
+        client.assert(response.headers.valueOf("Content-Range") === 'bytes 0-9/10', 'Response Content-Range invalid');
+        client.assert(response.body === '1111122222', 'Response content invalid');
+    });
+%}
+
+### 断点续传 error
+GET http://{{genericHost}}/{{project}}/{{repo}}/block.txt
+Authorization: Basic {{username}} {{password}}
+Range: bytes=-2-1
+
+> {%
+    client.test('Request executed successfully', function() {
+        client.assert(response.status === 416, 'Response status is not 416');
     });
 %}
 ###

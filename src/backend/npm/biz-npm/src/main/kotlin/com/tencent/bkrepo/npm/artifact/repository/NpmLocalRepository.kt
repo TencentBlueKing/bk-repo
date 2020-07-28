@@ -7,7 +7,6 @@ import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
-import com.tencent.bkrepo.common.artifact.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
@@ -16,8 +15,10 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
-import com.tencent.bkrepo.common.artifact.util.response.ServletResponseUtils
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -53,6 +54,7 @@ import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
@@ -60,7 +62,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
-import org.apache.commons.fileupload.util.Streams
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -68,7 +69,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
-import java.io.File
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -87,7 +88,7 @@ class NpmLocalRepository : LocalRepository() {
     private lateinit var npmDependentHandler: NpmDependentHandler
 
     private val okHttpClient: OkHttpClient by lazy {
-        HttpClientBuilderFactory.create().readTimeout(60L, TimeUnit.SECONDS).build()
+        HttpClientBuilderFactory.create().readTimeout(TIMEOUT, TimeUnit.SECONDS).build()
     }
 
     override fun onUploadValidate(context: ArtifactUploadContext) {
@@ -123,10 +124,10 @@ class NpmLocalRepository : LocalRepository() {
         val repositoryInfo = context.repositoryInfo
         val artifactFile = context.getArtifactFile(name)
         val contextAttributes = context.contextAttributes
-        val fileSha256Map = context.contextAttributes[ATTRIBUTE_SHA256MAP] as Map<String, String>
-        val fileMd5Map = context.contextAttributes[ATTRIBUTE_MD5MAP] as Map<String, String>
-        val sha256 = fileSha256Map[name]
-        val md5 = fileMd5Map[name]
+        val fileSha256Map = context.contextAttributes[ATTRIBUTE_SHA256MAP] as Map<*, *>
+        val fileMd5Map = context.contextAttributes[ATTRIBUTE_MD5MAP] as Map<*, *>
+        val sha256 = fileSha256Map[name] as? String
+        val md5 = fileMd5Map[name] as? String
 
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
@@ -142,53 +143,41 @@ class NpmLocalRepository : LocalRepository() {
         )
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun parseMetaData(name: String, contextAttributes: MutableMap<String, Any>): Map<String, String> {
         return if (name == NPM_PACKAGE_TGZ_FILE) contextAttributes[NPM_METADATA] as Map<String, String> else emptyMap()
     }
 
-    override fun download(context: ArtifactDownloadContext) {
-        val artifactUri = getNodeFullPath(context)
-        val userId = context.userId
-
-        try {
-            this.onDownloadValidate(context)
-            this.onDownloadBefore(context)
-            val file =
-                this.onDownload(context) ?: throw ArtifactNotFoundException("Artifact[$artifactUri] does not exist")
-            val name = NodeUtils.getName(getNodeFullPath(context))
-            ServletResponseUtils.response(name, file)
-            logger.info("User[$userId] download artifact[$artifactUri] success")
-            this.onDownloadSuccess(context, file)
-        } catch (validateException: ArtifactValidateException) {
-            this.onValidateFailed(context, validateException)
-        } catch (exception: Exception) {
-            this.onDownloadFailed(context, exception)
-        }
+    override fun determineArtifactName(context: ArtifactTransferContext): String {
+        val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
+        return NodeUtils.getName(fullPath)
     }
 
-    override fun onDownload(context: ArtifactDownloadContext): File? {
-        val repositoryInfo = context.repositoryInfo
-        val projectId = repositoryInfo.projectId
-        val repoName = repositoryInfo.name
-        val fullPath = getNodeFullPath(context)
-        val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
-
-        node.nodeInfo.takeIf { !it.folder } ?: return null
-        return storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
-    }
-
-    override fun getNodeFullPath(context: ArtifactDownloadContext): String {
+    override fun determineArtifactUri(context: ArtifactDownloadContext): String {
         return context.contextAttributes[NPM_FILE_FULL_PATH] as String
+    }
+
+    override fun countDownloads(context: ArtifactDownloadContext) {
+        val artifactInfo = context.artifactInfo
+        val artifact = artifactInfo.artifactUri.substringBefore("/-/").trimStart('/')
+        val version = artifactInfo.artifactUri.substringAfterLast("$artifact${StringPool.DASH}").substringBefore(".tgz")
+        downloadStatisticsResource.add(
+            DownloadStatisticsAddRequest(
+                artifactInfo.projectId,
+                artifactInfo.repoName,
+                artifact,
+                version
+            )
+        )
     }
 
     override fun search(context: ArtifactSearchContext): JsonObject? {
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        return try {
-            this.onSearch(context) ?: throw ArtifactNotFoundException("Artifact[$fullPath] does not exist")
-        } catch (exception: Exception) {
-            logger.error(exception.message ?: "search error")
-            return null
+        val searchResponse = this.onSearch(context)
+        if (searchResponse == null) {
+            logger.warn("Artifact[$fullPath] does not exist")
         }
+        return searchResponse
     }
 
     private fun onSearch(context: ArtifactSearchContext): JsonObject? {
@@ -196,15 +185,16 @@ class NpmLocalRepository : LocalRepository() {
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeResource.detail(projectId, repoName, fullPath).data ?: return null
-
-        node.nodeInfo.takeIf { !it.folder } ?: return null
-        val file = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials) ?: return null
-        return getPkgInfo(context, file)
+        val node = nodeResource.detail(projectId, repoName, fullPath).data
+        if (node == null || node.nodeInfo.folder) return null
+        val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials).also {
+            logger.info("search artifact [$fullPath] success!")
+        }
+        return inputStream?.let { getPkgInfo(context, it) }
     }
 
-    private fun getPkgInfo(context: ArtifactSearchContext, file: File): JsonObject {
-        val fileJson = GsonUtils.transferFileToJson(file)
+    private fun getPkgInfo(context: ArtifactSearchContext, inputStream: ArtifactInputStream): JsonObject {
+        val fileJson = GsonUtils.transferInputStreamToJson(inputStream)
         val containsVersion = fileJson[ID].asString.substring(1).contains('@')
         if (containsVersion) {
             val name = fileJson.get(NAME).asString
@@ -249,10 +239,10 @@ class NpmLocalRepository : LocalRepository() {
         val repositoryInfo = context.repositoryInfo
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
-        val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as List<String>
+        val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as List<*>
         val userId = context.userId
         fullPath.forEach {
-            nodeResource.delete(NodeDeleteRequest(projectId, repoName, it, userId))
+            nodeResource.delete(NodeDeleteRequest(projectId, repoName, it as String, userId))
         }
     }
 
@@ -290,14 +280,14 @@ class NpmLocalRepository : LocalRepository() {
             val packageInfo = mutableMapOf<String, Any>()
             val metadataInfo = mutableMapOf<String, Any?>()
             val date = it[LAST_MODIFIED_DATE] as String
-            val metadata = it[METADATA] as Map<String, String?>
-            metadataInfo[NAME] = metadata[NAME]
-            metadataInfo[DESCRIPTION] = metadata[DESCRIPTION]
-            metadataInfo[MAINTAINERS] = parseJsonArrayToList(metadata[MAINTAINERS])
-            metadataInfo[VERSION] = metadata[VERSION]
+            val metadata = it[METADATA] as Map<*, *>
+            metadataInfo[NAME] = metadata[NAME] as? String
+            metadataInfo[DESCRIPTION] = metadata[DESCRIPTION] as? String
+            metadataInfo[MAINTAINERS] = parseJsonArrayToList(metadata[MAINTAINERS] as? String)
+            metadataInfo[VERSION] = metadata[VERSION] as? String
             metadataInfo[DATE] = date
-            metadataInfo[KEYWORDS] = parseJsonArrayToList(metadata[KEYWORDS])
-            metadataInfo[AUTHOR] = metadata[AUTHOR]
+            metadataInfo[KEYWORDS] = parseJsonArrayToList(metadata[KEYWORDS] as? String)
+            metadataInfo[AUTHOR] = metadata[AUTHOR] as? String
             packageInfo[PACKAGE] = metadataInfo
             listInfo.add(packageInfo)
         }
@@ -317,23 +307,23 @@ class NpmLocalRepository : LocalRepository() {
         val versions = jsonObject.getAsJsonObject(VERSIONS)
         versions.keySet().forEach { version ->
             var response: Response? = null
-            var tgzFilePath: String? = null
+            val tgzFilePath: String?
+            val tarball = versions.getAsJsonObject(version).getAsJsonObject(DIST).get(TARBALL).asString
+            tgzFilePath = tarball.substringAfterLast(registry)
+            context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
+            // hit cache continue
+            getCacheArtifact(context)?.let {
+                return@forEach
+            }
+            val request = Request.Builder().url(tarball).get().build()
             try {
-                val tarball = versions.getAsJsonObject(version).getAsJsonObject(DIST).get(TARBALL).asString
-                tgzFilePath = tarball.substringAfterLast(registry)
-                context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
-                // hit cache continue
-                getCacheArtifact(context)?.let {
-                    return@forEach
-                }
-                val request = Request.Builder().url(tarball).get().build()
                 response = okHttpClient.newCall(request).execute()
                 if (checkResponse(response)) {
-                    val file = createTempFile(response.body()!!)
-                    putArtifact(context, file)
+                    val artifactFile = createTempFile(response.body()!!)
+                    putArtifact(context, artifactFile)
                 }
-            } catch (exception: Exception) {
-                logger.error("put tgz File [$tgzFilePath] failed : ", exception)
+            } catch (exception: IOException) {
+                logger.error("http send url [$tarball] for artifact [$tgzFilePath] failed : ${exception.message}")
                 throw exception
             } finally {
                 response?.body()?.close()
@@ -343,21 +333,21 @@ class NpmLocalRepository : LocalRepository() {
 
     private fun searchPkgJson(context: ArtifactMigrateContext): JsonObject {
         getCacheArtifact(context)?.let {
-            return GsonUtils.transferFileToJson(it)
+            return GsonUtils.transferInputStreamToJson(it)
         }
         val pkgName = context.contextAttributes[PKG_NAME] as String
-        val url = registry.trim('/') + '/' + pkgName
+        val url = registry.trimEnd('/') + '/' + pkgName
         var response: Response? = null
         return try {
             val request = Request.Builder().url(url).get().build()
             response = okHttpClient.newCall(request).execute()
             if (checkResponse(response)) {
-                val file = createTempFile(response.body()!!)
-                putArtifact(context, file)
-                putVersionArtifact(context, file)
-                GsonUtils.transferFileToJson(file)
+                val artifactFile = createTempFile(response.body()!!)
+                putArtifact(context, artifactFile)
+                putVersionArtifact(context, artifactFile)
+                GsonUtils.transferInputStreamToJson(artifactFile.getInputStream())
             } else throw ArtifactNotFoundException("download from remote for [$pkgName] failed.")
-        } catch (exception: Exception) {
+        } catch (exception: IOException) {
             logger.error("http send [$url] for search [$pkgName.json] file failed, {}", exception.message)
             throw exception
         } finally {
@@ -365,41 +355,35 @@ class NpmLocalRepository : LocalRepository() {
         }
     }
 
-    private fun getCacheArtifact(context: ArtifactTransferContext): File? {
+    private fun getCacheArtifact(context: ArtifactTransferContext): ArtifactInputStream? {
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data ?: return null
-        if (node.nodeInfo.folder) return null
-        val file = storageService.load(node.nodeInfo.sha256!!, context.storageCredentials)
-        file?.let { logger.debug("Cached remote artifact[$fullPath] is hit") }
-        return file
+        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+        if (node == null || node.nodeInfo.folder) return null
+        val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
+        inputStream?.let { logger.debug("Cached remote artifact[$fullPath] is hit") }
+        return inputStream
     }
 
-    private fun putVersionArtifact(context: ArtifactMigrateContext, file: File) {
-        val jsonFile = GsonUtils.transferFileToJson(file)
+    private fun putVersionArtifact(context: ArtifactMigrateContext, artifactFile: ArtifactFile) {
+        val jsonFile = GsonUtils.transferInputStreamToJson(artifactFile.getInputStream())
         val name = jsonFile[NAME].asString
         val versionsFile = jsonFile.getAsJsonObject(VERSIONS)
         versionsFile.keySet().forEach { version ->
             val versionFile = versionsFile.getAsJsonObject(version)
-            val artifactFile = ArtifactFileFactory.build()
-            GsonUtils.gsonToInputStream(versionFile).use { input ->
-                artifactFile.getOutputStream().use { output ->
-                    Streams.copy(input, output, true)
-                }
-            }
+            val artifactVersionFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
             context.contextAttributes[NPM_FILE_FULL_PATH] =
                 String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
-            val nodeCreateRequest = getNodeCreateRequest(context, artifactFile)
+            val nodeCreateRequest = getNodeCreateRequest(context, artifactVersionFile)
             nodeResource.create(nodeCreateRequest)
-            storageService.store(nodeCreateRequest.sha256!!, artifactFile, context.storageCredentials)
+            storageService.store(nodeCreateRequest.sha256!!, artifactVersionFile, context.storageCredentials)
         }
         // 添加依赖
         npmDependentHandler.updatePkgDepts(context.userId, context.artifactInfo, jsonFile, NpmOperationAction.MIGRATION)
     }
 
-    private fun putArtifact(context: ArtifactMigrateContext, file: File) {
-        val pkgFile = ArtifactFileFactory.build()
-        Streams.copy(file.inputStream(), pkgFile.getOutputStream(), true)
+    private fun putArtifact(context: ArtifactMigrateContext, artifactFile: ArtifactFile) {
+        val pkgFile = ArtifactFileFactory.build(artifactFile.getInputStream())
         val nodeCreateRequest = getNodeCreateRequest(context, pkgFile)
         nodeResource.create(nodeCreateRequest)
         storageService.store(nodeCreateRequest.sha256!!, pkgFile, context.storageCredentials)
@@ -425,11 +409,8 @@ class NpmLocalRepository : LocalRepository() {
     /**
      * 创建临时文件并将响应体写入文件
      */
-    protected fun createTempFile(body: ResponseBody): File {
-        // set threshold = 0, guarantee any data will be written to file rather than memory cache
-        val artifactFile = ArtifactFileFactory.build(0)
-        Streams.copy(body.byteStream(), artifactFile.getOutputStream(), true)
-        return artifactFile.getTempFile()
+    protected fun createTempFile(body: ResponseBody): ArtifactFile {
+        return ArtifactFileFactory.build(body.byteStream())
     }
 
     /**
@@ -443,7 +424,13 @@ class NpmLocalRepository : LocalRepository() {
         return true
     }
 
+    fun dependentMigrate(context: ArtifactMigrateContext) {
+        val pkgJsonFile = searchPkgJson(context)
+        npmDependentHandler.updatePkgDepts(context.userId, context.artifactInfo, pkgJsonFile, NpmOperationAction.MIGRATION)
+    }
+
     companion object {
+        const val TIMEOUT = 60L
         val logger: Logger = LoggerFactory.getLogger(NpmLocalRepository::class.java)
     }
 }

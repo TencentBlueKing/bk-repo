@@ -15,5 +15,6 @@ enum class RepositoryType {
     NPM,
     OPDATA,
     HELM,
-    COMPOSER
+    COMPOSER,
+    RPM
 }

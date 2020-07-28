@@ -2,7 +2,7 @@ dependencies {
     api project(":helm:api-helm")
     api project(":common:common-job")
     api project(":common:common-artifact:artifact-service")
-    compile group: 'org.yaml', name: 'snakeyaml', version: '1.23'
-    compile group: 'org.apache.commons', name: 'commons-compress', version: '1.18'
-    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.10.3"
+    implementation "org.yaml:snakeyaml"
+    implementation "org.apache.commons:commons-compress"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
 }

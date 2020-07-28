@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.storage.innercos
 
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.cos.COSClient
@@ -10,12 +11,14 @@ import com.tencent.cos.endpoint.CL5EndpointResolver
 import com.tencent.cos.internal.Constants.MB
 import com.tencent.cos.model.DeleteObjectRequest
 import com.tencent.cos.model.GetObjectRequest
+import com.tencent.cos.model.ObjectMetadata
 import com.tencent.cos.model.PutObjectRequest
 import com.tencent.cos.region.Region
 import com.tencent.cos.transfer.TransferManager
 import com.tencent.cos.transfer.TransferManagerConfiguration
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
+import java.io.InputStream
 import java.util.concurrent.Executor
 import javax.annotation.Resource
 
@@ -40,6 +43,11 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
         shutdownTransferManager(transferManager)
     }
 
+    override fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: InnerCosClient) {
+        val metadata = ObjectMetadata().apply { contentLength = size }
+        client.cosClient.putObject(client.bucketName, filename, inputStream, metadata)
+    }
+
     override fun load(path: String, filename: String, received: File, client: InnerCosClient): File? {
         val transferManager = getTransferManager(client)
         val getObjectRequest = GetObjectRequest(client.bucketName, filename)
@@ -49,14 +57,24 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
         return received
     }
 
+    override fun load(path: String, filename: String, range: Range, client: InnerCosClient): InputStream? {
+        val getObjectRequest = GetObjectRequest(client.bucketName, filename)
+        if (range.isPartialContent()) {
+            getObjectRequest.setRange(range.start, range.end)
+        }
+        return client.cosClient.getObject(getObjectRequest).objectContent
+    }
+
     override fun delete(path: String, filename: String, client: InnerCosClient) {
-        val deleteObjectRequest = DeleteObjectRequest(client.bucketName, filename)
-        client.cosClient.deleteObject(deleteObjectRequest)
+        if (exist(path, filename, client)) {
+            val deleteObjectRequest = DeleteObjectRequest(client.bucketName, filename)
+            client.cosClient.deleteObject(deleteObjectRequest)
+        }
     }
 
     override fun exist(path: String, filename: String, client: InnerCosClient): Boolean {
         return try {
-            return client.cosClient.getObjectMetadata(client.bucketName, filename) != null
+            return client.cosClient.getObjectMetadata(client.bucketName, filename).instanceLength >= 0
         } catch (ignored: Exception) {
             false
         }
@@ -82,8 +100,6 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, InnerC
         val cosClient = COSClient(basicCOSCredentials, clientConfig)
         return InnerCosClient(credentials.bucket, cosClient)
     }
-
-    override fun getDefaultCredentials() = storageProperties.innercos
 
     private fun getTransferManager(innerCosClient: InnerCosClient): TransferManager {
         return if (innerCosClient == defaultClient) {

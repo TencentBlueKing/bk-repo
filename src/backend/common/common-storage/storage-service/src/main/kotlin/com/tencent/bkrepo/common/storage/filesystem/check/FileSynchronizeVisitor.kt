@@ -23,7 +23,7 @@ class FileSynchronizeVisitor(
     @Throws(IOException::class)
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
         try {
-            if (!checkExist(filePath)) {
+            if (!exist(filePath)) {
                 val size = upload(filePath)
                 checkResult.totalSize += size
                 checkResult.synchronizedCount += 1
@@ -40,6 +40,7 @@ class FileSynchronizeVisitor(
     }
 
     override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes?): FileVisitResult {
+        // 跳过temp目录的内容
         return if (dir.compareTo(tempPath) == 0) {
             FileVisitResult.SKIP_SUBTREE
         } else {
@@ -52,7 +53,7 @@ class FileSynchronizeVisitor(
         return FileVisitResult.CONTINUE
     }
 
-    private fun checkExist(filePath: Path): Boolean {
+    private fun exist(filePath: Path): Boolean {
         val filename = filePath.fileName.toString()
         val path = fileLocator.locate(filename)
         return fileStorage.exist(path, filename, credential)
@@ -62,8 +63,8 @@ class FileSynchronizeVisitor(
         val filename = filePath.fileName.toString()
         val path = fileLocator.locate(filename)
         val file = filePath.toFile()
-        logger.info("Synchronize file[$filename]")
-        fileStorage.synchronizeStore(path, filename, file, credential)
+        fileStorage.store(path, filename, file, credential)
+        logger.info("Synchronize file[$filename] success")
         return file.length()
     }
 

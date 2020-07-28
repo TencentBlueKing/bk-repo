@@ -1,12 +1,16 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import org.apache.commons.fileupload.disk.DiskFileItem
-import org.apache.commons.io.FileCleaningTracker
-import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties
+import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.file.stream.OctetStreamArtifactFile
+import com.tencent.bkrepo.common.artifact.util.ArtifactContextHolder
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST
 import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.multipart.MultipartFile
 import java.io.InputStream
 
 /**
@@ -16,39 +20,50 @@ import java.io.InputStream
  * @date: 2019/10/30
  */
 @Component
-class ArtifactFileFactory(multipartProperties: MultipartProperties) {
+class ArtifactFileFactory(
+    storageProperties: StorageProperties,
+    storageHealthMonitor: StorageHealthMonitor
+) {
 
     init {
-        config = UploadConfigElement(multipartProperties)
+        monitor = storageHealthMonitor
+        properties = storageProperties
     }
-
 
     companion object {
 
-        private lateinit var config: UploadConfigElement
-        private val fileCleaningTracker = FileCleaningTracker()
+        private lateinit var monitor: StorageHealthMonitor
+        private lateinit var properties: StorageProperties
+
         const val ARTIFACT_FILES = "artifact.files"
 
         fun build(inputStream: InputStream): ArtifactFile {
-            val artifactFile = OctetStreamArtifactFile(inputStream, config.location, config.fileSizeThreshold, config.resolveLazily)
-
-            track(artifactFile)
-            return artifactFile
-        }
-
-        fun build(diskFileItem: DiskFileItem): ArtifactFile {
-            return MultipartArtifactFile(diskFileItem)
-        }
-
-        private fun track(artifactFile: ArtifactFile) {
-            fileCleaningTracker.track(artifactFile.getFile(), artifactFile)
-
-            var artifactFileList = RequestContextHolder.getRequestAttributes()?.getAttribute(ARTIFACT_FILES, SCOPE_REQUEST) as? MutableList<ArtifactFile>
-            if (artifactFileList == null) {
-                artifactFileList = mutableListOf()
-                RequestContextHolder.getRequestAttributes()?.setAttribute(ARTIFACT_FILES, artifactFileList, SCOPE_REQUEST)
+            return OctetStreamArtifactFile(inputStream, monitor, properties, getStorageCredentials()).apply {
+                track(this)
             }
-            artifactFileList.add(artifactFile)
+        }
+
+        fun build(multipartFile: MultipartFile): ArtifactFile {
+            return MultipartArtifactFile(multipartFile, monitor, properties, getStorageCredentials()).apply {
+                track(this)
+            }
+        }
+
+        private fun getStorageCredentials(): StorageCredentials {
+            return ArtifactContextHolder.getRepositoryInfo()?.storageCredentials ?: properties.defaultStorageCredentials()
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        private fun track(artifactFile: ArtifactFile) {
+            val requestAttributes = RequestContextHolder.getRequestAttributes()
+            if (requestAttributes != null) {
+                var artifactFileList = requestAttributes.getAttribute(ARTIFACT_FILES, SCOPE_REQUEST) as? MutableList<ArtifactFile>
+                if (artifactFileList == null) {
+                    artifactFileList = mutableListOf()
+                    RequestContextHolder.getRequestAttributes()?.setAttribute(ARTIFACT_FILES, artifactFileList, SCOPE_REQUEST)
+                }
+                artifactFileList.add(artifactFile)
+            }
         }
     }
 }

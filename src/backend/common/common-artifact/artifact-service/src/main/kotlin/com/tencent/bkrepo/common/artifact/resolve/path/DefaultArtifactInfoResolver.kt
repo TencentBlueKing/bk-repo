@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.common.artifact.resolve.path
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import javax.servlet.http.HttpServletRequest
 

@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.common.storage.credentials
 
+import com.tencent.bkrepo.common.storage.config.CacheProperties
+import com.tencent.bkrepo.common.storage.config.UploadProperties
+
 /**
  * S3配置
  *
@@ -11,8 +14,10 @@ data class S3Credentials(
     var secretKey: String = "",
     var endpoint: String = "",
     var region: String = "",
-    var bucket: String = ""
-) : StorageCredentials() {
+    var bucket: String = "",
+    override var cache: CacheProperties = CacheProperties(),
+    override var upload: UploadProperties = UploadProperties()
+) : StorageCredentials(cache, upload) {
     companion object {
         const val type = "s3"
     }

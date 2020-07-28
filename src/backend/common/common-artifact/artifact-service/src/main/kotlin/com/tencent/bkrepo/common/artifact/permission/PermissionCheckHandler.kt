@@ -16,7 +16,7 @@ interface PermissionCheckHandler {
      * 校验不通过抛PermissionCheckException异常
      */
     @Throws(PermissionCheckException::class)
-    fun onPermissionCheck(userId: String, permission: Permission, artifactInfo: ArtifactInfo, repositoryInfo: RepositoryInfo)
+    fun onPermissionCheck(userId: String, permission: Permission, repositoryInfo: RepositoryInfo, artifactInfo: ArtifactInfo? = null)
 
     /**
      * 进行身份校验

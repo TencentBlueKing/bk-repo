@@ -3,144 +3,125 @@ package com.tencent.bkrepo.composer.util
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.tencent.bkrepo.composer.ARTIFACT_DIRECT_DOWNLOAD_PREFIX
+import com.tencent.bkrepo.composer.COMPOSER_JSON
+import com.tencent.bkrepo.composer.exception.ComposerUnSupportCompressException
+import com.tencent.bkrepo.composer.pojo.ComposerMetadata
 import com.tencent.bkrepo.composer.util.JsonUtil.jsonValue
 import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
-import org.slf4j.LoggerFactory
-import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStream
-import java.util.*
 import java.util.zip.GZIPInputStream
-import java.util.zip.ZipFile
+import com.tencent.bkrepo.composer.util.pojo.ComposerJsonNode
+import org.apache.commons.compress.archivers.ArchiveEntry
+import java.util.UUID
 
 object DecompressUtil {
 
-    @Throws(Exception::class)
-    fun InputStream.getComposerJson(format: String): String {
+    private const val BUFFER_SIZE = 2048
+    // 支持的压缩格式
+    private const val TAR = "tar"
+    private const val ZIP = "zip"
+    private const val WHL = "whl"
+    private const val GZ = "tar.gz"
+    private const val TGZ = "tgz"
+
+    // json属性
+    private const val UID = "uid"
+    private const val TYPE = "type"
+    private const val URL = "url"
+    private const val DIST = "dist"
+    private const val NAME = "name"
+    private const val VERSION = "version"
+
+    private const val LIBRARY = "library"
+
+    /**
+     * 获取composer 压缩包中'composer.json'文件
+     * @param InputStream 文件流
+     * @param format 文件压缩格式
+     * @exception
+     */
+    private fun InputStream.getComposerJson(format: String): String {
         return when (format) {
-            "tar" -> {
+            TAR -> {
                 getTarComposerJson(this)
             }
-            "zip" -> {
+            ZIP, WHL -> {
                 getZipComposerJson(this)
             }
-            "tar.gz" -> {
-                getTgzComposerJson(this)
-            }
-            "tgz" -> {
+            GZ, TGZ -> {
                 getTgzComposerJson(this)
             }
             else -> {
-                "can not support compress format!"
+                throw ComposerUnSupportCompressException("Can not support compress format!")
             }
         }
     }
 
-    @Throws(Exception::class)
-    fun InputStream.wrapperJson(uri: String): Map<String, String>? {
-        UriUtil.getUriArgs(uri)?.let { args ->
-            args["format"]?.let { format ->
-                this.getComposerJson(format).let { json ->
-                    JsonParser().parse(json).asJsonObject.let {
-                        it.addProperty("uid", UUID.randomUUID().toString())
-                        val distObject = JsonObject()
-                        distObject.addProperty("type", format)
-                        distObject.addProperty("url", "direct-dists$uri")
-                        it.add("dist", distObject)
-                        it.addProperty("type", "library")
-                        return mapOf("packageName" to (json jsonValue "name"),
-                                "version" to (json jsonValue "version"),
-                                "json" to GsonBuilder().create().toJson(it))
-                    }
-                }
-            }
-        }
-        return null
+    fun InputStream.getComposerMetadata(uri: String): ComposerMetadata {
+        val uriArgs = UriUtil.getUriArgs(uri)
+        val json = this.getComposerJson(uriArgs.format)
+        val composerMetadata = JsonUtil.mapper.readValue(json, ComposerMetadata::class.java)
+        return composerMetadata
     }
 
-    @Throws(Exception::class)
-    fun getZipComposerJson(inputStream: InputStream): String {
+    /**
+     * composer package 中'composer.json'添加到服务器上对应%package%.json是需要增加一些信息
+     * @param InputStream composer package 的文件流
+     * @param uri 请求中的全文件名
+     * @return 'packageName': 包名; 'version': 版本; 'json': 增加属性后的json内容
+     */
+    fun InputStream.wrapperJson(uri: String): ComposerJsonNode {
+        val uriArgs = UriUtil.getUriArgs(uri)
+        val json = this.getComposerJson(uriArgs.format)
+        JsonParser().parse(json).asJsonObject.let {
+            // todo uid的值从什么地方拿
+            it.addProperty(UID, UUID.randomUUID().toString())
+            val distObject = JsonObject()
+            distObject.addProperty(TYPE, uriArgs.format)
+            distObject.addProperty(URL, "$ARTIFACT_DIRECT_DOWNLOAD_PREFIX$uri")
+            it.add(DIST, distObject)
+            it.addProperty(TYPE, LIBRARY)
+
+            return ComposerJsonNode(packageName = (json jsonValue NAME),
+                    version = (json jsonValue VERSION),
+                    json = GsonBuilder().create().toJson(it))
+        }
+    }
+
+    private fun getZipComposerJson(inputStream: InputStream): String {
         return getCompressComposerJson(ZipArchiveInputStream(inputStream))
     }
 
-    @Throws(Exception::class)
-    fun getTgzComposerJson(inputStream: InputStream): String {
+    private fun getTgzComposerJson(inputStream: InputStream): String {
         return getCompressComposerJson(TarArchiveInputStream(GZIPInputStream(inputStream)))
     }
 
-    @Throws(Exception::class)
-    fun getTarComposerJson(inputStream: InputStream): String {
+    private fun getTarComposerJson(inputStream: InputStream): String {
         return getCompressComposerJson(TarArchiveInputStream(inputStream))
     }
 
-    private fun getCompressComposerJson(tarInputStream: ArchiveInputStream): String {
+    /**
+     * 获取Composer package 压缩中的'composer.json'文件
+     * @param tarInputStream 压缩文件流
+     * @return 以字符串格式返回 composer.json 文件内容
+     */
+    private fun getCompressComposerJson(archiveInputStream: ArchiveInputStream): String {
         val stringBuilder = StringBuffer("")
-        with(tarInputStream) {
-            try {
-                while (nextEntry.also { zipEntry ->
-                            zipEntry?.let {
-                                if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == com.tencent.bkrepo.composer.COMPOSER_JSON) {
-                                    var length: Int
-                                    val bytes = kotlin.ByteArray(2048)
-                                    while ((tarInputStream.read(bytes).also { length = it }) != -1) {
-                                        stringBuilder.append(kotlin.text.String(bytes, 0, length))
-                                    }
-                                    return stringBuilder.toString()
-                                }
-                            }
-                        } != null){}
-            } catch (ise: IllegalStateException) {
-                if (ise.message != "it must not be null") {
-                } else {
-                    logger.error(ise.message)
+        var zipEntry: ArchiveEntry
+        archiveInputStream.use {
+            while (archiveInputStream.nextEntry.also { zipEntry = it } != null) {
+                if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == COMPOSER_JSON) {
+                    var length: Int
+                    val bytes = ByteArray(BUFFER_SIZE)
+                    while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
+                        stringBuilder.append(String(bytes, 0, length))
+                    }
                 }
             }
         }
         return stringBuilder.toString()
     }
-
-    /**
-     * @param destDir
-     */
-    @Throws(Exception::class)
-    infix fun ZipFile.unZipTo(destDir: String) {
-        try {
-            for (entry in entries()) {
-                // 判断是否为文件夹
-                if (entry.isDirectory) {
-                    File("$destDir/${entry.name}").mkdirs()
-                } else {
-                    getInputStream(entry).use { entryStream ->
-                        val tmpFile = File(destDir + File.separator + entry.name)
-                        createDirectory(tmpFile.parent + File.separator, null)
-                        FileOutputStream(tmpFile).use { fos ->
-                            var length: Int
-                            val b = ByteArray(2048)
-                            while ((entryStream.read(b).also { length = it }) != -1) {
-                                fos.write(b, 0, length)
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            logger.error("file unTar failed : " + e.message)
-            throw e
-        }
-    }
-
-    private fun createDirectory(outputDir: String, subDir: String?) {
-        var file = File(outputDir)
-        if (!(subDir == null || subDir.trim { it <= ' ' } == "")) { // 子目录不为空
-            file = File(outputDir + File.separator + subDir)
-        }
-        if (!file.exists()) {
-            file.mkdirs()
-        }
-    }
-
-    private val logger = LoggerFactory.getLogger(DecompressUtil::class.java)
 }
