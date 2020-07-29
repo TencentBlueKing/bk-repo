@@ -19,7 +19,7 @@ class DockerCatalogTagsSlicerTest {
         val elementsHolder = DockerPaginationElementsHolder()
 
         manifests.forEach {
-            if (StringUtils.isNotBlank(it.key)) {
+            if (it.key.isNotBlank()) {
                 elementsHolder.addElement(it.key)
             }
             DockerCatalogTagsSlicer.sliceCatalog(elementsHolder, maxEntries, lastEntry)

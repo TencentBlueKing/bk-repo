@@ -99,7 +99,7 @@ object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
             cmd = StringUtils.substringAfter(cmd, DOCKER_EMPTY_CMD)
             blobInfo.command = dockerCmd
             blobInfo.commandText = cmd
-        } else if (StringUtils.isNotBlank(cmd)) {
+        } else if (cmd!!.isNotBlank()) {
             blobInfo.command = DOCKER_RUN_CMD
             blobInfo.commandText = cmd
         }
@@ -120,7 +120,7 @@ object ManifestSchema1Deserializer : AbstractManifestDeserializer() {
             }
         }
 
-        if (dockerMetadata.config != null && StringUtils.isBlank(cmd) && dockerMetadata.config!!.cmd != null) {
+        if (dockerMetadata.config != null && cmd!!.isBlank() && dockerMetadata.config!!.cmd != null) {
             cmd = if (dockerMetadata.config!!.cmd!!.size == 3) {
                 dockerMetadata.config!!.cmd!![2]
             } else {

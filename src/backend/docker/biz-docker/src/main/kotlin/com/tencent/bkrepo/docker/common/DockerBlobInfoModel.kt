@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.docker.common
 
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
-import org.apache.commons.lang.StringUtils
 
 /**
  * model to describe docker info
@@ -15,7 +14,7 @@ class DockerBlobInfoModel(id: String, var digest: String, var size: String, var 
     var commandText: String = EMPTY
 
     init {
-        if (StringUtils.isNotBlank(id)) {
+        if (id.isNotBlank()) {
             this.shortId = id.substring(0, 12)
         }
     }

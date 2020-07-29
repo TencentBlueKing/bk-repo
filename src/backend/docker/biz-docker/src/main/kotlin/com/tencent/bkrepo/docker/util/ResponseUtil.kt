@@ -12,7 +12,6 @@ import com.tencent.bkrepo.docker.errors.DockerV2Errors
 import com.tencent.bkrepo.docker.manifest.ManifestType
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.response.DockerResponse
-import org.apache.commons.io.IOUtils
 import org.apache.commons.io.output.NullOutputStream
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
@@ -80,7 +79,7 @@ object ResponseUtil {
 
     fun consumeStreamAndReturnError(stream: InputStream): DockerResponse {
         NullOutputStream().use {
-            IOUtils.copy(stream, it)
+            stream.copyTo(it)
         }
         return DockerV2Errors.unauthorizedUpload()
     }

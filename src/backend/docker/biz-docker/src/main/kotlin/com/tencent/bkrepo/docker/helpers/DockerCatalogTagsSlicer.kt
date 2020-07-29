@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.docker.helpers
 
-import org.apache.commons.lang.StringUtils
 import java.util.TreeSet
 
 /**
@@ -20,7 +19,7 @@ object DockerCatalogTagsSlicer {
         if (elementsHolder.elements.isEmpty()) return
 
         val fromElement = calcFromElement(elementsHolder, lastEntry)
-        if (StringUtils.isBlank(fromElement)) {
+        if (fromElement.isBlank()) {
             elementsHolder.elements = TreeSet()
             return
         }
@@ -28,19 +27,19 @@ object DockerCatalogTagsSlicer {
         val elements = elementsHolder.elements
         val lastElement = elementsHolder.elements.last() as String
         val firstElement = elementsHolder.elements.first() as String
-        if (StringUtils.equals(fromElement, toElement)) {
-            elementsHolder.hasMoreElements = !StringUtils.equals(lastElement, toElement)
+        if (fromElement == toElement) {
+            elementsHolder.hasMoreElements = (lastElement != toElement)
             elementsHolder.elements = elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
         }
-        if (!StringUtils.equals(toElement, lastElement)) {
-            if (StringUtils.isBlank(toElement)) {
+        if (toElement != lastElement) {
+            if (toElement.isBlank()) {
                 elementsHolder.elements = TreeSet()
             } else {
-                elementsHolder.hasMoreElements = !StringUtils.equals(lastElement, toElement)
+                elementsHolder.hasMoreElements = lastElement != toElement
                 elementsHolder.elements = elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
             }
         }
-        if (!StringUtils.equals(fromElement, firstElement)) {
+        if (fromElement != firstElement) {
             elementsHolder.elements = elements.subSet(fromElement, true, toElement, true) as TreeSet<String>
         }
         return
@@ -66,7 +65,7 @@ object DockerCatalogTagsSlicer {
 
     private fun calcFromElement(elementsHolder: DockerPaginationElementsHolder, lastEntry: String): String {
         var fromElement = elementsHolder.elements.first() as String
-        if (StringUtils.isNotBlank(lastEntry)) {
+        if (lastEntry.isNotBlank()) {
             fromElement = elementsHolder.elements.higher(lastEntry) as String
         }
         return fromElement

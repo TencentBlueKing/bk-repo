@@ -16,7 +16,7 @@ data class DockerBlobInfo(var id: String, var digest: String?, var size: Long, v
     var urls: MutableList<String>? = null
 
     init {
-        if (StringUtils.isNotBlank(id)) {
+        if (id.isNotBlank()) {
             this.shortId = id.substring(0, 12)
         }
     }

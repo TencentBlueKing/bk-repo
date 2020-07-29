@@ -113,7 +113,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         manifests.forEach {
             val path = it[DOCKER_NODE_PATH] as String
             val repoName = path.replaceAfterLast(SLASH, EMPTY).replaceAfterLast(SLASH, EMPTY).removeSuffix(SLASH)
-            if (StringUtils.isNotBlank(repoName)) {
+            if (repoName.isNotBlank()) {
                 elementsHolder.addElement(repoName)
             }
             DockerCatalogTagsSlicer.sliceCatalog(elementsHolder, maxEntries, lastEntry)

@@ -32,7 +32,6 @@ import com.tencent.bkrepo.docker.util.BlobUtil
 import com.tencent.bkrepo.docker.util.BlobUtil.getBlobByName
 import com.tencent.bkrepo.docker.util.BlobUtil.getManifestConfigBlob
 import com.tencent.bkrepo.docker.util.ResponseUtil
-import org.apache.commons.io.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.InputStreamResource
@@ -76,7 +75,7 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         manifestType: ManifestType,
         artifactFile: ArtifactFile
     ): DockerDigest {
-        val manifestBytes = IOUtils.toByteArray(artifactFile.getInputStream())
+        val manifestBytes = artifactFile.getInputStream().readBytes()
         val digest = DockerManifestDigester.calcDigest(manifestBytes)
         logger.info("manifest file digest content digest : [$digest]")
         if (ManifestType.Schema2List == manifestType) {
@@ -134,7 +133,7 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         val downloadContext = DownloadContext(context).sha256(configFile.sha256!!).length(configFile.length)
         val stream = repo.download(downloadContext)
         stream.use {
-            return IOUtils.toByteArray(it)
+            return it.readBytes()
         }
     }
 
@@ -149,7 +148,7 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         val downloadContext = DownloadContext(context).sha256(manifest.sha256!!).length(manifest.length)
         val stream = repo.download(downloadContext)
         stream.use {
-            return IOUtils.toByteArray(it)
+            return it.readBytes()
         }
     }
 

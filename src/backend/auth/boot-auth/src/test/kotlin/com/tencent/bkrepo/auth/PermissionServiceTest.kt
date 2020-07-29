@@ -34,8 +34,8 @@ class PermissionServiceTest {
 
     private val userId = "unit_test_id"
 
-    private val role_id = "manager_unit_test"
-    private val project_id = "test"
+    private val roleId = "manager_unit_test"
+    private val projectId = "test"
 
     @AfterEach
     fun teardown() {
@@ -45,7 +45,7 @@ class PermissionServiceTest {
         }
 
         // 删除创建的角色
-        roleService.detail(role_id, project_id)?.let {
+        roleService.detail(roleId, projectId)?.let {
             roleService.deleteRoleByid(it.id!!)
         }
 
@@ -380,9 +380,9 @@ class PermissionServiceTest {
     }
 
     private fun createRoleRequest(
-        roleId: String = role_id,
+        roleId: String = this.roleId,
         type: RoleType = RoleType.PROJECT,
-        projectId: String = project_id,
+        projectId: String = this.projectId,
         repoName: String? = null,
         admin: Boolean = false
     ): CreateRoleRequest {
