@@ -14,4 +14,8 @@ dependencies {
     api "org.springframework.boot:spring-boot-starter-undertow"
     implementation 'org.apache.skywalking:apm-toolkit-logback-1.x'
     implementation "org.apache.skywalking:apm-toolkit-trace"
+
+    api 'io.jsonwebtoken:jjwt-api'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson'
 }
