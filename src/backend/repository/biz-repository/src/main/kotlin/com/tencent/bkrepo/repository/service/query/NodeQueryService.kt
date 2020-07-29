@@ -79,8 +79,10 @@ class NodeQueryService @Autowired constructor(
             it[TNode::lastModifiedDate.name]?.let { lastModifiedDate -> it[TNode::lastModifiedDate.name] = LocalDateTime.ofInstant((lastModifiedDate as Date).toInstant(), ZoneId.systemDefault()) }
             it.remove("_id")
         }
-        val total = nodeDao.count(query)
-        return Page((query.skip / query.limit).toInt(), query.limit, total, nodeList)
+        val countQuery = Query.of(query).limit(0).skip(0)
+        val count = nodeDao.count(countQuery)
+        val page = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
+        return Page(page, query.limit, count, nodeList)
     }
 
     companion object {

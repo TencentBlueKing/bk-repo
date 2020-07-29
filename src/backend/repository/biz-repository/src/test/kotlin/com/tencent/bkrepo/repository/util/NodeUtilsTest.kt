@@ -9,18 +9,20 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 @DisplayName("节点工具类测试")
-internal class NodeUtilsTest {
+class NodeUtilsTest {
 
     @Test
-    fun parseDirName() {
+    fun testParseDirName() {
         assertEquals(ROOT_PATH, NodeUtils.parseFullPath("/"))
         assertEquals(ROOT_PATH, NodeUtils.parseFullPath("  /   "))
         assertEquals(ROOT_PATH, NodeUtils.parseFullPath("  "))
         assertEquals("/a", NodeUtils.parseFullPath("  /   a"))
-        assertEquals("/a/b",
+        assertEquals(
+            "/a/b",
             NodeUtils.parseFullPath("  /   a  /b")
         )
-        assertEquals("/a/b",
+        assertEquals(
+            "/a/b",
             NodeUtils.parseFullPath("  /   a  /b/")
         )
 
@@ -40,10 +42,11 @@ internal class NodeUtilsTest {
     }
 
     @Test
-    fun parseFileName() {
+    fun testParseFileName() {
         assertEquals("abc", NodeUtils.parseFileName("abc"))
         assertEquals("中文测试", NodeUtils.parseFileName("中文测试"))
-        assertEquals("！@……&%#&¥*@#¥*（！——#！!@(#(!\$",
+        assertEquals(
+            "！@……&%#&¥*@#¥*（！——#！!@(#(!\$",
             NodeUtils.parseFileName("！@……&%#&¥*@#¥*（！——#！!@(#(!$")
         )
         assertThrows<ErrorCodeException> {
@@ -74,16 +77,17 @@ internal class NodeUtilsTest {
     }
 
     @Test
-    fun combineFullPath() {
+    fun testCombineFullPath() {
         assertEquals("/a", NodeUtils.combineFullPath("", "a"))
         assertEquals("/a/b", NodeUtils.combineFullPath("/a", "b"))
-        assertEquals("/a/b",
+        assertEquals(
+            "/a/b",
             NodeUtils.combineFullPath("/a/", "b")
         )
     }
 
     @Test
-    fun getParentPath() {
+    fun testGetParentPath() {
         assertEquals("/a/", NodeUtils.getParentPath("/a/b"))
         assertEquals("/a/", NodeUtils.getParentPath("/a/b.txt"))
         assertEquals("/a/b/", NodeUtils.getParentPath("/a/b/c/"))
@@ -92,7 +96,7 @@ internal class NodeUtilsTest {
     }
 
     @Test
-    fun getName() {
+    fun testGetName() {
         assertEquals("b", NodeUtils.getName("/a/b"))
         assertEquals("b.txt", NodeUtils.getName("/a/b.txt"))
         assertEquals("", NodeUtils.getName("/"))
@@ -100,17 +104,19 @@ internal class NodeUtilsTest {
     }
 
     @Test
-    fun escapeRegex() {
+    fun testEscapeRegex() {
         assertEquals("""\.\*""", NodeUtils.escapeRegex(".*"))
-        assertEquals("""/\.\*\|\^/a/""",
+        assertEquals(
+            """/\.\*\|\^/a/""",
             NodeUtils.escapeRegex("/.*|^/a/")
         )
     }
 
     @Test
-    fun formatPath() {
+    fun testFormatPath() {
         assertEquals("/.*|^/a/", NodeUtils.formatPath("/.*|^/a"))
-        assertEquals("/.*|^/a",
+        assertEquals(
+            "/.*|^/a",
             NodeUtils.formatFullPath("/.*|^/a")
         )
 

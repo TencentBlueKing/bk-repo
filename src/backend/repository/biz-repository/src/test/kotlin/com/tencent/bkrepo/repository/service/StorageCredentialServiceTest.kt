@@ -3,6 +3,8 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
+import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.pojo.credendial.StorageCredentialsCreateRequest
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -16,13 +18,11 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 @DataMongoTest
 internal class StorageCredentialServiceTest @Autowired constructor(
     private val storageCredentialService: StorageCredentialService
-): ServiceBaseTest() {
-
-    private val storageCredentialsKey = "unit-test-credentials-key"
+) : ServiceBaseTest() {
 
     @BeforeEach
-    fun setUp() {
-        storageCredentialService.delete(storageCredentialsKey)
+    fun beforeEach() {
+        storageCredentialService.delete(UT_STORAGE_CREDENTIALS_KEY)
     }
 
     @Test
@@ -33,10 +33,10 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         credential.cache.path = "cache-test"
         credential.cache.expireDays = 10
 
-        val createRequest = StorageCredentialsCreateRequest(storageCredentialsKey, credential)
-        storageCredentialService.create("system", createRequest)
+        val createRequest = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, credential)
+        storageCredentialService.create(UT_USER, createRequest)
 
-        val dbCredentials = storageCredentialService.findByKey(storageCredentialsKey)
+        val dbCredentials = storageCredentialService.findByKey(UT_STORAGE_CREDENTIALS_KEY)
         Assertions.assertNotNull(dbCredentials)
         Assertions.assertTrue(dbCredentials is FileSystemCredentials)
         dbCredentials as FileSystemCredentials
@@ -46,21 +46,21 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         Assertions.assertEquals(credential.cache.expireDays, dbCredentials.cache.expireDays)
 
         assertThrows<ErrorCodeException> {
-            storageCredentialService.create("system", createRequest)
+            storageCredentialService.create(UT_USER, createRequest)
         }
 
         assertThrows<ErrorCodeException> {
             val createRequest1 = StorageCredentialsCreateRequest("   ", credential)
-            storageCredentialService.create("system", createRequest1)
+            storageCredentialService.create(UT_USER, createRequest1)
         }
     }
 
     @Test
     fun testCreateDifferentTypeCredential() {
         val credential = InnerCosCredentials()
-        val createRequest = StorageCredentialsCreateRequest(storageCredentialsKey, credential)
+        val createRequest = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, credential)
         assertThrows<ErrorCodeException> {
-            storageCredentialService.create("system", createRequest)
+            storageCredentialService.create(UT_USER, createRequest)
         }
     }
 
@@ -75,8 +75,8 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         credential1.cache.path = "cache-test"
         credential1.cache.expireDays = 10
 
-        val createRequest1 = StorageCredentialsCreateRequest(storageCredentialsKey, credential1)
-        storageCredentialService.create("system", createRequest1)
+        val createRequest1 = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, credential1)
+        storageCredentialService.create(UT_USER, createRequest1)
 
         list = storageCredentialService.list()
         Assertions.assertEquals(1, list.size)
@@ -87,13 +87,13 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         credential1.cache.path = "cache-test2"
         credential1.cache.expireDays = 10
 
-        val createRequest2 = StorageCredentialsCreateRequest(storageCredentialsKey + "2", credential2)
-        storageCredentialService.create("system", createRequest2)
+        val createRequest2 = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY + "2", credential2)
+        storageCredentialService.create(UT_USER, createRequest2)
 
         list = storageCredentialService.list()
         Assertions.assertEquals(2, list.size)
 
-        storageCredentialService.delete(storageCredentialsKey + "2")
+        storageCredentialService.delete(UT_STORAGE_CREDENTIALS_KEY + "2")
 
         list = storageCredentialService.list()
         Assertions.assertEquals(1, list.size)

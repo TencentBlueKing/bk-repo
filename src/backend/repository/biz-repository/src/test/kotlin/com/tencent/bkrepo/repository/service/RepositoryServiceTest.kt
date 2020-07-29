@@ -5,20 +5,28 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.bkrepo.repository.UT_PROJECT_ID
+import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
+import com.tencent.bkrepo.repository.UT_REPO_NAME
+import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
+import com.tencent.bkrepo.repository.UT_USER
+import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.credendial.StorageCredentialsCreateRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
@@ -26,21 +34,17 @@ import org.springframework.boot.test.mock.mockito.MockBean
 
 @DisplayName("仓库服务测试")
 @DataMongoTest
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RepositoryServiceTest @Autowired constructor(
+    private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
-    private val storageCredentialService: StorageCredentialService
-): ServiceBaseTest() {
+    private val storageCredentialService: StorageCredentialService,
+    private val repositoryProperties: RepositoryProperties
+) : ServiceBaseTest() {
 
     @MockBean
     private lateinit var nodeService: NodeService
 
-    @MockBean
-    private lateinit var projectService: ProjectService
-
-    private val projectId = "unit-test"
-    private val operator = "system"
-    private val repoName = "test"
-    private val storageCredentialsKey = "unit-test-credentials-key"
     private val storageCredentials = FileSystemCredentials().apply {
         path = "test"
         cache.enabled = true
@@ -48,52 +52,52 @@ class RepositoryServiceTest @Autowired constructor(
         cache.expireDays = 10
     }
 
+    @BeforeAll
+    fun beforeAll() {
+        initMock()
+        if (!projectService.exist(UT_PROJECT_ID)) {
+            val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
+            projectService.create(projectCreateRequest)
+        }
+        val storageCreateRequest = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, storageCredentials)
+        storageCredentialService.create(UT_USER, storageCreateRequest)
+    }
+
     @BeforeEach
     fun beforeEach() {
         initMock()
-
-        repositoryService.list(projectId).forEach {
-            repositoryService.delete(RepoDeleteRequest(projectId, it.name, SYSTEM_USER))
+        repositoryService.list(UT_PROJECT_ID).forEach {
+            repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, it.name, UT_USER))
         }
-
-        val createRequest = StorageCredentialsCreateRequest(storageCredentialsKey, storageCredentials)
-        storageCredentialService.create(operator, createRequest)
-    }
-
-    @AfterEach
-    fun afterEach() {
-        repositoryService.list(projectId).forEach {
-            repositoryService.delete(RepoDeleteRequest(projectId, it.name, SYSTEM_USER))
-        }
-
-        storageCredentialService.delete(storageCredentialsKey)
     }
 
     @Test
-    fun list() {
-        assertEquals(0, repositoryService.list(projectId).size)
+    @DisplayName("测试列表查询")
+    fun `test list query`() {
+        assertEquals(0, repositoryService.list(UT_PROJECT_ID).size)
         val size = 20
-        repeat(size) { i -> repositoryService.create(createRequest("repo$i")) }
-        assertEquals(size, repositoryService.list(projectId).size)
+        repeat(size) { repositoryService.create(createRequest("repo$it")) }
+        assertEquals(size, repositoryService.list(UT_PROJECT_ID).size)
     }
 
     @Test
-    fun page() {
-        assertEquals(0, repositoryService.list(projectId).size)
+    @DisplayName("测试分页查询")
+    fun `test page query`() {
+        assertEquals(0, repositoryService.list(UT_PROJECT_ID).size)
         val size = 51L
         repeat(size.toInt()) { repositoryService.create(createRequest("repo$it")) }
-        var page = repositoryService.page(projectId, 0, 10)
+        var page = repositoryService.page(UT_PROJECT_ID, 0, 10)
         assertEquals(10, page.records.size)
         assertEquals(size, page.count)
         assertEquals(0, page.page)
         assertEquals(10, page.pageSize)
 
-        page = repositoryService.page(projectId, 5, 10)
+        page = repositoryService.page(UT_PROJECT_ID, 5, 10)
         assertEquals(1, page.records.size)
-        page = repositoryService.page(projectId, 6, 10)
+        page = repositoryService.page(UT_PROJECT_ID, 6, 10)
         assertEquals(0, page.records.size)
 
-        page = repositoryService.page(projectId, 0, 20)
+        page = repositoryService.page(UT_PROJECT_ID, 0, 20)
         assertEquals(20, page.records.size)
         assertEquals(size, page.count)
         assertEquals(0, page.page)
@@ -101,100 +105,113 @@ class RepositoryServiceTest @Autowired constructor(
     }
 
     @Test
-    fun exist() {
+    @DisplayName("测试判断仓库是否存在")
+    fun `test check exist`() {
         repositoryService.create(createRequest())
-        assertTrue(repositoryService.exist(projectId, repoName))
-        assertTrue(repositoryService.exist(projectId, repoName, "GENERIC"))
+        assertTrue(repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME))
+        assertTrue(repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name))
         assertFalse(repositoryService.exist("", ""))
-        assertFalse(repositoryService.exist(projectId, ""))
-        assertFalse(repositoryService.exist("", repoName))
+        assertFalse(repositoryService.exist(UT_PROJECT_ID, ""))
+        assertFalse(repositoryService.exist("", UT_REPO_NAME))
 
-        repositoryService.delete(RepoDeleteRequest(projectId, repoName, SYSTEM_USER))
-        assertFalse(repositoryService.exist(projectId, repoName))
+        repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, UT_REPO_NAME, SYSTEM_USER))
+        assertFalse(repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME))
     }
 
     @Test
-    fun create() {
-        val request = createRequest(storageCredentialKey = storageCredentialsKey)
-        repositoryService.create(request)
-        val repository = repositoryService.detail(projectId, repoName, "GENERIC")!!
-        assertEquals(repoName, repository.name)
-        assertEquals(RepositoryType.GENERIC, repository.type)
-        assertEquals(RepositoryCategory.LOCAL, repository.category)
-        assertEquals(true, repository.public)
-        assertEquals(projectId, repository.projectId)
-        assertEquals("simple description", repository.description)
-        assertTrue(repository.storageCredentials is FileSystemCredentials)
-        val dbCredential = repository.storageCredentials as FileSystemCredentials
-        assertEquals(storageCredentials.path, dbCredential.path)
-        assertEquals(storageCredentials.cache.enabled, dbCredential.cache.enabled)
-        assertEquals(storageCredentials.cache.path, dbCredential.cache.path)
-        assertEquals(storageCredentials.cache.expireDays, dbCredential.cache.expireDays)
-
-        assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
-    }
-
-    @Test
-    fun createWithNullCredentials() {
+    @DisplayName("测试创建同名仓库")
+    fun `should throw exception when repo name exists`() {
         repositoryService.create(createRequest())
-        val repository = repositoryService.detail(projectId, repoName, "GENERIC")!!
-        assertEquals(repoName, repository.name)
-        assertEquals(RepositoryType.GENERIC, repository.type)
-        assertEquals(RepositoryCategory.LOCAL, repository.category)
-        assertEquals(true, repository.public)
-        assertEquals(projectId, repository.projectId)
-        assertEquals("simple description", repository.description)
-        assertNull(repository.storageCredentials)
         assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
     }
 
     @Test
-    fun createWithNonExistCredentials() {
-        val request = createRequest(storageCredentialKey = "non-exist-credentials-key")
+    @DisplayName("测试使用指定storage key创建仓库")
+    fun `test create with specific storage key`() {
+        val request = createRequest(storageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY)
+        repositoryService.create(request)
+        val repository = repositoryService.detail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
+        assertEquals(UT_REPO_NAME, repository.name)
+        assertEquals(RepositoryType.GENERIC, repository.type)
+        assertEquals(RepositoryCategory.LOCAL, repository.category)
+        assertEquals(true, repository.public)
+        assertEquals(UT_PROJECT_ID, repository.projectId)
+        assertEquals("simple description", repository.description)
+        assertEquals(storageCredentials, repository.storageCredentials)
+
+        assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
+    }
+
+    @Test
+    @DisplayName("测试使用空storage key创建仓库")
+    fun `test create with null storage key`() {
+        assertNull(repositoryProperties.defaultStorageCredentialsKey)
+        repositoryService.create(createRequest())
+        val repository = repositoryService.detail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
+        assertNull(repository.storageCredentials)
+    }
+
+    @Test
+    @DisplayName("测试使用默认storage key创建仓库")
+    fun `test create with default storage key`() {
+        repositoryProperties.defaultStorageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY
+        repositoryService.create(createRequest())
+        val repository = repositoryService.detail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
+
+        val dbCredential = repository.storageCredentials
+        assertEquals(storageCredentials, dbCredential)
+    }
+
+    @Test
+    @DisplayName("测试使用不存在的storage key创建仓库")
+    fun `should throw exception when storage key nonexistent`() {
+        val request = createRequest(storageCredentialsKey = "non-exist-credentials-key")
         assertThrows<ErrorCodeException> { repositoryService.create(request) }
     }
 
     @Test
-    fun update() {
+    @DisplayName("测试更新仓库信息")
+    fun `test update repository info`() {
         repositoryService.create(createRequest())
         repositoryService.update(
             RepoUpdateRequest(
-                projectId = projectId,
-                name = repoName,
+                projectId = UT_PROJECT_ID,
+                name = UT_REPO_NAME,
                 public = false,
                 description = "updated description",
-                operator = operator
+                operator = UT_USER
             )
         )
-        val repository = repositoryService.detail(projectId, repoName)!!
+        val repository = repositoryService.detail(UT_PROJECT_ID, UT_REPO_NAME)!!
         assertEquals(false, repository.public)
         assertEquals("updated description", repository.description)
     }
 
     @Test
-    fun deleteById() {
+    @DisplayName("测试删除仓库")
+    fun `test delete repository`() {
         repositoryService.create(createRequest("test1"))
         repositoryService.create(createRequest("test2"))
-        repositoryService.delete(RepoDeleteRequest(projectId, "test1", SYSTEM_USER))
-        assertNull(repositoryService.detail(projectId, "test1"))
+        repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "test1", SYSTEM_USER))
+        assertNull(repositoryService.detail(UT_PROJECT_ID, "test1"))
 
-        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(projectId, "", SYSTEM_USER)) }
-        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(projectId, "test1", SYSTEM_USER)) }
+        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "", SYSTEM_USER)) }
+        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "test1", SYSTEM_USER)) }
 
-        assertNotNull(repositoryService.detail(projectId, "test2"))
+        assertNotNull(repositoryService.detail(UT_PROJECT_ID, "test2"))
     }
 
-    private fun createRequest(name: String = repoName, storageCredentialKey: String? = null): RepoCreateRequest {
+    private fun createRequest(name: String = UT_REPO_NAME, storageCredentialsKey: String? = null): RepoCreateRequest {
         return RepoCreateRequest(
-            projectId = projectId,
+            projectId = UT_PROJECT_ID,
             name = name,
             type = RepositoryType.GENERIC,
             category = RepositoryCategory.LOCAL,
             public = true,
             description = "simple description",
             configuration = LocalConfiguration(),
-            storageCredentialsKey = storageCredentialKey,
-            operator = operator
+            storageCredentialsKey = storageCredentialsKey,
+            operator = UT_USER
         )
     }
 }

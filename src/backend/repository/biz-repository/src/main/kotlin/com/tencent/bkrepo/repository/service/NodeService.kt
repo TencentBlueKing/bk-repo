@@ -39,7 +39,6 @@ import com.tencent.bkrepo.repository.util.QueryHelper.nodeDeleteUpdate
 import com.tencent.bkrepo.repository.util.QueryHelper.nodeExpireDateUpdate
 import com.tencent.bkrepo.repository.util.QueryHelper.nodeListCriteria
 import com.tencent.bkrepo.repository.util.QueryHelper.nodeListQuery
-import com.tencent.bkrepo.repository.util.QueryHelper.nodePageQuery
 import com.tencent.bkrepo.repository.util.QueryHelper.nodePathUpdate
 import com.tencent.bkrepo.repository.util.QueryHelper.nodeQuery
 import org.slf4j.LoggerFactory

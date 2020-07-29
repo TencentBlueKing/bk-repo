@@ -5,6 +5,7 @@ import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.artifact.auth.AuthProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito
@@ -30,11 +31,11 @@ abstract class ServiceBaseTest {
 
     fun initMock() {
         Mockito.`when`(roleResource.createRepoManage(ArgumentMatchers.anyString(), ArgumentMatchers.anyString())).then {
-            ResponseBuilder.success("manager")
+            ResponseBuilder.success(UT_USER)
         }
 
         Mockito.`when`(roleResource.createProjectManage(ArgumentMatchers.anyString())).thenReturn(
-            ResponseBuilder.success("manager")
+            ResponseBuilder.success(UT_USER)
         )
 
         Mockito.`when`(userResource.addUserRole(ArgumentMatchers.anyString(), ArgumentMatchers.anyString())).thenReturn(
