@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.AuthService
 import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
+import com.tencent.bkrepo.common.artifact.auth.jwt.JwtProvider
 import com.tencent.bkrepo.common.artifact.auth.platform.PlatformAuthCredentials
 import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
@@ -22,7 +23,6 @@ import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.constant.ERROR_MESSAGE
 import com.tencent.bkrepo.docker.constant.REGISTRY_SERVICE
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
-import com.tencent.bkrepo.docker.util.JwtUtil
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -69,13 +69,14 @@ class DockerClientAuthHandler : ClientAuthHandler {
             }
         }
         val token = (authCredentials as JwtAuthCredentials).token
-        if (!JwtUtil.verifyToken(token)) {
+        try {
+            JwtProvider.validateToken(token)
+            val claims = JwtProvider.validateToken(token).body
+            return claims[USER_KEY] as String
+        } catch (ignored: Exception) {
             logger.warn("auth token failed [$token] ")
             throw ClientAuthException("auth failed")
         }
-        val userName = JwtUtil.getUserName(token)
-        logger.info("auth token [$token] ,user [$userName]")
-        return userName
     }
 
     private fun checkUserId(userId: String) {

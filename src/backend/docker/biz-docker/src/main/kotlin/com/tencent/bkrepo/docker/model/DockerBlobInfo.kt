@@ -1,7 +1,5 @@
 package com.tencent.bkrepo.docker.model
 
-import org.apache.commons.lang.StringUtils
-
 /**
  * docker blob info
  * @author: owenlxu

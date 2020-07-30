@@ -2,7 +2,9 @@ package com.tencent.bkrepo.docker.auth
 
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.auth.basic.BasicAuthCredentials
+import com.tencent.bkrepo.common.artifact.auth.jwt.JwtProvider
 import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
@@ -11,7 +13,6 @@ import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_UNAUTHED_BODY
 import com.tencent.bkrepo.docker.response.DockerResponse
-import com.tencent.bkrepo.docker.util.JwtUtil
 import com.tencent.bkrepo.docker.util.TimeUtil
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -47,7 +48,8 @@ class AuthUtil {
     fun authUser(request: HttpServletRequest, response: HttpServletResponse): DockerResponse {
         return try {
             val user = extractBasicAuth(request)
-            val token = JwtUtil.sign(user.username)
+            val claims = mutableMapOf<String, Any>(USER_KEY to user.username)
+            val token = JwtProvider.generateToken(user.username, claims)
             val issuedAt = TimeUtil.getGMTTime()
             val tokenUrl = String.format(AUTH_CHALLENGE_TOKEN, token, token, issuedAt)
             ResponseEntity.ok().apply {

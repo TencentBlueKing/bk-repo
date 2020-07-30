@@ -3,7 +3,6 @@ package com.tencent.bkrepo.docker.helper
 import com.tencent.bkrepo.docker.helpers.DockerCatalogTagsSlicer
 import com.tencent.bkrepo.docker.helpers.DockerPaginationElementsHolder
 import com.tencent.bkrepo.docker.response.CatalogResponse
-import org.apache.commons.lang.StringUtils
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
