@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.artifact.auth
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Duration
 
 /**
  *
@@ -13,7 +14,7 @@ data class AuthProperties (
     var jwt: JwtProperties = JwtProperties()
 ) {
     data class JwtProperties (
-        var secretKey: String = "bkrepo",
-        var expireSeconds: Long = -1
+        var secretKey: String = "secret@key",
+        var expiration: Duration = Duration.ZERO
     )
 }
