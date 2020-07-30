@@ -31,6 +31,11 @@ const val AUTH_HEADER_UID: String = "X-BKREPO-UID"
 const val MS_AUTH_HEADER_UID: String = "X-BKREPO-MS-UID"
 
 /**
+ * micro service header security token
+ */
+const val MS_AUTH_HEADER_SECURITY_TOKEN: String = "X-BKREPO-SECURITY-TOKEN"
+
+/**
  * common logger name
  */
 const val EXCEPTION_LOGGER_NAME = "ExceptionLogger"

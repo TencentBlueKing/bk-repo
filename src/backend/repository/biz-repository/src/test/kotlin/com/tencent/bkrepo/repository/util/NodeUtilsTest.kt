@@ -8,52 +8,86 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-/**
- * 节点工具类测试
- *
- * @author: carrypan
- * @date: 2019-09-24
- */
 @DisplayName("节点工具类测试")
-internal class NodeUtilsTest {
+class NodeUtilsTest {
 
     @Test
-    fun parseDirName() {
+    fun testParseDirName() {
         assertEquals(ROOT_PATH, NodeUtils.parseFullPath("/"))
         assertEquals(ROOT_PATH, NodeUtils.parseFullPath("  /   "))
         assertEquals(ROOT_PATH, NodeUtils.parseFullPath("  "))
         assertEquals("/a", NodeUtils.parseFullPath("  /   a"))
-        assertEquals("/a/b", NodeUtils.parseFullPath("  /   a  /b"))
-        assertEquals("/a/b", NodeUtils.parseFullPath("  /   a  /b/"))
+        assertEquals(
+            "/a/b",
+            NodeUtils.parseFullPath("  /   a  /b")
+        )
+        assertEquals(
+            "/a/b",
+            NodeUtils.parseFullPath("  /   a  /b/")
+        )
 
         assertDoesNotThrow { NodeUtils.parseFullPath("/1/2/3/4/5/6/7/8/9/10") }
-        assertThrows<ErrorCodeException> { NodeUtils.parseFullPath("/../") }
-        assertThrows<ErrorCodeException> { NodeUtils.parseFullPath("/./") }
+        assertThrows<ErrorCodeException> {
+            NodeUtils.parseFullPath(
+                "/../"
+            )
+        }
+        assertThrows<ErrorCodeException> {
+            NodeUtils.parseFullPath(
+                "/./"
+            )
+        }
         assertDoesNotThrow { NodeUtils.parseFullPath("/.1/") }
         assertDoesNotThrow { NodeUtils.parseFullPath("/..../") }
     }
 
     @Test
-    fun parseFileName() {
+    fun testParseFileName() {
         assertEquals("abc", NodeUtils.parseFileName("abc"))
         assertEquals("中文测试", NodeUtils.parseFileName("中文测试"))
-        assertEquals("！@……&%#&¥*@#¥*（！——#！!@(#(!\$", NodeUtils.parseFileName("！@……&%#&¥*@#¥*（！——#！!@(#(!$"))
-        assertThrows<ErrorCodeException> { NodeUtils.parseFileName("") }
-        assertThrows<ErrorCodeException> { NodeUtils.parseFileName("   ") }
-        assertThrows<ErrorCodeException> { NodeUtils.parseFileName("..") }
-        assertThrows<ErrorCodeException> { NodeUtils.parseFileName(".") }
-        assertThrows<ErrorCodeException> { NodeUtils.parseFileName("dsjfkjafk/dsajdklsak") }
+        assertEquals(
+            "！@……&%#&¥*@#¥*（！——#！!@(#(!\$",
+            NodeUtils.parseFileName("！@……&%#&¥*@#¥*（！——#！!@(#(!$")
+        )
+        assertThrows<ErrorCodeException> {
+            NodeUtils.parseFileName(
+                ""
+            )
+        }
+        assertThrows<ErrorCodeException> {
+            NodeUtils.parseFileName(
+                "   "
+            )
+        }
+        assertThrows<ErrorCodeException> {
+            NodeUtils.parseFileName(
+                ".."
+            )
+        }
+        assertThrows<ErrorCodeException> {
+            NodeUtils.parseFileName(
+                "."
+            )
+        }
+        assertThrows<ErrorCodeException> {
+            NodeUtils.parseFileName(
+                "dsjfkjafk/dsajdklsak"
+            )
+        }
     }
 
     @Test
-    fun combineFullPath() {
+    fun testCombineFullPath() {
         assertEquals("/a", NodeUtils.combineFullPath("", "a"))
         assertEquals("/a/b", NodeUtils.combineFullPath("/a", "b"))
-        assertEquals("/a/b", NodeUtils.combineFullPath("/a/", "b"))
+        assertEquals(
+            "/a/b",
+            NodeUtils.combineFullPath("/a/", "b")
+        )
     }
 
     @Test
-    fun getParentPath() {
+    fun testGetParentPath() {
         assertEquals("/a/", NodeUtils.getParentPath("/a/b"))
         assertEquals("/a/", NodeUtils.getParentPath("/a/b.txt"))
         assertEquals("/a/b/", NodeUtils.getParentPath("/a/b/c/"))
@@ -62,7 +96,7 @@ internal class NodeUtilsTest {
     }
 
     @Test
-    fun getName() {
+    fun testGetName() {
         assertEquals("b", NodeUtils.getName("/a/b"))
         assertEquals("b.txt", NodeUtils.getName("/a/b.txt"))
         assertEquals("", NodeUtils.getName("/"))
@@ -70,15 +104,21 @@ internal class NodeUtilsTest {
     }
 
     @Test
-    fun escapeRegex() {
+    fun testEscapeRegex() {
         assertEquals("""\.\*""", NodeUtils.escapeRegex(".*"))
-        assertEquals("""/\.\*\|\^/a/""", NodeUtils.escapeRegex("/.*|^/a/"))
+        assertEquals(
+            """/\.\*\|\^/a/""",
+            NodeUtils.escapeRegex("/.*|^/a/")
+        )
     }
 
     @Test
-    fun formatPath() {
+    fun testFormatPath() {
         assertEquals("/.*|^/a/", NodeUtils.formatPath("/.*|^/a"))
-        assertEquals("/.*|^/a", NodeUtils.formatFullPath("/.*|^/a"))
+        assertEquals(
+            "/.*|^/a",
+            NodeUtils.formatFullPath("/.*|^/a")
+        )
 
         assertEquals("/a/b/", NodeUtils.formatPath("/a/b"))
         assertEquals("/a/b/", NodeUtils.formatPath("/a/b/"))

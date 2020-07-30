@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.repository.RepoRepository
 import com.tencent.bkrepo.repository.listener.event.repo.RepoCreatedEvent
@@ -52,6 +53,9 @@ class RepositoryService : AbstractService() {
     @Autowired
     private lateinit var storageCredentialService: StorageCredentialService
 
+    @Autowired
+    private lateinit var repositoryProperties: RepositoryProperties
+
     fun detail(projectId: String, name: String, type: String? = null): RepositoryInfo? {
         return convert(queryRepository(projectId, name, type))
     }
@@ -72,9 +76,10 @@ class RepositoryService : AbstractService() {
     }
 
     fun page(projectId: String, page: Int, size: Int): Page<RepositoryInfo> {
-        val query = createListQuery(projectId).with(PageRequest.of(page, size))
-        val data = mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
+        val query = createListQuery(projectId)
         val count = mongoTemplate.count(query, TRepository::class.java)
+        val pageQuery = query.with(PageRequest.of(page, size))
+        val data = mongoTemplate.find(pageQuery, TRepository::class.java).map { convert(it)!! }
 
         return Page(page, size, count, data)
     }
@@ -99,8 +104,9 @@ class RepositoryService : AbstractService() {
             if (exist(projectId, name)) {
                 throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
             }
-            // 确保存储凭证一定存在
-            val storageCredential = storageCredentialsKey?.let {
+            val credentialsKey = storageCredentialsKey ?: repositoryProperties.defaultStorageCredentialsKey
+            // 确保存储凭证Key一定存在
+            val storageCredential = credentialsKey?.let {
                 storageCredentialService.findByKey(it) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, it)
             }
             // 创建仓库
@@ -111,7 +117,7 @@ class RepositoryService : AbstractService() {
                 public = public,
                 description = description,
                 configuration = configuration.toJsonString(),
-                credentialsKey = storageCredentialsKey,
+                credentialsKey = credentialsKey,
                 projectId = projectId,
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
