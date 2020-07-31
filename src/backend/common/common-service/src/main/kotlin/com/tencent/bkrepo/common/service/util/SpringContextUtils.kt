@@ -23,7 +23,7 @@ class SpringContextUtils : ApplicationContextAware {
          * @param <T> Bean
          * @return 实例
          * @throws BeansException 异常
-        </T> */
+         */
         @Throws(BeansException::class)
         fun <T> getBean(clazz: Class<T>): T {
             return applicationContext.getBean(clazz)

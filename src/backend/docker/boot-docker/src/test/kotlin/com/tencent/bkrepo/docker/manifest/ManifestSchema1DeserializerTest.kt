@@ -10,7 +10,8 @@ class ManifestSchema1DeserializerTest {
     @Test
     @DisplayName("测试schema v1协议解析")
     fun manifestSchema1Test() {
-        val manifestFile = """{
+        val manifestFile =
+            """{
    "name": "hello-world",
    "tag": "latest",
    "architecture": "amd64",

@@ -59,8 +59,10 @@ object CertTrust {
         trustManagerFactory.init(keyStore)
         val trustManagers = trustManagerFactory.trustManagers
         check(!(trustManagers.size != 1 || trustManagers[0] !is X509TrustManager)) {
-            ("Unexpected default trust managers:" +
-                Arrays.toString(trustManagers))
+            (
+                "Unexpected default trust managers:" +
+                    Arrays.toString(trustManagers)
+                )
         }
         return trustManagers[0] as X509TrustManager
     }

@@ -134,7 +134,6 @@ class UploadService @Autowired constructor(
         return repoInfo.storageCredentials
     }
 
-
     companion object {
         private val logger = LoggerFactory.getLogger(UploadService::class.java)
     }

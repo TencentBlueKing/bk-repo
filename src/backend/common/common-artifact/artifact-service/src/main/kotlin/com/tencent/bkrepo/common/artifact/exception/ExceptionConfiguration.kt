@@ -14,7 +14,8 @@ import org.springframework.http.server.ServerHttpResponse
 @Configuration
 @Import(
     DefaultArtifactExceptionHandler::class,
-    ArtifactExceptionResponseAdvice::class)
+    ArtifactExceptionResponseAdvice::class
+)
 class ExceptionConfiguration {
 
     @Bean

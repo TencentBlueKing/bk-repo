@@ -50,8 +50,7 @@ class HelmLocalRepository : LocalRepository() {
             val nodeCreateRequest = getNodeCreateRequest(name, context)
             storageService.store(
                 nodeCreateRequest.sha256!!,
-                context.getArtifactFile(name)
-                    ?: context.getArtifactFile(),
+                context.getArtifactFile(name) ?: context.getArtifactFile(),
                 context.storageCredentials
             )
             nodeResource.create(nodeCreateRequest)

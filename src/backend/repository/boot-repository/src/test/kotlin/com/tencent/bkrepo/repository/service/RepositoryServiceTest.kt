@@ -76,9 +76,7 @@ internal class RepositoryServiceTest @Autowired constructor(
     fun page() {
         assertEquals(0, repositoryService.list(projectId).size)
         val size = 51L
-        repeat(size.toInt()) {
-            i -> repositoryService.create(createRequest("repo$i"))
-        }
+        repeat(size.toInt()) { repositoryService.create(createRequest("repo$it")) }
         var page = repositoryService.page(projectId, 0, 10)
         assertEquals(10, page.records.size)
         assertEquals(size, page.count)
@@ -124,9 +122,9 @@ internal class RepositoryServiceTest @Autowired constructor(
         assertTrue(repository.storageCredentials is FileSystemCredentials)
         val dbCredential = repository.storageCredentials as FileSystemCredentials
         assertEquals(storageCredentials.path, dbCredential.path)
-        assertEquals(storageCredentials.cache.enabled, dbCredential.cache.enabled )
-        assertEquals(storageCredentials.cache.path, dbCredential.cache.path )
-        assertEquals(storageCredentials.cache.expireDays, dbCredential.cache.expireDays )
+        assertEquals(storageCredentials.cache.enabled, dbCredential.cache.enabled)
+        assertEquals(storageCredentials.cache.path, dbCredential.cache.path)
+        assertEquals(storageCredentials.cache.expireDays, dbCredential.cache.expireDays)
 
         assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
     }
@@ -146,7 +144,6 @@ internal class RepositoryServiceTest @Autowired constructor(
         assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
     }
 
-
     @Test
     fun createWithNonExistCredentials() {
         val request = createRequest(storageCredentialKey = "non-exist-credentials-key")
@@ -156,12 +153,15 @@ internal class RepositoryServiceTest @Autowired constructor(
     @Test
     fun update() {
         repositoryService.create(createRequest())
-        repositoryService.update(RepoUpdateRequest(
-            projectId = projectId,
-            name = repoName,
-            public = false,
-            description = "新的描述",
-            operator = operator))
+        repositoryService.update(
+            RepoUpdateRequest(
+                projectId = projectId,
+                name = repoName,
+                public = false,
+                description = "新的描述",
+                operator = operator
+            )
+        )
         val repository = repositoryService.detail(projectId, repoName)!!
         assertEquals(false, repository.public)
         assertEquals("新的描述", repository.description)
@@ -182,15 +182,15 @@ internal class RepositoryServiceTest @Autowired constructor(
 
     private fun createRequest(name: String = repoName, storageCredentialKey: String? = null): RepoCreateRequest {
         return RepoCreateRequest(
-                projectId = projectId,
-                name = name,
-                type = RepositoryType.GENERIC,
-                category = RepositoryCategory.LOCAL,
-                public = true,
-                description = "简单描述",
-                configuration = LocalConfiguration(),
-                storageCredentialsKey = storageCredentialKey,
-                operator = operator
+            projectId = projectId,
+            name = name,
+            type = RepositoryType.GENERIC,
+            category = RepositoryCategory.LOCAL,
+            public = true,
+            description = "简单描述",
+            configuration = LocalConfiguration(),
+            storageCredentialsKey = storageCredentialKey,
+            operator = operator
         )
     }
 }

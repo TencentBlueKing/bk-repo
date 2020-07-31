@@ -14,11 +14,11 @@ class UserAuthServiceTest {
 
     @Test
     @DisplayName("用户登录测试")
-    fun addUserTest(){
+    fun addUserTest() {
         val body = "{_id:xwhy,name:xwhy,password:123456}"
         val authResponse = authService.addUser(body)
-        Assertions.assertEquals(authResponse.ok,true)
-        Assertions.assertEquals(authResponse.id,"xwhy")
-        Assertions.assertNotEquals(authResponse.token,true)
+        Assertions.assertEquals(authResponse.ok, true)
+        Assertions.assertEquals(authResponse.id, "xwhy")
+        Assertions.assertNotEquals(authResponse.token, true)
     }
 }

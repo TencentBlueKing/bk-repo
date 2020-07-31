@@ -16,7 +16,7 @@ class CachedFileWriter(
     private val cachePath: Path,
     private val filename: String,
     tempPath: Path
-): StreamReadListener {
+) : StreamReadListener {
 
     private val lockFilePath = tempPath.resolve(filename.plus(LOCK_SUFFIX))
     private val outputStream: FileOutputStream

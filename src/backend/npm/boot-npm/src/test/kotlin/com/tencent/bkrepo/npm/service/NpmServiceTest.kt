@@ -36,9 +36,9 @@ class NpmServiceTest {
         ).andExpect { MockMvcResultMatchers.status().isOk }
             .andDo(MockMvcResultHandlers.print()).andReturn()
         val resultMap = GsonUtils.gsonToMaps<Any>(result.response.contentAsString)!!
-        Assertions.assertEquals(resultMap["version"],"6.26.3")
-        Assertions.assertEquals(resultMap["name"],"babel-core")
-        Assertions.assertEquals(resultMap["_id"],"babel-core@6.26.3")
+        Assertions.assertEquals(resultMap["version"], "6.26.3")
+        Assertions.assertEquals(resultMap["name"], "babel-core")
+        Assertions.assertEquals(resultMap["_id"], "babel-core@6.26.3")
     }
 
     // {projectId}/{repoName}/-/package/**/dist-tags
@@ -50,8 +50,8 @@ class NpmServiceTest {
         ).andExpect { MockMvcResultMatchers.status().isOk }
             .andDo(MockMvcResultHandlers.print()).andReturn()
         val resultMap = GsonUtils.gsonToMaps<Any>(result.response.contentAsString)!!
-        Assertions.assertEquals(resultMap["latest"],"6.26.3")
-        Assertions.assertEquals(resultMap["old"],"5.8.38")
-        Assertions.assertEquals(resultMap["bridge"],"7.0.0-bridge.0")
+        Assertions.assertEquals(resultMap["latest"], "6.26.3")
+        Assertions.assertEquals(resultMap["old"], "5.8.38")
+        Assertions.assertEquals(resultMap["bridge"], "7.0.0-bridge.0")
     }
 }

@@ -31,7 +31,8 @@ class MemoryMessageHandler(
             started = true
             MemoryMessageQueue.instance.start(
                 configurationProperties.queueSize,
-                configurationProperties.workerPoolSize)
+                configurationProperties.workerPoolSize
+            )
         }
     }
 

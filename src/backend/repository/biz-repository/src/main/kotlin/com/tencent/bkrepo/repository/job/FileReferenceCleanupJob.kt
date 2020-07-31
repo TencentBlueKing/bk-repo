@@ -68,8 +68,10 @@ class FileReferenceCleanupJob {
             }
         }
         val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
-        logger.info("Clean up [$totalCount] files with zero reference, success[$cleanupCount], failed[$failedCount], " +
-            "file missing[$fileMissingCount], elapse [$elapseTimeMillis] ms totally.")
+        logger.info(
+            "Clean up [$totalCount] files with zero reference, success[$cleanupCount], failed[$failedCount], " +
+                "file missing[$fileMissingCount], elapse [$elapseTimeMillis] ms totally."
+        )
     }
 
     companion object {

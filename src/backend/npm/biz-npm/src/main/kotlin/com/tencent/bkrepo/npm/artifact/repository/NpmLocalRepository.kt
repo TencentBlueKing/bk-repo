@@ -102,8 +102,7 @@ class NpmLocalRepository : LocalRepository() {
                 // 校验MIME_TYPE
                 context.contextAttributes[APPLICATION_OCTET_STEAM].takeIf {
                     it == MediaType.APPLICATION_OCTET_STREAM_VALUE
-                }
-                    ?: throw ArtifactValidateException(
+                } ?: throw ArtifactValidateException(
                         "Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}"
                     )
                 // 计算sha1并校验

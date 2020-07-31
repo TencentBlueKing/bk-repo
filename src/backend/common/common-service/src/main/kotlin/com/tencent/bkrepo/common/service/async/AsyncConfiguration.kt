@@ -40,12 +40,12 @@ class AsyncConfiguration : AsyncConfigurerSupport() {
         return executor
     }
 
-    override fun getAsyncUncaughtExceptionHandler() = AsyncUncaughtExceptionHandler {
-            error, method, _ -> logger.error("Unexpected exception occurred invoking async method: {}", method, error)
+    override fun getAsyncUncaughtExceptionHandler() = AsyncUncaughtExceptionHandler { error, method, _ ->
+        logger.error("Unexpected exception occurred invoking async method: {}", method, error)
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(AsyncConfiguration::class.java)
-        private val DEFAULT_AWAIT_TERMINATION_SECONDS = 5 * 60
+        private const val DEFAULT_AWAIT_TERMINATION_SECONDS = 5 * 60
     }
 }

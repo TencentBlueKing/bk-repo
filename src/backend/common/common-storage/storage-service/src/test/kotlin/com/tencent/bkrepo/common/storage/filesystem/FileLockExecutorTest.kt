@@ -30,7 +30,7 @@ internal class FileLockExecutorTest {
         val thread1 = thread {
             FileLockExecutor.executeInLock(file) {
                 // 独占锁
-                println("thread1: " + System.currentTimeMillis()/1000)
+                println("thread1: " + System.currentTimeMillis() / 1000)
                 it.transferFrom(inputFile.inputStream().channel, 0, inputFile.length())
                 Thread.sleep(1000 * 5)
             }
@@ -40,7 +40,7 @@ internal class FileLockExecutorTest {
         val thread2 = thread {
             FileLockExecutor.executeInLock(file.inputStream()) {
                 // 拿到锁的时间比thread1应该晚5秒
-                println("thread2: " + System.currentTimeMillis()/1000)
+                println("thread2: " + System.currentTimeMillis() / 1000)
                 // 读取
                 Assertions.assertEquals("Hello, world!", file.readText())
             }
@@ -57,7 +57,7 @@ internal class FileLockExecutorTest {
         val thread1 = thread {
             FileLockExecutor.executeInLock(file.inputStream()) {
                 // 共享锁
-                println("thread1: " + System.currentTimeMillis()/1000)
+                println("thread1: " + System.currentTimeMillis() / 1000)
                 Assertions.assertEquals("Hello, world!", file.readText())
                 Thread.sleep(1000 * 5)
             }
@@ -67,7 +67,7 @@ internal class FileLockExecutorTest {
         val thread2 = thread {
             FileLockExecutor.executeInLock(file.inputStream()) {
                 // 拿到锁的时间比thread1应该晚1秒
-                println("thread2: " + System.currentTimeMillis()/1000)
+                println("thread2: " + System.currentTimeMillis() / 1000)
                 Assertions.assertEquals("Hello, world!", file.readText())
             }
         }
@@ -84,7 +84,7 @@ internal class FileLockExecutorTest {
         val thread1 = thread {
             FileLockExecutor.executeInLock(file.inputStream()) {
                 // 共享锁
-                println("thread1: " + System.currentTimeMillis()/1000)
+                println("thread1: " + System.currentTimeMillis() / 1000)
                 Assertions.assertEquals("Hello, world!", file.readText())
                 Thread.sleep(1000 * 5)
             }
@@ -94,7 +94,7 @@ internal class FileLockExecutorTest {
         val thread2 = thread {
             FileLockExecutor.executeInLock(file) {
                 // 独占锁，拿到锁的时间比thread1应该晚5秒
-                println("thread3: " + System.currentTimeMillis()/1000)
+                println("thread3: " + System.currentTimeMillis() / 1000)
                 // 删除
                 file.delete()
             }

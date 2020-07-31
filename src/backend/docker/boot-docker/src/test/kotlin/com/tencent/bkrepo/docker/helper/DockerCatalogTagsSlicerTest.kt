@@ -28,5 +28,4 @@ class DockerCatalogTagsSlicerTest {
         val catalogResponse = CatalogResponse(elementsHolder)
         Assertions.assertEquals(catalogResponse.repositories.size, 1)
     }
-
 }

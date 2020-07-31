@@ -278,9 +278,11 @@ abstract class AbstractStorageService : StorageService {
 
     override fun checkHealth(storageCredentials: StorageCredentials?) {
         val credentials = getCredentialsOrDefault(storageCredentials)
-        val future = healthCheckExecutor.submit(Callable {
-            doCheckHealth(credentials)
-        })
+        val future = healthCheckExecutor.submit(
+            Callable {
+                doCheckHealth(credentials)
+            }
+        )
         try {
             future.get(storageProperties.monitor.timeout.seconds, TimeUnit.SECONDS)
         } catch (timeoutException: TimeoutException) {

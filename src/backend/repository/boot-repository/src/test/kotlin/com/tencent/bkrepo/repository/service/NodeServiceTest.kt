@@ -41,7 +41,7 @@ internal class NodeServiceTest @Autowired constructor(
 
     @BeforeEach
     fun setUp() {
-        if(!repositoryService.exist(projectId, repoName)) {
+        if (!repositoryService.exist(projectId, repoName)) {
             repositoryService.create(
                 RepoCreateRequest(
                     projectId = projectId,
@@ -78,7 +78,6 @@ internal class NodeServiceTest @Autowired constructor(
         assertEquals(2, nodeService.list(projectId, repoName, "/", false, deep = true).size)
     }
 
-
     @Test
     @DisplayName("列表查询")
     fun listTest() {
@@ -90,8 +89,8 @@ internal class NodeServiceTest @Autowired constructor(
 
         assertEquals(1, nodeService.list(projectId, repoName, "/a/b", includeFolder = false, deep = false).size)
         assertEquals(3, nodeService.list(projectId, repoName, "/a/b", includeFolder = true, deep = false).size)
-        assertEquals(size*2 + 1, nodeService.list(projectId, repoName, "/a/b", includeFolder = false, deep = true).size)
-        assertEquals(size*2 + 3, nodeService.list(projectId, repoName, "/a/b", includeFolder = true, deep = true).size)
+        assertEquals(size * 2 + 1, nodeService.list(projectId, repoName, "/a/b", includeFolder = false, deep = true).size)
+        assertEquals(size * 2 + 3, nodeService.list(projectId, repoName, "/a/b", includeFolder = true, deep = true).size)
         assertEquals(size, nodeService.list(projectId, repoName, "/a/b/c", includeFolder = true, deep = true).size)
     }
 
@@ -151,10 +150,10 @@ internal class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("创建节点，非法名称抛异常")
     fun createThrowTest() {
-        assertThrows<ErrorCodeException> { nodeService.create(createRequest(" a /   b /  1.txt   ", false))}
-        assertThrows<ErrorCodeException> { nodeService.create(createRequest(" a /   b /  1./txt   ", false))}
-        assertThrows<ErrorCodeException> { nodeService.create(createRequest("/a/b/..", true))}
-        assertThrows<ErrorCodeException> { nodeService.create(createRequest("/a/b/.", true))}
+        assertThrows<ErrorCodeException> { nodeService.create(createRequest(" a /   b /  1.txt   ", false)) }
+        assertThrows<ErrorCodeException> { nodeService.create(createRequest(" a /   b /  1./txt   ", false)) }
+        assertThrows<ErrorCodeException> { nodeService.create(createRequest("/a/b/..", true)) }
+        assertThrows<ErrorCodeException> { nodeService.create(createRequest("/a/b/.", true)) }
         nodeService.create(createRequest("/a/b", true))
     }
 
@@ -197,7 +196,6 @@ internal class NodeServiceTest @Autowired constructor(
         assertEquals(null, node.sha256)
     }
 
-
     @Test
     @DisplayName("删除节点")
     fun deleteTest() {
@@ -230,7 +228,6 @@ internal class NodeServiceTest @Autowired constructor(
         )
 
         assertFalse(nodeService.exist(projectId, repoName, "/a/b/c/1.txt"))
-
     }
 
     @Test
@@ -238,7 +235,6 @@ internal class NodeServiceTest @Autowired constructor(
     fun escapeTest() {
         nodeService.create(createRequest("/.*|^/a/1.txt", false))
         nodeService.create(createRequest("/a/1.txt", false))
-
 
         assertEquals(1, nodeService.list(projectId, repoName, "/.*|^/a", includeFolder = true, deep = true).size)
         nodeService.deleteByPath(projectId, repoName, "/.*|^/a", operator)
@@ -262,7 +258,6 @@ internal class NodeServiceTest @Autowired constructor(
 
         assertEquals(0, fileSizeInfo.subNodeCount)
         assertEquals(1, fileSizeInfo.size)
-
     }
 
     @Test
@@ -288,13 +283,11 @@ internal class NodeServiceTest @Autowired constructor(
         assertFalse(nodeService.exist(projectId, repoName, "/a/b/1.txt"))
         assertFalse(nodeService.exist(projectId, repoName, "/a/b/c/2.txt"))
 
-
         assertTrue(nodeService.exist(projectId, repoName, "/aa"))
         assertTrue(nodeService.exist(projectId, repoName, "/aa/b"))
         assertTrue(nodeService.exist(projectId, repoName, "/aa/b/c"))
         assertTrue(nodeService.exist(projectId, repoName, "/aa/b/1.txt"))
         assertTrue(nodeService.exist(projectId, repoName, "/aa/b/c/2.txt"))
-
     }
 
     @Test
@@ -317,7 +310,6 @@ internal class NodeServiceTest @Autowired constructor(
 
         assertTrue(nodeService.exist(projectId, repoName, "/a/d"))
         assertTrue(nodeService.exist(projectId, repoName, "/a/d/c"))
-
     }
 
     @Test
@@ -367,7 +359,6 @@ internal class NodeServiceTest @Autowired constructor(
         assertFalse(nodeService.exist(projectId, repoName, "/a/b/c/d/1.txt"))
         assertFalse(nodeService.exist(projectId, repoName, "/a/b/c/d/e/2.txt"))
 
-
         assertTrue(nodeService.exist(projectId, repoName, "/ab"))
         assertTrue(nodeService.exist(projectId, repoName, "/ab/c"))
         assertTrue(nodeService.exist(projectId, repoName, "/ab/c/d"))
@@ -403,7 +394,6 @@ internal class NodeServiceTest @Autowired constructor(
         assertFalse(nodeService.exist(projectId, repoName, "/a/b/c/d/e"))
         assertFalse(nodeService.exist(projectId, repoName, "/a/b/c/d/1.txt"))
         assertFalse(nodeService.exist(projectId, repoName, "/a/b/c/d/e/2.txt"))
-
 
         assertTrue(nodeService.exist(projectId, repoName, "/ab"))
         assertTrue(nodeService.exist(projectId, repoName, "/ab/b"))
@@ -619,14 +609,12 @@ internal class NodeServiceTest @Autowired constructor(
         assertTrue(nodeService.exist(projectId, repoName, "/a/b/c/d/1.txt"))
         assertTrue(nodeService.exist(projectId, repoName, "/a/b/c/d/e/2.txt"))
 
-
         assertTrue(nodeService.exist(projectId, repoName, "/ab"))
         assertTrue(nodeService.exist(projectId, repoName, "/ab/c"))
         assertTrue(nodeService.exist(projectId, repoName, "/ab/c/d"))
         assertTrue(nodeService.exist(projectId, repoName, "/ab/c/d/e"))
         assertTrue(nodeService.exist(projectId, repoName, "/ab/c/d/1.txt"))
         assertTrue(nodeService.exist(projectId, repoName, "/ab/c/d/e/2.txt"))
-
     }
 
     @Test
@@ -681,5 +669,4 @@ internal class NodeServiceTest @Autowired constructor(
             metadata = metadata
         )
     }
-
 }

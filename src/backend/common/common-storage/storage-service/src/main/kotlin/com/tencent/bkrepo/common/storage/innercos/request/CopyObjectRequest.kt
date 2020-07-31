@@ -25,5 +25,4 @@ data class CopyObjectRequest(
         headers[COS_COPY_SOURCE] = sourceEndpoint + sourceUri
         return super.sign(credentials, config)
     }
-
 }
