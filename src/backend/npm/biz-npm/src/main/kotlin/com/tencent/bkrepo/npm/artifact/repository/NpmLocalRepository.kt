@@ -75,6 +75,7 @@ import org.springframework.stereotype.Component
 import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
 
 @Component
 class NpmLocalRepository : LocalRepository() {
@@ -361,13 +362,16 @@ class NpmLocalRepository : LocalRepository() {
         val totalSize = versions.keySet().size
         versions.keySet().forEach { version ->
             try {
-                val versionJson = versions.getAsJsonObject(version)
-                val tarball = versionJson.getAsJsonObject(DIST).get(TARBALL).asString
-                storeVersionArtifact(context, versionJson)
-                storeTgzArtifact(context, tarball, name)
-                logger.info(
-                    "migrate npm package [$name] for version [$version] success. process rate: [${++count}/$totalSize]"
-                )
+                measureTimeMillis {
+                    val versionJson = versions.getAsJsonObject(version)
+                    val tarball = versionJson.getAsJsonObject(DIST).get(TARBALL).asString
+                    storeVersionArtifact(context, versionJson)
+                    storeTgzArtifact(context, tarball, name)
+                }.apply {
+                    logger.info(
+                        "migrate npm package [$name] for version [$version] success, elapse $this ms.  process rate: [${++count}/$totalSize]"
+                    )
+                }
             } catch (ignored: Exception) {
                 logger.warn("migrate package [$name] for version [$version] failed， message： ${ignored.message}")
                 // delete version json file
@@ -422,14 +426,17 @@ class NpmLocalRepository : LocalRepository() {
         }
         val request = Request.Builder().url(tarball).get().build()
         try {
-            response = okHttpClient.newCall(request).execute()
-            if (checkResponse(response)) {
-                val artifactFile = createTempFile(response.body()!!)
-                putArtifact(context, artifactFile)
+            measureTimeMillis {
+                response = okHttpClient.newCall(request).execute()
+                if (checkResponse(response!!)) {
+                    val artifactFile = createTempFile(response?.body()!!)
+                    putArtifact(context, artifactFile)
+                    artifactFile.delete()
+                }
+            }.apply {
                 logger.info(
-                    "migrate npm package [$name] with tgz file [${tgzFilePath.substringAfter('/')}] success."
+                    "migrate npm package [$name] with tgz file [${tgzFilePath.substringAfter('/')}] success, elapse $this ms."
                 )
-                artifactFile.delete()
             }
         } catch (exception: IOException) {
             logger.error("http send url [$tarball] for artifact [$tgzFilePath] failed : ${exception.message}")

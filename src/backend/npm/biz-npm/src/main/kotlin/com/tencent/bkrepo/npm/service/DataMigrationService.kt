@@ -46,6 +46,7 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
+import kotlin.system.measureTimeMillis
 
 @Service
 class DataMigrationService {
@@ -214,9 +215,13 @@ class DataMigrationService {
         var failDataDetailInfo: MigrationFailDataDetailInfo? = null
         try {
             Thread.sleep(SLEEP_MILLIS)
-            failDataDetailInfo = migrate(artifactInfo, pkgName)
-            if (!hasMigrationFailData(failDataDetailInfo)){
-                logger.info("migrate npm package [$pkgName] success!")
+            measureTimeMillis {
+                failDataDetailInfo = migrate(artifactInfo, pkgName)
+            }.apply {
+                if (!hasMigrationFailData(failDataDetailInfo!!)){
+                    logger.info("migrate npm package [$pkgName] success, elapse $this ms.")
+                }
+
             }
 
         } catch (exception: IOException) {
