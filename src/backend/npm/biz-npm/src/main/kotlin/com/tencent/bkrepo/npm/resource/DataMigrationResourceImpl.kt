@@ -2,7 +2,7 @@ package com.tencent.bkrepo.npm.resource
 
 import com.tencent.bkrepo.npm.api.DataMigrationResource
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.pojo.NpmDataMigrationResponse
+import com.tencent.bkrepo.npm.pojo.migration.NpmDataMigrationResponse
 import com.tencent.bkrepo.npm.service.DataMigrationService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -16,14 +16,14 @@ class DataMigrationResourceImpl : DataMigrationResource {
     override fun dataMigrationByFile(
         artifactInfo: NpmArtifactInfo,
         useErrorData: Boolean
-    ): NpmDataMigrationResponse<String> {
+    ): NpmDataMigrationResponse {
         return dataMigrationService.dataMigrationByFile(artifactInfo, useErrorData)
     }
 
     override fun dataMigrationByUrl(
         artifactInfo: NpmArtifactInfo,
         useErrorData: Boolean
-    ): NpmDataMigrationResponse<String> {
+    ): NpmDataMigrationResponse {
         return dataMigrationService.dataMigrationByUrl(artifactInfo, useErrorData)
     }
 
@@ -31,7 +31,7 @@ class DataMigrationResourceImpl : DataMigrationResource {
         artifactInfo: NpmArtifactInfo,
         useErrorData: Boolean,
         pkgName: String
-    ): NpmDataMigrationResponse<String> {
+    ): NpmDataMigrationResponse {
         return dataMigrationService.dataMigrationByPkgName(artifactInfo, useErrorData, pkgName)
     }
 }

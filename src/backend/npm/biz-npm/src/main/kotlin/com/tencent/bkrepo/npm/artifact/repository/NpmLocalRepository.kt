@@ -52,6 +52,8 @@ import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
+import com.tencent.bkrepo.npm.pojo.migration.MigrationFailDataDetailInfo
+import com.tencent.bkrepo.npm.pojo.migration.VersionFailDetail
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
@@ -99,7 +101,8 @@ class NpmLocalRepository : LocalRepository() {
             if (name == NPM_PACKAGE_TGZ_FILE) {
                 // 校验MIME_TYPE
                 context.contextAttributes[APPLICATION_OCTET_STEAM].takeIf {
-                    it == MediaType.APPLICATION_OCTET_STREAM_VALUE }
+                    it == MediaType.APPLICATION_OCTET_STREAM_VALUE
+                }
                     ?: throw ArtifactValidateException(
                         "Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}"
                     )
@@ -306,48 +309,12 @@ class NpmLocalRepository : LocalRepository() {
         return jsonArray?.let { GsonUtils.gsonToList<Map<String, Any>>(it) } ?: emptyList()
     }
 
-    override fun migrate(context: ArtifactMigrateContext) {
-        val pkgJsonFile = searchPkgJson(context)
-        installTgzFile(context, pkgJsonFile)
+    override fun migrate(context: ArtifactMigrateContext): MigrationFailDataDetailInfo {
+        val pkgJsonFile = searchPackageJsonFile(context)
+        return installVersionAndTgzArtifact(context, pkgJsonFile)
     }
 
-    private fun installTgzFile(context: ArtifactMigrateContext, jsonObject: JsonObject) {
-        val name = jsonObject[NAME].asString
-        val versions = jsonObject.getAsJsonObject(VERSIONS)
-        var count = 0
-        val totalSize = versions.keySet().size
-        versions.keySet().forEach { version ->
-            var response: Response? = null
-            val tgzFilePath: String?
-            val tarball = versions.getAsJsonObject(version).getAsJsonObject(DIST).get(TARBALL).asString
-            tgzFilePath = tarball.substringAfterLast(registry)
-            context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
-            // hit cache continue
-            getCacheArtifact(context)?.let {
-                logger.info("migration package [$name] tgz file $tgzFilePath is exists in repository, skip," +
-                    " current process rate: [${++count}/$totalSize]")
-                return@forEach
-            }
-            val request = Request.Builder().url(tarball).get().build()
-            try {
-                response = okHttpClient.newCall(request).execute()
-                if (checkResponse(response)) {
-                    val artifactFile = createTempFile(response.body()!!)
-                    putArtifact(context, artifactFile)
-                    logger.info("migration package [$name] tgz file ${tgzFilePath.substringAfter('/')} success," +
-                        " current process rate: [${++count}/$totalSize]")
-                    artifactFile.delete()
-                }
-            } catch (exception: IOException) {
-                logger.error("http send url [$tarball] for artifact [$tgzFilePath] failed : ${exception.message}")
-                throw exception
-            } finally {
-                response?.body()?.close()
-            }
-        }
-    }
-
-    private fun searchPkgJson(context: ArtifactMigrateContext): JsonObject {
+    private fun searchPackageJsonFile(context: ArtifactMigrateContext): JsonObject {
         var cacheFileSha256: String? = null
         var cacheArtifact: InputStream? = null
         getCacheNodeInfo(context)?.let {
@@ -357,26 +324,116 @@ class NpmLocalRepository : LocalRepository() {
         val pkgName = context.contextAttributes[PKG_NAME] as String
         val url = registry.trimEnd('/') + '/' + pkgName
         var response: Response? = null
-        return try {
+        try {
             val request = Request.Builder().url(url).get().build()
             response = okHttpClient.newCall(request).execute()
             if (checkResponse(response)) {
-                val artifactFile = createTempFile(response.body()!!)
-                if (artifactFile.getFileSha256() == cacheFileSha256) {
-                    val resultJson = GsonUtils.transferInputStreamToJson(cacheArtifact!!)
-                    putVersionArtifact(context, resultJson)
-                    artifactFile.delete()
-                    return resultJson
-                }
 
+                val artifactFile = createTempFile(response.body()!!)
+                val artifactFileSha256 = artifactFile.getFileSha256()
+                if (artifactFileSha256 == cacheFileSha256) {
+                    return GsonUtils.transferInputStreamToJson(cacheArtifact!!)
+                }
                 putArtifact(context, artifactFile)
                 val resultJson = GsonUtils.transferInputStreamToJson(artifactFile.getInputStream())
-                putVersionArtifact(context, resultJson)
+                // 添加依赖
+                npmDependentHandler.updatePkgDepts(
+                    context.userId, context.artifactInfo, resultJson, NpmOperationAction.MIGRATION
+                )
                 artifactFile.delete()
-                resultJson
+                return resultJson
             } else throw ArtifactNotFoundException("download from remote for [$pkgName] failed.")
         } catch (exception: IOException) {
             logger.error("http send [$url] for search [$pkgName.json] file failed, {}", exception.message)
+            throw exception
+        } finally {
+            response?.body()?.close()
+        }
+    }
+
+    private fun installVersionAndTgzArtifact(
+        context: ArtifactMigrateContext,
+        jsonObject: JsonObject
+    ): MigrationFailDataDetailInfo {
+        val name = jsonObject[NAME].asString
+        val migrationFailDataDetailInfo = MigrationFailDataDetailInfo(name, mutableSetOf())
+        val versions = jsonObject.getAsJsonObject(VERSIONS)
+        var count = 0
+        val totalSize = versions.keySet().size
+        versions.keySet().forEach { version ->
+            try {
+                val versionJson = versions.getAsJsonObject(version)
+                val tarball = versionJson.getAsJsonObject(DIST).get(TARBALL).asString
+                storeVersionArtifact(context, versionJson)
+                storeTgzArtifact(context, tarball, name)
+                logger.info(
+                    "migrate npm package [$name] for version [$version] success. process rate: [${++count}/$totalSize]"
+                )
+            } catch (ignored: Exception) {
+                logger.warn("migrate package [$name] for version [$version] failed， message： ${ignored.message}")
+                // delete version json file
+                deleteVersionFile(context, name, version)
+                migrationFailDataDetailInfo.versionSet.add(VersionFailDetail(version, ignored.message))
+            }
+        }
+        return migrationFailDataDetailInfo
+    }
+
+    private fun deleteVersionFile(context: ArtifactMigrateContext, name: String, version: String) {
+        val fullPath = String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
+        with(context.artifactInfo) {
+            if (nodeResource.exist(projectId, repoName, fullPath).data!!) {
+                val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, fullPath, context.userId)
+                nodeResource.delete(nodeDeleteRequest)
+            }
+        }
+    }
+
+    private fun storeVersionArtifact(context: ArtifactMigrateContext, versionJson: JsonObject) {
+        val name = versionJson[NAME].asString
+        val version = versionJson[VERSION].asString
+        val versionArtifactFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionJson))
+        val fullPath = String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
+        context.contextAttributes[NPM_FILE_FULL_PATH] = fullPath
+        if (nodeResource.exist(context.artifactInfo.projectId, context.artifactInfo.repoName, fullPath).data!!) {
+            logger.info(
+                "package [$name] with version json file [$name-$version.json] " +
+                    "is already exists in repository, skip migration."
+            )
+            return
+        }
+        val nodeCreateRequest = getNodeCreateRequest(context, versionArtifactFile)
+        storageService.store(nodeCreateRequest.sha256!!, versionArtifactFile, context.storageCredentials)
+        nodeResource.create(nodeCreateRequest)
+        logger.info("migrate npm package [$name] with version json file [$name-$version.json] success.")
+        versionArtifactFile.delete()
+    }
+
+    private fun storeTgzArtifact(context: ArtifactMigrateContext, tarball: String, name: String) {
+        var response: Response? = null
+        val tgzFilePath: String?
+        tgzFilePath = tarball.substringAfterLast(registry)
+        context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
+        // hit cache continue
+        getCacheArtifact(context)?.let {
+            logger.info(
+                "package [$name] with tgz file [$tgzFilePath] is already exists in repository, skip migration."
+            )
+            return
+        }
+        val request = Request.Builder().url(tarball).get().build()
+        try {
+            response = okHttpClient.newCall(request).execute()
+            if (checkResponse(response)) {
+                val artifactFile = createTempFile(response.body()!!)
+                putArtifact(context, artifactFile)
+                logger.info(
+                    "migrate npm package [$name] with tgz file [${tgzFilePath.substringAfter('/')}] success."
+                )
+                artifactFile.delete()
+            }
+        } catch (exception: IOException) {
+            logger.error("http send url [$tarball] for artifact [$tgzFilePath] failed : ${exception.message}")
             throw exception
         } finally {
             response?.body()?.close()
@@ -400,39 +457,10 @@ class NpmLocalRepository : LocalRepository() {
         return nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
     }
 
-    private fun putVersionArtifact(context: ArtifactMigrateContext, jsonFile: JsonObject) {
-        val name = jsonFile[NAME].asString
-        val versionsFile = jsonFile.getAsJsonObject(VERSIONS)
-        var count = 0
-        val totalSize = versionsFile.keySet().size
-        versionsFile.keySet().forEach { version ->
-            val versionFile = versionsFile.getAsJsonObject(version)
-            val artifactVersionFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
-            val fullPath = String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
-            context.contextAttributes[NPM_FILE_FULL_PATH] = fullPath
-            if(nodeResource.exist(context.artifactInfo.projectId, context.artifactInfo.repoName, fullPath).data!!) {
-                logger.info("package $name-$version.json is exists in repository, skip," +
-                    " current process rate: [$name: ${++count}/$totalSize]")
-                return@forEach
-            }
-            val nodeCreateRequest = getNodeCreateRequest(context, artifactVersionFile)
-            storageService.store(nodeCreateRequest.sha256!!, artifactVersionFile, context.storageCredentials)
-            nodeResource.create(nodeCreateRequest)
-            logger.info("migration package $name-$version.json success," +
-                " current process rate: [$name: ${++count}/$totalSize]")
-            artifactVersionFile.delete()
-        }
-        // 添加依赖
-        npmDependentHandler.updatePkgDepts(
-            context.userId, context.artifactInfo, jsonFile, NpmOperationAction.MIGRATION
-        )
-    }
-
     private fun putArtifact(context: ArtifactMigrateContext, artifactFile: ArtifactFile) {
-        val pkgFile = ArtifactFileFactory.build(artifactFile.getInputStream())
-        val nodeCreateRequest = getNodeCreateRequest(context, pkgFile)
+        val nodeCreateRequest = getNodeCreateRequest(context, artifactFile)
+        storageService.store(nodeCreateRequest.sha256!!, artifactFile, context.storageCredentials)
         nodeResource.create(nodeCreateRequest)
-        storageService.store(nodeCreateRequest.sha256!!, pkgFile, context.storageCredentials)
     }
 
     private fun getNodeCreateRequest(context: ArtifactTransferContext, file: ArtifactFile): NodeCreateRequest {
@@ -471,7 +499,7 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     fun dependentMigrate(context: ArtifactMigrateContext) {
-        val pkgJsonFile = searchPkgJson(context)
+        val pkgJsonFile = searchPackageJsonFile(context)
         npmDependentHandler.updatePkgDepts(
             context.userId,
             context.artifactInfo,
@@ -481,7 +509,7 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     companion object {
-        const val TIMEOUT = 60L
+        const val TIMEOUT = 5 * 60L
         val logger: Logger = LoggerFactory.getLogger(NpmLocalRepository::class.java)
     }
 }
