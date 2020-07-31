@@ -3,6 +3,7 @@ package com.tencent.bkrepo.rpm.artifact.repository
 import com.sun.xml.internal.messaging.saaj.util.ByteInputStream
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.hash.sha256
@@ -50,23 +51,8 @@ class RpmLocalRepository(
 ) : LocalRepository() {
 
     fun rpmNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val artifactInfo = context.artifactInfo
-        val repositoryInfo = context.repositoryInfo
-        val artifactFile = context.getArtifactFile()
-        val sha256 = artifactFile.getInputStream().sha256()
-        val md5 = artifactFile.getInputStream().md5()
-
-        return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
-            folder = false,
-            overwrite = true,
-            fullPath = artifactInfo.artifactUri,
-            size = artifactFile.getSize(),
-            sha256 = sha256,
-            md5 = md5,
-            operator = context.userId
-        )
+        val nodeCreateRequest = super.getNodeCreateRequest(context)
+        return nodeCreateRequest.copy(overwrite = true)
     }
 
     fun xmlPrimaryNodeCreate(
@@ -154,7 +140,7 @@ class RpmLocalRepository(
                 ) ?: return
                 val rpmMetadataWithOldStream = RpmMetadataWithOldStream(rpmMetadata, inputStream.unGzipInputStream())
                 // 更新primary.xml
-                if (repeat == ArtifactRepeat.NONE) {
+                if (repeat == NONE) {
                     XmlStrUtil.insertPackage(rpmMetadataWithOldStream)
                 } else {
                     XmlStrUtil.updatePackage(rpmMetadataWithOldStream)
@@ -253,7 +239,7 @@ class RpmLocalRepository(
      */
     private fun checkRepeatArtifact(context: ArtifactUploadContext): ArtifactRepeat {
         val artifactUri = context.artifactInfo.artifactUri
-        val artifactSha256 = context.getArtifactFile().getFileSha256()
+        val artifactSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
 
         return with(context.artifactInfo) {
             val projectQuery = Rule.QueryRule("projectId", projectId)
