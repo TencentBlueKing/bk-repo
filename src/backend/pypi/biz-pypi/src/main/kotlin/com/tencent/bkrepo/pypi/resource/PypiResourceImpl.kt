@@ -50,15 +50,15 @@ class PypiResourceImpl : PypiResource {
     }
 
     @ResponseBody
-    override fun migrateByUrl(ArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
-        return pypiService.migrate(ArtifactInfo)
+    override fun migrateByUrl(pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
+        return pypiService.migrate(pypiArtifactInfo)
     }
 
     /**
      * 数据迁移结果查询接口
      */
     @ResponseBody
-    override fun migrateResult(ArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
-        return pypiService.migrateResult(ArtifactInfo)
+    override fun migrateResult(pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
+        return pypiService.migrateResult(pypiArtifactInfo)
     }
 }
