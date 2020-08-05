@@ -13,7 +13,7 @@ import java.io.InputStreamReader
 
 object GsonUtils {
     val gson: Gson =
-        GsonBuilder().setPrettyPrinting().disableHtmlEscaping().setDateFormat("yyyy-MM-dd HH:mm:ss.sss'Z'").create()
+        GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
 
     fun gsonToInputStream(obj: JsonElement): InputStream {
         return gson.toJson(obj).byteInputStream()
@@ -40,7 +40,7 @@ object GsonUtils {
     }
 
     fun <T> mapToGson(map: Map<String, T>): JsonObject {
-        return JsonParser().parse(gson.toJson(map)).asJsonObject
+        return JsonParser.parseString(gson.toJson(map)).asJsonObject
     }
 
     fun transferFileToJson(file: File): JsonObject {

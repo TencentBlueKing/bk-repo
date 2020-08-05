@@ -60,6 +60,7 @@ import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.GsonUtils
+import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.api.MetadataResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.apache.commons.codec.binary.Base64
@@ -81,7 +82,7 @@ class NpmService @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     fun publish(userId: String, artifactInfo: NpmArtifactInfo, body: String): NpmSuccessResponse {
         body.takeIf { StringUtils.isNotBlank(it) } ?: throw ArtifactNotFoundException("request body not found!")
-        val jsonObj = JsonParser().parse(body).asJsonObject
+        val jsonObj = JsonParser.parseString(body).asJsonObject
         val artifactFileMap = ArtifactFileMap()
         return if (jsonObj.has(ATTACHMENTS)) {
             val attributesMap = mutableMapOf<String, Any>()
@@ -133,19 +134,20 @@ class NpmService @Autowired constructor(
         }
 
         // first upload
+        val gmtTime = TimeUtil.getGMTTime()
         val timeMap = if (pkgInfo.size() == 0) pkgInfo else pkgInfo.getAsJsonObject(TIME)!!
         if (pkgInfo.size() == 0) {
             jsonObj.addProperty(REV, REV_VALUE)
             pkgInfo = jsonObj
-            timeMap.add(CREATED, GsonUtils.gson.toJsonTree(Date()))
+            timeMap.add(CREATED, GsonUtils.gson.toJsonTree(gmtTime))
         }
 
         pkgInfo.getAsJsonObject(VERSIONS).add(distTags.second, leastJsonObject.getAsJsonObject(distTags.second))
         pkgInfo.getAsJsonObject(DISTTAGS).addProperty(distTags.first, distTags.second)
-        timeMap.add(distTags.second, GsonUtils.gson.toJsonTree(Date()))
-        timeMap.add(MODIFIED, GsonUtils.gson.toJsonTree(Date()))
+        timeMap.add(distTags.second, GsonUtils.gson.toJsonTree(gmtTime))
+        timeMap.add(MODIFIED, GsonUtils.gson.toJsonTree(gmtTime))
         pkgInfo.add(TIME, timeMap)
-        val packageJsonFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(pkgInfo).byteInputStream())
+        val packageJsonFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(pkgInfo))
         artifactFileMap[NPM_PACKAGE_JSON_FILE] = packageJsonFile
     }
 
@@ -204,7 +206,6 @@ class NpmService @Autowired constructor(
     private fun getAttachmentsInfo(jsonObj: JsonObject, attributesMap: MutableMap<String, Any>): JsonObject {
         val distTags = getDistTags(jsonObj)!!
         val name = jsonObj.get(NAME).asString
-        // val version = jsonObj.getAsJsonObject(DISTTAGS).get(LATEST).asString
         logger.info("current pkgName : $name ,current version : ${distTags.second}")
         val attachKey = "$name$FILE_DASH${distTags.second}$FILE_SUFFIX"
         val mutableMap = jsonObj.getAsJsonObject(ATTACHMENTS).getAsJsonObject(attachKey)
@@ -293,7 +294,7 @@ class NpmService @Autowired constructor(
     fun updatePkg(artifactInfo: NpmArtifactInfo, body: String): NpmSuccessResponse {
         val attributesMap = mutableMapOf<String, Any>()
         body.takeIf { StringUtils.isNotBlank(it) } ?: throw ArtifactNotFoundException("request body not found!")
-        val jsonObj = JsonParser().parse(body).asJsonObject
+        val jsonObj = JsonParser.parseString(body).asJsonObject
         val name = jsonObj.get(NAME).asString
         attributesMap[NPM_PKG_JSON_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
 
