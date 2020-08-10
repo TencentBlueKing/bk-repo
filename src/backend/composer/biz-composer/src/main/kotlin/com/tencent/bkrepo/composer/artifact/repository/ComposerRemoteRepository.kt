@@ -30,7 +30,7 @@ class ComposerRemoteRepository : RemoteRepository(), ComposerRepository {
             .get().build()
         val result = okHttpClient.newCall(request).execute().body()?.string()
         try {
-            JsonParser().parse(result).asJsonObject
+            JsonParser.parseString(result).asJsonObject
         } catch (e: IllegalStateException) {
             return null
         }

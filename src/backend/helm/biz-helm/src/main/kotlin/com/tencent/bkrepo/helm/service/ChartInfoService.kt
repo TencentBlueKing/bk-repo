@@ -2,6 +2,7 @@ package com.tencent.bkrepo.helm.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
@@ -12,20 +13,25 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.constants.CHART_NOT_FOUND
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
+import com.tencent.bkrepo.helm.constants.PROJECT_ID
+import com.tencent.bkrepo.helm.constants.REPO_NAME
+import com.tencent.bkrepo.helm.constants.NODE_METADATA_NAME
+import com.tencent.bkrepo.helm.constants.NO_CHART_NAME_FOUND
+import com.tencent.bkrepo.helm.constants.VERSION
+import com.tencent.bkrepo.helm.constants.NODE_METADATA_VERSION
 import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_METADATA
-import com.tencent.bkrepo.helm.constants.NODE_METADATA_NAME
-import com.tencent.bkrepo.helm.constants.NODE_METADATA_VERSION
-import com.tencent.bkrepo.helm.constants.PROJECT_ID
-import com.tencent.bkrepo.helm.constants.REPO_NAME
-import com.tencent.bkrepo.helm.utils.JsonUtil
+import com.tencent.bkrepo.helm.pojo.IndexEntity
+import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.api.NodeResource
 import org.apache.http.HttpStatus
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.io.InputStream
 import java.time.LocalDateTime
 
 @Service
@@ -52,7 +58,43 @@ class ChartInfoService {
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         context.contextAttributes[FULL_PATH] = INDEX_CACHE_YAML
         val inputStream = repository.search(context) as ArtifactInputStream
-        return JsonUtil.searchJson(inputStream, artifactInfo.artifactUri)
+        return inputStream.use {
+            searchJson(it, artifactInfo.artifactUri)
+        }
+    }
+
+    private fun searchJson(inputStream: InputStream, urls: String): Map<String, *> {
+        val jsonStr = YamlUtils.yaml2Json(inputStream)
+        val indexEntity = JsonUtils.objectMapper.readValue(jsonStr, IndexEntity::class.java)
+        val urlList = urls.removePrefix("/").split("/").filter { it.isNotBlank() }
+        return when (urlList.size) {
+            // Without name and version
+            0 -> {
+                indexEntity.entries
+            }
+            // query with name
+            1 -> {
+                val chartName = urlList[0]
+                val chartList = indexEntity.entries[chartName]
+                chartList?.let { mapOf(chartName to chartList) } ?: CHART_NOT_FOUND
+            }
+            // query with name and version
+            2 -> {
+                val chartName = urlList[0]
+                val chartVersion = urlList[1]
+                val chartList = indexEntity.entries[chartName] ?: return NO_CHART_NAME_FOUND
+                val chartVersionList = chartList.filter { chartVersion == it[VERSION] }.toList()
+                if (chartVersionList.isNotEmpty()) {
+                    mapOf(chartName to chartVersionList)
+                } else {
+                    mapOf("error" to "no chart version found for $chartName-$chartVersion")
+                }
+            }
+            else -> {
+                // ERROR_NOT_FOUND
+                CHART_NOT_FOUND
+            }
+        }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)

@@ -81,7 +81,8 @@ class NpmRemoteRepository : RemoteRepository() {
         val createdDate = LocalDateTime.parse(node.nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
-            storageService.load(node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size), context.storageCredentials)?.run {
+            storageService.load(node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size),
+                context.storageCredentials)?.run {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit")
                 ArtifactResource(this, determineArtifactName(context), node.nodeInfo)
             }
