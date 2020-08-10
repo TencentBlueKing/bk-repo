@@ -178,7 +178,7 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
                 cmd = StringUtils.substringAfter(cmd, DOCKER_EMPTY_CMD)
                 blobInfo.command = dockerCmd
                 blobInfo.commandText = cmd
-            } else if (StringUtils.isNotBlank(cmd)) {
+            } else if (cmd.isNotBlank()) {
                 blobInfo.command = DOCKER_RUN_CMD
                 blobInfo.commandText = cmd
             }

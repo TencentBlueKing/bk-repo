@@ -3,7 +3,6 @@ package com.tencent.bkrepo.docker.helper
 import com.tencent.bkrepo.docker.helpers.DockerCatalogTagsSlicer
 import com.tencent.bkrepo.docker.helpers.DockerPaginationElementsHolder
 import com.tencent.bkrepo.docker.response.CatalogResponse
-import org.apache.commons.lang.StringUtils
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -19,7 +18,7 @@ class DockerCatalogTagsSlicerTest {
         val elementsHolder = DockerPaginationElementsHolder()
 
         manifests.forEach {
-            if (StringUtils.isNotBlank(it.key)) {
+            if (it.key.isNotBlank()) {
                 elementsHolder.addElement(it.key)
             }
             DockerCatalogTagsSlicer.sliceCatalog(elementsHolder, maxEntries, lastEntry)

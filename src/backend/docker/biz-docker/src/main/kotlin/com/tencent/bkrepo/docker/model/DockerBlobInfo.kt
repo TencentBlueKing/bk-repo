@@ -1,7 +1,5 @@
 package com.tencent.bkrepo.docker.model
 
-import org.apache.commons.lang.StringUtils
-
 /**
  * docker blob info
  * @author: owenlxu
@@ -16,7 +14,7 @@ data class DockerBlobInfo(var id: String, var digest: String?, var size: Long, v
     var urls: MutableList<String>? = null
 
     init {
-        if (StringUtils.isNotBlank(id)) {
+        if (id.isNotBlank()) {
             this.shortId = id.substring(0, 12)
         }
     }
