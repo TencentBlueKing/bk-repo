@@ -3,8 +3,8 @@ package com.tencent.bkrepo.pypi.artifact.repository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext

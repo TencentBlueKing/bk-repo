@@ -2,8 +2,7 @@ package com.tencent.bkrepo.helm.artifact
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import com.tencent.bkrepo.common.artifact.config.ClientAuthConfig
-import com.tencent.bkrepo.common.artifact.exception.response.ExceptionResponseTranslator
+import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.helm.pojo.HelmErrorResponse
 import org.springframework.context.annotation.Bean
@@ -13,11 +12,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class HelmArtifactConfiguration : ArtifactConfiguration {
+
     override fun getRepositoryType() = RepositoryType.HELM
-    override fun getClientAuthConfig(): ClientAuthConfig = ClientAuthConfig(
-        includePatterns = listOf("/**"),
-        excludePatterns = listOf()
-    )
 
     @Bean
     fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {

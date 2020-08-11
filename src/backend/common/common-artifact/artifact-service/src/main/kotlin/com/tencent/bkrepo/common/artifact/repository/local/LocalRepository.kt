@@ -1,7 +1,8 @@
 package com.tencent.bkrepo.common.artifact.repository.local
 
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_MD5
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -18,7 +19,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpStatus
 import java.util.concurrent.Executor
 import java.util.regex.Pattern
 import javax.annotation.Resource
@@ -135,7 +135,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
             }
         } catch (exception: IllegalArgumentException) {
             logger.warn("Failed to parse range header: $rangeHeader, message: ${exception.message}")
-            throw ArtifactException("Invalid range header", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE.value())
+            throw ArtifactException(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
         }
     }
 

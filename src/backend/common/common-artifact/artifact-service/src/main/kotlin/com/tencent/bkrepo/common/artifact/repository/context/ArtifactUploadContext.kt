@@ -2,7 +2,7 @@ package com.tencent.bkrepo.common.artifact.repository.context
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
-import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 
 /**
  * 构件上传context

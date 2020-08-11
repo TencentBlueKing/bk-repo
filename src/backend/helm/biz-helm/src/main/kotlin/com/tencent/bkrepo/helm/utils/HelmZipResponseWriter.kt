@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.helm.utils
 
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
-import com.tencent.bkrepo.common.artifact.config.CONTENT_DISPOSITION_TEMPLATE
+import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder

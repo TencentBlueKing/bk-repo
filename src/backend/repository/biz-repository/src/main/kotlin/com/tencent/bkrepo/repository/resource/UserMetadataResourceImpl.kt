@@ -4,7 +4,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.permission.Permission
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.UserMetadataResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -17,9 +17,6 @@ import org.springframework.web.bind.annotation.RestController
 
 /**
  * 元数据接口实现类
- *
- * @author: carrypan
- * @date: 2019-10-18
  */
 @RestController
 class UserMetadataResourceImpl : UserMetadataResource {

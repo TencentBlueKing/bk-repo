@@ -12,7 +12,8 @@ import org.springframework.context.annotation.Import
 @Import(FeignClientsConfiguration::class)
 class ReplicationConfiguration {
     @Bean
-    fun artifactConfiguration() = object : ArtifactConfiguration {}
+    fun artifactConfiguration() = object :
+        ArtifactConfiguration {}
 
     @Bean
     fun scheduler(): Scheduler {

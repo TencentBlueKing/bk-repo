@@ -2,7 +2,7 @@ package com.tencent.bkrepo.replication.job
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.common.artifact.constant.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.replication.api.ReplicationClient

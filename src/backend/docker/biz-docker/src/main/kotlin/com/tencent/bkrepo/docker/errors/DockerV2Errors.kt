@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.docker.errors
 
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
+import com.tencent.bkrepo.common.artifact.constant.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE
 import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE_SCOPE
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION

@@ -3,12 +3,12 @@ package com.tencent.bkrepo.repository.service.query
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.artifact.config.PROJECT_ID
-import com.tencent.bkrepo.common.artifact.config.REPO_NAME
-import com.tencent.bkrepo.common.artifact.permission.PermissionService
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import org.slf4j.LoggerFactory
@@ -30,7 +30,7 @@ import java.util.Date
 class NodeQueryService @Autowired constructor(
     private val nodeDao: NodeDao,
     private val nodeQueryBuilder: NodeQueryBuilder,
-    private val permissionService: PermissionService
+    private val permissionManager: PermissionManager
 ) {
 
     /**
@@ -64,7 +64,7 @@ class NodeQueryService @Autowired constructor(
         }
         // 鉴权
         repoNameList.forEach {
-            permissionService.checkPermission(operator, ResourceType.REPO, PermissionAction.READ, projectId!!, it)
+            permissionManager.checkPermission(operator, ResourceType.REPO, PermissionAction.READ, projectId!!, it)
         }
 
         return doQuery(query)

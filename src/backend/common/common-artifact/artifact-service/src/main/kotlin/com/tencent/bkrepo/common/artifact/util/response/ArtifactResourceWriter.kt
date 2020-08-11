@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.common.artifact.util.response
 
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
-import com.tencent.bkrepo.common.artifact.config.BYTES
-import com.tencent.bkrepo.common.artifact.config.CONTENT_DISPOSITION_TEMPLATE
-import com.tencent.bkrepo.common.artifact.config.ICO_MIME_TYPE
-import com.tencent.bkrepo.common.artifact.config.STREAM_MIME_TYPE
-import com.tencent.bkrepo.common.artifact.config.TGZ_MIME_TYPE
-import com.tencent.bkrepo.common.artifact.config.YAML_MIME_TYPE
+import com.tencent.bkrepo.common.artifact.constant.BYTES
+import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
+import com.tencent.bkrepo.common.artifact.constant.ICO_MIME_TYPE
+import com.tencent.bkrepo.common.artifact.constant.STREAM_MIME_TYPE
+import com.tencent.bkrepo.common.artifact.constant.TGZ_MIME_TYPE
+import com.tencent.bkrepo.common.artifact.constant.YAML_MIME_TYPE
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADED_BYTES_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADED_CONSUME_COUNT
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -54,7 +54,10 @@ object ArtifactResourceWriter {
         response.characterEncoding = resource.characterEncoding
         response.contentType = determineMediaType(artifact)
         response.status = resolveStatus(request)
-        response.setHeader(HttpHeaders.ACCEPT_RANGES, BYTES)
+        response.setHeader(
+            HttpHeaders.ACCEPT_RANGES,
+            BYTES
+        )
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, encodeDisposition(artifact))
         response.setHeader(HttpHeaders.CACHE_CONTROL, NO_CACHE)
         node?.let {

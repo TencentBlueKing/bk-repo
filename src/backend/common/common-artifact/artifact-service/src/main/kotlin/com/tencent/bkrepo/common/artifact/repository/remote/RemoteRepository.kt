@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.artifact.repository.remote
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.config.PROXY_AUTHORIZATION
+import com.tencent.bkrepo.common.artifact.constant.PROXY_AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCredentialsConfiguration

@@ -22,9 +22,6 @@ import org.springframework.retry.annotation.EnableRetry
 
 /**
  * 存储自动配置
- *
- * @author: carrypan
- * @date: 2019-09-17
  */
 @Configuration
 @EnableRetry

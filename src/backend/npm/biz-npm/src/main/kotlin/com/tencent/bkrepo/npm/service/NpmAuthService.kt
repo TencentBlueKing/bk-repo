@@ -3,8 +3,8 @@ package com.tencent.bkrepo.npm.service
 import com.google.gson.JsonParser
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.artifact.auth.jwt.JwtProvider
-import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
-import com.tencent.bkrepo.common.artifact.config.BEARER_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.common.artifact.constant.AUTHORIZATION
+import com.tencent.bkrepo.common.artifact.constant.BEARER_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.constants.ID
