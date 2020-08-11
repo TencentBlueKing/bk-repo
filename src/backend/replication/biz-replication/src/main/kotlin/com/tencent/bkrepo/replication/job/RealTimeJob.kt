@@ -68,6 +68,7 @@ class RealTimeJob {
 
         val listener = MessageListener<Document, TOperateLog> {
             val body = it.body
+            logger.info("consume log [$body]")
             body?.let {
                 when (body.operateType) {
                     OperateType.CREATE -> {
