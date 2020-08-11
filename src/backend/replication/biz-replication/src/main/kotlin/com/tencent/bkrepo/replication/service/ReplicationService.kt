@@ -20,6 +20,7 @@ import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.Request
 import org.springframework.stereotype.Service
+import java.net.URLEncoder.encode
 
 @Service
 class ReplicationService(val repoDataService: RepoDataService) {
@@ -29,9 +30,10 @@ class ReplicationService(val repoDataService: RepoDataService) {
             // 查询文件
             val inputStream = repoDataService.getFile(request.sha256!!, request.size!!, currentRepoDetail.localRepoInfo)
             val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM!!, inputStream, request.size!!)
+            val fullPath = encode(request.fullPath, "utf-8")
             val builder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("file", request.fullPath, fileRequestBody)
+                .addFormDataPart("file", fullPath, fileRequestBody)
                 .addFormDataPart("size", request.size.toString())
                 .addFormDataPart("sha256", request.sha256!!)
                 .addFormDataPart("md5", request.md5!!)
@@ -39,7 +41,7 @@ class ReplicationService(val repoDataService: RepoDataService) {
             request.metadata?.forEach { (key, value) ->
                 builder.addFormDataPart("metadata[$key]", value)
             }
-            val url = "$normalizedUrl/replica/file/${request.projectId}/${request.repoName}${request.fullPath}"
+            val url = "$normalizedUrl/replica/file/${request.projectId}/${request.repoName}/${request.fullPath}"
             val requestBody = builder.build()
             val httpRequest = Request.Builder()
                 .url(url)

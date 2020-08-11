@@ -32,6 +32,7 @@ class NodeEventHandler : AbstractEventHandler() {
                     logger.warn("found no repo detail [$projectId, $repoName]")
                     return
                 }
+                logger.info("start to handle event")
                 this.copy(
                     projectId = remoteProjectId,
                     repoName = remoteRepoName
