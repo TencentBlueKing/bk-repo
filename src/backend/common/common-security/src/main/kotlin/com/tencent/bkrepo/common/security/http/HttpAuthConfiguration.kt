@@ -21,7 +21,8 @@ class HttpAuthConfiguration {
             override fun addInterceptors(registry: InterceptorRegistry) {
                 val httpAuthSecurity = httpAuthSecurity()
                 registry.addInterceptor(httpAuthInterceptor())
-                    .excludePathPatterns(httpAuthSecurity.getExcludePatterns())
+                    .addPathPatterns(httpAuthSecurity.getIncludedPatterns())
+                    .excludePathPatterns(httpAuthSecurity.getExcludedPatterns())
             }
         }
     }

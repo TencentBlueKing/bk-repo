@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.security.http
 
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.common.security.constant.ANY_URI_PATTERN
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthHandler
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
@@ -28,7 +29,8 @@ class HttpAuthSecurity {
     private var basicAuthEnabled: Boolean = true
     private var platformAuthEnabled: Boolean = true
     private var jwtAuthEnabled: Boolean = true
-    private val excludePatterns: MutableSet<String> = mutableSetOf()
+    private val includedPatterns: MutableSet<String> = mutableSetOf()
+    private val excludedPatterns: MutableSet<String> = mutableSetOf()
     private val authHandlerList: MutableList<HttpAuthHandler> = mutableListOf()
     private val customizedAuthHandlerList: MutableList<HttpAuthHandler> = mutableListOf()
 
@@ -75,6 +77,8 @@ class HttpAuthSecurity {
 
     /**
      * 禁用匿名登录
+     * 开启后, 当没有任何auth handler认证成功，会抛出异常
+     * 若不开启，则以匿名用户访问
      */
     fun disableAnonymous(): HttpAuthSecurity {
         anonymousEnabled = false
@@ -90,10 +94,18 @@ class HttpAuthSecurity {
     }
 
     /**
-     * 添加排除认证路径
+     * 添加认证路径，如果不指定任何路径，那么默认会对所有接口进行认证
      */
-    fun addExcludePattern(pattern: String): HttpAuthSecurity {
-        excludePatterns.add(pattern)
+    fun includePattern(pattern: String): HttpAuthSecurity {
+        includedPatterns.add(pattern)
+        return this
+    }
+
+    /**
+     * 排除认证路径
+     */
+    fun excludePattern(pattern: String): HttpAuthSecurity {
+        excludedPatterns.add(pattern)
         return this
     }
 
@@ -101,8 +113,15 @@ class HttpAuthSecurity {
         return anonymousEnabled
     }
 
-    fun getExcludePatterns(): List<String> {
-        return excludePatterns.toList()
+    fun getIncludedPatterns(): List<String> {
+        if (includedPatterns.isEmpty()) {
+            includedPatterns.add(ANY_URI_PATTERN)
+        }
+        return includedPatterns.toList()
+    }
+
+    fun getExcludedPatterns(): List<String> {
+        return excludedPatterns.toList()
     }
 
     fun getAuthHandlerList(): List<HttpAuthHandler> {

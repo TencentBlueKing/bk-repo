@@ -10,6 +10,7 @@ interface HttpAuthHandler {
 
     /**
      * 登录endpoint，表示该handler用于处理登录请求
+     * 默认返回null, 表示在所有请求都进行认证
      */
     fun getLoginEndpoint(): String? = null
 
@@ -30,7 +31,11 @@ interface HttpAuthHandler {
      * 认证失败回调
      * 可以根据各自依赖源的协议返回不同的数据格式
      */
-    fun onAuthenticateFailed(request: HttpServletRequest, response: HttpServletResponse, authenticationException: AuthenticationException) {
+    fun onAuthenticateFailed(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        authenticationException: AuthenticationException
+    ) {
         // 默认向上抛异常
         throw authenticationException
     }

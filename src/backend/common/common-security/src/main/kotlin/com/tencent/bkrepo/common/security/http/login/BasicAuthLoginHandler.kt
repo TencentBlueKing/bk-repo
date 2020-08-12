@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.security.http.login
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.security.constant.AUTHORIZATION
-import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
@@ -22,7 +22,7 @@ class BasicAuthLoginHandler(authenticationManager: AuthenticationManager) : Basi
 
     override fun onAuthenticateSuccess(request: HttpServletRequest, response: HttpServletResponse, userId: String) {
         val token = JwtUtils.generateToken(signingKey, Duration.ZERO, userId)
-        response.addHeader(AUTHORIZATION, "$BEARER_AUTH_HEADER_PREFIX $token")
+        response.addHeader(HttpHeaders.AUTHORIZATION, "$BEARER_AUTH_PREFIX $token")
         super.onAuthenticateSuccess(request, response, userId)
     }
 

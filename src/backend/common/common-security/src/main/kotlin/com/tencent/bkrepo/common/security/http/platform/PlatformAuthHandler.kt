@@ -2,17 +2,17 @@ package com.tencent.bkrepo.common.security.http.platform
 
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
-import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
-import com.tencent.bkrepo.common.security.http.HttpAuthHandler
-import com.tencent.bkrepo.common.security.constant.AUTHORIZATION
-import com.tencent.bkrepo.common.security.constant.PLATFORM_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.common.security.constant.AUTH_HEADER_UID
+import com.tencent.bkrepo.common.security.constant.PLATFORM_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.BadCredentialsException
+import com.tencent.bkrepo.common.security.http.HttpAuthHandler
+import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
+import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
+import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import org.slf4j.LoggerFactory
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
@@ -26,10 +26,10 @@ open class PlatformAuthHandler(
 ) : HttpAuthHandler {
 
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
-        val authorizationHeader = request.getHeader(AUTHORIZATION).orEmpty()
-        return if (authorizationHeader.startsWith(PLATFORM_AUTH_HEADER_PREFIX)) {
+        val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
+        return if (authorizationHeader.startsWith(PLATFORM_AUTH_PREFIX)) {
             try {
-                val encodedCredentials = authorizationHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
+                val encodedCredentials = authorizationHeader.removePrefix(PLATFORM_AUTH_PREFIX)
                 val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
                 val parts = decodedHeader.split(StringPool.COLON)
                 require(parts.size >= 2)

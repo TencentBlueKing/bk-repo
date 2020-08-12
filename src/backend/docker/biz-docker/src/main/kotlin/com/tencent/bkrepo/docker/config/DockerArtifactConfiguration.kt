@@ -24,17 +24,17 @@ class DockerArtifactConfiguration : ArtifactConfiguration {
 
     @Bean
     fun dockerAuthSecurityCustomizer(
-        jwtProperties: JwtAuthProperties,
-        authenticationManager: AuthenticationManager
+        authenticationManager: AuthenticationManager,
+        jwtProperties: JwtAuthProperties
     ): HttpAuthSecurityCustomizer {
         return object : HttpAuthSecurityCustomizer {
             override fun customize(httpAuthSecurity: HttpAuthSecurity) {
                 httpAuthSecurity.disableBasicAuth()
-                    .addHttpAuthHandler(DockerBasicAuthLoginHandler(jwtProperties, authenticationManager))
+                    .addHttpAuthHandler(DockerBasicAuthLoginHandler(authenticationManager, jwtProperties))
                     .addHttpAuthHandler(DockerJwtAuthHandler(jwtProperties))
-                    .addExcludePattern("/v2/auth")
-                    .addExcludePattern("/v2/_catalog")
-                    .addExcludePattern("/v2/*/*/*/tags/list")
+                    .excludePattern("/v2/auth")
+                    .excludePattern("/v2/_catalog")
+                    .excludePattern("/v2/*/*/*/tags/list")
             }
         }
     }

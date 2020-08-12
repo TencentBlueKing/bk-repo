@@ -8,12 +8,9 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
-@Configuration
 @Import(FeignClientsConfiguration::class)
-class ReplicationConfiguration {
-    @Bean
-    fun artifactConfiguration() = object :
-        ArtifactConfiguration {}
+@Configuration
+class ReplicationConfiguration: ArtifactConfiguration {
 
     @Bean
     fun scheduler(): Scheduler {

@@ -16,8 +16,7 @@ class RpmArtifactConfiguration : ArtifactConfiguration {
     override fun getRepositoryType(): RepositoryType = RepositoryType.RPM
 
     @Bean
-    fun exceptionResponseTranslator() = object :
-        ExceptionResponseTranslator {
+    fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
             return RpmExceptionResponse(StringPool.EMPTY, payload.message.orEmpty())
         }

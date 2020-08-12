@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.security.http.jwt
 
-import com.tencent.bkrepo.common.security.constant.AUTHORIZATION
-import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.BadCredentialsException
 import com.tencent.bkrepo.common.security.http.HttpAuthHandler
@@ -17,9 +17,9 @@ open class JwtAuthHandler(properties: JwtAuthProperties) : HttpAuthHandler {
     private val signingKey = JwtUtils.createSigningKey(properties.secretKey)
 
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
-        val authorizationHeader = request.getHeader(AUTHORIZATION).orEmpty()
-        return if (authorizationHeader.startsWith(BEARER_AUTH_HEADER_PREFIX)) {
-            val jwtToken = authorizationHeader.removePrefix(BEARER_AUTH_HEADER_PREFIX).trim()
+        val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
+        return if (authorizationHeader.startsWith(BEARER_AUTH_PREFIX)) {
+            val jwtToken = authorizationHeader.removePrefix(BEARER_AUTH_PREFIX).trim()
             return JwtAuthCredentials(jwtToken)
         } else AnonymousCredentials()
     }

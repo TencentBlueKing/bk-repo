@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.docker.errors
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
-import com.tencent.bkrepo.common.artifact.constant.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE
 import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE_SCOPE
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
@@ -99,7 +99,7 @@ object DockerV2Errors {
     ): DockerResponse {
         val scopeStr = if (scopeType != null) String.format(AUTH_CHALLENGE_SCOPE, scopeType, repo, scope) else ""
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
-            .header(BASIC_AUTH_RESPONSE_HEADER, String.format(AUTH_CHALLENGE, tokenUrl, registryService) + scopeStr)
+            .header(HttpHeaders.WWW_AUTHENTICATE, String.format(AUTH_CHALLENGE, tokenUrl, registryService) + scopeStr)
             .contentType(MediaType.APPLICATION_JSON)
             .body(String.format(ERROR_MESSAGE_EMPTY, "UNAUTHORIZED", "authentication required"))
     }

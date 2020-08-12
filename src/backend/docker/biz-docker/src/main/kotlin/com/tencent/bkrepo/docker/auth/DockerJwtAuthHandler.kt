@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.docker.auth
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
-import com.tencent.bkrepo.common.artifact.constant.BASIC_AUTH_RESPONSE_HEADER
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthHandler
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
@@ -28,10 +28,9 @@ class DockerJwtAuthHandler(properties: JwtAuthProperties) : JwtAuthHandler(prope
         response.status = SC_UNAUTHORIZED
         response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         val scopeStr = "repository:*/*/tb:push,pull"
-        response.setHeader(BASIC_AUTH_RESPONSE_HEADER, AUTH_CHALLENGE_SERVICE_SCOPE.format(authUrl, REGISTRY_SERVICE, scopeStr))
+        response.setHeader(HttpHeaders.WWW_AUTHENTICATE, AUTH_CHALLENGE_SERVICE_SCOPE.format(authUrl, REGISTRY_SERVICE, scopeStr))
         response.contentType = MediaType.APPLICATION_JSON
         response.writer.print(ERROR_MESSAGE.format("UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.writer.flush()
     }
-
 }

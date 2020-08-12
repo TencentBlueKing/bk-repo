@@ -21,21 +21,6 @@ const val MS_REQUEST_KEY = "MSRequest"
 const val ANONYMOUS_USER = "anonymous"
 
 /**
- * header user id key
- */
-const val AUTH_HEADER_UID: String = "X-BKREPO-UID"
-
-/**
- * micro service header user id key
- */
-const val MS_AUTH_HEADER_UID: String = "X-BKREPO-MS-UID"
-
-/**
- * micro service header security token
- */
-const val MS_AUTH_HEADER_SECURITY_TOKEN: String = "X-BKREPO-SECURITY-TOKEN"
-
-/**
  * common logger name
  */
 const val EXCEPTION_LOGGER_NAME = "ExceptionLogger"

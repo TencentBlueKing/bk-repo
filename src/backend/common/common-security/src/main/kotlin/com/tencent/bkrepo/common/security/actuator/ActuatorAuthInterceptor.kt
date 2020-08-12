@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.security.actuator
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.security.constant.AUTHORIZATION
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.BadCredentialsException
 import com.tencent.bkrepo.common.security.exception.PermissionException
@@ -20,9 +20,9 @@ class ActuatorAuthInterceptor(
 ) : HandlerInterceptorAdapter() {
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        val authorizationHeader = request.getHeader(AUTHORIZATION) ?: throw AuthenticationException()
+        val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION) ?: throw AuthenticationException()
         try {
-            val encodedCredentials = authorizationHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
+            val encodedCredentials = authorizationHeader.removePrefix(BASIC_AUTH_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
             val parts = decodedHeader.split(StringPool.COLON)
             require(parts.size >= 2)

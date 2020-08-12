@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.security.http.basic
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.security.constant.AUTHORIZATION
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.BadCredentialsException
 import com.tencent.bkrepo.common.security.http.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
@@ -17,10 +17,10 @@ import javax.servlet.http.HttpServletRequest
 open class BasicAuthHandler(private val authenticationManager: AuthenticationManager) : HttpAuthHandler {
 
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
-        val authorizationHeader = request.getHeader(AUTHORIZATION).orEmpty()
-        return if (authorizationHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) {
+        val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
+        return if (authorizationHeader.startsWith(BASIC_AUTH_PREFIX)) {
             try {
-                val encodedCredentials = authorizationHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
+                val encodedCredentials = authorizationHeader.removePrefix(BASIC_AUTH_PREFIX)
                 val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
                 val parts = decodedHeader.split(StringPool.COLON)
                 require(parts.size >= 2)

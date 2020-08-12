@@ -7,6 +7,8 @@ import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.security.http.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
+import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_ADD_USER_MAPPING_URI
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_USER_LOGOUT_MAPPING_URI
 import com.tencent.bkrepo.npm.pojo.NpmErrorResponse
@@ -21,19 +23,20 @@ class NpmArtifactConfiguration : ArtifactConfiguration {
     override fun getRepositoryType() = RepositoryType.NPM
 
     @Bean
-    fun npmAuthSecurityCustomizer(): HttpAuthSecurityCustomizer {
+    fun npmAuthSecurityCustomizer(
+        authenticationManager: AuthenticationManager,
+        jwtProperties: JwtAuthProperties
+    ): HttpAuthSecurityCustomizer {
         return object : HttpAuthSecurityCustomizer {
             override fun customize(httpAuthSecurity: HttpAuthSecurity) {
                 httpAuthSecurity.disableBasicAuth()
-                    .addExcludePattern(NPM_ADD_USER_MAPPING_URI)
-                    .addExcludePattern(NPM_USER_LOGOUT_MAPPING_URI)
+                    .addHttpAuthHandler(NpmLoginAuthHandler(authenticationManager, jwtProperties))
             }
         }
     }
 
     @Bean
-    fun exceptionResponseTranslator() = object :
-        ExceptionResponseTranslator {
+    fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
             return NpmErrorResponse(payload.message.orEmpty(), StringPool.EMPTY)
         }
