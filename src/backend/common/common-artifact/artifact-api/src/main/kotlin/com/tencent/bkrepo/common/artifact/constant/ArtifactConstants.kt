@@ -18,10 +18,6 @@ const val PROJECT_ID = "projectId"
 const val REPO_NAME = "repoName"
 
 /**
- * 权限相关
- */
-const val PERMISSION_PROMPT = "Access Forbidden"
-/**
  * 构件传输相关
  */
 const val OCTET_STREAM = "octet-stream"

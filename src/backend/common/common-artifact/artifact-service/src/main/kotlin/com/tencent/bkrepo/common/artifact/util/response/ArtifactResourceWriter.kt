@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.util.response
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
 import com.tencent.bkrepo.common.artifact.constant.BYTES
 import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
@@ -20,7 +21,6 @@ import com.tencent.bkrepo.repository.util.NodeUtils
 import io.micrometer.core.instrument.Metrics
 import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.web.util.UriUtils
 import java.io.IOException
@@ -54,10 +54,7 @@ object ArtifactResourceWriter {
         response.characterEncoding = resource.characterEncoding
         response.contentType = determineMediaType(artifact)
         response.status = resolveStatus(request)
-        response.setHeader(
-            HttpHeaders.ACCEPT_RANGES,
-            BYTES
-        )
+        response.setHeader(HttpHeaders.ACCEPT_RANGES, BYTES)
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, encodeDisposition(artifact))
         response.setHeader(HttpHeaders.CACHE_CONTROL, NO_CACHE)
         node?.let {

@@ -11,6 +11,7 @@ object HttpHeaders {
     const val AUTHORIZATION = "Authorization"
     const val CACHE_CONTROL = "Cache-Control"
     const val CONNECTION = "Connection"
+    const val CONTENT_DISPOSITION = "Content-DISPOSITION"
     const val CONTENT_ENCODING = "Content-Encoding"
     const val CONTENT_LANGUAGE = "Content-Language"
     const val CONTENT_LENGTH = "Content-Length"
