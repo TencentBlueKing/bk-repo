@@ -18,15 +18,15 @@ import com.tencent.bkrepo.npm.constants.NPM_PKG_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PKG_NAME
 import com.tencent.bkrepo.npm.dao.repository.MigrationErrorDataRepository
 import com.tencent.bkrepo.npm.model.TMigrationErrorData
-import com.tencent.bkrepo.npm.pojo.NpmDataMigrationResponse
+import com.tencent.bkrepo.npm.pojo.migration.NpmDataMigrationResponse
 import com.tencent.bkrepo.npm.pojo.migration.MigrationErrorDataInfo
+import com.tencent.bkrepo.npm.pojo.migration.MigrationFailDataDetailInfo
 import com.tencent.bkrepo.npm.pojo.migration.service.MigrationErrorDataCreateRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.MigrationUtils
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -35,7 +35,6 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
@@ -47,7 +46,7 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
-import javax.annotation.Resource
+import kotlin.system.measureTimeMillis
 
 @Service
 class DataMigrationService {
@@ -57,9 +56,6 @@ class DataMigrationService {
 
     @Value("\${npm.migration.package.count: 100}")
     private val count: Int = DEFAULT_COUNT
-
-    @Resource(name = "npmTaskAsyncExecutor")
-    private lateinit var asyncExecutor: ThreadPoolTaskExecutor
 
     @Autowired
     private lateinit var migrationErrorDataRepository: MigrationErrorDataRepository
@@ -71,13 +67,10 @@ class DataMigrationService {
         HttpClientBuilderFactory.create().readTimeout(TIMEOUT, TimeUnit.SECONDS).build()
     }
 
-    private var totalDataSet = mutableSetOf<String>()
-    private val successSet = mutableSetOf<String>()
-    private val errorSet = mutableSetOf<String>()
-
-    private final fun initTotalDataSetByUrl() {
-        if (StringUtils.isEmpty(url)) {
-            return
+    private final fun initTotalDataSetByUrl(): Set<String> {
+        var totalDataSet: Set<String> = emptySet()
+        if (url.isEmpty()) {
+            return totalDataSet
         }
         var response: Response? = null
         try {
@@ -94,130 +87,157 @@ class DataMigrationService {
         } finally {
             response?.body()?.close()
         }
+        return totalDataSet
     }
 
-    private final fun initTotalDataSetByFile() {
-        val inputStream: InputStream = this.javaClass.classLoader.getResourceAsStream(FILE_NAME) ?: return
+    private final fun initTotalDataSetByFile(): Set<String> {
+        val inputStream: InputStream = this.javaClass.classLoader.getResourceAsStream(FILE_NAME) ?: return emptySet()
         val use = inputStream.use { GsonUtils.transferInputStreamToJson(it) }
-        totalDataSet =
-            use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
+        return use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
     }
 
-    private final fun initTotalDataSetByPkgName(pkgName: String) {
-        if (StringUtils.isNotBlank(pkgName)) {
-            totalDataSet = pkgName.split(',').filter { it.isNotBlank() }.map { it.trim() }.toMutableSet()
+    private final fun initTotalDataSetByPkgName(pkgName: String): Set<String> {
+        if (pkgName.isNotBlank()) {
+            val pkgNameSet = pkgName.split(',').filter { it.isNotBlank() }.map { it.trim() }.toMutableSet()
+            return pkgNameSet
         }
+        return emptySet()
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    fun dataMigrationByFile(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse<String> {
+    fun dataMigrationByFile(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse {
+        logger.info("migraion by file request parameter:[isUseErrorData: $useErrorData, fileName: $FILE_NAME]")
+        var totalDataSet: Set<String>
         if (useErrorData) {
             val result = find(artifactInfo.projectId, artifactInfo.repoName)
             if (result == null) {
-                initTotalDataSetByFile()
+                totalDataSet = initTotalDataSetByFile()
             } else {
                 totalDataSet = result.errorData
             }
         } else {
-            initTotalDataSetByFile()
+            totalDataSet = initTotalDataSetByFile()
         }
-        return dataMigration(artifactInfo, useErrorData)
+        logger.info("migration by file filter results: [$totalDataSet], size: ${totalDataSet.size}")
+        return dataMigration(totalDataSet, artifactInfo, useErrorData)
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    fun dataMigrationByUrl(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse<String> {
+    fun dataMigrationByUrl(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse {
+        logger.info("migraion by url request parameter: [url: $url, isUseErrorData: $useErrorData]")
+        var totalDataSet: Set<String>
         if (useErrorData) {
             val result = find(artifactInfo.projectId, artifactInfo.repoName)
             if (result == null) {
-                initTotalDataSetByUrl()
+                totalDataSet = initTotalDataSetByUrl()
             } else {
                 totalDataSet = result.errorData
             }
         } else {
-            initTotalDataSetByUrl()
+            totalDataSet = initTotalDataSetByUrl()
         }
-        return dataMigration(artifactInfo, useErrorData)
+        logger.info("migration by url filter results: [$totalDataSet], size: ${totalDataSet.size}")
+        return dataMigration(totalDataSet, artifactInfo, useErrorData)
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     fun dataMigrationByPkgName(
         artifactInfo: NpmArtifactInfo,
         useErrorData: Boolean,
         pkgName: String
-    ): NpmDataMigrationResponse<String> {
-        initTotalDataSetByPkgName(pkgName)
-        return dataMigration(artifactInfo, useErrorData)
+    ): NpmDataMigrationResponse {
+        logger.info("request parameter: [isUseErrorData: $useErrorData, pkgName: $pkgName]")
+        val pkgNameSet = initTotalDataSetByPkgName(pkgName)
+        logger.info("migration by pkgName filter results: [$pkgNameSet], size: ${pkgNameSet.size}")
+        return dataMigration(pkgNameSet, artifactInfo, useErrorData)
     }
 
-    fun dataMigration(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse<String> {
+    fun dataMigration(
+        totalDataSet: Set<String>,
+        artifactInfo: NpmArtifactInfo,
+        useErrorData: Boolean
+    ): NpmDataMigrationResponse {
         val attributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
         RequestContextHolder.setRequestAttributes(attributes, true)
 
-        successSet.clear()
-        errorSet.clear()
-        logger.info("npm data migration pkgName size : [${totalDataSet.size}]")
         val start = System.currentTimeMillis()
-        val list = MigrationUtils.split(totalDataSet, count)
-        val callableList: MutableList<Callable<Set<String>>> = mutableListOf()
-        list.forEach {
+        //val list = MigrationUtils.split(totalDataSet, count)
+        val callableList: MutableList<Callable<MigrationFailDataDetailInfo>> = mutableListOf()
+        var successCount = 0
+        var failCount = 0
+        totalDataSet.forEach {
             callableList.add(Callable {
                 RequestContextHolder.setRequestAttributes(attributes, true)
-                doDataMigration(artifactInfo, it.toSet())
-                errorSet
+                val migrationResult = doDataMigration(artifactInfo, it, totalDataSet.size)
+                if (!hasMigrationFailData(migrationResult)){
+                    successCount++
+                }else{
+                    failCount++
+                }
+                if (isMultipleOfFive(totalDataSet.size)) {
+                    logger.info(
+                        "progress rate : successRate:[${successCount}/${totalDataSet.size}], " +
+                            "failRate[${failCount}/${totalDataSet.size}]"
+                    )
+                }
+                migrationResult
             })
         }
         val resultList = ThreadPoolManager.submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
         logger.info(
-            "npm history data migration, total size[${totalDataSet.size}], success[${successSet.size}], " +
-                "fail[${errorSet.size}], elapse [${millisToSecond(elapseTimeMillis)}] s totally."
+            "npm history data migration, total size[${totalDataSet.size}], success[${successCount}], " +
+                "fail[${failCount}], elapse [${millisToSecond(elapseTimeMillis)}] s totally."
         )
-        val collect = resultList.stream().flatMap { set -> set.stream() }.collect(Collectors.toSet())
+        val resultDetailInfoSet = resultList.stream().filter{ hasMigrationFailData(it)}.collect(Collectors.toSet())
+        val collect = resultList.stream().map { it.pkgName }.collect(Collectors.toSet())
         if (collect.isNotEmpty() && useErrorData) {
             insertErrorData(artifactInfo, collect)
         }
         return NpmDataMigrationResponse(
-            "数据迁移信息展示：",
+            "Data migration information display：",
             totalDataSet.size,
-            successSet.size,
-            errorSet.size,
+            successCount,
+            failCount,
             millisToSecond(elapseTimeMillis),
-            collect
+            resultDetailInfoSet
         )
     }
 
-    fun doDataMigration(artifactInfo: NpmArtifactInfo, data: Set<String>) {
-        data.forEach { pkgName ->
-            try {
-                Thread.sleep(SLEEP_MILLIS)
-                migrate(artifactInfo, pkgName)
-                logger.info("npm package name: [$pkgName] migration success!")
-                successSet.add(pkgName)
-                if (isMultipleOfTen(successSet.size)) {
-                    logger.info(
-                        "progress rate : successRate:[${successSet.size}/${totalDataSet.size}], " +
-                            "failRate[${errorSet.size}/${totalDataSet.size}]"
-                    )
+    fun doDataMigration(
+        artifactInfo: NpmArtifactInfo,
+        pkgName: String,
+        totalDataSet: Int
+    ):MigrationFailDataDetailInfo {
+        var failDataDetailInfo: MigrationFailDataDetailInfo? = null
+        try {
+            Thread.sleep(SLEEP_MILLIS)
+            measureTimeMillis {
+                failDataDetailInfo = migrate(artifactInfo, pkgName)
+            }.apply {
+                if (!hasMigrationFailData(failDataDetailInfo!!)){
+                    logger.info("migrate npm package [$pkgName] success, elapse $this ms.")
                 }
-            } catch (exception: IOException) {
-                logger.error("failed to install [$pkgName.json] file, {}", exception.message)
-                errorSet.add(pkgName)
-            } catch (exception: InterruptedException) {
-                logger.error("failed to install [$pkgName.json] file, {}", exception.message)
-                errorSet.add(pkgName)
+
             }
+
+        } catch (exception: IOException) {
+            logger.error("failed to migrate [$pkgName.json] file, {}", exception.message)
+        } catch (exception: InterruptedException) {
+            logger.error("failed to migrate [$pkgName.json] file, {}", exception.message)
         }
+        return failDataDetailInfo!!
     }
 
-    fun migrate(artifactInfo: NpmArtifactInfo, pkgName: String) {
+    fun migrate(artifactInfo: NpmArtifactInfo, pkgName: String): MigrationFailDataDetailInfo {
         val context = ArtifactMigrateContext()
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, pkgName)
         context.contextAttributes[PKG_NAME] = pkgName
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-        repository.migrate(context)
+        return repository.migrate(context) as MigrationFailDataDetailInfo
     }
 
     fun checkResponse(response: Response): Boolean {
@@ -272,8 +292,8 @@ class DataMigrationService {
 
     companion object {
         const val FILE_NAME = "pkgName.json"
-        const val TIMEOUT = 60L
-        const val DEFAULT_COUNT = 100
+        const val TIMEOUT = 5 * 60L
+        const val DEFAULT_COUNT = 1
         const val MILLIS_RATE = 1000L
         const val SLEEP_MILLIS = 20L
 
@@ -298,8 +318,12 @@ class DataMigrationService {
             return millis / MILLIS_RATE
         }
 
-        fun isMultipleOfTen(size: Int): Boolean {
-            return size.rem(10) == 0
+        fun isMultipleOfFive(size: Int): Boolean {
+            return size.rem(1) == 0
+        }
+
+        fun hasMigrationFailData(failDataDetailInfo: MigrationFailDataDetailInfo): Boolean{
+            return failDataDetailInfo.versionSet.size > 0
         }
     }
 }

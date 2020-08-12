@@ -12,7 +12,6 @@ data class ProjectCreateRequest(
     val displayName: String,
     @ApiModelProperty("描述", required = true)
     val description: String? = null,
-
     @ApiModelProperty("操作用户", required = false)
     val operator: String = SYSTEM_USER
 ) : ProjectRequest

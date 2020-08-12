@@ -6,15 +6,17 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.composer.COMPOSER_VERSION_INIT
 import com.tencent.bkrepo.composer.INIT_PACKAGES
 import org.springframework.stereotype.Component
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.hash.md5
-import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.composer.ARTIFACT_DIRECT_DOWNLOAD_PREFIX
-import com.tencent.bkrepo.composer.artifact.ComposerArtifactInfo
+import com.tencent.bkrepo.composer.pojo.ArtifactRepeat
 import com.tencent.bkrepo.composer.util.DecompressUtil.wrapperJson
 import com.tencent.bkrepo.composer.util.HttpUtil.requestAddr
 import com.tencent.bkrepo.composer.util.JsonUtil
@@ -25,6 +27,9 @@ import org.springframework.transaction.annotation.Transactional
 import java.io.BufferedReader
 import java.io.ByteArrayInputStream
 import java.io.InputStreamReader
+import com.tencent.bkrepo.composer.pojo.ArtifactRepeat.NONE
+import com.tencent.bkrepo.composer.pojo.ArtifactRepeat.FULLPATH
+import com.tencent.bkrepo.composer.pojo.ArtifactRepeat.FULLPATH_SHA256
 
 @Component
 class ComposerLocalRepository : LocalRepository(), ComposerRepository {
@@ -33,71 +38,21 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
      * Composer节点创建请求
      */
     fun getCompressNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val artifactInfo = context.artifactInfo
-        val repositoryInfo = context.repositoryInfo
-        val filename = artifactInfo.artifactUri
-        val sha256 = context.getArtifactFile().getInputStream().sha256()
-        val md5 = context.getArtifactFile().getInputStream().md5()
-        val composerArtifactInfo = artifactInfo as ComposerArtifactInfo
-
-        return NodeCreateRequest(
-                projectId = repositoryInfo.projectId,
-                repoName = repositoryInfo.name,
-                folder = false,
-                overwrite = true,
-                fullPath = "/$ARTIFACT_DIRECT_DOWNLOAD_PREFIX/${filename.removePrefix("/")}",
-                size = context.getArtifactFile().getSize(),
-                sha256 = sha256,
-                md5 = md5,
-                operator = context.userId,
-                metadata = null
+        val nodeCreateRequest = getNodeCreateRequest(context)
+        return nodeCreateRequest.copy(
+            fullPath = "/$ARTIFACT_DIRECT_DOWNLOAD_PREFIX/${context.artifactInfo.artifactUri.removePrefix("/")}",
+            overwrite = true
         )
     }
 
     fun getJsonNodeCreateRequest(
         context: ArtifactUploadContext,
-        artifactFile: ArtifactFile,
-        fullPath: String,
-        fileName: String
+        fullPath: String
     ): NodeCreateRequest {
-        val artifactInfo = context.artifactInfo
-        val repositoryInfo = context.repositoryInfo
-        val artifactFile = artifactFile
-        val sha256 = artifactFile.getInputStream().sha256()
-        val md5 = artifactFile.getInputStream().md5()
-        val composerArtifactInfo = artifactInfo as ComposerArtifactInfo
-
-        return NodeCreateRequest(
-                projectId = repositoryInfo.projectId,
-                repoName = repositoryInfo.name,
-                folder = false,
-                overwrite = true,
-                fullPath = fullPath,
-                size = artifactFile.getSize(),
-                sha256 = sha256,
-                md5 = md5,
-                operator = context.userId,
-                metadata = null
-        )
-    }
-
-    fun getPackagesNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val artifactInfo = context.artifactInfo
-        val repositoryInfo = context.repositoryInfo
-        val artifactFile = context.getArtifactFile()
-        val sha256 = artifactFile.getInputStream().sha256()
-        val md5 = artifactFile.getInputStream().md5()
-
-        return NodeCreateRequest(
-                projectId = repositoryInfo.projectId,
-                repoName = repositoryInfo.name,
-                folder = false,
-                overwrite = true,
-                fullPath = artifactInfo.artifactUri,
-                size = artifactFile.getSize(),
-                sha256 = sha256,
-                md5 = md5,
-                operator = context.userId
+        val nodeCreateRequest = getNodeCreateRequest(context)
+        return nodeCreateRequest.copy(
+            overwrite = true,
+            fullPath = fullPath
         )
     }
 
@@ -105,48 +60,36 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
      *
      */
     private fun indexer(context: ArtifactUploadContext) {
-        with(context.artifactInfo as ComposerArtifactInfo) {
+        with(context.artifactInfo) {
             // 先读取并保存文件信息。
-            val composerJsonNode = context.getArtifactFile().getInputStream().wrapperJson(artifactUri)
-
+            val composerJsonNode = context.getArtifactFile().getInputStream()
+                .wrapperJson(artifactUri)
             with(composerJsonNode) {
-                // query "/p/%package%.json" node ,if not exists create it.
+                // 查询对应的 "/p/%package%.json" 是否存在
                 val pArtifactUri = "/p/$packageName.json"
-                val resultJson = if (nodeResource.detail(projectId, repoName, pArtifactUri).data == null) {
+                val node = nodeResource.detail(projectId, repoName, pArtifactUri).data
+                val resultJson = if (node == null) {
                     JsonUtil.addComposerVersion(String.format(COMPOSER_VERSION_INIT, packageName), json, packageName, version)
                 } else {
                     // if "/p/%package%.json" is Exists
-                    // load version jsonFile
-                    val existsJsonFile = with(context.artifactInfo) {
-                        val jsonNode = nodeResource.detail(projectId, repoName, "/p/$packageName.json").data ?: return
-                        jsonNode.nodeInfo.takeIf { !it.folder } ?: return
-                        storageService.load(jsonNode.nodeInfo.sha256!!, Range.ofFull(jsonNode.nodeInfo.size), context.storageCredentials) ?: return
+                    // load version jsonFile, update "/p/%package%.json"
+                    stream2Json(context)?.let {
+                        JsonUtil.addComposerVersion(it, json, packageName, version)
                     }
-
-                    val existsJson = StringBuilder("").let { stringBuilder ->
-                        BufferedReader(InputStreamReader(existsJsonFile)).use { bufferedReader ->
-                            while (bufferedReader.readLine().also { it?.let {
-                                        stringBuilder.append(it)
-                                    } } != null) {}
-                        }
-                        stringBuilder.toString()
-                    }
-
-                    // update "/p/%package%.json" 。override by default
-                    JsonUtil.addComposerVersion(existsJson, json, packageName, version)
                 }
                 val byteArrayInputStream = ByteArrayInputStream(GsonBuilder().create().toJson(resultJson).toByteArray())
                 val jsonFile = ArtifactFileFactory.build(byteArrayInputStream)
                 ArtifactUploadContext(jsonFile).let { jsonUploadContext ->
-                    val jsonNodeCreateRequest = getJsonNodeCreateRequest(context = jsonUploadContext,
-                            artifactFile = jsonFile,
-                            fullPath = "/p/$packageName.json",
-                            fileName = "${packageName.split("/").last()}.json"
+                    val jsonNodeCreateRequest = getJsonNodeCreateRequest(
+                        context = jsonUploadContext,
+                        fullPath = "/p/$packageName.json"
                     )
                     nodeResource.create(jsonNodeCreateRequest)
                     jsonFile.let {
-                        storageService.store(jsonNodeCreateRequest.sha256!!,
-                                it, context.storageCredentials)
+                        storageService.store(
+                            jsonNodeCreateRequest.sha256!!,
+                            it, context.storageCredentials
+                        )
                     }
                 }
             }
@@ -155,11 +98,14 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
-        indexer(context)
+        val repeat = checkRepeatArtifact(context)
+        if (repeat != ArtifactRepeat.FULLPATH_SHA256) { indexer(context) }
         val nodeCreateRequest = getCompressNodeCreateRequest(context)
         nodeResource.create(nodeCreateRequest)
-        storageService.store(nodeCreateRequest.sha256!!,
-                context.getArtifactFile(), context.storageCredentials)
+        storageService.store(
+            nodeCreateRequest.sha256!!,
+            context.getArtifactFile(), context.storageCredentials
+        )
     }
 
     /**
@@ -186,11 +132,13 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
                 val byteArrayInputStream = ByteArrayInputStream(INIT_PACKAGES.toByteArray())
                 val artifactFile = ArtifactFileFactory.build(byteArrayInputStream)
                 val artifactUploadContext = ArtifactUploadContext(artifactFile)
-                val nodeCreateRequest = getPackagesNodeCreateRequest(context = artifactUploadContext)
+                val nodeCreateRequest = getNodeCreateRequest(context = artifactUploadContext)
                 nodeResource.create(nodeCreateRequest)
                 artifactUploadContext.getArtifactFile().let {
-                    storageService.store(nodeCreateRequest.sha256!!,
-                            it, context.storageCredentials)
+                    storageService.store(
+                        nodeCreateRequest.sha256!!,
+                        it, context.storageCredentials
+                    )
                 }
             }
             return stream2Json(context)?.wrapperPackageJson(host)
@@ -198,19 +146,66 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
     }
 
     /**
+     * 检查上传的构件是否已在仓库中，判断条件：uri && sha256
+     * 降低并发对索引文件的影响
+     * @return ArtifactRepeat.FULLPATH_SHA256 存在完全相同构件，不操作索引
+     * @return ArtifactRepeat.FULLPATH 请求路径相同，但内容不同，更新索引
+     * @return ArtifactRepeat.NONE 无重复构件
+     */
+    private fun checkRepeatArtifact(context: ArtifactUploadContext): ArtifactRepeat {
+        val artifactUri = context.artifactInfo.artifactUri
+        val artifactSha256 = context.getArtifactFile().getFileSha256()
+
+        return with(context.artifactInfo) {
+            val projectQuery = Rule.QueryRule("projectId", projectId)
+            val repositoryQuery = Rule.QueryRule("repoName", repoName)
+//            val sha256Query = Rule.QueryRule("sha256", artifactSha256)
+            val fullPathQuery = Rule.QueryRule("fullPath", artifactUri)
+
+            val queryRule = Rule.NestedRule(
+                mutableListOf(projectQuery, repositoryQuery, fullPathQuery),
+                Rule.NestedRule.RelationType.AND
+            )
+            val queryModel = QueryModel(
+                page = PageLimit(0, 10),
+                sort = Sort(listOf("name"), Sort.Direction.ASC),
+                select = mutableListOf("projectId", "repoName", "fullPath", "sha256"),
+                rule = queryRule
+            )
+            val nodeList = nodeResource.query(queryModel).data?.records
+            if (nodeList.isNullOrEmpty()) {
+                NONE
+            } else {
+                // 上传时重名构件默认是覆盖操作，所以只会存在一个重名构件。
+                if (nodeList.first()["sha256"] == artifactSha256) {
+                    FULLPATH_SHA256
+                } else {
+                    FULLPATH
+                }
+            }
+        }
+    }
+
+    /**
      * 加载搜索到的流并返回内容
      */
-    private fun stream2Json(context: ArtifactSearchContext): String? {
+    private fun stream2Json(context: ArtifactTransferContext): String? {
         return with(context.artifactInfo) {
             val node = nodeResource.detail(projectId, repoName, artifactUri).data ?: return null
             node.nodeInfo.takeIf { !it.folder } ?: return null
-            val inputStream = storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
-                    ?: return null
+            val inputStream = storageService.load(
+                node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size),
+                context
+                    .storageCredentials
+            )
+                ?: return null
 
             val stringBuilder = StringBuilder("")
+            var line: String
             BufferedReader(InputStreamReader(inputStream)).use { bufferedReader ->
-                while (bufferedReader.readLine().also { it?.let {
-                            stringBuilder.append(it) } } != null) { }
+                while ((bufferedReader.readLine().also { line = it }) != null) {
+                    stringBuilder.append(line)
+                }
             }
             stringBuilder.toString()
         }

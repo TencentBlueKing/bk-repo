@@ -38,7 +38,7 @@ class ProjectRepoStatJob {
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT1H")
     fun statProjectRepoSize() {
         logger.info("start to stat project metrics")
-        val inluxdDb = influxDbConfig.influxDbUtils().getInstance() ?: kotlin.run {
+        val inluxdDb = influxDbConfig.influxDbUtils().getInstance() ?: run {
             logger.error("init influxdb fail")
             return
         }
@@ -50,13 +50,13 @@ class ProjectRepoStatJob {
         projects.forEach {
             val projectId = it.name
             val repos = repoModel.getRepoListByProjectId(it.name)
-            val table = "node_" + (projectId.hashCode() and 255).toString()
+            val table = TABLE_PREFIX + (projectId.hashCode() and 255).toString()
             repos.forEach {
                 val repoName = it
                 val result = nodeModel.getNodeSize(projectId, repoName)
                 if (result.size != 0L && result.num != 0L) {
                     logger.info("project : [$projectId],repo: [$repoName],size:[$result]")
-                    val point = Point.measurement("repoInfo")
+                    val point = Point.measurement(INFLUX_COLLECION)
                         .time(timeMillis, TimeUnit.MILLISECONDS)
                         .addField("size", result.size / (1024 * 1024 * 1024))
                         .addField("num", result.num)
@@ -74,5 +74,7 @@ class ProjectRepoStatJob {
 
     companion object {
         private val logger = LoggerHolder.jobLogger
+        private const val INFLUX_COLLECION = "repoInfo"
+        private const val TABLE_PREFIX = "node_"
     }
 }

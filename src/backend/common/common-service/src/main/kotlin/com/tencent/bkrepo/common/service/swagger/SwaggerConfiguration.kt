@@ -17,10 +17,10 @@ class SwaggerConfiguration {
     fun api(): Docket {
         val excludePath = DEFAULT_EXCLUDE_PATH.map { PathSelectors.ant(it) }
         return Docket(DocumentationType.SWAGGER_2)
-                .select()
-                .apis(RequestHandlerSelectors.any())
-                .paths(Predicates.not(Predicates.or(excludePath)))
-                .build()
+            .select()
+            .apis(RequestHandlerSelectors.any())
+            .paths(Predicates.not(Predicates.or(excludePath)))
+            .build()
     }
 
     companion object {

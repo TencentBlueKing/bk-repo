@@ -2,15 +2,16 @@ package com.tencent.bkrepo.common.storage.core.cache
 
 import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.bound
+import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
-import java.io.InputStream
 import java.nio.file.Paths
 import java.util.concurrent.Executor
 import javax.annotation.Resource
@@ -43,22 +44,21 @@ class CacheStorageService : AbstractStorageService() {
         }
     }
 
-    override fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): InputStream? {
+    override fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): ArtifactInputStream? {
         val cacheClient = getCacheClient(credentials)
-        return if (isLoadCacheFirst(range, credentials)) {
-            val cachedFile = cacheClient.load(path, filename) ?: run {
-                val newCacheFile = cacheClient.touch(path, filename)
-                fileStorage.load(path, filename, newCacheFile, credentials) ?: run {
-                    cacheClient.delete(path, filename)
-                    null
-                }
-            }
-            cachedFile?.bound(range)
-        } else {
-            fileStorage.load(path, filename, range, credentials) ?: run {
-                getCacheClient(credentials).load(path, filename)?.bound(range)
-            }
+        val loadCacheFirst = isLoadCacheFirst(range, credentials)
+        if (loadCacheFirst) {
+            cacheClient.load(path, filename)?.bound(range)?.toArtifactStream(range)?.let { return it }
         }
+
+        val artifactInputStream = fileStorage.load(path, filename, range, credentials)?.toArtifactStream(range)
+        if (range.isFullContent() && loadCacheFirst && artifactInputStream != null) {
+            val cachePath = Paths.get(credentials.cache.path, path)
+            val tempPath = Paths.get(credentials.cache.path, TEMP)
+            val readListener = CachedFileWriter(cachePath, filename, tempPath)
+            artifactInputStream.addListener(readListener)
+        }
+        return artifactInputStream
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
@@ -92,7 +92,7 @@ class CacheStorageService : AbstractStorageService() {
 
     override fun doCheckHealth(credentials: StorageCredentials) {
         if (!monitor.health.get()) {
-            throw RuntimeException("Cache storage is unhealthy: ${monitor.reason}")
+            throw IllegalStateException("Cache storage is unhealthy: ${monitor.reason}")
         }
         super.doCheckHealth(credentials)
     }

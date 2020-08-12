@@ -11,3 +11,6 @@ reports/
 
 data/
 http-client.private.env.json
+
+build.yml
+.temp/

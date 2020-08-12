@@ -20,9 +20,9 @@ class MemoryMessageChannelBinder(
     private val extendedBindingProperties: MemoryExtendedBindingProperties,
     provisioningProvider: MemoryProvisioningProvider
 ) : AbstractMessageChannelBinder<
-        ExtendedConsumerProperties<MemoryConsumerProperties>,
-        ExtendedProducerProperties<MemoryProducerProperties>,
-        MemoryProvisioningProvider>(arrayOf(), provisioningProvider),
+    ExtendedConsumerProperties<MemoryConsumerProperties>,
+    ExtendedProducerProperties<MemoryProducerProperties>,
+    MemoryProvisioningProvider>(arrayOf(), provisioningProvider),
     ExtendedPropertiesBinder<MessageChannel, MemoryConsumerProperties, MemoryProducerProperties> {
 
     override fun getExtendedConsumerProperties(channelName: String): MemoryConsumerProperties {

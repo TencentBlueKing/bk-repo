@@ -1,27 +1,28 @@
 package com.tencent.bkrepo.docker.auth
 
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.common.api.constant.APP_KEY
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.StringPool.COLON
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.artifact.auth.basic.BasicAuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.AuthCredentials
 import com.tencent.bkrepo.common.artifact.auth.core.AuthService
 import com.tencent.bkrepo.common.artifact.auth.core.ClientAuthHandler
+import com.tencent.bkrepo.common.artifact.auth.jwt.JwtProvider
 import com.tencent.bkrepo.common.artifact.auth.platform.PlatformAuthCredentials
 import com.tencent.bkrepo.common.artifact.config.AUTHORIZATION
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
+import com.tencent.bkrepo.common.artifact.config.BEARER_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
 import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE_SERVICE_SCOPE
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.constant.ERROR_MESSAGE
 import com.tencent.bkrepo.docker.constant.REGISTRY_SERVICE
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
-import com.tencent.bkrepo.docker.util.JwtUtil
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -39,14 +40,10 @@ import javax.ws.rs.core.MediaType
  * @date: 2019-11-12
  */
 @Component
-class DockerClientAuthHandler(val userResource: ServiceUserResource) :
-    ClientAuthHandler {
+class DockerClientAuthHandler : ClientAuthHandler {
 
     @Value("\${auth.url}")
-    private var authUrl: String = EMPTYSTR
-
-    @Value("\${auth.enable}")
-    private var authEnable: Boolean = true
+    private var authUrl: String = EMPTY
 
     @Autowired
     private lateinit var authService: AuthService
@@ -54,6 +51,10 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
     @Autowired
     private lateinit var serviceUserResource: ServiceUserResource
 
+    /**
+     * check api request ,not from docker client
+     * if platform passed, create user if not exist
+     */
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: AuthCredentials): String {
         if (request.requestURI.startsWith(USER_API_PREFIX)) {
             with(authCredentials as PlatformAuthCredentials) {
@@ -68,17 +69,18 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
             }
         }
         val token = (authCredentials as JwtAuthCredentials).token
-        if (!JwtUtil.verifyToken(token)) {
-            logger.warn("auth token failed {} ", token)
+        try {
+            JwtProvider.validateToken(token)
+            val claims = JwtProvider.validateToken(token).body
+            return claims[USER_KEY] as String
+        } catch (ignored: Exception) {
+            logger.warn("auth token failed [$token] ")
             throw ClientAuthException("auth failed")
         }
-        val userName = JwtUtil.getUserName(token)
-        logger.info("auth token [$token] ,user [$userName]")
-        return userName
     }
 
     private fun checkUserId(userId: String) {
-        if (serviceUserResource.detail(userId).data == null) {
+        serviceUserResource.detail(userId).data ?: run {
             val request = CreateUserRequest(userId = userId, name = userId)
             serviceUserResource.createUser(request)
             logger.info("create user request: [$request] success")
@@ -92,7 +94,7 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
     override fun onAuthenticateFailed(response: HttpServletResponse, clientAuthException: ClientAuthException) {
         response.status = SC_UNAUTHORIZED
         response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
-        val scopeStr = "repository:bkrepo/docker-local/tb:push,pull"
+        val scopeStr = "repository:*/*/tb:push,pull"
         response.setHeader(
             BASIC_AUTH_RESPONSE_HEADER,
             String.format(AUTH_CHALLENGE_SERVICE_SCOPE, authUrl, REGISTRY_SERVICE, scopeStr)
@@ -109,44 +111,24 @@ class DockerClientAuthHandler(val userResource: ServiceUserResource) :
         if (request.requestURI.startsWith(USER_API_PREFIX)) {
             val encodedCredentials = basicAuthHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
-            val parts = decodedHeader.split(":")
+            val parts = decodedHeader.split(COLON)
             require(parts.size >= 2)
             return PlatformAuthCredentials(parts[0], parts[1])
         }
         if (basicAuthHeader.isNullOrBlank()) {
-            logger.warn("auth value is null and path is {}", request.requestURI)
+            logger.warn("auth value is null and path is [${request.requestURI}]")
             throw ClientAuthException("Authorization value is null")
         }
-        if (!basicAuthHeader.startsWith("Bearer ")) {
-            logger.warn("parse token failed [$basicAuthHeader]", basicAuthHeader)
+        if (!basicAuthHeader.startsWith(BEARER_AUTH_HEADER_PREFIX)) {
+            logger.warn("parse token failed [$basicAuthHeader]")
             throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
         }
-        val token = basicAuthHeader.removePrefix("Bearer ")
+        val token = basicAuthHeader.removePrefix(BEARER_AUTH_HEADER_PREFIX)
         return JwtAuthCredentials(token)
     }
 
     companion object {
-
-        private const val PLATFORM_AUTH_HEADER_PREFIX = "Platform "
-
         private val logger = LoggerFactory.getLogger(DockerClientAuthHandler::class.java)
-
-        fun extractBasicAuth(request: HttpServletRequest): BasicAuthCredentials {
-            val basicAuthHeader = request.getHeader(AUTHORIZATION)
-            if (basicAuthHeader.isNullOrBlank()) throw ClientAuthException("Authorization value is null")
-            if (!basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
-
-            try {
-                val encodedCredentials = basicAuthHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
-                val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
-                val parts = decodedHeader.split(":")
-                require(parts.size >= 2)
-                return BasicAuthCredentials(parts[0], parts[1])
-            } catch (exception: IllegalArgumentException) {
-                logger.warn("auth value is not a valid schema")
-                throw ClientAuthException("Authorization value [$basicAuthHeader] is not a valid scheme")
-            }
-        }
     }
 }
 

@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.job
 
+import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -23,16 +24,15 @@ class FileSynchronizeJob {
     @Async
     @SchedulerLock(name = "FileSynchronizeJob", lockAtMostFor = "P7D")
     fun run() {
-        try {
-            logger.info("Starting to synchronize file.")
-            val startTimeMillis = System.currentTimeMillis()
-            val result = storageService.synchronizeFile()
-            val elapseSeconds = (System.currentTimeMillis() - startTimeMillis) / 1000
-            logger.info("Synchronize file success. Walked [${result.totalCount}] files totally, synchronized[${result.synchronizedCount}]," +
-                " error[${result.errorCount}], ignored[${result.ignoredCount}]" +
-                ", [${result.totalSize}] bytes totally, elapse [$elapseSeconds] s.")
-        } catch (exception: Exception) {
-            logger.error("Synchronize file failed.", exception)
+        logger.info("Starting to synchronize file.")
+        executeAndMeasureTime {
+            storageService.synchronizeFile()
+        }.apply {
+            logger.info(
+                "Synchronize file success. Walked [${first.totalCount}] files totally, synchronized[${first.synchronizedCount}]," +
+                    " error[${first.errorCount}], ignored[${first.ignoredCount}]" +
+                    ", [${first.totalSize}] bytes totally, elapse [${second.seconds}] s."
+            )
         }
     }
 

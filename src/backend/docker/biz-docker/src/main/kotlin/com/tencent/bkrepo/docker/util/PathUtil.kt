@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.docker.util
 
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
@@ -10,44 +10,42 @@ import javax.servlet.http.HttpServletRequest
  * @author: owenlxu
  * @date: 2019-11-15
  */
-class PathUtil {
-    companion object {
+object PathUtil {
 
-        private fun prefix(projectId: String, repoName: String): String {
-            return "/v2/$projectId/$repoName/"
-        }
+    fun artifactName(request: HttpServletRequest, pattern: String, projectId: String, repoName: String): String {
+        val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
+        return restOfTheUrl.replaceAfterLast(pattern, EMPTY).removeSuffix(pattern)
+            .removePrefix(prefix(projectId, repoName))
+    }
 
-        private fun userPrefix(projectId: String, repoName: String): String {
-            return "$USER_API_PREFIX/manifest/$projectId/$repoName/"
-        }
+    fun userArtifactName(request: HttpServletRequest, projectId: String, repoName: String, tag: String): String {
+        val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
+        return restOfTheUrl.removePrefix(userPrefix(projectId, repoName)).removeSuffix("/$tag")
+    }
 
-        private fun layerPrefix(projectId: String, repoName: String): String {
-            return "$USER_API_PREFIX/layer/$projectId/$repoName/"
-        }
+    fun layerArtifactName(request: HttpServletRequest, projectId: String, repoName: String, id: String): String {
+        val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
+        return restOfTheUrl.removePrefix(layerPrefix(projectId, repoName)).removeSuffix("/$id")
+    }
 
-        private fun tagPrefix(projectId: String, repoName: String): String {
-            return "$USER_API_PREFIX/repo/tag/$projectId/$repoName/"
-        }
+    fun tagArtifactName(request: HttpServletRequest, projectId: String, repoName: String): String {
+        val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
+        return restOfTheUrl.removePrefix(tagPrefix(projectId, repoName))
+    }
 
-        fun artifactName(request: HttpServletRequest, pattern: String, projectId: String, repoName: String): String {
-            val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
-            return restOfTheUrl.replaceAfterLast(pattern, EMPTYSTR).removeSuffix(pattern)
-                .removePrefix(prefix(projectId, repoName))
-        }
+    private fun prefix(projectId: String, repoName: String): String {
+        return "/v2/$projectId/$repoName/"
+    }
 
-        fun userArtifactName(request: HttpServletRequest, projectId: String, repoName: String, tag: String): String {
-            val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
-            return restOfTheUrl.removePrefix(userPrefix(projectId, repoName)).removeSuffix("/$tag")
-        }
+    private fun userPrefix(projectId: String, repoName: String): String {
+        return "$USER_API_PREFIX/manifest/$projectId/$repoName/"
+    }
 
-        fun layerArtifactName(request: HttpServletRequest, projectId: String, repoName: String, id: String): String {
-            val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
-            return restOfTheUrl.removePrefix(layerPrefix(projectId, repoName)).removeSuffix("/$id")
-        }
+    private fun layerPrefix(projectId: String, repoName: String): String {
+        return "$USER_API_PREFIX/layer/$projectId/$repoName/"
+    }
 
-        fun tagArtifactName(request: HttpServletRequest, projectId: String, repoName: String): String {
-            val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
-            return restOfTheUrl.removePrefix(tagPrefix(projectId, repoName))
-        }
+    private fun tagPrefix(projectId: String, repoName: String): String {
+        return "$USER_API_PREFIX/repo/tag/$projectId/$repoName/"
     }
 }

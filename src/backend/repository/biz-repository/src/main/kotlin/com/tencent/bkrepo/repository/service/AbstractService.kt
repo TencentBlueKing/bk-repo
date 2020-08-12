@@ -33,11 +33,11 @@ abstract class AbstractService {
         try {
             val repoManagerRoleId = roleResource.createRepoManage(projectId, repoName).data!!
             userResource.addUserRole(userId, repoManagerRoleId)
-        } catch (exception: Exception) {
+        } catch (ignored: RuntimeException) {
             if (authProperties.enabled) {
-                throw exception
+                throw ignored
             } else {
-                logger.warn("Create repository manager failed, ignore exception due to auth disabled[${exception.message}].")
+                logger.warn("Create repository manager failed, ignore exception due to auth disabled[${ignored.message}].")
             }
         }
     }
@@ -46,11 +46,11 @@ abstract class AbstractService {
         try {
             val projectManagerRoleId = roleResource.createProjectManage(projectId).data!!
             userResource.addUserRole(operator, projectManagerRoleId)
-        } catch (exception: Exception) {
+        } catch (ignored: RuntimeException) {
             if (authProperties.enabled) {
-                throw exception
+                throw ignored
             } else {
-                logger.warn("Create project manager failed, ignore exception due to auth disabled[${exception.message}].")
+                logger.warn("Create project manager failed, ignore exception due to auth disabled[${ignored.message}].")
             }
         }
     }

@@ -94,7 +94,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
             }
         }
         job.start()
-        return storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
+        return storageService.load(node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size), context.storageCredentials)
     }
 
     /**
@@ -160,9 +160,9 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
             .build()
         val htmlContent: String? = okHttpClient.newCall(build).execute().body()?.string()
         return htmlContent?.let {
-                    val methodResponse = XmlConvertUtil.xml2MethodResponse(it)
-                    return methodResponse.params.paramList[0].value.array?.data?.valueList
-                }
+            val methodResponse = XmlConvertUtil.xml2MethodResponse(it)
+            return methodResponse.params.paramList[0].value.array?.data?.valueList
+        }
     }
 
     companion object {

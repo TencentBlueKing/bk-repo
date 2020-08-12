@@ -4,6 +4,7 @@ import com.tencent.bkrepo.replication.handler.NodeEventConsumer
 import com.tencent.bkrepo.replication.model.TOperateLog
 import com.tencent.bkrepo.repository.pojo.log.OperateType
 import com.tencent.bkrepo.repository.pojo.log.ResourceType
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -14,10 +15,15 @@ import org.springframework.data.mongodb.core.messaging.MessageListenerContainer
 import org.springframework.data.mongodb.core.messaging.TailableCursorRequest
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
-import javax.annotation.PostConstruct
 
+/**
+ * real time job tail from the caped collection
+ * @author: owenlxu
+ * @date: 2020/05/20
+ */
 @Service
 class RealTimeJob {
 
@@ -29,9 +35,8 @@ class RealTimeJob {
 
     private lateinit var container: MessageListenerContainer
 
-    private val collectionName = "operation_log"
-
-    @PostConstruct
+    @Scheduled(initialDelay = 1000 * 40, fixedDelay = Long.MAX_VALUE)
+    @SchedulerLock(name = "RealTimeJob", lockAtMostFor = "PT1H")
     fun run() {
         var isRunning = false
         while (true) {
@@ -43,16 +48,14 @@ class RealTimeJob {
                     container.start()
                     logger.info("try to start status :[${container.isRunning}]")
                 }
-            } catch (exception: Exception) {
-                logger.error("fail to register container [${exception.message}]")
+            } catch (ignored: Exception) {
+                logger.error("fail to register container [${ignored.message}]")
             } finally {
                 logger.info("container running status :[${container.isRunning}]")
                 // get container running status an sleep try
                 isRunning = container.isRunning
-                if (isRunning) {
-                    return
-                }
-                Thread.sleep(30000)
+                if (isRunning) return
+                Thread.sleep(retryInterVal)
             }
         }
     }
@@ -95,7 +98,13 @@ class RealTimeJob {
             .build()
     }
 
+    fun getContainerStatus(): Boolean {
+        return this.container.isRunning
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(RealTimeJob::class.java)
+        const val collectionName = "operation_log"
+        const val retryInterVal = 30000L
     }
 }

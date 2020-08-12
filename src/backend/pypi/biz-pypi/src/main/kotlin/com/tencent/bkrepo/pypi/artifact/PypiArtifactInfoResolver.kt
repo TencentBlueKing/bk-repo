@@ -22,11 +22,11 @@ class PypiArtifactInfoResolver : ArtifactInfoResolver {
             "POST" -> {
                 when (request.getParameter(":action")) {
                     "file_upload" -> {
-                        return UrlPatternUtil.fileUpload(projectId, repoName, artifactUri, request)
+                        return UrlPatternUtil.fileUpload(projectId, repoName, request)
                     }
                 }
             }
         }
-        return PypiArtifactInfo(projectId, repoName, artifactUri, null, null, null)
+        return PypiArtifactInfo(projectId, repoName, artifactUri)
     }
 }

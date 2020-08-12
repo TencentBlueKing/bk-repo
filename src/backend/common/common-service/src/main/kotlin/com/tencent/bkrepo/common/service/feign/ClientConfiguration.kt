@@ -16,8 +16,8 @@ class ClientConfiguration {
     @Bean
     fun requestInterceptor(): RequestInterceptor {
         return RequestInterceptor { requestTemplate ->
-            val attributes =
-                    RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes ?: return@RequestInterceptor
+            val attributes = RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes
+                ?: return@RequestInterceptor
             val request = attributes.request
             // language
             val languageHeaderName = "Accept-Language"

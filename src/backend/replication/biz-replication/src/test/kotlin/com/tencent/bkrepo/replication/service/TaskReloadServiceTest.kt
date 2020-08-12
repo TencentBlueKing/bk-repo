@@ -30,7 +30,8 @@ import org.springframework.context.annotation.Import
 import java.time.LocalDateTime
 
 @DataMongoTest(properties = ["logging.level.com.tencent=DEBUG"])
-@Import(TaskService::class,
+@Import(
+    TaskService::class,
     ScheduleService::class,
     TaskReloadService::class,
     SpringContextUtils::class,
@@ -102,7 +103,6 @@ private class TaskReloadServiceTest {
         Thread.sleep(16 * 1000)
         verify(replicationJobBean, atLeast(5)).execute(task.id)
     }
-
 
     private fun createTask(type: ReplicationType, executionPlan: ExecutionPlan = ExecutionPlan()): ReplicationTaskInfo {
         val remoteClusterInfo = RemoteClusterInfo(url = "", username = "", password = "")

@@ -12,7 +12,9 @@ import com.tencent.bkrepo.npm.artifact.repository.NpmLocalRepository
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PKG_NAME
-import com.tencent.bkrepo.npm.pojo.NpmDataMigrationResponse
+import com.tencent.bkrepo.npm.pojo.migration.MigrationFailDataDetailInfo
+import com.tencent.bkrepo.npm.pojo.migration.NpmDataMigrationResponse
+import com.tencent.bkrepo.npm.pojo.migration.NpmPackageDependentMigrationResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.MigrationUtils
 import com.tencent.bkrepo.npm.utils.ThreadPoolManager
@@ -22,6 +24,7 @@ import okhttp3.Response
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
@@ -33,7 +36,6 @@ import java.io.InputStream
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
-import javax.annotation.Resource
 
 @Service
 class PackageDependentService {
@@ -43,17 +45,15 @@ class PackageDependentService {
     @Value("\${npm.migration.package.count: 100}")
     private val count: Int = DEFAULT_COUNT
 
-    @Resource(name = "npmTaskAsyncExecutor")
+    @Autowired
     private lateinit var asyncExecutor: ThreadPoolTaskExecutor
 
     private val okHttpClient: OkHttpClient by lazy {
         HttpClientBuilderFactory.create().readTimeout(TIMEOUT, TimeUnit.SECONDS).build()
     }
 
-    private final fun initTotalDataSetByUrl() {
-        if (StringUtils.isEmpty(url)) {
-            return
-        }
+    private final fun initTotalDataSetByUrl(): Set<String> {
+        var totalDataSet: Set<String> = emptySet()
         var response: Response? = null
         try {
             val request = Request.Builder().url(url).get().build()
@@ -71,63 +71,67 @@ class PackageDependentService {
         } finally {
             response?.body()?.close()
         }
+        return totalDataSet
     }
 
-    private final fun initTotalDataSetByFile() {
-        val inputStream: InputStream = this.javaClass.classLoader.getResourceAsStream(FILE_NAME) ?: return
+    private final fun initTotalDataSetByFile(): Set<String> {
+        val inputStream: InputStream = this.javaClass.classLoader.getResourceAsStream(FILE_NAME) ?: return emptySet()
         val use = inputStream.use { GsonUtils.transferInputStreamToJson(it) }
-        totalDataSet =
-            use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
+        return use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
-    fun dependentMigrationByUrl(artifactInfo: NpmArtifactInfo): NpmDataMigrationResponse<String> {
-        initTotalDataSetByUrl()
-        return dependentMigration(artifactInfo)
+    fun dependentMigrationByUrl(artifactInfo: NpmArtifactInfo): NpmPackageDependentMigrationResponse {
+        logger.info("dependent migration by url request parameter: [url: $url]")
+        val totalDataSet = initTotalDataSetByUrl()
+        logger.info("dependent migration by url filter results: [$totalDataSet], size: ${totalDataSet.size}")
+        return dependentMigration(artifactInfo, totalDataSet)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
-    fun dependentMigrationByFile(artifactInfo: NpmArtifactInfo): NpmDataMigrationResponse<String> {
-        initTotalDataSetByFile()
-        return dependentMigration(artifactInfo)
+    fun dependentMigrationByFile(artifactInfo: NpmArtifactInfo): NpmPackageDependentMigrationResponse {
+        logger.info("dependent migraion by file request parameter:[fileName: ${FILE_NAME}]")
+        val totalDataSet = initTotalDataSetByFile()
+        logger.info("dependent migration by file filter results: [$totalDataSet], size: ${totalDataSet.size}")
+        return dependentMigration(artifactInfo, totalDataSet)
     }
 
-    fun dependentMigration(artifactInfo: NpmArtifactInfo): NpmDataMigrationResponse<String> {
+    fun dependentMigration(artifactInfo: NpmArtifactInfo, totalDataSet: Set<String>): NpmPackageDependentMigrationResponse {
         val attributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
         RequestContextHolder.setRequestAttributes(attributes, true)
-        successSet.clear()
-        errorSet.clear()
-        logger.info("npm dependent migration pkgName size : [${totalDataSet.size}]")
         val start = System.currentTimeMillis()
         val list = MigrationUtils.split(totalDataSet, count)
         val callableList: MutableList<Callable<Set<String>>> = mutableListOf()
+        var migrationDependentResult: Pair<Set<String>,Set<String>> = Pair(emptySet(), emptySet())
         list.forEach {
             callableList.add(Callable {
                 RequestContextHolder.setRequestAttributes(attributes)
-                doDependentMigration(artifactInfo, it.toSet())
-                errorSet
+                migrationDependentResult = doDependentMigration(artifactInfo, it.toSet(), totalDataSet)
+                migrationDependentResult.second
             })
         }
         val resultList = ThreadPoolManager.submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
         logger.info(
-            "npm package dependent migrate, total size[${totalDataSet.size}], success[${successSet.size}], " +
-                "fail[${errorSet.size}], elapse [${millisToSecond(elapseTimeMillis)}] s totally."
+            "npm package dependent migrate, total size[${totalDataSet.size}], success[${migrationDependentResult.first.size}], " +
+                "fail[${migrationDependentResult.second.size}], elapse [${millisToSecond(elapseTimeMillis)}] s totally."
         )
         val collect = resultList.stream().flatMap { set -> set.stream() }.collect(Collectors.toSet())
-        return NpmDataMigrationResponse(
-            "npm dependent 依赖迁移信息展示：",
+        return NpmPackageDependentMigrationResponse(
+            "npm dependent migration information display：",
             totalDataSet.size,
-            successSet.size,
-            errorSet.size,
+            migrationDependentResult.first.size,
+            migrationDependentResult.second.size,
             millisToSecond(elapseTimeMillis),
             collect
         )
     }
 
-    fun doDependentMigration(artifactInfo: NpmArtifactInfo, data: Set<String>) {
+    fun doDependentMigration(artifactInfo: NpmArtifactInfo, data: Set<String>, totalDataSet: Set<String>): Pair<Set<String>,Set<String>> {
+        val successSet = mutableSetOf<String>()
+        val errorSet = mutableSetOf<String>()
         data.forEach { pkgName ->
             try {
                 dependentMigrate(artifactInfo, pkgName)
@@ -147,6 +151,7 @@ class PackageDependentService {
                 errorSet.add(pkgName)
             }
         }
+        return Pair(successSet, errorSet)
     }
 
     fun dependentMigrate(artifactInfo: NpmArtifactInfo, pkgName: String) {
@@ -170,10 +175,6 @@ class PackageDependentService {
         const val TIMEOUT = 60L
         const val DEFAULT_COUNT = 100
         val logger: Logger = LoggerFactory.getLogger(PackageDependentService::class.java)
-
-        private var totalDataSet = mutableSetOf<String>()
-        private val successSet = mutableSetOf<String>()
-        private val errorSet = mutableSetOf<String>()
 
         fun millisToSecond(millis: Long): Long {
             return millis / DataMigrationService.MILLIS_RATE

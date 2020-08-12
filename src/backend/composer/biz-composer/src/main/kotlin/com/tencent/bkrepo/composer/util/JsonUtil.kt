@@ -11,6 +11,11 @@ import java.lang.Exception
 object JsonUtil {
 
     val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule())
+    private const val packages = "packages"
+    private const val dist = "dist"
+    private const val url = "url"
+    private const val downloadRedirectUrl = "providers-lazy-url"
+    private const val search = "search"
 
     init {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -18,12 +23,11 @@ object JsonUtil {
 
     /**
      * get value with json-param, if string is json-format
-     * @param this json 字符串
      * @param param json 属性
      */
     @Throws(Exception::class)
     infix fun String.jsonValue(param: String): String {
-        val jsonObject = JsonParser().parse(this).asJsonObject
+        val jsonObject = JsonParser.parseString(this).asJsonObject
         return jsonObject.get(param).asString
     }
 
@@ -35,12 +39,12 @@ object JsonUtil {
      */
     @Throws(Exception::class)
     fun String.wrapperJson(host: String, packageName: String): String {
-        val jsonObject = JsonParser().parse(this).asJsonObject
-        val versions = jsonObject.get("packages").asJsonObject.get(packageName).asJsonObject
+        val jsonObject = JsonParser.parseString(this).asJsonObject
+        val versions = jsonObject.get(packages).asJsonObject.get(packageName).asJsonObject
         for (it in versions.entrySet()) {
-            val uri = it.value.asJsonObject.get("dist").asJsonObject.get("url").asString
+            val uri = it.value.asJsonObject.get(dist).asJsonObject.get(url).asString
             val downloadUrl = "$host/$uri"
-            it.value.asJsonObject.get("dist").asJsonObject.addProperty("url", downloadUrl)
+            it.value.asJsonObject.get(dist).asJsonObject.addProperty(url, downloadUrl)
         }
         return GsonBuilder().create().toJson(jsonObject)
     }
@@ -51,12 +55,12 @@ object JsonUtil {
      */
     @Throws(Exception::class)
     fun String.wrapperPackageJson(host: String): String {
-        val jsonObject = JsonParser().parse(this).asJsonObject
-        jsonObject.get("search").asString?.let {
-            jsonObject.addProperty("search", "$host$it")
+        val jsonObject = JsonParser.parseString(this).asJsonObject
+        jsonObject.get(search).asString?.let {
+            jsonObject.addProperty(search, "$host$it")
         }
-        jsonObject.get("providers-lazy-url").asString?.let {
-            jsonObject.addProperty("providers-lazy-url", "$host$it")
+        jsonObject.get(downloadRedirectUrl).asString?.let {
+            jsonObject.addProperty(downloadRedirectUrl, "$host$it")
         }
         return GsonBuilder().create().toJson(jsonObject)
     }
@@ -70,9 +74,10 @@ object JsonUtil {
      */
     @Throws(Exception::class)
     fun addComposerVersion(versionJson: String, uploadFileJson: String, name: String, version: String): JsonObject {
-        val jsonObject = JsonParser().parse(versionJson).asJsonObject
-        val nameParam = jsonObject.getAsJsonObject("packages").getAsJsonObject(name)
-        nameParam.add(version, JsonParser().parse(uploadFileJson))
+        val jsonObject = JsonParser.parseString(versionJson).asJsonObject
+        val nameParam = jsonObject.getAsJsonObject(packages).getAsJsonObject(name)
+        // 覆盖重复版本信息
+        nameParam.add(version, JsonParser.parseString(uploadFileJson))
         return jsonObject
     }
 }

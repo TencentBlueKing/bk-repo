@@ -10,18 +10,18 @@ import org.springframework.boot.test.context.SpringBootTest
 class YamlUtilsTest {
     @Test
     @DisplayName("yaml转换为json测试")
-    fun yaml2JsonTest(){
+    fun yaml2JsonTest() {
         val jsonString = YamlUtils.yaml2Json(yamlStr.byteInputStream())
         println(jsonString)
     }
 
     @Test
-    fun convertStringToEntityTest(){
-        val map = YamlUtils.convertStringToEntity<Map<String,Any>>(yamlStr)
+    fun convertStringToEntityTest() {
+        val map = YamlUtils.convertStringToEntity<Map<String, Any>>(yamlStr)
         Assertions.assertEquals(map.size, 4)
     }
 
-    companion object{
+    companion object {
         val yamlStr = "apiVersion: v1\n" +
             "entries:\n" +
             "  bk-redis:\n" +
@@ -37,5 +37,4 @@ class YamlUtilsTest {
             "generated: '2020-06-24T09:26:05.026Z'\n" +
             "serverInfo: {}"
     }
-
 }

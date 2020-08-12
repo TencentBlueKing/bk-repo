@@ -19,7 +19,7 @@ import java.time.LocalDateTime
 
 @DisplayName("chart info 信息列表测试")
 @SpringBootTest
-class ChartInfoServiceTest{
+class ChartInfoServiceTest {
     @Autowired
     private lateinit var chartInfoService: ChartInfoService
 
@@ -29,7 +29,7 @@ class ChartInfoServiceTest{
     private lateinit var mockMvc: MockMvc
 
     @BeforeEach
-    fun setUp(){
+    fun setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(wac).build()
     }
 
@@ -37,19 +37,19 @@ class ChartInfoServiceTest{
     private var repoName = "helm-local"
 
     @AfterEach
-    fun tearDown(){}
+    fun tearDown() {}
 
     @Test
     @DisplayName("chart列表展示")
-    fun allChartsListTest(){
+    fun allChartsListTest() {
         val helmArtifactInfo = HelmArtifactInfo(projectId, repoName, "/")
         val allChartsList = chartInfoService.allChartsList(helmArtifactInfo, LocalDateTime.now())
-        Assertions.assertEquals(allChartsList.size,0)
+        Assertions.assertEquals(allChartsList.size, 0)
     }
 
     @Test
     @DisplayName("json转换查询测试")
-    fun searchJsonTest(){
+    fun searchJsonTest() {
         val str = "apiVersion: v1\n" +
             "entries:\n" +
             "  bk-redis:\n" +
@@ -76,22 +76,24 @@ class ChartInfoServiceTest{
             "generated: '2020-06-24T09:26:05.026Z'\n" +
             "serverInfo: {}"
         val searchJson = JsonUtil.searchJson(str.byteInputStream(), "/")
-        Assertions.assertEquals(searchJson.size,2)
+        Assertions.assertEquals(searchJson.size, 2)
         val result = JsonUtil.searchJson(str.byteInputStream(), "/mychart")
-        Assertions.assertEquals(result.size,1)
+        Assertions.assertEquals(result.size, 1)
         val resultJson = JsonUtil.searchJson(str.byteInputStream(), "/mychart/0.1.0")
-        Assertions.assertEquals(resultJson["error"],"no chart version found for mychart-0.1.0")
+        Assertions.assertEquals(resultJson["error"], "no chart version found for mychart-0.1.0")
     }
 
     @Test
     @DisplayName("获取chart返回状态测试")
-    fun chartExistsTest(){
+    fun chartExistsTest() {
         val perform =
             mockMvc.perform(
-                MockMvcRequestBuilders.head("/test/helm-local/api/charts/bk-redis/0.1.1").header("Authorization","Basic eHdoeToxMjM0NTY=").contentType(
-                    MediaType.APPLICATION_JSON_UTF8))
+                MockMvcRequestBuilders.head("/test/helm-local/api/charts/bk-redis/0.1.1").header("Authorization", "Basic eHdoeToxMjM0NTY=").contentType(
+                    MediaType.APPLICATION_JSON_UTF8
+                )
+            )
         perform.andExpect { MockMvcResultMatchers.status().isOk }
         val status = perform.andReturn().response.status
-        Assertions.assertEquals(status,200)
+        Assertions.assertEquals(status, 200)
     }
 }

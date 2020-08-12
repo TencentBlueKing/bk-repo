@@ -73,7 +73,6 @@ internal class QuartzTest {
         println(scheduler.getJobKeys(GroupMatcher.anyGroup()).size)
         println(scheduler.getTriggersOfJob(jobKey).size)
 
-
         Thread.sleep(10 * 1000)
         scheduler.shutdown(true)
     }
@@ -97,4 +96,3 @@ internal class QuartzTest {
         }
     }
 }
-

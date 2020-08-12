@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.regex.Pattern
 
 @Service
 class ProjectService(
@@ -34,9 +35,6 @@ class ProjectService(
     fun create(request: ProjectCreateRequest): ProjectInfo {
         with(request) {
             validateParameter(this)
-            if (exist(name)) {
-                throw ErrorCodeException(ArtifactMessageCode.PROJECT_EXISTED, name)
-            }
             val project = TProject(
                 name = name,
                 displayName = displayName,
@@ -66,12 +64,24 @@ class ProjectService(
     }
 
     private fun validateParameter(request: ProjectCreateRequest) {
-        request.takeIf { it.name.isNotBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::name.name)
-        request.takeIf { it.displayName.isNotBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::displayName.name)
+        with(request) {
+            if (!Pattern.matches(PROJECT_NAME_PATTERN, name)) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::name.name)
+            }
+            if (displayName.isBlank() || displayName.length < DISPLAY_NAME_LENGTH_MIN || displayName.length > DISPLAY_NAME_LENGTH_MAX) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::displayName.name)
+            }
+            if (exist(name)) {
+                throw ErrorCodeException(ArtifactMessageCode.PROJECT_EXISTED, name)
+            }
+        }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ProjectService::class.java)
+        private const val PROJECT_NAME_PATTERN = "[a-z][a-zA-Z0-9\\-_]{1,31}"
+        private const val DISPLAY_NAME_LENGTH_MIN = 1
+        private const val DISPLAY_NAME_LENGTH_MAX = 32
 
         private fun convert(tProject: TProject?): ProjectInfo? {
             return tProject?.let {

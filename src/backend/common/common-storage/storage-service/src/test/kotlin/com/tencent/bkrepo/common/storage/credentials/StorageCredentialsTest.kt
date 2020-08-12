@@ -14,7 +14,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 @ExtendWith(SpringExtension::class)
 @EnableConfigurationProperties(value = [StorageProperties::class])
 @TestPropertySource(
-    locations= ["classpath:storage-test.properties"]
+    locations = ["classpath:storage-test.properties"]
 )
 internal class StorageCredentialsTest {
 

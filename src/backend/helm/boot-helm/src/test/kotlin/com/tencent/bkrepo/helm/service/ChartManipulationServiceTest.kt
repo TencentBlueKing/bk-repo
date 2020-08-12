@@ -24,29 +24,28 @@ class ChartManipulationServiceTest {
     private lateinit var mockMvc: MockMvc
 
     @BeforeEach
-    fun setUp(){
+    fun setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(wac).build()
     }
 
     @AfterEach
-    fun tearDown(){}
+    fun tearDown() {}
 
     @Test
     @DisplayName("测试tgz包的全路径")
-    fun chartFileFullPathTest(){
+    fun chartFileFullPathTest() {
         val chartMap = mapOf("name" to "bk-redis", "version" to "0.1.1")
         val chartFileFullPath = chartManipulationService.getChartFileFullPath(chartMap)
-        Assertions.assertEquals(chartFileFullPath,"/bk-redis-0.1.1.tgz")
-        Assertions.assertNotEquals(chartFileFullPath,"/bk-redis-0.1.1.tgz.prov")
+        Assertions.assertEquals(chartFileFullPath, "/bk-redis-0.1.1.tgz")
+        Assertions.assertNotEquals(chartFileFullPath, "/bk-redis-0.1.1.tgz.prov")
     }
 
     @Test
     @DisplayName("chart信息解析测试")
-    fun chartInfoTest(){
-        val artifactInfo = HelmArtifactInfo("test","helm-local","/bk-redis/0.1.1")
+    fun chartInfoTest() {
+        val artifactInfo = HelmArtifactInfo("test", "helm-local", "/bk-redis/0.1.1")
         val chartFileFullPath = chartManipulationService.getChartInfo(artifactInfo)
-        Assertions.assertEquals(chartFileFullPath.first,"bk-redis")
-        Assertions.assertEquals(chartFileFullPath.second,"0.1.1")
+        Assertions.assertEquals(chartFileFullPath.first, "bk-redis")
+        Assertions.assertEquals(chartFileFullPath.second, "0.1.1")
     }
-
 }

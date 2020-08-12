@@ -30,8 +30,8 @@ class FileSynchronizeVisitor(
             } else {
                 checkResult.ignoredCount += 1
             }
-        } catch (exception: Exception) {
-            logger.error("Synchronize file[${filePath.fileName}] error.", exception)
+        } catch (ignored: Exception) {
+            logger.error("Synchronize file[${filePath.fileName}] error.", ignored)
             checkResult.errorCount += 1
         } finally {
             checkResult.totalCount += 1

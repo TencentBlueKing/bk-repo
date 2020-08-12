@@ -33,6 +33,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
+@Suppress("TooGenericExceptionCaught")
 @Component
 class ReplicationJobBean(
     private val taskRepository: TaskRepository,
@@ -139,7 +140,7 @@ class ReplicationJobBean(
                 context.progress.successProject += 1
             } catch (interruptedException: InterruptedException) {
                 throw interruptedException
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 context.progress.failedProject += 1
                 logger.error("Failed to replica project [$localProjectId] to [$remoteProjectId].", exception)
             } finally {
@@ -176,7 +177,7 @@ class ReplicationJobBean(
                     logger.info("Success to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].")
                 } catch (interruptedException: InterruptedException) {
                     throw interruptedException
-                } catch (exception: Exception) {
+                } catch (exception: RuntimeException) {
                     context.progress.failedRepo += 1
                     logger.error("Failed to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].", exception)
                 } finally {
@@ -238,7 +239,7 @@ class ReplicationJobBean(
                     ConflictStrategy.OVERWRITE -> {
                         logger.debug("File[$formattedNodePath] conflict, overwrite it.")
                     }
-                    ConflictStrategy.FAST_FAIL -> throw RuntimeException("File[$formattedNodePath] conflict.")
+                    ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$formattedNodePath] conflict.")
                 }
             }
             try {
@@ -264,7 +265,7 @@ class ReplicationJobBean(
                 logger.info("Success to replica file [$formattedNodePath].")
             } catch (interruptedException: InterruptedException) {
                 throw interruptedException
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 progress.failedNode += 1
                 logger.error("Failed to replica file [$formattedNodePath].", exception)
             } finally {

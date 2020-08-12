@@ -14,15 +14,15 @@ class DateConverterConfig {
      */
     @Bean
     fun localDateTimeConverter(): Converter<String, LocalDateTime> {
-        return Converter {
-            source -> LocalDateTime.parse(source, DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT))
+        return Converter { source ->
+            LocalDateTime.parse(source, DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT))
         }
     }
 
     @Bean
     fun localDateConverter(): Converter<String, LocalDate> {
-        return Converter {
-            source -> LocalDate.parse(source, DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT))
+        return Converter { source ->
+            LocalDate.parse(source, DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT))
         }
     }
 

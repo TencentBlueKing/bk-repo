@@ -68,8 +68,9 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             val response = httpClient.newCall(request).execute()
             return if (checkResponse(response)) {
                 val artifactFile = createTempFile(response.body()!!)
-                val artifactStream = artifactFile.getInputStream().toArtifactStream()
                 val nodeInfo = putArtifactCache(context, artifactFile)
+                val size = artifactFile.getSize()
+                val artifactStream = artifactFile.getInputStream().toArtifactStream(Range.full(size))
                 return ArtifactResource(artifactStream, determineArtifactName(context), nodeInfo)
             } else null
         }
@@ -88,7 +89,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val createdDate = LocalDateTime.parse(nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
-            storageService.load(nodeInfo.sha256!!, Range.ofFull(nodeInfo.size), context.storageCredentials)?.run {
+            storageService.load(nodeInfo.sha256!!, Range.full(nodeInfo.size), context.storageCredentials)?.run {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
                 ArtifactResource(this, determineArtifactName(context), nodeInfo)
             }

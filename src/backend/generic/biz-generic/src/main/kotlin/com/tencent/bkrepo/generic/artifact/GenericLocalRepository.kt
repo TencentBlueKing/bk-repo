@@ -5,7 +5,10 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
 import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
+import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
+import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -19,6 +22,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
 
@@ -59,6 +63,21 @@ class GenericLocalRepository : LocalRepository() {
             val createResult = nodeResource.create(nodeCreateRequest)
             context.response.contentType = StringPool.MEDIA_TYPE_JSON
             context.response.writer.println(createResult.toJsonString())
+        }
+    }
+
+    override fun remove(context: ArtifactRemoveContext) {
+        val artifactInfo = context.artifactInfo
+        with(artifactInfo) {
+            val nodeDetail = nodeResource.detail(projectId, repoName, artifactUri).data
+                ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
+            if (nodeDetail.nodeInfo.folder) {
+                if (nodeResource.countFileNode(projectId, repoName, artifactUri).data!! > 0) {
+                    throw UnsupportedMethodException("Delete non empty folder is forbidden")
+                }
+            }
+            val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactUri, context.userId)
+            nodeResource.delete(nodeDeleteRequest)
         }
     }
 

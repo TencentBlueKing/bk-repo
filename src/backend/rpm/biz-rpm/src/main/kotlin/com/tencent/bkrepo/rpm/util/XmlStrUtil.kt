@@ -14,7 +14,7 @@ object XmlStrUtil {
 
     // RpmMetadata序列化成xml中 metadata 开始字符串
     private const val METADATA_PREFIX = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\" packages=\"1\">\n" +
-            "  "
+        "  "
     // RpmMetadata序列化成xml中 metadata 结束字符串
     private const val METADATA_SUFFIX = "</metadata>"
 
@@ -71,8 +71,8 @@ object XmlStrUtil {
      */
     private fun RpmMetadata.rpmMetadataToPackageXml(): String {
         return this.objectToXml()
-                .removePrefix(METADATA_PREFIX)
-                .removeSuffix(METADATA_SUFFIX)
+            .removePrefix(METADATA_PREFIX)
+            .removeSuffix(METADATA_SUFFIX)
     }
 
     /**

@@ -10,8 +10,7 @@ sealed class HashAlgorithm(
     private val hashLength: Int
 ) {
 
-    fun hash(file: File) =
-        hash(file.inputStream().buffered())
+    fun hash(file: File) = hash(file.inputStream().buffered())
 
     fun hash(inputStream: InputStream): String {
         val digest = MessageDigest.getInstance(algorithm)
@@ -32,8 +31,7 @@ sealed class HashAlgorithm(
         else hashText
     }
 
-    fun hash(string: String): String =
-        hash(string.byteInputStream())
+    fun hash(string: String): String = hash(string.byteInputStream())
 
     override fun toString(): String = algorithm
 

@@ -23,14 +23,14 @@ interface ComposerResource {
     )
 
     @ApiOperation("packages.json")
-    @GetMapping(COMPOSER_PACKAGES, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
+    @GetMapping(COMPOSER_PACKAGES, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun packages(@ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo)
 
     @ApiOperation("%package%.json")
-    @GetMapping(COMPOSER_JSON, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
+    @GetMapping(COMPOSER_JSON, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getJson(@ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo)
 
     @ApiOperation("deploy")
-    @PutMapping(COMPOSER_DEPLOY, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
+    @PutMapping(COMPOSER_DEPLOY, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun deploy(@ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo, file: ArtifactFile)
 }

@@ -14,7 +14,7 @@ fun Path.createFile(): File {
         }
         try {
             Files.createFile(this)
-        } catch (exception: java.nio.file.FileAlreadyExistsException) {
+        } catch (ignored: java.nio.file.FileAlreadyExistsException) {
             // ignore
         }
     }

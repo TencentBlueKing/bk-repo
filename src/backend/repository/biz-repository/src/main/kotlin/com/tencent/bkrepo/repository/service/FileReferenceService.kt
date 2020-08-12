@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 
 /**
@@ -47,30 +48,31 @@ class FileReferenceService {
         } else false
     }
 
-    private fun query(sha256: String, credentialsKey: String?): TFileReference? {
-        val query = Query.query(Criteria.where(TFileReference::sha256.name).`is`(sha256)
-            .and(TFileReference::credentialsKey.name).`is`(credentialsKey))
-        return fileReferenceDao.findOne(query)
-    }
-
-    private fun increment(sha256: String, credentialsKey: String?): Boolean {
-        val fileReference = query(sha256, credentialsKey)?.run {
-            this.count += 1
-            this
-        } ?: createNewReference(sha256, credentialsKey)
-        fileReferenceDao.save(fileReference)
+    fun increment(sha256: String, credentialsKey: String?): Boolean {
+        val query = Query.query(
+            Criteria.where(TFileReference::sha256.name).`is`(sha256)
+                .and(TFileReference::credentialsKey.name).`is`(credentialsKey)
+        )
+        val update = Update().apply { inc(TFileReference::count.name, 1) }
+        fileReferenceDao.upsert(query, update)
         logger.info("Increment reference of file [$sha256] on credentialsKey [$credentialsKey].")
         return true
     }
 
-    private fun decrement(sha256: String, credentialsKey: String?): Boolean {
-        val fileReference = query(sha256, credentialsKey) ?: run {
-            logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: sha256 reference not found, create new one.")
-            createNewReference(sha256, credentialsKey)
+    fun decrement(sha256: String, credentialsKey: String?): Boolean {
+        val query = Query.query(
+            Criteria.where(TFileReference::sha256.name).`is`(sha256)
+                .and(TFileReference::credentialsKey.name).`is`(credentialsKey)
+        )
+
+        val fileReference = fileReferenceDao.findOne(query) ?: run {
+            logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: $sha256 reference not found, create new one.")
+            return false
         }
+
         return if (fileReference.count >= 1) {
-            fileReference.count -= 1
-            fileReferenceDao.save(fileReference)
+            val update = Update().apply { inc(TFileReference::count.name, -1) }
+            fileReferenceDao.upsert(query, update)
             logger.info("Decrement references of file [$sha256] on credentialsKey [$credentialsKey].")
             true
         } else {
@@ -79,8 +81,12 @@ class FileReferenceService {
         }
     }
 
-    private fun createNewReference(sha256: String, credentialsKey: String?): TFileReference {
-        return TFileReference(sha256 = sha256, credentialsKey = credentialsKey, count = 1)
+    fun count(sha256: String, credentialsKey: String?): Long {
+        val query = Query.query(
+            Criteria.where(TFileReference::sha256.name).`is`(sha256)
+                .and(TFileReference::credentialsKey.name).`is`(credentialsKey)
+        )
+        return fileReferenceDao.findOne(query)?.count ?: 0
     }
 
     private fun validateParameter(node: TNode): Boolean {
