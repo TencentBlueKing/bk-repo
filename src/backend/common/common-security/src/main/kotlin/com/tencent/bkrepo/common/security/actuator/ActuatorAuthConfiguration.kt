@@ -39,7 +39,6 @@ class ActuatorAuthConfiguration {
         allEndpoints.addAll(controllerEndpointsSupplier.endpoints)
         val basePath = webEndpointProperties.basePath
         val endpointMapping = EndpointMapping(basePath)
-
         val webMvcEndpointHandlerMapping = WebMvcEndpointHandlerMapping(
             endpointMapping, webEndpoints,
             endpointMediaTypes, corsProperties.toCorsConfiguration(),

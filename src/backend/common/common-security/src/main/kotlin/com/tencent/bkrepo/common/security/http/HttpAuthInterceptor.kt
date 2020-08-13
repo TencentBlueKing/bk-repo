@@ -22,6 +22,9 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
 
     @PostConstruct
     private fun init() {
+        if (httpAuthSecurity.getAuthHandlerList().isEmpty()) {
+            logger.warn("No http auth handler was configured.")
+        }
         httpAuthSecurity.getAuthHandlerList().forEach {
             logger.info("Initializing http auth handler[${it::class.simpleName}].")
         }
@@ -51,7 +54,7 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
         }
         // 没有合适的认证handler或为匿名用户
         if (httpAuthSecurity.isAnonymousEnabled()) {
-            logger.debug("None of auth handler authenticate success, set anonymous user.")
+            logger.debug("None of the auth handler authenticate success, set anonymous user.")
             request.setAttribute(USER_KEY, ANONYMOUS_USER)
             return true
         } else {

@@ -31,8 +31,8 @@ class LoginConfiguration {
     }
 
     /**
-     * a trick method
+     * a trick method for registering request mapping dynamiclly in spring interceptor
      */
     @ResponseBody
-    private fun anonymous() {}
+    private fun anonymous() { }
 }
