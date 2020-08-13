@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.stream.message.node.NodeDeletedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeMovedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeRenamedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeUpdatedMessage
+import com.tencent.bkrepo.replication.exception.ReplicaFileFailedException
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -23,21 +24,27 @@ class NodeEventHandler : AbstractEventHandler() {
     @EventListener(NodeCreatedMessage::class)
     fun handle(message: NodeCreatedMessage) {
         with(message.request) {
-            getRelativeTaskList(projectId, repoName).forEach {
-                val remoteProjectId = getRemoteProjectId(it, projectId)
-                val remoteRepoName = getRemoteRepoName(it, repoName)
-                var context = ReplicationContext(it)
+            try {
+                getRelativeTaskList(projectId, repoName).forEach {
+                    val remoteProjectId = getRemoteProjectId(it, projectId)
+                    val remoteRepoName = getRemoteRepoName(it, repoName)
+                    var context = ReplicationContext(it)
 
-                context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
-                    logger.warn("found no repo detail [$projectId, $repoName]")
-                    return
+                    context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
+                        logger.warn("found no repo detail [$projectId, $repoName]")
+                        return
+                    }
+                    logger.info("start to handle event")
+                    this.copy(
+                        projectId = remoteProjectId,
+                        repoName = remoteRepoName
+                    ).apply { replicationService.replicaNodeCreateRequest(context, this) }
                 }
-                logger.info("start to handle event")
-                this.copy(
-                    projectId = remoteProjectId,
-                    repoName = remoteRepoName
-                ).apply { replicationService.replicaNodeCreateRequest(context, this) }
+            } catch (exception: ReplicaFileFailedException) {
+                logger.info("replication file failed [${exception.message}]")
+                // retry three times
             }
+
         }
     }
 
