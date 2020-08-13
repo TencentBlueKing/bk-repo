@@ -22,7 +22,7 @@ object CL5Utils {
         }
         val routeInfo = RouteInfo(request.hostIp, request.hostPort)
         if (logger.isDebugEnabled) {
-            logger.debug("get CL5[{0}] route: [{1}]", cl5Info, routeInfo)
+            logger.debug("Success to get cl5 route info: $cl5Info -> $routeInfo")
         }
         return routeInfo
     }
