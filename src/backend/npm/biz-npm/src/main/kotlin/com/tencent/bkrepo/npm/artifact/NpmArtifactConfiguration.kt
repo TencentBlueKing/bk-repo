@@ -9,15 +9,13 @@ import com.tencent.bkrepo.common.security.http.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_ADD_USER_MAPPING_URI
-import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_USER_LOGOUT_MAPPING_URI
 import com.tencent.bkrepo.npm.pojo.NpmErrorResponse
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
-import org.springframework.stereotype.Component
 
-@Component
+@Configuration
 class NpmArtifactConfiguration : ArtifactConfiguration {
 
     override fun getRepositoryType() = RepositoryType.NPM

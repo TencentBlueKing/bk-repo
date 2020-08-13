@@ -7,13 +7,13 @@ import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.composer.pojo.ComposerExceptionResponse
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
-import org.springframework.stereotype.Component
 
-@Component
-class ComposerArtifactConfiguration :
-    ArtifactConfiguration {
+@Configuration
+class ComposerArtifactConfiguration : ArtifactConfiguration {
+
     override fun getRepositoryType() = RepositoryType.COMPOSER
 
     @Bean

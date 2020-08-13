@@ -13,8 +13,7 @@ class RepositoryArtifactConfiguration : ArtifactConfiguration {
     fun repositoryAuthSecurityCustomizer(): HttpAuthSecurityCustomizer {
         return object : HttpAuthSecurityCustomizer {
             override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-                httpAuthSecurity.disableJwtAuth()
-                    .includePattern("/api/**")
+                httpAuthSecurity.includePattern("/api/**")
             }
         }
     }

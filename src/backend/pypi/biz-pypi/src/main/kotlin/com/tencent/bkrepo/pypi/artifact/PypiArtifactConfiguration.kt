@@ -5,7 +5,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.security.http.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.pypi.pojo.PypiExceptionResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -21,11 +20,6 @@ import org.springframework.http.server.ServerHttpResponse
 class PypiArtifactConfiguration : ArtifactConfiguration {
 
     override fun getRepositoryType() = RepositoryType.PYPI
-
-    @Bean
-    fun pypiAuthSecurityCustomizer(): HttpAuthSecurityCustomizer {
-        return object : HttpAuthSecurityCustomizer {}
-    }
 
     @Bean
     fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {

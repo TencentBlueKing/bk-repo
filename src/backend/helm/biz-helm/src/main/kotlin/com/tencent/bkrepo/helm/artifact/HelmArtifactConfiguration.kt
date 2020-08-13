@@ -6,11 +6,11 @@ import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.helm.pojo.HelmErrorResponse
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
-import org.springframework.stereotype.Component
 
-@Component
+@Configuration
 class HelmArtifactConfiguration : ArtifactConfiguration {
 
     override fun getRepositoryType() = RepositoryType.HELM
