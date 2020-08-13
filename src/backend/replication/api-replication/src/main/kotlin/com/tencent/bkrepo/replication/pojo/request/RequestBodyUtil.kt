@@ -9,9 +9,9 @@ import okio.Source
 import java.io.InputStream
 
 object RequestBodyUtil {
-    fun create(mediaType: MediaType, inputStream: InputStream, length: Long): RequestBody {
+    fun create(mediaType: MediaType?, inputStream: InputStream, length: Long): RequestBody {
         return object : RequestBody() {
-            override fun contentType(): MediaType {
+            override fun contentType(): MediaType? {
                 return mediaType
             }
 

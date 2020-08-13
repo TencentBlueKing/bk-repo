@@ -26,12 +26,6 @@ const val ATTRIBUTE_OCTET_STREAM_SHA256 = "artifact.sha256.octet-stream"
 const val ATTRIBUTE_MD5MAP = "artifact.md5"
 const val ATTRIBUTE_OCTET_STREAM_MD5 = "artifact.md5.octet-stream"
 const val CONTENT_DISPOSITION_TEMPLATE = "attachment;filename=\"%s\";filename*=UTF-8''%s"
-const val BYTES = "bytes"
-
-const val YAML_MIME_TYPE = "application/x-yaml"
-const val TGZ_MIME_TYPE = "application/x-tar"
-const val ICO_MIME_TYPE = "image/x-icon"
-const val STREAM_MIME_TYPE = "application/octet-stream"
 
 /**
  * 虚拟仓库相关

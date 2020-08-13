@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.generic.artifact
 
-import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_MD5
@@ -55,13 +55,13 @@ class GenericLocalRepository : LocalRepository() {
         val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
         if (isBlockUpload(uploadId, sequence)) {
             this.blockUpload(uploadId, sequence!!, context)
-            context.response.contentType = StringPool.MEDIA_TYPE_JSON
+            context.response.contentType = MediaTypes.APPLICATION_JSON
             context.response.writer.println(ResponseBuilder.success().toJsonString())
         } else {
             val nodeCreateRequest = getNodeCreateRequest(context)
             storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
             val createResult = nodeResource.create(nodeCreateRequest)
-            context.response.contentType = StringPool.MEDIA_TYPE_JSON
+            context.response.contentType = MediaTypes.APPLICATION_JSON
             context.response.writer.println(createResult.toJsonString())
         }
     }

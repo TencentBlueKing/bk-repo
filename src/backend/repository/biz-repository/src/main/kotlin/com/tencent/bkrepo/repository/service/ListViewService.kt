@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.constant.StringPool.MEDIA_TYPE_HTML
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -36,7 +36,7 @@ class ListViewService(
             val nodeDetail = nodeService.detail(projectId, repoName, artifactUri)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
             val response = HttpContextHolder.getResponse()
-            response.contentType = MEDIA_TYPE_HTML
+            response.contentType = MediaTypes.TEXT_HTML
             if (nodeDetail.nodeInfo.folder) {
                 trailingSlash()
                 val nodeList = nodeService.list(artifactInfo.projectId, artifactInfo.repoName, artifactUri, includeFolder = true, deep = false)
