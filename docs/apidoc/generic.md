@@ -1,4 +1,8 @@
-### 上传文件
+## Generic通用制品接口说明
+
+### 文件操作接口
+
+#### 上传文件
 
 - API: PUT /generic/{project}/{repo}/{path}
 - API 名称: upload
@@ -8,9 +12,6 @@
 
 - 请求体
 [文件流]
-
-- 请求参数
-此接口无请求参数
 
 - 请求字段说明
 
@@ -64,7 +65,7 @@
 |code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
 |message|string|错误消息|the failure message|
 |data|object|文件节点信息|file node info|
-|traceId|string|请求跟踪id|the trace id|
+|traceId|string|请求跟踪id|trace id|
 
 - data字段说明
 
@@ -84,8 +85,142 @@
 |projectId|string|节点所属项目|node project id|
 |repoName|string|节点所属仓库|node repository name|
 
+#### 下载文件
 
-### 初始化分块上传
+- API: GET /generic/{project}/{repo}/{path}
+- API 名称: download
+- 功能说明：
+  - 中文：下载通用制品文件
+  - English：download generic file
+
+- 请求体
+  此接口请求体为空
+
+- 请求字段说明
+
+| 字段    | 类型   | 是否必须 | 默认值 | 说明     | Description  |
+| ------- | ------ | -------- | ------ | -------- | ------------ |
+| project | string | 是       | 无     | 项目名称 | project name |
+| repo    | string | 是       | 无     | 仓库名称 | repo name    |
+| path    | string | 是       | 无     | 完整路径 | full path    |
+
+- 请求头
+
+| 字段          | 类型   | 是否必须 | 默认值 | 说明                                                         | Description       |
+| ------------- | ------ | -------- | ------ | ------------------------------------------------------------ | ----------------- |
+| Authorization | string | 否       | 无     | Basic Auth认证头，Basic base64(username:password)            | Basic Auth header |
+| Range         | string | 否       | 无     | RFC 2616 中定义的字节范围，范围值必须使用 bytes=first-last 格式且仅支持单一范围，不支持多重范围。first 和 last 都是基于0开始的偏移量。例如 bytes=0-9，表示下载对象的开头10个字节的数据；bytes=5-9，表示下载对象的第6到第10个字节。此时返回 HTTP 状态码206（Partial Content）及 Content-Range 响应头部。如果 first 超过对象的大小，则返回 HTTP 状态码416（Requested Range Not Satisfiable）错误。如果不指定，则表示下载整个对象 | bytes range       |
+
+- 响应头
+
+| 字段                | 类型   | 说明                                                         | Description                  |
+| ------------------- | ------ | ------------------------------------------------------------ | ---------------------------- |
+| Accept-Ranges       | string | RFC 2616 中定义的服务器接收Range范围                         | RFC 2616 Accept-Ranges       |
+| Cache-Control       | string | RFC 2616 中定义的缓存指令                                    | RFC 2616 Cache-Control       |
+| Connection          | string | RFC 2616 中定义，表明响应完成后是否会关闭网络连接。枚举值：keep-alive，close。 | RFC 2616 Connection          |
+| Content-Disposition | string | RFC 2616 中定义的文件名称                                    | RFC 2616 Content-Disposition |
+| Content-Length      | long   | RFC 2616 中定义的 HTTP 响应内容长度（字节）                  | RFC 2616 Content Length      |
+| Content-Range       | string | RFC 2616 中定义的返回内容的字节范围，仅当请求中指定了 Range 请求头部时才会返回该头部 | RFC 2616 Content-Range       |
+| Content-Type        | string | RFC 2616 中定义的 HTTP 响应内容类型（MIME）                  | RFC 2616 Content Length      |
+| Date                | string | RFC 1123 中定义的 GMT 格式服务端响应时间，例如Mon, 27 Jul 2020 08:51:59 GMT | RFC 1123 Content Length      |
+| Etag                | string | ETag 全称为 Entity Tag，是文件被创建时标识对象内容的信息标签，可用于检查对象的内容是否发生变化，通用制品文件会返回文件的sha256值 | ETag, file sha256 checksum   |
+| Last-Modified       | string | 文件的最近一次上传的时间，例如Mon, 27 Jul 2020 08:51:58 GMT  | file last modified time      |
+
+- 响应体
+  [文件流]
+
+#### 获取文件头部信息
+
+- API: HEAD /generic/{project}/{repo}/{path}
+- API 名称: head
+- 功能说明：
+  - 中文：获取通用制品文件头部信息
+  - English：get generic file head info
+
+- 请求体
+  此接口请求体为空
+
+- 请求字段说明
+
+| 字段    | 类型   | 是否必须 | 默认值 | 说明     | Description  |
+| ------- | ------ | -------- | ------ | -------- | ------------ |
+| project | string | 是       | 无     | 项目名称 | project name |
+| repo    | string | 是       | 无     | 仓库名称 | repo name    |
+| path    | string | 是       | 无     | 完整路径 | full path    |
+
+- 请求头
+
+| 字段          | 类型   | 是否必须 | 默认值 | 说明                                                         | Description       |
+| ------------- | ------ | -------- | ------ | ------------------------------------------------------------ | ----------------- |
+| Authorization | string | 否       | 无     | Basic Auth认证头，Basic base64(username:password)            | Basic Auth header |
+| Range         | string | 否       | 无     | RFC 2616 中定义的字节范围，范围值必须使用 bytes=first-last 格式且仅支持单一范围，不支持多重范围。first 和 last 都是基于0开始的偏移量。例如 bytes=0-9，表示下载对象的开头10个字节的数据；bytes=5-9，表示下载对象的第6到第10个字节。此时返回 HTTP 状态码206（Partial Content）及 Content-Range 响应头部。如果 first 超过对象的大小，则返回 HTTP 状态码416（Requested Range Not Satisfiable）错误。如果不指定，则表示下载整个对象 | bytes range       |
+
+- 响应头
+
+| 字段                | 类型   | 说明                                                         | Description                  |
+| ------------------- | ------ | ------------------------------------------------------------ | ---------------------------- |
+| Accept-Ranges       | string | RFC 2616 中定义的服务器接收Range范围                         | RFC 2616 Accept-Ranges       |
+| Cache-Control       | string | RFC 2616 中定义的缓存指令                                    | RFC 2616 Cache-Control       |
+| Connection          | string | RFC 2616 中定义，表明响应完成后是否会关闭网络连接。枚举值：keep-alive，close。 | RFC 2616 Connection          |
+| Content-Disposition | string | RFC 2616 中定义的文件名称                                    | RFC 2616 Content-Disposition |
+| Content-Length      | long   | RFC 2616 中定义的 HTTP 响应内容长度（字节）                  | RFC 2616 Content Length      |
+| Content-Range       | string | RFC 2616 中定义的返回内容的字节范围，仅当请求中指定了 Range 请求头部时才会返回该头部 | RFC 2616 Content-Range       |
+| Content-Type        | string | RFC 2616 中定义的 HTTP 响应内容类型（MIME）                  | RFC 2616 Content Length      |
+| Date                | string | RFC 1123 中定义的 GMT 格式服务端响应时间，例如Mon, 27 Jul 2020 08:51:59 GMT | RFC 1123 Content Length      |
+| Etag                | string | ETag 全称为 Entity Tag，是文件被创建时标识对象内容的信息标签，可用于检查对象的内容是否发生变化，通用制品文件会返回文件的sha256值 | ETag, file sha256 checksum   |
+| Last-Modified       | string | 文件的最近一次上传的时间，例如Mon, 27 Jul 2020 08:51:58 GMT  | file last modified time      |
+
+- 响应体
+  此接口响应体为空
+
+#### 删除文件
+
+- API: DELETE /generic/{project}/{repo}/{path}
+- API 名称: delete
+- 功能说明：
+  - 中文：删除通用制品文件
+  - English：delete generic file
+
+- 请求体
+  此接口请求体为空
+
+- 请求字段说明
+
+| 字段    | 类型   | 是否必须 | 默认值 | 说明     | Description  |
+| ------- | ------ | -------- | ------ | -------- | ------------ |
+| project | string | 是       | 无     | 项目名称 | project name |
+| repo    | string | 是       | 无     | 仓库名称 | repo name    |
+| path    | string | 是       | 无     | 完整路径 | full path    |
+
+- 请求头
+
+| 字段          | 类型   | 是否必须 | 默认值 | 说明                                              | Description       |
+| ------------- | ------ | -------- | ------ | ------------------------------------------------- | ----------------- |
+| Authorization | string | 否       | 无     | Basic Auth认证头，Basic base64(username:password) | Basic Auth header |
+
+- 响应体
+
+``` json
+{
+  "code" : 0,
+  "message" : null,
+  "data" : null,
+  "traceId" : ""
+}
+```
+
+- 响应字段说明
+
+| 字段    | 类型   | 说明                                    | Description               |
+| ------- | ------ | --------------------------------------- | ------------------------- |
+| code    | bool   | 错误编码。 0表示success，>0表示失败错误 | 0:success, other: failure |
+| message | string | 错误消息                                | the failure message       |
+| data    | null   | null                                    | null                      |
+| traceId | string | 请求跟踪id                              | trace id                  |
+
+### 分块上传接口
+
+#### 初始化分块上传
 
 - API: POST /generic/block/{project}/{repo}/{path}
 - API 名称: start_block_upload
@@ -95,9 +230,6 @@
 
 - 请求体
 此接口请求体为空
-
-- 请求参数
-此接口无请求参数
 
 - 请求字段说明
 
@@ -137,7 +269,7 @@
 |code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
 |message|string|错误消息|the failure message|
 |data|object|分块上传初始化结果|block upload result|
-|traceId|string|请求跟踪id|the trace id|
+|traceId|string|请求跟踪id|trace id|
 
 - data字段说明
 
@@ -146,7 +278,7 @@
 |uploadId|string|分块上传id|block upload id|
 |expireSeconds|string|上传有效期(秒)|expire time(seconds)|
 
-### 上传分块文件
+#### 上传分块文件
 
 - API: PUT /{project}/{repo}/{path}
 - API 名称: block_upload
@@ -156,9 +288,6 @@
 
 - 请求体
 [文件流]
-
-- 请求参数
-此接口无请求参数
 
 - 请求字段说明
 
@@ -196,10 +325,10 @@
 |code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
 |message|string|错误消息|the failure message|
 |data|null|空|null|
-|traceId|string|请求跟踪id|the trace id|
+|traceId|string|请求跟踪id|trace id|
 
 
-### 完成分块上传
+#### 完成分块上传
 
 - API: PUT /generic/block/{project}/{repo}/{path}
 - API 名称: complete_block_upload
@@ -209,9 +338,6 @@
 
 - 请求体
 此接口请求体为空
-
-- 请求参数
-此接口无请求参数
 
 - 请求字段说明
 
@@ -246,9 +372,9 @@
 |code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
 |message|string|错误消息|the failure message|
 |data|null|null|null|
-|traceId|string|请求跟踪id|the trace id|
+|traceId|string|请求跟踪id|trace id|
 
-### 终止(取消)分块上传
+#### 终止(取消)分块上传
 
 - API: DELETE /generic/block/{project}/{repo}/{path}
 - API 名称: abort_block_upload
@@ -258,9 +384,6 @@
 
 - 请求体
 此接口请求体为空
-
-- 请求参数
-此接口无请求参数
 
 - 请求字段说明
 
@@ -295,9 +418,9 @@
 |code|bool|错误编码。 0表示success，>0表示失败错误|0:success, other: failure|
 |message|string|错误消息|the failure message|
 |data|null|null|null|
-|traceId|string|请求跟踪id|the trace id|
+|traceId|string|请求跟踪id|trace id|
 
-### 查询已上传的分块列表
+#### 查询已上传的分块列表
 
 - API: GET /generic/block/{project}/{repo}/{path}
 - API 名称: list_upload_block
@@ -307,9 +430,6 @@
 
 - 请求体
 此接口请求体为空
-
-- 请求参数
-此接口无请求参数
 
 - 请求字段说明
 
@@ -352,7 +472,7 @@
 |code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
 |message|string|错误消息 |the failure message |
 |data|list|分块列表|block list|
-|traceId|string|请求跟踪id|the trace id|
+|traceId|string|请求跟踪id|trace id|
 
 - 分块信息字段说明
 
@@ -362,144 +482,3 @@
 |sha256|string|分块sha256|block sha256 checksum|
 |sequence|int|分块序号|block sequence|
 
-### 下载通用制品文件
-
-- API: GET /generic/{project}/{repo}/{path}
-- API 名称: download
-- 功能说明：
-	- 中文：下载通用制品文件
-	- English：download generic file
-
-- 请求体
-此接口请求体为空
-
-- 请求参数
-此接口无请求参数
-
-- 请求字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|project|string|是|无|项目名称|project name|
-|repo|string|是|无|仓库名称|repo name|
-|path|string|是|无|完整路径|full path|
-
-- 请求头
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|Authorization|string|否|无|Basic Auth认证头，Basic base64(username:password)|Basic Auth header|
-|Range|string|否|无|RFC 2616 中定义的字节范围，范围值必须使用 bytes=first-last 格式且仅支持单一范围，不支持多重范围。first 和 last 都是基于0开始的偏移量。例如 bytes=0-9，表示下载对象的开头10个字节的数据；bytes=5-9，表示下载对象的第6到第10个字节。此时返回 HTTP 状态码206（Partial Content）及 Content-Range 响应头部。如果 first 超过对象的大小，则返回 HTTP 状态码416（Requested Range Not Satisfiable）错误。如果不指定，则表示下载整个对象|bytes range|
-
-- 响应头
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|Accept-Ranges|string|RFC 2616 中定义的服务器接收Range范围|RFC 2616 Accept-Ranges|
-|Cache-Control|string|RFC 2616 中定义的缓存指令|RFC 2616 Cache-Control|
-|Connection|string|RFC 2616 中定义，表明响应完成后是否会关闭网络连接。枚举值：keep-alive，close。|RFC 2616 Connection|
-|Content-Disposition|string|RFC 2616 中定义的文件名称|RFC 2616 Content-Disposition|
-|Content-Length|long|RFC 2616 中定义的 HTTP 响应内容长度（字节）|RFC 2616 Content Length|
-|Content-Range|string|RFC 2616 中定义的返回内容的字节范围，仅当请求中指定了 Range 请求头部时才会返回该头部|RFC 2616 Content-Range|
-|Content-Type|string|RFC 2616 中定义的 HTTP 响应内容类型（MIME）|RFC 2616 Content Length|
-|Date|string|RFC 1123 中定义的 GMT 格式服务端响应时间，例如Mon, 27 Jul 2020 08:51:59 GMT|RFC 1123 Content Length|
-|Etag|string|ETag 全称为 Entity Tag，是文件被创建时标识对象内容的信息标签，可用于检查对象的内容是否发生变化，通用制品文件会返回文件的sha256值|ETag, file sha256 checksum|
-|Last-Modified|string|文件的最近一次上传的时间，例如Mon, 27 Jul 2020 08:51:58 GMT|file last modified time|
-
-- 响应体
-[文件流]
-
-### 获取通用制品文件头部信息
-
-- API: HEAD /generic/{project}/{repo}/{path}
-- API 名称: head
-- 功能说明：
-	- 中文：获取通用制品文件头部信息
-	- English：get generic file head info
-
-- 请求体
-此接口请求体为空
-
-- 请求参数
-此接口无请求参数
-
-- 请求字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|project|string|是|无|项目名称|project name|
-|repo|string|是|无|仓库名称|repo name|
-|path|string|是|无|完整路径|full path|
-
-- 请求头
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|Authorization|string|否|无|Basic Auth认证头，Basic base64(username:password)|Basic Auth header|
-|Range|string|否|无|RFC 2616 中定义的字节范围，范围值必须使用 bytes=first-last 格式且仅支持单一范围，不支持多重范围。first 和 last 都是基于0开始的偏移量。例如 bytes=0-9，表示下载对象的开头10个字节的数据；bytes=5-9，表示下载对象的第6到第10个字节。此时返回 HTTP 状态码206（Partial Content）及 Content-Range 响应头部。如果 first 超过对象的大小，则返回 HTTP 状态码416（Requested Range Not Satisfiable）错误。如果不指定，则表示下载整个对象|bytes range|
-
-- 响应头
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|Accept-Ranges|string|RFC 2616 中定义的服务器接收Range范围|RFC 2616 Accept-Ranges|
-|Cache-Control|string|RFC 2616 中定义的缓存指令|RFC 2616 Cache-Control|
-|Connection|string|RFC 2616 中定义，表明响应完成后是否会关闭网络连接。枚举值：keep-alive，close。|RFC 2616 Connection|
-|Content-Disposition|string|RFC 2616 中定义的文件名称|RFC 2616 Content-Disposition|
-|Content-Length|long|RFC 2616 中定义的 HTTP 响应内容长度（字节）|RFC 2616 Content Length|
-|Content-Range|string|RFC 2616 中定义的返回内容的字节范围，仅当请求中指定了 Range 请求头部时才会返回该头部|RFC 2616 Content-Range|
-|Content-Type|string|RFC 2616 中定义的 HTTP 响应内容类型（MIME）|RFC 2616 Content Length|
-|Date|string|RFC 1123 中定义的 GMT 格式服务端响应时间，例如Mon, 27 Jul 2020 08:51:59 GMT|RFC 1123 Content Length|
-|Etag|string|ETag 全称为 Entity Tag，是文件被创建时标识对象内容的信息标签，可用于检查对象的内容是否发生变化，通用制品文件会返回文件的sha256值|ETag, file sha256 checksum|
-|Last-Modified|string|文件的最近一次上传的时间，例如Mon, 27 Jul 2020 08:51:58 GMT|file last modified time|
-
-- 响应体
-此接口响应体为空
-
-### 删除通用制品文件
-
-- API: DELETE /generic/{project}/{repo}/{path}
-- API 名称: delete
-- 功能说明：
-	- 中文：删除通用制品文件
-	- English：delete generic file
-
-- 请求体
-此接口请求体为空
-
-- 请求参数
-此接口无请求参数
-
-- 请求字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|project|string|是|无|项目名称|project name|
-|repo|string|是|无|仓库名称|repo name|
-|path|string|是|无|完整路径|full path|
-
-- 请求头
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|Authorization|string|否|无|Basic Auth认证头，Basic base64(username:password)|Basic Auth header|
-
-- 响应体
-
-``` json
-{
-  "code" : 0,
-  "message" : null,
-  "data" : null,
-  "traceId" : ""
-}
-```
-
-- 响应字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误|0:success, other: failure|
-|message|string|错误消息|the failure message|
-|data|null|null|null|
-|traceId|string|请求跟踪id|the trace id|
