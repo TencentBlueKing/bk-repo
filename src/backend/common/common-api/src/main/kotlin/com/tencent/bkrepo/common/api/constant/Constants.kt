@@ -3,12 +3,12 @@ package com.tencent.bkrepo.common.api.constant
 /**
  * 认证成功后username写入request attributes的key
  */
-const val USER_KEY = "user-id"
+const val USER_KEY = "userId"
 
 /**
  * 认证成功后platform写入request attributes的key
  */
-const val PLATFORM_KEY = "platform-id"
+const val PLATFORM_KEY = "platformId"
 
 /**
  * 微服务调用请求标记key
