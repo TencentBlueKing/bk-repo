@@ -102,14 +102,14 @@ class GenericLocalRepository : LocalRepository() {
         return request.copy(
             expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
             overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
-            metadata = parseMetadata(context.request)
+            metadata = resolveMetadata(context.request)
         )
     }
 
     /**
      * 从header中提取metadata
      */
-    private fun parseMetadata(request: HttpServletRequest): Map<String, String> {
+    private fun resolveMetadata(request: HttpServletRequest): Map<String, String> {
         val metadata = mutableMapOf<String, String>()
         val headerNames = request.headerNames
         for (headerName in headerNames) {
