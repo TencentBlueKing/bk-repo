@@ -1,9 +1,15 @@
 package com.tencent.bkrepo.docker.config
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import com.tencent.bkrepo.common.artifact.config.ClientAuthConfig
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.common.security.http.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
+import com.tencent.bkrepo.common.security.manager.AuthenticationManager
+import com.tencent.bkrepo.docker.auth.DockerBasicAuthLoginHandler
+import com.tencent.bkrepo.docker.auth.DockerJwtAuthHandler
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
 /**
  * config the path to validate privilege
@@ -11,13 +17,25 @@ import org.springframework.stereotype.Component
  * @date: 2019/11/27
  */
 
-@Component
+@Configuration
 class DockerArtifactConfiguration : ArtifactConfiguration {
 
     override fun getRepositoryType() = RepositoryType.DOCKER
 
-    override fun getClientAuthConfig() = ClientAuthConfig(
-        includePatterns = listOf("/**"),
-        excludePatterns = listOf("/v2/auth", "/v2/_catalog", "/v2/*/*/*/tags/list")
-    )
+    @Bean
+    fun dockerAuthSecurityCustomizer(
+        authenticationManager: AuthenticationManager,
+        jwtProperties: JwtAuthProperties
+    ): HttpAuthSecurityCustomizer {
+        return object : HttpAuthSecurityCustomizer {
+            override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+                httpAuthSecurity.disableBasicAuth()
+                    .addHttpAuthHandler(DockerBasicAuthLoginHandler(authenticationManager, jwtProperties))
+                    .addHttpAuthHandler(DockerJwtAuthHandler(jwtProperties))
+                    .excludePattern("/v2/auth")
+                    .excludePattern("/v2/_catalog")
+                    .excludePattern("/v2/*/*/*/tags/list")
+            }
+        }
+    }
 }

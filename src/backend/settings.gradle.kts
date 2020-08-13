@@ -15,6 +15,7 @@ include(":boot-assembly")
 
 include(":common")
 include(":common:common-api")
+include(":common:common-security")
 include(":common:common-mongo")
 include(":common:common-job")
 include(":common:common-stream")

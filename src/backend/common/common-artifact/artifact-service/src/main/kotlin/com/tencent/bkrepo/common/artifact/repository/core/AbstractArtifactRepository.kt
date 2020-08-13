@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.common.artifact.repository.core
 
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
-import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_MD5
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_SHA256
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
+import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException

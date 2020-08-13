@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.repository.resource
 
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.permission.Principal
-import com.tencent.bkrepo.common.artifact.permission.PrincipalType
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.UserProjectResource
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest

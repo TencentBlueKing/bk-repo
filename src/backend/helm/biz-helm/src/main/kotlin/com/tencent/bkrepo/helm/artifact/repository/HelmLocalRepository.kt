@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.helm.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext

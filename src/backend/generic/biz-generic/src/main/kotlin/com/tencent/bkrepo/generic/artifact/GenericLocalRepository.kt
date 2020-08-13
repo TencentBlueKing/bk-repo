@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.generic.artifact
 
-import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_MD5
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
@@ -55,13 +55,13 @@ class GenericLocalRepository : LocalRepository() {
         val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
         if (isBlockUpload(uploadId, sequence)) {
             this.blockUpload(uploadId, sequence!!, context)
-            context.response.contentType = StringPool.MEDIA_TYPE_JSON
+            context.response.contentType = MediaTypes.APPLICATION_JSON
             context.response.writer.println(ResponseBuilder.success().toJsonString())
         } else {
             val nodeCreateRequest = getNodeCreateRequest(context)
             storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
             val createResult = nodeResource.create(nodeCreateRequest)
-            context.response.contentType = StringPool.MEDIA_TYPE_JSON
+            context.response.contentType = MediaTypes.APPLICATION_JSON
             context.response.writer.println(createResult.toJsonString())
         }
     }
@@ -102,14 +102,14 @@ class GenericLocalRepository : LocalRepository() {
         return request.copy(
             expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
             overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
-            metadata = parseMetadata(context.request)
+            metadata = resolveMetadata(context.request)
         )
     }
 
     /**
      * 从header中提取metadata
      */
-    private fun parseMetadata(request: HttpServletRequest): Map<String, String> {
+    private fun resolveMetadata(request: HttpServletRequest): Map<String, String> {
         val metadata = mutableMapOf<String, String>()
         val headerNames = request.headerNames
         for (headerName in headerNames) {

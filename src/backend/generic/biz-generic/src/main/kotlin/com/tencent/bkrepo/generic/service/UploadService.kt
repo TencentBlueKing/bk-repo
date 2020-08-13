@@ -5,12 +5,12 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.config.REPO_KEY
+import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -31,9 +31,6 @@ import org.springframework.stereotype.Service
 
 /**
  * 通用文件上传服务类
- *
- * @author: carrypan
- * @date: 2019-10-08
  */
 @Service
 class UploadService @Autowired constructor(

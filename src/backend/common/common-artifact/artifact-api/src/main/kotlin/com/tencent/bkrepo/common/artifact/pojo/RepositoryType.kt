@@ -13,7 +13,6 @@ enum class RepositoryType {
     MAVEN,
     PYPI,
     NPM,
-    OPDATA,
     HELM,
     COMPOSER,
     RPM

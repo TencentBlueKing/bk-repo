@@ -7,9 +7,9 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.permission.Permission
-import com.tencent.bkrepo.common.artifact.permission.PermissionService
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.UserNodeResource
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -32,15 +32,12 @@ import org.springframework.web.bind.annotation.RestController
 
 /**
  * 用户节点接口实现类
- *
- * @author: carrypan
- * @date: 2019/11/19
  */
 @RestController
 class UserNodeResourceImpl @Autowired constructor(
     private val nodeService: NodeService,
     private val nodeQueryService: NodeQueryService,
-    private val permissionService: PermissionService
+    private val permissionManager: PermissionManager
 ) : UserNodeResource {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
@@ -83,7 +80,7 @@ class UserNodeResourceImpl @Autowired constructor(
 
     override fun update(userId: String, request: UserNodeUpdateRequest): Response<Void> {
         with(request) {
-            permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
+            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
             val updateRequest = NodeUpdateRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -98,7 +95,7 @@ class UserNodeResourceImpl @Autowired constructor(
 
     override fun rename(userId: String, request: UserNodeRenameRequest): Response<Void> {
         with(request) {
-            permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
+            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
             val renameRequest = NodeRenameRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -113,9 +110,9 @@ class UserNodeResourceImpl @Autowired constructor(
 
     override fun move(userId: String, request: UserNodeMoveRequest): Response<Void> {
         with(request) {
-            permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
+            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
             if (destProjectId != null && destRepoName != null) {
-                permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId!!, destRepoName!!)
+                permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId!!, destRepoName!!)
             }
             val moveRequest = NodeMoveRequest(
                 srcProjectId = srcProjectId,
@@ -134,9 +131,9 @@ class UserNodeResourceImpl @Autowired constructor(
 
     override fun copy(userId: String, request: UserNodeCopyRequest): Response<Void> {
         with(request) {
-            permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
+            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
             if (destProjectId != null && destRepoName != null) {
-                permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId!!, destRepoName!!)
+                permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId!!, destRepoName!!)
             }
             val copyRequest = NodeCopyRequest(
                 srcProjectId = srcProjectId,

@@ -16,5 +16,5 @@ object ResponseBuilder {
 
     fun <T> success(data: T) = build(CommonMessageCode.SUCCESS.getCode(), null, data)
 
-    fun fail(code: Int, message: String) = build(code, message, null)
+    fun fail(code: Int, message: String?) = build(code, message, null)
 }

@@ -5,14 +5,14 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.exception.PermissionCheckException
-import com.tencent.bkrepo.common.artifact.permission.PermissionService
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.docker.constant.DOCKER_CREATE_BY
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
@@ -54,7 +54,7 @@ class DockerArtifactRepo @Autowired constructor(
     private val nodeResource: NodeResource,
     private val storageService: StorageService,
     private val metadataService: MetadataResource,
-    private val permissionService: PermissionService
+    private val permissionManager: PermissionManager
 ) {
 
     lateinit var userId: String
@@ -281,14 +281,14 @@ class DockerArtifactRepo @Autowired constructor(
      */
     fun canRead(context: RequestContext): Boolean {
         try {
-            permissionService.checkPermission(
+            permissionManager.checkPermission(
                 userId,
                 ResourceType.PROJECT,
                 PermissionAction.WRITE,
                 context.projectId,
                 context.repoName
             )
-        } catch (e: PermissionCheckException) {
+        } catch (e: PermissionException) {
             logger.debug("user: [$userId] ,check read permission fail [$context]")
             return false
         }
@@ -302,14 +302,14 @@ class DockerArtifactRepo @Autowired constructor(
      */
     fun canWrite(context: RequestContext): Boolean {
         try {
-            permissionService.checkPermission(
+            permissionManager.checkPermission(
                 userId,
                 ResourceType.PROJECT,
                 PermissionAction.WRITE,
                 context.projectId,
                 context.repoName
             )
-        } catch (e: PermissionCheckException) {
+        } catch (e: PermissionException) {
             logger.debug("user: [$userId] ,check write permission fail [$context]")
             return false
         }

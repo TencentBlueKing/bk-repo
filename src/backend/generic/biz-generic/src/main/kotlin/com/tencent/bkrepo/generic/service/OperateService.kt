@@ -2,7 +2,7 @@ package com.tencent.bkrepo.generic.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.permission.PermissionService
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.generic.pojo.FileInfo
 import com.tencent.bkrepo.repository.api.NodeResource
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -10,18 +10,15 @@ import org.springframework.stereotype.Service
 
 /**
  * 文件操作服务类
- *
- * @author: carrypan
- * @date: 2019-10-13
  */
 @Service
 class OperateService(
     private val nodeResource: NodeResource,
-    private val permissionService: PermissionService
+    private val permissionManager: PermissionManager
 ) {
 
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
-        permissionService.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName)
+        permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName)
         return nodeResource.list(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
     }
 
