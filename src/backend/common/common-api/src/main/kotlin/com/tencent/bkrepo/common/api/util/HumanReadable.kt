@@ -20,7 +20,7 @@ object HumanReadable {
     }
 
     fun throughput(bytes: Long, nano: Long): String {
-        val speed = bytes * 1000 * 1000 * 1000 / nano
+        val speed = bytes / nano * 1000 * 1000 * 1000
         return size(speed) + "/s"
     }
 
