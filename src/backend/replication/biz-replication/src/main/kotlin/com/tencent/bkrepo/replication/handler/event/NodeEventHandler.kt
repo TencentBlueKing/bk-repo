@@ -35,6 +35,7 @@ class NodeEventHandler : AbstractEventHandler() {
 
                         context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
                             logger.warn("found no repo detail [$projectId, $repoName]")
+                            retryCount -= 3
                             return
                         }
                         logger.info("start to handle event [${message.request}]")
@@ -43,6 +44,7 @@ class NodeEventHandler : AbstractEventHandler() {
                             repoName = remoteRepoName
                         ).apply { replicationService.replicaNodeCreateRequest(context, this) }
                         retryCount -= 3
+                        return
                     }
                 } catch (exception: ReplicaFileFailedException) {
                     logger.info("replication file failed [${exception.message}]")
@@ -51,6 +53,7 @@ class NodeEventHandler : AbstractEventHandler() {
                         logger.error("replication file failed [${exception.message}]")
                         // log to db
                     }
+                    return
                 }
             }
             // return
