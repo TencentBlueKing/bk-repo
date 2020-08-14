@@ -27,7 +27,6 @@ class NodeEventHandler : AbstractEventHandler() {
             var retryCount = 3
             while (retryCount > 0) {
                 try {
-                    logger.info("event message handle :[${message.request.fullPath}]")
                     getRelativeTaskList(projectId, repoName).forEach {
                         val remoteProjectId = getRemoteProjectId(it, projectId)
                         val remoteRepoName = getRemoteRepoName(it, repoName)

@@ -35,10 +35,11 @@ class RealTimeJob {
 
     private lateinit var container: MessageListenerContainer
 
-    @Scheduled(cron = "00 */1 * * * ?")
+
+    @Scheduled(cron = "00 */1 * * * ?", initialDelay = 1000 * 60)
     fun ping(){
         if (!container.isRunning) {
-            logger.error("container running status :[${container.isRunning}]")
+            logger.error("container is not running")
         }
     }
 
