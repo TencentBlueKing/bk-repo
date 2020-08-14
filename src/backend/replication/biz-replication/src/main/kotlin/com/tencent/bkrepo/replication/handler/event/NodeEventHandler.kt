@@ -24,8 +24,10 @@ class NodeEventHandler : AbstractEventHandler() {
     @EventListener(NodeCreatedMessage::class)
     fun handle(message: NodeCreatedMessage) {
         with(message.request) {
+            logger.info("astart to handle event [${message.request}]")
             var retryCount = 3
             while (retryCount > 0) {
+                logger.info("bstart to handle event [${message.request}]")
                 try {
                     getRelativeTaskList(projectId, repoName).forEach {
                         val remoteProjectId = getRemoteProjectId(it, projectId)
