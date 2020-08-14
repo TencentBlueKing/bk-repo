@@ -89,7 +89,7 @@ class ShareService(
     private fun checkNode(projectId: String, repoName: String, fullPath: String) {
         repositoryService.checkRepository(projectId, repoName)
         val node = nodeService.detail(projectId, repoName, fullPath)
-        if (node == null || node.nodeInfo.folder) {
+        if (node == null || node.folder) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
         }
     }

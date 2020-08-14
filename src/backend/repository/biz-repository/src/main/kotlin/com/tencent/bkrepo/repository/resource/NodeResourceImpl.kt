@@ -66,7 +66,7 @@ class NodeResourceImpl @Autowired constructor(
         includeFolder: Boolean,
         deep: Boolean
     ): Response<List<NodeInfo>> {
-        return ResponseBuilder.success(nodeService.list(projectId, repoName, path, includeFolder, deep))
+        return ResponseBuilder.success(nodeService.list(projectId, repoName, path, includeFolder, false, deep))
     }
 
     override fun page(
@@ -76,12 +76,13 @@ class NodeResourceImpl @Autowired constructor(
         size: Int,
         path: String,
         includeFolder: Boolean,
+        includeMetadata: Boolean,
         deep: Boolean
     ): Response<Page<NodeInfo>> {
-        return ResponseBuilder.success(nodeService.page(projectId, repoName, path, page, size, includeFolder, deep))
+        return ResponseBuilder.success(nodeService.page(projectId, repoName, path, page, size, includeFolder, includeMetadata, deep))
     }
 
-    override fun create(nodeCreateRequest: NodeCreateRequest): Response<NodeInfo> {
+    override fun create(nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {
         return ResponseBuilder.success(nodeService.create(nodeCreateRequest))
     }
 

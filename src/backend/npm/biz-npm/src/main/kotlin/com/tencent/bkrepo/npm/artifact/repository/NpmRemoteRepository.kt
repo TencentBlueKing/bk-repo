@@ -77,14 +77,14 @@ class NpmRemoteRepository : RemoteRepository() {
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
-        if (node == null || node.nodeInfo.folder) return null
-        val createdDate = LocalDateTime.parse(node.nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
+        if (node == null || node.folder) return null
+        val createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
-            storageService.load(node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size),
+            storageService.load(node.sha256!!, Range.full(node.size),
                 context.storageCredentials)?.run {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit")
-                ArtifactResource(this, determineArtifactName(context), node.nodeInfo)
+                ArtifactResource(this, determineArtifactName(context), node)
             }
         } else null
     }

@@ -2,7 +2,6 @@ package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.repository.model.TNode
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -17,15 +16,12 @@ import java.time.LocalDateTime
  */
 object QueryHelper {
 
-    fun nodeQuery(projectId: String, repoName: String, fullPath: String? = null, withDetail: Boolean = false): Query {
+    fun nodeQuery(projectId: String, repoName: String, fullPath: String? = null): Query {
         val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
             .and(TNode::repoName.name).`is`(repoName)
             .and(TNode::deleted.name).`is`(null)
-
         val query = Query(criteria)
-
         fullPath?.run { criteria.and(TNode::fullPath.name).`is`(fullPath) }
-        if (!withDetail) { query.fields().exclude(TNode::metadata.name) }
 
         return query
     }
@@ -58,19 +54,19 @@ object QueryHelper {
         return criteria
     }
 
-    fun nodeListQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Query {
+    fun nodeListQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, includeMetadata: Boolean, deep: Boolean): Query {
         return Query.query(nodeListCriteria(projectId, repoName, path, includeFolder, deep))
             .with(Sort.by(TNode::fullPath.name))
             .apply {
-                // 强制使用fullPath索引，否则mongodb会使用path索引，不能达到最优索引
+                // 强制使用fullPath索引，否则mongodb可能会使用path索引，不能达到最优索引
                 if (deep) {
                     this.withHint(TNode.FULL_PATH_IDX_DEF)
                 }
+                // 查询元数据
+                if (!includeMetadata) {
+                    this.fields().exclude(TNode::metadata.name)
+                }
             }
-    }
-
-    fun nodePageQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean, page: Int, size: Int): Query {
-        return nodeListQuery(projectId, repoName, path, includeFolder, deep).with(PageRequest.of(page, size))
     }
 
     fun nodePathUpdate(path: String, name: String, operator: String): Update {

@@ -43,8 +43,9 @@ class UserNodeResourceImpl @Autowired constructor(
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     override fun detail(userId: String, artifactInfo: ArtifactInfo): Response<NodeDetail> {
         with(artifactInfo) {
-            val nodeDetail = nodeService.detail(projectId, repoName, artifactUri) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
-            return ResponseBuilder.success(nodeDetail)
+            val node = nodeService.detail(projectId, repoName, artifactUri)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
+            return ResponseBuilder.success(node)
         }
     }
 
@@ -159,9 +160,18 @@ class UserNodeResourceImpl @Autowired constructor(
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    override fun list(userId: String, artifactInfo: ArtifactInfo, includeFolder: Boolean, deep: Boolean): Response<List<NodeInfo>> {
+    override fun page(
+        userId: String,
+        artifactInfo: ArtifactInfo,
+        page: Int,
+        size: Int,
+        includeFolder: Boolean,
+        includeMetadata: Boolean,
+        deep: Boolean
+    ): Response<Page<NodeInfo>> {
         with(artifactInfo) {
-            return ResponseBuilder.success(nodeService.list(projectId, repoName, artifactUri, includeFolder, deep))
+            val nodePage = nodeService.page(projectId, repoName, artifactUri, page, size, includeFolder, includeMetadata, deep)
+            return ResponseBuilder.success(nodePage)
         }
     }
 

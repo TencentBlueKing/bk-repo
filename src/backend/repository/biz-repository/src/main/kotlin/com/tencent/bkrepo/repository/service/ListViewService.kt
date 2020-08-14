@@ -11,7 +11,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.ListViewObject
 import com.tencent.bkrepo.repository.pojo.list.RowItem
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
 import com.tencent.bkrepo.repository.pojo.project.ProjectListViewItem
 import com.tencent.bkrepo.repository.pojo.repo.RepoListViewItem
@@ -33,14 +33,21 @@ class ListViewService(
 ) {
     fun listNodeView(artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
-            val nodeDetail = nodeService.detail(projectId, repoName, artifactUri)
+            val node = nodeService.detail(projectId, repoName, artifactUri)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
             val response = HttpContextHolder.getResponse()
             response.contentType = MediaTypes.TEXT_HTML
-            if (nodeDetail.nodeInfo.folder) {
+            if (node.folder) {
                 trailingSlash()
-                val nodeList = nodeService.list(artifactInfo.projectId, artifactInfo.repoName, artifactUri, includeFolder = true, deep = false)
-                val currentPath = computeCurrentPath(nodeDetail.nodeInfo)
+                val nodeList = nodeService.list(
+                    artifactInfo.projectId,
+                    artifactInfo.repoName,
+                    artifactUri,
+                    includeFolder = true,
+                    includeMetadata = false,
+                    deep = false
+                )
+                val currentPath = computeCurrentPath(node)
                 val headerList = listOf(
                     HeaderItem("Name"),
                     HeaderItem("Created by"),
@@ -140,7 +147,7 @@ class ListViewService(
         }
     }
 
-    private fun computeCurrentPath(currentNode: NodeInfo): String {
+    private fun computeCurrentPath(currentNode: NodeDetail): String {
         val builder = StringBuilder()
         builder.append(NodeUtils.FILE_SEPARATOR)
             .append(currentNode.projectId)

@@ -91,15 +91,21 @@ interface UserNodeResource {
     ): Response<NodeSizeInfo>
 
     @ApiOperation("列表文件")
-    @GetMapping("/list/$DEFAULT_MAPPING_URI")
-    fun list(
+    @GetMapping("/page/$DEFAULT_MAPPING_URI")
+    fun page(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
-        @ApiParam("是否包含目录", required = false, defaultValue = "false")
+        @ApiParam(value = "当前页", required = true, defaultValue = "0")
+        @RequestParam page: Int = 0,
+        @ApiParam(value = "分页大小", required = true, defaultValue = "20")
+        @RequestParam size: Int = 20,
+        @ApiParam("是否包含目录", required = false, defaultValue = "true")
         @RequestParam includeFolder: Boolean = true,
+        @ApiParam("是否包含元数据", required = false, defaultValue = "false")
+        @RequestParam includeMetadata: Boolean = false,
         @ApiParam("是否深度查询文件", required = false, defaultValue = "false")
         @RequestParam deep: Boolean = false
-    ): Response<List<NodeInfo>>
+    ): Response<Page<NodeInfo>>
 
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")

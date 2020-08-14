@@ -192,15 +192,14 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
     private fun stream2Json(context: ArtifactTransferContext): String? {
         return with(context.artifactInfo) {
             val node = nodeResource.detail(projectId, repoName, artifactUri).data ?: return null
-            node.nodeInfo.takeIf { !it.folder } ?: return null
+            node.takeIf { !it.folder } ?: return null
             val inputStream = storageService.load(
-                node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size),
-                context
-                    .storageCredentials
-            )
-                ?: return null
+                node.sha256!!,
+                Range.full(node.size),
+                context.storageCredentials
+            ) ?: return null
 
-            val stringBuilder = StringBuilder("")
+            val stringBuilder = StringBuilder()
             var line: String
             BufferedReader(InputStreamReader(inputStream)).use { bufferedReader ->
                 while ((bufferedReader.readLine().also { line = it }) != null) {

@@ -69,9 +69,9 @@ class GenericLocalRepository : LocalRepository() {
     override fun remove(context: ArtifactRemoveContext) {
         val artifactInfo = context.artifactInfo
         with(artifactInfo) {
-            val nodeDetail = nodeResource.detail(projectId, repoName, artifactUri).data
+            val node = nodeResource.detail(projectId, repoName, artifactUri).data
                 ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
-            if (nodeDetail.nodeInfo.folder) {
+            if (node.folder) {
                 if (nodeResource.countFileNode(projectId, repoName, artifactUri).data!! > 0) {
                     throw UnsupportedMethodException("Delete non empty folder is forbidden")
                 }
