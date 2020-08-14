@@ -109,9 +109,9 @@ class HelmLocalRepository : LocalRepository() {
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
         val node = nodeResource.detail(projectId, repoName, fullPath).data
-        if (node == null || node.nodeInfo.folder) return null
+        if (node == null || node.folder) return null
         return storageService.load(
-            node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials
+            node.sha256!!, Range.ofFull(node.size), context.storageCredentials
         )?.also { logger.info("search artifact [$fullPath] success!") }
     }
 

@@ -245,7 +245,7 @@ class ReplicationJobBean(
             try {
                 // 查询元数据
                 val metadata = if (task.setting.includeMetadata) {
-                    repoDataService.getMetadata(node)
+                    node.metadata
                 } else emptyMap()
                 // 同步节点
                 val replicaRequest = NodeCreateRequest(

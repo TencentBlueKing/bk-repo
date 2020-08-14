@@ -17,7 +17,7 @@ import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeResource
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import okhttp3.Authenticator
 import okhttp3.Credentials
@@ -68,10 +68,10 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             val response = httpClient.newCall(request).execute()
             return if (checkResponse(response)) {
                 val artifactFile = createTempFile(response.body()!!)
-                val nodeInfo = putArtifactCache(context, artifactFile)
+                val node = putArtifactCache(context, artifactFile)
                 val size = artifactFile.getSize()
                 val artifactStream = artifactFile.getInputStream().toArtifactStream(Range.full(size))
-                return ArtifactResource(artifactStream, determineArtifactName(context), nodeInfo)
+                return ArtifactResource(artifactStream, determineArtifactName(context), node)
             } else null
         }
     }
@@ -84,14 +84,14 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
         if (!cacheConfiguration.cacheEnabled) return null
 
-        val nodeInfo = getCacheNodeInfo(context) ?: return null
-        if (nodeInfo.folder) return null
-        val createdDate = LocalDateTime.parse(nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
+        val node = getCacheNodeDetail(context) ?: return null
+        if (node.folder) return null
+        val createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
-            storageService.load(nodeInfo.sha256!!, Range.full(nodeInfo.size), context.storageCredentials)?.run {
+            storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)?.run {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
-                ArtifactResource(this, determineArtifactName(context), nodeInfo)
+                ArtifactResource(this, determineArtifactName(context), node)
             }
         } else null
     }
@@ -99,16 +99,16 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 尝试获取缓存的远程构件节点
      */
-    private fun getCacheNodeInfo(context: ArtifactDownloadContext): NodeInfo? {
+    private fun getCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
-        return nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, artifactInfo.artifactUri).data?.nodeInfo
+        return nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, artifactInfo.artifactUri).data
     }
 
     /**
      * 将远程拉取的构件缓存本地
      */
-    protected fun putArtifactCache(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeInfo? {
+    protected fun putArtifactCache(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeDetail? {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
         return if (cacheConfiguration.cacheEnabled) {

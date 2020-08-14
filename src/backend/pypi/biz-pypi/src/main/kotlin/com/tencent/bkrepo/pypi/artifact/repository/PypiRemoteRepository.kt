@@ -83,9 +83,9 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         while (node == null) {
             cacheRemoteRepoList(context)
         }
-        node.nodeInfo.takeIf { !it.folder } ?: return null
+        node.takeIf { !it.folder } ?: return null
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
-        val date = LocalDateTime.parse(node.nodeInfo.lastModifiedDate, format)
+        val date = LocalDateTime.parse(node.lastModifiedDate, format)
         val currentTime = LocalDateTime.now()
         val duration = Duration.between(date, currentTime).toMinutes()
         val job = GlobalScope.launch {
@@ -94,7 +94,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
             }
         }
         job.start()
-        return storageService.load(node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size), context.storageCredentials)
+        return storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
     }
 
     /**

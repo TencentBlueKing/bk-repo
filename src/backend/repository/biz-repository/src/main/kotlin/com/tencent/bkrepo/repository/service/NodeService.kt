@@ -117,17 +117,24 @@ class NodeService : AbstractService() {
     fun countFileNode(projectId: String, repoName: String, path: String = ROOT_PATH): Long {
         repositoryService.checkRepository(projectId, repoName)
         val formattedPath = formatPath(path)
-        val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = false, deep = true)
+        val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = false, includeMetadata = false, deep = true)
         return nodeDao.count(query)
     }
 
     /**
      * 列表查询节点
      */
-    fun list(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<NodeInfo> {
+    fun list(
+        projectId: String,
+        repoName: String,
+        path: String,
+        includeFolder: Boolean = true,
+        includeMetadata: Boolean = false,
+        deep: Boolean = false
+    ): List<NodeInfo> {
         repositoryService.checkRepository(projectId, repoName)
-        val query = nodeListQuery(projectId, repoName, path, includeFolder, deep)
-        if (nodeDao.count(query) >= THRESHOLD) {
+        val query = nodeListQuery(projectId, repoName, path, includeFolder, includeMetadata, deep)
+        if (nodeDao.count(query) >= LIST_THRESHOLD) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
         }
         return nodeDao.find(query).map { convert(it)!! }
@@ -136,12 +143,21 @@ class NodeService : AbstractService() {
     /**
      * 分页查询节点
      */
-    fun page(projectId: String, repoName: String, path: String, page: Int, size: Int, includeFolder: Boolean, deep: Boolean): Page<NodeInfo> {
+    fun page(
+        projectId: String,
+        repoName: String,
+        path: String,
+        page: Int,
+        size: Int,
+        includeFolder: Boolean = true,
+        includeMetadata: Boolean = false,
+        deep: Boolean = false
+    ): Page<NodeInfo> {
         page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
-        size.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
+        size.takeIf { it in 0..LIST_THRESHOLD } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
         repositoryService.checkRepository(projectId, repoName)
 
-        val query = nodeListQuery(projectId, repoName, path, includeFolder, deep)
+        val query = nodeListQuery(projectId, repoName, path, includeFolder, includeMetadata, deep)
         val count = nodeDao.count(query)
         val listData = nodeDao.find(query.with(PageRequest.of(page, size))).map { convert(it)!! }
 
@@ -172,7 +188,7 @@ class NodeService : AbstractService() {
      * 创建节点，返回id
      */
     @Transactional(rollbackFor = [Throwable::class])
-    fun create(createRequest: NodeCreateRequest): NodeInfo {
+    fun create(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
             this.takeIf { folder || !sha256.isNullOrBlank() }
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
@@ -213,7 +229,7 @@ class NodeService : AbstractService() {
             return node.apply { doCreate(this, repo) }
                 .also { publishEvent(NodeCreatedEvent(createRequest)) }
                 .also { logger.info("Create node [$createRequest] success.") }
-                .let { convert(it)!! }
+                .let { convertToDetail(it)!! }
         }
     }
 
@@ -341,7 +357,7 @@ class NodeService : AbstractService() {
             mkdirs(projectId, repoName, newFullPath, operator)
             val newParentPath = formatPath(newFullPath)
             val fullPath = formatPath(node.fullPath)
-            val query = nodeListQuery(projectId, repoName, fullPath, includeFolder = true, deep = false)
+            val query = nodeListQuery(projectId, repoName, fullPath, includeFolder = true, includeMetadata = false, deep = false)
             nodeDao.find(query).forEach { doRename(it, newParentPath + it.name, operator) }
             // 删除自己
             nodeDao.remove(nodeQuery(projectId, repoName, node.fullPath))
@@ -385,7 +401,7 @@ class NodeService : AbstractService() {
      * 查询节点model
      */
     private fun queryNode(projectId: String, repoName: String, fullPath: String): TNode? {
-        val query = nodeQuery(projectId, repoName, formatFullPath(fullPath), withDetail = true)
+        val query = nodeQuery(projectId, repoName, formatFullPath(fullPath))
         return nodeDao.findOne(query)
     }
 
@@ -473,6 +489,7 @@ class NodeService : AbstractService() {
                     srcNode.repoName,
                     srcRootNodePath,
                     includeFolder = true,
+                    includeMetadata = false,
                     deep = true
                 )
                 nodeDao.find(query).forEach {
@@ -481,8 +498,7 @@ class NodeService : AbstractService() {
                 }
             } else {
                 // 文件 ->
-                val destPath =
-                    if (destNode?.folder == true) formatPath(destNode.fullPath) else getParentPath(destFullPath)
+                val destPath = if (destNode?.folder == true) formatPath(destNode.fullPath) else getParentPath(destFullPath)
                 val destName = if (destNode?.folder == true) srcNode.name else getName(destFullPath)
                 mkdirs(destProjectId, destRepoName, destPath, operator)
                 moveOrCopyNode(srcNode, destRepository, destPath, destName, request, operator)
@@ -574,15 +590,13 @@ class NodeService : AbstractService() {
      * 根据有效天数，计算到期时间
      */
     private fun parseExpireDate(expireDays: Long?): LocalDateTime? {
-        return expireDays?.let {
-            if (it > 0) LocalDateTime.now().plusDays(it) else null
-        }
+        return expireDays?.takeIf { it > 0 }?.run { LocalDateTime.now().plusDays(this)  }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeService::class.java)
 
-        private const val THRESHOLD: Long = 100000L
+        private const val LIST_THRESHOLD: Long = 100000L
 
         private fun convert(tNode: TNode?): NodeInfo? {
             return tNode?.let {
@@ -598,6 +612,7 @@ class NodeService : AbstractService() {
                     size = it.size,
                     sha256 = it.sha256,
                     md5 = it.md5,
+                    metadata = MetadataService.convertOrNull(it.metadata),
                     repoName = it.repoName,
                     projectId = it.projectId
                 )
@@ -605,10 +620,10 @@ class NodeService : AbstractService() {
         }
 
         private fun convertToDetail(tNode: TNode?): NodeDetail? {
-            return tNode?.let {
+            return convert(tNode)?.let {
                 NodeDetail(
-                    nodeInfo = convert(it)!!,
-                    metadata = MetadataService.convert(it.metadata)
+                    nodeInfo = it,
+                    metadata = it.metadata.orEmpty()
                 )
             }
         }

@@ -195,9 +195,9 @@ class NpmLocalRepository : LocalRepository() {
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         val node = nodeResource.detail(projectId, repoName, fullPath).data
-        if (node == null || node.nodeInfo.folder) return null
+        if (node == null || node.folder) return null
         val inputStream =
-            storageService.load(node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size), context.storageCredentials)
+            storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
                 .also {
                     logger.info("search artifact [$fullPath] success!")
                 }
@@ -318,7 +318,7 @@ class NpmLocalRepository : LocalRepository() {
         var cacheFileSha256: String? = null
         var cacheArtifact: InputStream? = null
         getCacheNodeInfo(context)?.let {
-            cacheFileSha256 = it.nodeInfo.sha256
+            cacheFileSha256 = it.sha256
             cacheArtifact = getCacheArtifact(context)
         }
         val pkgName = context.contextAttributes[PKG_NAME] as String
@@ -450,9 +450,9 @@ class NpmLocalRepository : LocalRepository() {
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
-        if (node == null || node.nodeInfo.folder) return null
+        if (node == null || node.folder) return null
         val inputStream =
-            storageService.load(node.nodeInfo.sha256!!, Range.full(node.nodeInfo.size), context.storageCredentials)
+            storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
         inputStream?.let { logger.debug("Cached remote artifact[$fullPath] is hit") }
         return inputStream
     }

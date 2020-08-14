@@ -2,11 +2,13 @@ package com.tencent.bkrepo.pypi.artifact.repository
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha256
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -143,22 +145,16 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         with(artifactInfo) {
-            val nodeDetail = nodeResource.detail(projectId, repositoryInfo.name, artifactUri).data
-                ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
-                    com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
-                    artifactUri
-                )
+            val node = nodeResource.detail(projectId, repositoryInfo.name, artifactUri).data
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
 
             val response = HttpContextHolder.getResponse()
             response.contentType = "text/html; charset=UTF-8"
             // 请求不带包名，返回包名列表.
             if (artifactUri == "/") {
-                if (nodeDetail.nodeInfo.folder) {
+                if (node.folder) {
                     val nodeList = nodeResource.list(projectId, repositoryInfo.name, artifactUri, includeFolder = true, deep = true).data
-                        ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
-                            com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
-                            artifactInfo.artifactUri
-                        )
+                        ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
                     // 过滤掉'根节点',
                     val htmlContent = buildPackageListContent(
                         artifactInfo.projectId,
@@ -170,12 +166,9 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
             }
             // 请求中带包名，返回对应包的文件列表。
             else {
-                if (nodeDetail.nodeInfo.folder) {
+                if (node.folder) {
                     val packageNode = nodeResource.list(projectId, repositoryInfo.name, artifactUri, includeFolder = false, deep = true).data
-                        ?: throw com.tencent.bkrepo.common.api.exception.ErrorCodeException(
-                            com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_NOT_FOUND,
-                            artifactUri
-                        )
+                        ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
                     val htmlContent = buildPypiPageContent(buildPackageFilenodeListContent(artifactInfo.projectId, artifactInfo.repoName, packageNode))
                     response.writer.print(htmlContent)
                 }

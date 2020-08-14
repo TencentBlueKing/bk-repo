@@ -60,7 +60,7 @@ class RepoDataService @Autowired constructor(
     }
 
     fun listFileNode(projectId: String, repoName: String, path: String = ROOT, page: Int = 0, size: Int = 100): List<NodeInfo> {
-        return nodeResource.page(projectId, repoName, page, size, path, includeFolder = false, deep = true).data!!.records
+        return nodeResource.page(projectId, repoName, page, size, path, includeFolder = false, includeMetadata = true, deep = true).data!!.records
     }
 
     fun getMetadata(nodeInfo: NodeInfo): Map<String, String> {

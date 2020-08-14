@@ -36,7 +36,7 @@ class MetadataService : AbstractService() {
 
     fun query(projectId: String, repoName: String, fullPath: String): Map<String, String> {
         repositoryService.checkRepository(projectId, repoName)
-        return convert(nodeDao.findOne(QueryHelper.nodeQuery(projectId, repoName, fullPath, withDetail = true))?.metadata)
+        return convert(nodeDao.findOne(QueryHelper.nodeQuery(projectId, repoName, fullPath))?.metadata)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -45,7 +45,7 @@ class MetadataService : AbstractService() {
             if (!metadata.isNullOrEmpty()) {
                 repositoryService.checkRepository(projectId, repoName)
                 val fullPath = formatFullPath(fullPath)
-                nodeDao.findOne(QueryHelper.nodeQuery(projectId, repoName, fullPath, withDetail = true))?.let { node ->
+                nodeDao.findOne(QueryHelper.nodeQuery(projectId, repoName, fullPath))?.let { node ->
                     val originalMetadata = convert(node.metadata).toMutableMap()
                     metadata!!.forEach { (key, value) -> originalMetadata[key] = value }
                     node.metadata = convert(originalMetadata)
@@ -94,6 +94,10 @@ class MetadataService : AbstractService() {
 
         fun convert(metadataList: List<TMetadata>?): Map<String, String> {
             return metadataList?.map { it.key to it.value }?.toMap().orEmpty()
+        }
+
+        fun convertOrNull(metadataList: List<TMetadata>?): Map<String, String>? {
+            return metadataList?.map { it.key to it.value }?.toMap()
         }
     }
 }

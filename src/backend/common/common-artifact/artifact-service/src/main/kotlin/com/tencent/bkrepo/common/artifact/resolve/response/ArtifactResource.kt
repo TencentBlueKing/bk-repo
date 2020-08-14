@@ -1,13 +1,13 @@
 package com.tencent.bkrepo.common.artifact.resolve.response
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import java.nio.charset.StandardCharsets
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 class ArtifactResource(
     val inputStream: ArtifactInputStream,
     val artifact: String,
-    val nodeInfo: NodeInfo?
+    val node: NodeDetail?
 ) {
-    var characterEncoding: String = StandardCharsets.UTF_8.name()
+    var characterEncoding: String = StringPool.UTF_8
 }

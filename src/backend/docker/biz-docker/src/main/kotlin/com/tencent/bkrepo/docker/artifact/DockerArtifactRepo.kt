@@ -322,12 +322,12 @@ class DockerArtifactRepo @Autowired constructor(
             logger.warn("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
         }
-        node.nodeInfo.sha256 ?: run {
+        node.sha256 ?: run {
             logger.error("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
         }
-        return DockerArtifact(projectId, repoName, fullPath).sha256(node.nodeInfo.sha256!!)
-            .length(node.nodeInfo.size)
+        return DockerArtifact(projectId, repoName, fullPath).sha256(node.sha256!!)
+            .length(node.size)
     }
 
     // get artifact list by name

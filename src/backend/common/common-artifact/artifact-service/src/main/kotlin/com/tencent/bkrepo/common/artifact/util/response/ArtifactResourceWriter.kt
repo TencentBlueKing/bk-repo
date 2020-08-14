@@ -16,7 +16,7 @@ import com.tencent.bkrepo.common.artifact.stream.STREAM_BUFFER_SIZE
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.monitor.Throughput
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.util.NodeUtils
 import io.micrometer.core.instrument.Metrics
 import org.slf4j.LoggerFactory
@@ -44,7 +44,7 @@ object ArtifactResourceWriter {
         val request = HttpContextHolder.getRequest()
         val response = HttpContextHolder.getResponse()
         val artifact = resource.artifact
-        val node = resource.nodeInfo
+        val node = resource.node
         val range = resource.inputStream.range
 
         response.bufferSize = STREAM_BUFFER_SIZE
@@ -55,8 +55,8 @@ object ArtifactResourceWriter {
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, encodeDisposition(artifact))
         response.setHeader(HttpHeaders.CACHE_CONTROL, NO_CACHE)
         node?.let {
-            response.setHeader(HttpHeaders.ETAG, resolveETag(node))
-            response.setDateHeader(HttpHeaders.LAST_MODIFIED, resolveLastModified(node.lastModifiedDate))
+            response.setHeader(HttpHeaders.ETAG, resolveETag(it))
+            response.setDateHeader(HttpHeaders.LAST_MODIFIED, resolveLastModified(it.lastModifiedDate))
         }
         response.setHeader(HttpHeaders.CONTENT_LENGTH, resolveContentLength(range))
         response.setHeader(HttpHeaders.CONTENT_RANGE, resolveContentRange(range))
@@ -122,7 +122,7 @@ object ArtifactResourceWriter {
         return CONTENT_DISPOSITION_TEMPLATE.format(encodeFilename, encodeFilename)
     }
 
-    private fun resolveETag(node: NodeInfo): String {
+    private fun resolveETag(node: NodeDetail): String {
         return node.sha256!!
     }
 }
