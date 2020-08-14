@@ -369,12 +369,16 @@ class NodeService : AbstractService() {
         )
         if (soft) {
             // 软删除
-            nodeDao.updateMulti(query, nodeDeleteUpdate(operator))
+            try {
+                nodeDao.updateMulti(query, nodeDeleteUpdate(operator))
+            } catch (exception: DuplicateKeyException) {
+                logger.warn("Soft delete node[$projectId/$repoName$fullPath] error: [${exception.message}]")
+            }
         } else {
             // 硬删除
             nodeDao.remove(query)
         }
-        logger.info("Delete node [$projectId/$repoName/$fullPath] by [$operator] success.")
+        logger.info("Delete node [$projectId/$repoName$fullPath] by [$operator] success.")
     }
 
     /**
