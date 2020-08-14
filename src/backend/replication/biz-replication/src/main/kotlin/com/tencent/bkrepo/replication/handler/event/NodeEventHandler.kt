@@ -43,9 +43,9 @@ class NodeEventHandler : AbstractEventHandler() {
                             projectId = remoteProjectId,
                             repoName = remoteRepoName
                         ).apply { replicationService.replicaNodeCreateRequest(context, this) }
-                        retryCount -= 3
-                        return
                     }
+                    retryCount -= 3
+                    return
                 } catch (exception: ReplicaFileFailedException) {
                     logger.info("replication file failed [${exception.message}]")
                     retryCount -= 1
