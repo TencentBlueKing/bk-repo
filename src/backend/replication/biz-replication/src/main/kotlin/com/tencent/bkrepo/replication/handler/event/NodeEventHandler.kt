@@ -52,6 +52,7 @@ class NodeEventHandler : AbstractEventHandler() {
                     }
                 }
             }
+            return
         }
     }
 
