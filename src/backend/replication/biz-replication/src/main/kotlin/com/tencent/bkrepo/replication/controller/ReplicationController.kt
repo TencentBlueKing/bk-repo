@@ -32,7 +32,7 @@ import com.tencent.bkrepo.repository.api.ProjectResource
 import com.tencent.bkrepo.repository.api.RepositoryResource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -166,7 +166,7 @@ class ReplicationController : ReplicationClient {
         artifactInfo: DefaultArtifactInfo,
         fileMap: ArtifactFileMap,
         nodeReplicaRequest: NodeReplicaRequest
-    ): Response<NodeInfo> {
+    ): Response<NodeDetail> {
         with(nodeReplicaRequest) {
             val file = fileMap["file"]!!
             // 校验
@@ -203,7 +203,7 @@ class ReplicationController : ReplicationClient {
         }
     }
 
-    override fun replicaNodeCreateRequest(token: String, nodeCreateRequest: NodeCreateRequest): Response<NodeInfo> {
+    override fun replicaNodeCreateRequest(token: String, nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {
         return nodeResource.create(nodeCreateRequest)
     }
 
