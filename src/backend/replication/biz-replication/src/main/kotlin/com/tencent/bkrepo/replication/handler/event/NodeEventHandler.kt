@@ -24,8 +24,8 @@ class NodeEventHandler : AbstractEventHandler() {
     @EventListener(NodeCreatedMessage::class)
     fun handle(message: NodeCreatedMessage) {
         with(message.request) {
-            // var retryCount = 3
-            // while (retryCount > 0)
+            var retryCount = 3
+            while (retryCount > 0) {
                 try {
                     getRelativeTaskList(projectId, repoName).forEach {
                         val remoteProjectId = getRemoteProjectId(it, projectId)
@@ -41,18 +41,18 @@ class NodeEventHandler : AbstractEventHandler() {
                             projectId = remoteProjectId,
                             repoName = remoteRepoName
                         ).apply { replicationService.replicaNodeCreateRequest(context, this) }
-                        //retryCount -= 3
+                        retryCount -= 3
                     }
                 } catch (exception: ReplicaFileFailedException) {
                     logger.info("replication file failed [${exception.message}]")
-                    // retryCount -= 1
-                    // if (retryCount == 0) {
-                    //     logger.error("replication file failed [${exception.message}]")
-                    //     // log to db
-                    // }
+                    retryCount -= 1
+                    if (retryCount == 0) {
+                        logger.error("replication file failed [${exception.message}]")
+                        // log to db
+                    }
                 }
-        //
-         }
+            }
+        }
     }
 
     @EventListener(NodeRenamedMessage::class)
