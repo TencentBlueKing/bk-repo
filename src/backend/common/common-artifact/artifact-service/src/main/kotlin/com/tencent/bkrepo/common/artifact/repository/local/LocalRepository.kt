@@ -23,11 +23,6 @@ import java.util.concurrent.Executor
 import java.util.regex.Pattern
 import javax.annotation.Resource
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/26
- */
 abstract class LocalRepository : AbstractArtifactRepository() {
 
     @Autowired

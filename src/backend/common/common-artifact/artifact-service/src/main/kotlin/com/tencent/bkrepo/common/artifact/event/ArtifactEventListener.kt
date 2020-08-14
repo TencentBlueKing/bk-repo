@@ -8,9 +8,6 @@ import org.springframework.context.event.EventListener
 
 /**
  * 构件相关事件监听器
- *
- * @author: carrypan
- * @date: 2020/1/8
  */
 class ArtifactEventListener {
 

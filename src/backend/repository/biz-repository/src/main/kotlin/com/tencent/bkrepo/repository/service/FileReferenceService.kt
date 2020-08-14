@@ -13,9 +13,6 @@ import org.springframework.stereotype.Service
 
 /**
  * 文件摘要引用 Service
- *
- * @author: carrypan
- * @date: 2019/11/12
  */
 @Service
 class FileReferenceService {

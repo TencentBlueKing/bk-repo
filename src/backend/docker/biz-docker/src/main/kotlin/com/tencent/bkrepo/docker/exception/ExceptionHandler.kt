@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 /**
  * docker repo exception handler
  */
-
 @RestControllerAdvice
 class ExceptionHandler {
 

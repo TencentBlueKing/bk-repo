@@ -26,11 +26,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/28
- */
 @Component
 class GenericLocalRepository : LocalRepository() {
 

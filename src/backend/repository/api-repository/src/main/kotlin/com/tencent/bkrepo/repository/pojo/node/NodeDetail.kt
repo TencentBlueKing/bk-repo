@@ -5,8 +5,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 节点详细信息
- * @author: carrypan
- * @date: 2019-10-13
  */
 @ApiModel("节点详细信息")
 data class NodeDetail(

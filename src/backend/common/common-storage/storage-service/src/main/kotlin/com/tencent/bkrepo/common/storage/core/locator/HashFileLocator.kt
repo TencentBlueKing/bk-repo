@@ -2,9 +2,6 @@ package com.tencent.bkrepo.common.storage.core.locator
 
 /**
  * 使用hash落地文件
- *
- * @author: carrypan
- * @date: 2019-09-09
  */
 class HashFileLocator : FileLocator {
 

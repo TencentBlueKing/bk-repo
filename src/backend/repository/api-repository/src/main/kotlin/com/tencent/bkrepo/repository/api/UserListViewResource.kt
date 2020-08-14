@@ -10,9 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 /**
  * 用户查看节点列表页面
- *
- * @author: carrypan
- * @date: 2019-11-18
  */
 @RequestMapping("/api/list")
 interface UserListViewResource {

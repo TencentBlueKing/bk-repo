@@ -6,9 +6,6 @@ import com.tencent.bkrepo.repository.model.TNode
 
 /**
  * 排除指定字段
- *
- * @author: carrypan
- * @date: 2019/11/15
  */
 class NodeSelectInterceptor : QueryModelInterceptor {
 

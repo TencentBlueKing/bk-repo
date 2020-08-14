@@ -16,9 +16,6 @@ import kotlin.system.measureNanoTime
 
 /**
  * 文件存储接口
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 @Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught")
 abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : FileStorage {

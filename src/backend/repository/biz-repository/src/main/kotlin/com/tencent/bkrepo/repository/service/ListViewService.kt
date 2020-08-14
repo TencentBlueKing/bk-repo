@@ -20,11 +20,6 @@ import org.apache.commons.lang.StringEscapeUtils
 import org.springframework.stereotype.Service
 import java.io.PrintWriter
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/22
- */
 @Service
 class ListViewService(
     private val projectService: ProjectService,

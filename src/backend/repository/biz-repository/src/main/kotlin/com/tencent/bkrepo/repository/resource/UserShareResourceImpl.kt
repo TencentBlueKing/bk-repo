@@ -19,9 +19,6 @@ import org.springframework.web.bind.annotation.RestController
 
 /**
  * 用户节点接口实现类
- *
- * @author: carrypan
- * @date: 2019/11/19
  */
 @RestController
 class UserShareResourceImpl @Autowired constructor(

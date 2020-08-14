@@ -27,8 +27,6 @@ import kotlin.streams.toList
 
 /**
  * docker repo service utility
- * @author: owenlxu
- * @date: 2019-11-15
  */
 object ResponseUtil {
 

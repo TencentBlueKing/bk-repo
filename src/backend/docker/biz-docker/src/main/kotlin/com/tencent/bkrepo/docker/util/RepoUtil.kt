@@ -9,8 +9,6 @@ import org.slf4j.LoggerFactory
 /**
  * docker repo  utility
  * to deal with repo params
- * @author: owenlxu
- * @date: 2019-11-15
  */
 object RepoUtil {
 

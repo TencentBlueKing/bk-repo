@@ -42,11 +42,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.InputStream
 
-/*
+/**
  * docker repo storage interface
  * to work with storage module
- * @author: owenlxu
- * @date: 2020-06-10
  */
 @Service
 class DockerArtifactRepo @Autowired constructor(

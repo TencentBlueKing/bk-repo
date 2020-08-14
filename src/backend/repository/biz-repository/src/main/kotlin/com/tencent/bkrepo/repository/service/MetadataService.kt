@@ -21,9 +21,6 @@ import org.springframework.transaction.annotation.Transactional
 
 /**
  * 元数据服务
- *
- * @author: carrypan
- * @date: 2019-10-14
  */
 @Service
 class MetadataService : AbstractService() {

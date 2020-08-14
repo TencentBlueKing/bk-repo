@@ -29,9 +29,6 @@ import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * 资源节点服务接口
- *
- * @author: carrypan
- * @date: 2019-09-10
  */
 @Api("节点服务接口")
 @FeignClient(SERVICE_NAME, contextId = "NodeResource")

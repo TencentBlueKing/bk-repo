@@ -26,9 +26,6 @@ import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * 用户节点服务接口
- *
- * @author: carrypan
- * @date: 2019-11-18
  */
 @Api("用户节点服务接口")
 @RequestMapping("/api/node")

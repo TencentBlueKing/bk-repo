@@ -23,9 +23,6 @@ import org.springframework.web.bind.annotation.RestController
 
 /**
  * 资源节点服务接口 实现类
- *
- * @author: carrypan
- * @date: 2019-09-10
  */
 @RestController
 class NodeResourceImpl @Autowired constructor(

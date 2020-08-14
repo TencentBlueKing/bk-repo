@@ -15,9 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 /**
  * 仓库服务接口
- *
- * @author: carrypan
- * @date: 2019-10-18
  */
 @Api("仓库服务接口")
 @RequestMapping("/api/repo")

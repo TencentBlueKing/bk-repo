@@ -7,8 +7,6 @@ import com.tencent.bkrepo.docker.model.ManifestMetadata
 
 /**
  * the enterypoint for deserialize manifest
- * @author: owenlxu
- * @date: 2020-02-05
  */
 object ManifestDeserializer {
 

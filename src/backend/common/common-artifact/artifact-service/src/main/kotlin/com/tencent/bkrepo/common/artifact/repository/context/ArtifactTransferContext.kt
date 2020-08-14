@@ -14,8 +14,6 @@ import javax.servlet.http.HttpServletResponse
 
 /**
  * 构件传输context
- * @author: carrypan
- * @date: 2019/11/26
  */
 open class ArtifactTransferContext(repo: RepositoryInfo? = null) {
     val request: HttpServletRequest = HttpContextHolder.getRequest()

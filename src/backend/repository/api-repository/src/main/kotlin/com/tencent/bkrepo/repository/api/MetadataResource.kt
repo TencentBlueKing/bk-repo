@@ -18,9 +18,6 @@ import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * 节点元数据服务接口
- *
- * @author: carrypan
- * @date: 2019-10-14
  */
 @Api("节点元数据服务接口")
 @FeignClient(SERVICE_NAME, contextId = "MetadataResource")

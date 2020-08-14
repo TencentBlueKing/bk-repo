@@ -32,9 +32,6 @@ import kotlin.system.measureNanoTime
 
 /**
  * 存储服务抽象实现
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 @Suppress("TooGenericExceptionCaught")
 abstract class AbstractStorageService : StorageService {

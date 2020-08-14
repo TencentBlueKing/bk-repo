@@ -16,11 +16,6 @@ import com.tencent.bkrepo.pypi.artifact.repository.PypiRepository
 import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
 import org.springframework.stereotype.Service
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/4
- */
 @Service
 class PypiService {
 

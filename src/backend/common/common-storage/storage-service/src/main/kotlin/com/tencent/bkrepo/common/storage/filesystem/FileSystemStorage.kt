@@ -12,9 +12,6 @@ import java.nio.file.Paths
 
 /**
  * 文件系统存储
- *
- * @author: carrypan
- * @date: 2019-09-09
  */
 open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSystemClient>() {
 

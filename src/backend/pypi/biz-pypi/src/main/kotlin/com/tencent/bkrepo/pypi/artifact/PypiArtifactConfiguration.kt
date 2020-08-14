@@ -11,11 +11,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/4
- */
 @Configuration
 class PypiArtifactConfiguration : ArtifactConfiguration {
 

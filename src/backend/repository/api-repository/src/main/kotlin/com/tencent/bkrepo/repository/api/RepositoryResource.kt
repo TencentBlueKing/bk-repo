@@ -21,9 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 /**
  * 仓库服务接口
- *
- * @author: carrypan
- * @date: 2019-09-09
  */
 @Api("仓库服务接口")
 @FeignClient(SERVICE_NAME, contextId = "RepositoryResource")

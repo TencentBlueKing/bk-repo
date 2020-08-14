@@ -35,11 +35,6 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/4
- */
 @Component
 class PypiRemoteRepository : RemoteRepository(), PypiRepository {
 

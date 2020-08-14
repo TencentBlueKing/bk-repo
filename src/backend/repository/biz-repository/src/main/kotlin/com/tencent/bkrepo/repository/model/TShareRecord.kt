@@ -7,9 +7,6 @@ import org.springframework.data.mongodb.core.mapping.Document
 
 /**
  * 构件共享记录
- *
- * @author: carrypan
- * @date: 2019/12/20
  */
 @Document("share_record")
 @CompoundIndexes(

@@ -35,11 +35,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/26
- */
 abstract class RemoteRepository : AbstractArtifactRepository() {
 
     @Autowired

@@ -16,8 +16,6 @@ import java.time.LocalDateTime
 
 /**
  * 标记已过期的节点为已删除
- * @author: carrypan
- * @date: 2019/12/24
  */
 @Component
 class ExpiredNodeMarkupJob {

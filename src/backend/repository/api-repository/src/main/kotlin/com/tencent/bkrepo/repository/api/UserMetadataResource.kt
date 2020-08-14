@@ -17,9 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 /**
  * 节点元数据服务接口
- *
- * @author: carrypan
- * @date: 2019-10-18
  */
 @Api("节点元数据服务接口")
 @RequestMapping("/api/metadata")

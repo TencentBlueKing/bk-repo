@@ -5,9 +5,6 @@ import javax.servlet.http.HttpServletRequest
 
 /**
  * 默认实现
- *
- * @author: carrypan
- * @date: 2019/12/2
  */
 @Resolver(DefaultArtifactInfo::class, default = true)
 class DefaultArtifactInfoResolver : ArtifactInfoResolver {

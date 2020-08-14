@@ -17,9 +17,6 @@ import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * 用户分享接口
- *
- * @author: carrypan
- * @date: 2019/12/20
  */
 @RequestMapping("/api/share")
 interface UserShareResource {

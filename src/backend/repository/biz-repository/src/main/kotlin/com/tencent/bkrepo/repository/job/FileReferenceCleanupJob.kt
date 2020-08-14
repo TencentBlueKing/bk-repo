@@ -16,8 +16,6 @@ import org.springframework.stereotype.Component
 
 /**
  * 清理引用=0的文件
- * @author: carrypan
- * @date: 2019/12/24
  */
 @Component
 class FileReferenceCleanupJob {

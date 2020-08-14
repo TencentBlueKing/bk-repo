@@ -55,9 +55,6 @@ import java.time.format.DateTimeFormatter
 
 /**
  * 节点service
- *
- * @author: carrypan
- * @date: 2019-09-20
  */
 @Service
 class NodeService : AbstractService() {

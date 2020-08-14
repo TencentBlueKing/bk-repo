@@ -21,9 +21,6 @@ import java.util.Date
 
 /**
  * 节点自定义查询service
- *
- * @author: carrypan
- * @date: 2019-11-15
  */
 @Suppress("UNCHECKED_CAST")
 @Service

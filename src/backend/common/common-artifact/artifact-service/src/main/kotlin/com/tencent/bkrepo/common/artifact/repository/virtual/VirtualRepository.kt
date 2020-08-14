@@ -13,11 +13,6 @@ import com.tencent.bkrepo.repository.api.RepositoryResource
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/26
- */
 abstract class VirtualRepository : AbstractArtifactRepository() {
 
     @Autowired

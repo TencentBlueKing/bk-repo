@@ -5,8 +5,6 @@ import org.apache.commons.lang.StringUtils
 
 /**
  * docker digest
- * @author: owenlxu
- * @date: 2019-10-15
  */
 data class DockerDigest(val digest: String?) {
 

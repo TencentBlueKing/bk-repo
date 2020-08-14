@@ -10,9 +10,6 @@ import java.time.LocalDateTime
 
 /**
  * 查询条件构造工具
- *
- * @author: carrypan
- * @date: 2019-10-18
  */
 object QueryHelper {
 

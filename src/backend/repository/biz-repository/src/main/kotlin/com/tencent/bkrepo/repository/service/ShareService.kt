@@ -21,9 +21,6 @@ import java.util.UUID
 
 /**
  * 文件分享 service
- *
- * @author: carrypan
- * @date: 2019/11/12
  */
 @Service
 class ShareService(

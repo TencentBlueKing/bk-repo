@@ -11,8 +11,6 @@ import org.springframework.stereotype.Component
 
 /**
  * 文件同步任务
- * @author: carrypan
- * @date: 2019/12/24
  */
 @Component
 class FileSynchronizeJob {

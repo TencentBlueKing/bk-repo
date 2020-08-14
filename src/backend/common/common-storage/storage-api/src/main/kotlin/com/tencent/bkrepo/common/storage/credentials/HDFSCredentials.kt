@@ -5,9 +5,6 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
  * HDFS配置
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 data class HDFSCredentials(
     var clusterMode: Boolean = false,

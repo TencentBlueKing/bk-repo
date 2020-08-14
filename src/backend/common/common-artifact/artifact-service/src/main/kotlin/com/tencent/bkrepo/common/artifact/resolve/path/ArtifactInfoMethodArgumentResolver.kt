@@ -18,9 +18,6 @@ import org.springframework.web.servlet.HandlerMapping
 
 /**
  * 构件位置信息参数解析器
- *
- * @author: carrypan
- * @date: 2019/11/19
  */
 @Suppress("UNCHECKED_CAST")
 class ArtifactInfoMethodArgumentResolver : HandlerMethodArgumentResolver {

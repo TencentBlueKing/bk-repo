@@ -56,9 +56,6 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
         )
     }
 
-    /**
-     *
-     */
     private fun indexer(context: ArtifactUploadContext) {
         with(context.artifactInfo) {
             // 先读取并保存文件信息。

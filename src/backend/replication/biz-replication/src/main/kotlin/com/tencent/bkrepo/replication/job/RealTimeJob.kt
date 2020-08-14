@@ -21,8 +21,6 @@ import java.time.LocalDateTime
 
 /**
  * real time job tail from the caped collection
- * @author: owenlxu
- * @date: 2020/05/20
  */
 @Service
 class RealTimeJob {

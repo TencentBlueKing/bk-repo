@@ -3,14 +3,9 @@ package com.tencent.bkrepo.common.query.handler.impl
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.handler.MongoQueryRuleHandler
 import com.tencent.bkrepo.common.query.model.Rule
-import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.query.Criteria
+import java.time.LocalDateTime
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/15
- */
 class BeforeHandler : MongoQueryRuleHandler {
 
     override fun match(rule: Rule.QueryRule): Boolean {

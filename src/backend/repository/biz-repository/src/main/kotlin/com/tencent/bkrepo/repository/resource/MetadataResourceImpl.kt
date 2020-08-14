@@ -11,9 +11,6 @@ import org.springframework.web.bind.annotation.RestController
 
 /**
  * 元数据接口实现类
- *
- * @author: carrypan
- * @date: 2019-10-15
  */
 @RestController
 class MetadataResourceImpl @Autowired constructor(

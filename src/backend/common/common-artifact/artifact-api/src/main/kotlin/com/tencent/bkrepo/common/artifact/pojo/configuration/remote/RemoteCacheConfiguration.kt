@@ -2,8 +2,6 @@ package com.tencent.bkrepo.common.artifact.pojo.configuration.remote
 
 /**
  * 远程仓库 缓存配置
- * @author: carrypan
- * @date: 2019/11/26
  */
 class RemoteCacheConfiguration(
     // 是否开启缓存

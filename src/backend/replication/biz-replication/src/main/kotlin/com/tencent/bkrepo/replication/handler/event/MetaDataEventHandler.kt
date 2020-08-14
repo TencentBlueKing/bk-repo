@@ -7,8 +7,6 @@ import org.springframework.context.event.EventListener
 
 /**
  * handler metadata message and replicate
- * @author: owenlxu
- * @date: 2020/05/20
  */
 class MetaDataEventHandler : AbstractEventHandler() {
 

@@ -10,10 +10,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
-/**
- * @author: carrypan
- * @date: 2019/12/4
- */
 @Component
 class PypiVirtualRepository : VirtualRepository(), PypiRepository {
 

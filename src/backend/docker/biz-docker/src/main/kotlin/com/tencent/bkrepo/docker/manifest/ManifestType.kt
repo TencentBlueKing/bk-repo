@@ -8,8 +8,6 @@ import org.springframework.http.MediaType
 
 /**
  * enum type of manifest
- * @author: owenlxu
- * @date: 2020-02-05
  */
 enum class ManifestType(private val mediaType: String) {
 

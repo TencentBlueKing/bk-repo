@@ -17,8 +17,6 @@ import java.time.LocalDateTime
 
 /**
  * 清理被标记为删除的node，同时减少文件引用
- * @author: carrypan
- * @date: 2019/12/24
  */
 @Component
 class DeletedNodeCleanupJob {

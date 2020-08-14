@@ -12,9 +12,6 @@ import java.io.InputStream
 
 /**
  * 内部cos文件存储实现类
- *
- * @author: carrypan
- * @date: 2019-09-17
  */
 open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosClient>() {
 

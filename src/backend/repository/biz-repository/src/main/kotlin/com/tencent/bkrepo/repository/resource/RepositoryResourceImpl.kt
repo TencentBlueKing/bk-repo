@@ -14,9 +14,6 @@ import org.springframework.web.bind.annotation.RestController
 
 /**
  * 仓库服务接口实现类
- *
- * @author: carrypan
- * @date: 2019-09-10
  */
 @RestController
 class RepositoryResourceImpl @Autowired constructor(

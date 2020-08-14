@@ -15,9 +15,6 @@ import javax.servlet.http.HttpServletRequest
 
 /**
  * Multipart表单多文件上传参数解析器
- *
- * @author: carrypan
- * @date: 2019-10-30
  */
 class ArtifactFileMapMethodArgumentResolver : HandlerMethodArgumentResolver {
 

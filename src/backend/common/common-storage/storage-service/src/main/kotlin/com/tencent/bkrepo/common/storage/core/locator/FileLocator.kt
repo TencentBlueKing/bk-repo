@@ -2,9 +2,6 @@ package com.tencent.bkrepo.common.storage.core.locator
 
 /**
  * 文件定位
- *
- * @author: carrypan
- * @date: 2019-09-09
  */
 interface FileLocator {
 

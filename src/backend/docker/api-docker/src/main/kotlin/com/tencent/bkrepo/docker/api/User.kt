@@ -21,8 +21,6 @@ import javax.servlet.http.HttpServletRequest
 
 /**
  * docker image extension api
- * @author: owenlxu
- * @date: 2020-03-12
  */
 @Api("docker镜像仓库扩展查询api")
 @RequestMapping(USER_API_PREFIX)

@@ -34,9 +34,6 @@ import java.time.format.DateTimeFormatter
 
 /**
  * 仓库service
- *
- * @author: carrypan
- * @date: 2019-09-20
  */
 @Service
 class RepositoryService : AbstractService() {

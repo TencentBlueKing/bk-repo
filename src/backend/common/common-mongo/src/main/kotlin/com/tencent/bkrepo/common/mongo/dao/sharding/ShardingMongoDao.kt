@@ -18,9 +18,6 @@ import javax.annotation.PostConstruct
 
 /**
  * mongodb 支持分表的数据访问层抽象类
- *
- * @author: carrypan
- * @date: 2019/11/5
  */
 abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
 

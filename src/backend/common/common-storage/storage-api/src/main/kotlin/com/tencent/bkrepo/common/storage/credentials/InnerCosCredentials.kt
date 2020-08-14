@@ -5,9 +5,6 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
  * inner cos 身份认证信息
- *
- * @author: carrypan
- * @date: 2019-09-17
  */
 data class InnerCosCredentials(
     var secretId: String = "",

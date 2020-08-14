@@ -6,11 +6,6 @@ import com.tencent.bkrepo.common.security.http.HttpAuthSecurityCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-/**
- *
- * @author: owenlxu
- * @date: 2020/01/03
- */
 @Configuration
 class OpDataConfiguration : ArtifactConfiguration {
 

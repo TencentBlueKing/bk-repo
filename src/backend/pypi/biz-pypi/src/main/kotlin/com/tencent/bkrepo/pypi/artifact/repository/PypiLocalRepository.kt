@@ -55,11 +55,6 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/4
- */
 @Component
 @Primary
 class PypiLocalRepository : LocalRepository(), PypiRepository {
@@ -138,9 +133,6 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         return null
     }
 
-    /**
-     *
-     */
     override fun list(context: ArtifactListContext) {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo

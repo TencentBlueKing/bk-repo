@@ -30,8 +30,6 @@ import java.util.stream.StreamSupport
 
 /**
  * deserialize manifest schema2 manifest
- * @author: owenlxu
- * @date: 2020-02-05
  */
 object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
 
