@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.handler.event
 
+import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.stream.message.node.NodeCopiedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeCreatedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeDeletedMessage
@@ -46,6 +47,15 @@ class NodeEventHandler : AbstractEventHandler() {
                     retryCount -= 3
                     return
                 } catch (exception: ReplicaFileFailedException) {
+                    logger.info("replication file failed [${exception.message}]")
+                    retryCount -= 1
+                    if (retryCount == 0) {
+                        logger.error("replication file failed [${exception.message}]")
+                        // log to db
+                    }
+                    return
+                }
+                catch (exception: ExternalErrorCodeException) {
                     logger.info("replication file failed [${exception.message}]")
                     retryCount -= 1
                     if (retryCount == 0) {
