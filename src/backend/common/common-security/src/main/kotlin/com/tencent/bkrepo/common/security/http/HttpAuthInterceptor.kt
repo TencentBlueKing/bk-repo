@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.util.AntPathMatcher
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
 import javax.annotation.PostConstruct
 import javax.servlet.http.HttpServletRequest
@@ -20,6 +21,8 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
     @Autowired
     private lateinit var httpAuthSecurity: HttpAuthSecurity
 
+    private val pathMatcher = AntPathMatcher()
+
     @PostConstruct
     private fun init() {
         if (httpAuthSecurity.getAuthHandlerList().isEmpty()) {
@@ -33,7 +36,7 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val requestUri = request.requestURI
         httpAuthSecurity.getAuthHandlerList().forEach { authHandler ->
-            val isLoginRequest = authHandler.getLoginEndpoint() == requestUri
+            val isLoginRequest = authHandler.getLoginEndpoint()?.let { pathMatcher.match(it, requestUri) } ?: false
             if (authHandler.getLoginEndpoint() == null || isLoginRequest) {
                 try {
                     val authCredentials = authHandler.extractAuthCredentials(request)
