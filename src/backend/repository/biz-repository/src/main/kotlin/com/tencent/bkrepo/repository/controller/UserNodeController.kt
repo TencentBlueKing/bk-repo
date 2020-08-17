@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.resource
+package com.tencent.bkrepo.repository.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -6,12 +6,13 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.UserNodeResource
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
@@ -26,22 +27,35 @@ import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import com.tencent.bkrepo.repository.service.NodeService
-import com.tencent.bkrepo.repository.service.query.NodeQueryService
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.repository.service.query.NodeQueryServiceImpl
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiParam
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestAttribute
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-/**
- * 用户节点接口实现类
- */
+@Api("节点用户接口")
 @RestController
-class UserNodeResourceImpl @Autowired constructor(
+@RequestMapping("/api/node")
+class UserNodeController(
     private val nodeService: NodeService,
-    private val nodeQueryService: NodeQueryService,
+    private val nodeQueryService: NodeQueryServiceImpl,
     private val permissionManager: PermissionManager
-) : UserNodeResource {
+) {
 
+    @ApiOperation("根据路径查看节点详情")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    override fun detail(userId: String, artifactInfo: ArtifactInfo): Response<NodeDetail> {
+    @GetMapping(DEFAULT_MAPPING_URI)
+    fun detail(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo
+    ): Response<NodeDetail> {
         with(artifactInfo) {
             val node = nodeService.detail(projectId, repoName, artifactUri)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
@@ -49,8 +63,13 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
+    @ApiOperation("创建文件夹")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    override fun mkdir(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
+    @PostMapping(DEFAULT_MAPPING_URI)
+    fun mkdir(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo
+    ): Response<Void> {
         with(artifactInfo) {
             val createRequest = NodeCreateRequest(
                 projectId = projectId,
@@ -65,8 +84,13 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
+    @ApiOperation("删除节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    override fun delete(userId: String, artifactInfo: ArtifactInfo): Response<Void> {
+    @DeleteMapping(DEFAULT_MAPPING_URI)
+    fun delete(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo
+    ): Response<Void> {
         with(artifactInfo) {
             val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
@@ -79,7 +103,12 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
-    override fun update(userId: String, request: UserNodeUpdateRequest): Response<Void> {
+    @ApiOperation("更新节点")
+    @PostMapping("/update")
+    fun update(
+        @RequestAttribute userId: String,
+        @RequestBody request: UserNodeUpdateRequest
+    ): Response<Void> {
         with(request) {
             permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
             val updateRequest = NodeUpdateRequest(
@@ -94,7 +123,12 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
-    override fun rename(userId: String, request: UserNodeRenameRequest): Response<Void> {
+    @ApiOperation("重命名节点")
+    @PostMapping("/rename")
+    fun rename(
+        @RequestAttribute userId: String,
+        @RequestBody request: UserNodeRenameRequest
+    ): Response<Void> {
         with(request) {
             permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
             val renameRequest = NodeRenameRequest(
@@ -109,7 +143,12 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
-    override fun move(userId: String, request: UserNodeMoveRequest): Response<Void> {
+    @ApiOperation("移动节点")
+    @PostMapping("/move")
+    fun move(
+        @RequestAttribute userId: String,
+        @RequestBody request: UserNodeMoveRequest
+    ): Response<Void> {
         with(request) {
             permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
             if (destProjectId != null && destRepoName != null) {
@@ -130,7 +169,12 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
-    override fun copy(userId: String, request: UserNodeCopyRequest): Response<Void> {
+    @ApiOperation("复制节点")
+    @PostMapping("/copy")
+    fun copy(
+        @RequestAttribute userId: String,
+        @RequestBody request: UserNodeCopyRequest
+    ): Response<Void> {
         with(request) {
             permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
             if (destProjectId != null && destRepoName != null) {
@@ -151,23 +195,35 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
+    @ApiOperation("查询节点大小信息")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    override fun computeSize(userId: String, artifactInfo: ArtifactInfo): Response<NodeSizeInfo> {
+    @GetMapping("/size/$DEFAULT_MAPPING_URI")
+    fun computeSize(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo
+    ): Response<NodeSizeInfo> {
         with(artifactInfo) {
             val nodeSizeInfo = nodeService.computeSize(projectId, repoName, artifactUri)
             return ResponseBuilder.success(nodeSizeInfo)
         }
     }
 
+    @ApiOperation("分页查询节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    override fun page(
-        userId: String,
-        artifactInfo: ArtifactInfo,
-        page: Int,
-        size: Int,
-        includeFolder: Boolean,
-        includeMetadata: Boolean,
-        deep: Boolean
+    @GetMapping("/page/$DEFAULT_MAPPING_URI")
+    fun page(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @ApiParam(value = "当前页", required = true, defaultValue = "0")
+        @RequestParam page: Int = 0,
+        @ApiParam(value = "分页大小", required = true, defaultValue = "20")
+        @RequestParam size: Int = 20,
+        @ApiParam("是否包含目录", required = false, defaultValue = "true")
+        @RequestParam includeFolder: Boolean = true,
+        @ApiParam("是否包含元数据", required = false, defaultValue = "false")
+        @RequestParam includeMetadata: Boolean = false,
+        @ApiParam("是否深度查询文件", required = false, defaultValue = "false")
+        @RequestParam deep: Boolean = false
     ): Response<Page<NodeInfo>> {
         with(artifactInfo) {
             val nodePage = nodeService.page(projectId, repoName, artifactUri, page, size, includeFolder, includeMetadata, deep)
@@ -175,7 +231,12 @@ class UserNodeResourceImpl @Autowired constructor(
         }
     }
 
-    override fun query(userId: String, queryModel: QueryModel): Response<Page<Map<String, Any>>> {
+    @ApiOperation("自定义查询节点")
+    @PostMapping("/query")
+    fun query(
+        @RequestAttribute userId: String,
+        @RequestBody queryModel: QueryModel
+    ): Response<Page<Map<String, Any>>> {
         // 由于涉及到queryModel校验和解析规则，自定义查询在service内部鉴权
         return ResponseBuilder.success(nodeQueryService.userQuery(userId, queryModel))
     }

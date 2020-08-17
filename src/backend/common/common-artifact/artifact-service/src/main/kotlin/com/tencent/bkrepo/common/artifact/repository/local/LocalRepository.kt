@@ -11,8 +11,8 @@ import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactReposi
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.DownloadStatisticsResource
-import com.tencent.bkrepo.repository.api.NodeResource
+import com.tencent.bkrepo.repository.api.DownloadStatisticsClient
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
@@ -26,7 +26,7 @@ import javax.annotation.Resource
 abstract class LocalRepository : AbstractArtifactRepository() {
 
     @Autowired
-    lateinit var nodeResource: NodeResource
+    lateinit var nodeClient: NodeClient
 
     @Autowired
     lateinit var storageService: StorageService
@@ -35,7 +35,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
     lateinit var publisher: ApplicationEventPublisher
 
     @Autowired
-    lateinit var downloadStatisticsResource: DownloadStatisticsResource
+    lateinit var downloadStatisticsClient: DownloadStatisticsClient
 
     @Resource
     private lateinit var taskAsyncExecutor: Executor
@@ -43,14 +43,14 @@ abstract class LocalRepository : AbstractArtifactRepository() {
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
         storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
-        nodeResource.create(nodeCreateRequest)
+        nodeClient.create(nodeCreateRequest)
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val artifactUri = determineArtifactUri(this)
             val artifactName = determineArtifactName(this)
-            val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, artifactUri).data ?: return null
+            val node = nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, artifactUri).data ?: return null
             node.takeIf { !it.folder } ?: return null
             val range = resolveRange(context, node.size)
             val inputStream = storageService.load(node.sha256!!, range, storageCredentials) ?: return null
@@ -61,7 +61,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
     open fun countDownloads(context: ArtifactDownloadContext) {
         taskAsyncExecutor.execute {
             val artifactInfo = context.artifactInfo
-            downloadStatisticsResource.add(
+            downloadStatisticsClient.add(
                 DownloadStatisticsAddRequest(
                     artifactInfo.projectId,
                     artifactInfo.repoName,

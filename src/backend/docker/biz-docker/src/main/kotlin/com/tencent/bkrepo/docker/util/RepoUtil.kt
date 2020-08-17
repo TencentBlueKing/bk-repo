@@ -23,7 +23,7 @@ object RepoUtil {
 
     private fun isRepoExist(repo: DockerArtifactRepo, projectId: String, repoName: String) {
         // check repository
-        repo.repositoryResource.detail(projectId, repoName, REPO_TYPE).data ?: run {
+        repo.repositoryClient.detail(projectId, repoName, REPO_TYPE).data ?: run {
             logger.error("get repository detail exception [$projectId,$repoName] ")
             throw DockerRepoNotFoundException(repoName)
         }

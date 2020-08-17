@@ -22,7 +22,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
-import com.tencent.bkrepo.repository.api.NodeResource
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
@@ -34,7 +34,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class UploadService @Autowired constructor(
-    private val nodeResource: NodeResource,
+    private val nodeClient: NodeClient,
     private val storageService: StorageService
 ) {
 
@@ -63,7 +63,7 @@ class UploadService @Autowired constructor(
 
             expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
             // 判断文件是否存在
-            if (!overwrite && nodeResource.exist(projectId, repoName, artifactUri).data == true) {
+            if (!overwrite && nodeClient.exist(projectId, repoName, artifactUri).data == true) {
                 logger.warn("User[$userId] start block upload [$artifactInfo] failed: artifact already exists.")
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, artifactUri)
             }
@@ -95,7 +95,7 @@ class UploadService @Autowired constructor(
 
         val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials)
         // 保存节点
-        nodeResource.create(
+        nodeClient.create(
             NodeCreateRequest(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,

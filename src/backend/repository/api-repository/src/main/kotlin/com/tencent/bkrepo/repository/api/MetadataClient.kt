@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Api("节点元数据服务接口")
 @FeignClient(SERVICE_NAME, contextId = "MetadataResource")
 @RequestMapping("/service/metadata")
-interface MetadataResource {
+interface MetadataClient {
     @ApiOperation("查询节点所有元数据")
     @GetMapping("/list/{projectId}/{repoName}")
     fun query(

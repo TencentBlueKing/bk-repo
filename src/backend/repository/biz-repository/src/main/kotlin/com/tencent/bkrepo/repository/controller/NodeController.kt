@@ -1,10 +1,10 @@
-package com.tencent.bkrepo.repository.resource
+package com.tencent.bkrepo.repository.controller
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.NodeResource
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
@@ -17,19 +17,18 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.ShareService
-import com.tencent.bkrepo.repository.service.query.NodeQueryService
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.repository.service.query.NodeQueryServiceImpl
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 资源节点服务接口 实现类
+ * 节点服务接口实现类
  */
 @RestController
-class NodeResourceImpl @Autowired constructor(
+class NodeController(
     private val nodeService: NodeService,
-    private val nodeQueryService: NodeQueryService,
+    private val nodeQueryService: NodeQueryServiceImpl,
     private val shareService: ShareService
-) : NodeResource {
+) : NodeClient {
 
     override fun detail(
         projectId: String,

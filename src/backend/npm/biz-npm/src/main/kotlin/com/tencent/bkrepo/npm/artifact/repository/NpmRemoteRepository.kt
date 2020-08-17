@@ -76,7 +76,7 @@ class NpmRemoteRepository : RemoteRepository() {
         if (!cacheConfiguration.cacheEnabled) return null
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+        val node = nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
         if (node == null || node.folder) return null
         val createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()

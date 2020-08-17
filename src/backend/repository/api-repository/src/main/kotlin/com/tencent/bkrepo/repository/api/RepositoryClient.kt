@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Api("仓库服务接口")
 @FeignClient(SERVICE_NAME, contextId = "RepositoryResource")
 @RequestMapping("/service/repo")
-interface RepositoryResource {
+interface RepositoryClient {
 
     @ApiOperation("根据名称类型查询仓库")
     @GetMapping("/query/{projectId}/{name}/{type}")

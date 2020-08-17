@@ -18,9 +18,10 @@ import org.springframework.web.bind.annotation.RequestParam
 import java.time.LocalDate
 
 @Api("构建下载量统计服务接口")
-@FeignClient(SERVICE_NAME, contextId = "ArtifactDownloadCountResource")
+@FeignClient(SERVICE_NAME, contextId = "DownloadStatisticsClient")
 @RequestMapping("/service/download/statistics")
-interface DownloadStatisticsResource {
+interface DownloadStatisticsClient {
+
     @ApiOperation("创建构建下载量")
     @PostMapping("/add")
     fun add(@RequestBody statisticsAddRequest: DownloadStatisticsAddRequest): Response<Void>

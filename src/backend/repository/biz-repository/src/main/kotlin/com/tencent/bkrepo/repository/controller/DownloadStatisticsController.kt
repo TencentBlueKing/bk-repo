@@ -1,20 +1,19 @@
-package com.tencent.bkrepo.repository.resource
+package com.tencent.bkrepo.repository.controller
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.DownloadStatisticsResource
+import com.tencent.bkrepo.repository.api.DownloadStatisticsClient
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.service.DownloadStatisticsService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDate
 
 @RestController
-class DownloadStatisticsResourceImpl @Autowired constructor(
+class DownloadStatisticsController(
     private val downloadStatisticsService: DownloadStatisticsService
-) : DownloadStatisticsResource {
+) : DownloadStatisticsClient {
 
     override fun add(statisticsAddRequest: DownloadStatisticsAddRequest): Response<Void> {
         downloadStatisticsService.add(statisticsAddRequest)

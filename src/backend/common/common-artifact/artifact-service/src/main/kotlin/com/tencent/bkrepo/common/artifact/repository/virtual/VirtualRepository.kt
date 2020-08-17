@@ -9,14 +9,14 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferCon
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.repository.api.RepositoryResource
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
 abstract class VirtualRepository : AbstractArtifactRepository() {
 
     @Autowired
-    lateinit var repositoryResource: RepositoryResource
+    lateinit var repositoryClient: RepositoryClient
 
     override fun search(context: ArtifactSearchContext): Any? {
         val artifactInfo = context.artifactInfo
@@ -30,7 +30,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             }
             traversedList.add(repoIdentify)
             try {
-                val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
+                val subRepoInfo = repositoryClient.detail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactSearchContext
                 repository.search(subContext)?.let { jsonObj ->
@@ -56,7 +56,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             }
             traversedList.add(repoIdentify)
             try {
-                val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
+                val subRepoInfo = repositoryClient.detail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactDownloadContext
                 repository.onDownload(subContext)?.let {

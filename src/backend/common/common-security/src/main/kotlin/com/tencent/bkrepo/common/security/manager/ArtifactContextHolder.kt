@@ -11,7 +11,7 @@ import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.api.RepositoryResource
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
@@ -20,17 +20,17 @@ import javax.servlet.http.HttpServletRequest
 @Component
 class ArtifactContextHolder(
     artifactConfiguration: ArtifactConfiguration,
-    repositoryResource: RepositoryResource
+    repositoryClient: RepositoryClient
 ) {
 
     init {
         repositoryType = artifactConfiguration.getRepositoryType()
-        Companion.repositoryResource = repositoryResource
+        Companion.repositoryClient = repositoryClient
     }
 
     companion object {
         private lateinit var repositoryType: RepositoryType
-        private lateinit var repositoryResource: RepositoryResource
+        private lateinit var repositoryClient: RepositoryClient
 
         fun getRepositoryInfo(): RepositoryInfo? {
             val request = HttpContextHolder.getRequestOrNull() ?: return null
@@ -60,9 +60,9 @@ class ArtifactContextHolder(
         private fun queryRepositoryInfo(artifactInfo: ArtifactInfo): RepositoryInfo {
             with(artifactInfo) {
                 val response = if (repositoryType == RepositoryType.NONE) {
-                    repositoryResource.detail(projectId, repoName)
+                    repositoryClient.detail(projectId, repoName)
                 } else {
-                    repositoryResource.detail(projectId, repoName, repositoryType.name)
+                    repositoryClient.detail(projectId, repoName, repositoryType.name)
                 }
                 return response.data ?: throw ArtifactNotFoundException("Repository[$repoName] not found")
             }

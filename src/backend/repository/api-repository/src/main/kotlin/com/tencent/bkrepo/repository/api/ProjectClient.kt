@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Api(description = "服务-项目接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceProjectResource")
 @RequestMapping("/service/project")
-interface ProjectResource {
+interface ProjectClient {
 
     @ApiOperation("查询项目")
     @GetMapping("/query/{name}")

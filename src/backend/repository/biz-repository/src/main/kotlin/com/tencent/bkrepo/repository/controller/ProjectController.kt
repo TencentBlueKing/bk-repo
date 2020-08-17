@@ -1,18 +1,20 @@
-package com.tencent.bkrepo.repository.resource
+package com.tencent.bkrepo.repository.controller
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.ProjectResource
+import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.service.ProjectService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * 项目服务接口实现类
+ */
 @RestController
-class ProjectResourceImpl @Autowired constructor(
+class ProjectController(
     private val projectService: ProjectService
-) : ProjectResource {
+) : ProjectClient {
 
     override fun query(name: String): Response<ProjectInfo?> {
         return ResponseBuilder.success(projectService.query(name))

@@ -13,7 +13,7 @@ import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.HttpAuthProperties
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.api.RepositoryResource
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class PermissionManager(
-    private val repositoryResource: RepositoryResource,
+    private val repositoryClient: RepositoryClient,
     private val permissionResource: ServicePermissionResource,
     private val userResource: ServiceUserResource,
     private val httpAuthProperties: HttpAuthProperties
@@ -72,7 +72,7 @@ class PermissionManager(
     }
 
     private fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
-        val response = repositoryResource.detail(projectId, repoName)
+        val response = repositoryClient.detail(projectId, repoName)
         return response.data ?: throw ArtifactNotFoundException("Repository[$repoName] not found")
     }
 

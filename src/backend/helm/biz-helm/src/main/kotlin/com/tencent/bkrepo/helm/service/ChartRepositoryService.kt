@@ -42,7 +42,7 @@ import com.tencent.bkrepo.helm.pojo.IndexEntity
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmZipResponseWriter
 import com.tencent.bkrepo.helm.utils.YamlUtils
-import com.tencent.bkrepo.repository.api.NodeResource
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.util.NodeUtils
 import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
 import org.slf4j.Logger
@@ -62,7 +62,7 @@ class ChartRepositoryService {
     private lateinit var domain: String
 
     @Autowired
-    private lateinit var nodeResource: NodeResource
+    private lateinit var nodeClient: NodeClient
 
     @Autowired
     private lateinit var mongoLock: MongoLock
@@ -85,7 +85,7 @@ class ChartRepositoryService {
     fun freshIndexFile(artifactInfo: HelmArtifactInfo) {
         // 先查询index.yaml文件，如果不存在则创建，
         // 存在则根据最后一次更新时间与node节点创建时间对比进行增量更新
-        val exist = nodeResource.exist(artifactInfo.projectId, artifactInfo.repoName, INDEX_CACHE_YAML).data!!
+        val exist = nodeClient.exist(artifactInfo.projectId, artifactInfo.repoName, INDEX_CACHE_YAML).data!!
         if (!exist) {
             val indexEntity = initIndexEntity()
             val nodeList = queryNodeList(artifactInfo, false)
@@ -145,7 +145,7 @@ class ChartRepositoryService {
             ),
             rule = rule
         )
-        val result = nodeResource.query(queryModel).data ?: run {
+        val result = nodeClient.query(queryModel).data ?: run {
             logger.warn("don't find node list in repository: [${artifactInfo.projectId}, ${artifactInfo.repoName}]!")
             return emptyList()
         }

@@ -120,7 +120,7 @@ class RpmLocalRepository(
 
         with(context.repositoryInfo) {
             // repodata下'-primary.xml.gz'最新节点。
-            val nodeList = nodeResource.list(
+            val nodeList = nodeClient.list(
                 projectId, name,
                 "/${repodataPath}repodata",
                 includeFolder = false, deep = false
@@ -180,7 +180,7 @@ class RpmLocalRepository(
                 xmlGZArtifact
             )
             storageService.store(xmlPrimaryNode.sha256!!, xmlGZArtifact, context.storageCredentials)
-            nodeResource.create(xmlPrimaryNode)
+            nodeClient.create(xmlPrimaryNode)
             xmlGZFile.delete()
 
             // 更新repomd.xml
@@ -226,7 +226,7 @@ class RpmLocalRepository(
                 xmlRepodataArtifact
             )
             storageService.store(xmlRepomdNode.sha256!!, xmlRepodataArtifact, context.storageCredentials)
-            nodeResource.create(xmlRepomdNode)
+            nodeClient.create(xmlRepomdNode)
         }
     }
 
@@ -256,7 +256,7 @@ class RpmLocalRepository(
                 select = mutableListOf("projectId", "repoName", "fullPath", "sha256"),
                 rule = queryRule
             )
-            val nodeList = nodeResource.query(queryModel).data?.records
+            val nodeList = nodeClient.query(queryModel).data?.records
             if (nodeList.isNullOrEmpty()) {
                 NONE
             } else {
@@ -296,7 +296,7 @@ class RpmLocalRepository(
         // 保存rpm 包
         val nodeCreateRequest = rpmNodeCreateRequest(context)
         storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
-        nodeResource.create(nodeCreateRequest)
+        nodeClient.create(nodeCreateRequest)
         successUpload(context, mark)
     }
 }

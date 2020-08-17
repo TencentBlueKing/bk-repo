@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Api("节点服务接口")
 @FeignClient(SERVICE_NAME, contextId = "NodeResource")
 @RequestMapping("/service/node")
-interface NodeResource {
+interface NodeClient {
 
     @ApiOperation("根据路径查看节点详情")
     @GetMapping("/query/{projectId}/{repoName}/{repoType}")

@@ -74,7 +74,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = REMOTE_HTML_CACHE_FULL_PATH
-        val node = nodeResource.detail(projectId, repoName, fullPath).data
+        val node = nodeClient.detail(projectId, repoName, fullPath).data
         while (node == null) {
             cacheRemoteRepoList(context)
         }
@@ -117,7 +117,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
 
     fun onUpload(context: ArtifactListContext, file: File) {
         val nodeCreateRequest = getNodeCreateRequest(context, file)
-        nodeResource.create(nodeCreateRequest)
+        nodeClient.create(nodeCreateRequest)
         storageService.store(nodeCreateRequest.sha256!!, ArtifactFileFactory.build(file.inputStream()), context.storageCredentials)
     }
 
