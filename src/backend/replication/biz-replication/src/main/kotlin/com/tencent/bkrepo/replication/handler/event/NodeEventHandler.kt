@@ -12,6 +12,7 @@ import com.tencent.bkrepo.replication.job.ReplicationContext
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
+import java.lang.Thread.sleep
 
 /**
  * handler node message and replicate
@@ -25,7 +26,7 @@ class NodeEventHandler : AbstractEventHandler() {
     @EventListener(NodeCreatedMessage::class)
     fun handle(message: NodeCreatedMessage) {
         with(message.request) {
-            var retryCount = 3
+            var retryCount = CTEATE_RETRY_COUNT
             while (retryCount > 0) {
                 try {
                     getRelativeTaskList(projectId, repoName).forEach {
@@ -44,22 +45,20 @@ class NodeEventHandler : AbstractEventHandler() {
                             repoName = remoteRepoName
                         ).apply { replicationService.replicaNodeCreateRequest(context, this) }
                     }
-                    retryCount -= 3
+                    retryCount -= CTEATE_RETRY_COUNT
                     return
                 } catch (exception: ReplicaFileFailedException) {
-                    logger.info("replication file failed [${exception.message}]")
                     retryCount -= 1
                     if (retryCount == 0) {
-                        logger.error("replication file failed [${exception.message}]")
+                        logger.error("create file failed [${exception.message}]")
                         // log to db
                     }
                     return
                 }
                 catch (exception: ExternalErrorCodeException) {
-                    logger.info("replication file failed [${exception.message}]")
                     retryCount -= 1
                     if (retryCount == 0) {
-                        logger.error("replication file failed [${exception.message}]")
+                        logger.error("create file failed [${exception.message}]")
                         // log to db
                     }
                     return
@@ -97,13 +96,43 @@ class NodeEventHandler : AbstractEventHandler() {
 
     @EventListener(NodeCopiedMessage::class)
     fun handle(message: NodeCopiedMessage) {
-        with(message.request) {
-            getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
-                this.copy(
-                    srcProjectId = getRemoteProjectId(it, projectId),
-                    srcRepoName = getRemoteRepoName(it, repoName)
-                ).apply { replicationService.replicaNodeCopyRequest(context, this) }
+        var retryCount = COPY_RETRY_COUNT
+        while (retryCount > 0) {
+            try {
+                with(message.request) {
+                    getRelativeTaskList(projectId, repoName).forEach {
+                        val remoteProjectId = getRemoteProjectId(it, projectId)
+                        val remoteRepoName = getRemoteRepoName(it, repoName)
+                        val context = ReplicationContext(it)
+
+                        context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
+                            logger.warn("found no repo detail [$projectId, $repoName]")
+                            retryCount -= COPY_RETRY_COUNT
+                            return
+                        }
+                        logger.info("start to handle event [${message.request}]")
+                        this.copy(
+                            srcProjectId = remoteProjectId,
+                            srcRepoName = remoteRepoName
+                        ).apply { replicationService.replicaNodeCopyRequest(context, this) }
+                    }
+                }
+            } catch (exception: ReplicaFileFailedException) {
+                retryCount -= 1
+                sleep(2000)
+                if (retryCount == 0) {
+                    logger.error("copy file failed [${exception.message}]")
+                    // log to db
+                }
+                return
+            } catch (exception: ExternalErrorCodeException) {
+                retryCount -= 1
+                sleep(2000)
+                if (retryCount == 0) {
+                    logger.error("copy file failed [${exception.message}]")
+                    // log to db
+                }
+                return
             }
         }
     }
@@ -137,5 +166,7 @@ class NodeEventHandler : AbstractEventHandler() {
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeEventHandler::class.java)
+        private const val CTEATE_RETRY_COUNT = 3
+        private const val COPY_RETRY_COUNT = 5
     }
 }
