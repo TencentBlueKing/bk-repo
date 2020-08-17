@@ -27,7 +27,7 @@ import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import com.tencent.bkrepo.repository.service.NodeService
-import com.tencent.bkrepo.repository.service.query.NodeQueryServiceImpl
+import com.tencent.bkrepo.repository.service.query.NodeQueryService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/node")
 class UserNodeController(
     private val nodeService: NodeService,
-    private val nodeQueryService: NodeQueryServiceImpl,
+    private val nodeQueryService: NodeQueryService,
     private val permissionManager: PermissionManager
 ) {
 

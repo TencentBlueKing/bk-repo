@@ -10,7 +10,6 @@ import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationTaskInfo
 import com.tencent.bkrepo.replication.service.TaskLogService
 import com.tencent.bkrepo.replication.service.TaskService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -23,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController
 @Principal(type = PrincipalType.ADMIN)
 @RestController
 @RequestMapping("/task")
-class TaskController @Autowired constructor(
+class TaskController(
     private val taskService: TaskService,
     private val taskLogService: TaskLogService
 ) {

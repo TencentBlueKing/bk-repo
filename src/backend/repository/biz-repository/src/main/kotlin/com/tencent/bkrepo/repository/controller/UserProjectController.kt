@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @Api("项目用户接口")
+@Principal(PrincipalType.PLATFORM)
 @RestController
 @RequestMapping("/api/project")
 class UserProjectController(
@@ -25,7 +26,6 @@ class UserProjectController(
 ) {
 
     @ApiOperation("创建项目")
-    @Principal(PrincipalType.PLATFORM)
     @PostMapping
     fun create(
         @RequestAttribute userId: String,
@@ -44,7 +44,6 @@ class UserProjectController(
     }
 
     @ApiOperation("项目列表")
-    @Principal(PrincipalType.PLATFORM)
     @GetMapping("/list")
     fun list(): Response<List<ProjectInfo>> {
         return ResponseBuilder.success(projectService.list())

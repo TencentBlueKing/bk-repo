@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @Api("仓库用户接口")
+@Principal(PrincipalType.PLATFORM)
 @RestController
 @RequestMapping("/api/repo")
 class UserRepositoryController(
@@ -31,7 +32,6 @@ class UserRepositoryController(
 ) {
 
     @ApiOperation("创建仓库")
-    @Principal(PrincipalType.PLATFORM)
     @PostMapping
     fun create(
         @RequestAttribute userId: String,
@@ -57,7 +57,6 @@ class UserRepositoryController(
     }
 
     @ApiOperation("列表查询项目所有仓库")
-    @Principal(PrincipalType.PLATFORM)
     @GetMapping("/list/{projectId}")
     fun list(
         @ApiParam(value = "项目id", required = true)

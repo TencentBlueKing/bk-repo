@@ -12,7 +12,6 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -24,7 +23,7 @@ import java.util.Date
  */
 @Suppress("UNCHECKED_CAST")
 @Service
-class NodeQueryServiceImpl @Autowired constructor(
+class NodeQueryServiceImpl(
     private val nodeDao: NodeDao,
     private val nodeQueryBuilder: NodeQueryBuilder,
     private val permissionManager: PermissionManager

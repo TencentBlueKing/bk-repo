@@ -26,14 +26,13 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
  * 通用文件上传服务类
  */
 @Service
-class UploadService @Autowired constructor(
+class UploadService(
     private val nodeClient: NodeClient,
     private val storageService: StorageService
 ) {

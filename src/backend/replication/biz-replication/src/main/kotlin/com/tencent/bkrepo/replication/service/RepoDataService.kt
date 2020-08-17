@@ -19,12 +19,11 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.InputStream
 
 @Service
-class RepoDataService @Autowired constructor(
+class RepoDataService(
     private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
