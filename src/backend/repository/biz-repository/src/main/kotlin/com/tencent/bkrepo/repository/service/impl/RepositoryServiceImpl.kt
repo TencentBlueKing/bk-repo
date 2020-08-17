@@ -24,7 +24,6 @@ import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.ProjectService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
-import com.tencent.bkrepo.repository.service.impl.AbstractService
 import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -111,7 +110,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
             }
             val credentialsKey = storageCredentialsKey ?: repositoryProperties.defaultStorageCredentialsKey
             // 确保存储凭证Key一定存在
-            val storageCredential = credentialsKey?.let {
+            val storageCredential = credentialsKey?.takeIf { it.isNotBlank() }?.let {
                 storageCredentialService.findByKey(it) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, it)
             }
             // 创建仓库
