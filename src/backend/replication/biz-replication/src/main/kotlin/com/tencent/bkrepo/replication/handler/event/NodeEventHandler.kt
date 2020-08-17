@@ -94,48 +94,48 @@ class NodeEventHandler : AbstractEventHandler() {
         }
     }
 
-    @EventListener(NodeCopiedMessage::class)
-    fun handle(message: NodeCopiedMessage) {
-        var retryCount = COPY_RETRY_COUNT
-        while (retryCount > 0) {
-            try {
-                with(message.request) {
-                    getRelativeTaskList(projectId, repoName).forEach {
-                        val remoteProjectId = getRemoteProjectId(it, projectId)
-                        val remoteRepoName = getRemoteRepoName(it, repoName)
-                        val context = ReplicationContext(it)
-
-                        context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
-                            logger.warn("found no repo detail [$projectId, $repoName]")
-                            retryCount -= COPY_RETRY_COUNT
-                            return
-                        }
-                        logger.info("start to handle event [${message.request}]")
-                        this.copy(
-                            srcProjectId = remoteProjectId,
-                            srcRepoName = remoteRepoName
-                        ).apply { replicationService.replicaNodeCopyRequest(context, this) }
-                    }
-                }
-            } catch (exception: ReplicaFileFailedException) {
-                retryCount -= 1
-                sleep(2000)
-                if (retryCount == 0) {
-                    logger.error("copy file failed [${exception.message}]")
-                    // log to db
-                }
-                return
-            } catch (exception: ExternalErrorCodeException) {
-                retryCount -= 1
-                sleep(2000)
-                if (retryCount == 0) {
-                    logger.error("copy file failed [${exception.message}]")
-                    // log to db
-                }
-                return
-            }
-        }
-    }
+    // @EventListener(NodeCopiedMessage::class)
+    // fun handle(message: NodeCopiedMessage) {
+    //     var retryCount = COPY_RETRY_COUNT
+    //     while (retryCount > 0) {
+    //         try {
+    //             with(message.request) {
+    //                 getRelativeTaskList(projectId, repoName).forEach {
+    //                     val remoteProjectId = getRemoteProjectId(it, projectId)
+    //                     val remoteRepoName = getRemoteRepoName(it, repoName)
+    //                     val context = ReplicationContext(it)
+    //
+    //                     context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
+    //                         logger.warn("found no repo detail [$projectId, $repoName]")
+    //                         retryCount -= COPY_RETRY_COUNT
+    //                         return
+    //                     }
+    //                     logger.info("start to handle event [${message.request}]")
+    //                     this.copy(
+    //                         srcProjectId = remoteProjectId,
+    //                         srcRepoName = remoteRepoName
+    //                     ).apply { replicationService.replicaNodeCopyRequest(context, this) }
+    //                 }
+    //             }
+    //         } catch (exception: ReplicaFileFailedException) {
+    //             retryCount -= 1
+    //             sleep(2000)
+    //             if (retryCount == 0) {
+    //                 logger.error("copy file failed [${exception.message}]")
+    //                 // log to db
+    //             }
+    //             return
+    //         } catch (exception: ExternalErrorCodeException) {
+    //             retryCount -= 1
+    //             sleep(2000)
+    //             if (retryCount == 0) {
+    //                 logger.error("copy file failed [${exception.message}]")
+    //                 // log to db
+    //             }
+    //             return
+    //         }
+    //     }
+    // }
 
     @EventListener(NodeMovedMessage::class)
     fun handle(message: NodeMovedMessage) {
@@ -167,6 +167,6 @@ class NodeEventHandler : AbstractEventHandler() {
     companion object {
         private val logger = LoggerFactory.getLogger(NodeEventHandler::class.java)
         private const val CTEATE_RETRY_COUNT = 3
-        private const val COPY_RETRY_COUNT = 5
+        // private const val COPY_RETRY_COUNT = 5
     }
 }
