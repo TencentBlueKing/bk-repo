@@ -38,7 +38,7 @@ class HelmLocalRepository : LocalRepository() {
         val repoName = repositoryInfo.name
         context.artifactFileMap.entries.forEach { (name, _) ->
             val fullPath = context.contextAttributes[name + "_full_path"] as String
-            val isExist = nodeResource.exist(projectId, repoName, fullPath).data!!
+            val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
             if (isExist && !isOverwrite(fullPath, isForce)) {
                 throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
             }
@@ -53,7 +53,7 @@ class HelmLocalRepository : LocalRepository() {
                 context.getArtifactFile(name) ?: context.getArtifactFile(),
                 context.storageCredentials
             )
-            nodeResource.create(nodeCreateRequest)
+            nodeClient.create(nodeCreateRequest)
         }
     }
 
@@ -108,7 +108,7 @@ class HelmLocalRepository : LocalRepository() {
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
-        val node = nodeResource.detail(projectId, repoName, fullPath).data
+        val node = nodeClient.detail(projectId, repoName, fullPath).data
         if (node == null || node.folder) return null
         return storageService.load(
             node.sha256!!, Range.ofFull(node.size), context.storageCredentials
@@ -121,11 +121,11 @@ class HelmLocalRepository : LocalRepository() {
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
         val userId = context.userId
-        val isExist = nodeResource.exist(projectId, repoName, fullPath).data!!
+        val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
         if (!isExist) {
             throw HelmFileNotFoundException("remove $fullPath failed: no such file or directory")
         }
-        nodeResource.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
+        nodeClient.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
     }
 
     companion object {

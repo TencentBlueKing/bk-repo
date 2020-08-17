@@ -7,8 +7,6 @@ import org.springframework.retry.listener.RetryListenerSupport
 
 /**
  * 文件存储重试监听器
- * @author: carrypan
- * @date: 2020/1/8
  */
 class FileStoreRetryListener : RetryListenerSupport() {
     override fun <T : Any, E : Throwable> onError(context: RetryContext, callback: RetryCallback<T, E>, throwable: Throwable) {

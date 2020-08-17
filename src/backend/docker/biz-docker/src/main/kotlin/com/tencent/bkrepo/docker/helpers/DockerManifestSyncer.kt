@@ -22,8 +22,6 @@ import java.io.ByteArrayInputStream
 /**
  * to synchronize blob when finish manifest upload
  * copy blob from temp path or other tag
- * @author: owenlxu
- * @date: 2020-02-05
  */
 object DockerManifestSyncer {
 

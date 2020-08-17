@@ -7,9 +7,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 用户节点复制请求
- *
- * @author: carrypan
- * @date: 2019-10-15
  */
 @ApiModel("用户节点复制请求")
 data class UserNodeCopyRequest(

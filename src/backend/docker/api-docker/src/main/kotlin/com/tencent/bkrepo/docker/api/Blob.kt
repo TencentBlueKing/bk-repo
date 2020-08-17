@@ -25,8 +25,6 @@ import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * docker image blob api
- * @author: owenlxu
- * @date: 2019-10-13
  */
 @Api("docker镜像blob文件处理接口")
 @RequestMapping(DOCKER_API_PREFIX)

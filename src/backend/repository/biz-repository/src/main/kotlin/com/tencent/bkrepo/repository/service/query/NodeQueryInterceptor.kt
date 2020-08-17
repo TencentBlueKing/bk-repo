@@ -11,9 +11,6 @@ import com.tencent.bkrepo.repository.model.TNode
 /**
  * - 校验node query model的格式
  * - 添加deleted属性为null的查询条件
- *
- * @author: carrypan
- * @date: 2019/11/15
  */
 class NodeQueryInterceptor : QueryModelInterceptor {
 
@@ -29,7 +26,6 @@ class NodeQueryInterceptor : QueryModelInterceptor {
      *   1. rule必须为AND类型的嵌套查询
      *   2. rule嵌套查询规则列表中，必须指定projectId条件，且为EQ操作
      *   3. rule嵌套查询规则列表中，必须指定repoName条件，且为EQ 或者 IN操作
-     *
      * 对于rule嵌套查询规则列表中的其它规则，不做限定
      */
     private fun validateModel(queryModel: QueryModel) {

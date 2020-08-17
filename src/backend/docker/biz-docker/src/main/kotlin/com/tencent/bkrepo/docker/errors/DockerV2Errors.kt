@@ -16,10 +16,7 @@ import org.springframework.http.ResponseEntity
 
 /**
  * define errors to return when exception happen
- * @author: owenlxu
- * @date: 2019-12-01
  */
-
 object DockerV2Errors {
 
     fun internalError(msg: String?): DockerResponse {

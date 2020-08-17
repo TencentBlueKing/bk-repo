@@ -26,11 +26,6 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-/**
- *
- * @author: carrypan
- * @date: 2019-10-11
- */
 @Disabled
 @DisplayName("文件上传下载集成测试")
 class IntegrationTest {

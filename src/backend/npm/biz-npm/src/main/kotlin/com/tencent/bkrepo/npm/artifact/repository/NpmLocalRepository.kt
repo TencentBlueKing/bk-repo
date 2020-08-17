@@ -55,7 +55,7 @@ import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.migration.MigrationFailDataDetailInfo
 import com.tencent.bkrepo.npm.pojo.migration.VersionFailDetail
 import com.tencent.bkrepo.npm.utils.GsonUtils
-import com.tencent.bkrepo.repository.api.MetadataResource
+import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -81,7 +81,7 @@ import kotlin.system.measureTimeMillis
 class NpmLocalRepository : LocalRepository() {
 
     @Autowired
-    lateinit var metadataResource: MetadataResource
+    lateinit var metadataClient: MetadataClient
 
     @Value("\${npm.migration.remote.registry}")
     private val registry: String = StringPool.EMPTY
@@ -124,7 +124,7 @@ class NpmLocalRepository : LocalRepository() {
                 context.getArtifactFile(name)!!,
                 context.storageCredentials
             )
-            nodeResource.create(nodeCreateRequest)
+            nodeClient.create(nodeCreateRequest)
         }
     }
 
@@ -170,7 +170,7 @@ class NpmLocalRepository : LocalRepository() {
         val artifact = artifactInfo.artifactUri.substringBefore("/-/").trimStart('/')
         val version = artifactInfo.artifactUri.substringAfterLast("$artifact${StringPool.DASH}")
             .substringBefore(".tgz")
-        downloadStatisticsResource.add(
+        downloadStatisticsClient.add(
             DownloadStatisticsAddRequest(
                 artifactInfo.projectId,
                 artifactInfo.repoName,
@@ -194,7 +194,7 @@ class NpmLocalRepository : LocalRepository() {
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeResource.detail(projectId, repoName, fullPath).data
+        val node = nodeClient.detail(projectId, repoName, fullPath).data
         if (node == null || node.folder) return null
         val inputStream =
             storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
@@ -212,7 +212,7 @@ class NpmLocalRepository : LocalRepository() {
             val version = fileJson[VERSION].asString
             val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
             val metadataInfo =
-                metadataResource.query(context.artifactInfo.projectId, context.artifactInfo.repoName, tgzFullPath).data
+                metadataClient.query(context.artifactInfo.projectId, context.artifactInfo.repoName, tgzFullPath).data
             metadataInfo?.forEach { (key, value) ->
                 if (StringUtils.isNotBlank(value)) fileJson.addProperty(key, value)
                 if (key == KEYWORDS || key == MAINTAINERS) fileJson.add(key, GsonUtils.stringToArray(value))
@@ -227,7 +227,7 @@ class NpmLocalRepository : LocalRepository() {
             versions.keySet().forEach {
                 val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, it)
                 val metadataInfo =
-                    metadataResource.query(context.artifactInfo.projectId, context.artifactInfo.repoName, tgzFullPath)
+                    metadataClient.query(context.artifactInfo.projectId, context.artifactInfo.repoName, tgzFullPath)
                         .data
                 metadataInfo?.forEach { (key, value) ->
                     if (StringUtils.isNotBlank(value)) versions.getAsJsonObject(it).addProperty(key, value)
@@ -253,7 +253,7 @@ class NpmLocalRepository : LocalRepository() {
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as List<*>
         val userId = context.userId
         fullPath.forEach {
-            nodeResource.delete(NodeDeleteRequest(projectId, repoName, it as String, userId))
+            nodeClient.delete(NodeDeleteRequest(projectId, repoName, it as String, userId))
         }
     }
 
@@ -279,7 +279,7 @@ class NpmLocalRepository : LocalRepository() {
             select = mutableListOf("projectId", "repoName", "fullPath", "metadata", "lastModifiedDate"),
             rule = rule
         )
-        val result = nodeResource.query(queryModel)
+        val result = nodeClient.query(queryModel)
         val data = result.data ?: return NpmSearchResponse()
         return transferRecords(data.records)
     }
@@ -385,9 +385,9 @@ class NpmLocalRepository : LocalRepository() {
     private fun deleteVersionFile(context: ArtifactMigrateContext, name: String, version: String) {
         val fullPath = String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
         with(context.artifactInfo) {
-            if (nodeResource.exist(projectId, repoName, fullPath).data!!) {
+            if (nodeClient.exist(projectId, repoName, fullPath).data!!) {
                 val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, fullPath, context.userId)
-                nodeResource.delete(nodeDeleteRequest)
+                nodeClient.delete(nodeDeleteRequest)
             }
         }
     }
@@ -398,7 +398,7 @@ class NpmLocalRepository : LocalRepository() {
         val versionArtifactFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionJson))
         val fullPath = String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
         context.contextAttributes[NPM_FILE_FULL_PATH] = fullPath
-        if (nodeResource.exist(context.artifactInfo.projectId, context.artifactInfo.repoName, fullPath).data!!) {
+        if (nodeClient.exist(context.artifactInfo.projectId, context.artifactInfo.repoName, fullPath).data!!) {
             logger.info(
                 "package [$name] with version json file [$name-$version.json] " +
                     "is already exists in repository, skip migration."
@@ -407,7 +407,7 @@ class NpmLocalRepository : LocalRepository() {
         }
         val nodeCreateRequest = getNodeCreateRequest(context, versionArtifactFile)
         storageService.store(nodeCreateRequest.sha256!!, versionArtifactFile, context.storageCredentials)
-        nodeResource.create(nodeCreateRequest)
+        nodeClient.create(nodeCreateRequest)
         logger.info("migrate npm package [$name] with version json file [$name-$version.json] success.")
         versionArtifactFile.delete()
     }
@@ -449,7 +449,7 @@ class NpmLocalRepository : LocalRepository() {
     private fun getCacheArtifact(context: ArtifactTransferContext): ArtifactInputStream? {
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+        val node = nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
         if (node == null || node.folder) return null
         val inputStream =
             storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
@@ -460,13 +460,13 @@ class NpmLocalRepository : LocalRepository() {
     private fun getCacheNodeInfo(context: ArtifactTransferContext): NodeDetail? {
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        return nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+        return nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
     }
 
     private fun putArtifact(context: ArtifactMigrateContext, artifactFile: ArtifactFile) {
         val nodeCreateRequest = getNodeCreateRequest(context, artifactFile)
         storageService.store(nodeCreateRequest.sha256!!, artifactFile, context.storageCredentials)
-        nodeResource.create(nodeCreateRequest)
+        nodeClient.create(nodeCreateRequest)
     }
 
     private fun getNodeCreateRequest(context: ArtifactTransferContext, file: ArtifactFile): NodeCreateRequest {

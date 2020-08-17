@@ -7,9 +7,6 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
  * 存储身份信息
- *
- * @author: carrypan
- * @date: 2019-09-26
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes(

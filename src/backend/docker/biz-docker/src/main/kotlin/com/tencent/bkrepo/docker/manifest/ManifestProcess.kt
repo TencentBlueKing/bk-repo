@@ -42,8 +42,6 @@ import org.springframework.http.ResponseEntity
 /**
  * docker image manifest process
  * to upload the manifest to repository and store it
- * @author: owenlxu
- * @date: 2019-10-15
  */
 class ManifestProcess constructor(val repo: DockerArtifactRepo) {
 

@@ -7,9 +7,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 节点删除请求
- *
- * @author: carrypan
- * @date: 2019-09-22
  */
 @ApiModel("节点删除请求")
 data class NodeDeleteRequest(

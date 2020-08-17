@@ -15,10 +15,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 
-/**
- * @author: carrypan
- * @date: 2019/12/4
- */
 interface PypiResource {
 
     /**
@@ -58,9 +54,6 @@ interface PypiResource {
     @GetMapping(PYPI_PACKAGES_MAPPING_URI)
     fun packages(@ArtifactPathVariable artifactInfo: PypiArtifactInfo)
 
-    /**
-     *
-     */
     @ApiOperation("数据迁移接口")
     @GetMapping(PYPI_MIGRATE_URL, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun migrateByUrl(@ArtifactPathVariable pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String>

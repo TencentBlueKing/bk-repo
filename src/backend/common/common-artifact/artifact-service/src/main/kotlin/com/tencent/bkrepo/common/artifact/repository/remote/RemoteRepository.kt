@@ -16,7 +16,7 @@ import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
 import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.NodeResource
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import okhttp3.Authenticator
@@ -35,15 +35,10 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/26
- */
 abstract class RemoteRepository : AbstractArtifactRepository() {
 
     @Autowired
-    lateinit var nodeResource: NodeResource
+    lateinit var nodeClient: NodeClient
 
     @Autowired
     lateinit var storageService: StorageService
@@ -102,7 +97,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     private fun getCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
-        return nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, artifactInfo.artifactUri).data
+        return nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, artifactInfo.artifactUri).data
     }
 
     /**
@@ -114,7 +109,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         return if (cacheConfiguration.cacheEnabled) {
             val nodeCreateRequest = getCacheNodeCreateRequest(context, artifactFile)
             storageService.store(nodeCreateRequest.sha256!!, artifactFile, context.storageCredentials)
-            nodeResource.create(nodeCreateRequest).data
+            nodeClient.create(nodeCreateRequest).data
         } else null
     }
 

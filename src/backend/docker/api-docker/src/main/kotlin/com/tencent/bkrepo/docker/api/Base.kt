@@ -8,8 +8,6 @@ import org.springframework.web.bind.annotation.GetMapping
 
 /**
  * docker image base api
- * @author: owenlxu
- * @date: 2019-11-08
  */
 @Api("docker镜像仓库base")
 interface Base {

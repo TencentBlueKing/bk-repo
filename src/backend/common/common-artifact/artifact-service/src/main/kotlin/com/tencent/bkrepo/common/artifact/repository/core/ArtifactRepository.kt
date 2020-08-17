@@ -9,9 +9,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 
 /**
  * 构件仓库接口
- *
- * @author: carrypan
- * @date: 2019/11/27
  */
 interface ArtifactRepository {
     /**

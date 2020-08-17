@@ -26,7 +26,7 @@ import com.tencent.bkrepo.npm.pojo.DownloadCount
 import com.tencent.bkrepo.npm.pojo.MaintainerInfo
 import com.tencent.bkrepo.npm.pojo.PackageInfoResponse
 import com.tencent.bkrepo.npm.pojo.TagsInfo
-import com.tencent.bkrepo.repository.api.DownloadStatisticsResource
+import com.tencent.bkrepo.repository.api.DownloadStatisticsClient
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetric
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -39,7 +39,7 @@ class NpmWebService {
     private lateinit var moduleDepsService: ModuleDepsService
 
     @Autowired
-    private lateinit var downloadStatisticsResource: DownloadStatisticsResource
+    private lateinit var downloadStatisticsClient: DownloadStatisticsClient
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
@@ -47,7 +47,7 @@ class NpmWebService {
         val pkgName = artifactInfo.artifactUri.trimStart('/')
         val packageJson = searchPkgInfo(pkgName)
         val page = moduleDepsService.page(artifactInfo.projectId, artifactInfo.repoName, PAGE, SIZE, pkgName)
-        val query = downloadStatisticsResource.queryForSpecial(
+        val query = downloadStatisticsClient.queryForSpecial(
             artifactInfo.projectId, artifactInfo.repoName, artifactInfo.artifactUri
         )
         val latestVersion = packageJson.getAsJsonObject(DISTTAGS).get(LATEST).asString

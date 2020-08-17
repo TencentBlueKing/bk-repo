@@ -4,8 +4,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 
 /**
  * docker artifact describe class
- * @author: owenlxu
- * @date: 2020-03-12
  */
 class DockerArtifact(projectId: String, repoName: String, artifactName: String) {
 

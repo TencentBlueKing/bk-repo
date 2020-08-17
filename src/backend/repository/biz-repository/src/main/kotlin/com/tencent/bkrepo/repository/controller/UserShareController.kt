@@ -1,42 +1,58 @@
-package com.tencent.bkrepo.repository.resource
+package com.tencent.bkrepo.repository.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.UserShareResource
 import com.tencent.bkrepo.repository.pojo.share.BatchShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.ShareService
 import com.tencent.bkrepo.repository.util.NodeUtils
-import org.springframework.beans.factory.annotation.Autowired
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestAttribute
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 用户节点接口实现类
- *
- * @author: carrypan
- * @date: 2019/11/19
+ * 用户分享接口
  */
+@Api("节点分享用户接口")
 @RestController
-class UserShareResourceImpl @Autowired constructor(
+@RequestMapping("/api/share")
+class UserShareController(
     private val permissionManager: PermissionManager,
     private val shareService: ShareService
-) : UserShareResource {
+) {
 
+    @ApiOperation("创建分享链接")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    override fun share(userId: String, artifactInfo: ArtifactInfo, shareRecordCreateRequest: ShareRecordCreateRequest): Response<ShareRecordInfo> {
-        with(artifactInfo) {
-            return ResponseBuilder.success(shareService.create(userId, this, shareRecordCreateRequest))
-        }
+    @PostMapping(DEFAULT_MAPPING_URI)
+    fun share(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @RequestBody shareRecordCreateRequest: ShareRecordCreateRequest
+    ): Response<ShareRecordInfo> {
+        return ResponseBuilder.success(shareService.create(userId, artifactInfo, shareRecordCreateRequest))
     }
 
-    override fun batchShare(userId: String, batchShareRecordCreateRequest: BatchShareRecordCreateRequest): Response<List<ShareRecordInfo>> {
+    @ApiOperation("批量创建分享链接")
+    @PostMapping("/batch")
+    fun batchShare(
+        @RequestAttribute userId: String,
+        @RequestBody batchShareRecordCreateRequest: BatchShareRecordCreateRequest
+    ): Response<List<ShareRecordInfo>> {
         with(batchShareRecordCreateRequest) {
             permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
             val shareRecordCreateRequest = ShareRecordCreateRequest(authorizedUserList, authorizedIpList, expireSeconds)
@@ -48,7 +64,13 @@ class UserShareResourceImpl @Autowired constructor(
         }
     }
 
-    override fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
+    @ApiOperation("下载分享文件")
+    @GetMapping(DEFAULT_MAPPING_URI)
+    fun download(
+        @RequestAttribute userId: String,
+        @RequestParam token: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo
+    ) {
         shareService.download(userId, token, artifactInfo)
     }
 }

@@ -3,9 +3,6 @@ package com.tencent.bkrepo.rpm.util.xStream.pojo
 import com.thoughtworks.xstream.annotations.XStreamAlias
 import com.thoughtworks.xstream.annotations.XStreamAsAttribute
 
-/**
- *
- */
 @XStreamAlias("package")
 data class RpmPackage(
     @XStreamAsAttribute

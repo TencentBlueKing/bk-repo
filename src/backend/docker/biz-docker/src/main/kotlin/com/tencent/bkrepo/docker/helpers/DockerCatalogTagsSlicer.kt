@@ -4,8 +4,6 @@ import java.util.TreeSet
 
 /**
  * catalog slice tags pagination helper
- * @author: owenlxu
- * @date: 2020-01-05
  */
 object DockerCatalogTagsSlicer {
 

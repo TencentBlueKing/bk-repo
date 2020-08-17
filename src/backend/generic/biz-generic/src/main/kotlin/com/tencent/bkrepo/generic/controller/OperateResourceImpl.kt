@@ -11,9 +11,6 @@ import org.springframework.web.bind.annotation.RestController
 
 /**
  * 文件操作接口实现类
- *
- * @author: carrypan
- * @date: 2019-10-13
  */
 @RestController
 class OperateResourceImpl @Autowired constructor(

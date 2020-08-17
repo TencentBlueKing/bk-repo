@@ -1,10 +1,5 @@
 package com.tencent.bkrepo.common.query.util
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/15
- */
 object MongoEscapeUtils {
 
     private val keywordList = listOf("\\", "$", "(", ")", "*", "+", ".", "[", "]", "?", "^", "{", "}", "|", "?", "&")

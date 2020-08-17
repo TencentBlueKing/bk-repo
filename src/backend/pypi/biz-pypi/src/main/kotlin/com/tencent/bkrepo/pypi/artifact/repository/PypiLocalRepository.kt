@@ -55,11 +55,6 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/4
- */
 @Component
 @Primary
 class PypiLocalRepository : LocalRepository(), PypiRepository {
@@ -72,7 +67,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
 
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
-        nodeResource.create(nodeCreateRequest)
+        nodeClient.create(nodeCreateRequest)
         context.getArtifactFile("content")?.let {
             storageService.store(
                 nodeCreateRequest.sha256!!,
@@ -129,7 +124,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                     select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
                     rule = rule1
                 )
-                val nodeList: List<Map<String, Any>>? = nodeResource.query(queryModel).data?.records
+                val nodeList: List<Map<String, Any>>? = nodeClient.query(queryModel).data?.records
                 if (nodeList != null) {
                     return XmlUtil.nodeLis2Values(nodeList)
                 }
@@ -138,14 +133,11 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         return null
     }
 
-    /**
-     *
-     */
     override fun list(context: ArtifactListContext) {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         with(artifactInfo) {
-            val node = nodeResource.detail(projectId, repositoryInfo.name, artifactUri).data
+            val node = nodeClient.detail(projectId, repositoryInfo.name, artifactUri).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
 
             val response = HttpContextHolder.getResponse()
@@ -153,7 +145,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
             // 请求不带包名，返回包名列表.
             if (artifactUri == "/") {
                 if (node.folder) {
-                    val nodeList = nodeResource.list(projectId, repositoryInfo.name, artifactUri, includeFolder = true, deep = true).data
+                    val nodeList = nodeClient.list(projectId, repositoryInfo.name, artifactUri, includeFolder = true, deep = true).data
                         ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
                     // 过滤掉'根节点',
                     val htmlContent = buildPackageListContent(
@@ -167,7 +159,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
             // 请求中带包名，返回对应包的文件列表。
             else {
                 if (node.folder) {
-                    val packageNode = nodeResource.list(projectId, repositoryInfo.name, artifactUri, includeFolder = false, deep = true).data
+                    val packageNode = nodeClient.list(projectId, repositoryInfo.name, artifactUri, includeFolder = false, deep = true).data
                         ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
                     val htmlContent = buildPypiPageContent(buildPackageFilenodeListContent(artifactInfo.projectId, artifactInfo.repoName, packageNode))
                     response.writer.print(htmlContent)
@@ -249,7 +241,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
                 rule = rule1
             )
-            filenodeList = nodeResource.query(queryModel).data?.records
+            filenodeList = nodeClient.query(queryModel).data?.records
         }
         return filenodeList
     }
@@ -393,7 +385,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 val artifactFile = ArtifactFileFactory.build(inputStream)
                 val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename)
                 nodeCreateRequest?.let {
-                    nodeResource.create(nodeCreateRequest)
+                    nodeClient.create(nodeCreateRequest)
                     storageService.store(
                         nodeCreateRequest.sha256!!,
                         artifactFile, context.storageCredentials
@@ -418,7 +410,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         val pypiInfo = filename.fileFormat().let { artifactFile.getInputStream().getPkgInfo(it) }
         // 文件fullPath
         val path = "/$packageName/${pypiInfo.version}/$filename"
-        nodeResource.exist(repositoryInfo.projectId, repositoryInfo.name, path).data?.let {
+        nodeClient.exist(repositoryInfo.projectId, repositoryInfo.name, path).data?.let {
             if (it) {
                 return null
             }

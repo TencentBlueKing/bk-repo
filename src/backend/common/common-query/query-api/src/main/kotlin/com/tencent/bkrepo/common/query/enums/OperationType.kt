@@ -5,9 +5,6 @@ import kotlin.reflect.KClass
 
 /**
  * 排序类型
- *
- * @author: carrypan
- * @date: 2019/11/14
  */
 enum class OperationType(val valueType: KClass<*>) {
     EQ(Any::class),

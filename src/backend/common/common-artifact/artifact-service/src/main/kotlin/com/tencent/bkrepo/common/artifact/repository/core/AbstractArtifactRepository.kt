@@ -24,9 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 构件仓库抽象类
- *
- * @author: carrypan
- * @date: 2019/11/27
  */
 @Suppress("TooGenericExceptionCaught")
 abstract class AbstractArtifactRepository : ArtifactRepository {

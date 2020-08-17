@@ -7,8 +7,6 @@ import java.io.Serializable
 
 /**
  * to deserialize manifest json
- * @author: owenlxu
- * @date: 2020-02-05
  */
 class ManifestJson : Serializable {
 

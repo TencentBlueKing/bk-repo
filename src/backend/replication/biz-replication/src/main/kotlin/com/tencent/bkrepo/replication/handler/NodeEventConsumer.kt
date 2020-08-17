@@ -21,8 +21,6 @@ import org.springframework.stereotype.Component
 /**
  * consume event from caped collection and
  * dispatch it to event  handler
- * @author: owenlxu
- * @date: 2020/05/20
  */
 @Component
 class NodeEventConsumer : AbstractHandler() {

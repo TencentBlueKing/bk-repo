@@ -15,8 +15,6 @@ import org.springframework.util.ClassUtils
 
 /**
  * 自动扫描@Resolver注解
- * @author: carrypan
- * @date: 2019/11/28
  */
 class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
 

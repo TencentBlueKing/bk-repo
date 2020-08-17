@@ -6,8 +6,6 @@ import java.io.Serializable
 
 /**
  * to deserialize manifest list json
- * @author: owenlxu
- * @date: 2020-02-05
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 class ManifestListJson : Serializable {

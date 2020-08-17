@@ -4,11 +4,6 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import org.apache.skywalking.apm.toolkit.trace.TraceContext
 
-/**
- *
- * @author: carrypan
- * @date: 2020/1/8
- */
 object ResponseBuilder {
     fun <T> build(code: Int, message: String?, data: T?) = Response(code, message, data, TraceContext.traceId())
 

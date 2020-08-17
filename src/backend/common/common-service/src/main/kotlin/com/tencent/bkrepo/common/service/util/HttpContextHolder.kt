@@ -7,11 +7,6 @@ import java.util.StringTokenizer
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/25
- */
 object HttpContextHolder {
     fun getRequest(): HttpServletRequest {
         return (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes).request

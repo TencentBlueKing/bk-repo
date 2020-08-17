@@ -1,27 +1,24 @@
-package com.tencent.bkrepo.repository.resource
+package com.tencent.bkrepo.repository.controller
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.RepositoryResource
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.RepositoryService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * 仓库服务接口实现类
- *
- * @author: carrypan
- * @date: 2019-09-10
  */
 @RestController
-class RepositoryResourceImpl @Autowired constructor(
+class RepositoryController(
     private val repositoryService: RepositoryService
-) : RepositoryResource {
+) : RepositoryClient {
+
     override fun detail(projectId: String, name: String): Response<RepositoryInfo?> {
         return ResponseBuilder.success(repositoryService.detail(projectId, name))
     }

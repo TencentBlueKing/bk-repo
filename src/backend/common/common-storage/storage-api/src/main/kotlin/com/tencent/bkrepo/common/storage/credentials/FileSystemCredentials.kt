@@ -5,9 +5,6 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
  * 文件系统配置
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 data class FileSystemCredentials(
     var path: String = "data/store",

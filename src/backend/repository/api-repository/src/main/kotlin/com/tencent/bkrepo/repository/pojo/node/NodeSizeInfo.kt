@@ -5,9 +5,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 节点大小信息
- *
- * @author: carrypan
- * @date: 2019-10-15
  */
 @ApiModel("节点大小信息")
 data class NodeSizeInfo(

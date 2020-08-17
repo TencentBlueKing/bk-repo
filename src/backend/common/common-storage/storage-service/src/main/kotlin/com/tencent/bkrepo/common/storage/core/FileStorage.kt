@@ -10,9 +10,6 @@ import java.io.InputStream
 
 /**
  * 文件存储接口
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 interface FileStorage {
     @Retryable(Exception::class, label = "FileStorage.store", maxAttempts = 5, backoff = Backoff(delay = 60 * 1000, multiplier = 2.0))

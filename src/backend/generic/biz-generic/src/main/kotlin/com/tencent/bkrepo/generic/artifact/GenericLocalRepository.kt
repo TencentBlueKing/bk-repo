@@ -26,11 +26,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/28
- */
 @Component
 class GenericLocalRepository : LocalRepository() {
 
@@ -60,7 +55,7 @@ class GenericLocalRepository : LocalRepository() {
         } else {
             val nodeCreateRequest = getNodeCreateRequest(context)
             storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
-            val createResult = nodeResource.create(nodeCreateRequest)
+            val createResult = nodeClient.create(nodeCreateRequest)
             context.response.contentType = MediaTypes.APPLICATION_JSON
             context.response.writer.println(createResult.toJsonString())
         }
@@ -69,15 +64,15 @@ class GenericLocalRepository : LocalRepository() {
     override fun remove(context: ArtifactRemoveContext) {
         val artifactInfo = context.artifactInfo
         with(artifactInfo) {
-            val node = nodeResource.detail(projectId, repoName, artifactUri).data
+            val node = nodeClient.detail(projectId, repoName, artifactUri).data
                 ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
             if (node.folder) {
-                if (nodeResource.countFileNode(projectId, repoName, artifactUri).data!! > 0) {
+                if (nodeClient.countFileNode(projectId, repoName, artifactUri).data!! > 0) {
                     throw UnsupportedMethodException("Delete non empty folder is forbidden")
                 }
             }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactUri, context.userId)
-            nodeResource.delete(nodeDeleteRequest)
+            nodeClient.delete(nodeDeleteRequest)
         }
     }
 

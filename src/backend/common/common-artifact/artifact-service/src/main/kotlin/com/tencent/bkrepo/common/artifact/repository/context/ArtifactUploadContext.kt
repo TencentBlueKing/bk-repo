@@ -6,8 +6,6 @@ import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 
 /**
  * 构件上传context
- * @author: carrypan
- * @date: 2019/11/26
  */
 class ArtifactUploadContext : ArtifactTransferContext {
 

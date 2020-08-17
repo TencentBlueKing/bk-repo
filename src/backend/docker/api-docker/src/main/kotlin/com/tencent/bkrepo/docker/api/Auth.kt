@@ -11,8 +11,6 @@ import javax.servlet.http.HttpServletResponse
 
 /**
  * docker image auth api
- * @author: owenlxu
- * @date: 2019-11-27
  */
 @RequestMapping(DOCKER_API_PREFIX)
 interface Auth {

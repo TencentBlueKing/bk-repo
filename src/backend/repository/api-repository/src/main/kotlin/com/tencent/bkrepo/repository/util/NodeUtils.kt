@@ -8,9 +8,6 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_PATH_
  * path节点目录命名规则：以'/'开头，以'/'结尾
  * name节点文件命名规则：不含'/'
  * fullpath全路径命名规则：以'/'开头，结尾不含'/'
- *
- * @author: carrypan
- * @date: 2019-09-24
  */
 object NodeUtils {
 

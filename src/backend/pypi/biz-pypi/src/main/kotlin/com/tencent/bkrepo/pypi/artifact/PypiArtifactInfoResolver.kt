@@ -5,11 +5,6 @@ import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil
 import javax.servlet.http.HttpServletRequest
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/4
- */
 @Resolver(PypiArtifactInfo::class)
 class PypiArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(

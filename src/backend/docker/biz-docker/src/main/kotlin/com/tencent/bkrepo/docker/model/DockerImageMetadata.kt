@@ -6,8 +6,6 @@ import java.io.Serializable
 
 /**
  * docker image metadata
- * @author: owenlxu
- * @date: 2019-10-15
  */
 class DockerImageMetadata : Serializable {
     @JsonProperty("id")

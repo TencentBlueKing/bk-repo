@@ -12,23 +12,22 @@ import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.replication.message.ReplicationException
-import com.tencent.bkrepo.repository.api.MetadataResource
-import com.tencent.bkrepo.repository.api.NodeResource
-import com.tencent.bkrepo.repository.api.ProjectResource
-import com.tencent.bkrepo.repository.api.RepositoryResource
+import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.InputStream
 
 @Service
-class RepoDataService @Autowired constructor(
-    private val projectResource: ProjectResource,
-    private val repositoryResource: RepositoryResource,
-    private val nodeResource: NodeResource,
-    private val metadataResource: MetadataResource,
+class RepoDataService(
+    private val projectClient: ProjectClient,
+    private val repositoryClient: RepositoryClient,
+    private val nodeClient: NodeClient,
+    private val metadataClient: MetadataClient,
     private val permissionResource: ServicePermissionResource,
     private val roleResource: ServiceRoleResource,
     private val userResource: ServiceUserResource,
@@ -37,34 +36,34 @@ class RepoDataService @Autowired constructor(
 
     fun listProject(projectId: String? = null): List<ProjectInfo> {
         return if (projectId == null) {
-            projectResource.list().data!!
+            projectClient.list().data!!
         } else {
-            listOf(projectResource.query(projectId).data!!)
+            listOf(projectClient.query(projectId).data!!)
         }
     }
 
     fun listRepository(projectId: String, repoName: String? = null): List<RepositoryInfo> {
         return if (repoName == null) {
-            repositoryResource.list(projectId).data!!
+            repositoryClient.list(projectId).data!!
         } else {
-            listOf(repositoryResource.detail(projectId, repoName).data!!)
+            listOf(repositoryClient.detail(projectId, repoName).data!!)
         }
     }
 
     fun getRepositoryDetail(projectId: String, repoName: String): RepositoryInfo? {
-        return repositoryResource.detail(projectId, repoName).data
+        return repositoryClient.detail(projectId, repoName).data
     }
 
     fun countFileNode(repositoryInfo: RepositoryInfo): Long {
-        return nodeResource.countFileNode(repositoryInfo.projectId, repositoryInfo.name, ROOT).data!!
+        return nodeClient.countFileNode(repositoryInfo.projectId, repositoryInfo.name, ROOT).data!!
     }
 
     fun listFileNode(projectId: String, repoName: String, path: String = ROOT, page: Int = 0, size: Int = 100): List<NodeInfo> {
-        return nodeResource.page(projectId, repoName, page, size, path, includeFolder = false, includeMetadata = true, deep = true).data!!.records
+        return nodeClient.page(projectId, repoName, page, size, path, includeFolder = false, includeMetadata = true, deep = true).data!!.records
     }
 
     fun getMetadata(nodeInfo: NodeInfo): Map<String, String> {
-        return metadataResource.query(nodeInfo.projectId, nodeInfo.repoName, nodeInfo.fullPath).data!!
+        return metadataClient.query(nodeInfo.projectId, nodeInfo.repoName, nodeInfo.fullPath).data!!
     }
 
     fun getFile(sha256: String, length: Long, repoInfo: RepositoryInfo): InputStream {

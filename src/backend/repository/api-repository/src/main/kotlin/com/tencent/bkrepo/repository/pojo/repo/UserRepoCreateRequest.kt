@@ -8,9 +8,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 创建仓库请求
- *
- * @author: carrypan
- * @date: 2019-09-22
  */
 @ApiModel("创建仓库请求")
 data class UserRepoCreateRequest(

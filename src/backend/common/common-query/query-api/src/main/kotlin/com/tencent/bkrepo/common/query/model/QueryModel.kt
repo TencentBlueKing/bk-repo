@@ -5,9 +5,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 自定义查询模型
- *
- * @author: carrypan
- * @date: 2019/11/14
  */
 @ApiModel("自定义查询模型")
 data class QueryModel(

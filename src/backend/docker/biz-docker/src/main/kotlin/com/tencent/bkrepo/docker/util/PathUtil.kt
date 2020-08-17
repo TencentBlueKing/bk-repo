@@ -7,8 +7,6 @@ import javax.servlet.http.HttpServletRequest
 
 /**
  * docker path utility
- * @author: owenlxu
- * @date: 2019-11-15
  */
 object PathUtil {
 

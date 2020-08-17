@@ -9,11 +9,6 @@ import org.springframework.boot.autoconfigure.mongo.MongoProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/23
- */
 @Configuration
 @EnableSchedulerLock(defaultLockAtMostFor = "60s", defaultLockAtLeastFor = "1s")
 class JobAutoConfiguration {

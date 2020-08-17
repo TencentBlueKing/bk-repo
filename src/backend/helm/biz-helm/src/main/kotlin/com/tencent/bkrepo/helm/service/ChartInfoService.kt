@@ -27,7 +27,7 @@ import com.tencent.bkrepo.helm.constants.REPO_NAME
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.pojo.IndexEntity
 import com.tencent.bkrepo.helm.utils.YamlUtils
-import com.tencent.bkrepo.repository.api.NodeResource
+import com.tencent.bkrepo.repository.api.NodeClient
 import org.apache.http.HttpStatus
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -38,7 +38,7 @@ import java.time.LocalDateTime
 class ChartInfoService {
 
     @Autowired
-    private lateinit var nodeResource: NodeResource
+    private lateinit var nodeClient: NodeClient
 
     @Autowired
     private lateinit var chartRepositoryService: ChartRepositoryService
@@ -127,7 +127,7 @@ class ChartInfoService {
                     select = mutableListOf(PROJECT_ID, REPO_NAME, NODE_FULL_PATH, NODE_METADATA),
                     rule = rule
                 )
-                val nodeList: List<Map<String, Any>>? = nodeResource.query(queryModel).data?.records
+                val nodeList: List<Map<String, Any>>? = nodeClient.query(queryModel).data?.records
                 if (nodeList.isNullOrEmpty()) HttpStatus.SC_NOT_FOUND else HttpStatus.SC_OK
             } else {
                 HttpStatus.SC_NOT_FOUND

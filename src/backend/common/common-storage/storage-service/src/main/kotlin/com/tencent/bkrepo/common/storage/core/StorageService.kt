@@ -10,9 +10,6 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 
 /**
  * 存储服务接口
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 interface StorageService {
     /**

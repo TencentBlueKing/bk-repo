@@ -5,8 +5,6 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfigura
 
 /**
  * 虚拟仓库配置
- * @author: carrypan
- * @date: 2019/11/26
  */
 open class VirtualConfiguration(
     val repositoryList: List<RepositoryIdentify>

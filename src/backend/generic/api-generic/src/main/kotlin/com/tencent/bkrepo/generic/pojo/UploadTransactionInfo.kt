@@ -5,9 +5,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 分块上传预检结果
- *
- * @author: carrypan
- * @date: 2019-09-30
  */
 @ApiModel("分块上传事物信息")
 data class UploadTransactionInfo(

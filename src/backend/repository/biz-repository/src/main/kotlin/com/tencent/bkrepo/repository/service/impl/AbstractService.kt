@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.mongodb.core.MongoTemplate
 
+/**
+ * 服务抽象类，封装公共逻辑
+ */
 abstract class AbstractService {
 
     @Autowired

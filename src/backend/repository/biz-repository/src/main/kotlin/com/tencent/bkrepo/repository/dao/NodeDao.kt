@@ -6,9 +6,6 @@ import org.springframework.stereotype.Repository
 
 /**
  * 节点 Dao
- *
- * @author: carrypan
- * @date: 2019/11/7
  */
 @Repository
 class NodeDao : ShardingMongoDao<TNode>()

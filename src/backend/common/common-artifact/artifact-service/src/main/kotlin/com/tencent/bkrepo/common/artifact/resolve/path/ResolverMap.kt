@@ -4,11 +4,6 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResolveException
 import kotlin.reflect.KClass
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/2
- */
 class ResolverMap : LinkedHashMap<KClass<out ArtifactInfo>, ArtifactInfoResolver>() {
 
     private lateinit var defaultResolver: ArtifactInfoResolver

@@ -4,9 +4,6 @@ import com.tencent.bkrepo.common.api.message.MessageCode
 
 /**
  * 存储错误码
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 enum class StorageMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
 

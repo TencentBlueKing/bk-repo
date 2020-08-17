@@ -10,9 +10,6 @@ import java.io.IOException
 
 /**
  * Feign ErrorDecoder
- *
- * @author: carrypan
- * @date: 2019/12/10
  */
 class ErrorCodeDecoder : ErrorDecoder {
 

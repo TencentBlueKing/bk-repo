@@ -1,24 +1,21 @@
-package com.tencent.bkrepo.repository.resource
+package com.tencent.bkrepo.repository.controller
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.MetadataResource
+import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.service.MetadataService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 元数据接口实现类
- *
- * @author: carrypan
- * @date: 2019-10-15
+ * 元数据服务接口实现类
  */
 @RestController
-class MetadataResourceImpl @Autowired constructor(
+class MetadataController(
     private val metadataService: MetadataService
-) : MetadataResource {
+) : MetadataClient {
+
     override fun query(projectId: String, repoName: String, fullPath: String): Response<Map<String, String>> {
         return ResponseBuilder.success(metadataService.query(projectId, repoName, fullPath))
     }

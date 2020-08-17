@@ -12,11 +12,6 @@ import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import javax.servlet.http.HttpServletRequest
 
-/**
- *
- * @author: carrypan
- * @date: 2020/1/6
- */
 object LoggerHolder {
     /**
      * 异常logger

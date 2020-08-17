@@ -61,7 +61,7 @@ import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
-import com.tencent.bkrepo.repository.api.MetadataResource
+import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.lang.StringUtils
@@ -70,12 +70,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.Date
 
 @Service
 class NpmService @Autowired constructor(
     private val npmDependentHandler: NpmDependentHandler,
-    private val metadataResource: MetadataResource
+    private val metadataClient: MetadataClient
 ) {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -109,7 +108,7 @@ class NpmService @Autowired constructor(
             val version = versions.getAsJsonObject(it)[VERSION].asString
             val metaData = buildMetaData(versions[it].asJsonObject)
             val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
-            metadataResource.save(
+            metadataClient.save(
                 MetadataSaveRequest(
                     artifactInfo.projectId,
                     artifactInfo.repoName,
