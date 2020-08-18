@@ -8,9 +8,11 @@ import com.tencent.bkrepo.common.stream.message.node.NodeMovedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeRenamedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeUpdatedMessage
 import com.tencent.bkrepo.replication.exception.ReplicaFileFailedException
+import com.tencent.bkrepo.replication.exception.WaitPreorderNodeFailedException
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import java.lang.Thread.sleep
 
@@ -23,10 +25,11 @@ import java.lang.Thread.sleep
 @Component
 class NodeEventHandler : AbstractEventHandler() {
 
+    @Async
     @EventListener(NodeCreatedMessage::class)
     fun handle(message: NodeCreatedMessage) {
         with(message.request) {
-            var retryCount = CTEATE_RETRY_COUNT
+            var retryCount = EXCEPTION_RETRY_COUNT
             while (retryCount > 0) {
                 try {
                     getRelativeTaskList(projectId, repoName).forEach {
@@ -36,7 +39,7 @@ class NodeEventHandler : AbstractEventHandler() {
 
                         context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
                             logger.warn("found no repo detail [$projectId, $repoName]")
-                            retryCount -= 3
+                            retryCount -= EXCEPTION_RETRY_COUNT
                             return
                         }
                         logger.info("start to handle event [${message.request}]")
@@ -45,7 +48,7 @@ class NodeEventHandler : AbstractEventHandler() {
                             repoName = remoteRepoName
                         ).apply { replicationService.replicaNodeCreateRequest(context, this) }
                     }
-                    retryCount -= CTEATE_RETRY_COUNT
+                    retryCount -= EXCEPTION_RETRY_COUNT
                     return
                 } catch (exception: ReplicaFileFailedException) {
                     retryCount -= 1
@@ -54,8 +57,7 @@ class NodeEventHandler : AbstractEventHandler() {
                         // log to db
                     }
                     return
-                }
-                catch (exception: ExternalErrorCodeException) {
+                } catch (exception: ExternalErrorCodeException) {
                     retryCount -= 1
                     if (retryCount == 0) {
                         logger.error("create file failed [${exception.message}]")
@@ -94,48 +96,51 @@ class NodeEventHandler : AbstractEventHandler() {
         }
     }
 
-    // @EventListener(NodeCopiedMessage::class)
-    // fun handle(message: NodeCopiedMessage) {
-    //     var retryCount = COPY_RETRY_COUNT
-    //     while (retryCount > 0) {
-    //         try {
-    //             with(message.request) {
-    //                 getRelativeTaskList(projectId, repoName).forEach {
-    //                     val remoteProjectId = getRemoteProjectId(it, projectId)
-    //                     val remoteRepoName = getRemoteRepoName(it, repoName)
-    //                     val context = ReplicationContext(it)
-    //
-    //                     context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
-    //                         logger.warn("found no repo detail [$projectId, $repoName]")
-    //                         retryCount -= COPY_RETRY_COUNT
-    //                         return
-    //                     }
-    //                     logger.info("start to handle event [${message.request}]")
-    //                     this.copy(
-    //                         srcProjectId = remoteProjectId,
-    //                         srcRepoName = remoteRepoName
-    //                     ).apply { replicationService.replicaNodeCopyRequest(context, this) }
-    //                 }
-    //             }
-    //         } catch (exception: ReplicaFileFailedException) {
-    //             retryCount -= 1
-    //             sleep(2000)
-    //             if (retryCount == 0) {
-    //                 logger.error("copy file failed [${exception.message}]")
-    //                 // log to db
-    //             }
-    //             return
-    //         } catch (exception: ExternalErrorCodeException) {
-    //             retryCount -= 1
-    //             sleep(2000)
-    //             if (retryCount == 0) {
-    //                 logger.error("copy file failed [${exception.message}]")
-    //                 // log to db
-    //             }
-    //             return
-    //         }
-    //     }
-    // }
+    @Async
+    @EventListener(NodeCopiedMessage::class)
+    fun handle(message: NodeCopiedMessage) {
+        var retryCount = EXCEPTION_RETRY_COUNT
+        while (retryCount > 0) {
+            try {
+                with(message.request) {
+                    getRelativeTaskList(projectId, repoName).forEach {
+                        val remoteProjectId = getRemoteProjectId(it, projectId)
+                        val remoteRepoName = getRemoteRepoName(it, repoName)
+                        val context = ReplicationContext(it)
+                        context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
+                            logger.warn("found no repo detail [$projectId, $repoName]")
+                            retryCount -= EXCEPTION_RETRY_COUNT
+                            return
+                        }
+                        logger.info("start to handle event [${message.request}]")
+                        val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, this.srcFullPath)
+                        if (!result) throw WaitPreorderNodeFailedException("time out")
+                        this.copy(
+                            srcProjectId = remoteProjectId,
+                            srcRepoName = remoteRepoName
+                        ).apply { replicationService.replicaNodeCopyRequest(context, this) }
+                    }
+                }
+            } catch (exception: ReplicaFileFailedException) {
+                retryCount -= 1
+                if (retryCount == 0) {
+                    logger.error("copy file failed [${exception.message}]")
+                    // log to db
+                }
+                return
+            } catch (exception: ExternalErrorCodeException) {
+                retryCount -= 1
+                if (retryCount == 0) {
+                    logger.error("copy file failed [${exception.message}]")
+                    // log to db
+                }
+                return
+            } catch (exception: WaitPreorderNodeFailedException) {
+                logger.error("copy file failed [${exception.message}]")
+                return
+            }
+        }
+    }
 
     @EventListener(NodeMovedMessage::class)
     fun handle(message: NodeMovedMessage) {
@@ -164,9 +169,26 @@ class NodeEventHandler : AbstractEventHandler() {
         }
     }
 
+    // wait max 120s for pre order node
+    private fun waitForPreorderNode(
+        context: ReplicationContext,
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    ): Boolean {
+        var retryCount = WAIT_RETRY_COUNT
+        while (retryCount > 0) {
+            val result = replicationService.checkNodeExistRequest(context, projectId, repoName, fullPath)
+            if (result) return true
+            retryCount -= 1
+            sleep(1000)
+        }
+        return false
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(NodeEventHandler::class.java)
-        private const val CTEATE_RETRY_COUNT = 3
-        // private const val COPY_RETRY_COUNT = 5
+        private const val EXCEPTION_RETRY_COUNT = 3
+        private const val WAIT_RETRY_COUNT = 120
     }
 }

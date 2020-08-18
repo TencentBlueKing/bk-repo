@@ -68,6 +68,19 @@ class ReplicationService(val repoDataService: RepoDataService) {
         }
     }
 
+    fun checkNodeExistRequest(
+        context: ReplicationContext,
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    ): Boolean {
+        with(context) {
+            return replicationClient.checkNodeExist(authToken, projectId, repoName, fullPath).data ?: run {
+                return false
+            }
+        }
+    }
+
     fun replicaNodeRenameRequest(context: ReplicationContext, request: NodeRenameRequest) {
         with(context) {
             replicationClient.replicaNodeRenameRequest(authToken, request)
