@@ -191,6 +191,6 @@ class NodeEventHandler : AbstractEventHandler() {
     companion object {
         private val logger = LoggerFactory.getLogger(NodeEventHandler::class.java)
         private const val EXCEPTION_RETRY_COUNT = 3
-        private const val WAIT_RETRY_COUNT = 12
+        private const val WAIT_RETRY_COUNT = 120
     }
 }
