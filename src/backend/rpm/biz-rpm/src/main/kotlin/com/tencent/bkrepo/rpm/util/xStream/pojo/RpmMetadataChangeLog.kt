@@ -5,16 +5,13 @@ import com.thoughtworks.xstream.annotations.XStreamAsAttribute
 import com.thoughtworks.xstream.annotations.XStreamImplicit
 
 @XStreamAlias("metadata")
-class RpmMetadata(
+class RpmMetadataChangeLog(
     @XStreamImplicit(itemFieldName = "package")
-    override val packages: List<RpmPackage>,
+    override val packages: List<RpmPackageChangeLog>,
     @XStreamAsAttribute
     @XStreamAlias("packages")
     override var packageNum: Long
 ) : RpmXmlMetadata(packages, packageNum) {
     @XStreamAsAttribute
-    val xmlns: String = "http://linux.duke.edu/metadata/common"
-    @XStreamAsAttribute
-    @XStreamAlias("xmlns:rpm")
-    val rpm: String = "http://linux.duke.edu/metadata/rpm"
+    val xmlns: String = "http://linux.duke.edu/metadata/other"
 }
