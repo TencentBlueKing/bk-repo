@@ -42,7 +42,7 @@ class NodeEventHandler : AbstractEventHandler() {
                             retryCount -= EXCEPTION_RETRY_COUNT
                             return
                         }
-                        logger.info("start to handle event [${message.request}]")
+                        logger.info("start to handle create event [${message.request}]")
                         this.copy(
                             projectId = remoteProjectId,
                             repoName = remoteRepoName
@@ -112,9 +112,9 @@ class NodeEventHandler : AbstractEventHandler() {
                             retryCount -= EXCEPTION_RETRY_COUNT
                             return
                         }
-                        logger.info("start to handle event [${message.request}]")
+                        logger.info("start to handle copy event [${message.request}]")
                         val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, this.srcFullPath)
-                        if (!result) throw WaitPreorderNodeFailedException("time out")
+                        if (!result) throw WaitPreorderNodeFailedException("$remoteProjectId:$remoteRepoName:${this.srcFullPath}:copy time out")
                         this.copy(
                             srcProjectId = remoteProjectId,
                             srcRepoName = remoteRepoName
