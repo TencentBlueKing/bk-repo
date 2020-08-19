@@ -120,6 +120,8 @@ class NodeEventHandler : AbstractEventHandler() {
                             srcRepoName = remoteRepoName
                         ).apply { replicationService.replicaNodeCopyRequest(context, this) }
                     }
+                    retryCount -= EXCEPTION_RETRY_COUNT
+                    return
                 }
             } catch (exception: ReplicaFileFailedException) {
                 retryCount -= 1
@@ -189,6 +191,6 @@ class NodeEventHandler : AbstractEventHandler() {
     companion object {
         private val logger = LoggerFactory.getLogger(NodeEventHandler::class.java)
         private const val EXCEPTION_RETRY_COUNT = 3
-        private const val WAIT_RETRY_COUNT = 120
+        private const val WAIT_RETRY_COUNT = 12
     }
 }
