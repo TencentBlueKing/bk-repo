@@ -219,10 +219,10 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 projectId = projectId,
                 repoName = repoName,
                 metadata = MetadataServiceImpl.convert(metadata),
-                createdBy = operator,
-                createdDate = LocalDateTime.now(),
-                lastModifiedBy = operator,
-                lastModifiedDate = LocalDateTime.now()
+                createdBy = createdBy ?: operator,
+                createdDate = createdDate?: LocalDateTime.now(),
+                lastModifiedBy = createdBy ?: operator,
+                lastModifiedDate = lastModifiedDate?: LocalDateTime.now()
             )
             return node.apply { doCreate(this, repo) }
                 .also { publishEvent(NodeCreatedEvent(createRequest)) }
