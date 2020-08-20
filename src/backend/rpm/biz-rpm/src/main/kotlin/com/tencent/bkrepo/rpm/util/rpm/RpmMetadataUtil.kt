@@ -27,7 +27,7 @@ class RpmMetadataUtil {
         val header: Header = rawFormat.format.header
         val signature: Signature = rawFormat.format.signature
         return RpmMetadata(
-            setOf(
+            listOf(
                 RpmPackage(
                     "rpm",
                     getName(header)!!,
@@ -37,6 +37,7 @@ class RpmMetadataUtil {
                         getArchitecture(header)!!
                     },
                     RpmVersion(getEpoch(header), getVersion(header)!!, getRelease(header)!!),
+                    "pkgid",
                     RpmChecksum(checkSum),
                     getSummary(header),
                     getDescription(header),
@@ -76,8 +77,8 @@ class RpmMetadataUtil {
                             Header.HeaderTag.OBSOLETEFLAGS,
                             Header.HeaderTag.OBSOLETEVERSION
                         ),
-                        resolveFiles(header)
-//                    resolveChangeLogs(header)
+                        resolveFiles(header),
+                        resolveChangeLogs(header)
                     )
                 )
             ),
