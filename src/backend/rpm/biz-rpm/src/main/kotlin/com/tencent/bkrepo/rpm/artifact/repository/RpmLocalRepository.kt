@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.rpm.artifact.repository
 
-import com.sun.xml.internal.messaging.saaj.util.ByteInputStream
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
 import com.tencent.bkrepo.common.api.constant.StringPool.DOT
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
@@ -18,7 +17,6 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.rpm.FILELISTS
@@ -56,6 +54,7 @@ import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import java.io.ByteArrayInputStream
 import java.io.FileInputStream
 import java.nio.channels.Channels
 
@@ -234,11 +233,11 @@ class RpmLocalRepository(
         context: ArtifactUploadContext,
         target: String
     ): RepomdChildNode {
-        (xmlStr.toByteArray()).let { ByteInputStream(it, it.size) }.use { xmlInputStream ->
+        ByteArrayInputStream((xmlStr.toByteArray())).use { xmlInputStream ->
             // 处理xml节点
-            val xmlFileSize = xmlInputStream.bytes.size
+            val xmlFileSize = xmlStr.toByteArray().size
             // xml.gz文件sha1
-            val xmlGZFile = xmlInputStream.bytes.gZip(indexType)
+            val xmlGZFile = xmlStr.toByteArray().gZip(indexType)
             try {
                 val xmlGZFileSha1 = FileInputStream(xmlGZFile).sha1()
 
@@ -292,7 +291,7 @@ class RpmLocalRepository(
             repoDataList
         )
         val xmlRepodataString = repomd.objectToXml()
-        xmlRepodataString.byteInputStream().use { xmlRepodataInputStream ->
+        ByteArrayInputStream((xmlRepodataString.toByteArray())).use{ xmlRepodataInputStream ->
             val xmlRepodataArtifact = ArtifactFileFactory.build(xmlRepodataInputStream)
             // 保存repodata 节点
             val xmlRepomdNode = xmlPrimaryNodeCreate(
