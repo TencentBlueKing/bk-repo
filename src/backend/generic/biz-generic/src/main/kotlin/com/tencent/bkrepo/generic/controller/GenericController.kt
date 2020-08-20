@@ -81,10 +81,4 @@ class GenericController(
     ): Response<List<BlockInfo>> {
         return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
     }
-
-    @GetMapping("/login2")
-    fun login(
-    ): Response<String> {
-        return ResponseBuilder.success("ok")
-    }
 }
