@@ -109,6 +109,27 @@ abstract class AbstractStorageService : StorageService {
         }
     }
 
+    override fun copy(digest: String, from: StorageCredentials?, to: StorageCredentials?) {
+        val path = fileLocator.locate(digest)
+        val fromCredentials = getCredentialsOrDefault(from)
+        val toCredentials = getCredentialsOrDefault(to)
+        try {
+            if (fromCredentials == toCredentials) {
+                logger.info("Source and destination credentials are same, skip copy file [$digest].")
+                return
+            }
+            if (doExist(path, digest, toCredentials)) {
+                logger.info("File [$digest] exist on destination credentials, skip copy file.")
+                return
+            }
+            fileStorage.copy(path, digest, fromCredentials, toCredentials)
+            logger.info("Success to copy file [$digest] from [$fromCredentials] to [$toCredentials].")
+        } catch (exception: Exception) {
+            logger.error("Failed to copy file [$digest] from [$fromCredentials] to [$toCredentials].", exception)
+            throw StorageException(StorageMessageCode.COPY_ERROR, exception.message.toString())
+        }
+    }
+
     /**
      * 创建可追加的文件, 返回文件追加Id
      * 追加文件组织格式: 在temp目录下创建一个具有唯一id的文件，文件名称即追加Id

@@ -46,6 +46,8 @@ object NodeUtils {
 
     /**
      * 格式化目录名称, 返回格式/a/b/c/，根目录返回/
+     * /a/b/c -> /a/b/c/
+     * /a/b/c/ -> /a/b/c/
      */
     fun formatPath(input: String): String {
         val path = formatFullPath(input)
