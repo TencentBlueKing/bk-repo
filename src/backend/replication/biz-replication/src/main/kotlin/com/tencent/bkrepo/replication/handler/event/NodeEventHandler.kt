@@ -1,13 +1,11 @@
 package com.tencent.bkrepo.replication.handler.event
 
-import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.stream.message.node.NodeCopiedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeCreatedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeDeletedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeMovedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeRenamedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeUpdatedMessage
-import com.tencent.bkrepo.replication.exception.ReplicaFileFailedException
 import com.tencent.bkrepo.replication.exception.WaitPreorderNodeFailedException
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import org.slf4j.LoggerFactory
@@ -29,69 +27,105 @@ class NodeEventHandler : AbstractEventHandler() {
     @EventListener(NodeCreatedMessage::class)
     fun handle(message: NodeCreatedMessage) {
         with(message.request) {
-            var retryCount = EXCEPTION_RETRY_COUNT
-            while (retryCount > 0) {
-                try {
-                    getRelativeTaskList(projectId, repoName).forEach {
+            getRelativeTaskList(projectId, repoName).forEach {
+                var retryCount = EXCEPTION_RETRY_COUNT
+                while (retryCount > 0) {
+                    try {
                         val remoteProjectId = getRemoteProjectId(it, projectId)
                         val remoteRepoName = getRemoteRepoName(it, repoName)
                         var context = ReplicationContext(it)
 
                         context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
                             logger.warn("found no repo detail [$projectId, $repoName]")
-                            retryCount -= EXCEPTION_RETRY_COUNT
-                            return
+                            return@forEach
                         }
-                        logger.info("start to handle create event [${message.request}]")
+                        logger.info("start to handle create event [$projectId,$repoName,$fullPath]")
                         this.copy(
                             projectId = remoteProjectId,
                             repoName = remoteRepoName
                         ).apply { replicationService.replicaNodeCreateRequest(context, this) }
+                        return@forEach
+                    } catch (ignored: Exception) {
+                        retryCount -= 1
+                        if (retryCount == 0) {
+                            logger.error("create node [$projectId,$repoName,$fullPath] failed [${ignored.message}]")
+                            // log to db
+                        }
                     }
-                    retryCount -= EXCEPTION_RETRY_COUNT
-                    return
-                } catch (exception: ReplicaFileFailedException) {
-                    retryCount -= 1
-                    if (retryCount == 0) {
-                        logger.error("create file failed [${exception.message}]")
-                        // log to db
-                    }
-                    return
-                } catch (exception: ExternalErrorCodeException) {
-                    retryCount -= 1
-                    if (retryCount == 0) {
-                        logger.error("create file failed [${exception.message}]")
-                        // log to db
-                    }
-                    return
                 }
             }
-            // return
         }
     }
 
+    @Async
     @EventListener(NodeRenamedMessage::class)
     fun handle(message: NodeRenamedMessage) {
         with(message.request) {
             getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
-                this.copy(
-                    projectId = getRemoteProjectId(it, projectId),
-                    repoName = getRemoteRepoName(it, repoName)
-                ).apply { replicationService.replicaNodeRenameRequest(context, this) }
+                var retryCount = EXCEPTION_RETRY_COUNT
+                while (retryCount > 0) {
+                    val remoteProjectId = getRemoteProjectId(it, projectId)
+                    val remoteRepoName = getRemoteRepoName(it, repoName)
+                    val context = ReplicationContext(it)
+                    context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
+                        logger.warn("found no repo detail [$projectId, $repoName]")
+                        return@forEach
+                    }
+                    try {
+                        logger.info("start to handle rename event [$projectId,$repoName,$fullPath]")
+                        val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, fullPath)
+                        if (!result) throw WaitPreorderNodeFailedException("rename time out")
+                        this.copy(
+                            projectId = remoteProjectId,
+                            repoName = remoteRepoName
+                        ).apply { replicationService.replicaNodeRenameRequest(context, this) }
+                        return@forEach
+                    } catch (ignored: Exception) {
+                        retryCount -= 1
+                        if (retryCount == 0) {
+                            logger.error("rename node rename [$projectId,$repoName,$fullPath,${ignored.message}]")
+                            // log to db
+                        }
+                        return
+                    }
+                }
             }
         }
     }
 
+    @Async
     @EventListener(NodeUpdatedMessage::class)
     fun handle(message: NodeUpdatedMessage) {
         with(message.request) {
             getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
-                this.copy(
-                    projectId = getRemoteProjectId(it, projectId),
-                    repoName = getRemoteRepoName(it, repoName)
-                ).apply { replicationService.replicaNodeUpdateRequest(context, this) }
+                var retryCount = EXCEPTION_RETRY_COUNT
+                while (retryCount > 0) {
+                    val remoteProjectId = getRemoteProjectId(it, projectId)
+                    val remoteRepoName = getRemoteRepoName(it, repoName)
+                    val context = ReplicationContext(it)
+                    context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
+                        logger.warn("found no repo detail [$projectId, $repoName]")
+                        return@forEach
+                    }
+                    try {
+                        logger.info("start to handle update event [$projectId,$repoName,$fullPath]")
+                        val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, fullPath)
+                        if (!result) throw WaitPreorderNodeFailedException("update time out")
+
+                        this.copy(
+                            projectId = remoteProjectId,
+                            repoName = remoteRepoName
+                        ).apply { replicationService.replicaNodeUpdateRequest(context, this) }
+                        return@forEach
+                    } catch (ignored: Exception) {
+                        retryCount -= 1
+                        if (retryCount == 0) {
+                            logger.error("update node failed [$projectId,$repoName,$fullPath,${ignored.message}]")
+                            // log to db
+                        }
+                        return
+                    }
+                }
             }
         }
     }
@@ -99,74 +133,106 @@ class NodeEventHandler : AbstractEventHandler() {
     @Async
     @EventListener(NodeCopiedMessage::class)
     fun handle(message: NodeCopiedMessage) {
-        var retryCount = EXCEPTION_RETRY_COUNT
-        while (retryCount > 0) {
-            try {
-                with(message.request) {
-                    getRelativeTaskList(projectId, repoName).forEach {
-                        val remoteProjectId = getRemoteProjectId(it, projectId)
-                        val remoteRepoName = getRemoteRepoName(it, repoName)
-                        val context = ReplicationContext(it)
-                        context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
-                            logger.warn("found no repo detail [$projectId, $repoName]")
-                            retryCount -= EXCEPTION_RETRY_COUNT
-                            return
-                        }
-                        logger.info("start to handle copy event [${message.request}]")
-                        val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, this.srcFullPath)
-                        if (!result) throw WaitPreorderNodeFailedException("$remoteProjectId:$remoteRepoName:${this.srcFullPath}:copy time out")
+        with(message.request) {
+            getRelativeTaskList(projectId, repoName).forEach {
+                var retryCount = EXCEPTION_RETRY_COUNT
+                while (retryCount > 0) {
+                    val remoteProjectId = getRemoteProjectId(it, projectId)
+                    val remoteRepoName = getRemoteRepoName(it, repoName)
+                    val context = ReplicationContext(it)
+                    context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
+                        logger.warn("found no repo detail [$projectId, $repoName]")
+                        return@forEach
+                    }
+                    try {
+                        logger.info("start to handle copy event [$projectId,$repoName,$srcFullPath]")
+                        val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, srcFullPath)
+                        if (!result) throw WaitPreorderNodeFailedException("copy time out")
                         this.copy(
                             srcProjectId = remoteProjectId,
                             srcRepoName = remoteRepoName
                         ).apply { replicationService.replicaNodeCopyRequest(context, this) }
+                        return@forEach
+                    } catch (ignored: Exception) {
+                        retryCount -= 1
+                        if (retryCount == 0) {
+                            logger.error("copy node failed [$projectId,$repoName,$srcFullPath,${ignored.message}]")
+                            // log to db
+                        }
                     }
-                    retryCount -= EXCEPTION_RETRY_COUNT
-                    return
                 }
-            } catch (exception: ReplicaFileFailedException) {
-                retryCount -= 1
-                if (retryCount == 0) {
-                    logger.error("copy file failed [${exception.message}]")
-                    // log to db
-                }
-                return
-            } catch (exception: ExternalErrorCodeException) {
-                retryCount -= 1
-                if (retryCount == 0) {
-                    logger.error("copy file failed [${exception.message}]")
-                    // log to db
-                }
-                return
-            } catch (exception: WaitPreorderNodeFailedException) {
-                logger.error("copy file failed [${exception.message}]")
-                return
             }
         }
     }
 
+    @Async
     @EventListener(NodeMovedMessage::class)
     fun handle(message: NodeMovedMessage) {
         with(message.request) {
             getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
-                context.currentProjectDetail
-                this.copy(
-                    srcProjectId = getRemoteProjectId(it, projectId),
-                    srcRepoName = getRemoteRepoName(it, repoName)
-                ).apply { replicationService.replicaNodeMoveRequest(context, this) }
+                var retryCount = EXCEPTION_RETRY_COUNT
+                while (retryCount > 0) {
+                    val remoteProjectId = getRemoteProjectId(it, projectId)
+                    val remoteRepoName = getRemoteRepoName(it, repoName)
+                    val context = ReplicationContext(it)
+                    context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
+                        logger.warn("found no repo detail [$projectId, $repoName]")
+                        return@forEach
+                    }
+                    try{
+                        logger.info("start to handle move event [$projectId,$repoName,$fullPath]")
+                        val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, fullPath)
+                        if (!result) throw WaitPreorderNodeFailedException("move time out")
+                        this.copy(
+                            srcProjectId = remoteProjectId,
+                            srcRepoName = remoteRepoName
+                        ).apply { replicationService.replicaNodeMoveRequest(context, this) }
+                        return@forEach
+                    }catch (ignored: Exception) {
+                        retryCount -= 1
+                        if (retryCount == 0) {
+                            logger.error("move node failed [$projectId,$repoName,$fullPath,${ignored.message}]")
+                            // log to db
+                        }
+                    }
+
+                }
             }
+
         }
     }
 
+    @Async
     @EventListener(NodeDeletedMessage::class)
     fun handle(message: NodeDeletedMessage) {
         with(message.request) {
             getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
-                this.copy(
-                    projectId = getRemoteProjectId(it, projectId),
-                    repoName = getRemoteRepoName(it, repoName)
-                ).apply { replicationService.replicaNodeDeleteRequest(context, this) }
+                var retryCount = EXCEPTION_RETRY_COUNT
+                while (retryCount > 0) {
+                    val remoteProjectId = getRemoteProjectId(it, projectId)
+                    val remoteRepoName = getRemoteRepoName(it, repoName)
+                    val context = ReplicationContext(it)
+                    context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
+                        logger.warn("found no repo detail [$projectId, $repoName]")
+                        return@forEach
+                    }
+                    try {
+                        logger.info("start to handle delete event [$projectId,$repoName,$fullPath]")
+                        val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, fullPath)
+                        if (!result) throw WaitPreorderNodeFailedException("delete time out")
+                        this.copy(
+                            projectId = remoteProjectId,
+                            repoName = remoteRepoName
+                        ).apply { replicationService.replicaNodeDeleteRequest(context, this) }
+                        return@forEach
+                    } catch (ignored: Exception) {
+                        retryCount -= 1
+                        if (retryCount == 0) {
+                            logger.error("delete node failed [$projectId,$repoName,$fullPath,${ignored.message}]")
+                            // log to db
+                        }
+                    }
+                }
             }
         }
     }
