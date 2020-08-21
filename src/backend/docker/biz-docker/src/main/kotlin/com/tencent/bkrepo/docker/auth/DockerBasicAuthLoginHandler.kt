@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.docker.constant.AUTH_CHALLENGE_TOKEN
+import com.tencent.bkrepo.docker.constant.DOCKER_API_PREFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_API_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
@@ -27,7 +28,7 @@ class DockerBasicAuthLoginHandler(
 
     private val signingKey = JwtUtils.createSigningKey(jwtProperties.secretKey)
 
-    override fun getLoginEndpoint() = DOCKER_API_SUFFIX
+    override fun getLoginEndpoint() = DOCKER_API_PREFIX + DOCKER_API_SUFFIX
 
     override fun onAuthenticateSuccess(request: HttpServletRequest, response: HttpServletResponse, userId: String) {
         val token = JwtUtils.generateToken(signingKey, jwtProperties.expiration, userId)
