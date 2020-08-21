@@ -7,7 +7,6 @@ import com.tencent.bkrepo.common.security.http.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.docker.auth.DockerBasicAuthLoginHandler
-import com.tencent.bkrepo.docker.auth.DockerJwtAuthHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -28,7 +27,6 @@ class DockerArtifactConfiguration : ArtifactConfiguration {
             override fun customize(httpAuthSecurity: HttpAuthSecurity) {
                 httpAuthSecurity.disableBasicAuth()
                     .addHttpAuthHandler(DockerBasicAuthLoginHandler(authenticationManager, jwtProperties))
-                    .addHttpAuthHandler(DockerJwtAuthHandler(jwtProperties))
                     .excludePattern("/v2/auth")
                     .excludePattern("/v2/_catalog")
                     .excludePattern("/v2/*/*/*/tags/list")
