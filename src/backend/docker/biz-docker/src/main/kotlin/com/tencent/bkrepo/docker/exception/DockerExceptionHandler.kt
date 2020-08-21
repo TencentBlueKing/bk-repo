@@ -64,13 +64,13 @@ class DockerExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handleException(exception: AuthenticationException){
-        logger.error("Failed with authentication exception:[${exception.message}]", exception)
+        logger.warn("Failed with authentication exception:[${exception.message}]")
         val response = HttpContextHolder.getResponse()
-        response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         val scopeStr = "repository:*/*/tb:push,pull"
+        response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         response.setHeader(HttpHeaders.WWW_AUTHENTICATE, AUTH_CHALLENGE_SERVICE_SCOPE.format(authUrl, REGISTRY_SERVICE, scopeStr))
+        response.status = HttpStatus.UNAUTHORIZED.value()
         response.contentType = MediaType.APPLICATION_JSON
         response.writer.print(ERROR_MESSAGE.format("UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.writer.flush()
