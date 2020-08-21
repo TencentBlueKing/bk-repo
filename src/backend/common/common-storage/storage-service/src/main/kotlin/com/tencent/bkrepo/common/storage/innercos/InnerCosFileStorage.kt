@@ -46,7 +46,7 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
 
     override fun copy(path: String, filename: String, fromClient: CosClient, toClient: CosClient) {
         try {
-            require(fromClient.credentials.region == toClient.credentials.bucket)
+            require(fromClient.credentials.region == toClient.credentials.region)
             require(fromClient.credentials.secretId == toClient.credentials.secretId)
             require(fromClient.credentials.secretKey == toClient.credentials.secretKey)
         } catch (exception: IllegalArgumentException) {

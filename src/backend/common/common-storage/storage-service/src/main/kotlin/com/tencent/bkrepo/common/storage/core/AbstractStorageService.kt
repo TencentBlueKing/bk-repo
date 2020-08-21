@@ -109,23 +109,23 @@ abstract class AbstractStorageService : StorageService {
         }
     }
 
-    override fun copy(digest: String, from: StorageCredentials?, to: StorageCredentials?) {
+    override fun copy(digest: String, fromCredentials: StorageCredentials?, toCredentials: StorageCredentials?) {
         val path = fileLocator.locate(digest)
-        val fromCredentials = getCredentialsOrDefault(from)
-        val toCredentials = getCredentialsOrDefault(to)
+        val from = getCredentialsOrDefault(fromCredentials)
+        val to = getCredentialsOrDefault(toCredentials)
         try {
-            if (fromCredentials == toCredentials) {
+            if (from == to) {
                 logger.info("Source and destination credentials are same, skip copy file [$digest].")
                 return
             }
-            if (doExist(path, digest, toCredentials)) {
+            if (doExist(path, digest, to)) {
                 logger.info("File [$digest] exist on destination credentials, skip copy file.")
                 return
             }
-            fileStorage.copy(path, digest, fromCredentials, toCredentials)
-            logger.info("Success to copy file [$digest] from [$fromCredentials] to [$toCredentials].")
+            fileStorage.copy(path, digest, from, to)
+            logger.info("Success to copy file [$digest] from [$from] to [$to].")
         } catch (exception: Exception) {
-            logger.error("Failed to copy file [$digest] from [$fromCredentials] to [$toCredentials].", exception)
+            logger.error("Failed to copy file [$digest] from [$from] to [$to].", exception)
             throw StorageException(StorageMessageCode.COPY_ERROR, exception.message.toString())
         }
     }
