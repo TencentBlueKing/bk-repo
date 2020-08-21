@@ -27,7 +27,7 @@ class DockerArtifactConfiguration : ArtifactConfiguration {
             override fun customize(httpAuthSecurity: HttpAuthSecurity) {
                 httpAuthSecurity.disableBasicAuth()
                     .addHttpAuthHandler(DockerBasicAuthLoginHandler(authenticationManager, jwtProperties))
-                    .excludePattern("/v2/auth")
+                    // .excludePattern("/v2/auth")
                     .excludePattern("/v2/_catalog")
                     .excludePattern("/v2/*/*/*/tags/list")
             }
