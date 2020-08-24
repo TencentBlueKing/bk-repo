@@ -79,7 +79,7 @@ class ProjectService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ProjectService::class.java)
-        private const val PROJECT_NAME_PATTERN = "[a-z][a-zA-Z0-9\\-_]{1,31}"
+        private const val PROJECT_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,31}"
         private const val DISPLAY_NAME_LENGTH_MIN = 1
         private const val DISPLAY_NAME_LENGTH_MAX = 32
 
