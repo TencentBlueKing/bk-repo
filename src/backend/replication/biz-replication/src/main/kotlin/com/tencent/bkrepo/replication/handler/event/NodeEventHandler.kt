@@ -34,11 +34,6 @@ class NodeEventHandler : AbstractEventHandler() {
                         val remoteProjectId = getRemoteProjectId(it, projectId)
                         val remoteRepoName = getRemoteRepoName(it, repoName)
                         var context = ReplicationContext(it)
-
-                        context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
-                            logger.warn("found no repo detail [$projectId, $repoName]")
-                            return@forEach
-                        }
                         logger.info("start to handle create event [$projectId,$repoName,$fullPath]")
                         this.copy(
                             projectId = remoteProjectId,
@@ -46,9 +41,10 @@ class NodeEventHandler : AbstractEventHandler() {
                         ).apply { replicationService.replicaNodeCreateRequest(context, this) }
                         return@forEach
                     } catch (ignored: Exception) {
+                        logger.warn("create node miss [$projectId,$repoName,$fullPath,${ignored.message}]")
                         retryCount -= 1
                         if (retryCount == 0) {
-                            logger.error("create node [$projectId,$repoName,$fullPath] failed [${ignored.message}]")
+                            logger.error("create node failed [$projectId,$repoName,$fullPath,${ignored.message}]")
                             // log to db
                         }
                     }
@@ -67,10 +63,6 @@ class NodeEventHandler : AbstractEventHandler() {
                     val remoteProjectId = getRemoteProjectId(it, projectId)
                     val remoteRepoName = getRemoteRepoName(it, repoName)
                     val context = ReplicationContext(it)
-                    context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
-                        logger.warn("found no repo detail [$projectId, $repoName]")
-                        return@forEach
-                    }
                     try {
                         logger.info("start to handle rename event [$projectId,$repoName,$fullPath]")
                         val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, fullPath)
@@ -81,9 +73,10 @@ class NodeEventHandler : AbstractEventHandler() {
                         ).apply { replicationService.replicaNodeRenameRequest(context, this) }
                         return@forEach
                     } catch (ignored: Exception) {
+                        logger.warn("rename node miss [$projectId,$repoName,$fullPath,${ignored.message}]")
                         retryCount -= 1
                         if (retryCount == 0) {
-                            logger.error("rename node rename [$projectId,$repoName,$fullPath,${ignored.message}]")
+                            logger.error("rename node failed [$projectId,$repoName,$fullPath,${ignored.message}]")
                             // log to db
                         }
                         return
@@ -103,10 +96,6 @@ class NodeEventHandler : AbstractEventHandler() {
                     val remoteProjectId = getRemoteProjectId(it, projectId)
                     val remoteRepoName = getRemoteRepoName(it, repoName)
                     val context = ReplicationContext(it)
-                    context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
-                        logger.warn("found no repo detail [$projectId, $repoName]")
-                        return@forEach
-                    }
                     try {
                         logger.info("start to handle update event [$projectId,$repoName,$fullPath]")
                         val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, fullPath)
@@ -118,6 +107,7 @@ class NodeEventHandler : AbstractEventHandler() {
                         ).apply { replicationService.replicaNodeUpdateRequest(context, this) }
                         return@forEach
                     } catch (ignored: Exception) {
+                        logger.warn("update node miss [$projectId,$repoName,$fullPath,${ignored.message}]")
                         retryCount -= 1
                         if (retryCount == 0) {
                             logger.error("update node failed [$projectId,$repoName,$fullPath,${ignored.message}]")
@@ -140,10 +130,6 @@ class NodeEventHandler : AbstractEventHandler() {
                     val remoteProjectId = getRemoteProjectId(it, projectId)
                     val remoteRepoName = getRemoteRepoName(it, repoName)
                     val context = ReplicationContext(it)
-                    context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
-                        logger.warn("found no repo detail [$projectId, $repoName]")
-                        return@forEach
-                    }
                     try {
                         logger.info("start to handle copy event [$projectId,$repoName,$srcFullPath]")
                         val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, srcFullPath)
@@ -154,6 +140,7 @@ class NodeEventHandler : AbstractEventHandler() {
                         ).apply { replicationService.replicaNodeCopyRequest(context, this) }
                         return@forEach
                     } catch (ignored: Exception) {
+                        logger.warn("copy node miss [$projectId,$repoName,$srcFullPath,${ignored.message}]")
                         retryCount -= 1
                         if (retryCount == 0) {
                             logger.error("copy node failed [$projectId,$repoName,$srcFullPath,${ignored.message}]")
@@ -175,10 +162,6 @@ class NodeEventHandler : AbstractEventHandler() {
                     val remoteProjectId = getRemoteProjectId(it, projectId)
                     val remoteRepoName = getRemoteRepoName(it, repoName)
                     val context = ReplicationContext(it)
-                    context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
-                        logger.warn("found no repo detail [$projectId, $repoName]")
-                        return@forEach
-                    }
                     try{
                         logger.info("start to handle move event [$projectId,$repoName,$fullPath]")
                         val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, fullPath)
@@ -190,6 +173,7 @@ class NodeEventHandler : AbstractEventHandler() {
                         return@forEach
                     }catch (ignored: Exception) {
                         retryCount -= 1
+                        logger.warn("move node miss [$projectId,$repoName,$fullPath,${ignored.message}]")
                         if (retryCount == 0) {
                             logger.error("move node failed [$projectId,$repoName,$fullPath,${ignored.message}]")
                             // log to db
@@ -212,10 +196,6 @@ class NodeEventHandler : AbstractEventHandler() {
                     val remoteProjectId = getRemoteProjectId(it, projectId)
                     val remoteRepoName = getRemoteRepoName(it, repoName)
                     val context = ReplicationContext(it)
-                    context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
-                        logger.warn("found no repo detail [$projectId, $repoName]")
-                        return@forEach
-                    }
                     try {
                         logger.info("start to handle delete event [$projectId,$repoName,$fullPath]")
                         val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, fullPath)
@@ -226,6 +206,7 @@ class NodeEventHandler : AbstractEventHandler() {
                         ).apply { replicationService.replicaNodeDeleteRequest(context, this) }
                         return@forEach
                     } catch (ignored: Exception) {
+                        logger.warn("delete node miss [$projectId,$repoName,$fullPath,${ignored.message}]")
                         retryCount -= 1
                         if (retryCount == 0) {
                             logger.error("delete node failed [$projectId,$repoName,$fullPath,${ignored.message}]")
