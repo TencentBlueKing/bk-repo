@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
+import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import java.io.File
@@ -43,6 +44,17 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
         }
     }
 
+    override fun copy(path: String, filename: String, fromClient: CosClient, toClient: CosClient) {
+        try {
+            require(fromClient.credentials.region == toClient.credentials.region)
+            require(fromClient.credentials.secretId == toClient.credentials.secretId)
+            require(fromClient.credentials.secretKey == toClient.credentials.secretKey)
+        } catch (exception: IllegalArgumentException) {
+            throw IllegalArgumentException("Unsupported to copy object between different cos app id")
+        }
+        toClient.copyObject(CopyObjectRequest(fromClient.credentials.bucket, filename, filename))
+    }
+
     override fun onCreateClient(credentials: InnerCosCredentials): CosClient {
         require(credentials.secretId.isNotBlank())
         require(credentials.secretKey.isNotBlank())
@@ -50,4 +62,5 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
         require(credentials.bucket.isNotBlank())
         return CosClient(credentials)
     }
+
 }
