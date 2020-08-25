@@ -8,6 +8,7 @@ import com.tencent.bkrepo.repository.service.FileReferenceService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -52,8 +53,13 @@ class FileReferenceServiceImpl : FileReferenceService {
             Criteria.where(TFileReference::sha256.name).`is`(sha256)
                 .and(TFileReference::credentialsKey.name).`is`(credentialsKey)
         )
-        val update = Update().apply { inc(TFileReference::count.name, 1) }
-        fileReferenceDao.upsert(query, update)
+        val update = Update().inc(TFileReference::count.name, 1)
+        try {
+            fileReferenceDao.upsert(query, update)
+        } catch (exception: DuplicateKeyException) {
+            // retry because upsert operation is not atomic
+            fileReferenceDao.upsert(query, update)
+        }
         logger.info("Increment reference of file [$sha256] on credentialsKey [$credentialsKey].")
         return true
     }
@@ -75,7 +81,7 @@ class FileReferenceServiceImpl : FileReferenceService {
             logger.info("Decrement references of file [$sha256] on credentialsKey [$credentialsKey].")
             true
         } else {
-            logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: sha256 reference is 0.")
+            logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: reference count is 0.")
             false
         }
     }

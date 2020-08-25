@@ -23,7 +23,7 @@ data class UserNodeCopyRequest(
     @ApiModelProperty("目的路径", required = true)
     override val destFullPath: String,
     @Deprecated("This property is deprecated!", ReplaceWith("destFullPath"))
-    @ApiModelProperty("目的路径", required = true)
+    @ApiModelProperty("目的路径", required = false)
     val destPath: String? = null,
     @ApiModelProperty("同名文件是否覆盖", required = false)
     override val overwrite: Boolean = false

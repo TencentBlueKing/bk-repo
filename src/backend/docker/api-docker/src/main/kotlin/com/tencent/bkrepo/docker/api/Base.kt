@@ -5,6 +5,7 @@ import com.tencent.bkrepo.docker.response.DockerResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestAttribute
 
 /**
  * docker image base api
@@ -14,5 +15,5 @@ interface Base {
 
     @ApiOperation("校验仓库版本")
     @GetMapping(DOCKER_API_PREFIX)
-    fun ping(): DockerResponse
+    fun ping(@RequestAttribute userId: String): DockerResponse
 }

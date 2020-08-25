@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -28,6 +29,22 @@ import javax.servlet.http.HttpServletRequest
 
 @Component
 class GenericLocalRepository : LocalRepository() {
+
+    override fun onUploadBefore(context: ArtifactUploadContext) {
+        super.onUploadBefore(context)
+        // 若不允许覆盖, 提前检查节点是否存在
+        val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
+        val uploadId = context.request.getHeader(HEADER_UPLOAD_ID)
+        val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
+        if (!overwrite && !isBlockUpload(uploadId, sequence)) {
+            with(context.artifactInfo) {
+                val node = nodeClient.detail(projectId, repoName, artifactUri).data
+                if (node != null) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, artifactUri)
+                }
+            }
+        }
+    }
 
     override fun onUploadValidate(context: ArtifactUploadContext) {
         super.onUploadValidate(context)

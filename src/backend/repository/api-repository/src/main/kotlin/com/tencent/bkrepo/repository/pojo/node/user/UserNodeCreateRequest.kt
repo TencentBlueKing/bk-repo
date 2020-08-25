@@ -1,9 +1,11 @@
 package com.tencent.bkrepo.repository.pojo.node.user
 
+import com.tencent.bkrepo.repository.pojo.Auditable
 import com.tencent.bkrepo.repository.pojo.UserRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
 /**
  * 创建节点请求
@@ -29,5 +31,9 @@ data class UserNodeCreateRequest(
     @ApiModelProperty("文件md5")
     val md5: String? = null,
     @ApiModelProperty("元数据信息")
-    val metadata: Map<String, String>? = null
-) : NodeRequest, UserRequest
+    val metadata: Map<String, String>? = null,
+    override val createdBy: String? = null,
+    override val createdDate: LocalDateTime? = null,
+    override val lastModifiedBy: String? = null,
+    override val lastModifiedDate: LocalDateTime? = null
+) : NodeRequest, UserRequest, Auditable

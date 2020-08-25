@@ -10,6 +10,7 @@ import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAdd
 import com.tencent.bkrepo.repository.service.DownloadStatisticsService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.aggregation.AggregationResults
 import org.springframework.data.mongodb.core.query.Criteria
@@ -33,12 +34,18 @@ class DownloadStatisticsServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun add(statisticsAddRequest: DownloadStatisticsAddRequest) {
         with(statisticsAddRequest) {
-            val criteria = criteria(projectId, repoName, artifact, version).apply {
-                and(TDownloadStatistics::date.name).`is`(LocalDate.now())
-            }
+            val criteria = criteria(projectId, repoName, artifact, version)
+                .and(TDownloadStatistics::date.name).`is`(LocalDate.now())
             val query = Query(criteria)
-            val update = Update().apply { inc(TDownloadStatistics::count.name, 1) }
-            mongoTemplate.upsert(query, update, TDownloadStatistics::class.java)
+            val update = Update().inc(TDownloadStatistics::count.name, 1)
+            try {
+                mongoTemplate.upsert(query, update, TDownloadStatistics::class.java)
+            } catch (exception: DuplicateKeyException) {
+                // retry because upsert operation is not atomic
+                logger.error("DuplicateKeyException: " + exception.message.orEmpty())
+                mongoTemplate.upsert(query, update, TDownloadStatistics::class.java)
+            }
+
             logger.info("Create artifact download statistics [$statisticsAddRequest] success.")
         }
     }
@@ -169,18 +176,19 @@ class DownloadStatisticsServiceImpl(
         return getAggregateCount(todayResult)
     }
 
-    override fun getAggregateCount(aggregateResult: AggregationResults<java.util.HashMap<*, *>>): Int {
+    private fun getAggregateCount(aggregateResult: AggregationResults<java.util.HashMap<*, *>>): Int {
         return if (aggregateResult.mappedResults.size > 0) {
             aggregateResult.mappedResults[0][DownloadStatisticsMetric::count.name] as? Int ?: 0
         } else 0
     }
 
-    override fun criteria(projectId: String, repoName: String, artifact: String, version: String?): Criteria {
-        val criteria = Criteria.where(TDownloadStatistics::projectId.name).`is`(projectId)
+    private fun criteria(projectId: String, repoName: String, artifact: String, version: String?): Criteria {
+        return Criteria.where(TDownloadStatistics::projectId.name).`is`(projectId)
             .and(TDownloadStatistics::repoName.name).`is`(repoName)
             .and(TDownloadStatistics::artifact.name).`is`(artifact)
-        version?.let { criteria.and(TDownloadStatistics::version.name).`is`(it) }
-        return criteria
+            .apply {
+                version?.let { and(TDownloadStatistics::version.name).`is`(it) }
+            }
     }
 
     companion object {
