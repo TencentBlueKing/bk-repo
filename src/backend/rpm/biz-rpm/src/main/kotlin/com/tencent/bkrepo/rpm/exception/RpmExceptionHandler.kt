@@ -23,4 +23,10 @@ class RpmExceptionHandler {
     fun handelException(exception: RpmIndexTypeResolveException): RpmExceptionResponse {
         return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
     }
+
+    @ExceptionHandler(RpmIndexNotFoundException::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handelException(exception: RpmIndexNotFoundException): RpmExceptionResponse {
+        return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
+    }
 }

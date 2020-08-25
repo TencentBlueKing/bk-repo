@@ -10,7 +10,7 @@ import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import org.slf4j.LoggerFactory
 import java.io.InputStream
 
-object XmlStrUtil {
+object XmlStrUtils {
 
     private val logger = LoggerFactory.getLogger(RpmLocalRepository::class.java)
 
@@ -84,7 +84,8 @@ object XmlStrUtil {
             "primary" -> { "<location href=\"${(rpmXmlMetadata as RpmMetadata).packages.first().location.href}\"/>" }
             else -> {
                 logger.error("$filename 中解析出$indexType 是不受支持的索引类型")
-                throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型") }
+                throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
+            }
         }
 
         val stringBuilder = StringBuilder(String(inputStream.readBytes()))
@@ -131,7 +132,7 @@ object XmlStrUtil {
     }
 
     /**
-     * 按照仓库设置的repodata 深度分割请求参数
+     * 按照仓库设置的repodata深度 分割请求参数
      */
     fun splitUriByDepth(uri: String, depth: Int): RepodataUri {
         val uriList = uri.removePrefix("/").split("/")
@@ -143,6 +144,18 @@ object XmlStrUtil {
         return RepodataUri(repodataPath.toString(), artifactRelativePath)
     }
 
+    fun getGroupNodeFullPath(uri: String, fileSha1: String): String {
+        val uriList = uri.removePrefix("/").split("/")
+        val filename = "$fileSha1$DASH${uriList.last()}"
+        val stringBuilder = StringBuilder("/")
+        val size = uriList.size
+        for (i in 0 until size - 1) {
+            stringBuilder.append(uriList[i]).append("/")
+        }
+        stringBuilder.append(filename)
+        return stringBuilder.toString()
+    }
+
     /**
      * 更新索引文件中 package 数量+1
      */
@@ -152,6 +165,4 @@ object XmlStrUtil {
         val sum = this.substring(start, end).toInt().inc()
         return this.replace(start, end, nullStr).insert(start, sum).toString()
     }
-
-
 }

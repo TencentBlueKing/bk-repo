@@ -8,7 +8,8 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfigur
  */
 class RpmLocalConfiguration(
     val repodataDepth: Int,
-    val enabledFileLists: Boolean
+    val enabledFileLists: Boolean,
+    val groupXmlSet: MutableSet<String>
 ) : LocalConfiguration() {
     companion object {
         const val type = "rpm-local"

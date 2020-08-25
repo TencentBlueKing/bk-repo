@@ -3,7 +3,7 @@
 ####添加仓库：
 ```bash
 #composer 不支持virtual仓库
-curl -X POST http://127.0.0.1:8080/service/repo \
+curl -X POST http://127.0.0.1:8080/aip/repo \
 -H 'Content-Type: application/json' \
 -d '{
   "projectId": "projectName",
