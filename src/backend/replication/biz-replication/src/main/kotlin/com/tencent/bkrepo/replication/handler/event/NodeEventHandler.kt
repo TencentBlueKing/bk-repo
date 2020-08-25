@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.handler.event
 
+import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.stream.message.node.NodeCopiedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeCreatedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeDeletedMessage
@@ -8,11 +9,13 @@ import com.tencent.bkrepo.common.stream.message.node.NodeRenamedMessage
 import com.tencent.bkrepo.common.stream.message.node.NodeUpdatedMessage
 import com.tencent.bkrepo.replication.exception.WaitPreorderNodeFailedException
 import com.tencent.bkrepo.replication.job.ReplicationContext
+import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import java.lang.Thread.sleep
+import java.util.concurrent.TimeUnit
 
 /**
  * handler node message and replicate
@@ -34,11 +37,16 @@ class NodeEventHandler : AbstractEventHandler() {
                         val remoteProjectId = getRemoteProjectId(it, projectId)
                         val remoteRepoName = getRemoteRepoName(it, repoName)
                         var context = ReplicationContext(it)
-
-                        context.currentRepoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
-                            logger.warn("found no repo detail [$projectId, $repoName]")
-                            return@forEach
+                        val cacheKey = "$projectId:$repoName:$remoteRepoName"
+                        var repoDetail = accessTokenCache.getIfPresent(cacheKey)
+                        if (repoDetail == null) {
+                            repoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: run {
+                                logger.warn("found no repo detail [$projectId, $repoName]")
+                                return@forEach
+                            }
+                            accessTokenCache.put(cacheKey, repoDetail)
                         }
+                        context.currentRepoDetail = repoDetail
                         logger.info("start to handle create event [$projectId,$repoName,$fullPath]")
                         this.copy(
                             projectId = remoteProjectId,
@@ -257,6 +265,10 @@ class NodeEventHandler : AbstractEventHandler() {
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeEventHandler::class.java)
+        private val accessTokenCache = CacheBuilder.newBuilder()
+            .maximumSize(100)
+            .expireAfterWrite(210, TimeUnit.SECONDS)
+            .build<String, ReplicationRepoDetail>()
         private const val EXCEPTION_RETRY_COUNT = 3
         private const val WAIT_RETRY_COUNT = 120
     }
