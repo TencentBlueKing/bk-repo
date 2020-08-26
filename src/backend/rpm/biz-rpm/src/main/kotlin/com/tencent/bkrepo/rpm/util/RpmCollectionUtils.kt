@@ -1,29 +1,30 @@
 package com.tencent.bkrepo.rpm.util
 
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-
 object RpmCollectionUtils {
 
     fun List<Map<String, Any>>.filterRpmCustom(set: MutableSet<String>, enabledFileLists: Boolean): List<Map<String,
             Any>> {
         val resultList = mutableListOf<Map<String, Any>>()
-
-        resultList.add(
-            this.first {
-                (it["metadata"] as Map<String, String>)["indexType"] == "primary"
-            }
-        )
-        resultList.add(
-            this.first {
-                (it["metadata"] as Map<String, String>)["indexType"] == "others"
-            }
-        )
-        if (enabledFileLists) {
+        try {
             resultList.add(
                 this.first {
-                    (it["metadata"] as Map<String, String>)["indexType"] == "filelists"
+                    (it["metadata"] as Map<*, *>)["indexType"] == "primary"
                 }
             )
+            resultList.add(
+                this.first {
+                    (it["metadata"] as Map<*, *>)["indexType"] == "others"
+                }
+            )
+            if (enabledFileLists) {
+                resultList.add(
+                    this.first {
+                        (it["metadata"] as Map<*, *>)["indexType"] == "filelists"
+                    }
+                )
+            }
+        } catch (noSuchElementException: NoSuchElementException) {
+            // 仓库中还没有生成索引
         }
 
         val doubleSet = mutableSetOf<String>()
@@ -36,7 +37,7 @@ object RpmCollectionUtils {
             try {
                 resultList.add(
                     this.first {
-                        (it["metadata"] as Map<String, String>)["indexName"] == str
+                        (it["metadata"] as Map<*, *>)["indexName"] == str
                     }
                 )
             } catch (noSuchElementException: NoSuchElementException) {

@@ -27,8 +27,8 @@ interface RpmResource {
 
     @PutMapping(RPM_CONFIGURATION, consumes = [MediaType.APPLICATION_JSON_VALUE])
     fun addGroups(
-            @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
-            @RequestBody groups: MutableSet<String>
+        @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
+        @RequestBody groups: MutableSet<String>
     )
 
     @DeleteMapping(RPM_CONFIGURATION, consumes = [MediaType.APPLICATION_JSON_VALUE])
