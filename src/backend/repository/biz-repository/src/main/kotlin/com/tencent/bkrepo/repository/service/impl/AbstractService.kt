@@ -2,6 +2,7 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.security.http.HttpAuthProperties
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -34,8 +35,10 @@ abstract class AbstractService {
 
     fun createRepoManager(projectId: String, repoName: String, userId: String) {
         try {
-            val repoManagerRoleId = roleResource.createRepoManage(projectId, repoName).data!!
-            userResource.addUserRole(userId, repoManagerRoleId)
+            if (userId != ANONYMOUS_USER) {
+                val repoManagerRoleId = roleResource.createRepoManage(projectId, repoName).data!!
+                userResource.addUserRole(userId, repoManagerRoleId)
+            }
         } catch (ignored: RuntimeException) {
             if (authProperties.enabled) {
                 throw ignored
@@ -45,10 +48,12 @@ abstract class AbstractService {
         }
     }
 
-    fun createProjectManager(projectId: String, operator: String) {
+    fun createProjectManager(projectId: String, userId: String) {
         try {
-            val projectManagerRoleId = roleResource.createProjectManage(projectId).data!!
-            userResource.addUserRole(operator, projectManagerRoleId)
+            if (userId != ANONYMOUS_USER) {
+                val projectManagerRoleId = roleResource.createProjectManage(projectId).data!!
+                userResource.addUserRole(userId, projectManagerRoleId)
+            }
         } catch (ignored: RuntimeException) {
             if (authProperties.enabled) {
                 throw ignored

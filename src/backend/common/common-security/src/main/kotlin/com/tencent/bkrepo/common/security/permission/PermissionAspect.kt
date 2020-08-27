@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.security.permission
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.http.SecurityUtils
 import com.tencent.bkrepo.common.security.manager.ArtifactContextHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.aspectj.lang.ProceedingJoinPoint
@@ -30,11 +31,11 @@ class PermissionAspect {
 
         return try {
             permissionCheckHandler.onPermissionCheck(userId, permission, repositoryInfo)
-            logger.debug("User[$userId] check permission [$permission] on [$repositoryInfo] success.")
+            logger.debug("User[${SecurityUtils.getPrincipal()}] check permission [$permission] on [$repositoryInfo] success.")
             permissionCheckHandler.onPermissionCheckSuccess()
             point.proceed()
         } catch (exception: PermissionException) {
-            logger.warn("User[$userId] check permission [$permission] on [$repositoryInfo] failed.")
+            logger.warn("User[${SecurityUtils.getPrincipal()}] check permission [$permission] on [$repositoryInfo] failed.")
             permissionCheckHandler.onPermissionCheckFailed(exception)
             null
         }

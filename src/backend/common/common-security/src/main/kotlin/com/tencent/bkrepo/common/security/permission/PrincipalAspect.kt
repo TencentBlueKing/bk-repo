@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.security.permission
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.http.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
@@ -39,11 +40,11 @@ class PrincipalAspect {
 
         return try {
             permissionCheckHandler.onPrincipalCheck(userId, principal)
-            logger.debug("User[$userId] check principal [$principal] success.")
+            logger.debug("User[${SecurityUtils.getPrincipal()}] check principal [$principal] success.")
             permissionCheckHandler.onPermissionCheckSuccess()
             point.proceed()
         } catch (exception: PermissionException) {
-            logger.warn("User[$userId] check principal [$principal] failed.")
+            logger.warn("User[${SecurityUtils.getPrincipal()}] check principal [$principal] failed.")
             permissionCheckHandler.onPermissionCheckFailed(exception)
             null
         }
