@@ -35,4 +35,16 @@ class RpmExceptionHandler {
     fun handleException(exception: RpmArtifactMetadataResolveException): RpmExceptionResponse {
         return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
     }
+
+    @ExceptionHandler(RpmVersionNotFoundException::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handleException(exception: RpmVersionNotFoundException): RpmExceptionResponse {
+        return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
+    }
+
+    @ExceptionHandler(RpmArtifactFormatNotSupportedException::class)
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    fun handleException(exception: RpmArtifactFormatNotSupportedException): RpmExceptionResponse {
+        return RpmExceptionResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE.toString(), exception.message)
+    }
 }
