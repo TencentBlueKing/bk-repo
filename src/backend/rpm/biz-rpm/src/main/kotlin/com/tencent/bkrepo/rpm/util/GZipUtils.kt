@@ -1,13 +1,13 @@
 package com.tencent.bkrepo.rpm.util
 
-import java.io.File
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
-object GZipUtil {
+object GZipUtils {
     /**
      * 将'xml'以gzip压缩后返回'xml.gz'
      */
@@ -21,8 +21,6 @@ object GZipUtil {
      * 解压
      */
     fun InputStream.unGzipInputStream(): InputStream {
-        return GZIPInputStream(this).readBytes().let {
-            ByteArrayInputStream(it)
-        }
+        return ByteArrayInputStream(GZIPInputStream(this).readBytes())
     }
 }

@@ -2,7 +2,7 @@
 
 ####添加仓库：
 ```bash
-curl -X POST http://127.0.0.1:8080/service/repo \
+curl -X POST http://127.0.0.1:8080/api/repo \
 -H 'Content-Type: application/json' \
 -d '{
   "projectId": "projectName",

@@ -3,14 +3,12 @@ package com.tencent.bkrepo.rpm.artifact
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class SurplusNodeCleaner {
-    @Autowired
-    lateinit var nodeClient: NodeClient
-
+class SurplusNodeCleaner(
+    private val nodeClient: NodeClient
+) {
     /**
      * 删除目标List<NodeInfo> 中排序 >=2 的节点
      */
