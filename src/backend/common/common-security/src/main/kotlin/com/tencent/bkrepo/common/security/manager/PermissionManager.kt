@@ -80,8 +80,8 @@ class PermissionManager(
     private fun checkRepoPermission(userId: String, type: ResourceType, action: PermissionAction, repositoryInfo: RepositoryInfo) {
         // public仓库且为READ操作，直接跳过
         if (type == ResourceType.REPO && action == PermissionAction.READ && repositoryInfo.public) return
-        val appId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
         // 匿名用户，提示登录
+        val appId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
         if (userId == ANONYMOUS_USER && appId == null) throw AuthenticationException()
         // auth 校验
         with(repositoryInfo) {
@@ -91,7 +91,10 @@ class PermissionManager(
     }
 
     private fun checkProjectPermission(userId: String, type: ResourceType, action: PermissionAction, projectId: String) {
-        val checkRequest = CheckPermissionRequest(userId, type, action, projectId)
+        // 匿名用户，提示登录
+        val appId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
+        if (userId == ANONYMOUS_USER && appId == null) throw AuthenticationException()
+        val checkRequest = CheckPermissionRequest(userId, type, action, projectId, appId = appId)
         checkPermission(checkRequest)
     }
 
