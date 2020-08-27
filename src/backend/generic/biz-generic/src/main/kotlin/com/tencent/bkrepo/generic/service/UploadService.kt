@@ -10,6 +10,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.security.http.SecurityUtils
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
@@ -51,7 +52,7 @@ class UploadService(
         val context = ArtifactRemoveContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.remove(context)
-        logger.info("User[$userId] delete artifact[$artifactInfo] success.")
+        logger.info("User[${SecurityUtils.getPrincipal()}] delete artifact[$artifactInfo] success.")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -63,7 +64,7 @@ class UploadService(
             expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
             // 判断文件是否存在
             if (!overwrite && nodeClient.exist(projectId, repoName, artifactUri).data == true) {
-                logger.warn("User[$userId] start block upload [$artifactInfo] failed: artifact already exists.")
+                logger.warn("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: artifact already exists.")
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, artifactUri)
             }
 
@@ -73,7 +74,7 @@ class UploadService(
                 expireSeconds = uploadTransactionExpires
             )
 
-            logger.info("User[$userId] start block upload [$artifactInfo] success: $uploadTransaction.")
+            logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success: $uploadTransaction.")
             return uploadTransaction
         }
     }
@@ -84,7 +85,7 @@ class UploadService(
         checkUploadId(uploadId, storageCredentials)
 
         storageService.deleteBlockId(uploadId, storageCredentials)
-        logger.info("User[$userId] abort upload block [$artifactInfo] success.")
+        logger.info("User[${SecurityUtils.getPrincipal()}] abort upload block [$artifactInfo] success.")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -107,7 +108,7 @@ class UploadService(
                 operator = userId
             )
         )
-        logger.info("User[$userId] complete upload [$artifactInfo] success.")
+        logger.info("User[${SecurityUtils.getPrincipal()}] complete upload [$artifactInfo] success.")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
