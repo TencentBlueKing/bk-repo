@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class NpmFixToolResourceImpl @Autowired constructor(
     private val npmFixToolService: NpmFixToolService
-) : NpmFixToolResource{
+) : NpmFixToolResource {
     override fun fixDateFormat(artifactInfo: NpmArtifactInfo, pkgName: String): DateTimeFormatResponse {
         return npmFixToolService.fixDateFormat(artifactInfo, pkgName)
     }
