@@ -5,7 +5,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
 import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -19,7 +18,6 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -32,11 +30,14 @@ import com.tencent.bkrepo.npm.constants.AUTHOR
 import com.tencent.bkrepo.npm.constants.DATE
 import com.tencent.bkrepo.npm.constants.DESCRIPTION
 import com.tencent.bkrepo.npm.constants.DIST
+import com.tencent.bkrepo.npm.constants.DISTTAGS
 import com.tencent.bkrepo.npm.constants.ID
 import com.tencent.bkrepo.npm.constants.KEYWORDS
 import com.tencent.bkrepo.npm.constants.LAST_MODIFIED_DATE
+import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MAINTAINERS
 import com.tencent.bkrepo.npm.constants.METADATA
+import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_METADATA
@@ -47,6 +48,7 @@ import com.tencent.bkrepo.npm.constants.PACKAGE
 import com.tencent.bkrepo.npm.constants.PKG_NAME
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.TARBALL
+import com.tencent.bkrepo.npm.constants.TIME
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
@@ -55,14 +57,14 @@ import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.migration.MigrationFailDataDetailInfo
 import com.tencent.bkrepo.npm.pojo.migration.VersionFailDetail
 import com.tencent.bkrepo.npm.utils.GsonUtils
+import com.tencent.bkrepo.npm.utils.OkHttpUtil
+import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import org.apache.commons.lang.StringUtils
@@ -74,7 +76,6 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import java.io.IOException
 import java.io.InputStream
-import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
 
 @Component
@@ -92,9 +93,8 @@ class NpmLocalRepository : LocalRepository() {
     @Autowired
     private lateinit var npmDependentHandler: NpmDependentHandler
 
-    private val okHttpClient: OkHttpClient by lazy {
-        HttpClientBuilderFactory.create().readTimeout(TIMEOUT, TimeUnit.SECONDS).build()
-    }
+    @Autowired
+    private lateinit var okHttpUtil: OkHttpUtil
 
     override fun onUploadValidate(context: ArtifactUploadContext) {
         super.onUploadValidate(context)
@@ -104,8 +104,8 @@ class NpmLocalRepository : LocalRepository() {
                 context.contextAttributes[APPLICATION_OCTET_STEAM].takeIf {
                     it == MediaType.APPLICATION_OCTET_STREAM_VALUE
                 } ?: throw ArtifactValidateException(
-                        "Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}"
-                    )
+                    "Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}"
+                )
                 // 计算sha1并校验
                 val calculatedSha1 = file.getFile()?.sha1()
                 val uploadSha1 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA1] as String?
@@ -325,30 +325,83 @@ class NpmLocalRepository : LocalRepository() {
         val url = registry.trimEnd('/') + '/' + pkgName
         var response: Response? = null
         try {
-            val request = Request.Builder().url(url).get().build()
-            response = okHttpClient.newCall(request).execute()
-            if (checkResponse(response)) {
-
-                val artifactFile = createTempFile(response.body()!!)
-                val artifactFileSha256 = artifactFile.getFileSha256()
-                if (artifactFileSha256 == cacheFileSha256) {
-                    return GsonUtils.transferInputStreamToJson(cacheArtifact!!)
-                }
+            response = okHttpUtil.doGet(url)
+            val artifactFile = createTempFile(response.body()!!)
+            val artifactFileSha256 = artifactFile.getFileSha256()
+            if (artifactFileSha256 == cacheFileSha256) {
+                return GsonUtils.transferInputStreamToJson(cacheArtifact!!)
+            }
+            // 这里需要将package.json文件进行对比，将不同的版本进行合并
+            val resultJson = GsonUtils.transferInputStreamToJson(artifactFile.getInputStream())
+            if (cacheArtifact != null) {
+                val cachePackageJson = GsonUtils.transferInputStreamToJson(cacheArtifact!!)
+                val newPackageJson = addPackageVersion(cachePackageJson, resultJson)
+                // store package json file
+                val newArtifactFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(newPackageJson))
+                putArtifact(context, newArtifactFile)
+                // 添加依赖
+                npmDependentHandler.updatePkgDepts(
+                    context.userId, context.artifactInfo, newPackageJson, NpmOperationAction.MIGRATION
+                )
+                newArtifactFile.delete()
+                return newPackageJson
+            } else {
                 putArtifact(context, artifactFile)
-                val resultJson = GsonUtils.transferInputStreamToJson(artifactFile.getInputStream())
                 // 添加依赖
                 npmDependentHandler.updatePkgDepts(
                     context.userId, context.artifactInfo, resultJson, NpmOperationAction.MIGRATION
                 )
                 artifactFile.delete()
                 return resultJson
-            } else throw ArtifactNotFoundException("download from remote for [$pkgName] failed.")
+            }
         } catch (exception: IOException) {
-            logger.error("http send [$url] for search [$pkgName.json] file failed, {}", exception.message)
+            logger.error("http send [$url] for search [$pkgName.json] file failed, {}", exception)
             throw exception
         } finally {
             response?.body()?.close()
         }
+    }
+
+    private fun addPackageVersion(cachePackageJson: JsonObject, remoteJson: JsonObject): JsonObject {
+        val pkgName = cachePackageJson[NAME].asString
+        val remoteVersions = remoteJson.getAsJsonObject(VERSIONS)
+        val localVersions = cachePackageJson.getAsJsonObject(VERSIONS)
+        val remoteVersionsSet = remoteVersions.keySet()
+        val cacheVersionsSet = localVersions.keySet()
+        remoteVersionsSet.removeAll(cacheVersionsSet)
+
+        val remoteDistTags = remoteJson.getAsJsonObject(DISTTAGS)
+        val localDistTags = cachePackageJson.getAsJsonObject(DISTTAGS)
+        // 将拉取的包的dist_tags迁移过来
+        remoteDistTags.keySet().forEach {
+            if (!localDistTags.keySet().contains(it)) {
+                localDistTags.addProperty(it, remoteDistTags[it].asString)
+            }
+        }
+
+        val remoteLatest = remoteDistTags[LATEST].asString
+        val localLatest = localDistTags[LATEST].asString
+        val remoteLatestTime = remoteJson.getAsJsonObject(TIME)[remoteLatest].asString
+        val localLatestTime = cachePackageJson.getAsJsonObject(TIME)[localLatest].asString
+        if (TimeUtil.compareTime(remoteLatestTime, localLatestTime)) {
+            cachePackageJson.getAsJsonObject(DISTTAGS).addProperty(LATEST, remoteLatest)
+            cachePackageJson.getAsJsonObject(TIME)
+                .addProperty(MODIFIED, remoteJson.getAsJsonObject(TIME)[MODIFIED].asString)
+        }
+        logger.info("the different versions of the  package [$pkgName] is $remoteVersionsSet, size : ${remoteVersionsSet.size}")
+        if (remoteVersionsSet.size > 0) {
+            // 说明有版本更新,将新增的版本迁移过来
+            remoteVersionsSet.forEach {
+                val versionJson = remoteVersions.getAsJsonObject(it)
+                val versionTime = remoteJson.getAsJsonObject(TIME)[it].asString
+                // 以自身为准，如果已经存在该版本则不迁移过来
+                if (!cacheVersionsSet.contains(it)) {
+                    localVersions.add(it, versionJson)
+                    cachePackageJson.getAsJsonObject(TIME).addProperty(it, versionTime)
+                }
+            }
+        }
+        return cachePackageJson
     }
 
     private fun installVersionAndTgzArtifact(
@@ -414,8 +467,7 @@ class NpmLocalRepository : LocalRepository() {
 
     private fun storeTgzArtifact(context: ArtifactMigrateContext, tarball: String, name: String) {
         var response: Response? = null
-        val tgzFilePath: String?
-        tgzFilePath = tarball.substringAfterLast(registry)
+        val tgzFilePath = tarball.substring(tarball.indexOf(name))
         context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
         // hit cache continue
         getCacheArtifact(context)?.let {
@@ -424,10 +476,9 @@ class NpmLocalRepository : LocalRepository() {
             )
             return
         }
-        val request = Request.Builder().url(tarball).get().build()
         try {
             measureTimeMillis {
-                response = okHttpClient.newCall(request).execute()
+                response = okHttpUtil.doGet(tarball)
                 if (checkResponse(response!!)) {
                     val artifactFile = createTempFile(response?.body()!!)
                     putArtifact(context, artifactFile)
@@ -439,7 +490,7 @@ class NpmLocalRepository : LocalRepository() {
                 )
             }
         } catch (exception: IOException) {
-            logger.error("http send url [$tarball] for artifact [$tgzFilePath] failed : ${exception.message}")
+            logger.error("http send url [$tarball] for artifact [$tgzFilePath] failed : $exception")
             throw exception
         } finally {
             response?.body()?.close()
@@ -515,7 +566,7 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     companion object {
-        const val TIMEOUT = 5 * 60L
+        // const val TIMEOUT = 5 * 60L
         val logger: Logger = LoggerFactory.getLogger(NpmLocalRepository::class.java)
     }
 }
