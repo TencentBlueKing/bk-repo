@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class RpmDebugController(
-        private val rpmDebugService: RpmDebugService
+    private val rpmDebugService: RpmDebugService
 ) {
 
     @GetMapping(RpmArtifactInfo.RPM_DEBUG_FLUSH)

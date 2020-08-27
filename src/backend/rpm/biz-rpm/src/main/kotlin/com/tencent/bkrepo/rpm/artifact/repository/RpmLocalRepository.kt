@@ -69,7 +69,6 @@ import java.io.FileInputStream
 import java.nio.channels.Channels
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.RPM
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
-import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.OTHER
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
@@ -81,16 +80,18 @@ class RpmLocalRepository(
     val surplusNodeCleaner: SurplusNodeCleaner
 ) : LocalRepository() {
 
-    fun rpmNodeCreateRequest(context: ArtifactUploadContext,
-                             metadata: MutableMap<String, String>?,
-                             overwrite: Boolean):
-            NodeCreateRequest {
-        val nodeCreateRequest = super.getNodeCreateRequest(context)
-        return nodeCreateRequest.copy(
-            overwrite = overwrite,
-            metadata = metadata
-        )
-    }
+    fun rpmNodeCreateRequest(
+        context: ArtifactUploadContext,
+        metadata: MutableMap<String, String>?,
+        overwrite: Boolean
+    ):
+        NodeCreateRequest {
+            val nodeCreateRequest = super.getNodeCreateRequest(context)
+            return nodeCreateRequest.copy(
+                overwrite = overwrite,
+                metadata = metadata
+            )
+        }
 
     fun xmlIndexNodeCreate(
         userId: String,
@@ -219,11 +220,11 @@ class RpmLocalRepository(
         updateIndexXml(context, rpmMetadata, repeat, repodataPath, PRIMARY)
         flushRepoMdXML(context)
         return RpmVersion(
-                rpmMetadata.packages[0].name,
-                rpmMetadata.packages[0].arch,
-                rpmMetadata.packages[0].version.epoch.toString(),
-                rpmMetadata.packages[0].version.ver,
-                rpmMetadata.packages[0].version.rel
+            rpmMetadata.packages[0].name,
+            rpmMetadata.packages[0].arch,
+            rpmMetadata.packages[0].version.epoch.toString(),
+            rpmMetadata.packages[0].version.ver,
+            rpmMetadata.packages[0].version.rel
         )
     }
 
@@ -562,7 +563,6 @@ class RpmLocalRepository(
         }
     }
 
-
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
         val overwrite = HttpContextHolder.getRequest().getHeader("X-BKREPO-OVERWRITE").orEmpty().let {
@@ -589,7 +589,7 @@ class RpmLocalRepository(
             rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
         }
         storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
-        with(context.artifactInfo) {logger.info("Success to store $projectId/$repoName/$artifactUri")}
+        with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/$artifactUri") }
         nodeClient.create(nodeCreateRequest)
         logger.info("Success to insert $nodeCreateRequest")
         successUpload(context, mark, rpmRepoConf.repodataDepth)

@@ -24,7 +24,7 @@ object RpmCollectionUtils {
                 )
             }
         } catch (noSuchElementException: NoSuchElementException) {
-            //todo
+            // todo
             // 仓库中还没有生成索引
         }
 
@@ -42,7 +42,7 @@ object RpmCollectionUtils {
                     }
                 )
             } catch (noSuchElementException: NoSuchElementException) {
-                //todo
+                // todo
                 // 用户未上传对应分组文件
             }
         }

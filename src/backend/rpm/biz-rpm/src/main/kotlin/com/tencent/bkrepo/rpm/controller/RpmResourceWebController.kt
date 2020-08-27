@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class RpmResourceWebController(
-        private val rpmWebService: RpmWebService
+    private val rpmWebService: RpmWebService
 ) {
     @DeleteMapping(RpmArtifactInfo.RPM, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {

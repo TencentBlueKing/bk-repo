@@ -9,14 +9,12 @@ import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.rpm.FILELISTS_XML
 import com.tencent.bkrepo.rpm.OTHERS_XML
 import com.tencent.bkrepo.rpm.REPOMD_XML
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
-import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -66,16 +64,18 @@ class RpmService {
 //        (repository as RpmLocalRepository).flushRepoMdXML(context)
     }
 
-    private fun createRepoUpdateRequest(context: ArtifactSearchContext,
-                                        rpmLocalConfiguration: RpmLocalConfiguration): RepoUpdateRequest {
+    private fun createRepoUpdateRequest(
+        context: ArtifactSearchContext,
+        rpmLocalConfiguration: RpmLocalConfiguration
+    ): RepoUpdateRequest {
         return RepoUpdateRequest(
-                context.artifactInfo.projectId,
-                context.artifactInfo.repoName,
-                context.repositoryInfo.category,
-                context.repositoryInfo.public,
-                context.repositoryInfo.description,
-                rpmLocalConfiguration,
-                context.userId
+            context.artifactInfo.projectId,
+            context.artifactInfo.repoName,
+            context.repositoryInfo.category,
+            context.repositoryInfo.public,
+            context.repositoryInfo.description,
+            rpmLocalConfiguration,
+            context.userId
         )
     }
 }
