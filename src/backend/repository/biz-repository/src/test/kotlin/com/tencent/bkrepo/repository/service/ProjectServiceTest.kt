@@ -62,6 +62,12 @@ class ProjectServiceTest @Autowired constructor(
 
         request = ProjectCreateRequest("a1", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
         projectService.create(request)
+
+        request = ProjectCreateRequest("_prebuild", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
+        projectService.create(request)
+
+        request = ProjectCreateRequest("CODECC_a1", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
+        projectService.create(request)
     }
 
     @Test
