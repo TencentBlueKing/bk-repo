@@ -50,7 +50,8 @@ class PermissionManager(
             return
         }
         // 匿名用户，提示登录
-        if (userId == ANONYMOUS_USER) throw AuthenticationException()
+        val platformId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
+        if (userId == ANONYMOUS_USER && platformId == null) throw AuthenticationException()
         if (principalType == PrincipalType.ADMIN) {
             if (!isAdminUser(userId)) {
                 throw AccessDeniedException()
