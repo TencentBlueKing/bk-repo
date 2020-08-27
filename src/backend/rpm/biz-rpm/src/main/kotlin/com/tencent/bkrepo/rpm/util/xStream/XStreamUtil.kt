@@ -3,6 +3,7 @@ package com.tencent.bkrepo.rpm.util.xStream
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmEntry
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmFile
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
 import com.thoughtworks.xstream.XStream
 import java.io.ByteArrayOutputStream
@@ -17,8 +18,8 @@ object XStreamUtil {
         val xStream = XStream()
         val outputStream = ByteArrayOutputStream()
         val writer: Writer = OutputStreamWriter(outputStream, "UTF-8")
-        // 如果Any is RpmMetadata 添加xml声明
-        if (this is RpmMetadata) { writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n") }
+        // 如果Any is RpmXmlMetadata 添加xml声明
+        if (this is RpmXmlMetadata) { writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n") }
         xStream.autodetectAnnotations(true)
         xStream.toXML(this, writer)
         return String(outputStream.toByteArray())

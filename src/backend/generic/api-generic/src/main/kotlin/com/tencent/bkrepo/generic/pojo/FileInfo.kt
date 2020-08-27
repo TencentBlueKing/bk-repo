@@ -5,9 +5,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 文件信息
- *
- * @author: carrypan
- * @date: 2019-09-28
  */
 @ApiModel("文件信息")
 data class FileInfo(

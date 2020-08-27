@@ -21,11 +21,6 @@ import java.io.InputStream
 import java.util.concurrent.Executor
 import javax.annotation.Resource
 
-/**
- *
- * @author: carrypan
- * @date: 2020/1/13
- */
 open class S3Storage : AbstractFileStorage<S3Credentials, S3Client>() {
 
     @Resource

@@ -15,8 +15,6 @@ import java.lang.System.arraycopy
 
 /**
  * to parse manifest digest
- * @author: owenlxu
- * @date: 2020-01-05
  */
 object DockerManifestDigester {
 

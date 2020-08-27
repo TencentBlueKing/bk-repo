@@ -6,4 +6,3 @@
 - 统一格式的依赖源以依赖源客户端官方协议为准（docker、maven、npm、composer、pypi、rpm、helm）
 - auth模块输出文档
 
-

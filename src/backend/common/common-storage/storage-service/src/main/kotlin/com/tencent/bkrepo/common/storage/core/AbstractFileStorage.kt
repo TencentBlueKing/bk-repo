@@ -16,9 +16,6 @@ import kotlin.system.measureNanoTime
 
 /**
  * 文件存储接口
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 @Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught")
 abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : FileStorage {
@@ -79,6 +76,12 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         return exist(path, filename, client)
     }
 
+    override fun copy(path: String, filename: String, fromCredentials: StorageCredentials, toCredentials: StorageCredentials) {
+        val fromClient = getClient(fromCredentials)
+        val toClient = getClient(toCredentials)
+        copy(path, filename, fromClient, toClient)
+    }
+
     override fun recover(exception: Exception, path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
         val event = StoreFailureEvent(path, filename, file.absolutePath, storageCredentials, exception)
         publisher.publishEvent(event)
@@ -98,6 +101,9 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     abstract fun load(path: String, filename: String, range: Range, client: Client): InputStream?
     abstract fun delete(path: String, filename: String, client: Client)
     abstract fun exist(path: String, filename: String, client: Client): Boolean
+    open fun copy(path: String, filename: String, fromClient: Client, toClient: Client) {
+        throw RuntimeException("Copy operation unsupported")
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractFileStorage::class.java)

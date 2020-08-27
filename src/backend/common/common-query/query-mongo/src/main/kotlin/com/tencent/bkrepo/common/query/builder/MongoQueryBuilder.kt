@@ -29,9 +29,6 @@ import org.springframework.data.mongodb.core.query.Query
 
 /**
  * MongoDB QueryBuilder
- *
- * @author: carrypan
- * @date: 2019/11/14
  */
 open class MongoQueryBuilder {
 

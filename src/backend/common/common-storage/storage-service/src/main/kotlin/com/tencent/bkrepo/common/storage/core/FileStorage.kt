@@ -10,9 +10,6 @@ import java.io.InputStream
 
 /**
  * 文件存储接口
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 interface FileStorage {
     @Retryable(Exception::class, label = "FileStorage.store", maxAttempts = 5, backoff = Backoff(delay = 60 * 1000, multiplier = 2.0))
@@ -21,6 +18,7 @@ interface FileStorage {
     fun load(path: String, filename: String, range: Range, storageCredentials: StorageCredentials): InputStream?
     fun delete(path: String, filename: String, storageCredentials: StorageCredentials)
     fun exist(path: String, filename: String, storageCredentials: StorageCredentials): Boolean
+    fun copy(path: String, filename: String, fromCredentials: StorageCredentials, toCredentials: StorageCredentials)
     fun getTempPath(storageCredentials: StorageCredentials): String = System.getProperty("java.io.tmpdir")
     @Recover
     fun recover(exception: Exception, path: String, filename: String, file: File, storageCredentials: StorageCredentials)

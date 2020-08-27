@@ -15,9 +15,6 @@ import java.util.concurrent.TimeUnit
 
 /**
  * stat bkrepo running status
- *
- * @author: owenlxu
- * @date: 2020/01/03
  */
 @Component
 class ProjectRepoStatJob {

@@ -8,9 +8,6 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
 
 /**
  * 文件摘要引用
- *
- * @author: carrypan
- * @date: 2019/11/12
  */
 @ShardingDocument("file_reference")
 @CompoundIndexes(

@@ -10,9 +10,6 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver
  * Spring还提供另外一种基于{@link java.util.Properties}实现的ReloadableResourceBundleMessageSource
  * 以上两种实现方式从classpath加载properties时，都不支持多个同名文件同时加载，即classpath*方式，因为这种特性属于Spring，JDK本身不支持
  * 所以该类实现了支持classpath*方式加载的MessageSource
- *
- * @author: carrypan
- * @date: 2019/12/14
  */
 class PathMatchingResourceBundleMessageSource : ReloadableResourceBundleMessageSource() {
 

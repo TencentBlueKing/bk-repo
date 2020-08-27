@@ -6,9 +6,6 @@ import org.springframework.stereotype.Repository
 
 /**
  * 文件摘要引用 Dao
- *
- * @author: carrypan
- * @date: 2019/11/7
  */
 @Repository
 class FileReferenceDao : ShardingMongoDao<TFileReference>()

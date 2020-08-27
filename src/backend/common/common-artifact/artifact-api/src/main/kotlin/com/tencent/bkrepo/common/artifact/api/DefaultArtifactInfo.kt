@@ -1,10 +1,5 @@
 package com.tencent.bkrepo.common.artifact.api
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/2
- */
 class DefaultArtifactInfo(
     projectId: String,
     repoName: String,

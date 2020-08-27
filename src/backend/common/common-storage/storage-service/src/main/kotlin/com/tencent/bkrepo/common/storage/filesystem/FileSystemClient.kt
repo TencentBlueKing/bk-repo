@@ -18,9 +18,6 @@ import java.nio.file.StandardCopyOption
 
 /**
  * 本地文件存储客户端
- *
- * @author: carrypan
- * @date: 2019-09-18
  */
 class FileSystemClient(private val root: String) {
 
@@ -193,7 +190,6 @@ class FileSystemClient(private val root: String) {
         /**
          * OpenJdk中FileChannelImpl.java限定了单次传输大小:
          * private static final long MAPPED_TRANSFER_SIZE = 8L*1024L*1024L;
-         *
          * 防止不同jdk版本的不同实现，这里限定一下大小
          */
         private const val FILE_COPY_BUFFER_SIZE = 64 * 1024 * 1024L

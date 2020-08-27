@@ -5,9 +5,8 @@ import com.google.gson.JsonParser
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
-import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -15,6 +14,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.async.NpmDependentHandler
@@ -61,7 +61,7 @@ import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
-import com.tencent.bkrepo.repository.api.MetadataResource
+import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.lang.StringUtils
@@ -70,12 +70,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.Date
 
 @Service
 class NpmService @Autowired constructor(
     private val npmDependentHandler: NpmDependentHandler,
-    private val metadataResource: MetadataResource
+    private val metadataClient: MetadataClient
 ) {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -109,7 +108,7 @@ class NpmService @Autowired constructor(
             val version = versions.getAsJsonObject(it)[VERSION].asString
             val metaData = buildMetaData(versions[it].asJsonObject)
             val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
-            metadataResource.save(
+            metadataClient.save(
                 MetadataSaveRequest(
                     artifactInfo.projectId,
                     artifactInfo.repoName,

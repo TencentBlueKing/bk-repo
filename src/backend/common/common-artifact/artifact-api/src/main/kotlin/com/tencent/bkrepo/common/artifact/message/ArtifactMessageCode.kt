@@ -4,11 +4,7 @@ import com.tencent.bkrepo.common.api.message.MessageCode
 
 /**
  * 构件相关错误码
- *
- * @author: carrypan
- * @date: 2019-10-11
  */
-
 enum class ArtifactMessageCode(private val key: String) : MessageCode {
     PROJECT_NOT_FOUND("artifact.project.notfound"),
     PROJECT_EXISTED("artifact.project.existed"),

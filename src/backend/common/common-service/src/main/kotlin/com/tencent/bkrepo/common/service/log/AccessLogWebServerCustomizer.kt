@@ -8,10 +8,10 @@ import org.springframework.boot.web.embedded.undertow.UndertowBuilderCustomizer
 import org.springframework.boot.web.embedded.undertow.UndertowDeploymentInfoCustomizer
 import org.springframework.boot.web.embedded.undertow.UndertowServletWebServerFactory
 import org.springframework.context.annotation.Configuration
-import org.springframework.boot.web.server.WebServerFactoryCustomizer as WebServerFactoryCustomizer1
+import org.springframework.boot.web.server.WebServerFactoryCustomizer
 
 @Configuration
-class AccessLogWebServerCustomizer : WebServerFactoryCustomizer1<UndertowServletWebServerFactory> {
+class AccessLogWebServerCustomizer : WebServerFactoryCustomizer<UndertowServletWebServerFactory> {
 
     override fun customize(factory: UndertowServletWebServerFactory) {
         val pattern = "%h %l %u %t \"%r\" %s %b \"%{i,Referer}\" \"%{i,User-Agent}\" %D ms"

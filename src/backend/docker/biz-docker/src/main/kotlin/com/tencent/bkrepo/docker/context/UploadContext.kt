@@ -5,8 +5,6 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 
 /**
  * docker registry upload context
- * @author: owenlxu
- * @date: 2019-12-01
  */
 data class UploadContext(var projectId: String, var repoName: String, var fullPath: String) {
 

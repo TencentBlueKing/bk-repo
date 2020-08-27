@@ -8,9 +8,6 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_PATH_
  * path节点目录命名规则：以'/'开头，以'/'结尾
  * name节点文件命名规则：不含'/'
  * fullpath全路径命名规则：以'/'开头，结尾不含'/'
- *
- * @author: carrypan
- * @date: 2019-09-24
  */
 object NodeUtils {
 
@@ -49,6 +46,8 @@ object NodeUtils {
 
     /**
      * 格式化目录名称, 返回格式/a/b/c/，根目录返回/
+     * /a/b/c -> /a/b/c/
+     * /a/b/c/ -> /a/b/c/
      */
     fun formatPath(input: String): String {
         val path = formatFullPath(input)

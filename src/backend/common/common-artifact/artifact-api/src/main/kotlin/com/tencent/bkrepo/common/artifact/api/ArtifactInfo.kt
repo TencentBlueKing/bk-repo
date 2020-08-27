@@ -4,9 +4,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 
 /**
  * 构件信息
- *
- * @author: carrypan
- * @date: 2019/11/19
  */
 abstract class ArtifactInfo(
     open val projectId: String,

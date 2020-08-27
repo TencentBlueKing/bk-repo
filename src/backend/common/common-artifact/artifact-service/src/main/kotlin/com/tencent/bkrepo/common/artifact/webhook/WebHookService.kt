@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.artifact.webhook
 
-import com.tencent.bkrepo.common.api.constant.StringPool.MEDIA_TYPE_JSON
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
@@ -19,7 +19,7 @@ class WebHookService {
 
     private val httpClient = HttpClientBuilderFactory.create().build()
 
-    private val jsonMediaType = MediaType.parse(MEDIA_TYPE_JSON)
+    private val jsonMediaType = MediaType.parse(MediaTypes.APPLICATION_JSON)
 
     fun hook(context: ArtifactTransferContext, type: ArtifactEventType) {
         if (context.repositoryConfiguration is LocalConfiguration) {

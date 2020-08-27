@@ -5,9 +5,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 元数据删除请求
- *
- * @author: carrypan
- * @date: 2019-10-14
  */
 @ApiModel("元数据删除请求")
 data class UserMetadataDeleteRequest(

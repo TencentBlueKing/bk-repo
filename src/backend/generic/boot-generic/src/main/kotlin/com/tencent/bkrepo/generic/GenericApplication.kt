@@ -5,9 +5,6 @@ import org.springframework.boot.runApplication
 
 /**
  * 通用文件微服务启动类
- *
- * @author: carrypan
- * @date: 2019-09-10
  */
 @MicroService
 class GenericApplication

@@ -20,10 +20,11 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.scheduling.annotation.Async
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
+import javax.annotation.Resource
 
 /**
  * 存储实例迁移任务
@@ -49,38 +50,45 @@ class StorageInstanceMigrationJob {
     @Autowired
     private lateinit var storageProperties: StorageProperties
 
-    @Async
+    @Resource
+    lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
+
     fun migrate(projectId: String, repoName: String, destStorageKey: String) {
         logger.info("Start to migrate storage instance, projectId: $projectId, repoName: $repoName, dest key: $destStorageKey.")
         val repository = repositoryService.queryRepository(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
         // 限制只能由默认storage迁移
         val srcStorageKey = repository.credentialsKey
-            ?: throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
+        if (srcStorageKey != null) {
+            throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
+        }
         val srcStorageCredentials = storageProperties.defaultStorageCredentials()
         val destStorageCredentials = storageCredentialService.findByKey(destStorageKey)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, destStorageKey)
         // 限制存储实例类型必须相同且为InnerCos
-        require(srcStorageCredentials is InnerCosCredentials)
-        require(destStorageCredentials is InnerCosCredentials)
+        if (srcStorageCredentials !is InnerCosCredentials || destStorageCredentials !is InnerCosCredentials) {
+            throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
+        }
 
         val srcBucket = srcStorageCredentials.bucket
         val srcCosClient = CosClient(srcStorageCredentials)
         val destCosClient = CosClient(destStorageCredentials)
         val startTime = LocalDateTime.now()
 
-        try {
-            // 修改repository配置，保证之后上传的文件直接保存到新存储实例中，文件下载时，当前实例找不到的情况下会去默认存储找
-            repository.credentialsKey = destStorageKey
-            repoRepository.save(repository)
+        taskAsyncExecutor.submit {
+            try {
+                // 修改repository配置，保证之后上传的文件直接保存到新存储实例中，文件下载时，当前实例找不到的情况下会去默认存储找
+                repository.credentialsKey = destStorageKey
+                repoRepository.save(repository)
 
-            // 迁移老文件
-            migrateOldFile(projectId, repoName, startTime, srcBucket, srcStorageKey, destStorageKey, srcCosClient, destCosClient)
+                // 迁移老文件
+                migrateOldFile(projectId, repoName, startTime, srcBucket, srcStorageKey, destStorageKey, srcCosClient, destCosClient)
 
-            // 校验新文件
-            checkNewFile(projectId, repoName, startTime, srcBucket, srcStorageKey, destStorageKey, srcCosClient, destCosClient)
-        } catch (exception: RuntimeException) {
-            logger.error("Migrate storage instance failed.", exception)
+                // 校验新文件
+                checkNewFile(projectId, repoName, startTime, srcBucket, srcStorageKey, destStorageKey, srcCosClient, destCosClient)
+            } catch (exception: RuntimeException) {
+                logger.error("Migrate storage instance failed.", exception)
+            }
         }
     }
 

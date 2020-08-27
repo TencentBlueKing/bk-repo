@@ -10,9 +10,6 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 
 /**
  * 存储服务接口
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 interface StorageService {
     /**
@@ -34,6 +31,14 @@ interface StorageService {
      * 判断是否存在
      */
     fun exist(digest: String, storageCredentials: StorageCredentials?): Boolean
+
+    /**
+     * 文件跨存储拷贝
+     * A -> B
+     * 若B中已经存在相同文件则立即返回
+     * 若A == B，立即返回
+     */
+    fun copy(digest: String, fromCredentials: StorageCredentials?, toCredentials: StorageCredentials?)
 
     /**
      * 创建可追加的文件, 返回文件追加Id

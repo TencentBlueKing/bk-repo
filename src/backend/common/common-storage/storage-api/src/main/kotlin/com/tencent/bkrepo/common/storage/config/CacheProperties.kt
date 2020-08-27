@@ -2,9 +2,6 @@ package com.tencent.bkrepo.common.storage.config
 
 /**
  * 本地文件缓存属性
- *
- * @author: carrypan
- * @date: 2019/10/29
  */
 data class CacheProperties(
     /**

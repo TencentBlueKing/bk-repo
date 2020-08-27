@@ -4,7 +4,7 @@ import org.springframework.boot.gradle.tasks.run.BootRun
 plugins {
     kotlin("jvm") version "1.3.72"
     kotlin("plugin.spring") version "1.3.72" apply false
-    id("org.springframework.boot") version "2.3.1.RELEASE" apply false
+    id("org.springframework.boot") version "2.3.2.RELEASE" apply false
     id("io.spring.dependency-management") version "1.0.9.RELEASE"
     id("maven-publish")
 }
@@ -33,12 +33,9 @@ allprojects {
         jcenter()
     }
 
-    // fix issue https://github.com/spring-projects/spring-boot/issues/21934
-    extra["reactor-bom.version"] = "Dysprosium-SR9"
-
     dependencyManagement {
         imports {
-            mavenBom("org.springframework.cloud:spring-cloud-dependencies:Hoxton.SR5")
+            mavenBom("org.springframework.cloud:spring-cloud-dependencies:Hoxton.SR7")
         }
         dependencies {
             dependency("io.swagger:swagger-annotations:1.5.22")

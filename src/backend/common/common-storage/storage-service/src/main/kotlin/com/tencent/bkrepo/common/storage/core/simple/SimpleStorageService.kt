@@ -9,9 +9,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
 /**
  * 存储服务简单实现
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 class SimpleStorageService : AbstractStorageService() {
 

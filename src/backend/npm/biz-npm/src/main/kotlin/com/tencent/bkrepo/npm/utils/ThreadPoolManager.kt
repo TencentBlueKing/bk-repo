@@ -15,7 +15,6 @@ object ThreadPoolManager {
     private var asyncExecutor: ThreadPoolTaskExecutor = SpringContextUtils.getBean(ThreadPoolTaskExecutor::class.java)
 
     /**
-     *
      * 执行一组有返回值的任务
      * @param callableList 任务列表
      * @param timeout 任务超时时间，单位毫秒

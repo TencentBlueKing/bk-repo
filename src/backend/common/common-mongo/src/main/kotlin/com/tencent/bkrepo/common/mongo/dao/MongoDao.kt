@@ -9,9 +9,6 @@ import org.springframework.data.mongodb.core.query.Update
 
 /**
  * mongo db 数据访问层接口
- *
- * @author: carrypan
- * @date: 2019/11/5
  */
 interface MongoDao<E> {
 

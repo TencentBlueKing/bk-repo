@@ -13,9 +13,6 @@ import org.springframework.util.unit.DataSize
 
 /**
  * 存储属性配置
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 @ConfigurationProperties("storage")
 data class StorageProperties(

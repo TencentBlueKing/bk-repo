@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.service
 
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.replication.job.ReplicationContext
@@ -28,7 +29,7 @@ class ReplicationService(val repoDataService: RepoDataService) {
         with(context) {
             // 查询文件
             val inputStream = repoDataService.getFile(request.sha256!!, request.size!!, currentRepoDetail.localRepoInfo)
-            val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM!!, inputStream, request.size!!)
+            val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM, inputStream, request.size!!)
             val builder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", request.fullPath, fileRequestBody)
@@ -132,6 +133,6 @@ class ReplicationService(val repoDataService: RepoDataService) {
     }
 
     companion object {
-        private val MEDIA_TYPE_STREAM = MediaType.parse(StringPool.MEDIA_TYPE_STREAM)
+        private val MEDIA_TYPE_STREAM = MediaType.parse(MediaTypes.APPLICATION_OCTET_STREAM)
     }
 }

@@ -5,9 +5,6 @@ import org.springframework.boot.runApplication
 
 /**
  * 微服务启动类
- *
- * @author: carrypan
- * @date: 2019/12/4
  */
 @MicroService
 class PypiApplication

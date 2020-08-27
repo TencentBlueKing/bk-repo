@@ -9,11 +9,6 @@ import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.Duration
 
-/**
- *
- * @author: carrypan
- * @date: 2020/1/6
- */
 class CleanupFileVisitor(
     private val rootPath: Path,
     private val expireDays: Int

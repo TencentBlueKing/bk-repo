@@ -6,11 +6,6 @@ import org.springframework.web.context.request.ServletRequestAttributes
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/25
- */
 object HeaderUtils {
 
     fun getHeader(name: String): String? {

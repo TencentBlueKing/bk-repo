@@ -6,8 +6,6 @@ import com.tencent.bkrepo.docker.model.ManifestMetadata
 
 /**
  * manifest utility with each schema
- * @author: owenlxu
- * @date: 2020-02-05
  */
 abstract class AbstractManifestDeserializer {
 

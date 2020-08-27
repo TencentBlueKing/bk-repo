@@ -3,7 +3,7 @@ package com.tencent.bkrepo.helm.exception
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.pojo.HelmErrorResponse
 import org.slf4j.LoggerFactory
@@ -21,9 +21,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @RestControllerAdvice
 class HelmExceptionHandler {
 
-    @ExceptionHandler(ClientAuthException::class)
+    @ExceptionHandler(AuthenticationException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handlerClientAuthException(exception: ClientAuthException) {
+    fun handlerClientAuthException(exception: AuthenticationException) {
         val responseObject = HelmErrorResponse(HttpStatus.UNAUTHORIZED.reasonPhrase)
         helmResponse(responseObject, exception)
     }

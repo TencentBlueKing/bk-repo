@@ -5,8 +5,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 节点信息
- * @author: carrypan
- * @date: 2019-09-10
  */
 @ApiModel("节点信息")
 data class NodeInfo(
@@ -33,6 +31,8 @@ data class NodeInfo(
     val sha256: String? = null,
     @ApiModelProperty("文件md5")
     val md5: String? = null,
+    @ApiModelProperty("元数据")
+    val metadata: Map<String, String> ? = null,
     @ApiModelProperty("所属项目id")
     val projectId: String,
     @ApiModelProperty("所属仓库名称")

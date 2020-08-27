@@ -5,11 +5,6 @@ import com.tencent.bkrepo.common.query.handler.MongoNestedRuleHandler
 import com.tencent.bkrepo.common.query.model.Rule
 import org.springframework.data.mongodb.core.query.Criteria
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/15
- */
 class DefaultMongoNestedRuleHandler : MongoNestedRuleHandler {
 
     override fun handle(rule: Rule.NestedRule, context: MongoQueryBuilder): Criteria {

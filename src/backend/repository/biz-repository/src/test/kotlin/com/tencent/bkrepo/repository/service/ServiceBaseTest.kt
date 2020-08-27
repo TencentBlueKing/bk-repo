@@ -2,7 +2,7 @@ package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
-import com.tencent.bkrepo.common.artifact.auth.AuthProperties
+import com.tencent.bkrepo.common.security.http.HttpAuthProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.repository.UT_USER
@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 
 @Import(
-    AuthProperties::class,
+    HttpAuthProperties::class,
     StorageProperties::class,
     RepositoryProperties::class
 )
