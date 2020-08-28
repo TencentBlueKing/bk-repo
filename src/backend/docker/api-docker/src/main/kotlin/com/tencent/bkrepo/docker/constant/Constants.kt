@@ -30,7 +30,7 @@ const val HTTP_PROTOCOL_HTTP = "http"
 const val HTTP_PROTOCOL_HTTPS = "https"
 const val REGISTRY_SERVICE = "bkrepo"
 
-const val ERROR_MESSAGE = "{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":{%s}}]}"
+const val ERROR_MESSAGE = "{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}"
 const val ERROR_MESSAGE_EMPTY = "{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":null}]}"
 const val AUTH_CHALLENGE = "Bearer realm=\"%s\",service=\"%s\""
 const val AUTH_CHALLENGE_SERVICE_SCOPE = "Bearer realm=\"%s\",service=\"%s\",scope=\"%s\""
