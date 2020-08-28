@@ -33,6 +33,7 @@ import com.tencent.bkrepo.rpm.INDEXER
 import com.tencent.bkrepo.rpm.NO_INDEXER
 import com.tencent.bkrepo.rpm.GZ
 import com.tencent.bkrepo.rpm.artifact.SurplusNodeCleaner
+import com.tencent.bkrepo.rpm.exception.RpmArtifactFormatNotSupportedException
 import com.tencent.bkrepo.rpm.exception.RpmArtifactMetadataResolveException
 import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
@@ -68,8 +69,8 @@ import java.io.FileInputStream
 import java.nio.channels.Channels
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.RPM
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
-import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.OTHER
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
+import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoIndex
@@ -79,13 +80,18 @@ class RpmLocalRepository(
     val surplusNodeCleaner: SurplusNodeCleaner
 ) : LocalRepository() {
 
-    fun rpmNodeCreateRequest(context: ArtifactUploadContext, metadata: MutableMap<String, String>?): NodeCreateRequest {
-        val nodeCreateRequest = super.getNodeCreateRequest(context)
-        return nodeCreateRequest.copy(
-            overwrite = true,
-            metadata = metadata
-        )
-    }
+    fun rpmNodeCreateRequest(
+        context: ArtifactUploadContext,
+        metadata: MutableMap<String, String>?,
+        overwrite: Boolean
+    ):
+        NodeCreateRequest {
+            val nodeCreateRequest = super.getNodeCreateRequest(context)
+            return nodeCreateRequest.copy(
+                overwrite = overwrite,
+                metadata = metadata
+            )
+        }
 
     fun xmlIndexNodeCreate(
         userId: String,
@@ -163,7 +169,7 @@ class RpmLocalRepository(
     /**
      * 生成构件索引
      */
-    private fun indexer(context: ArtifactUploadContext, repeat: ArtifactRepeat, rpmRepoConf: RpmRepoConf, metadata: MutableMap<String, String>) {
+    private fun indexer(context: ArtifactUploadContext, repeat: ArtifactRepeat, rpmRepoConf: RpmRepoConf): RpmVersion {
 
         val repodataDepth = rpmRepoConf.repodataDepth
         val repodataUri = XmlStrUtils.splitUriByDepth(context.artifactInfo.artifactUri, repodataDepth)
@@ -180,13 +186,6 @@ class RpmLocalRepository(
             sha1Digest,
             artifactRelativePath
         )
-        metadata["name"] = rpmMetadata.packages[0].name
-        metadata["arch"] = rpmMetadata.packages[0].arch
-        with(rpmMetadata.packages[0].version) {
-            metadata["epoch"] = epoch.toString()
-            metadata["ver"] = ver
-            metadata["rel"] = rel
-        }
         if (rpmRepoConf.enabledFileLists) {
             val rpmMetadataFileList = RpmMetadataFileList(
                 listOf(
@@ -220,6 +219,13 @@ class RpmLocalRepository(
         // 更新primary.xml
         updateIndexXml(context, rpmMetadata, repeat, repodataPath, PRIMARY)
         flushRepoMdXML(context)
+        return RpmVersion(
+            rpmMetadata.packages[0].name,
+            rpmMetadata.packages[0].arch,
+            rpmMetadata.packages[0].version.epoch.toString(),
+            rpmMetadata.packages[0].version.ver,
+            rpmMetadata.packages[0].version.rel
+        )
     }
 
     private fun updateIndexXml(
@@ -372,26 +378,11 @@ class RpmLocalRepository(
         val artifactSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
 
         return with(context.artifactInfo) {
-            val projectQuery = Rule.QueryRule("projectId", projectId)
-            val repositoryQuery = Rule.QueryRule("repoName", repoName)
-            val fullPathQuery = Rule.QueryRule("fullPath", artifactUri)
-
-            val queryRule = Rule.NestedRule(
-                mutableListOf(projectQuery, repositoryQuery, fullPathQuery),
-                Rule.NestedRule.RelationType.AND
-            )
-            val queryModel = QueryModel(
-                page = PageLimit(0, 10),
-                sort = Sort(listOf("name"), Sort.Direction.ASC),
-                select = mutableListOf("projectId", "repoName", "fullPath", "sha256"),
-                rule = queryRule
-            )
-            val nodeList = nodeClient.query(queryModel).data?.records
-            if (nodeList.isNullOrEmpty()) {
+            val node = nodeClient.detail(projectId, repoName, artifactUri).data
+            if (node == null) {
                 NONE
             } else {
-                // 上传时重名构件默认是覆盖操作，所以只会存在一个重名构件。
-                if (nodeList.first()["sha256"] == artifactSha256) {
+                if (node.sha256 == artifactSha256) {
                     FULLPATH_SHA256
                 } else {
                     FULLPATH
@@ -435,7 +426,7 @@ class RpmLocalRepository(
         return when (format) {
             "xml" -> XML
             "rpm" -> RPM
-            else -> OTHER
+            else -> throw RpmArtifactFormatNotSupportedException("rpm not supported `$format` artifact")
         }
     }
 
@@ -493,7 +484,6 @@ class RpmLocalRepository(
 
         // todo
         // 删除多余节点
-
         flushRepoMdXML(context)
     }
 
@@ -537,7 +527,7 @@ class RpmLocalRepository(
                             type = (index["metadata"] as Map<*, *>)["indexType"] as String,
                             location = RpmLocation("$REPODATA$SLASH${index["name"] as String}"),
                             checksum = RpmChecksum((index["metadata"] as Map<*, *>)["checksum"] as String),
-                            size = (index["metadata"] as Map<String, String>)["size"]?.toLong() ?: 111L,
+                            size = ((index["metadata"] as Map<*, *>)["size"] as String).toLong(),
                             timestamp = (index["metadata"] as Map<*, *>)["timestamp"] as String,
                             openChecksum = RpmChecksum((index["metadata"] as Map<*, *>)["openChecksum"] as String),
                             openSize = (index["metadata"] as Map<String, String>)["size"]?.toInt() ?: 111
@@ -554,7 +544,6 @@ class RpmLocalRepository(
                 )
             }
         }
-
         val repomd = Repomd(
             repoDataList
         )
@@ -576,27 +565,33 @@ class RpmLocalRepository(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
+        val overwrite = HttpContextHolder.getRequest().getHeader("X-BKREPO-OVERWRITE").orEmpty().let {
+            if (it.isBlank()) {
+                true
+            } else {
+                it.toBoolean()
+            }
+        }
         val artifactFormat = getArtifactFormat(context)
-        val metadata: MutableMap<String, String> = mutableMapOf<String, String>()
         // 检查请求路径是否契合仓库repodataDepth 深度设置
         val rpmRepoConf = getRpmRepoConf(context)
         val mark: Boolean = checkRequestUri(context, rpmRepoConf.repodataDepth)
-        if (artifactFormat != OTHER) {
-            if (mark) {
-                val repeat = checkRepeatArtifact(context)
-                if (repeat != FULLPATH_SHA256) {
-                    if (artifactFormat == RPM) {
-                        indexer(context, repeat, rpmRepoConf, metadata)
-                    } else if (artifactFormat == XML) {
-                        storeGroupFile(context, repeat, rpmRepoConf)
-                    }
-                }
+        val nodeCreateRequest = if (mark) {
+            val repeat = checkRepeatArtifact(context)
+            if (repeat != FULLPATH_SHA256 && artifactFormat == RPM) {
+                val rpmVersion = indexer(context, repeat, rpmRepoConf)
+                rpmNodeCreateRequest(context, rpmVersion.toMetadata(), overwrite)
+            } else {
+                storeGroupFile(context, repeat, rpmRepoConf)
+                rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
             }
+        } else {
+            rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
         }
-        // 保存rpm 包
-        val nodeCreateRequest = rpmNodeCreateRequest(context, metadata)
         storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
+        with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/$artifactUri") }
         nodeClient.create(nodeCreateRequest)
+        logger.info("Success to insert $nodeCreateRequest")
         successUpload(context, mark, rpmRepoConf.repodataDepth)
     }
 

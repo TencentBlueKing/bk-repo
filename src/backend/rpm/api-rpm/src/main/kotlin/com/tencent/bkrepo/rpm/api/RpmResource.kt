@@ -22,9 +22,6 @@ interface RpmResource {
     @GetMapping(RPM)
     fun install(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo)
 
-    @DeleteMapping(RPM, produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo)
-
     @PutMapping(RPM_CONFIGURATION, consumes = [MediaType.APPLICATION_JSON_VALUE])
     fun addGroups(
         @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,

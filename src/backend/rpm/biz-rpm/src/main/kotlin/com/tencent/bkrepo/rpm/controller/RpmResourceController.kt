@@ -18,10 +18,6 @@ class RpmResourceController(
         rpmService.install(rpmArtifactInfo)
     }
 
-    override fun delete(rpmArtifactInfo: RpmArtifactInfo) {
-        rpmService.delete(rpmArtifactInfo)
-    }
-
     override fun addGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
         rpmService.addGroups(rpmArtifactInfo, groups)
     }
