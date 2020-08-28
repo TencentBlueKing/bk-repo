@@ -18,6 +18,7 @@ interface FileStorage {
     fun load(path: String, filename: String, range: Range, storageCredentials: StorageCredentials): InputStream?
     fun delete(path: String, filename: String, storageCredentials: StorageCredentials)
     fun exist(path: String, filename: String, storageCredentials: StorageCredentials): Boolean
+    fun copy(path: String, filename: String, fromCredentials: StorageCredentials, toCredentials: StorageCredentials)
     fun getTempPath(storageCredentials: StorageCredentials): String = System.getProperty("java.io.tmpdir")
     @Recover
     fun recover(exception: Exception, path: String, filename: String, file: File, storageCredentials: StorageCredentials)

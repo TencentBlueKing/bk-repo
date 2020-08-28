@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.security.http.platform
 
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -43,7 +44,7 @@ open class PlatformAuthHandler(
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
         with(authCredentials as PlatformAuthCredentials) {
             val appId = authenticationManager.checkPlatformAccount(accessKey, secretKey)
-            val userId = request.getHeader(AUTH_HEADER_UID)?.apply { checkUserId(this) } ?: appId
+            val userId = request.getHeader(AUTH_HEADER_UID)?.apply { checkUserId(this) } ?: ANONYMOUS_USER
             request.setAttribute(PLATFORM_KEY, appId)
             request.setAttribute(USER_KEY, userId)
             return userId

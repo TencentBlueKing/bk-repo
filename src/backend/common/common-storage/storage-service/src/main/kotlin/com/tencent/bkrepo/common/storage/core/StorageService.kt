@@ -33,6 +33,14 @@ interface StorageService {
     fun exist(digest: String, storageCredentials: StorageCredentials?): Boolean
 
     /**
+     * 文件跨存储拷贝
+     * A -> B
+     * 若B中已经存在相同文件则立即返回
+     * 若A == B，立即返回
+     */
+    fun copy(digest: String, fromCredentials: StorageCredentials?, toCredentials: StorageCredentials?)
+
+    /**
      * 创建可追加的文件, 返回文件追加Id
      */
     fun createAppendId(storageCredentials: StorageCredentials?): String
