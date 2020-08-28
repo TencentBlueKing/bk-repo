@@ -14,13 +14,37 @@ class RpmExceptionHandler {
 
     @ExceptionHandler(RpmRequestParamMissException::class)
     @ResponseStatus(HttpStatus.PRECONDITION_FAILED)
-    fun handelException(exception: RpmRequestParamMissException): RpmExceptionResponse {
+    fun handleException(exception: RpmRequestParamMissException): RpmExceptionResponse {
         return RpmExceptionResponse(HttpStatus.PRECONDITION_FAILED.toString(), exception.message)
     }
 
     @ExceptionHandler(RpmIndexTypeResolveException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handelException(exception: RpmIndexTypeResolveException): RpmExceptionResponse {
+    fun handleException(exception: RpmIndexTypeResolveException): RpmExceptionResponse {
         return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
+    }
+
+    @ExceptionHandler(RpmIndexNotFoundException::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handleException(exception: RpmIndexNotFoundException): RpmExceptionResponse {
+        return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
+    }
+
+    @ExceptionHandler(RpmArtifactMetadataResolveException::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handleException(exception: RpmArtifactMetadataResolveException): RpmExceptionResponse {
+        return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
+    }
+
+    @ExceptionHandler(RpmVersionNotFoundException::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handleException(exception: RpmVersionNotFoundException): RpmExceptionResponse {
+        return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
+    }
+
+    @ExceptionHandler(RpmArtifactFormatNotSupportedException::class)
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    fun handleException(exception: RpmArtifactFormatNotSupportedException): RpmExceptionResponse {
+        return RpmExceptionResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE.toString(), exception.message)
     }
 }

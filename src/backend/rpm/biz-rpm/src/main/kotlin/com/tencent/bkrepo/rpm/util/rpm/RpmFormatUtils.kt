@@ -10,7 +10,7 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.ReadableByteChannel
 
-object RpmFormatUtil {
+object RpmFormatUtils {
 
     @Throws(IOException::class)
     fun getRpmFormat(channel: ReadableByteChannel): RpmFormat {

@@ -8,6 +8,8 @@ class RpmArtifactInfo(
     artifactUri: String
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
-        const val RPM_DEPLOY = "/{projectId}/{repoName}/**"
+        const val RPM = "/{projectId}/{repoName}/**"
+        const val RPM_CONFIGURATION = "/configuration/{projectId}/{repoName}/**"
+        const val RPM_DEBUG_FLUSH = "/flush/{projectId}/{repoName}/**"
     }
 }

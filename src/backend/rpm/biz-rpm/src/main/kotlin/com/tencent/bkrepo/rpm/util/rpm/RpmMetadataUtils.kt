@@ -21,7 +21,7 @@ import org.redline_rpm.header.Signature
 import org.redline_rpm.header.RpmType
 import java.util.LinkedList
 
-class RpmMetadataUtil {
+class RpmMetadataUtils {
 
     fun interpret(rawFormat: RpmFormat, size: Long, checkSum: String, href: String): RpmMetadata {
         val header: Header = rawFormat.format.header

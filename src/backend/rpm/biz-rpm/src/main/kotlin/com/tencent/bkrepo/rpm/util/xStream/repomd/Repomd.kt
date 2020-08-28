@@ -10,7 +10,7 @@ import com.thoughtworks.xstream.annotations.XStreamImplicit
 @XStreamAlias("repomd")
 data class Repomd(
     @XStreamImplicit()
-    val repoDatas: List<RepoData>
+    val repoDatas: List<RepoIndex>
 ) {
     @XStreamAsAttribute
     val xmlns: String = "http://linux.duke.edu/metadata/repo"
