@@ -138,13 +138,6 @@ class RpmLocalRepository(
             operator = userId
         )
     }
-    /**
-     * 查询仓库设置的repodata 深度
-     */
-    @Deprecated("getRpmRepoConf()")
-    private fun searchRpmRepoDataDepth(context: ArtifactUploadContext): Int {
-        (context.repositoryInfo.configuration as RpmLocalConfiguration).repodataDepth.let { return it }
-    }
 
     /**
      * 查询rpm仓库属性
@@ -585,8 +578,10 @@ class RpmLocalRepository(
             if (repeat != FULLPATH_SHA256 && artifactFormat == RPM) {
                 val rpmVersion = indexer(context, repeat, rpmRepoConf)
                 rpmNodeCreateRequest(context, rpmVersion.toMetadata(), overwrite)
-            } else {
+            } else if (artifactFormat == XML) {
                 storeGroupFile(context)
+                rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
+            } else {
                 rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
             }
         } else {
