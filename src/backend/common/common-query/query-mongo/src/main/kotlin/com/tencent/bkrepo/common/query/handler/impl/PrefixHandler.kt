@@ -6,11 +6,6 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
 import org.springframework.data.mongodb.core.query.Criteria
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/15
- */
 class PrefixHandler : MongoQueryRuleHandler {
 
     override fun match(rule: Rule.QueryRule): Boolean {

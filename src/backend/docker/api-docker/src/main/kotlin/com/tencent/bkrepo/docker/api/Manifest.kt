@@ -24,8 +24,6 @@ import javax.servlet.http.HttpServletRequest
 
 /**
  * docker image manifest 文件处理接口
- * @author: owenlxu
- * @date: 2019-10-03
  */
 @Api("docker镜像manifest文件处理接口")
 @RequestMapping(DOCKER_API_PREFIX)

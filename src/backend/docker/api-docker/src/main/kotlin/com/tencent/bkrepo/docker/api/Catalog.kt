@@ -15,10 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * docker image catalog api
- * @author: owenlxu
- * @date: 2019-12-01
  */
-
 @Api("docker镜像catalog相关接口")
 @RequestMapping(DOCKER_API_PREFIX)
 interface Catalog {

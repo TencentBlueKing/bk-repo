@@ -12,9 +12,6 @@ import org.springframework.web.bind.annotation.ResponseBody
 
 /**
  * pypi服务接口实现类
- *
- * @author: carrypan
- * @date: 2019/12/4
  */
 @Controller
 class PypiResourceImpl : PypiResource {

@@ -5,9 +5,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 排序规则
- *
- * @author: carrypan
- * @date: 2019/11/14
  */
 @ApiModel("排序规则")
 data class Sort(

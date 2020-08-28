@@ -7,9 +7,6 @@ import java.time.format.DateTimeFormatter
 
 /**
  * 用于浏览器列表查看节点信息
- *
- * @author: carrypan
- * @date: 2019/12/11
  */
 data class NodeListViewItem(
     val name: String,

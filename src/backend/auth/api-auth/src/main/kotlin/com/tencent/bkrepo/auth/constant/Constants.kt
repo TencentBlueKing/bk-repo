@@ -3,7 +3,6 @@ package com.tencent.bkrepo.auth.constant
 /**
  * 认证相关
  */
-
 const val SERVICE_NAME = "auth"
 
 const val PROJECT_MANAGE_ID = "project_manage"

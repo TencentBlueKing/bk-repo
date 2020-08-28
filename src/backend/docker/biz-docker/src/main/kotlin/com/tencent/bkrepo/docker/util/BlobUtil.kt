@@ -13,8 +13,6 @@ import org.slf4j.LoggerFactory
 
 /**
  * docker artifact utility
- * @author: owenlxu
- * @date: 2019-10-15
  */
 object BlobUtil {
 

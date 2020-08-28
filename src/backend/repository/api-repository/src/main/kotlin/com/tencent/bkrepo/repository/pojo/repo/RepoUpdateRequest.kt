@@ -7,9 +7,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 更新仓库请求
- *
- * @author: carrypan
- * @date: 2019-09-22
  */
 @ApiModel("更新仓库请求")
 data class RepoUpdateRequest(

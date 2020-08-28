@@ -35,7 +35,7 @@ import java.util.concurrent.Future
 import kotlin.math.ceil
 import kotlin.math.max
 
-class CosClient(private val credentials: InnerCosCredentials) {
+class CosClient(val credentials: InnerCosCredentials) {
     private val config: ClientConfig = ClientConfig(credentials)
 
     /**

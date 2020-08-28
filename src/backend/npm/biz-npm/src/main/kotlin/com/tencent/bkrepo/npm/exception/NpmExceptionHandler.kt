@@ -1,12 +1,11 @@
 package com.tencent.bkrepo.npm.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_VALUE
-import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.pojo.AuthFailInfo
 import com.tencent.bkrepo.npm.pojo.NpmAuthFailResponse
@@ -31,7 +30,7 @@ class NpmExceptionHandler {
     @ExceptionHandler(ExecutionException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerExecutionException(exception: ExecutionException) {
-        val responseObject = NpmErrorResponse("bad request", exception.message ?: StringPool.EMPTY)
+        val responseObject = NpmErrorResponse("bad request", exception.message.orEmpty())
         npmResponse(responseObject, exception)
     }
 
@@ -42,9 +41,9 @@ class NpmExceptionHandler {
         npmResponse(fail, exception)
     }
 
-    @ExceptionHandler(ClientAuthException::class)
+    @ExceptionHandler(AuthenticationException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handlerClientAuthException(exception: ClientAuthException) {
+    fun handlerClientAuthException(exception: AuthenticationException) {
         val responseObject = NpmErrorResponse("Unauthorized", "Authentication required")
         npmResponse(responseObject, exception)
     }
@@ -66,7 +65,7 @@ class NpmExceptionHandler {
     @ExceptionHandler(NpmTokenIllegalException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handlerNpmTokenIllegalException(exception: NpmTokenIllegalException) {
-        HttpContextHolder.getResponse().setHeader(BASIC_AUTH_RESPONSE_HEADER, BASIC_AUTH_RESPONSE_VALUE)
+        HttpContextHolder.getResponse().setHeader(HttpHeaders.WWW_AUTHENTICATE, BASIC_AUTH_PROMPT)
         val authFailInfo = AuthFailInfo(HttpStatus.UNAUTHORIZED.value(), exception.message)
         val npmAuthFailResponse = NpmAuthFailResponse(errors = listOf(authFailInfo))
         npmResponse(npmAuthFailResponse, exception)

@@ -11,8 +11,6 @@ import com.tencent.bkrepo.docker.model.ManifestMetadata
 /**
  * manifest context to describe
  * interactive params
- * @author: owenlxu
- * @date: 2020-02-05
  */
 object ManifestContext {
 

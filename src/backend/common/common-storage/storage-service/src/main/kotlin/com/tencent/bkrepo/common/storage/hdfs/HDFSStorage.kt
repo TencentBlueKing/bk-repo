@@ -11,11 +11,6 @@ import java.io.File
 import java.io.InputStream
 import java.net.URI
 
-/**
- *
- * @author: carrypan
- * @date: 2020/1/13
- */
 open class HDFSStorage : AbstractFileStorage<HDFSCredentials, HDFSClient>() {
 
     override fun store(path: String, filename: String, file: File, client: HDFSClient) {

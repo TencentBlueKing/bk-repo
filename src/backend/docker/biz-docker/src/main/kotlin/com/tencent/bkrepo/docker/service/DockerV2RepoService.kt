@@ -7,8 +7,6 @@ import com.tencent.bkrepo.docker.response.DockerResponse
 
 /**
  * docker v2 protocol interface
- * @author: owenlxu
- * @date: 2019-10-15
  */
 interface DockerV2RepoService {
 

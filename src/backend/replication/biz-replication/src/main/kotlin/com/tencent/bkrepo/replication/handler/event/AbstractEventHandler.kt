@@ -8,8 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * AbstractMessageHandler
- * @author: owenlxu
- * @date: 2020/05/20
  */
 abstract class AbstractEventHandler : AbstractHandler() {
 

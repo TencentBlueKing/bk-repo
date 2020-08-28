@@ -7,8 +7,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 
 /**
  * docker tag info
- * @author: owenlxu
- * @date: 2019-10-15
  */
 data class DockerTagInfo(
     var title: String = EMPTY,

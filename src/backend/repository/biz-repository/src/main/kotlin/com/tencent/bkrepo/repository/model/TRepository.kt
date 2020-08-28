@@ -9,9 +9,6 @@ import java.time.LocalDateTime
 
 /**
  * 仓库模型
- *
- * @author: carrypan
- * @date: 2019-09-10
  */
 @Document("repository")
 @CompoundIndexes(

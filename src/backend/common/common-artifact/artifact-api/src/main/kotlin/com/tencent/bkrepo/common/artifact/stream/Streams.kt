@@ -3,6 +3,11 @@ package com.tencent.bkrepo.common.artifact.stream
 import java.io.Closeable
 import java.nio.channels.FileLock
 
+/**
+ * Returns the default buffer size when working with buffered streams.
+ */
+const val STREAM_BUFFER_SIZE: Int = 8 * 1024
+
 fun Closeable.closeQuietly() {
     try {
         this.close()

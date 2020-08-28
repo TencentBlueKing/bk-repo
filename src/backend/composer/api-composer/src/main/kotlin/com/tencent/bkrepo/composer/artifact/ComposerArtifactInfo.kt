@@ -2,8 +2,6 @@ package com.tencent.bkrepo.composer.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 
-/**
- */
 class ComposerArtifactInfo(
     projectId: String,
     repoName: String,

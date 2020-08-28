@@ -52,8 +52,6 @@ import java.nio.charset.Charset
 /**
  * docker v2 protocol to work with
  * local storage
- * @author: owenlxu
- * @date: 2019-10-15
  */
 @Service
 class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRepo) : DockerV2RepoService {

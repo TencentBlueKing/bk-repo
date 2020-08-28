@@ -5,9 +5,6 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
  * S3配置
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 data class S3Credentials(
     var accessKey: String = "",

@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletRequest
  * pypi部分请求路径的信息无法定位一个文件，因此在PypiService之前构建一个完整坐标。
  * {package}/{version}/{filename}
  */
-
 object UrlPatternUtil {
 
     fun HttpServletRequest.parameterMaps(): MutableMap<String, String> {

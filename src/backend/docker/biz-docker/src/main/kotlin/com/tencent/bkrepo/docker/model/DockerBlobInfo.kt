@@ -2,8 +2,6 @@ package com.tencent.bkrepo.docker.model
 
 /**
  * docker blob info
- * @author: owenlxu
- * @date: 2019-10-15
  */
 data class DockerBlobInfo(var id: String, var digest: String?, var size: Long, var created: String) {
 

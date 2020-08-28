@@ -10,7 +10,6 @@ import com.thoughtworks.xstream.annotations.XStreamAsAttribute
  * @property location 索引文件下载链接(相对路径)
  * @property openChecksum 代表'xml.gz'解压之后'xml'文件的sha1值
  * @property checksum 代表'xml.gz'的sha1值，同时也作为'xml.gz'的文件名
- *
  */
 @XStreamAlias("data")
 data class RepoData(
@@ -25,4 +24,4 @@ data class RepoData(
     @XStreamAlias("open-size")
     val openSize: Int,
     val revision: String = ""
-)
+) : RepoIndex()

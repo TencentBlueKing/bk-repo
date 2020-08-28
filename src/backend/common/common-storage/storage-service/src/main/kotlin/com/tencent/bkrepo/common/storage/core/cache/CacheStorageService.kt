@@ -18,9 +18,6 @@ import javax.annotation.Resource
 
 /**
  * 支持缓存的存储服务
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
 class CacheStorageService : AbstractStorageService() {
 

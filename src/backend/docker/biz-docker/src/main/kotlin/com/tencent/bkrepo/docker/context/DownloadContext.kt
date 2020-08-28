@@ -4,8 +4,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 
 /**
  * docker registry download context
- * @author: owenlxu
- * @date: 2019-12-01
 */
 data class DownloadContext(val requestContext: RequestContext) {
 

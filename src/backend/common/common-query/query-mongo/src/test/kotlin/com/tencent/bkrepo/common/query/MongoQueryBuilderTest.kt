@@ -9,11 +9,6 @@ import com.tencent.bkrepo.common.query.model.Sort
 import org.bson.Document
 import org.junit.jupiter.api.Test
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/15
- */
 class MongoQueryBuilderTest {
 
     @Test

@@ -10,8 +10,6 @@ import org.springframework.stereotype.Component
 
 /**
  * 清理缓存文件定时任务
- * @author: carrypan
- * @date: 2019/12/24
  */
 @Component
 class ExpiredCacheFileCleanupJob {

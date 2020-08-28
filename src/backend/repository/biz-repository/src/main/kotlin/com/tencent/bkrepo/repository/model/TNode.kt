@@ -15,9 +15,6 @@ import java.time.LocalDateTime
 
 /**
  * 资源模型
- *
- * @author: carrypan
- * @date: 2019-09-10
  */
 @ShardingDocument("node")
 @CompoundIndexes(

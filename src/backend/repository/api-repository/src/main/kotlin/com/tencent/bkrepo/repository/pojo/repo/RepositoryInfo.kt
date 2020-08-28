@@ -9,8 +9,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 仓库信息
- * @author: carrypan
- * @date: 2019-09-10
  */
 @ApiModel("仓库信息")
 data class RepositoryInfo(

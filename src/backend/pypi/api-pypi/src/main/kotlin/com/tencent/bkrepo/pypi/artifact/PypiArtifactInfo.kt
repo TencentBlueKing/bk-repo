@@ -2,11 +2,6 @@ package com.tencent.bkrepo.pypi.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/4
- */
 class PypiArtifactInfo(
     projectId: String,
     repoName: String,

@@ -8,7 +8,6 @@ import com.tencent.bkrepo.common.service.feign.FeignFilterRequestMappingHandlerM
 import com.tencent.bkrepo.common.service.log.AccessLogWebServerCustomizer
 import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
 import com.tencent.bkrepo.common.service.ribbon.RibbonGrayConfiguration
-import com.tencent.bkrepo.common.service.security.SecurityConfiguration
 import com.tencent.bkrepo.common.service.swagger.SwaggerConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
@@ -33,8 +32,7 @@ import org.springframework.scheduling.annotation.EnableAsync
     MessageSourceConfiguration::class,
     ClientConfiguration::class,
     RibbonGrayConfiguration::class,
-    AccessLogWebServerCustomizer::class,
-    SecurityConfiguration::class
+    AccessLogWebServerCustomizer::class
 )
 class ServiceAutoConfiguration {
 

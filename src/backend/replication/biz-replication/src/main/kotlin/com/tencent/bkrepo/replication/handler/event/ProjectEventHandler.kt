@@ -7,8 +7,6 @@ import org.springframework.stereotype.Component
 
 /**
  * handler project message and replicate
- * @author: owenlxu
- * @date: 2020/05/20
  */
 @Component
 class ProjectEventHandler : AbstractEventHandler() {

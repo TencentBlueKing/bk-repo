@@ -13,12 +13,8 @@ import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletRequest
 
 /**
- *
  *  ManifestImpl validates and impl the manifest interface
- * @author: owenlxu
- * @date: 2019-10-03
  */
-
 @RestController
 class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) : Manifest {
 

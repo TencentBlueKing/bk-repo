@@ -77,19 +77,40 @@ class NodeServiceTest @Autowired constructor(
     }
 
     @Test
-    @DisplayName("根节点相关测试")
+    @DisplayName("根节点测试")
     fun testRootNode() {
         assertNull(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/"))
-        assertEquals(0, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/", true, deep = true).size)
+        assertEquals(0, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/", includeFolder = true, deep = true).size)
 
         nodeService.create(createRequest("/1.txt", false))
         assertNotNull(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/"))
-        assertEquals(1, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/", false, deep = true).size)
+        assertEquals(1, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/", includeFolder = false, deep = true).size)
 
         nodeService.create(createRequest("/a/b/1.txt", false))
         assertNotNull(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/"))
 
-        assertEquals(2, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/", false, deep = true).size)
+        assertEquals(2, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/", includeFolder = false, deep = true).size)
+    }
+
+    @Test
+    @DisplayName("测试元数据查询")
+    fun testIncludeMetadata() {
+        nodeService.create(createRequest("/a/b/1.txt", folder = false, metadata = mapOf("key" to "value")))
+        nodeService.create(createRequest("/a/b/2.txt", folder = false))
+
+        val node1 = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/1.txt")
+        val node2 = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/2.txt")
+        assertNotNull(node1!!.metadata)
+        assertNotNull(node1.metadata["key"])
+        assertNotNull(node2!!.metadata)
+
+        val list1 = nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeMetadata = true)
+        assertNotNull(list1[0].metadata)
+        assertNotNull(list1[1].metadata)
+
+        val list2 = nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeMetadata = false)
+        assertNull(list2[0].metadata)
+        assertNull(list2[1].metadata)
     }
 
     @Test
@@ -176,7 +197,7 @@ class NodeServiceTest @Autowired constructor(
     fun testCreateFile() {
         nodeService.create(createRequest("  / a /   b /  1.txt  ", false))
         assertThrows<ErrorCodeException> { nodeService.create(createRequest("  / a /   b /  1.txt  ", false)) }
-        val node = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/1.txt")!!.nodeInfo
+        val node = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/1.txt")!!
 
         assertEquals(UT_USER, node.createdBy)
         assertNotNull(node.createdDate)
@@ -195,7 +216,7 @@ class NodeServiceTest @Autowired constructor(
     @DisplayName("创建目录测试")
     fun testCreatePath() {
         nodeService.create(createRequest("  /// a /   c ////    中文.@_-`~...  "))
-        val node = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/a/c/中文.@_-`~...")!!.nodeInfo
+        val node = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/a/c/中文.@_-`~...")!!
 
         assertEquals(UT_USER, node.createdBy)
         assertNotNull(node.createdDate)
@@ -471,7 +492,7 @@ class NodeServiceTest @Autowired constructor(
 
         val destNode = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/ab")
         assertNotNull(destNode)
-        assertFalse(destNode!!.nodeInfo.folder)
+        assertFalse(destNode!!.folder)
     }
 
     @Test
@@ -494,7 +515,7 @@ class NodeServiceTest @Autowired constructor(
 
         // file -> file
         var node = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/ab/a/1.txt")!!
-        assertEquals(1, node.nodeInfo.size)
+        assertEquals(1, node.size)
 
         moveRequest = NodeMoveRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -507,7 +528,7 @@ class NodeServiceTest @Autowired constructor(
         nodeService.move(moveRequest)
 
         node = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/abc/a/1.txt")!!
-        assertEquals(1, node.nodeInfo.size)
+        assertEquals(1, node.size)
     }
 
     @Test
@@ -647,8 +668,8 @@ class NodeServiceTest @Autowired constructor(
         )
         nodeService.copy(copyRequest)
 
-        assertTrue(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/b")?.nodeInfo?.folder == true)
-        assertTrue(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/b/1.txt")?.nodeInfo?.folder == false)
+        assertTrue(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/b")?.folder == true)
+        assertTrue(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/b/1.txt")?.folder == false)
         nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/", true, deep = true).forEach { println(it) }
     }
 

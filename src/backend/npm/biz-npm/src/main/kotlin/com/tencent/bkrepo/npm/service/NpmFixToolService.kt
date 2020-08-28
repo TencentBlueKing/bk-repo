@@ -3,12 +3,12 @@ package com.tencent.bkrepo.npm.service
 import com.google.gson.JsonObject
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
-import com.tencent.bkrepo.common.artifact.permission.Permission
+import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH

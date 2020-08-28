@@ -11,9 +11,6 @@ import javax.servlet.http.HttpServletRequest
 
 /**
  * application/octet-stream流文件上传参数解析器
- *
- * @author: carrypan
- * @date: 2019-10-30
  */
 class ArtifactFileMethodArgumentResolver : HandlerMethodArgumentResolver {
 

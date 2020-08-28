@@ -2,9 +2,6 @@ package com.tencent.bkrepo.common.api.message
 
 /**
  * 消息码
- *
- * @author: carrypan
- * @date: 2019/12/13
  */
 interface MessageCode {
     /**

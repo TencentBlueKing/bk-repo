@@ -2,9 +2,9 @@ package com.tencent.bkrepo.common.artifact.resolve.path
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.artifact.config.ARTIFACT_INFO_KEY
-import com.tencent.bkrepo.common.artifact.config.PROJECT_ID
-import com.tencent.bkrepo.common.artifact.config.REPO_NAME
+import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.repository.util.NodeUtils
 import javax.servlet.http.HttpServletRequest
 import kotlin.reflect.KClass
@@ -18,9 +18,6 @@ import org.springframework.web.servlet.HandlerMapping
 
 /**
  * 构件位置信息参数解析器
- *
- * @author: carrypan
- * @date: 2019/11/19
  */
 @Suppress("UNCHECKED_CAST")
 class ArtifactInfoMethodArgumentResolver : HandlerMethodArgumentResolver {
