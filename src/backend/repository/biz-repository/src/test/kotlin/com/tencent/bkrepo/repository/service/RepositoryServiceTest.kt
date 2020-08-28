@@ -130,7 +130,7 @@ class RepositoryServiceTest @Autowired constructor(
     fun `test create with specific storage key`() {
         val request = createRequest(storageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY)
         repositoryService.create(request)
-        val repository = repositoryService.detail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
+        val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
         assertEquals(UT_REPO_NAME, repository.name)
         assertEquals(RepositoryType.GENERIC, repository.type)
         assertEquals(RepositoryCategory.LOCAL, repository.category)
@@ -138,6 +138,7 @@ class RepositoryServiceTest @Autowired constructor(
         assertEquals(UT_PROJECT_ID, repository.projectId)
         assertEquals("simple description", repository.description)
         assertEquals(storageCredentials, repository.storageCredentials)
+        assertEquals(UT_STORAGE_CREDENTIALS_KEY, repository.storageCredentials!!.key)
 
         assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
     }
@@ -147,7 +148,7 @@ class RepositoryServiceTest @Autowired constructor(
     fun `test create with null storage key`() {
         assertNull(repositoryProperties.defaultStorageCredentialsKey)
         repositoryService.create(createRequest())
-        val repository = repositoryService.detail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
+        val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
         assertNull(repository.storageCredentials)
     }
 
@@ -156,10 +157,11 @@ class RepositoryServiceTest @Autowired constructor(
     fun `test create with default storage key`() {
         repositoryProperties.defaultStorageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY
         repositoryService.create(createRequest())
-        val repository = repositoryService.detail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
+        val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
 
         val dbCredential = repository.storageCredentials
         assertEquals(storageCredentials, dbCredential)
+        assertNull(repository.storageCredentials!!.key)
     }
 
     @Test
@@ -182,7 +184,7 @@ class RepositoryServiceTest @Autowired constructor(
                 operator = UT_USER
             )
         )
-        val repository = repositoryService.detail(UT_PROJECT_ID, UT_REPO_NAME)!!
+        val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME)!!
         assertEquals(false, repository.public)
         assertEquals("updated description", repository.description)
     }
@@ -193,12 +195,12 @@ class RepositoryServiceTest @Autowired constructor(
         repositoryService.create(createRequest("test1"))
         repositoryService.create(createRequest("test2"))
         repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "test1", SYSTEM_USER))
-        assertNull(repositoryService.detail(UT_PROJECT_ID, "test1"))
+        assertNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test1"))
 
         assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "", SYSTEM_USER)) }
         assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "test1", SYSTEM_USER)) }
 
-        assertNotNull(repositoryService.detail(UT_PROJECT_ID, "test2"))
+        assertNotNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test2"))
     }
 
     private fun createRequest(name: String = UT_REPO_NAME, storageCredentialsKey: String? = null): RepoCreateRequest {

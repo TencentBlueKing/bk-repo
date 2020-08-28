@@ -32,7 +32,7 @@ class NpmFixToolService {
         val successSet = mutableSetOf<String>()
         val errorSet = mutableSetOf<String>()
         val context = ArtifactSearchContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         pkgNameSet.forEach { it ->
             try {
                 val fullPath = String.format(NPM_PKG_FULL_PATH, it)
@@ -63,7 +63,7 @@ class NpmFixToolService {
         val context = ArtifactUploadContext(pkgMetadata)
         val fullPath = String.format(NPM_PKG_FULL_PATH, name)
         context.contextAttributes[OCTET_STREAM + "_full_path"] = fullPath
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
 

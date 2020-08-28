@@ -15,14 +15,14 @@ class RpmService {
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun install(rpmArtifactInfo: RpmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         repository.download(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deploy(rpmArtifactInfo: RpmArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
 }

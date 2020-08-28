@@ -70,7 +70,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
      * 获取项目-仓库缓存对应的html文件
      */
     fun getCacheHtml(context: ArtifactListContext): ArtifactInputStream? {
-        val repositoryInfo = context.repositoryInfo
+        val repositoryDetail = context.repositoryDetail
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = REMOTE_HTML_CACHE_FULL_PATH
@@ -125,7 +125,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
      * 需要单独给fullpath赋值。
      */
     fun getNodeCreateRequest(context: ArtifactListContext, file: File): NodeCreateRequest {
-        val repositoryInfo = context.repositoryInfo
+        val repositoryDetail = context.repositoryDetail
         // 分别计算sha256与md5
         val fileInputStream01 = FileInputStream(file)
         val sha256 = fileInputStream01.sha256()

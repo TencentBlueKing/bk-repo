@@ -235,7 +235,7 @@ class DataMigrationService {
         val context = ArtifactMigrateContext()
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, pkgName)
         context.contextAttributes[PKG_NAME] = pkgName
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         return repository.migrate(context) as MigrationFailDataDetailInfo
     }
 

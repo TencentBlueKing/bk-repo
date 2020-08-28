@@ -27,32 +27,29 @@ class FileReferenceServiceImpl : FileReferenceService {
     private lateinit var repositoryService: RepositoryService
 
     override fun increment(node: TNode, repository: TRepository?): Boolean {
-        return if (validateParameter(node)) {
-            val repo = repository ?: repositoryService.queryRepository(node.projectId, node.repoName)
-            if (repo == null) {
-                logger.error("Failed to decrement reference of node [$node], repository not found.")
-                return false
-            }
-            return increment(node.sha256!!, repo.credentialsKey)
-        } else false
+        if (!validateParameter(node)) return false
+        return try {
+            val credentialsKey = findCredentialsKey(node, repository)
+            increment(node.sha256!!, credentialsKey)
+        } catch (exception: NullPointerException) {
+            logger.error("Failed to increment reference of node [$node], repository not found.")
+            false
+        }
     }
 
     override fun decrement(node: TNode, repository: TRepository?): Boolean {
-        return if (validateParameter(node)) {
-            val repo = repository ?: repositoryService.queryRepository(node.projectId, node.repoName)
-            if (repo == null) {
-                logger.error("Failed to decrement reference of node [$node], repository not found.")
-                return false
-            }
-            return decrement(node.sha256!!, repo.credentialsKey)
-        } else false
+        if (!validateParameter(node)) return false
+        return try {
+            val credentialsKey = findCredentialsKey(node, repository)
+            decrement(node.sha256!!, credentialsKey)
+        } catch (exception: NullPointerException) {
+            logger.error("Failed to decrement reference of node [$node], repository not found.")
+            false
+        }
     }
 
     override fun increment(sha256: String, credentialsKey: String?): Boolean {
-        val query = Query.query(
-            Criteria.where(TFileReference::sha256.name).`is`(sha256)
-                .and(TFileReference::credentialsKey.name).`is`(credentialsKey)
-        )
+        val query = buildQuery(sha256, credentialsKey)
         val update = Update().inc(TFileReference::count.name, 1)
         try {
             fileReferenceDao.upsert(query, update)
@@ -65,11 +62,7 @@ class FileReferenceServiceImpl : FileReferenceService {
     }
 
     override fun decrement(sha256: String, credentialsKey: String?): Boolean {
-        val query = Query.query(
-            Criteria.where(TFileReference::sha256.name).`is`(sha256)
-                .and(TFileReference::credentialsKey.name).`is`(credentialsKey)
-        )
-
+        val query = buildQuery(sha256, credentialsKey)
         val fileReference = fileReferenceDao.findOne(query) ?: run {
             logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: $sha256 reference not found, create new one.")
             return false
@@ -87,11 +80,22 @@ class FileReferenceServiceImpl : FileReferenceService {
     }
 
     override fun count(sha256: String, credentialsKey: String?): Long {
-        val query = Query.query(
-            Criteria.where(TFileReference::sha256.name).`is`(sha256)
-                .and(TFileReference::credentialsKey.name).`is`(credentialsKey)
-        )
+        val query = buildQuery(sha256, credentialsKey)
         return fileReferenceDao.findOne(query)?.count ?: 0
+    }
+
+    private fun findCredentialsKey(node: TNode, repository: TRepository?): String? {
+        return if (repository != null) {
+            repository.credentialsKey
+        } else {
+            repositoryService.getRepoInfo(node.projectId, node.repoName)!!.credentialsKey
+        }
+    }
+
+    private fun buildQuery(sha256: String, credentialsKey: String?): Query {
+        val criteria = Criteria.where(TFileReference::sha256.name).`is`(sha256)
+            .and(TFileReference::credentialsKey.name).`is`(credentialsKey)
+        return Query.query(criteria)
     }
 
     private fun validateParameter(node: TNode): Boolean {

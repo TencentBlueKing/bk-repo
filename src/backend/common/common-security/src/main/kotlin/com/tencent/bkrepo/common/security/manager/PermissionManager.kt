@@ -29,18 +29,24 @@ class PermissionManager(
     private val httpAuthProperties: HttpAuthProperties
 ) {
 
-    fun checkPermission(userId: String, type: ResourceType, action: PermissionAction, repositoryInfo: RepositoryInfo) {
-        if (preCheck()) return
-        checkRepoPermission(userId, type, action, repositoryInfo)
-    }
-
-    fun checkPermission(userId: String, type: ResourceType, action: PermissionAction, projectId: String, repoName: String? = null) {
-        if (preCheck()) return
-        if (type == ResourceType.PROJECT) {
-            checkProjectPermission(userId, type, action, projectId)
-        } else {
-            val repositoryInfo = queryRepositoryInfo(projectId, repoName!!)
-            checkRepoPermission(userId, type, action, repositoryInfo)
+    fun checkPermission(
+        userId: String,
+        type: ResourceType,
+        action: PermissionAction,
+        projectId: String,
+        repoName: String? = null,
+        repoPublic: Boolean? = null
+    ) {
+        when {
+            preCheck() -> return
+            type == ResourceType.PROJECT -> checkProjectPermission(userId, type, action, projectId)
+            repoName != null && repoPublic != null -> {
+                checkRepoPermission(userId, type, action, projectId, repoName, repoPublic)
+            }
+            else -> {
+                val repoInfo = queryRepositoryInfo(projectId, repoName!!)
+                checkRepoPermission(userId, type, action, repoInfo.projectId, repoInfo.name, repoInfo.public)
+            }
         }
     }
 
@@ -52,7 +58,9 @@ class PermissionManager(
             return
         }
         // 匿名用户，提示登录
-        if (userId == ANONYMOUS_USER) throw AuthenticationException()
+        val platformId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
+        if (userId == ANONYMOUS_USER && platformId == null) throw AuthenticationException()
+
         if (principalType == PrincipalType.ADMIN) {
             if (!isAdminUser(userId)) {
                 throw AccessDeniedException()
@@ -74,25 +82,49 @@ class PermissionManager(
     }
 
     private fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
-        val response = repositoryClient.detail(projectId, repoName)
-        return response.data ?: throw ArtifactNotFoundException("Repository[$repoName] not found")
+        return repositoryClient.getRepoInfo(projectId, repoName).data
+            ?: throw ArtifactNotFoundException("Repository[$repoName] not found")
     }
 
-    private fun checkRepoPermission(userId: String, type: ResourceType, action: PermissionAction, repositoryInfo: RepositoryInfo) {
+    private fun checkRepoPermission(
+        userId: String,
+        type: ResourceType,
+        action: PermissionAction,
+        projectId: String,
+        repoName: String,
+        repoPublic: Boolean
+    ) {
         // public仓库且为READ操作，直接跳过
-        if (type == ResourceType.REPO && action == PermissionAction.READ && repositoryInfo.public) return
-        val appId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
+        if (type == ResourceType.REPO && action == PermissionAction.READ && repoPublic) return
+
         // 匿名用户，提示登录
+        val appId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
         if (userId == ANONYMOUS_USER && appId == null) throw AuthenticationException()
+
         // auth 校验
-        with(repositoryInfo) {
-            val checkRequest = CheckPermissionRequest(userId, type, action, projectId, name, null, null, appId)
-            checkPermission(checkRequest)
-        }
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            appId = appId,
+            resourceType = type,
+            action = action,
+            projectId = projectId,
+            repoName = repoName
+        )
+        checkPermission(checkRequest)
     }
 
     private fun checkProjectPermission(userId: String, type: ResourceType, action: PermissionAction, projectId: String) {
-        val checkRequest = CheckPermissionRequest(userId, type, action, projectId)
+        // 匿名用户，提示登录
+        val platformId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
+        if (userId == ANONYMOUS_USER && platformId == null) throw AuthenticationException()
+
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            appId = platformId,
+            resourceType = type,
+            action = action,
+            projectId = projectId
+        )
         checkPermission(checkRequest)
     }
 

@@ -12,7 +12,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
@@ -32,16 +32,16 @@ class ArtifactContextHolder(
         private lateinit var repositoryType: RepositoryType
         private lateinit var repositoryClient: RepositoryClient
 
-        fun getRepositoryInfo(): RepositoryInfo? {
+        fun getRepositoryDetail(): RepositoryDetail? {
             val request = HttpContextHolder.getRequestOrNull() ?: return null
-            val repoInfoAttribute = request.getAttribute(REPO_KEY)
-            return if (repoInfoAttribute == null) {
+            val repositoryAttribute = request.getAttribute(REPO_KEY)
+            return if (repositoryAttribute == null) {
                 val artifactInfo = getArtifactInfo(request)
-                val repositoryInfo = queryRepositoryInfo(artifactInfo)
-                request.setAttribute(REPO_KEY, repositoryInfo)
-                repositoryInfo
+                val repositoryDetail = queryRepositoryDetail(artifactInfo)
+                request.setAttribute(REPO_KEY, repositoryDetail)
+                repositoryDetail
             } else {
-                repoInfoAttribute as RepositoryInfo
+                repositoryAttribute as RepositoryDetail
             }
         }
 
@@ -57,12 +57,12 @@ class ArtifactContextHolder(
             }
         }
 
-        private fun queryRepositoryInfo(artifactInfo: ArtifactInfo): RepositoryInfo {
+        private fun queryRepositoryDetail(artifactInfo: ArtifactInfo): RepositoryDetail {
             with(artifactInfo) {
                 val response = if (repositoryType == RepositoryType.NONE) {
-                    repositoryClient.detail(projectId, repoName)
+                    repositoryClient.getRepoDetail(projectId, repoName)
                 } else {
-                    repositoryClient.detail(projectId, repoName, repositoryType.name)
+                    repositoryClient.getRepoDetail(projectId, repoName, repositoryType.name)
                 }
                 return response.data ?: throw ArtifactNotFoundException("Repository[$repoName] not found")
             }

@@ -24,7 +24,7 @@ import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -42,14 +42,14 @@ class UploadService(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun delete(userId: String, artifactInfo: GenericArtifactInfo) {
         val context = ArtifactRemoveContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
         logger.info("User[$userId] delete artifact[$artifactInfo] success.")
     }
@@ -126,7 +126,7 @@ class UploadService(
     }
 
     private fun getStorageCredentials(): StorageCredentials? {
-        val repoInfo = HttpContextHolder.getRequest().getAttribute(REPO_KEY) as RepositoryInfo
+        val repoInfo = HttpContextHolder.getRequest().getAttribute(REPO_KEY) as RepositoryDetail
         return repoInfo.storageCredentials
     }
 

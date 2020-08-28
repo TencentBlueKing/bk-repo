@@ -26,17 +26,17 @@ class PermissionAspect {
         val permission = method.getAnnotation(Permission::class.java)
 
         val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
-        val repositoryInfo = ArtifactContextHolder.getRepositoryInfo()!!
+        val repositoryDetail = ArtifactContextHolder.getRepositoryDetail()!!
 
         return try {
-            permissionCheckHandler.onPermissionCheck(userId, permission, repositoryInfo)
+            permissionCheckHandler.onPermissionCheck(userId, permission, repositoryDetail)
             if (logger.isDebugEnabled) {
-                logger.debug("User[$userId] check permission [$permission] on [$repositoryInfo] success.")
+                logger.debug("User[$userId] check permission [$permission] on [$repositoryDetail] success.")
             }
             permissionCheckHandler.onPermissionCheckSuccess()
             point.proceed()
         } catch (exception: PermissionException) {
-            logger.warn("User[$userId] check permission [$permission] on [$repositoryInfo] failed.")
+            logger.warn("User[$userId] check permission [$permission] on [$repositoryDetail] failed.")
             permissionCheckHandler.onPermissionCheckFailed(exception)
             null
         }

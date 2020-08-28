@@ -9,7 +9,6 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.user.UserRepositoryInfo
 import com.tencent.bkrepo.repository.service.RepositoryService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -43,22 +42,7 @@ class UserRepositoryController(
         @PathVariable type: String? = null
     ): Response<RepositoryInfo?> {
         permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
-        return ResponseBuilder.success(repositoryService.detail(projectId, repoName))
-    }
-
-    @ApiOperation("根据名称类型查询仓库详情")
-    @GetMapping("/detail/{projectId}/{repoName}", "/detail/{projectId}/{repoName}/{type}")
-    fun getRepoDetail(
-        @RequestAttribute userId: String,
-        @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
-        @ApiParam(value = "仓库类型", required = true)
-        @PathVariable type: String
-    ): Response<RepositoryInfo?> {
-        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
-        return ResponseBuilder.success(repositoryService.detail(projectId, repoName))
+        return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName))
     }
 
     @ApiOperation("创建仓库")
@@ -88,6 +72,7 @@ class UserRepositoryController(
     @ApiOperation("分页查询仓库列表")
     @GetMapping("/page/{projectId}/{page}/{size}")
     fun page(
+        @RequestAttribute userId: String,
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "当前页", required = true, example = "0")
@@ -98,32 +83,19 @@ class UserRepositoryController(
         @RequestParam name: String? = null,
         @ApiParam("仓库类型", required = false)
         @RequestParam type: String? = null
-    ): Response<Page<UserRepositoryInfo>> {
-        val pageResult = repositoryService.page(projectId, page, size, name, type)
-        val userRepositoryList = pageResult.records.map {
-            UserRepositoryInfo(
-                projectId = it.projectId,
-                name = it.name,
-                type = it.type,
-                category = it.category,
-                public = it.public,
-                description = it.description,
-                createdBy = it.createdBy,
-                createdDate = it.createdDate,
-                lastModifiedBy = it.lastModifiedBy,
-                lastModifiedDate = it.lastModifiedDate
-            )
-        }
-
-        return ResponseBuilder.success(Page(pageResult, userRepositoryList))
+    ): Response<Page<RepositoryInfo>> {
+        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
+        return ResponseBuilder.success(repositoryService.page(projectId, page, size, name, type))
     }
 
     @ApiOperation("列表查询项目所有仓库")
     @GetMapping("/list/{projectId}")
     fun list(
+        @RequestAttribute userId: String,
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String
     ): Response<List<RepositoryInfo>> {
+        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
         return ResponseBuilder.success(repositoryService.list(projectId))
     }
 }

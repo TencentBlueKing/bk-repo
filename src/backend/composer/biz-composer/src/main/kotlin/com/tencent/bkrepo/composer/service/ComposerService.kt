@@ -18,28 +18,28 @@ class ComposerService {
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun installRequire(composerArtifactInfo: ComposerArtifactInfo) {
         val context = ArtifactDownloadContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         repository.download(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun getJson(composerArtifactInfo: ComposerArtifactInfo): String? {
         val context = ArtifactSearchContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         return (repository as ComposerRepository).getJson(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun packages(composerArtifactInfo: ComposerArtifactInfo): String? {
         val context = ArtifactSearchContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         return (repository as ComposerRepository).packages(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deploy(composerArtifactInfo: ComposerArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
 }

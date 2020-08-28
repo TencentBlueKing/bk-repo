@@ -94,15 +94,15 @@ class RpmLocalRepository(
      */
     @Deprecated("getRpmRepoConf()")
     private fun searchRpmRepoDataDepth(context: ArtifactUploadContext): Int {
-        (context.repositoryInfo.configuration as RpmLocalConfiguration).repodataDepth.let { return it }
+        (context.repositoryDetail.configuration as RpmLocalConfiguration).repodataDepth.let { return it }
     }
 
     /**
      * 查询rpm仓库属性
      */
     private fun getRpmRepoConf(context: ArtifactUploadContext): RpmRepoConf {
-        val repodataDepth = (context.repositoryInfo.configuration as RpmLocalConfiguration).repodataDepth
-        val enabledFileLists = (context.repositoryInfo.configuration as RpmLocalConfiguration).enabledFileLists
+        val repodataDepth = (context.repositoryDetail.configuration as RpmLocalConfiguration).repodataDepth
+        val enabledFileLists = (context.repositoryDetail.configuration as RpmLocalConfiguration).enabledFileLists
         return RpmRepoConf(repodataDepth, enabledFileLists)
     }
 
@@ -182,7 +182,7 @@ class RpmLocalRepository(
     ): RepomdChildNode? {
         val target = "$DASH$indexType$DOT$XMLGZ"
 
-        with(context.repositoryInfo) {
+        with(context.repositoryDetail) {
             // repodata下'-primary.xml.gz'最新节点。
             val nodeList = nodeClient.list(
                 projectId, name,
@@ -246,7 +246,7 @@ class RpmLocalRepository(
                 val fullPath = "$SLASH${repodataPath}$REPODATA$SLASH$xmlGZFileSha1$target"
                 val xmlPrimaryNode = xmlPrimaryNodeCreate(
                     context.userId,
-                    context.repositoryInfo,
+                    context.repositoryDetail,
                     fullPath,
                     xmlGZArtifact
                 )
@@ -296,7 +296,7 @@ class RpmLocalRepository(
             // 保存repodata 节点
             val xmlRepomdNode = xmlPrimaryNodeCreate(
                 context.userId,
-                context.repositoryInfo,
+                context.repositoryDetail,
                 "$SLASH${repodataPath}$REPODATA${SLASH}repomd.xml",
                 xmlRepodataArtifact
             )

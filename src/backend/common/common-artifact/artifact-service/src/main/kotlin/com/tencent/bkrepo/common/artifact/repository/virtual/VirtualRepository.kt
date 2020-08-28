@@ -34,9 +34,9 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             }
             traversedList.add(repoIdentify)
             try {
-                val subRepoInfo = repositoryClient.detail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
-                val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactSearchContext
+                val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
+                val repository = RepositoryHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
+                val subContext = context.copy(subRepoDetail) as ArtifactSearchContext
                 repository.search(subContext)?.let { jsonObj ->
                     if (logger.isDebugEnabled) {
                         logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
@@ -68,9 +68,9 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             }
             traversedList.add(repoIdentify)
             try {
-                val subRepoInfo = repositoryClient.detail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
-                val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactDownloadContext
+                val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
+                val repository = RepositoryHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
+                val subContext = context.copy(repositoryDetail = subRepoDetail) as ArtifactDownloadContext
                 repository.onDownload(subContext)?.let {
                     if (logger.isDebugEnabled) {
                         logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
@@ -91,7 +91,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
     @Suppress("UNCHECKED_CAST")
     protected fun getTraversedList(context: ArtifactContext): MutableList<RepositoryIdentify> {
         return context.getAttribute(TRAVERSED_LIST) as? MutableList<RepositoryIdentify> ?: let {
-            val selfRepoInfo = context.repositoryInfo
+            val selfRepoInfo = context.repositoryDetail
             val traversedList = mutableListOf(RepositoryIdentify(selfRepoInfo.projectId, selfRepoInfo.name))
             context.putAttribute(TRAVERSED_LIST, traversedList)
             return traversedList

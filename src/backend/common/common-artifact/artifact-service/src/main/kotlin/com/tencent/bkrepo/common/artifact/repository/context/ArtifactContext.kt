@@ -13,37 +13,37 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfig
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 /**
  * 构件上下文
  */
-open class ArtifactContext(repo: RepositoryInfo? = null) {
+open class ArtifactContext(repo: RepositoryDetail? = null) {
     private var contextAttributes: MutableMap<String, Any> = mutableMapOf()
     val request: HttpServletRequest = HttpContextHolder.getRequest()
     val response: HttpServletResponse = HttpContextHolder.getResponse()
     val userId: String
     val artifactInfo: ArtifactInfo
-    var repositoryInfo: RepositoryInfo
-    val storageCredentials: StorageCredentials? get() = repositoryInfo.storageCredentials
-    val projectId: String get() = repositoryInfo.projectId
-    val repoName: String get() = repositoryInfo.name
+    var repositoryDetail: RepositoryDetail
+    val storageCredentials: StorageCredentials? get() = repositoryDetail.storageCredentials
+    val projectId: String get() = repositoryDetail.projectId
+    val repoName: String get() = repositoryDetail.name
 
     init {
         this.userId = request.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
         this.artifactInfo = request.getAttribute(ARTIFACT_INFO_KEY) as ArtifactInfo
-        this.repositoryInfo = repo ?: request.getAttribute(REPO_KEY) as RepositoryInfo
+        this.repositoryDetail = repo ?: request.getAttribute(REPO_KEY) as RepositoryDetail
     }
 
     /**
      * 使用当前实例的属性，拷贝出一个新的[ArtifactContext]实例
-     * 传入的[repositoryInfo]会替换当前实例的仓库信息
+     * 传入的[repositoryDetail]会替换当前实例的仓库信息
      */
-    fun copy(repositoryInfo: RepositoryInfo): ArtifactContext {
+    fun copy(repositoryDetail: RepositoryDetail): ArtifactContext {
         val context = this.javaClass.newInstance()
-        context.repositoryInfo = repositoryInfo
+        context.repositoryDetail = repositoryDetail
         context.contextAttributes = this.contextAttributes
         return context
     }
@@ -87,38 +87,38 @@ open class ArtifactContext(repo: RepositoryInfo? = null) {
      * 获取仓库配置
      */
     fun getConfiguration(): RepositoryConfiguration {
-        return this.repositoryInfo.configuration
+        return this.repositoryDetail.configuration
     }
 
     /**
      * 获取本地仓库配置
      */
     fun getLocalConfiguration(): LocalConfiguration {
-        require(this.repositoryInfo.category == RepositoryCategory.LOCAL)
-        return this.repositoryInfo.configuration as LocalConfiguration
+        require(this.repositoryDetail.category == RepositoryCategory.LOCAL)
+        return this.repositoryDetail.configuration as LocalConfiguration
     }
 
     /**
      * 获取远程仓库配置
      */
     fun getRemoteConfiguration(): RemoteConfiguration {
-        require(this.repositoryInfo.category == RepositoryCategory.REMOTE)
-        return this.repositoryInfo.configuration as RemoteConfiguration
+        require(this.repositoryDetail.category == RepositoryCategory.REMOTE)
+        return this.repositoryDetail.configuration as RemoteConfiguration
     }
 
     /**
      * 获取远程仓库配置
      */
     fun getVirtualConfiguration(): VirtualConfiguration {
-        require(this.repositoryInfo.category == RepositoryCategory.VIRTUAL)
-        return this.repositoryInfo.configuration as VirtualConfiguration
+        require(this.repositoryDetail.category == RepositoryCategory.VIRTUAL)
+        return this.repositoryDetail.configuration as VirtualConfiguration
     }
 
     /**
      * 获取组合仓库配置
      */
     fun getCompositeConfiguration(): CompositeConfiguration {
-        require(this.repositoryInfo.category == RepositoryCategory.COMPOSITE)
-        return this.repositoryInfo.configuration as CompositeConfiguration
+        require(this.repositoryDetail.category == RepositoryCategory.COMPOSITE)
+        return this.repositoryDetail.configuration as CompositeConfiguration
     }
 }

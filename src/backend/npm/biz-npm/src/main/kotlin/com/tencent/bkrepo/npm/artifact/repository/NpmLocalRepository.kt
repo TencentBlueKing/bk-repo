@@ -129,7 +129,7 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     private fun getNodeCreateRequest(name: String, context: ArtifactUploadContext): NodeCreateRequest {
-        val repositoryInfo = context.repositoryInfo
+        val repositoryDetail = context.repositoryDetail
         val artifactFile = context.getArtifactFile(name)
         val contextAttributes = context.contextAttributes
         val fileSha256Map = context.contextAttributes[ATTRIBUTE_SHA256MAP] as Map<*, *>
@@ -138,8 +138,8 @@ class NpmLocalRepository : LocalRepository() {
         val md5 = fileMd5Map[name] as? String
 
         return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
+            projectId = repositoryDetail.projectId,
+            repoName = repositoryDetail.name,
             folder = false,
             fullPath = contextAttributes[name + "_full_path"] as String,
             size = artifactFile?.getSize(),
@@ -190,9 +190,9 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     private fun onSearch(context: ArtifactSearchContext): JsonObject? {
-        val repositoryInfo = context.repositoryInfo
-        val projectId = repositoryInfo.projectId
-        val repoName = repositoryInfo.name
+        val repositoryDetail = context.repositoryDetail
+        val projectId = repositoryDetail.projectId
+        val repoName = repositoryDetail.name
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         val node = nodeClient.detail(projectId, repoName, fullPath).data
         if (node == null || node.folder) return null
@@ -247,9 +247,9 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     override fun remove(context: ArtifactRemoveContext) {
-        val repositoryInfo = context.repositoryInfo
-        val projectId = repositoryInfo.projectId
-        val repoName = repositoryInfo.name
+        val repositoryDetail = context.repositoryDetail
+        val projectId = repositoryDetail.projectId
+        val repoName = repositoryDetail.name
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as List<*>
         val userId = context.userId
         fullPath.forEach {
@@ -259,8 +259,8 @@ class NpmLocalRepository : LocalRepository() {
 
     override fun list(context: ArtifactListContext): NpmSearchResponse {
         val searchRequest = context.contextAttributes[SEARCH_REQUEST] as MetadataSearchRequest
-        val projectId = Rule.QueryRule("projectId", context.repositoryInfo.projectId)
-        val repoName = Rule.QueryRule("repoName", context.repositoryInfo.name)
+        val projectId = Rule.QueryRule("projectId", context.repositoryDetail.projectId)
+        val repoName = Rule.QueryRule("repoName", context.repositoryDetail.name)
         val fullPath = Rule.QueryRule("fullPath", ".tgz", OperationType.SUFFIX)
 
         val nameMd = Rule.QueryRule("metadata.name", searchRequest.text, OperationType.MATCH)
@@ -447,9 +447,9 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     private fun getCacheArtifact(context: ArtifactContext): ArtifactInputStream? {
-        val repositoryInfo = context.repositoryInfo
+        val repositoryDetail = context.repositoryDetail
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+        val node = nodeClient.detail(repositoryDetail.projectId, repositoryDetail.name, fullPath).data
         if (node == null || node.folder) return null
         val inputStream =
             storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
@@ -458,9 +458,9 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     private fun getCacheNodeInfo(context: ArtifactContext): NodeDetail? {
-        val repositoryInfo = context.repositoryInfo
+        val repositoryDetail = context.repositoryDetail
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        return nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+        return nodeClient.detail(repositoryDetail.projectId, repositoryDetail.name, fullPath).data
     }
 
     private fun putArtifact(context: ArtifactMigrateContext, artifactFile: ArtifactFile) {
@@ -470,12 +470,12 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     private fun getNodeCreateRequest(context: ArtifactContext, file: ArtifactFile): NodeCreateRequest {
-        val repositoryInfo = context.repositoryInfo
+        val repositoryDetail = context.repositoryDetail
         val sha256 = file.getFileSha256()
         val md5 = file.getFileMd5()
         return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
+            projectId = repositoryDetail.projectId,
+            repoName = repositoryDetail.name,
             folder = false,
             fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String,
             size = file.getSize(),

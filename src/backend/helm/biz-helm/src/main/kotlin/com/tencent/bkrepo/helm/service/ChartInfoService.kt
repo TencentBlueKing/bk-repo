@@ -55,7 +55,7 @@ class ChartInfoService {
         }
         chartRepositoryService.freshIndexFile(artifactInfo)
         val context = ArtifactSearchContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         context.contextAttributes[FULL_PATH] = INDEX_CACHE_YAML
         val inputStream = repository.search(context) as ArtifactInputStream
         return inputStream.use {

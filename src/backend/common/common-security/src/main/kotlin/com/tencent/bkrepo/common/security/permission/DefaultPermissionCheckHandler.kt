@@ -3,14 +3,16 @@ package com.tencent.bkrepo.common.security.permission
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
 open class DefaultPermissionCheckHandler(
     private val permissionManager: PermissionManager
 ) : PermissionCheckHandler {
 
-    override fun onPermissionCheck(userId: String, permission: Permission, repositoryInfo: RepositoryInfo, artifactInfo: ArtifactInfo?) {
-        permissionManager.checkPermission(userId, permission.type, permission.action, repositoryInfo)
+    override fun onPermissionCheck(userId: String, permission: Permission, repositoryDetail: RepositoryDetail, artifactInfo: ArtifactInfo?) {
+        with(repositoryDetail) {
+            permissionManager.checkPermission(userId, permission.type, permission.action, projectId, name, public)
+        }
     }
 
     override fun onPrincipalCheck(userId: String, principal: Principal) {

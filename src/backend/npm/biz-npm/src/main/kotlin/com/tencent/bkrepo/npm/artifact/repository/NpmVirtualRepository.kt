@@ -24,9 +24,9 @@ class NpmVirtualRepository : VirtualRepository() {
             }
             traversedList.add(repoIdentify)
             try {
-                val subRepoInfo = repositoryClient.detail(repoIdentify.projectId, repoIdentify.name).data!!
+                val subRepoInfo = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
-                val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactListContext
+                val subContext = context.copy(repositoryDetail = subRepoInfo) as ArtifactListContext
                 repository.list(subContext)?.let { map ->
                     list.add(map as NpmSearchResponse)
                 }

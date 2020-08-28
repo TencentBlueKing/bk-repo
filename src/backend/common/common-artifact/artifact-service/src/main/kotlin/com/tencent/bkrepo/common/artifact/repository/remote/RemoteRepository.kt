@@ -110,8 +110,8 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     private fun findCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
         val artifactInfo = context.artifactInfo
-        val repositoryInfo = context.repositoryInfo
-        return nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, artifactInfo.artifactUri).data
+        val repositoryDetail = context.repositoryDetail
+        return nodeClient.detail(repositoryDetail.projectId, repositoryDetail.name, artifactInfo.artifactUri).data
     }
 
     /**
@@ -141,8 +141,8 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     open fun buildCacheNodeCreateRequest(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeCreateRequest {
         return NodeCreateRequest(
-            projectId = context.repositoryInfo.projectId,
-            repoName = context.repositoryInfo.name,
+            projectId = context.repositoryDetail.projectId,
+            repoName = context.repositoryDetail.name,
             folder = false,
             fullPath = context.artifactInfo.artifactUri,
             size = artifactFile.getSize(),

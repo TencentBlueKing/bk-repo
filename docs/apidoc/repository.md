@@ -2,7 +2,7 @@
 
 repo仓库接口使用统一接口协议，公共部分请参照[通用接口协议说明](./common.md)
 
-repo仓库枚举值请参考后文**公共枚举类说明**部分
+repo仓库枚举值请参考后文**仓库公共枚举值说明**部分
 
 ### 创建仓库
 
@@ -62,7 +62,7 @@ repo仓库枚举值请参考后文**公共枚举类说明**部分
 
 ### 分页查询仓库
 
-- API: POST /repository/api/repo/page/{projectId}/{page}/{size}?name=local&type=GENERIC
+- API: GET /repository/api/repo/page/{projectId}/{page}/{size}?name=local&type=GENERIC
 
 - API 名称: list_repo_page
 
@@ -134,17 +134,77 @@ repo仓库枚举值请参考后文**公共枚举类说明**部分
 
 
 
-### 查询仓库代理详情
+### 查询仓库详情
 
-- 待补充
+- API: GET /repository/api/repo/detail/{projectId}/{name}/{type}
+
+- API 名称: get_repo_detail
+
+- 功能说明：
+
+  - 中文：查询仓库详情
+  - English：get repo detail
+
+- 请求体
+
+  此接口无请求体
+
+- 请求字段说明
+
+  | 字段      | 类型   | 是否必须 | 默认值 | 说明     | Description  |
+  | --------- | ------ | -------- | ------ | -------- | ------------ |
+  | projectId | string | 是       | 无     | 项目名称 | project name |
+  | page      | string | 是       | 无     | 当前页   | repo name    |
+  | type      | enum   | 否       | 无     | 仓库类型 | repo type    |
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": {
+      "projectId" : "test",
+      "name" : "local",
+      "type" : "GENERIC",
+      "category" : "LOCAL",
+      "public" : false,
+      "description" : "",
+      "configuration": {},
+      "createdBy" : "system",
+      "createdDate" : "2020-03-16T12:13:03.371",
+      "lastModifiedBy" : "system",
+      "lastModifiedDate" : "2020-03-16T12:13:03.371"
+    },
+    "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  | 字段             | 类型     | 说明                       | Description        |
+  | ---------------- | -------- | -------------------------- | ------------------ |
+  | projectId        | string   | 项目id                     | project id         |
+  | name             | string   | 仓库名称                   | repo name          |
+  | type             | string   | 仓库类型                   | repo type          |
+  | category         | string   | 仓库类别                   | repo category      |
+  | public           | boolean  | 是否公开项目               | is public repo     |
+  | description      | string   | 仓库描述                   | repo description   |
+  | configuration    | [object] | 仓库配置，参考仓库配置介绍 | repo configuration |
+  | createdBy        | string   | 创建者                     | create user        |
+  | createdDate      | string   | 创建时间                   | create time        |
+  | lastModifiedBy   | string   | 上次修改者                 | last modify user   |
+  | lastModifiedDate | string   | 上次修改时间               | last modify time   |
+
+
 
 ### 修改仓库配置
 
-- 待补充
+- TODO
 
 
 
-### 公共枚举类说明
+### 仓库公共枚举值说明
 
 #### 1. 仓库类型
 
@@ -171,3 +231,18 @@ repo仓库枚举值请参考后文**公共枚举类说明**部分
 | REMOTE    | 远程仓库。通过访问远程地址拉取构件，不支持上传               |
 | VIRTUAL   | 虚拟仓库。可以组合多个本地仓库和远程仓库拉取构件，不支持上传 |
 | COMPOSITE | 组合仓库。具有LOCAL的功能，同时也支持代理多个远程地址进行下载 |
+
+
+
+### 仓库配置项
+
+- 公共配置项
+  - TODO
+- local本地仓库配置项
+  - TODO
+- remote远程仓库配置项
+  - TODO
+- virtual虚拟仓库配置项
+  - TODO
+- composite组合仓库配置项
+  - TODO

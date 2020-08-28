@@ -81,7 +81,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
      */
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val artifactInfo = context.artifactInfo
-        val repositoryInfo = context.repositoryInfo
+        val repositoryDetail = context.repositoryDetail
         val artifactFile = context.artifactFileMap["content"]
         val metadata = context.request.parameterMaps()
         val filename = (artifactFile as MultipartArtifactFile).getOriginalFilename()
@@ -103,7 +103,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     }
 
     override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
-        val repository = context.repositoryInfo
+        val repository = context.repositoryDetail
         val searchArgs = XmlUtil.getSearchArgs(xmlString)
         val packageName = searchArgs["packageName"]
         val summary = searchArgs["summary"]
@@ -135,7 +135,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
 
     override fun list(context: ArtifactListContext) {
         val artifactInfo = context.artifactInfo
-        val repositoryInfo = context.repositoryInfo
+        val repositoryDetail = context.repositoryDetail
         with(artifactInfo) {
             val node = nodeClient.detail(projectId, repositoryInfo.name, artifactUri).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
@@ -404,7 +404,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         packageName: String,
         filename: String
     ): NodeCreateRequest? {
-        val repositoryInfo = context.repositoryInfo
+        val repositoryDetail = context.repositoryDetail
         val metadata = context.request.parameterMaps()
         // 获取文件版本信息
         val pypiInfo = filename.fileFormat().let { artifactFile.getInputStream().getPkgInfo(it) }

@@ -46,12 +46,12 @@ class RepoDataService(
         return if (repoName == null) {
             repositoryClient.list(projectId).data!!
         } else {
-            listOf(repositoryClient.detail(projectId, repoName).data!!)
+            listOf(repositoryClient.getRepoDetail(projectId, repoName).data!!)
         }
     }
 
     fun getRepositoryDetail(projectId: String, repoName: String): RepositoryInfo? {
-        return repositoryClient.detail(projectId, repoName).data
+        return repositoryClient.getRepoDetail(projectId, repoName).data
     }
 
     fun countFileNode(repositoryInfo: RepositoryInfo): Long {

@@ -5,14 +5,34 @@ import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 
 /**
  * 仓库服务接口
  */
 interface RepositoryService {
-    fun detail(projectId: String, name: String, type: String? = null): RepositoryInfo?
-    fun queryRepository(projectId: String, name: String, type: String? = null): TRepository?
+    /**
+     * 查询仓库详情，不存在返回null
+     *
+     * @param projectId 项目id
+     * @param name 仓库名称
+     * @param type 仓库类型
+     */
+    fun getRepoDetail(projectId: String, name: String, type: String? = null): RepositoryDetail?
+
+    /**
+     * 查询仓库基本信息，不存在返回null
+     *
+     * @param projectId 项目id
+     * @param name 仓库名称
+     * @param type 仓库类型
+     */
+    fun getRepoInfo(projectId: String, name: String, type: String? = null): RepositoryInfo?
+
+    /**
+     * 查询项目[projectId]下的所有仓库
+     */
     fun list(projectId: String): List<RepositoryInfo>
 
     /**
@@ -38,12 +58,17 @@ interface RepositoryService {
     /**
      * 根据请求[repoCreateRequest]创建仓库
      */
-    fun create(repoCreateRequest: RepoCreateRequest): RepositoryInfo
+    fun create(repoCreateRequest: RepoCreateRequest): RepositoryDetail
 
     /**
      * 根据请求[repoUpdateRequest]更新仓库
      */
     fun update(repoUpdateRequest: RepoUpdateRequest)
+
+    /**
+     * 更新storageCredentialsKey
+     */
+    fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String)
 
     /**
      * 根据请求[repoDeleteRequest]删除仓库

@@ -88,8 +88,8 @@ abstract class LocalRepository : AbstractArtifactRepository() {
      */
     open fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         return NodeCreateRequest(
-            projectId = context.repositoryInfo.projectId,
-            repoName = context.repositoryInfo.name,
+            projectId = context.repositoryDetail.projectId,
+            repoName = context.repositoryDetail.name,
             folder = false,
             fullPath = context.artifactInfo.artifactUri,
             size = context.getArtifactFile().getSize(),

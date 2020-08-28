@@ -6,6 +6,7 @@ import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -29,25 +30,34 @@ import org.springframework.web.bind.annotation.RequestMapping
 @RequestMapping("/service/repo")
 interface RepositoryClient {
 
-    @ApiOperation("根据名称类型查询仓库")
-    @GetMapping("/query/{projectId}/{name}/{type}")
-    fun detail(
+    @ApiOperation("查询仓库信息")
+    @GetMapping("/info/{projectId}/{repoName}")
+    fun getRepoInfo(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable name: String,
-        @ApiParam(value = "仓库类型", required = true)
-        @PathVariable type: String
+        @PathVariable repoName: String
     ): Response<RepositoryInfo?>
 
-    @ApiOperation("根据名称查询仓库")
-    @GetMapping("/query/{projectId}/{name}")
-    fun detail(
+    @ApiOperation("查询仓库详情")
+    @GetMapping("/detail/{projectId}/{repoName}")
+    fun getRepoDetail(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable name: String
-    ): Response<RepositoryInfo?>
+        @PathVariable repoName: String
+    ): Response<RepositoryDetail?>
+
+    @ApiOperation("查询仓库详情")
+    @GetMapping("/detail/{projectId}/{repoName}/{type}")
+    fun getRepoDetail(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "仓库类型", required = true)
+        @PathVariable type: String? = null
+    ): Response<RepositoryDetail?>
 
     @ApiOperation("列表查询项目所有仓库")
     @GetMapping("/list/{projectId}")
@@ -71,7 +81,7 @@ interface RepositoryClient {
     @PostMapping
     fun create(
         @RequestBody repoCreateRequest: RepoCreateRequest
-    ): Response<RepositoryInfo>
+    ): Response<RepositoryDetail>
 
     @ApiOperation("修改仓库")
     @PutMapping

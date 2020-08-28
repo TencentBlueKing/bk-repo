@@ -62,7 +62,7 @@ class ListViewServiceImpl(
                 writePageContent(ListViewObject(currentPath, headerList, rowList, FOOTER, true))
             } else {
                 val context = ArtifactDownloadContext()
-                val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+                val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
                 repository.download(context)
             }
         }

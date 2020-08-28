@@ -47,7 +47,7 @@ class ArtifactFileFactory(
         }
 
         private fun getStorageCredentials(): StorageCredentials {
-            return ArtifactContextHolder.getRepositoryInfo()?.storageCredentials ?: properties.defaultStorageCredentials()
+            return ArtifactContextHolder.getRepositoryDetail()?.storageCredentials ?: properties.defaultStorageCredentials()
         }
 
         @Suppress("UNCHECKED_CAST")

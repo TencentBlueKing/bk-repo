@@ -126,7 +126,7 @@ class NpmWebService {
         pkgName.takeIf { !pkgName.isBlank() } ?: throw NpmArgumentNotFoundException("argument [$pkgName] not found.")
         val context = ArtifactSearchContext()
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, pkgName)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         return repository.search(context)?.let { it as JsonObject }
             ?: throw NpmArtifactNotFoundException("package [$pkgName] not found.")
     }

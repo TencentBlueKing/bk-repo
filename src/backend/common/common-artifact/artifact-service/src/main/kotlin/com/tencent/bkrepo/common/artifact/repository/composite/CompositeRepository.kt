@@ -147,25 +147,25 @@ class CompositeRepository(
         val repoType = proxyChannel.repoType.name
         val projectId = PUBLIC_PROXY_PROJECT
         val repoName = PUBLIC_PROXY_REPO_NAME.format(repoType, proxyChannel.name)
-        val remoteRepoInfo = repositoryClient.detail(projectId, repoName, repoType).data!!
+        val remoteRepoDetail = repositoryClient.getRepoDetail(projectId, repoName, repoType).data!!
         // 构造proxyConfiguration
-        val remoteConfiguration = remoteRepoInfo.configuration as RemoteConfiguration
+        val remoteConfiguration = remoteRepoDetail.configuration as RemoteConfiguration
         remoteConfiguration.proxy = RemoteProxyConfiguration(proxyChannel.url, proxyChannel.username, proxyChannel.password)
 
-        return context.copy(remoteRepoInfo)
+        return context.copy(remoteRepoDetail)
     }
 
     private fun getContextFromPrivateProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
         // 查询远程仓库
-        val projectId = context.repositoryInfo.projectId
-        val repoType = context.repositoryInfo.type.name
-        val repoName = PRIVATE_PROXY_REPO_NAME.format(context.repositoryInfo.name, setting.name)
-        val remoteRepoInfo = repositoryClient.detail(projectId, repoName, repoType).data!!
+        val projectId = context.repositoryDetail.projectId
+        val repoType = context.repositoryDetail.type.name
+        val repoName = PRIVATE_PROXY_REPO_NAME.format(context.repositoryDetail.name, setting.name)
+        val remoteRepoDetail = repositoryClient.getRepoDetail(projectId, repoName, repoType).data!!
         // 构造proxyConfiguration
-        val remoteConfiguration = remoteRepoInfo.configuration as RemoteConfiguration
+        val remoteConfiguration = remoteRepoDetail.configuration as RemoteConfiguration
         remoteConfiguration.proxy = RemoteProxyConfiguration(setting.url!!, setting.username, setting.password)
 
-        return context.copy(remoteRepoInfo)
+        return context.copy(remoteRepoDetail)
     }
 
     companion object {

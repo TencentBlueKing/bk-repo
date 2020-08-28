@@ -3,7 +3,6 @@ package com.tencent.bkrepo.npm.artifact.repository
 import com.google.gson.JsonObject
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
@@ -74,9 +73,9 @@ class NpmRemoteRepository : RemoteRepository() {
         val remoteConfiguration = context.getRemoteConfiguration()
         val cacheConfiguration = remoteConfiguration.cache
         if (!cacheConfiguration.enabled) return null
-        val repositoryInfo = context.repositoryInfo
+        val repositoryDetail = context.repositoryDetail
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+        val node = nodeClient.detail(repositoryDetail.projectId, repositoryDetail.name, fullPath).data
         if (node == null || node.folder) return null
         val createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()

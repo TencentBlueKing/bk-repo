@@ -70,9 +70,9 @@ class ShareServiceImpl(
             if (shareRecord.expireDate?.isBefore(LocalDateTime.now()) == true) {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXPIRED, token)
             }
-            val repo = repositoryService.detail(projectId, repoName) ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+            val repo = repositoryService.getRepoDetail(projectId, repoName) ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo)
-            val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+            val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
         }
     }

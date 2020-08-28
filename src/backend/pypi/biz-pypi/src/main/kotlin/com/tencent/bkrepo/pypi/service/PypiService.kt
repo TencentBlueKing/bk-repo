@@ -22,14 +22,14 @@ class PypiService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun packages(pypiArtifactInfo: PypiArtifactInfo) {
         val context = ArtifactDownloadContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         repository.download(context)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun simple(artifactInfo: PypiArtifactInfo) {
         val context = ArtifactListContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         repository.list(context)
     }
 
@@ -39,7 +39,7 @@ class PypiService {
         xmlString: String
     ) {
         val context = ArtifactSearchContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         (repository as PypiRepository).searchXml(context, xmlString)
     }
 
@@ -49,21 +49,21 @@ class PypiService {
         artifactFileMap: ArtifactFileMap
     ) {
         val context = ArtifactUploadContext(artifactFileMap)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun migrate(pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
         val context = ArtifactMigrateContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         return (repository as PypiLocalRepository).migrateData(context)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun migrateResult(pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
         val context = ArtifactMigrateContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
         return (repository as PypiLocalRepository).migrateResult(context)
     }
 }

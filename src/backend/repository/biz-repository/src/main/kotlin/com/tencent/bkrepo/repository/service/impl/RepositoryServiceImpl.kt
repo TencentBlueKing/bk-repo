@@ -24,6 +24,7 @@ import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.ProjectService
@@ -62,30 +63,33 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     @Autowired
     private lateinit var repositoryProperties: RepositoryProperties
 
-    override fun detail(projectId: String, name: String, type: String?): RepositoryInfo? {
-        return convert(queryRepository(projectId, name, type))
+    override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
+        val tRepository = queryRepository(projectId, name, type, false)
+        return convertToInfo(tRepository)
     }
 
-    override fun queryRepository(projectId: String, name: String, type: String?): TRepository? {
-        if (projectId.isBlank() || name.isBlank()) return null
+    override fun getRepoDetail(projectId: String, name: String, type: String?): RepositoryDetail? {
+        val tRepository = queryRepository(projectId, name, type)
+        return convertToDetail(tRepository)
+    }
 
-        val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId).and(TRepository::name.name).`is`(name)
-        if (!type.isNullOrBlank()) {
-            criteria.and(TRepository::type.name).`is`(type)
+    override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String) {
+        queryRepository(projectId, repoName, null, false)?.run {
+            this.credentialsKey = storageCredentialsKey
+            repoRepository.save(this)
         }
-        return mongoTemplate.findOne(Query(criteria), TRepository::class.java)
     }
 
     override fun list(projectId: String): List<RepositoryInfo> {
         val query = buildListQuery(projectId)
-        return mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
+        return mongoTemplate.find(query, TRepository::class.java).map { convertToInfo(it)!! }
     }
 
     override fun page(projectId: String, page: Int, size: Int, name: String?, type: String?): Page<RepositoryInfo> {
         val query = buildListQuery(projectId, name, type)
         val count = mongoTemplate.count(query, TRepository::class.java)
         val pageQuery = query.with(PageRequest.of(page, size))
-        val data = mongoTemplate.find(pageQuery, TRepository::class.java).map { convert(it)!! }
+        val data = mongoTemplate.find(pageQuery, TRepository::class.java).map { convertToInfo(it)!! }
 
         return Page(page, size, count, data)
     }
@@ -105,7 +109,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
      * 创建仓库
      */
     @Transactional(rollbackFor = [Throwable::class])
-    override fun create(repoCreateRequest: RepoCreateRequest): RepositoryInfo {
+    override fun create(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
         with(repoCreateRequest) {
             TODO("校验仓库配置")
             // 确保项目一定存在
@@ -142,7 +146,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
                 .also { createRepoManager(it.projectId, it.name, it.createdBy) }
                 .also { publishEvent(RepoCreatedEvent(repoCreateRequest)) }
                 .also { logger.info("Create repository [$repoCreateRequest] success.") }
-                .let { convert(repository, storageCredential)!! }
+                .let { convertToDetail(repository, storageCredential)!! }
         }
     }
 
@@ -179,21 +183,43 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     }
 
     /**
+     * 查询仓库
+     */
+    private fun queryRepository(projectId: String, name: String, type: String?, withDetail: Boolean = true): TRepository? {
+        if (projectId.isBlank() || name.isBlank()) return null
+
+        val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId).and(TRepository::name.name).`is`(name)
+        if (!type.isNullOrBlank()) {
+            criteria.and(TRepository::type.name).`is`(type)
+        }
+        val query = Query(criteria)
+        if (!withDetail) {
+            query.fields().exclude(TRepository::configuration.name)
+        }
+        return mongoTemplate.findOne(Query(criteria), TRepository::class.java)
+    }
+
+    /**
      * 检查仓库是否存在，不存在则抛异常
      */
     override fun checkRepository(projectId: String, repoName: String, repoType: String?): TRepository {
         return queryRepository(projectId, repoName, repoType) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
     }
 
+    /**
+     * 狗仔list查询条件
+     */
     private fun buildListQuery(projectId: String, repoName: String? = null, repoType: String? = null): Query {
         val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId)
         repoName?.let { criteria.and(TRepository::name.name).regex("^$repoName") }
         repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
-        return Query().with(Sort.by(TRepository::name.name))
+        return Query().with(Sort.by(TRepository::name.name)).apply {
+            fields().exclude(TRepository::configuration.name)
+        }
     }
 
     /**
-     * 构造仓库配置
+     * 构造仓库初始化配置
      */
     private fun buildRepoConfiguration(request: RepoCreateRequest): RepositoryConfiguration {
         return when(request.category) {
@@ -204,11 +230,10 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         }
     }
 
-
-    private fun convert(tRepository: TRepository?, storageCredentials: StorageCredentials? = null): RepositoryInfo? {
+    private fun convertToDetail(tRepository: TRepository?, storageCredentials: StorageCredentials? = null): RepositoryDetail? {
         return tRepository?.let {
             val credentials = storageCredentials ?: it.credentialsKey?.let { key -> storageCredentialService.findByKey(key) }
-            RepositoryInfo(
+            RepositoryDetail(
                 name = it.name,
                 type = it.type,
                 category = it.category,
@@ -216,6 +241,24 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
                 description = it.description,
                 configuration = JsonUtils.objectMapper.readValue(it.configuration, RepositoryConfiguration::class.java),
                 storageCredentials = credentials,
+                projectId = it.projectId,
+                createdBy = it.createdBy,
+                createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedBy = it.lastModifiedBy,
+                lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+            )
+        }
+    }
+
+    private fun convertToInfo(tRepository: TRepository?): RepositoryInfo? {
+        return tRepository?.let {
+            RepositoryInfo(
+                name = it.name,
+                type = it.type,
+                category = it.category,
+                public = it.public,
+                description = it.description,
+                credentialsKey = it.credentialsKey,
                 projectId = it.projectId,
                 createdBy = it.createdBy,
                 createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
