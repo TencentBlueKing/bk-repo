@@ -3,6 +3,7 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
+import com.tencent.bkrepo.replication.exception.ReplicaFileFailedException
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import com.tencent.bkrepo.replication.pojo.request.RequestBodyUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -21,6 +22,7 @@ import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.Request
 import org.springframework.stereotype.Service
+import java.net.URLEncoder.encode
 
 @Service
 class ReplicationService(val repoDataService: RepoDataService) {
@@ -29,10 +31,11 @@ class ReplicationService(val repoDataService: RepoDataService) {
         with(context) {
             // 查询文件
             val inputStream = repoDataService.getFile(request.sha256!!, request.size!!, currentRepoDetail.localRepoInfo)
+            val fullPath = encode(request.fullPath, "utf-8")
             val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM, inputStream, request.size!!)
             val builder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("file", request.fullPath, fileRequestBody)
+                .addFormDataPart("file", fullPath, fileRequestBody)
                 .addFormDataPart("size", request.size.toString())
                 .addFormDataPart("sha256", request.sha256!!)
                 .addFormDataPart("md5", request.md5!!)
@@ -40,7 +43,7 @@ class ReplicationService(val repoDataService: RepoDataService) {
             request.metadata?.forEach { (key, value) ->
                 builder.addFormDataPart("metadata[$key]", value)
             }
-            val url = "$normalizedUrl/replica/file/${request.projectId}/${request.repoName}${request.fullPath}"
+            val url = "$normalizedUrl/replica/file/${request.projectId}/${request.repoName}/${request.fullPath}"
             val requestBody = builder.build()
             val httpRequest = Request.Builder()
                 .url(url)
@@ -50,7 +53,7 @@ class ReplicationService(val repoDataService: RepoDataService) {
             response.use {
                 if (!response.isSuccessful) {
                     val responseString = response.body()?.string() ?: UNKNOWN
-                    throw RuntimeException("Failed to replica node, response message: $responseString")
+                    throw ReplicaFileFailedException("Failed to replica node, response message: $responseString")
                 }
             }
         }
@@ -62,6 +65,19 @@ class ReplicationService(val repoDataService: RepoDataService) {
                 replicationClient.replicaNodeCreateRequest(authToken, request)
             } else {
                 replicaFile(context, request)
+            }
+        }
+    }
+
+    fun checkNodeExistRequest(
+        context: ReplicationContext,
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    ): Boolean {
+        with(context) {
+            return replicationClient.checkNodeExist(authToken, projectId, repoName, fullPath).data ?: run {
+                return false
             }
         }
     }
