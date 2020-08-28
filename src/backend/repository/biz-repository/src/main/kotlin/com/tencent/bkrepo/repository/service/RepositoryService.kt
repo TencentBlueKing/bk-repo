@@ -6,32 +6,50 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import org.springframework.transaction.annotation.Transactional
 
 /**
- * 仓库服务
+ * 仓库服务接口
  */
 interface RepositoryService {
     fun detail(projectId: String, name: String, type: String? = null): RepositoryInfo?
     fun queryRepository(projectId: String, name: String, type: String? = null): TRepository?
     fun list(projectId: String): List<RepositoryInfo>
-    fun page(projectId: String, page: Int, size: Int): Page<RepositoryInfo>
+
+    /**
+     * 分页查询仓库列表
+     *
+     * @param projectId 项目id
+     * @param page 当前页，从0开始
+     * @param size 分页数量
+     * @param name 仓库名称
+     * @param type 仓库类型
+     */
+    fun page(projectId: String, page: Int, size: Int, name: String? = null, type: String? = null): Page<RepositoryInfo>
+
+    /**
+     * 判断仓库是否存在
+     *
+     * @param projectId 项目id
+     * @param name 仓库名称
+     * @param type 仓库类型
+     */
     fun exist(projectId: String, name: String, type: String? = null): Boolean
 
     /**
-     * 创建仓库
+     * 根据请求[repoCreateRequest]创建仓库
      */
     fun create(repoCreateRequest: RepoCreateRequest): RepositoryInfo
 
     /**
-     * 更新仓库
+     * 根据请求[repoUpdateRequest]更新仓库
      */
     fun update(repoUpdateRequest: RepoUpdateRequest)
 
     /**
-     * 删除仓库，需要保证文件已经被删除
+     * 根据请求[repoDeleteRequest]删除仓库
+     *
+     * 删除仓库前，需要保证仓库下的文件已经被删除
      */
-    @Transactional(rollbackFor = [Throwable::class])
     fun delete(repoDeleteRequest: RepoDeleteRequest)
 
     /**

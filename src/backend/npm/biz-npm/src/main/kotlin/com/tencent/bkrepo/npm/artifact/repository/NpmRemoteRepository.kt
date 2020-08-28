@@ -8,7 +8,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -53,8 +53,8 @@ class NpmRemoteRepository : RemoteRepository() {
         return tgzFile
     }
 
-    override fun generateRemoteDownloadUrl(context: ArtifactTransferContext): String {
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+    override fun createRemoteDownloadUrl(context: ArtifactContext): String {
+        val remoteConfiguration = context.getRemoteConfiguration()
         val tarballPrefix = getTarballPrefix(context)
         val queryString = context.request.queryString
         val requestURL =
@@ -63,24 +63,24 @@ class NpmRemoteRepository : RemoteRepository() {
         return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
     }
 
-    override fun getCacheNodeCreateRequest(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeCreateRequest {
-        val nodeCreateRequest = super.getCacheNodeCreateRequest(context, artifactFile)
+    override fun buildCacheNodeCreateRequest(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeCreateRequest {
+        val nodeCreateRequest = super.buildCacheNodeCreateRequest(context, artifactFile)
         return nodeCreateRequest.copy(
             fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         )
     }
 
-    private fun getCacheArtifactResource(context: ArtifactTransferContext): ArtifactResource? {
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
-        val cacheConfiguration = remoteConfiguration.cacheConfiguration
-        if (!cacheConfiguration.cacheEnabled) return null
+    private fun getCacheArtifactResource(context: ArtifactContext): ArtifactResource? {
+        val remoteConfiguration = context.getRemoteConfiguration()
+        val cacheConfiguration = remoteConfiguration.cache
+        if (!cacheConfiguration.enabled) return null
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         val node = nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
         if (node == null || node.folder) return null
         val createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
-        return if (age <= cacheConfiguration.cachePeriod) {
+        return if (age <= cacheConfiguration.expiration) {
             storageService.load(node.sha256!!, Range.full(node.size),
                 context.storageCredentials)?.run {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit")
@@ -89,7 +89,7 @@ class NpmRemoteRepository : RemoteRepository() {
         } else null
     }
 
-    override fun determineArtifactName(context: ArtifactTransferContext): String {
+    override fun determineArtifactName(context: ArtifactContext): String {
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         return NodeUtils.getName(fullPath)
     }
@@ -110,7 +110,7 @@ class NpmRemoteRepository : RemoteRepository() {
             val name = jsonFile[NAME].asString
             context.contextAttributes[NPM_FILE_FULL_PATH] =
                 String.format(NPM_PKG_VERSION_FULL_PATH, name, name, pkgInfo.second)
-            putArtifactCache(context, artifact)
+            cacheArtifactFile(context, artifact)
         } catch (ex: TypeCastException) {
             logger.warn("cache artifact [${pkgInfo.first}-${pkgInfo.second}.json] failed, {}", ex.message)
         }
@@ -130,7 +130,7 @@ class NpmRemoteRepository : RemoteRepository() {
         getCacheArtifactResource(context)?.let {
             return transFileToJson(it.inputStream)
         }
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+        val remoteConfiguration = context.getRemoteConfiguration()
         val httpClient = createHttpClient(remoteConfiguration)
         val searchUri = generateRemoteSearchUrl(context)
         val request = Request.Builder().url(searchUri).build()
@@ -142,7 +142,7 @@ class NpmRemoteRepository : RemoteRepository() {
                 val downloadContext = ArtifactDownloadContext()
                 downloadContext.contextAttributes = context.contextAttributes
                 val resultJson = transFileToJson(file.getInputStream())
-                putArtifactCache(downloadContext, file)
+                cacheArtifactFile(downloadContext, file)
                 resultJson
             } else null
         } catch (exception: IOException) {
@@ -177,7 +177,7 @@ class NpmRemoteRepository : RemoteRepository() {
         return pkgJson
     }
 
-    private fun getTarballPrefix(context: ArtifactTransferContext): String {
+    private fun getTarballPrefix(context: ArtifactContext): String {
         val requestURL = context.request.requestURL.toString()
         val requestURI = context.request.requestURI
         val projectId = context.artifactInfo.projectId
@@ -187,16 +187,16 @@ class NpmRemoteRepository : RemoteRepository() {
     }
 
     private fun generateRemoteSearchUrl(context: ArtifactSearchContext): String {
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+        val remoteConfiguration = context.getRemoteConfiguration()
         val tarballPrefix = getTarballPrefix(context)
         val requestURL = context.request.requestURL.toString()
         return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
     }
 
     override fun list(context: ArtifactListContext): NpmSearchResponse {
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+        val remoteConfiguration = context.getRemoteConfiguration()
         val httpClient = createHttpClient(remoteConfiguration)
-        val downloadUri = generateRemoteDownloadUrl(context)
+        val downloadUri = createRemoteDownloadUrl(context)
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
         return if (checkResponse(response)) {

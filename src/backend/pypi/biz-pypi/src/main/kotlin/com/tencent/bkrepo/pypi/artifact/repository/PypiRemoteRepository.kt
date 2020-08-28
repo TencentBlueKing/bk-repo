@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
@@ -38,8 +38,8 @@ import java.time.format.DateTimeFormatter
 @Component
 class PypiRemoteRepository : RemoteRepository(), PypiRepository {
 
-    override fun generateRemoteDownloadUrl(context: ArtifactTransferContext): String {
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+    override fun createRemoteDownloadUrl(context: ArtifactContext): String {
+        val remoteConfiguration = context.getRemoteConfiguration()
         val artifactUri = context.artifactInfo.artifactUri
         return remoteConfiguration.url.trimEnd('/') + "/packages" + artifactUri
     }
@@ -48,7 +48,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
      * 生成远程list url
      */
     fun generateRemoteListUrl(context: ArtifactListContext): String {
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+        val remoteConfiguration = context.getRemoteConfiguration()
         val artifactUri = context.artifactInfo.artifactUri
         return remoteConfiguration.url.trimEnd('/') + "/simple$artifactUri"
     }
@@ -97,7 +97,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
      */
     fun cacheRemoteRepoList(context: ArtifactListContext) {
         val listUri = generateRemoteListUrl(context)
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+        val remoteConfiguration = context.getRemoteConfiguration()
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
         val build: Request = Request.Builder().get().url(listUri).build()
         val htmlContent = okHttpClient.newCall(build).execute().body()?.string()
@@ -146,7 +146,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
     }
 
     override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+        val remoteConfiguration = context.getRemoteConfiguration()
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
         val body = RequestBody.create(MediaType.parse("text/xml"), xmlString)
         val build: Request = Request.Builder().url("${remoteConfiguration.url}$XML_RPC_URI")

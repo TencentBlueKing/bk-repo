@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.npm.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
@@ -15,15 +14,12 @@ import org.springframework.stereotype.Component
 class NpmVirtualRepository : VirtualRepository() {
     override fun list(context: ArtifactListContext): NpmSearchResponse {
         val list = mutableListOf<NpmSearchResponse>()
-        val searchRequest = context.contextAttributes[SEARCH_REQUEST] as MetadataSearchRequest
-        val virtualConfiguration = context.repositoryConfiguration as VirtualConfiguration
+        val searchRequest = context.getAttribute(SEARCH_REQUEST) as MetadataSearchRequest
+        val virtualConfiguration = context.getVirtualConfiguration()
         val repoList = virtualConfiguration.repositoryList
         val traversedList = getTraversedList(context)
         for (repoIdentify in repoList) {
             if (repoIdentify in traversedList) {
-                if (logger.isDebugEnabled) {
-                    logger.debug("Repository[$repoIdentify] has been traversed, skip it.")
-                }
                 continue
             }
             traversedList.add(repoIdentify)

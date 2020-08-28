@@ -9,7 +9,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
-import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -22,7 +22,6 @@ import com.tencent.bkrepo.npm.pojo.migration.MigrationErrorDataInfo
 import com.tencent.bkrepo.npm.pojo.migration.MigrationFailDataDetailInfo
 import com.tencent.bkrepo.npm.pojo.migration.service.MigrationErrorDataCreateRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
-import com.tencent.bkrepo.npm.utils.MigrationUtils
 import com.tencent.bkrepo.npm.utils.ThreadPoolManager
 import okhttp3.OkHttpClient
 import okhttp3.Request

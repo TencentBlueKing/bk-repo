@@ -28,9 +28,9 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 
 /**
- * MongoDB QueryBuilder
+ * MongoDB QueryInterpreter
  */
-open class MongoQueryBuilder {
+open class MongoQueryInterpreter {
 
     private val defaultQueryRuleHandlerMap = mutableMapOf<OperationType, MongoQueryRuleHandler>()
     private val nestedRuleHandler = DefaultMongoNestedRuleHandler()
@@ -55,7 +55,7 @@ open class MongoQueryBuilder {
         defaultQueryRuleHandlerMap[OperationType.NOT_NULL] = NotNullHandler()
     }
 
-    fun build(queryModel: QueryModel): Query {
+    fun interpret(queryModel: QueryModel): Query {
         var newModel = queryModel
         for (interceptor in queryModelInterceptorList) {
             newModel = interceptor.intercept(queryModel)

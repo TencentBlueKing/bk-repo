@@ -64,7 +64,7 @@ class RpmLocalRepository(
 ) : LocalRepository() {
 
     fun rpmNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val nodeCreateRequest = super.getNodeCreateRequest(context)
+        val nodeCreateRequest = super.buildNodeCreateRequest(context)
         return nodeCreateRequest.copy(overwrite = true)
     }
 

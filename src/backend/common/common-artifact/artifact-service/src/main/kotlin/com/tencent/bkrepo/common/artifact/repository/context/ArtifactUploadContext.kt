@@ -2,19 +2,19 @@ package com.tencent.bkrepo.common.artifact.repository.context
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
-import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.file.stream.OctetStreamArtifactFile
 
 /**
  * 构件上传context
  */
-class ArtifactUploadContext : ArtifactTransferContext {
+class ArtifactUploadContext : ArtifactContext {
 
-    val artifactFileMap: ArtifactFileMap
+    private var artifactFileMap: ArtifactFileMap? = null
+    private var artifactFile: ArtifactFile? = null
 
     constructor(artifactFile: ArtifactFile) {
-        val artifactFileMap = ArtifactFileMap()
-        artifactFileMap[OCTET_STREAM] = artifactFile
-        this.artifactFileMap = artifactFileMap
+        this.artifactFile = artifactFile
     }
 
     constructor(artifactFileMap: ArtifactFileMap) {
@@ -22,16 +22,42 @@ class ArtifactUploadContext : ArtifactTransferContext {
     }
 
     /**
-     * 默认获取二进制流文件
+     * 根据[name]获取构件文件[ArtifactFile]
+     * [name]为空则返回二进制流[OctetStreamArtifactFile]
+     * [name]不为空则返回字段为[name]的[MultipartArtifactFile]
+     * 如果[name]对应的构件文件不存在，则抛出[NullPointerException]
      */
-    fun getArtifactFile(): ArtifactFile {
-        return artifactFileMap[OCTET_STREAM]!!
+    @Throws(NullPointerException::class)
+    fun getArtifactFile(name: String? = null): ArtifactFile {
+        return if (name.isNullOrBlank()) {
+            artifactFile!! as OctetStreamArtifactFile
+        } else {
+            artifactFileMap!![name]!! as MultipartArtifactFile
+        }
     }
 
     /**
-     * 根据field name获取multipart file
+     * 如果名为[name]的构件存在则返回`true`
      */
-    fun getArtifactFile(name: String): ArtifactFile? {
-        return artifactFileMap[name]
+    fun checkArtifactExist(name: String? = null): Boolean {
+        return if (name.isNullOrBlank()) {
+            return artifactFile != null
+        } else {
+            artifactFileMap?.get(name) != null
+        }
+    }
+
+    /**
+     * 返回名为[name]的构件sha256校验值
+     */
+    fun getArtifactSha256(name: String? = null): String {
+        return getArtifactFile(name).getFileSha256()
+    }
+
+    /**
+     * 返回名为[name]的构件md5校验值
+     */
+    fun getArtifactMd5(name: String? = null): String {
+        return getArtifactFile(name).getFileMd5()
     }
 }

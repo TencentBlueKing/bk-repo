@@ -7,4 +7,4 @@ import org.springframework.context.annotation.Import
 @Import(
     StorageHealthIndicator::class
 )
-class ArtifactHealhConfiguration
+class ArtifactHealthConfiguration

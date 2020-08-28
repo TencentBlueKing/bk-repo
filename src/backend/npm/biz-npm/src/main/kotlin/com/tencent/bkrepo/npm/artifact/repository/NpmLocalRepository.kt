@@ -13,13 +13,13 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -156,7 +156,7 @@ class NpmLocalRepository : LocalRepository() {
         return if (name == NPM_PACKAGE_TGZ_FILE) contextAttributes[NPM_METADATA] as Map<String, String> else emptyMap()
     }
 
-    override fun determineArtifactName(context: ArtifactTransferContext): String {
+    override fun determineArtifactName(context: ArtifactContext): String {
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         return NodeUtils.getName(fullPath)
     }
@@ -446,7 +446,7 @@ class NpmLocalRepository : LocalRepository() {
         }
     }
 
-    private fun getCacheArtifact(context: ArtifactTransferContext): ArtifactInputStream? {
+    private fun getCacheArtifact(context: ArtifactContext): ArtifactInputStream? {
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         val node = nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
@@ -457,7 +457,7 @@ class NpmLocalRepository : LocalRepository() {
         return inputStream
     }
 
-    private fun getCacheNodeInfo(context: ArtifactTransferContext): NodeDetail? {
+    private fun getCacheNodeInfo(context: ArtifactContext): NodeDetail? {
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
         return nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
@@ -469,7 +469,7 @@ class NpmLocalRepository : LocalRepository() {
         nodeClient.create(nodeCreateRequest)
     }
 
-    private fun getNodeCreateRequest(context: ArtifactTransferContext, file: ArtifactFile): NodeCreateRequest {
+    private fun getNodeCreateRequest(context: ArtifactContext, file: ArtifactFile): NodeCreateRequest {
         val repositoryInfo = context.repositoryInfo
         val sha256 = file.getFileSha256()
         val md5 = file.getFileMd5()

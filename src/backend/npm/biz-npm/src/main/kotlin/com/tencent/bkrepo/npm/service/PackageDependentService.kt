@@ -5,15 +5,13 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
-import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.artifact.repository.NpmLocalRepository
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PKG_NAME
-import com.tencent.bkrepo.npm.pojo.migration.MigrationFailDataDetailInfo
-import com.tencent.bkrepo.npm.pojo.migration.NpmDataMigrationResponse
 import com.tencent.bkrepo.npm.pojo.migration.NpmPackageDependentMigrationResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.MigrationUtils
@@ -21,7 +19,6 @@ import com.tencent.bkrepo.npm.utils.ThreadPoolManager
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

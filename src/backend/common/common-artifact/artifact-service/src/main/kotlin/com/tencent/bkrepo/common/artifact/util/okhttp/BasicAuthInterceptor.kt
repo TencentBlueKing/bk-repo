@@ -1,9 +1,9 @@
-package com.tencent.bkrepo.common.artifact.util.http
+package com.tencent.bkrepo.common.artifact.util.okhttp
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import okhttp3.Credentials
 import okhttp3.Interceptor
 import okhttp3.Response
-import org.springframework.http.HttpHeaders
 
 class BasicAuthInterceptor(user: String, password: String) : Interceptor {
 

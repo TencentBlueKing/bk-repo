@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component
 @Component
 class HelmLocalRepository : LocalRepository() {
 
-    override fun determineArtifactName(context: ArtifactTransferContext): String {
+    override fun determineArtifactName(context: ArtifactContext): String {
         val fileName = context.artifactInfo.artifactUri.trimStart('/')
         return if (StringUtils.isBlank(fileName)) INDEX_YAML else fileName
     }

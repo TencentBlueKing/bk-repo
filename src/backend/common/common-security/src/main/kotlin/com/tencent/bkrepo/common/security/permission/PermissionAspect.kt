@@ -30,7 +30,9 @@ class PermissionAspect {
 
         return try {
             permissionCheckHandler.onPermissionCheck(userId, permission, repositoryInfo)
-            logger.debug("User[$userId] check permission [$permission] on [$repositoryInfo] success.")
+            if (logger.isDebugEnabled) {
+                logger.debug("User[$userId] check permission [$permission] on [$repositoryInfo] success.")
+            }
             permissionCheckHandler.onPermissionCheckSuccess()
             point.proceed()
         } catch (exception: PermissionException) {

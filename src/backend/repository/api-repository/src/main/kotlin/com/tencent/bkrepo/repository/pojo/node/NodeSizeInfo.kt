@@ -8,8 +8,8 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("节点大小信息")
 data class NodeSizeInfo(
-    @ApiModelProperty("子节点数量")
+    @ApiModelProperty("子节点数量, 包含文件夹")
     val subNodeCount: Long = 0,
-    @ApiModelProperty("大小")
+    @ApiModelProperty("文件大小总和")
     val size: Long
 )

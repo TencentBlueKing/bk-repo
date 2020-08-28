@@ -3,8 +3,6 @@ package com.tencent.bkrepo.generic.artifact
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_MD5
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
@@ -49,13 +47,13 @@ class GenericLocalRepository : LocalRepository() {
     override fun onUploadValidate(context: ArtifactUploadContext) {
         super.onUploadValidate(context)
         // 校验sha256
-        val calculatedSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
+        val calculatedSha256 = context.getArtifactSha256()
         val uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256)
         if (uploadSha256 != null && !calculatedSha256.equals(uploadSha256, true)) {
             throw ArtifactValidateException("File sha256 validate failed.")
         }
         // 校验md5
-        val calculatedMd5 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] as String
+        val calculatedMd5 = context.getArtifactMd5()
         val uploadMd5 = HeaderUtils.getHeader(HEADER_MD5)
         if (uploadMd5 != null && !calculatedMd5.equals(calculatedMd5, true)) {
             throw ArtifactValidateException("File md5 validate failed.")
@@ -70,7 +68,7 @@ class GenericLocalRepository : LocalRepository() {
             context.response.contentType = MediaTypes.APPLICATION_JSON
             context.response.writer.println(ResponseBuilder.success().toJsonString())
         } else {
-            val nodeCreateRequest = getNodeCreateRequest(context)
+            val nodeCreateRequest = buildNodeCreateRequest(context)
             storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
             val createResult = nodeClient.create(nodeCreateRequest)
             context.response.contentType = MediaTypes.APPLICATION_JSON
@@ -79,10 +77,9 @@ class GenericLocalRepository : LocalRepository() {
     }
 
     override fun remove(context: ArtifactRemoveContext) {
-        val artifactInfo = context.artifactInfo
-        with(artifactInfo) {
+        with(context.artifactInfo) {
             val node = nodeClient.detail(projectId, repoName, artifactUri).data
-                ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
+                ?: throw ArtifactNotFoundException("Artifact[$this] not found")
             if (node.folder) {
                 if (nodeClient.countFileNode(projectId, repoName, artifactUri).data!! > 0) {
                     throw UnsupportedMethodException("Delete non empty folder is forbidden")
@@ -104,13 +101,13 @@ class GenericLocalRepository : LocalRepository() {
         if (!storageService.checkBlockId(uploadId, context.storageCredentials)) {
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
         }
-        val calculatedSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
+        val calculatedSha256 = context.getArtifactSha256()
         val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
         storageService.storeBlock(uploadId, sequence, calculatedSha256, context.getArtifactFile(), overwrite, context.storageCredentials)
     }
 
-    override fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val request = super.getNodeCreateRequest(context)
+    override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
+        val request = super.buildNodeCreateRequest(context)
         return request.copy(
             expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
             overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),

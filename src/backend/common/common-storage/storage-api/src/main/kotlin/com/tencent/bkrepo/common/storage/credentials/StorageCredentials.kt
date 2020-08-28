@@ -17,4 +17,6 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
 abstract class StorageCredentials(
     open var cache: CacheProperties,
     open var upload: UploadProperties
-)
+) {
+    var key: String? = null
+}

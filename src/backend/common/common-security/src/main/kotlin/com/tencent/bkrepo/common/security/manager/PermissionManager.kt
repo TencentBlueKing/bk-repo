@@ -46,7 +46,9 @@ class PermissionManager(
 
     fun checkPrincipal(userId: String, principalType: PrincipalType) {
         if (!httpAuthProperties.enabled) {
-            logger.debug("Auth disabled, skip checking principal")
+            if (logger.isDebugEnabled) {
+                logger.debug("Auth disabled, skip checking principal")
+            }
             return
         }
         // 匿名用户，提示登录
@@ -64,11 +66,11 @@ class PermissionManager(
 
     private fun preCheck(): Boolean {
         return if (!httpAuthProperties.enabled) {
-            logger.debug("Auth disabled, skip checking permission")
+            if (logger.isDebugEnabled) {
+                logger.debug("Auth disabled, skip checking permission")
+            }
             true
-        } else {
-            false
-        }
+        } else false
     }
 
     private fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {

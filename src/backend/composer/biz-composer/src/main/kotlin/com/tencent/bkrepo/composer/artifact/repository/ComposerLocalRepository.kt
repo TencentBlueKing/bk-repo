@@ -7,7 +7,7 @@ import com.tencent.bkrepo.composer.COMPOSER_VERSION_INIT
 import com.tencent.bkrepo.composer.INIT_PACKAGES
 import org.springframework.stereotype.Component
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -38,7 +38,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
      * Composer节点创建请求
      */
     fun getCompressNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val nodeCreateRequest = getNodeCreateRequest(context)
+        val nodeCreateRequest = buildNodeCreateRequest(context)
         return nodeCreateRequest.copy(
             fullPath = "/$ARTIFACT_DIRECT_DOWNLOAD_PREFIX/${context.artifactInfo.artifactUri.removePrefix("/")}",
             overwrite = true
@@ -49,7 +49,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
         context: ArtifactUploadContext,
         fullPath: String
     ): NodeCreateRequest {
-        val nodeCreateRequest = getNodeCreateRequest(context)
+        val nodeCreateRequest = buildNodeCreateRequest(context)
         return nodeCreateRequest.copy(
             overwrite = true,
             fullPath = fullPath
@@ -129,7 +129,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
                 val byteArrayInputStream = ByteArrayInputStream(INIT_PACKAGES.toByteArray())
                 val artifactFile = ArtifactFileFactory.build(byteArrayInputStream)
                 val artifactUploadContext = ArtifactUploadContext(artifactFile)
-                val nodeCreateRequest = getNodeCreateRequest(context = artifactUploadContext)
+                val nodeCreateRequest = buildNodeCreateRequest(context = artifactUploadContext)
                 nodeClient.create(nodeCreateRequest)
                 artifactUploadContext.getArtifactFile().let {
                     storageService.store(
@@ -186,7 +186,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
     /**
      * 加载搜索到的流并返回内容
      */
-    private fun stream2Json(context: ArtifactTransferContext): String? {
+    private fun stream2Json(context: ArtifactContext): String? {
         return with(context.artifactInfo) {
             val node = nodeClient.detail(projectId, repoName, artifactUri).data ?: return null
             node.takeIf { !it.folder } ?: return null

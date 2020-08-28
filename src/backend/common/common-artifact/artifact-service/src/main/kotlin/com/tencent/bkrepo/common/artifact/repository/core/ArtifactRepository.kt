@@ -22,6 +22,11 @@ interface ArtifactRepository {
     fun download(context: ArtifactDownloadContext)
 
     /**
+     * 移除构件
+     */
+    fun remove(context: ArtifactRemoveContext)
+
+    /**
      * 构件搜索
      */
     fun search(context: ArtifactSearchContext): Any?
@@ -30,11 +35,6 @@ interface ArtifactRepository {
      * 构件列表
      */
     fun list(context: ArtifactListContext): Any?
-
-    /**
-     * 移除构件
-     */
-    fun remove(context: ArtifactRemoveContext)
 
     /**
      * 仓库数据迁移

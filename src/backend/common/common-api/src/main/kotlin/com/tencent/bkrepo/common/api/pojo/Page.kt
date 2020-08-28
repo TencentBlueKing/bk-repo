@@ -24,4 +24,12 @@ data class Page<out T>(
         totalPages = ceil(count * 1.0 / pageSize).toInt(),
         records = records
     )
+
+    constructor(page: Page<Any>, records: List<T>) : this(
+        count = page.count,
+        page = page.page,
+        pageSize = page.pageSize,
+        totalPages = page.totalPages,
+        records = records
+    )
 }

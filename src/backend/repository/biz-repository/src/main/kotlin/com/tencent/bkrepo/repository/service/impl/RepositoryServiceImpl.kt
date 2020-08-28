@@ -7,7 +7,12 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -72,12 +77,12 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     }
 
     override fun list(projectId: String): List<RepositoryInfo> {
-        val query = createListQuery(projectId)
+        val query = buildListQuery(projectId)
         return mongoTemplate.find(query, TRepository::class.java).map { convert(it)!! }
     }
 
-    override fun page(projectId: String, page: Int, size: Int): Page<RepositoryInfo> {
-        val query = createListQuery(projectId)
+    override fun page(projectId: String, page: Int, size: Int, name: String?, type: String?): Page<RepositoryInfo> {
+        val query = buildListQuery(projectId, name, type)
         val count = mongoTemplate.count(query, TRepository::class.java)
         val pageQuery = query.with(PageRequest.of(page, size))
         val data = mongoTemplate.find(pageQuery, TRepository::class.java).map { convert(it)!! }
@@ -102,17 +107,20 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     @Transactional(rollbackFor = [Throwable::class])
     override fun create(repoCreateRequest: RepoCreateRequest): RepositoryInfo {
         with(repoCreateRequest) {
+            TODO("校验仓库配置")
             // 确保项目一定存在
             projectService.checkProject(projectId)
             // 确保同名仓库不存在
             if (exist(projectId, name)) {
                 throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
             }
-            val credentialsKey = storageCredentialsKey ?: repositoryProperties.defaultStorageCredentialsKey
             // 确保存储凭证Key一定存在
+            val credentialsKey = storageCredentialsKey ?: repositoryProperties.defaultStorageCredentialsKey
             val storageCredential = credentialsKey?.takeIf { it.isNotBlank() }?.let {
                 storageCredentialService.findByKey(it) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, it)
             }
+            // 初始化仓库配置
+            val repoConfiguration = configuration ?: buildRepoConfiguration(this)
             // 创建仓库
             val repository = TRepository(
                 name = name,
@@ -120,7 +128,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
                 category = category,
                 public = public,
                 description = description,
-                configuration = configuration.toJsonString(),
+                configuration = repoConfiguration.toJsonString(),
                 credentialsKey = credentialsKey,
                 projectId = projectId,
                 createdBy = operator,
@@ -177,9 +185,25 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         return queryRepository(projectId, repoName, repoType) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
     }
 
-    private fun createListQuery(projectId: String): Query {
-        return Query(Criteria.where(TRepository::projectId.name).`is`(projectId)).with(Sort.by(TRepository::name.name))
+    private fun buildListQuery(projectId: String, repoName: String? = null, repoType: String? = null): Query {
+        val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId)
+        repoName?.let { criteria.and(TRepository::name.name).regex("^$repoName") }
+        repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
+        return Query().with(Sort.by(TRepository::name.name))
     }
+
+    /**
+     * 构造仓库配置
+     */
+    private fun buildRepoConfiguration(request: RepoCreateRequest): RepositoryConfiguration {
+        return when(request.category) {
+            RepositoryCategory.LOCAL -> LocalConfiguration()
+            RepositoryCategory.REMOTE -> RemoteConfiguration()
+            RepositoryCategory.VIRTUAL -> VirtualConfiguration()
+            RepositoryCategory.COMPOSITE -> CompositeConfiguration()
+        }
+    }
+
 
     private fun convert(tRepository: TRepository?, storageCredentials: StorageCredentials? = null): RepositoryInfo? {
         return tRepository?.let {

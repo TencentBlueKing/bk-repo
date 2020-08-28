@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.query
 
 import com.mongodb.BasicDBList
-import com.tencent.bkrepo.common.query.builder.MongoQueryBuilder
+import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
@@ -9,7 +9,7 @@ import com.tencent.bkrepo.common.query.model.Sort
 import org.bson.Document
 import org.junit.jupiter.api.Test
 
-class MongoQueryBuilderTest {
+class MongoQueryInterpreterTest {
 
     @Test
     fun buildTest() {
@@ -27,8 +27,8 @@ class MongoQueryBuilderTest {
             rule = rule2
         )
 
-        val builder = MongoQueryBuilder()
-        val query = builder.build(queryModel)
+        val builder = MongoQueryInterpreter()
+        val query = builder.interpret(queryModel)
         println(query)
         println(query.queryObject)
 

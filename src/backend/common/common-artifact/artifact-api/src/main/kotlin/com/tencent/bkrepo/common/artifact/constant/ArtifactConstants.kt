@@ -31,3 +31,16 @@ const val CONTENT_DISPOSITION_TEMPLATE = "attachment;filename=\"%s\";filename*=U
  * 虚拟仓库相关
  */
 const val TRAVERSED_LIST = "traversed"
+
+/**
+ * 公共源代理项目名称
+ */
+const val PUBLIC_PROXY_PROJECT = "public-proxy"
+/**
+ * 公共源代理仓库名称, <RepoType>-<ChannelName>
+ */
+const val PUBLIC_PROXY_REPO_NAME = "%s-%s"
+/**
+ * 私有源代理仓库名称, <RepoName>-<ChannelName>
+ */
+const val PRIVATE_PROXY_REPO_NAME = "%s-%s"

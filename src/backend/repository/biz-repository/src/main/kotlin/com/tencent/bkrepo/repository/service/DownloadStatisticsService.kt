@@ -6,7 +6,7 @@ import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAdd
 import java.time.LocalDate
 
 /**
- * 下载统计服务
+ * 下载统计服务接口
  */
 interface DownloadStatisticsService {
 

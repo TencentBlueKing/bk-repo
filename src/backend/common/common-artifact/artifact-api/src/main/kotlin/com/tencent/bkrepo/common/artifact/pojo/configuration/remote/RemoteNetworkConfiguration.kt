@@ -7,17 +7,20 @@ data class RemoteNetworkConfiguration(
     /**
      * 代理配置
      */
-    val proxy: ProxyConfiguration? = null,
+    val proxy: NetworkProxyConfiguration? = null,
     /**
-     * 远程请求请求超时时间，单位ms
+     * 远程请求连接超时时间，单位ms
      */
-    val readTimeout: Long = 10 * 1000,
-    val connectTimeout: Long = 10 * 1000
+    var connectTimeout: Long = 10 * 1000L,
+    /**
+     * 远程请求读超时时间，单位ms
+     */
+    var readTimeout: Long = 10 * 1000L
 )
 
-data class ProxyConfiguration(
-    val host: String,
-    val port: Int,
-    val username: String? = null,
-    val password: String? = null
+data class NetworkProxyConfiguration(
+    var host: String,
+    var port: Int,
+    var username: String? = null,
+    var password: String? = null
 )

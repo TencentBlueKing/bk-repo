@@ -18,13 +18,13 @@ data class UserRepoCreateRequest(
     @ApiModelProperty("仓库类型", required = true)
     val type: RepositoryType,
     @ApiModelProperty("仓库类别", required = true)
-    val category: RepositoryCategory,
+    val category: RepositoryCategory = RepositoryCategory.COMPOSITE,
     @ApiModelProperty("是否公开", required = true)
-    val public: Boolean,
+    val public: Boolean = false,
     @ApiModelProperty("简要描述", required = false)
     val description: String? = null,
     @ApiModelProperty("仓库配置", required = true)
-    val configuration: RepositoryConfiguration,
+    val configuration: RepositoryConfiguration? = null,
     @ApiModelProperty("存储凭证key", required = false)
     val storageCredentialsKey: String? = null
 ) : RepoRequest

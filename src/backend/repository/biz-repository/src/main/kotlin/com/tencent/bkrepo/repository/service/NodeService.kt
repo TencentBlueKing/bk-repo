@@ -13,7 +13,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 
 /**
- * 节点服务
+ * 节点服务接口
  */
 interface NodeService {
     /**

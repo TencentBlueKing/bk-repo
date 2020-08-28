@@ -25,7 +25,7 @@ data class RepoCreateRequest(
     @ApiModelProperty("简要描述", required = false)
     val description: String? = null,
     @ApiModelProperty("仓库配置", required = true)
-    val configuration: RepositoryConfiguration,
+    val configuration: RepositoryConfiguration? = null,
     @ApiModelProperty("存储凭证key", required = false)
     val storageCredentialsKey: String? = null,
 

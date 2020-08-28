@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.util.http
+package com.tencent.bkrepo.common.artifact.util.okhttp
 
 import java.security.KeyStore
 import java.security.cert.CertificateFactory

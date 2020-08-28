@@ -1,8 +1,8 @@
-package com.tencent.bkrepo.common.artifact.util.http
+package com.tencent.bkrepo.common.artifact.util.okhttp
 
-import com.tencent.bkrepo.common.artifact.util.http.CertTrustManager.disableValidationSSLSocketFactory
-import com.tencent.bkrepo.common.artifact.util.http.CertTrustManager.disableValidationTrustManager
-import com.tencent.bkrepo.common.artifact.util.http.CertTrustManager.trustAllHostname
+import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
+import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationTrustManager
+import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 

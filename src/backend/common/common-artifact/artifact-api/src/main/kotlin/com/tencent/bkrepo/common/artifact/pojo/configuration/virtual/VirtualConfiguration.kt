@@ -6,8 +6,8 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfigura
 /**
  * 虚拟仓库配置
  */
-open class VirtualConfiguration(
-    val repositoryList: List<RepositoryIdentify>
+data class VirtualConfiguration(
+    var repositoryList: List<RepositoryIdentify> = emptyList()
 ) : RepositoryConfiguration() {
     companion object {
         const val type = "virtual"

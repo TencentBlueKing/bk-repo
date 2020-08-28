@@ -2,8 +2,8 @@ package com.tencent.bkrepo.replication.job
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
-import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
-import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
+import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.replication.api.ReplicationClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory

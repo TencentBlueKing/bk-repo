@@ -10,8 +10,8 @@ class MavenLocalRepository : LocalRepository() {
     /**
      * 获取MAVEN节点创建请求
      */
-    override fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val request = super.getNodeCreateRequest(context)
+    override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
+        val request = super.buildNodeCreateRequest(context)
         return request.copy(overwrite = true)
     }
 }

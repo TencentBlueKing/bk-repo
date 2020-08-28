@@ -11,7 +11,6 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
-import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -25,26 +24,18 @@ import java.util.Date
 @Service
 class NodeQueryServiceImpl(
     private val nodeDao: NodeDao,
-    private val nodeQueryBuilder: NodeQueryBuilder,
+    private val nodeQueryInterpreter: NodeQueryInterpreter,
     private val permissionManager: PermissionManager
 ) : NodeQueryService {
 
-    /**
-     * 查询节点
-     */
     override fun query(queryModel: QueryModel): Page<Map<String, Any>> {
-        logger.debug("Node query: [$queryModel]")
-        val query = nodeQueryBuilder.build(queryModel)
+        val query = nodeQueryInterpreter.interpret(queryModel)
         return doQuery(query)
     }
 
-    /**
-     * 查询节点(提供外部使用，需要鉴权)
-     */
     override fun userQuery(operator: String, queryModel: QueryModel): Page<Map<String, Any>> {
-        logger.debug("User node query: [$queryModel]")
         // 解析projectId和repoName
-        val query = nodeQueryBuilder.build(queryModel)
+        val query = nodeQueryInterpreter.interpret(queryModel)
         var projectId: String? = null
         val repoNameList = mutableListOf<String>()
         for (rule in (queryModel.rule as Rule.NestedRule).rules) {
@@ -82,10 +73,10 @@ class NodeQueryServiceImpl(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(NodeQueryServiceImpl::class.java)
-
         fun convert(metadataList: List<Map<String, String>>): Map<String, String> {
-            return metadataList.filter { it.containsKey("key") && it.containsKey("value") }.map { it.getValue("key") to it.getValue("value") }.toMap()
+            return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
+                .map { it.getValue("key") to it.getValue("value") }
+                .toMap()
         }
     }
 }

@@ -9,6 +9,7 @@ object StringPool {
     const val ROOT = SLASH
     const val COLON = ":"
     const val DASH = "-"
+    const val QUESTION = "?"
     const val HTTP = "http://"
     const val HTTPS = "https://"
     const val UNKNOWN = "Unknown"

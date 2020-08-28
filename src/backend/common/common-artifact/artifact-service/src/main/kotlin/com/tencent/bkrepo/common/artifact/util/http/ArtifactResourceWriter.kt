@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.util.response
+package com.tencent.bkrepo.common.artifact.util.http
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus

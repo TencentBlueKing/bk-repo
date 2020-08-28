@@ -1,0 +1,174 @@
+package com.tencent.bkrepo.common.artifact.repository.composite
+
+import com.tencent.bkrepo.common.artifact.constant.PRIVATE_PROXY_REPO_NAME
+import com.tencent.bkrepo.common.artifact.constant.PUBLIC_PROXY_PROJECT
+import com.tencent.bkrepo.common.artifact.constant.PUBLIC_PROXY_REPO_NAME
+import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteProxyConfiguration
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.repository.api.ProxyChannelClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
+
+/**
+ * 组合仓库抽象逻辑
+ */
+@Component
+class CompositeRepository(
+    private val localRepository: LocalRepository,
+    private val remoteRepository: RemoteRepository,
+    private val repositoryClient: RepositoryClient,
+    private val proxyChannelClient: ProxyChannelClient
+) : AbstractArtifactRepository() {
+
+    override fun onUpload(context: ArtifactUploadContext) {
+        localRepository.onUpload(context)
+    }
+
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        return localRepository.onDownload(context) ?: run {
+            mapFirstProxyRepo(context) {
+                remoteRepository.onDownload(it as ArtifactDownloadContext)
+            }
+        }
+    }
+
+    override fun search(context: ArtifactSearchContext): Any? {
+        return localRepository.search(context) ?: run {
+            mapEachProxyRepo(context) {
+                remoteRepository.search(it as ArtifactSearchContext)
+            }
+        }
+    }
+
+    override fun list(context: ArtifactListContext): Any? {
+        return localRepository.list(context) ?: run {
+            mapEachProxyRepo(context) {
+                remoteRepository.list(it as ArtifactListContext)
+            }
+        }
+    }
+
+    override fun remove(context: ArtifactRemoveContext) {
+        return localRepository.remove(context)
+    }
+
+    override fun migrate(context: ArtifactMigrateContext): Any? {
+        return localRepository.migrate(context)
+    }
+
+    /**
+     * 遍历代理仓库列表，执行[action]操作，当遇到代理仓库[action]操作返回非`null`时，立即返回结果[R]
+     */
+    private fun <R> mapFirstProxyRepo(context: ArtifactContext, action: (ArtifactContext) -> R?): R? {
+        val proxyChannelList = getProxyChannelList(context)
+        for (setting in proxyChannelList) {
+            try {
+                val newContext = getContextFromProxyChannel(context, setting)
+                action(newContext)?.let {
+                    if (logger.isDebugEnabled) {
+                        logger.debug("Success to execute map with channel ${setting.name}")
+                    }
+                    return it
+                }
+            } catch (exception: Exception) {
+                logger.warn("Failed to execute map with channel ${setting.name}", exception)
+            }
+        }
+        return null
+    }
+
+    /**
+     * 遍历代理仓库列表，执行[action]操作，并将结果聚合成[List]返回
+     */
+    private fun <R> mapEachProxyRepo(context: ArtifactContext, action: (ArtifactContext) -> R?): List<R> {
+        val proxyChannelList = getProxyChannelList(context)
+        val mapResult = ArrayList<R>(proxyChannelList.size)
+        for (proxyChannel in proxyChannelList) {
+            try {
+                val newContext = getContextFromProxyChannel(context, proxyChannel)
+                action(newContext)?.let { mapResult.add(it) }
+                if (logger.isDebugEnabled) {
+                    logger.debug("Success to execute map with channel ${proxyChannel.name}")
+                }
+            } catch (exception: Exception) {
+                logger.warn("Failed to execute map with channel ${proxyChannel.name}", exception)
+            }
+        }
+        return mapResult
+    }
+
+    /**
+     * 遍历代理仓库列表，执行[action]操作
+     */
+    private fun forEachProxyRepo(context: ArtifactContext, action: (ArtifactContext) -> Unit) {
+        val proxyChannelList = getProxyChannelList(context)
+        for (proxyChannel in proxyChannelList) {
+            try {
+                val newContext = getContextFromProxyChannel(context, proxyChannel)
+                action(newContext)
+                if (logger.isDebugEnabled) {
+                    logger.debug("Success to execute action with channel ${proxyChannel.name}")
+                }
+            } catch (exception: Exception) {
+                logger.warn("Failed to execute action with channel ${proxyChannel.name}", exception)
+            }
+        }
+    }
+
+    private fun getProxyChannelList(context: ArtifactContext): List<ProxyChannelSetting> {
+        return context.getCompositeConfiguration().proxy.channelList
+    }
+
+    private fun getContextFromProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
+        return if (setting.public) {
+            getContextFromPublicProxyChannel(context, setting)
+        } else {
+            getContextFromPrivateProxyChannel(context, setting)
+        } as ArtifactDownloadContext
+    }
+
+    private fun getContextFromPublicProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
+        // 查询公共源详情
+        val proxyChannel = proxyChannelClient.getById(setting.channelId!!).data!!
+        // 查询远程仓库
+        val repoType = proxyChannel.repoType.name
+        val projectId = PUBLIC_PROXY_PROJECT
+        val repoName = PUBLIC_PROXY_REPO_NAME.format(repoType, proxyChannel.name)
+        val remoteRepoInfo = repositoryClient.detail(projectId, repoName, repoType).data!!
+        // 构造proxyConfiguration
+        val remoteConfiguration = remoteRepoInfo.configuration as RemoteConfiguration
+        remoteConfiguration.proxy = RemoteProxyConfiguration(proxyChannel.url, proxyChannel.username, proxyChannel.password)
+
+        return context.copy(remoteRepoInfo)
+    }
+
+    private fun getContextFromPrivateProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
+        // 查询远程仓库
+        val projectId = context.repositoryInfo.projectId
+        val repoType = context.repositoryInfo.type.name
+        val repoName = PRIVATE_PROXY_REPO_NAME.format(context.repositoryInfo.name, setting.name)
+        val remoteRepoInfo = repositoryClient.detail(projectId, repoName, repoType).data!!
+        // 构造proxyConfiguration
+        val remoteConfiguration = remoteRepoInfo.configuration as RemoteConfiguration
+        remoteConfiguration.proxy = RemoteProxyConfiguration(setting.url!!, setting.username, setting.password)
+
+        return context.copy(remoteRepoInfo)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(CompositeRepository::class.java)
+    }
+}

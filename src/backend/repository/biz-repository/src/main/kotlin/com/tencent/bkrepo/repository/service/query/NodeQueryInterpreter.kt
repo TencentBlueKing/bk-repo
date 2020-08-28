@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.repository.service.query
 
-import com.tencent.bkrepo.common.query.builder.MongoQueryBuilder
+import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
 import org.springframework.stereotype.Component
 
 @Component
-class NodeQueryBuilder : MongoQueryBuilder() {
+class NodeQueryInterpreter : MongoQueryInterpreter() {
     init {
         addModelInterceptor(NodeQueryInterceptor())
         addModelInterceptor(NodeSelectInterceptor())

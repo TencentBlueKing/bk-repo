@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("节点服务接口")
 @Primary
-@FeignClient(SERVICE_NAME, contextId = "NodeResource")
+@FeignClient(SERVICE_NAME, contextId = "NodeClient")
 @RequestMapping("/service/node")
 interface NodeClient {
 

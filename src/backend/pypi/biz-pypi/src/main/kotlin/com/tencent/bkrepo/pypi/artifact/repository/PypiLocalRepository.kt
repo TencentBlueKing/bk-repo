@@ -66,7 +66,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     private lateinit var migrateDataRepository: MigrateDataRepository
 
     override fun onUpload(context: ArtifactUploadContext) {
-        val nodeCreateRequest = getNodeCreateRequest(context)
+        val nodeCreateRequest = buildNodeCreateRequest(context)
         nodeClient.create(nodeCreateRequest)
         context.getArtifactFile("content")?.let {
             storageService.store(
@@ -79,7 +79,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     /**
      * 获取PYPI节点创建请求
      */
-    override fun getNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
+    override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
         val artifactFile = context.artifactFileMap["content"]

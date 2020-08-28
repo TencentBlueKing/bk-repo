@@ -1,0 +1,89 @@
+package com.tencent.bkrepo.repository.service.impl
+
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.repository.dao.repository.ProxyChannelRepository
+import com.tencent.bkrepo.repository.model.TProxyChannel
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
+import com.tencent.bkrepo.repository.service.ProxyChannelService
+import org.springframework.data.repository.findByIdOrNull
+import org.springframework.stereotype.Service
+
+/**
+ * 代理源服务实现类
+ */
+@Service
+class ProxyChannelServiceImpl(
+    private val proxyChannelRepository: ProxyChannelRepository
+): ProxyChannelService {
+
+    override fun findById(id: String): ProxyChannelInfo? {
+        val tProxyChannel = proxyChannelRepository.findByIdOrNull(id)
+        return convert(tProxyChannel)
+    }
+
+    override fun create(userId: String, request: ProxyChannelCreateRequest) {
+        with(request) {
+            if (name.isBlank()) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, this::name.name)
+            }
+            if (checkExistByName(name, repoType)) {
+                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, this::name.name)
+            }
+            if (checkExistByUrl(url, repoType)) {
+                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, this::url.name)
+            }
+            val tProxyChannel = TProxyChannel(
+                public = public,
+                name = name.trim(),
+                url = formatUrl(url),
+                repoType = repoType,
+                credentialKey = credentialKey,
+                username = username,
+                password = password
+            )
+            proxyChannelRepository.insert(tProxyChannel)
+        }
+    }
+
+    override fun listPublicChannel(repoType: String): List<ProxyChannelInfo> {
+        return proxyChannelRepository.findByPublicAndRepoType(true, repoType).map { convert(it)!! }
+    }
+
+    override fun checkExistByName(name: String, repoType: RepositoryType): Boolean {
+        return proxyChannelRepository.findByNameAndRepoType(name, repoType) != null
+    }
+
+    override fun checkExistByUrl(url: String, repoType: RepositoryType): Boolean {
+        return proxyChannelRepository.findByUrlAndRepoType(formatUrl(url), repoType) != null
+    }
+
+    private fun formatUrl(url: String): String {
+        return try {
+            UrlFormatter.formatUrl(url)
+        } catch (exception: IllegalArgumentException) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "url")
+        }
+    }
+
+    companion object {
+
+        private fun convert(tProxyChannel: TProxyChannel?): ProxyChannelInfo? {
+            return tProxyChannel?.let {
+                ProxyChannelInfo(
+                    id = it.id!!,
+                    public = it.public,
+                    name = it.name,
+                    url = it.url,
+                    repoType = it.repoType,
+                    credentialKey = it.credentialKey,
+                    username = it.username,
+                    password = it.password
+                )
+            }
+        }
+    }
+}

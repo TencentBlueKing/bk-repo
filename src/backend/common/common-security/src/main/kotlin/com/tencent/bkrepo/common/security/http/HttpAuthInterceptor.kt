@@ -42,7 +42,9 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
                     val authCredentials = authHandler.extractAuthCredentials(request)
                     if (authCredentials !is AnonymousCredentials) {
                         val userId = authHandler.onAuthenticate(request, authCredentials)
-                        logger.debug("User[$userId] authenticate success by ${authHandler.javaClass.simpleName}.")
+                        if (logger.isDebugEnabled) {
+                            logger.debug("User[$userId] authenticate success by ${authHandler.javaClass.simpleName}.")
+                        }
                         authHandler.onAuthenticateSuccess(request, response, userId)
                         request.setAttribute(USER_KEY, userId)
                         return true
@@ -57,7 +59,9 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
         }
         // 没有合适的认证handler或为匿名用户
         if (httpAuthSecurity.isAnonymousEnabled()) {
-            logger.debug("None of the auth handler authenticate success, set anonymous user.")
+            if (logger.isDebugEnabled) {
+                logger.debug("None of the auth handler authenticate success, set anonymous user.")
+            }
             request.setAttribute(USER_KEY, ANONYMOUS_USER)
             return true
         } else {

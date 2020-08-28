@@ -1,23 +1,18 @@
 package com.tencent.bkrepo.common.artifact.repository.core
 
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_MD5
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_SHA256
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
-import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.util.response.ArtifactResourceWriter
+import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -79,7 +74,10 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         throw UnsupportedMethodException()
     }
 
-    open fun determineArtifactName(context: ArtifactTransferContext): String {
+    /**
+     * 判断构件名称
+     */
+    open fun determineArtifactName(context: ArtifactContext): String {
         val artifactUri = context.artifactInfo.artifactUri
         return artifactUri.substring(artifactUri.lastIndexOf(NodeUtils.FILE_SEPARATOR) + 1)
     }
@@ -89,19 +87,6 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     @Throws(ArtifactValidateException::class)
     open fun onUploadValidate(context: ArtifactUploadContext) {
-        val sha256Map = mutableMapOf<String, String>()
-        val md5Map = mutableMapOf<String, String>()
-        // 计算sha256和md5
-        context.artifactFileMap.entries.forEach { (name, file) ->
-            sha256Map[name] = file.getFileSha256()
-            md5Map[name] = file.getFileMd5()
-            if (name == OCTET_STREAM) {
-                context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] = sha256Map[name] as String
-                context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] = md5Map[name] as String
-            }
-        }
-        context.contextAttributes[ATTRIBUTE_SHA256MAP] = sha256Map
-        context.contextAttributes[ATTRIBUTE_MD5MAP] = md5Map
     }
 
     /**
@@ -179,7 +164,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     /**
      * 验证失败回调
      */
-    open fun onValidateFailed(context: ArtifactTransferContext, validateException: ArtifactValidateException) {
+    open fun onValidateFailed(context: ArtifactContext, validateException: ArtifactValidateException) {
         // 默认向上抛异常，由全局异常处理器处理
         throw validateException
     }
