@@ -20,6 +20,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -70,6 +71,7 @@ import java.nio.channels.Channels
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.RPM
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
+import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.getRpmBooleanHeader
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
@@ -356,10 +358,9 @@ class RpmLocalRepository(
                     metadata
                 )
                 storageService.store(xmlPrimaryNode.sha256!!, xmlGZArtifact, context.storageCredentials)
+                with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
                 nodeClient.create(xmlPrimaryNode)
-
-                // 更新repomd.xml
-                // xml文件sha1
+                logger.info("Success to insert $xmlPrimaryNode")
             } finally {
                 xmlGZFile.delete()
             }
@@ -426,12 +427,15 @@ class RpmLocalRepository(
         return when (format) {
             "xml" -> XML
             "rpm" -> RPM
-            else -> throw RpmArtifactFormatNotSupportedException("rpm not supported `$format` artifact")
+            else -> {
+                with(context.artifactInfo) { logger.info("$projectId$SLASH$repoName$SLASH$artifactUri: 格式不被接受") }
+                throw RpmArtifactFormatNotSupportedException("rpm not supported `$format` artifact")
+            }
         }
     }
 
     // 保存分组文件
-    private fun storeGroupFile(context: ArtifactUploadContext, repeat: ArtifactRepeat, rpmRepoConf: RpmRepoConf) {
+    private fun storeGroupFile(context: ArtifactUploadContext) {
         val xmlByteArray = context.getArtifactFile().getInputStream().readBytes()
         val filename = context.artifactInfo.artifactUri.split("/").last()
 
@@ -453,7 +457,9 @@ class RpmLocalRepository(
             metadata
         )
         storageService.store(xmlNode.sha256!!, xmlSha1ArtifactFile, context.storageCredentials)
+        with(xmlNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
         nodeClient.create(xmlNode)
+        logger.info("Success to insert $xmlNode")
         xmlSha1ArtifactFile.delete()
 
         // 保存xml.gz
@@ -476,7 +482,9 @@ class RpmLocalRepository(
                 metadataGZ
             )
             storageService.store(groupGZNode.sha256!!, groupGZArtifactFile, context.storageCredentials)
+            with(groupGZNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
             nodeClient.create(groupGZNode)
+            logger.info("Success to insert $groupGZNode")
             groupGZArtifactFile.delete()
         } finally {
             groupGZFile.delete()
@@ -495,6 +503,7 @@ class RpmLocalRepository(
         val repodataDepth = configuration.repodataDepth
         val repodataUri = XmlStrUtils.splitUriByDepth(context.artifactInfo.artifactUri, repodataDepth)
         val indexPath = "${repodataUri.repodataPath}$REPODATA"
+        val limit = groupXmlSet.size * 3 + 9
 
         // 查询该请求路径对应的索引目录下所有文件
         val nodeList = with(context.artifactInfo) {
@@ -506,9 +515,8 @@ class RpmLocalRepository(
                 mutableListOf(projectQuery, repositoryQuery, pathQuery),
                 Rule.NestedRule.RelationType.AND
             )
-            // TODO limit大小
             val queryModel = QueryModel(
-                page = PageLimit(0, 15),
+                page = PageLimit(0, limit),
                 sort = Sort(listOf("lastModifiedDate"), Sort.Direction.DESC),
                 select = mutableListOf("projectId", "repoName", "path", "name", "lastModifiedDate", "metadata"),
                 rule = queryRule
@@ -522,7 +530,7 @@ class RpmLocalRepository(
         if (targetIndexList != null) {
             for (index in targetIndexList) {
                 repoDataList.add(
-                    if ((index["name"] as String).contains(Regex("-filelists|-others|-primary"))) {
+                    if ((index["name"] as String).contains(Regex("-filelists.xml.gz|-others|-primary"))) {
                         RepoData(
                             type = (index["metadata"] as Map<*, *>)["indexType"] as String,
                             location = RpmLocation("$REPODATA$SLASH${index["name"] as String}"),
@@ -530,14 +538,14 @@ class RpmLocalRepository(
                             size = ((index["metadata"] as Map<*, *>)["size"] as String).toLong(),
                             timestamp = (index["metadata"] as Map<*, *>)["timestamp"] as String,
                             openChecksum = RpmChecksum((index["metadata"] as Map<*, *>)["openChecksum"] as String),
-                            openSize = (index["metadata"] as Map<String, String>)["size"]?.toInt() ?: 111
+                            openSize = ((index["metadata"] as Map<*, *>)["openSize"] as String).toInt()
                         )
                     } else {
                         RepoGroup(
                             type = (index["metadata"] as Map<*, *>)["indexType"] as String,
                             location = RpmLocation("$REPODATA$SLASH${index["name"] as String}"),
                             checksum = RpmChecksum((index["metadata"] as Map<*, *>)["checksum"] as String),
-                            size = (index["metadata"] as Map<String, String>)["size"]?.toLong() ?: 111L,
+                            size = ((index["metadata"] as Map<*, *>)["size"] as String).toLong(),
                             timestamp = (index["metadata"] as Map<*, *>)["timestamp"] as String
                         )
                     }
@@ -558,20 +566,16 @@ class RpmLocalRepository(
                 xmlRepodataArtifact
             )
             storageService.store(xmlRepomdNode.sha256!!, xmlRepodataArtifact, context.storageCredentials)
+            with(xmlRepomdNode){ logger.info("Success to store $projectId/$repoName/$fullPath") }
             nodeClient.create(xmlRepomdNode)
+            logger.info("Success to insert $xmlRepomdNode")
             xmlRepodataArtifact.delete()
         }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
-        val overwrite = HttpContextHolder.getRequest().getHeader("X-BKREPO-OVERWRITE").orEmpty().let {
-            if (it.isBlank()) {
-                true
-            } else {
-                it.toBoolean()
-            }
-        }
+        val overwrite = HeaderUtils.getRpmBooleanHeader("X-BKREPO-OVERWRITE")
         val artifactFormat = getArtifactFormat(context)
         // 检查请求路径是否契合仓库repodataDepth 深度设置
         val rpmRepoConf = getRpmRepoConf(context)
@@ -582,7 +586,7 @@ class RpmLocalRepository(
                 val rpmVersion = indexer(context, repeat, rpmRepoConf)
                 rpmNodeCreateRequest(context, rpmVersion.toMetadata(), overwrite)
             } else {
-                storeGroupFile(context, repeat, rpmRepoConf)
+                storeGroupFile(context)
                 rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
             }
         } else {
