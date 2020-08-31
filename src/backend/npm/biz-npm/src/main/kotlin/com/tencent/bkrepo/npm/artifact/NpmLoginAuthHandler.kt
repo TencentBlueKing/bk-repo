@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletResponse
 class NpmLoginAuthHandler(
     private val authenticationManager: AuthenticationManager,
     private val jwtProperties: JwtAuthProperties
-): HttpAuthHandler {
+) : HttpAuthHandler {
 
     private val signingKey = JwtUtils.createSigningKey(jwtProperties.secretKey)
 
