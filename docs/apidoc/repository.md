@@ -36,8 +36,8 @@ Repository仓库枚举值与配置部分请参考末尾部分
   | --------------------- | ------- | -------- | --------- | ------------------ | ----------------------- |
   | projectId             | string  | 是       | 无        | 项目名称           | project name            |
   | name                  | string  | 是       | 无        | 仓库名称           | repo name               |
-  | type                  | enum    | 是       | 无        | 仓库类型，枚举值   | repo type               |
-  | category              | enum    | 否       | COMPOSITE | 仓库类别，枚举值   | repo category           |
+  | type                  | string  | 是       | 无        | 仓库类型，枚举值   | repo type               |
+  | category              | string  | 否       | COMPOSITE | 仓库类别，枚举值   | repo category           |
   | public                | boolean | 否       | false     | 是否公开           | is public repo          |
   | description           | string  | 否       | 无        | 仓库描述           | repo description        |
   | configuration         | object  | 否       | 无        | 仓库配置，参考后文 | repo configuration      |
@@ -175,7 +175,7 @@ Repository仓库枚举值与配置部分请参考末尾部分
   | --------- | ------ | -------- | ------ | -------- | ------------ |
   | projectId | string | 是       | 无     | 项目名称 | project name |
   | repoName  | string | 是       | 无     | 仓库名称 | repo name    |
-  | type      | enum   | 否       | 无     | 仓库类型 | repo type    |
+  | type      | string | 否       | 无     | 仓库类型 | repo type    |
 
 - 响应体
 
@@ -241,7 +241,7 @@ Repository仓库枚举值与配置部分请参考末尾部分
   | page      | int    | 是       | 无     | 当前页                     | current page |
   | size      | int    | 是       | 无     | 分页数量                   | page size    |
   | name      | string | 否       | 无     | 仓库名称，支持前缀模糊匹配 | repo name    |
-  | type      | enum   | 否       | 无     | 仓库类型，枚举值           | repo type    |
+  | type      | string | 否       | 无     | 仓库类型，枚举值           | repo type    |
 
 - 响应体
 
@@ -311,7 +311,7 @@ Repository仓库枚举值与配置部分请参考末尾部分
   | --------- | ------ | -------- | ------ | -------------------------- | ------------ |
   | projectId | string | 是       | 无     | 项目名称                   | project name |
   | name      | string | 否       | 无     | 仓库名称，支持前缀模糊匹配 | repo name    |
-  | type      | enum   | 否       | 无     | 仓库类型，枚举值           | repo type    |
+  | type      | string | 否       | 无     | 仓库类型，枚举值           | repo type    |
 
 - 响应体
 
