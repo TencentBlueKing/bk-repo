@@ -22,7 +22,6 @@ import com.tencent.bkrepo.npm.pojo.migration.MigrationErrorDataInfo
 import com.tencent.bkrepo.npm.pojo.migration.MigrationFailDataDetailInfo
 import com.tencent.bkrepo.npm.pojo.migration.service.MigrationErrorDataCreateRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
-import com.tencent.bkrepo.npm.utils.MigrationUtils
 import com.tencent.bkrepo.npm.utils.ThreadPoolManager
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -108,16 +107,12 @@ class DataMigrationService {
     @Transactional(rollbackFor = [Throwable::class])
     fun dataMigrationByFile(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse {
         logger.info("migraion by file request parameter:[isUseErrorData: $useErrorData, fileName: $FILE_NAME]")
-        var totalDataSet: Set<String>
-        if (useErrorData) {
+        val totalDataSet: Set<String>
+        totalDataSet = if (useErrorData) {
             val result = find(artifactInfo.projectId, artifactInfo.repoName)
-            if (result == null) {
-                totalDataSet = initTotalDataSetByFile()
-            } else {
-                totalDataSet = result.errorData
-            }
+            result?.errorData ?: initTotalDataSetByFile()
         } else {
-            totalDataSet = initTotalDataSetByFile()
+            initTotalDataSetByFile()
         }
         logger.info("migration by file filter results: [$totalDataSet], size: ${totalDataSet.size}")
         return dataMigration(totalDataSet, artifactInfo, useErrorData)
@@ -127,16 +122,12 @@ class DataMigrationService {
     @Transactional(rollbackFor = [Throwable::class])
     fun dataMigrationByUrl(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse {
         logger.info("migraion by url request parameter: [url: $url, isUseErrorData: $useErrorData]")
-        var totalDataSet: Set<String>
-        if (useErrorData) {
+        val totalDataSet: Set<String>
+        totalDataSet = if (useErrorData) {
             val result = find(artifactInfo.projectId, artifactInfo.repoName)
-            if (result == null) {
-                totalDataSet = initTotalDataSetByUrl()
-            } else {
-                totalDataSet = result.errorData
-            }
+            result?.errorData ?: initTotalDataSetByUrl()
         } else {
-            totalDataSet = initTotalDataSetByUrl()
+            initTotalDataSetByUrl()
         }
         logger.info("migration by url filter results: [$totalDataSet], size: ${totalDataSet.size}")
         return dataMigration(totalDataSet, artifactInfo, useErrorData)
@@ -164,35 +155,36 @@ class DataMigrationService {
         RequestContextHolder.setRequestAttributes(attributes, true)
 
         val start = System.currentTimeMillis()
-        //val list = MigrationUtils.split(totalDataSet, count)
         val callableList: MutableList<Callable<MigrationFailDataDetailInfo>> = mutableListOf()
         var successCount = 0
         var failCount = 0
         totalDataSet.forEach {
-            callableList.add(Callable {
-                RequestContextHolder.setRequestAttributes(attributes, true)
-                val migrationResult = doDataMigration(artifactInfo, it, totalDataSet.size)
-                if (!hasMigrationFailData(migrationResult)){
-                    successCount++
-                }else{
-                    failCount++
+            callableList.add(
+                Callable {
+                    RequestContextHolder.setRequestAttributes(attributes, true)
+                    val migrationResult = doDataMigration(artifactInfo, it, totalDataSet.size)
+                    if (!hasMigrationFailData(migrationResult)) {
+                        successCount++
+                    } else {
+                        failCount++
+                    }
+                    if (isMultipleOfFive(totalDataSet.size)) {
+                        logger.info(
+                            "progress rate : successRate:[$successCount/${totalDataSet.size}], " +
+                                "failRate[$failCount/${totalDataSet.size}]"
+                        )
+                    }
+                    migrationResult
                 }
-                if (isMultipleOfFive(totalDataSet.size)) {
-                    logger.info(
-                        "progress rate : successRate:[${successCount}/${totalDataSet.size}], " +
-                            "failRate[${failCount}/${totalDataSet.size}]"
-                    )
-                }
-                migrationResult
-            })
+            )
         }
         val resultList = ThreadPoolManager.submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
         logger.info(
-            "npm history data migration, total size[${totalDataSet.size}], success[${successCount}], " +
-                "fail[${failCount}], elapse [${millisToSecond(elapseTimeMillis)}] s totally."
+            "npm history data migration, total size[${totalDataSet.size}], success[$successCount], " +
+                "fail[$failCount], elapse [${millisToSecond(elapseTimeMillis)}] s totally."
         )
-        val resultDetailInfoSet = resultList.stream().filter{ hasMigrationFailData(it)}.collect(Collectors.toSet())
+        val resultDetailInfoSet = resultList.stream().filter { hasMigrationFailData(it) }.collect(Collectors.toSet())
         val collect = resultList.stream().map { it.pkgName }.collect(Collectors.toSet())
         if (collect.isNotEmpty() && useErrorData) {
             insertErrorData(artifactInfo, collect)
@@ -211,19 +203,17 @@ class DataMigrationService {
         artifactInfo: NpmArtifactInfo,
         pkgName: String,
         totalDataSet: Int
-    ):MigrationFailDataDetailInfo {
+    ): MigrationFailDataDetailInfo {
         var failDataDetailInfo: MigrationFailDataDetailInfo? = null
         try {
             Thread.sleep(SLEEP_MILLIS)
             measureTimeMillis {
                 failDataDetailInfo = migrate(artifactInfo, pkgName)
             }.apply {
-                if (!hasMigrationFailData(failDataDetailInfo!!)){
+                if (!hasMigrationFailData(failDataDetailInfo!!)) {
                     logger.info("migrate npm package [$pkgName] success, elapse $this ms.")
                 }
-
             }
-
         } catch (exception: IOException) {
             logger.error("failed to migrate [$pkgName.json] file, {}", exception.message)
         } catch (exception: InterruptedException) {
@@ -322,7 +312,7 @@ class DataMigrationService {
             return size.rem(1) == 0
         }
 
-        fun hasMigrationFailData(failDataDetailInfo: MigrationFailDataDetailInfo): Boolean{
+        fun hasMigrationFailData(failDataDetailInfo: MigrationFailDataDetailInfo): Boolean {
             return failDataDetailInfo.versionSet.size > 0
         }
     }

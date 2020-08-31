@@ -50,7 +50,7 @@ class NpmFixToolService {
                 }
                 reUploadPkgJson(pkgFileInfo)
                 successSet.add(it)
-            }catch (ignored: Exception){
+            } catch (ignored: Exception) {
                 errorSet.add(it)
             }
         }
@@ -73,7 +73,7 @@ class NpmFixToolService {
         return TimeUtil.getGMTTime(dateTime)
     }
 
-    companion object{
+    companion object {
         private val logger = LoggerFactory.getLogger(NpmFixToolService::class.java)
     }
 }
