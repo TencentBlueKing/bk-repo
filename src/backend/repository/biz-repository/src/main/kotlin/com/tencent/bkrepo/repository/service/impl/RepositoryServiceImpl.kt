@@ -223,6 +223,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
      */
     private fun buildListQuery(projectId: String, repoName: String? = null, repoType: String? = null): Query {
         val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId)
+        criteria.and(TRepository::display.name).`is`(true)
         repoName?.let { criteria.and(TRepository::name.name).regex("^$repoName") }
         repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
         return Query(criteria).with(Sort.by(TRepository::name.name))
@@ -236,13 +237,6 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         criteria.and(TRepository::name.name).`is`(repoName)
         repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
         return Query(criteria)
-    }
-
-    private fun validateCreateParameter(request: RepoCreateRequest) {
-        with(request) {
-            Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
-            Preconditions.checkArgument(description?.length ?: 0 < 200, this::description.name)
-        }
     }
 
     /**
@@ -333,6 +327,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
             description = null,
             configuration = RemoteConfiguration().toJsonString(),
             credentialsKey = repository.credentialsKey,
+            display = false,
             projectId = repository.projectId,
             createdBy = operator,
             createdDate = LocalDateTime.now(),

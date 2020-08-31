@@ -28,6 +28,7 @@ data class TRepository(
     var description: String? = null,
     var configuration: String,
     var credentialsKey: String? = null,
+    var display: Boolean = true,
 
     var projectId: String
 )
