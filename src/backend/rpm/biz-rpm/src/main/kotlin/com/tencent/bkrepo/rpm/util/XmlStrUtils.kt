@@ -54,6 +54,7 @@ object XmlStrUtils {
     ): String {
         val stringBuilder = StringBuilder(String(inputStream.readBytes()))
         // 定位插入字符串的位置
+        // TODO 当删除全部包后再次插入无法定位
         val start: Int = when (indexType) {
             "others", "filelists" -> { stringBuilder.indexOf(PACKAGE_OTHER_START_MARK) }
             "primary" -> { stringBuilder.indexOf(PACKAGE_START_MARK) }

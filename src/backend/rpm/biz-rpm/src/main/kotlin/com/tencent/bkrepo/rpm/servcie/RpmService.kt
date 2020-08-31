@@ -15,6 +15,7 @@ import com.tencent.bkrepo.rpm.FILELISTS_XML
 import com.tencent.bkrepo.rpm.OTHERS_XML
 import com.tencent.bkrepo.rpm.REPOMD_XML
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
+import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -45,23 +46,23 @@ class RpmService {
     fun addGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
         val context = ArtifactSearchContext()
         groups.removeAll(rpmIndexSet)
-        val rpmLocalConfiguration = context.repositoryInfo.configuration as RpmLocalConfiguration
-        rpmLocalConfiguration.groupXmlSet.addAll(groups)
+        val rpmLocalConfiguration = (context.repositoryInfo.configuration as RpmLocalConfiguration)
+        (rpmLocalConfiguration.groupXmlSet ?: mutableSetOf()).addAll(groups)
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)
         repositoryClient.update(repoUpdateRequest)
-//        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-//        (repository as RpmLocalRepository).flushRepoMdXML(context)
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        (repository as RpmLocalRepository).flushAllRepoData(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deleteGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
         val context = ArtifactSearchContext()
         val rpmLocalConfiguration = context.repositoryInfo.configuration as RpmLocalConfiguration
-        rpmLocalConfiguration.groupXmlSet.removeAll(groups)
+        (rpmLocalConfiguration.groupXmlSet ?: mutableSetOf()).removeAll(groups)
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)
         repositoryClient.update(repoUpdateRequest)
-//        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-//        (repository as RpmLocalRepository).flushRepoMdXML(context)
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        (repository as RpmLocalRepository).flushAllRepoData(context)
     }
 
     private fun createRepoUpdateRequest(
