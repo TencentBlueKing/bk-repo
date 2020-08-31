@@ -49,6 +49,10 @@
 | totalPages | int  | 总页数       | total pages  |
 | records    | list | 数据记录列表 | record list  |
 
+### 统一时间响应格式
+
+接口返回的时间，统一使用ISO_DATETIME格式，2011-12-03T10:15:30
+
 ### 通用概念
 
 | 名称              | 解释                 |

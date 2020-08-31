@@ -6,10 +6,6 @@ import com.tencent.bkrepo.common.query.serializer.RuleDeserializer
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-/**
- * 查询规则
- * rules 与 {field, value} 需要存在
- */
 @ApiModel("查询规则")
 @JsonDeserialize(using = RuleDeserializer::class)
 sealed class Rule {

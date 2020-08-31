@@ -51,7 +51,7 @@ class UserNodeController(
 
     @ApiOperation("根据路径查看节点详情")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    @GetMapping(DEFAULT_MAPPING_URI)
+    @GetMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/detail/$DEFAULT_MAPPING_URI")
     fun detail(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
@@ -65,7 +65,7 @@ class UserNodeController(
 
     @ApiOperation("创建文件夹")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    @PostMapping(DEFAULT_MAPPING_URI)
+    @PostMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/mkdir/$DEFAULT_MAPPING_URI")
     fun mkdir(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
@@ -86,7 +86,7 @@ class UserNodeController(
 
     @ApiOperation("删除节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    @DeleteMapping(DEFAULT_MAPPING_URI)
+    @DeleteMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/delete/$DEFAULT_MAPPING_URI")
     fun delete(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
@@ -104,18 +104,19 @@ class UserNodeController(
     }
 
     @ApiOperation("更新节点")
-    @PostMapping("/update")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    @PostMapping("/update/$DEFAULT_MAPPING_URI")
     fun update(
         @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestBody request: UserNodeUpdateRequest
     ): Response<Void> {
-        with(request) {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
+        with(artifactInfo) {
             val updateRequest = NodeUpdateRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = fullPath,
-                expires = expires,
+                fullPath = artifactUri,
+                expires = request.expires,
                 operator = userId
             )
             nodeService.update(updateRequest)
@@ -123,6 +124,28 @@ class UserNodeController(
         }
     }
 
+    @ApiOperation("重命名节点")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    @PostMapping( "/rename/$DEFAULT_MAPPING_URI")
+    fun rename(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @RequestParam newFullPath: String
+    ): Response<Void> {
+        with(artifactInfo) {
+            val renameRequest = NodeRenameRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = artifactUri,
+                newFullPath = newFullPath,
+                operator = userId
+            )
+            nodeService.rename(renameRequest)
+            return ResponseBuilder.success()
+        }
+    }
+
+    @Deprecated("/rename/{projectId}/{repoName}/**")
     @ApiOperation("重命名节点")
     @PostMapping("/rename")
     fun rename(

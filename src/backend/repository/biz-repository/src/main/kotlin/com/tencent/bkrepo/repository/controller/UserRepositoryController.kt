@@ -125,7 +125,7 @@ class UserRepositoryController(
 
     @ApiOperation("更新仓库")
     @DeleteMapping("/update/{projectId}/{repoName}")
-    fun deleteRepo(
+    fun updateRepo(
         @RequestAttribute userId: String,
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,

@@ -1,8 +1,8 @@
 ## Repository仓库接口说明
 
-repo仓库接口使用统一接口协议，公共部分请参照[通用接口协议说明](./common.md)
+Repository仓库接口使用统一接口协议，公共部分请参照[通用接口协议说明](./common.md)
 
-repo仓库枚举值请参考后文**仓库公共枚举值说明**部分
+Repository仓库枚举值与配置部分请参考末尾部分
 
 ### 创建仓库
 
@@ -60,32 +60,36 @@ repo仓库枚举值请参考后文**仓库公共枚举值说明**部分
 
 
 
-### 分页查询仓库
+### 更新仓库信息
 
-- API: GET /repository/api/repo/page/{projectId}/{page}/{size}?name=local&type=GENERIC
+- API: POST /repository/api/repo/update/{projectId}/{repoName}
 
-- API 名称: list_repo_page
+- API 名称: update_repo
 
 - 功能说明：
 
-  - 中文：分页查询仓库
-  - English：list repo page
+  - 中文：更新仓库信息
+  - English：update repo
 
 - 请求体
 
-  此接口无请求体
-
-  
+  ```json
+  {
+    "public": false,
+    "description": "repo description",
+    "configuration": null
+  }
+  ```
 
 - 请求字段说明
 
-  | 字段      | 类型   | 是否必须 | 默认值 | 说明                       | Description  |
-  | --------- | ------ | -------- | ------ | -------------------------- | ------------ |
-  | projectId | string | 是       | 无     | 项目名称                   | project name |
-  | page      | int    | 是       | 无     | 当前页                     | current page |
-  | size      | int    | 是       | 无     | 分页数量                   | page size    |
-  | name      | string | 否       | 无     | 仓库名称，支持前缀模糊匹配 | repo name    |
-  | type      | enum   | 否       | 无     | 仓库类型，枚举值           | repo type    |
+  | 字段          | 类型                    | 是否必须 | 默认值 | 说明                             | Description        |
+  | ------------- | ----------------------- | -------- | ------ | -------------------------------- | ------------------ |
+  | projectId     | string                  | 是       | 无     | 项目名称                         | project name       |
+  | repoName      | string                  | 是       | 无     | 仓库名称                         | repo name          |
+  | public        | boolean                 | 否       | 无     | 是否公开。null则不修改           | is public repo     |
+  | description   | string                  | 否       | 无     | 仓库描述。null则不修改           | repo description   |
+  | configuration | RepositoryConfiguration | 否       | 无     | 仓库配置，参考后文。null则不修改 | repo configuration |
 
 - 响应体
 
@@ -93,44 +97,60 @@ repo仓库枚举值请参考后文**仓库公共枚举值说明**部分
   {
     "code": 0,
     "message": null,
-    "data": {
-      "count": 18,
-      "page": 0,
-      "pageSize": 1,
-      "totalPages": 2,
-      "records": [
-        {
-          "projectId" : "test",
-          "name" : "local",
-          "type" : "GENERIC",
-          "category" : "LOCAL",
-          "public" : false,
-          "description" : "",
-          "createdBy" : "system",
-          "createdDate" : "2020-03-16T12:13:03.371",
-          "lastModifiedBy" : "system",
-          "lastModifiedDate" : "2020-03-16T12:13:03.371"
-        }
-      ]
-    },
+    "data": null,
     "traceId": ""
   }
   ```
 
-- record字段说明
+- data字段说明
 
-  | 字段             | 类型    | 说明         | Description      |
-  | ---------------- | ------- | ------------ | ---------------- |
-  | projectId        | string  | 项目id       | project id       |
-  | name             | string  | 仓库名称     | repo name        |
-  | type             | string  | 仓库类型     | repo type        |
-  | category         | string  | 仓库类别     | repo category    |
-  | public           | boolean | 是否公开项目 | is public repo   |
-  | description      | string  | 仓库描述     | repo description |
-  | createdBy        | string  | 创建者       | create user      |
-  | createdDate      | string  | 创建时间     | create time      |
-  | lastModifiedBy   | string  | 上次修改者   | last modify user |
-  | lastModifiedDate | string  | 上次修改时间 | last modify time |
+  请求成功无返回数据
+
+
+
+### 删除仓库
+
+- API: DELETE /repository/api/repo/delete/{projectId}/{repoName}?forced=false
+
+- API 名称: delete_repo
+
+- 功能说明：
+
+  - 中文：删除仓库
+  - English：delete repo
+
+- 请求体
+
+  ```json
+  {
+    "public": false,
+    "description": "repo description",
+    "configuration": null
+  }
+  ```
+
+- 请求字段说明
+
+  | 字段      | 类型    | 是否必须 | 默认值 | 说明                                                         | Description          |
+  | --------- | ------- | -------- | ------ | ------------------------------------------------------------ | -------------------- |
+  | projectId | string  | 是       | 无     | 项目名称                                                     | project name         |
+  | repoName  | string  | 是       | 无     | 仓库名称                                                     | repo name            |
+  | forced    | boolean | 否       | false  | 是否强制删除。如果为false，当仓库中存在文件时，将无法删除仓库 | force to delete repo |
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  请求成功无返回数据
 
 
 
@@ -198,34 +218,30 @@ repo仓库枚举值请参考后文**仓库公共枚举值说明**部分
 
 
 
-### 更新仓库信息
+### 分页查询仓库
 
-- API: POST /repository/api/repo/update/{projectId}/{repoName}
+- API: GET /repository/api/repo/page/{projectId}/{page}/{size}?name=local&type=GENERIC
 
-- API 名称: update_repo
+- API 名称: list_repo_page
 
 - 功能说明：
 
-  - 中文：更新仓库信息
-  - English：update repo
+  - 中文：分页查询仓库
+  - English：list repo page
 
 - 请求体
 
-  ```json
-  {
-    "public": false,
-    "description": "repo description",
-    "configuration": null
-  }
-  ```
+  此接口无请求体
 
 - 请求字段说明
 
-  | 字段          | 类型    | 是否必须 | 默认值 | 说明                             | Description        |
-  | ------------- | ------- | -------- | ------ | -------------------------------- | ------------------ |
-  | public        | boolean | 否       | 无     | 是否公开。null则不修改           | is public repo     |
-  | description   | string  | 否       | 无     | 仓库描述。null则不修改           | repo description   |
-  | configuration | object  | 否       | 无     | 仓库配置，参考后文。null则不修改 | repo configuration |
+  | 字段      | 类型   | 是否必须 | 默认值 | 说明                       | Description  |
+  | --------- | ------ | -------- | ------ | -------------------------- | ------------ |
+  | projectId | string | 是       | 无     | 项目名称                   | project name |
+  | page      | int    | 是       | 无     | 当前页                     | current page |
+  | size      | int    | 是       | 无     | 分页数量                   | page size    |
+  | name      | string | 否       | 无     | 仓库名称，支持前缀模糊匹配 | repo name    |
+  | type      | enum   | 否       | 无     | 仓库类型，枚举值           | repo type    |
 
 - 响应体
 
@@ -233,14 +249,110 @@ repo仓库枚举值请参考后文**仓库公共枚举值说明**部分
   {
     "code": 0,
     "message": null,
-    "data": null,
+    "data": {
+      "count": 18,
+      "page": 0,
+      "pageSize": 1,
+      "totalPages": 2,
+      "records": [
+        {
+          "projectId" : "test",
+          "name" : "local",
+          "type" : "GENERIC",
+          "category" : "LOCAL",
+          "public" : false,
+          "description" : "",
+          "createdBy" : "system",
+          "createdDate" : "2020-03-16T12:13:03.371",
+          "lastModifiedBy" : "system",
+          "lastModifiedDate" : "2020-03-16T12:13:03.371"
+        }
+      ]
+    },
     "traceId": ""
   }
   ```
 
-- data字段说明
+- record字段说明
 
-  请求成功无返回数据
+  | 字段             | 类型    | 说明         | Description      |
+  | ---------------- | ------- | ------------ | ---------------- |
+  | projectId        | string  | 项目id       | project id       |
+  | name             | string  | 仓库名称     | repo name        |
+  | type             | string  | 仓库类型     | repo type        |
+  | category         | string  | 仓库类别     | repo category    |
+  | public           | boolean | 是否公开项目 | is public repo   |
+  | description      | string  | 仓库描述     | repo description |
+  | createdBy        | string  | 创建者       | create user      |
+  | createdDate      | string  | 创建时间     | create time      |
+  | lastModifiedBy   | string  | 上次修改者   | last modify user |
+  | lastModifiedDate | string  | 上次修改时间 | last modify time |
+
+
+
+### 列表查询仓库
+
+- API: GET /repository/api/repo/list/{projectId}?name=local&type=GENERIC
+
+- API 名称: list_repo
+
+- 功能说明：
+
+  - 中文：列表查询仓库
+  - English：list repo
+
+- 请求体
+
+  此接口无请求体
+
+- 请求字段说明
+
+  | 字段      | 类型   | 是否必须 | 默认值 | 说明                       | Description  |
+  | --------- | ------ | -------- | ------ | -------------------------- | ------------ |
+  | projectId | string | 是       | 无     | 项目名称                   | project name |
+  | name      | string | 否       | 无     | 仓库名称，支持前缀模糊匹配 | repo name    |
+  | type      | enum   | 否       | 无     | 仓库类型，枚举值           | repo type    |
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": [
+      {
+        "projectId" : "test",
+        "name" : "local",
+        "type" : "GENERIC",
+        "category" : "LOCAL",
+        "public" : false,
+        "description" : "",
+        "createdBy" : "system",
+        "createdDate" : "2020-03-16T12:13:03.371",
+        "lastModifiedBy" : "system",
+        "lastModifiedDate" : "2020-03-16T12:13:03.371"
+      }
+    ],
+    "traceId": ""
+  }
+  ```
+
+- 列表record字段说明
+
+  | 字段             | 类型    | 说明         | Description      |
+  | ---------------- | ------- | ------------ | ---------------- |
+  | projectId        | string  | 项目id       | project id       |
+  | name             | string  | 仓库名称     | repo name        |
+  | type             | string  | 仓库类型     | repo type        |
+  | category         | string  | 仓库类别     | repo category    |
+  | public           | boolean | 是否公开项目 | is public repo   |
+  | description      | string  | 仓库描述     | repo description |
+  | createdBy        | string  | 创建者       | create user      |
+  | createdDate      | string  | 创建时间     | create time      |
+  | lastModifiedBy   | string  | 上次修改者   | last modify user |
+  | lastModifiedDate | string  | 上次修改时间 | last modify time |
+
+
 
 ### 仓库公共枚举值说明
 
@@ -272,7 +384,7 @@ repo仓库枚举值请参考后文**仓库公共枚举值说明**部分
 
 
 
-### 仓库配置项
+### RepositoryConfiguration仓库配置项
 
 #### 1. 公共配置项
 
@@ -281,18 +393,19 @@ repo仓库枚举值请参考后文**仓库公共枚举值说明**部分
 | 字段     | 类型   | 是否必须 | 默认值 | 说明                                                         | Description        |
 | -------- | ------ | -------- | ------ | ------------------------------------------------------------ | ------------------ |
 | type     | string | 是       | 无     | 不同类型仓库分别对应local、remote、virtual、composite(小写)，用于反序列化，创建和修改时需要提供该字段 | configuration type |
-| settings | object | 否       | 无     | 不同类型仓库可以通过该字段进行差异化配置                     | repo settings      |
+| settings | map    | 否       | 无     | 不同类型仓库可以通过该字段进行差异化配置                     | repo settings      |
 
 #### 2. local本地仓库配置项
 
 | 字段    | 类型    | 是否必须 | 默认值 | 说明            | Description |
 | :------ | ------- | -------- | ------ | --------------- | ----------- |
 | webHook | WebHook | 否       | 无     | WebHook相关配置 | web hook    |
+
 - ##### WebHook配置项
 
-  | 字段        | 类型                 | 是否必须 | 默认值 | 说明         | Description   |
-  | :---------- | -------------------- | -------- | ------ | ------------ | ------------- |
-  | webHookList | list<WebHookSetting> | 否       | 无     | WebHook 列表 | web hook list |
+  | 字段        | 类型             | 是否必须 | 默认值 | 说明         | Description   |
+  | :---------- | ---------------- | -------- | ------ | ------------ | ------------- |
+  | webHookList | [WebHookSetting] | 否       | 无     | WebHook 列表 | web hook list |
 
 - ##### WebHookSetting配置项
 
@@ -343,9 +456,9 @@ repo仓库枚举值请参考后文**仓库公共枚举值说明**部分
 
 #### 4. virtual虚拟仓库配置项
 
-| 字段           | 类型                     | 是否必须 | 默认值 | 说明     | Description |
-| -------------- | ------------------------ | -------- | ------ | -------- | ----------- |
-| repositoryList | list<RepositoryIdentify> | 否       | 无     | 仓库列表 | repo list   |
+| 字段           | 类型                 | 是否必须 | 默认值 | 说明     | Description |
+| -------------- | -------------------- | -------- | ------ | -------- | ----------- |
+| repositoryList | [RepositoryIdentify] | 否       | 无     | 仓库列表 | repo list   |
 
 - ##### RepositoryIdentify
 
@@ -362,9 +475,9 @@ repo仓库枚举值请参考后文**仓库公共枚举值说明**部分
 
 - ##### ProxyConfiguration
 
-  | 字段        | 类型                      | 是否必须 | 默认值 | 说明       | Description        |
-  | ----------- | ------------------------- | -------- | ------ | ---------- | ------------------ |
-  | channelList | list<ProxyChannelSetting> | 否       | 无     | 代理源列表 | proxy channel list |
+  | 字段        | 类型                  | 是否必须 | 默认值 | 说明       | Description        |
+  | ----------- | --------------------- | -------- | ------ | ---------- | ------------------ |
+  | channelList | [ProxyChannelSetting] | 否       | 无     | 代理源列表 | proxy channel list |
 
 - ##### ProxyChannelSetting
 

@@ -2,8 +2,6 @@
 
 proxy channel接口使用统一接口协议，公共部分请参照[通用接口协议说明](./common.md)
 
-
-
 ### 查询公有源列表
 
 - API: POST /repository/api/proxy-channel/list/public/{repoType}
