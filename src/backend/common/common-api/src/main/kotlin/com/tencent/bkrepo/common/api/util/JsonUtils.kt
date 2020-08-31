@@ -11,7 +11,9 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
+import java.io.InputStream
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -39,4 +41,17 @@ object JsonUtils {
     }
 }
 
+/**
+ * 将对象序列化为json字符串
+ */
 fun Any.toJsonString() = JsonUtils.objectMapper.writeValueAsString(this).orEmpty()
+
+/**
+ * 将json字符串反序列化为java对象
+ */
+inline fun <reified T> String.readJsonString(): T = JsonUtils.objectMapper.readValue(this, jacksonTypeRef<T>())
+
+/**
+ * 将json字符串流反序列化为java对象
+ */
+inline fun <reified T> InputStream.readJsonString(): T = JsonUtils.objectMapper.readValue(this, jacksonTypeRef<T>())

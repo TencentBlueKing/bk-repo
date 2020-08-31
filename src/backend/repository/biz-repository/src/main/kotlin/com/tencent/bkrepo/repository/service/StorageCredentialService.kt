@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.pojo.credendial.StorageCredentialsCreateRequest
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 
 /**
  * 存储凭证服务接口

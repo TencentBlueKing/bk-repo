@@ -53,7 +53,7 @@ object QueryHelper {
 
     fun nodeListQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, includeMetadata: Boolean, deep: Boolean): Query {
         return Query.query(nodeListCriteria(projectId, repoName, path, includeFolder, deep))
-            .with(Sort.by(TNode::fullPath.name))
+            .with(Sort.by(TNode::folder.name, TNode::fullPath.name))
             .apply {
                 // 强制使用fullPath索引，否则mongodb可能会使用path索引，不能达到最优索引
                 if (deep) {

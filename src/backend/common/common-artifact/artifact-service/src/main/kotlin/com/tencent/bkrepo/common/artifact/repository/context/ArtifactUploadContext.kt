@@ -23,6 +23,7 @@ class ArtifactUploadContext : ArtifactContext {
 
     /**
      * 根据[name]获取构件文件[ArtifactFile]
+     *
      * [name]为空则返回二进制流[OctetStreamArtifactFile]
      * [name]不为空则返回字段为[name]的[MultipartArtifactFile]
      * 如果[name]对应的构件文件不存在，则抛出[NullPointerException]
@@ -49,6 +50,8 @@ class ArtifactUploadContext : ArtifactContext {
 
     /**
      * 返回名为[name]的构件sha256校验值
+     *
+     * [name]为`null`或不传值则返回二进制流文件的sha256
      */
     fun getArtifactSha256(name: String? = null): String {
         return getArtifactFile(name).getFileSha256()
@@ -56,6 +59,8 @@ class ArtifactUploadContext : ArtifactContext {
 
     /**
      * 返回名为[name]的构件md5校验值
+     *
+     * [name]为`null`或不传值则返回二进制流文件的md5
      */
     fun getArtifactMd5(name: String? = null): String {
         return getArtifactFile(name).getFileMd5()

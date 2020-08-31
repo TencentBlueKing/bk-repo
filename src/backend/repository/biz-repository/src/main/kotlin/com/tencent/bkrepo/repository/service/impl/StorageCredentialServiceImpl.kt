@@ -2,13 +2,13 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.dao.repository.StorageCredentialsRepository
 import com.tencent.bkrepo.repository.model.TStorageCredentials
-import com.tencent.bkrepo.repository.pojo.credendial.StorageCredentialsCreateRequest
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.service.StorageCredentialService
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -47,12 +47,12 @@ class StorageCredentialServiceImpl(
 
     override fun findByKey(key: String): StorageCredentials? {
         val tStorageCredentials = storageCredentialsRepository.findByIdOrNull(key)
-        return tStorageCredentials?.credentials?.let { JsonUtils.objectMapper.readValue(it, StorageCredentials::class.java) }
+        return tStorageCredentials?.credentials?.readJsonString()
     }
 
     override fun list(): List<StorageCredentials> {
         return storageCredentialsRepository.findAll().map {
-            JsonUtils.objectMapper.readValue(it.credentials, StorageCredentials::class.java)
+            it.credentials.readJsonString<StorageCredentials>()
         }
     }
 

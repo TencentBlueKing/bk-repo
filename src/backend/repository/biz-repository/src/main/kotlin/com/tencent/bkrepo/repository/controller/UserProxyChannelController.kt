@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.controller
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -26,11 +27,16 @@ class UserProxyChannelController(
 ) {
 
     @ApiOperation("列表查询公有源")
-    @GetMapping("/list/public/{repoType}")
+    @GetMapping("/list/public/{type}")
     fun listPublicChannel(
         @ApiParam("仓库类型", required = true)
-        @PathVariable repoType: String
+        @PathVariable type: String
     ): Response<List<ProxyChannelInfo>> {
+        val repoType = try {
+            RepositoryType.valueOf(type)
+        } catch (ignored: IllegalArgumentException) {
+            return ResponseBuilder.success(emptyList())
+        }
         return ResponseBuilder.success(proxyChannelService.listPublicChannel(repoType))
     }
 

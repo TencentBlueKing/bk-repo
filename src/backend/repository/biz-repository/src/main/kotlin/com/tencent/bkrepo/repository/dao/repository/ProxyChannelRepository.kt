@@ -12,5 +12,6 @@ import org.springframework.stereotype.Repository
 interface ProxyChannelRepository : MongoRepository<TProxyChannel, String> {
     fun findByNameAndRepoType(name: String, repoType: RepositoryType): TProxyChannel?
     fun findByUrlAndRepoType(url: String, repoType: RepositoryType): TProxyChannel?
-    fun findByPublicAndRepoType(public: Boolean, repoType: String): List<TProxyChannel>
+    fun findByIdAndRepoType(id: String, repoType: RepositoryType): TProxyChannel?
+    fun findByPublicAndRepoType(public: Boolean, repoType: RepositoryType): List<TProxyChannel>
 }

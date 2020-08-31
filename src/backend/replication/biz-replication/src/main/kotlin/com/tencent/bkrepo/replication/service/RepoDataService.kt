@@ -67,7 +67,7 @@ class RepoDataService(
     }
 
     fun getFile(sha256: String, length: Long, repoInfo: RepositoryInfo): InputStream {
-        return storageService.load(sha256, Range.ofFull(length), repoInfo.storageCredentials)
+        return storageService.load(sha256, Range.ofFull(length), repoInfo.storageCredentialsKey)
             ?: throw ReplicationException("File data does not exist")
     }
 

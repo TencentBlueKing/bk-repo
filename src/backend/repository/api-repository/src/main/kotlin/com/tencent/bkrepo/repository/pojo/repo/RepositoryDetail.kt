@@ -27,7 +27,7 @@ data class RepositoryDetail(
     @ApiModelProperty("仓库配置信息")
     val configuration: RepositoryConfiguration,
     @ApiModelProperty("存储身份信息")
-    var storageCredentials: StorageCredentials? = null,
+    val storageCredentials: StorageCredentials?,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建日期")

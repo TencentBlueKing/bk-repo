@@ -20,6 +20,11 @@ interface ProxyChannelService {
     fun create(userId: String, request: ProxyChannelCreateRequest)
 
     /**
+     * 判断id为[id]类型为[repoType]的代理源是否存在
+     */
+    fun checkExistById(id: String, repoType: RepositoryType): Boolean
+
+    /**
      * 判断名称为[name]类型为[repoType]的代理源是否存在
      */
     fun checkExistByName(name: String, repoType: RepositoryType): Boolean
@@ -32,5 +37,5 @@ interface ProxyChannelService {
     /**
      * 列表查询公有源
      */
-    fun listPublicChannel(repoType: String): List<ProxyChannelInfo>
+    fun listPublicChannel(repoType: RepositoryType): List<ProxyChannelInfo>
 }

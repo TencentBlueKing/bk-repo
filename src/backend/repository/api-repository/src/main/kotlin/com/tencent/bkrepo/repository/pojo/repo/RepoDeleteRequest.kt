@@ -9,6 +9,8 @@ data class RepoDeleteRequest(
     override val projectId: String,
     @ApiModelProperty("仓库名称", required = true)
     override val name: String,
+    @ApiModelProperty("是否强制删除（忽略存在的文件）", required = false)
+    val forced: Boolean = false,
     @ApiModelProperty("操作用户", required = true)
     val operator: String
 ) : RepoRequest

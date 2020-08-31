@@ -7,12 +7,16 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.UserRepoUpdateRequest
 import com.tencent.bkrepo.repository.service.RepositoryService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -46,7 +50,7 @@ class UserRepositoryController(
     }
 
     @ApiOperation("创建仓库")
-    @PostMapping
+    @PostMapping("/create")
     fun createRepo(
         @RequestAttribute userId: String,
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest
@@ -93,9 +97,52 @@ class UserRepositoryController(
     fun list(
         @RequestAttribute userId: String,
         @ApiParam(value = "项目id", required = true)
-        @PathVariable projectId: String
+        @PathVariable projectId: String,
+        @ApiParam("仓库名称", required = false)
+        @RequestParam name: String? = null,
+        @ApiParam("仓库类型", required = false)
+        @RequestParam type: String? = null
     ): Response<List<RepositoryInfo>> {
         permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
         return ResponseBuilder.success(repositoryService.list(projectId))
+    }
+
+    @ApiOperation("删除仓库")
+    @DeleteMapping("/delete/{projectId}/{repoName}")
+    fun deleteRepo(
+        @RequestAttribute userId: String,
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "是否强制删除", required = false)
+        @RequestParam forced: Boolean = false
+    ): Response<Void> {
+        permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.DELETE, projectId)
+        repositoryService.delete(RepoDeleteRequest(projectId, repoName, forced, userId))
+        return ResponseBuilder.success()
+    }
+
+    @ApiOperation("更新仓库")
+    @DeleteMapping("/update/{projectId}/{repoName}")
+    fun deleteRepo(
+        @RequestAttribute userId: String,
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @RequestBody request: UserRepoUpdateRequest
+    ): Response<Void> {
+        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.DELETE, projectId)
+        val repoUpdateRequest = RepoUpdateRequest(
+            projectId = projectId,
+            name = repoName,
+            public = request.public,
+            description = request.description,
+            configuration = request.configuration,
+            operator = userId
+        )
+        repositoryService.update(repoUpdateRequest)
+        return ResponseBuilder.success()
     }
 }

@@ -1,8 +1,7 @@
 package com.tencent.bkrepo.common.service.feign
 
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
 import feign.Response
 import feign.codec.ErrorDecoder
@@ -19,7 +18,7 @@ class ErrorCodeDecoder : ErrorDecoder {
         if (feignResponse.status() == HttpStatus.BAD_REQUEST.value) {
             return try {
                 feignResponse.body().asInputStream().use {
-                    val response = JsonUtils.objectMapper.readValue<com.tencent.bkrepo.common.api.pojo.Response<Any>>(it)
+                    val response = it.readJsonString<com.tencent.bkrepo.common.api.pojo.Response<Any>>()
                     ExternalErrorCodeException(methodKey, response.code, response.message)
                 }
             } catch (ignored: IOException) {

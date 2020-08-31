@@ -2,6 +2,7 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.repository.dao.repository.ProxyChannelRepository
@@ -27,15 +28,10 @@ class ProxyChannelServiceImpl(
 
     override fun create(userId: String, request: ProxyChannelCreateRequest) {
         with(request) {
-            if (name.isBlank()) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, this::name.name)
-            }
-            if (checkExistByName(name, repoType)) {
-                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, this::name.name)
-            }
-            if (checkExistByUrl(url, repoType)) {
-                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, this::url.name)
-            }
+            Preconditions.checkArgument(public, this::public.name)
+            Preconditions.checkNotBlank(name, this::name.name)
+            Preconditions.checkArgument(checkExistByName(name, repoType), this::name.name)
+            Preconditions.checkArgument(checkExistByUrl(url, repoType), this::url.name)
             val tProxyChannel = TProxyChannel(
                 public = public,
                 name = name.trim(),
@@ -49,15 +45,22 @@ class ProxyChannelServiceImpl(
         }
     }
 
-    override fun listPublicChannel(repoType: String): List<ProxyChannelInfo> {
+    override fun listPublicChannel(repoType: RepositoryType): List<ProxyChannelInfo> {
         return proxyChannelRepository.findByPublicAndRepoType(true, repoType).map { convert(it)!! }
     }
 
+    override fun checkExistById(id: String, repoType: RepositoryType): Boolean {
+        if (id.isBlank()) return false
+        return proxyChannelRepository.findByIdAndRepoType(id, repoType) != null
+    }
+
     override fun checkExistByName(name: String, repoType: RepositoryType): Boolean {
+        if (name.isBlank()) return false
         return proxyChannelRepository.findByNameAndRepoType(name, repoType) != null
     }
 
     override fun checkExistByUrl(url: String, repoType: RepositoryType): Boolean {
+        if (url.isBlank()) return false
         return proxyChannelRepository.findByUrlAndRepoType(formatUrl(url), repoType) != null
     }
 

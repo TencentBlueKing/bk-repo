@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.storage.credentials
 
-import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import org.junit.jupiter.api.Assertions
@@ -47,7 +47,7 @@ internal class StorageCredentialsTest {
         originalCredentials.cache.expireDays = 10
         val jsonString = originalCredentials.toJsonString()
 
-        val serializedCredentials = JsonUtils.objectMapper.readValue(jsonString, StorageCredentials::class.java)
+        val serializedCredentials = jsonString.readJsonString<StorageCredentials>()
         Assertions.assertTrue(serializedCredentials is FileSystemCredentials)
         serializedCredentials as FileSystemCredentials
         Assertions.assertEquals(originalCredentials.path, serializedCredentials.path)

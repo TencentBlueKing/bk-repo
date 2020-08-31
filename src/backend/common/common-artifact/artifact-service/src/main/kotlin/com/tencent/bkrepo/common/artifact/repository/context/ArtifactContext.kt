@@ -49,10 +49,17 @@ open class ArtifactContext(repo: RepositoryDetail? = null) {
     }
 
     /**
-     * 添加上下文属性
+     * 添加自定义context属性
      */
     fun putAttribute(key: String, value: Any) {
         this.contextAttributes[key] = value
+    }
+
+    /**
+     * 根据属性名[key]获取自定义context属性
+     */
+    fun getAttribute(key: String): Any? {
+        return this.contextAttributes[key]
     }
 
     /**
@@ -77,13 +84,6 @@ open class ArtifactContext(repo: RepositoryDetail? = null) {
     }
 
     /**
-     * 根据属性名[key]获取属性
-     */
-    fun getAttribute(key: String): Any? {
-        return this.contextAttributes[key]
-    }
-
-    /**
      * 获取仓库配置
      */
     fun getConfiguration(): RepositoryConfiguration {
@@ -92,7 +92,10 @@ open class ArtifactContext(repo: RepositoryDetail? = null) {
 
     /**
      * 获取本地仓库配置
+     *
+     * 当仓库类型和配置类型不符时抛[IllegalArgumentException]异常
      */
+    @Throws(IllegalArgumentException::class)
     fun getLocalConfiguration(): LocalConfiguration {
         require(this.repositoryDetail.category == RepositoryCategory.LOCAL)
         return this.repositoryDetail.configuration as LocalConfiguration
@@ -100,7 +103,10 @@ open class ArtifactContext(repo: RepositoryDetail? = null) {
 
     /**
      * 获取远程仓库配置
+     *
+     * 当仓库类型和配置类型不符时抛[IllegalArgumentException]异常
      */
+    @Throws(IllegalArgumentException::class)
     fun getRemoteConfiguration(): RemoteConfiguration {
         require(this.repositoryDetail.category == RepositoryCategory.REMOTE)
         return this.repositoryDetail.configuration as RemoteConfiguration
@@ -108,7 +114,10 @@ open class ArtifactContext(repo: RepositoryDetail? = null) {
 
     /**
      * 获取远程仓库配置
+     *
+     * 当仓库类型和配置类型不符时抛[IllegalArgumentException]异常
      */
+    @Throws(IllegalArgumentException::class)
     fun getVirtualConfiguration(): VirtualConfiguration {
         require(this.repositoryDetail.category == RepositoryCategory.VIRTUAL)
         return this.repositoryDetail.configuration as VirtualConfiguration
@@ -116,7 +125,10 @@ open class ArtifactContext(repo: RepositoryDetail? = null) {
 
     /**
      * 获取组合仓库配置
+     *
+     * 当仓库类型和配置类型不符时抛[IllegalArgumentException]异常
      */
+    @Throws(IllegalArgumentException::class)
     fun getCompositeConfiguration(): CompositeConfiguration {
         require(this.repositoryDetail.category == RepositoryCategory.COMPOSITE)
         return this.repositoryDetail.configuration as CompositeConfiguration
