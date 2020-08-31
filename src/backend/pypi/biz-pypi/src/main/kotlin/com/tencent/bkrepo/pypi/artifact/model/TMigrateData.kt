@@ -1,13 +1,11 @@
 package com.tencent.bkrepo.pypi.artifact.model
 
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@ShardingDocument("migration_data")
+@Document("migration_data")
 @CompoundIndexes(
     CompoundIndex(
         name = "migration_data_idx",
@@ -27,8 +25,6 @@ data class TMigrateData(
     var filesNum: Int,
     var elapseTimeSeconds: Long,
     var description: String,
-
-    @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,
     var repoName: String
 )

@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.TimeZone
 
@@ -21,5 +22,11 @@ object TimeUtil {
         simpleDateFormat.timeZone = timeZone
         val date = Date(time)
         return simpleDateFormat.format(date)
+    }
+
+    fun compareTime(oldTime: String, newTime: String): Boolean {
+        val oldLocalDateTime = LocalDateTime.parse(oldTime, DateTimeFormatter.ISO_DATE_TIME)
+        val newLocalDateTime = LocalDateTime.parse(newTime, DateTimeFormatter.ISO_DATE_TIME)
+        return oldLocalDateTime.isAfter(newLocalDateTime)
     }
 }
