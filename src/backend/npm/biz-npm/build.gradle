@@ -2,6 +2,7 @@ dependencies {
     api project(":npm:api-npm")
     api project(":common:common-job")
     api project(":common:common-artifact:artifact-service")
+    api project(":common:common-storage:storage-service")
     api 'io.jsonwebtoken:jjwt-api'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl'
 }
