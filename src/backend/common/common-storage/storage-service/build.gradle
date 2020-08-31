@@ -5,10 +5,11 @@ dependencies {
 
     api "commons-codec:commons-codec"
     api "commons-io:commons-io"
-    implementation "org.springframework.retry:spring-retry"
+    api "org.springframework.retry:spring-retry"
     implementation "org.springframework.boot:spring-boot-starter-aop"
     implementation "com.google.guava:guava"
     implementation "com.tencent:innercos-java-sdk"
+    implementation "com.tencent:cl5-java-sdk:1.0.0"
     implementation "com.amazonaws:aws-java-sdk-s3"
     implementation "org.apache.hadoop:hadoop-hdfs"
     implementation "org.apache.hadoop:hadoop-common"
