@@ -218,6 +218,47 @@ Repository仓库枚举值与配置部分请参考末尾部分
 
 
 
+### 校验仓库是否存在
+
+- API: GET /repository/api/repo/exist/{projectId}/{repoName}
+
+- API 名称: check_repo_exist
+
+- 功能说明：
+
+  - 中文：校验仓库是否存在
+  - English：check repo exist
+
+- 请求体
+
+  此接口无请求体
+
+- 请求字段说明
+
+  | 字段      | 类型   | 是否必须 | 默认值 | 说明     | Description  |
+  | --------- | ------ | -------- | ------ | -------- | ------------ |
+  | projectId | string | 是       | 无     | 项目名称 | project name |
+  | repoName  | string | 是       | 无     | 仓库名称 | repo name    |
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": true,
+    "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  | 字段 | 类型    | 说明         | Description       |
+  | ---- | ------- | ------------ | ----------------- |
+  | data | boolean | 仓库是否存在 | repo exist or not |
+
+
+
 ### 分页查询仓库
 
 - API: GET /repository/api/repo/page/{projectId}/{page}/{size}?name=local&type=GENERIC
