@@ -51,15 +51,15 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     @Autowired
     lateinit var storageManager: StorageManager
 
-    override fun search(context: ArtifactSearchContext): Any? {
+    override fun <E> search(context: ArtifactSearchContext): List<E> {
         val remoteConfiguration = context.getRemoteConfiguration()
         val httpClient = createHttpClient(remoteConfiguration)
         val downloadUri = createRemoteDownloadUrl(context)
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
         return if (checkResponse(response)) {
-            response.body()!!.string()
-        } else null
+            onSearchResponse(context, response)
+        } else emptyList()
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
@@ -117,7 +117,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 将远程拉取的构件缓存本地
      */
-    protected fun cacheArtifactFile(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeDetail? {
+    protected fun cacheArtifactFile(context: ArtifactContext, artifactFile: ArtifactFile): NodeDetail? {
         val configuration = context.getRemoteConfiguration()
         return if (configuration.cache.enabled) {
             val nodeCreateRequest = buildCacheNodeCreateRequest(context, artifactFile)
@@ -137,9 +137,16 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     }
 
     /**
+     * 远程下载响应回调
+     */
+    open fun <E> onSearchResponse(context: ArtifactSearchContext, response: Response): List<E> {
+       return emptyList()
+    }
+
+    /**
      * 获取缓存节点创建请求
      */
-    open fun buildCacheNodeCreateRequest(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeCreateRequest {
+    open fun buildCacheNodeCreateRequest(context: ArtifactContext, artifactFile: ArtifactFile): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = context.repositoryDetail.projectId,
             repoName = context.repositoryDetail.name,

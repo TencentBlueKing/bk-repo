@@ -35,8 +35,8 @@ class RepositoryController(
         return ResponseBuilder.success(repositoryService.list(projectId))
     }
 
-    override fun page(page: Int, size: Int, projectId: String): Response<Page<RepositoryInfo>> {
-        return ResponseBuilder.success(repositoryService.page(projectId, page, size))
+    override fun page(pageNumber: Int, pageSize: Int, projectId: String): Response<Page<RepositoryInfo>> {
+        return ResponseBuilder.success(repositoryService.page(projectId, pageNumber, pageSize))
     }
 
     override fun create(repoCreateRequest: RepoCreateRequest): Response<RepositoryDetail> {

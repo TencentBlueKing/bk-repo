@@ -6,7 +6,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
@@ -32,7 +32,7 @@ class NpmFixToolService {
         val successSet = mutableSetOf<String>()
         val errorSet = mutableSetOf<String>()
         val context = ArtifactSearchContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         pkgNameSet.forEach { it ->
             try {
                 val fullPath = String.format(NPM_PKG_FULL_PATH, it)
@@ -63,7 +63,7 @@ class NpmFixToolService {
         val context = ArtifactUploadContext(pkgMetadata)
         val fullPath = String.format(NPM_PKG_FULL_PATH, name)
         context.contextAttributes[OCTET_STREAM + "_full_path"] = fullPath
-        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
 

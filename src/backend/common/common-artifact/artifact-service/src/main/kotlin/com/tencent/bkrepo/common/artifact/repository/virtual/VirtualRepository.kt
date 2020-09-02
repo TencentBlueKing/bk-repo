@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -20,38 +20,31 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
     @Autowired
     lateinit var repositoryClient: RepositoryClient
 
-    override fun search(context: ArtifactSearchContext): Any? {
+    override fun <E> search(context: ArtifactSearchContext): List<E> {
         val artifactInfo = context.artifactInfo
         val virtualConfiguration = context.getVirtualConfiguration()
         val repoList = virtualConfiguration.repositoryList
         val traversedList = getTraversedList(context)
         for (repoIdentify in repoList) {
             if (repoIdentify in traversedList) {
-                if (logger.isDebugEnabled) {
-                    logger.debug("Repository[$repoIdentify] has been traversed, skip it.")
-                }
                 continue
             }
             traversedList.add(repoIdentify)
             try {
                 val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = RepositoryHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
+                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
                 val subContext = context.copy(subRepoDetail) as ArtifactSearchContext
-                repository.search(subContext)?.let { jsonObj ->
+                repository.search<E>(subContext).let {
                     if (logger.isDebugEnabled) {
                         logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
                     }
-                    return jsonObj
-                } ?: run {
-                    if (logger.isDebugEnabled) {
-                        logger.debug("Artifact[$artifactInfo] is not found in repository[$repoIdentify], skipped.")
-                    }
+                    return it
                 }
             } catch (ignored: Exception) {
                 logger.warn("Search Artifact[$artifactInfo] from repository[$repoIdentify] failed: ${ignored.message}")
             }
         }
-        return null
+        return emptyList()
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
@@ -69,7 +62,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             traversedList.add(repoIdentify)
             try {
                 val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = RepositoryHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
+                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryDetail = subRepoDetail) as ArtifactDownloadContext
                 repository.onDownload(subContext)?.let {
                     if (logger.isDebugEnabled) {

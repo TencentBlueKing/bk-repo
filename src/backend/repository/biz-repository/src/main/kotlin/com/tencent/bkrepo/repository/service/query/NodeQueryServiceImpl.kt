@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.util.Pages
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -67,9 +68,10 @@ class NodeQueryServiceImpl(
             it.remove("_id")
         }
         val countQuery = Query.of(query).limit(0).skip(0)
-        val count = nodeDao.count(countQuery)
-        val page = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
-        return Page(page, query.limit, count, nodeList)
+        val totalRecords = nodeDao.count(countQuery)
+        val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
+
+        return Page(pageNumber + 1, query.limit, totalRecords, nodeList)
     }
 
     companion object {

@@ -43,10 +43,10 @@
 
 | 字段       | 类型 | 说明         | Description  |
 | ---------- | ---- | ------------ | ------------ |
-| count      | long | 节点信息     | total count  |
-| page       | int  | 当前页       | current page |
+| totalRecords | long | 节点信息     | total count  |
+| pageNumber   | int  | 当前页       | page number |
 | pageSize   | int  | 每页记录数   | page size    |
-| totalPages | int  | 总页数       | total pages  |
+| totalPages | long  | 总页数       | total pages  |
 | records    | list | 数据记录列表 | record list  |
 
 ### 统一时间响应格式

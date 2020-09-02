@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.generic.artifact
 
+import com.sun.org.apache.xalan.internal.lib.NodeInfo
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -7,6 +8,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -32,8 +34,8 @@ class GenericLocalRepository : LocalRepository() {
         super.onUploadBefore(context)
         // 若不允许覆盖, 提前检查节点是否存在
         val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
-        val uploadId = context.request.getHeader(HEADER_UPLOAD_ID)
-        val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
+        val uploadId = HeaderUtils.getHeader(HEADER_UPLOAD_ID)
+        val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
         if (!overwrite && !isBlockUpload(uploadId, sequence)) {
             with(context.artifactInfo) {
                 val node = nodeClient.detail(projectId, repoName, artifactUri).data
@@ -69,10 +71,13 @@ class GenericLocalRepository : LocalRepository() {
             context.response.writer.println(ResponseBuilder.success().toJsonString())
         } else {
             val nodeCreateRequest = buildNodeCreateRequest(context)
-            storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
-            val createResult = nodeClient.create(nodeCreateRequest)
+            val nodeDetail = storageManager.storeArtifactFile(
+                nodeCreateRequest,
+                context.getArtifactFile(),
+                context.storageCredentials
+            )
             context.response.contentType = MediaTypes.APPLICATION_JSON
-            context.response.writer.println(createResult.toJsonString())
+            context.response.writer.println(nodeDetail.toJsonString())
         }
     }
 
@@ -98,12 +103,13 @@ class GenericLocalRepository : LocalRepository() {
     }
 
     private fun blockUpload(uploadId: String, sequence: Int, context: ArtifactUploadContext) {
-        if (!storageService.checkBlockId(uploadId, context.storageCredentials)) {
-            throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
+        with(context) {
+            if (!storageService.checkBlockId(uploadId, storageCredentials)) {
+                throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
+            }
+            val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
+            storageService.storeBlock(uploadId, sequence, getArtifactSha256(), getArtifactFile(), overwrite, storageCredentials)
         }
-        val calculatedSha256 = context.getArtifactSha256()
-        val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
-        storageService.storeBlock(uploadId, sequence, calculatedSha256, context.getArtifactFile(), overwrite, context.storageCredentials)
     }
 
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
@@ -130,5 +136,9 @@ class GenericLocalRepository : LocalRepository() {
             }
         }
         return metadata
+    }
+
+    override fun <E> list(context: ArtifactListContext): List<E> {
+        return super.list(context)
     }
 }

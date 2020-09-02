@@ -72,7 +72,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 
 ### 分页查询节点
 
-- API: GET /repository/api/node/page/{projectId}/{repoName}/{fullPath}?page=0&size=20&includeFolder=true&deep=false
+- API: GET /repository/api/node/page/{projectId}/{repoName}/{fullPath}?pageNumber=0&pageSize=20&includeFolder=true&deep=false
 
 - API 名称: list_node_page
 
@@ -90,8 +90,8 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   | projectId     | string  | 是       | 无     | 项目名称           | project name      |
   | repoName      | string  | 是       | 无     | 仓库名称           | repo name         |
   | fullPath      | string  | 是       | 无     | 完整路径           | full path         |
-  | page          | int     | 否       | 0      | 当前页             | current page      |
-  | size          | int     | 否       | 20     | 分页大小           | page size         |
+  | pageNumber    | int     | 否       | 0      | 当前页             | current page      |
+  | pageSize      | int     | 否       | 20     | 分页大小           | page size         |
   | includeFolder | boolean | 否       | true   | 是否包含目录       | is include folder |
   | deep          | boolean | 否       | false  | 是否查询子目录节点 | deep query        |
 
@@ -102,9 +102,9 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
     "code": 0,
     "message": null,
     "data": {
-      "count": 18,
-      "page": 0,
+      "pageNumber": 0,
       "pageSize": 1,
+      "totalRecords": 18,
       "totalPages": 18,
       "records": [
         {
@@ -466,8 +466,8 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   {
     "select": ["name", "fullPath", "size", "sha256", "md5", "metadata"],
     "page": {
-      "current": 0,
-      "size": 20
+      "pageNumber": 0,
+      "pageSize": 20
     },
     "sort": {
       "properties": ["name", "size"],
@@ -506,7 +506,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   | 字段   | 类型      | 是否必须 | 默认值               | 说明                                                       | Description        |
   | ------ | --------- | -------- | -------------------- | ---------------------------------------------------------- | ------------------ |
   | select | list      | 否       | 所有字段             | 筛选字段列表。支持筛选字段参照`查询节点详情`接口响应字段。 | select fields list |
-  | page   | PageLimit | 否       | current=0, size=20。 | 分页参数                                                   | page limit         |
+  | page   | PageLimit | 否       | pageNumber=1, pageSize=20。 | 分页参数                                                   | page limit         |
   | sort   | Sort      | 否       | 无                   | 排序规则                                                   | sort rule          |
   | rule   | Rule      | 是       | 无                   | 自定义查询规则                                             | custom query rule  |
 
@@ -514,8 +514,8 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 
     | 字段    | 类型 | 是否必须 | 默认值 | 说明              | Description  |
     | ------- | ---- | -------- | ------ | ----------------- | ------------ |
-    | current | int  | 否       | 0      | 当前页(第0页开始) | current page |
-    | size    | int  | 否       | 20     | 每页数量          | page size    |
+    | pageNumber | int  | 否       | 0      | 当前页(第1页开始) | page number |
+    | pageSize   | int  | 否       | 20     | 每页数量          | page size  |
 
   - Sort
 
@@ -578,4 +578,3 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 - 列表record字段说明
 
   由`select`筛选字段条件决定
-

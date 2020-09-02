@@ -67,12 +67,12 @@ interface RepositoryClient {
     ): Response<List<RepositoryInfo>>
 
     @ApiOperation("分页查询项目所有仓库")
-    @GetMapping("/page/{page}/{size}/{projectId}")
+    @GetMapping("/page/{pageNumber}/{pageSize}/{projectId}")
     fun page(
-        @ApiParam(value = "当前页", required = true, example = "0")
-        @PathVariable page: Int,
+        @ApiParam(value = "当前页", required = true, example = "1")
+        @PathVariable pageNumber: Int,
         @ApiParam(value = "分页大小", required = true, example = "20")
-        @PathVariable size: Int,
+        @PathVariable pageSize: Int,
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String
     ): Response<Page<RepositoryInfo>>

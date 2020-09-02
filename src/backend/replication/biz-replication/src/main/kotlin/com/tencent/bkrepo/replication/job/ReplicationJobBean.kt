@@ -165,7 +165,7 @@ class ReplicationJobBean(
             replicaUserAndPermission(context)
             // 同步仓库
             this.repoDetailList.forEach {
-                val formattedLocalRepoName = "${it.localRepoInfo.projectId}/${it.localRepoInfo.name}"
+                val formattedLocalRepoName = "${it.localRepoDetail.projectId}/${it.localRepoDetail.name}"
                 val formattedRemoteRepoName = "${context.remoteProjectId}/${it.remoteRepoName}"
                 val fileCount = it.fileCount
                 logger.info("Start to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName], file count: $fileCount.")
@@ -195,31 +195,31 @@ class ReplicationJobBean(
             val replicaRequest = RepoCreateRequest(
                 projectId = context.remoteProjectId,
                 name = context.remoteRepoName,
-                type = localRepoInfo.type,
-                category = localRepoInfo.category,
-                public = localRepoInfo.public,
-                description = localRepoInfo.description,
-                configuration = localRepoInfo.configuration,
-                operator = localRepoInfo.createdBy
+                type = localRepoDetail.type,
+                category = localRepoDetail.category,
+                public = localRepoDetail.public,
+                description = localRepoDetail.description,
+                configuration = localRepoDetail.configuration,
+                operator = localRepoDetail.createdBy
             )
             replicationService.replicaRepoCreateRequest(context, replicaRequest)
             // 同步权限
             replicaUserAndPermission(context, true)
             // 同步节点
-            var page = 0
-            var fileNodeList = repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, ROOT, page, pageSize)
+            var page = 1
+            var fileNodeList = repoDataService.listFileNode(localRepoDetail.projectId, localRepoDetail.name, ROOT, page, pageSize)
             while (fileNodeList.isNotEmpty()) {
                 val fullPathList = mutableListOf<String>()
                 fileNodeList.forEach { fullPathList.add(it.fullPath) }
                 with(context) {
-                    val nodeCheckRequest = NodeExistCheckRequest(localRepoInfo.projectId, localRepoInfo.name, fullPathList)
+                    val nodeCheckRequest = NodeExistCheckRequest(localRepoDetail.projectId, localRepoDetail.name, fullPathList)
                     val existFullPathList = replicationClient.checkNodeExistList(authToken, nodeCheckRequest).data!!
                     // 同步不存在的节点
                     fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
                 }
 
                 page += 1
-                fileNodeList = repoDataService.listFileNode(localRepoInfo.projectId, localRepoInfo.name, ROOT, page, pageSize)
+                fileNodeList = repoDataService.listFileNode(localRepoDetail.projectId, localRepoDetail.name, ROOT, page, pageSize)
             }
         }
     }
@@ -289,7 +289,7 @@ class ReplicationJobBean(
             val remoteProjectId = remoteProjectId
             val remoteRepoName = if (isRepo) remoteRepoName else null
             val localProjectId = currentProjectDetail.localProjectInfo.name
-            val localRepoName = if (isRepo) currentRepoDetail.localRepoInfo.name else null
+            val localRepoName = if (isRepo) currentRepoDetail.localRepoDetail.name else null
 
             // 查询所有相关联的角色, 该步骤可以查询到所有角色
             val localRoleList = repoDataService.listRole(localProjectId, localRepoName)
@@ -427,7 +427,7 @@ class ReplicationJobBean(
         return with(localRepoInfo) {
             val fileCount = repoDataService.countFileNode(this)
             ReplicationRepoDetail(
-                localRepoInfo = this,
+                localRepoDetail = this,
                 fileCount = fileCount,
                 remoteRepoName = remoteRepoName ?: this.name
             )

@@ -14,13 +14,13 @@ import com.tencent.bkrepo.common.query.model.Sort
  * val queryModel = NodeQueryBuilder()
  *      .select("size", "name", "path")
  *      .sortByAsc("name")
- *      .limit(0, 50)
+ *      .page(0, 50)
  *      .projectId("test")
  *      .repoName("generic-local")
  *      .and()
- *        .rule("path", "/data")
- *        .rule("folder", false)
- *        .rule("size", 1024, OperationType.GTE)
+ *        .path("/data")
+ *        .size(1024, OperationType.GT)
+ *        .excludeFolder()
  *      .build()
  */
 class NodeQueryBuilder {
@@ -94,12 +94,12 @@ class NodeQueryBuilder {
     }
 
     /**
-     * 设置分页查询条件，[current]代表当前页, 从0开始，[size]代表分页大小
+     * 设置分页查询条件，[pageNumber]代表当前页, 从1开始，[pageSize]代表分页大小
      */
-    fun limit(current: Int = 0, size: Int = 20): NodeQueryBuilder {
-        require(current >= 0) { "page index must ge 0" }
-        require(size > 0) { "page size must gt 0" }
-        this.pageLimit = PageLimit(current, size)
+    fun page(pageNumber: Int, pageSize: Int): NodeQueryBuilder {
+        require(pageNumber >= 0) { "page index must gte 0" }
+        require(pageSize > 0) { "page size must gt 0" }
+        this.pageLimit = PageLimit(pageNumber, pageSize)
         return this
     }
 
@@ -173,7 +173,75 @@ class NodeQueryBuilder {
         return this
     }
 
+    /**
+     * 添加元数据字段规则
+     *
+     * [key]为元数据名称，[value]为值，[operation]为查询操作类型，默认为EQ查询
+     */
+    fun metadata(key: String, value: Any, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
+        return this.rule(true, METADATA_PREFIX + key, value, operation)
+    }
+
+    /**
+     * 添加文件名字段规则
+     *
+     * [value]为值，[operation]为查询操作类型，默认为EQ查询
+     */
+    fun name(value: String, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
+        return this.rule(true, NAME_FILED, value, operation)
+    }
+
+    /**
+     * 添加路径字段规则
+     *
+     * [value]为值，[operation]为查询操作类型，默认为EQ查询
+     */
+    fun path(value: String, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
+        return this.rule(true, PATH_FILED, value, operation)
+    }
+
+    /**
+     * 添加路径字段规则
+     *
+     * [value]为值，[operation]为查询操作类型，默认为EQ查询
+     */
+    fun fullPath(value: String, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
+        return this.rule(true, FULL_PATH_FILED, value, operation)
+    }
+
+    /**
+     * 添加文件大小字段规则
+     *
+     * [value]为值，[operation]为查询操作类型，默认为EQ查询
+     */
+    fun size(value: Long, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
+        return this.rule(true, SIZE_FILED, value, operation)
+    }
+
+    /**
+     * 排除目录
+     */
+    fun excludeFolder(): NodeQueryBuilder {
+        return this.rule(true, FOLDER_FILED, false, OperationType.EQ)
+    }
+
+    /**
+     * 排除文件
+     */
+    fun excludeFile(): NodeQueryBuilder {
+        return this.rule(true, FOLDER_FILED, true, OperationType.EQ)
+    }
+
     private fun createNestedRule(relation: Rule.NestedRule.RelationType): Rule.NestedRule {
         return Rule.NestedRule(mutableListOf(), relation)
+    }
+
+    companion object {
+        private const val METADATA_PREFIX = "metadata."
+        private const val SIZE_FILED = "size"
+        private const val NAME_FILED = "name"
+        private const val PATH_FILED = "path"
+        private const val FULL_PATH_FILED = "fullPath"
+        private const val FOLDER_FILED = "folder"
     }
 }

@@ -56,7 +56,6 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 @Component
-@Primary
 class PypiLocalRepository : LocalRepository(), PypiRepository {
 
     @Autowired
@@ -89,8 +88,8 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         val md5 = (context.contextAttributes[ATTRIBUTE_MD5MAP] as Map<*, *>)["content"] as String
 
         return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
+            projectId = repositoryDetail.projectId,
+            repoName = repositoryDetail.name,
             folder = false,
             overwrite = true,
             fullPath = artifactInfo.artifactUri + "/$filename",
@@ -137,7 +136,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         val artifactInfo = context.artifactInfo
         val repositoryDetail = context.repositoryDetail
         with(artifactInfo) {
-            val node = nodeClient.detail(projectId, repositoryInfo.name, artifactUri).data
+            val node = nodeClient.detail(projectId, repositoryDetail.name, artifactUri).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
 
             val response = HttpContextHolder.getResponse()
@@ -145,7 +144,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
             // 请求不带包名，返回包名列表.
             if (artifactUri == "/") {
                 if (node.folder) {
-                    val nodeList = nodeClient.list(projectId, repositoryInfo.name, artifactUri, includeFolder = true, deep = true).data
+                    val nodeList = nodeClient.list(projectId, repositoryDetail.name, artifactUri, includeFolder = true, deep = true).data
                         ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
                     // 过滤掉'根节点',
                     val htmlContent = buildPackageListContent(
@@ -159,7 +158,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
             // 请求中带包名，返回对应包的文件列表。
             else {
                 if (node.folder) {
-                    val packageNode = nodeClient.list(projectId, repositoryInfo.name, artifactUri, includeFolder = false, deep = true).data
+                    val packageNode = nodeClient.list(projectId, repositoryDetail.name, artifactUri, includeFolder = false, deep = true).data
                         ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
                     val htmlContent = buildPypiPageContent(buildPackageFilenodeListContent(artifactInfo.projectId, artifactInfo.repoName, packageNode))
                     response.writer.print(htmlContent)
@@ -410,7 +409,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         val pypiInfo = filename.fileFormat().let { artifactFile.getInputStream().getPkgInfo(it) }
         // 文件fullPath
         val path = "/$packageName/${pypiInfo.version}/$filename"
-        nodeClient.exist(repositoryInfo.projectId, repositoryInfo.name, path).data?.let {
+        nodeClient.exist(repositoryDetail.projectId, repositoryDetail.name, path).data?.let {
             if (it) {
                 return null
             }
@@ -419,8 +418,8 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         val md5 = artifactFile.getInputStream().md5()
 
         return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
+            projectId = repositoryDetail.projectId,
+            repoName = repositoryDetail.name,
             folder = false,
             overwrite = true,
             fullPath = path,

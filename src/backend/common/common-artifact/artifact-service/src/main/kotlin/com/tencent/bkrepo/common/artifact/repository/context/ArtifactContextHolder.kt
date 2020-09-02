@@ -1,8 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.context
 
-import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
@@ -36,9 +34,7 @@ class ArtifactContextHolder(
         private lateinit var artifactConfiguration: ArtifactConfiguration
         private lateinit var repositoryClient: RepositoryClient
 
-        inline fun <reified T> String.readJsonString(): T = JsonUtils.objectMapper.readValue(this, jacksonTypeRef<T>())
-
-        fun <reified T> getRepository(repositoryCategory: RepositoryCategory? = null): ArtifactRepository {
+        fun getRepository(repositoryCategory: RepositoryCategory? = null): ArtifactRepository {
             return when (repositoryCategory?: getRepoDetail()!!.category) {
                 RepositoryCategory.LOCAL -> artifactConfiguration.getLocalRepository()
                 RepositoryCategory.REMOTE -> artifactConfiguration.getRemoteRepository()

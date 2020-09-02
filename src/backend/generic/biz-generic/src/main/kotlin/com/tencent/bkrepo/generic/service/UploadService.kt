@@ -9,7 +9,7 @@ import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
@@ -42,14 +42,14 @@ class UploadService(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
-        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun delete(userId: String, artifactInfo: GenericArtifactInfo) {
         val context = ArtifactRemoveContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
         logger.info("User[$userId] delete artifact[$artifactInfo] success.")
     }

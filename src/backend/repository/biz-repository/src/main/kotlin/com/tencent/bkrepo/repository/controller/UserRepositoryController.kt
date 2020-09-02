@@ -49,6 +49,19 @@ class UserRepositoryController(
         return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName))
     }
 
+    @ApiOperation("根据名称查询仓库是否存在")
+    @GetMapping("/exist/{projectId}/{repoName}")
+    fun checkRepoExist(
+        @RequestAttribute userId: String,
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String
+    ): Response<Boolean> {
+        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
+        return ResponseBuilder.success(repositoryService.exist(projectId, repoName))
+    }
+
     @ApiOperation("创建仓库")
     @PostMapping("/create")
     fun createRepo(
@@ -74,22 +87,22 @@ class UserRepositoryController(
     }
 
     @ApiOperation("分页查询仓库列表")
-    @GetMapping("/page/{projectId}/{page}/{size}")
+    @GetMapping("/page/{projectId}/{pageNumber}/{pageSize}")
     fun page(
         @RequestAttribute userId: String,
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "当前页", required = true, example = "0")
-        @PathVariable page: Int,
+        @PathVariable pageNumber: Int,
         @ApiParam(value = "分页大小", required = true, example = "20")
-        @PathVariable size: Int,
+        @PathVariable pageSize: Int,
         @ApiParam("仓库名称", required = false)
         @RequestParam name: String? = null,
         @ApiParam("仓库类型", required = false)
         @RequestParam type: String? = null
     ): Response<Page<RepositoryInfo>> {
         permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
-        return ResponseBuilder.success(repositoryService.page(projectId, page, size, name, type))
+        return ResponseBuilder.success(repositoryService.page(projectId, pageNumber, pageSize, name, type))
     }
 
     @ApiOperation("列表查询项目所有仓库")

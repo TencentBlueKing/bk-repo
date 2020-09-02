@@ -7,7 +7,7 @@ import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
@@ -159,7 +159,7 @@ class ChartRepositoryService {
         artifactInfo: HelmArtifactInfo
     ) {
         val context = ArtifactSearchContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         result.forEach { it ->
             Thread.sleep(SLEEP_MILLIS)
             context.contextAttributes[FULL_PATH] = it[NODE_FULL_PATH] as String
@@ -192,7 +192,7 @@ class ChartRepositoryService {
         val artifactFile = ArtifactFileFactory.build(YamlUtils.transEntityToStream(indexEntity))
         val context = ArtifactUploadContext(artifactFile)
         context.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
 
@@ -230,7 +230,7 @@ class ChartRepositoryService {
 
     fun getOriginalIndexYaml(): IndexEntity {
         val context = ArtifactSearchContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         val indexMap = (repository.search(context) as ArtifactInputStream).run {
             YamlUtils.convertFileToEntity<Map<String, Any>>(this)
@@ -247,7 +247,7 @@ class ChartRepositoryService {
 
     fun downloadIndexYaml() {
         val context = ArtifactDownloadContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         context.contextAttributes[FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
         repository.download(context)
     }
@@ -269,7 +269,7 @@ class ChartRepositoryService {
     @Transactional(rollbackFor = [Throwable::class])
     fun installTgz(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         context.contextAttributes[FULL_PATH] = artifactInfo.artifactUri
         repository.download(context)
     }
@@ -285,7 +285,7 @@ class ChartRepositoryService {
             )
         }
         val context = ArtifactSearchContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         nodeList.forEach {
             context.contextAttributes[FULL_PATH] = it[NODE_FULL_PATH] as String
             val artifactInputStream = repository.search(context) as ArtifactInputStream

@@ -40,6 +40,7 @@ import com.tencent.bkrepo.repository.util.NodeUtils.getName
 import com.tencent.bkrepo.repository.util.NodeUtils.getParentPath
 import com.tencent.bkrepo.repository.util.NodeUtils.isRootPath
 import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
+import com.tencent.bkrepo.repository.util.Pages
 import com.tencent.bkrepo.repository.util.QueryHelper.nodeDeleteUpdate
 import com.tencent.bkrepo.repository.util.QueryHelper.nodeExpireDateUpdate
 import com.tencent.bkrepo.repository.util.QueryHelper.nodeListCriteria
@@ -49,7 +50,6 @@ import com.tencent.bkrepo.repository.util.QueryHelper.nodeQuery
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -155,21 +155,21 @@ class NodeServiceImpl : AbstractService(), NodeService {
         projectId: String,
         repoName: String,
         path: String,
-        page: Int,
-        size: Int,
+        pageNumber: Int,
+        pageSize: Int,
         includeFolder: Boolean,
         includeMetadata: Boolean,
         deep: Boolean
     ): Page<NodeInfo> {
-        page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
-        size.takeIf { it in 0..LIST_THRESHOLD } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
+        pageNumber.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageNumber")
+        pageSize.takeIf { it in 0..LIST_THRESHOLD } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageSize")
         repositoryService.checkRepository(projectId, repoName)
-
         val query = nodeListQuery(projectId, repoName, path, includeFolder, includeMetadata, deep)
-        val count = nodeDao.count(query)
-        val listData = nodeDao.find(query.with(PageRequest.of(page, size))).map { convert(it)!! }
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val totalRecords = nodeDao.count(query)
+        val records = nodeDao.find(query.with(pageRequest)).map { convert(it)!! }
 
-        return Page(page, size, count, listData)
+        return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
     /**

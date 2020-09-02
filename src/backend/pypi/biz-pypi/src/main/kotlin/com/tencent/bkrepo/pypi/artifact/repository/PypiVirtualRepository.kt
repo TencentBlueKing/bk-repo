@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.pypi.artifact.repository
 
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import org.springframework.stereotype.Component
@@ -24,7 +24,7 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
             }
             traversedList.add(repoIdentify)
             val subRepoInfo = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-            val repository = RepositoryHolder.getRepository(subRepoInfo.category)
+            val repository = ArtifactContextHolder.getRepository(subRepoInfo.category)
             val subContext = context.copy(repositoryDetail = subRepoInfo) as ArtifactListContext
             repository.list(subContext)
         }
@@ -41,7 +41,7 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
             }
             traversedList.add(repoIdentify)
             val subRepoInfo = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-            val repository = RepositoryHolder.getRepository(subRepoInfo.category) as PypiRepository
+            val repository = ArtifactContextHolder.getRepository(subRepoInfo.category) as PypiRepository
             val subContext = context.copy(subRepoInfo) as ArtifactSearchContext
             val subValueList = repository.searchNodeList(subContext, xmlString)
             subValueList?.let {

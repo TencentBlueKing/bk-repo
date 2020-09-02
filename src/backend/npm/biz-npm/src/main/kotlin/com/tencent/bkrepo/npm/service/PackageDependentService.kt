@@ -4,7 +4,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
@@ -155,7 +155,7 @@ class PackageDependentService {
         val context = ArtifactMigrateContext()
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, pkgName)
         context.contextAttributes[PKG_NAME] = pkgName
-        val repository = RepositoryHolder.getRepository(context.repositoryDetail.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         (repository as NpmLocalRepository).dependentMigrate(context)
     }
 

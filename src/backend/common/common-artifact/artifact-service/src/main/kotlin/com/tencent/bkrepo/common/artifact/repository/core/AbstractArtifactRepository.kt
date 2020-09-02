@@ -58,19 +58,19 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         }
     }
 
-    override fun search(context: ArtifactSearchContext): Any? {
-        throw UnsupportedMethodException()
-    }
-
-    override fun list(context: ArtifactListContext): Any? {
-        throw UnsupportedMethodException()
-    }
-
     override fun remove(context: ArtifactRemoveContext) {
         throw UnsupportedMethodException()
     }
 
-    override fun migrate(context: ArtifactMigrateContext): Any? {
+    override fun <E> search(context: ArtifactSearchContext): List<E> {
+        throw UnsupportedMethodException()
+    }
+
+    override fun list(context: ArtifactListContext): List<Any> {
+        throw UnsupportedMethodException()
+    }
+
+    override fun <R> migrate(context: ArtifactMigrateContext): R? {
         throw UnsupportedMethodException()
     }
 

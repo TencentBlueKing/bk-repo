@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.npm.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
@@ -25,7 +25,7 @@ class NpmVirtualRepository : VirtualRepository() {
             traversedList.add(repoIdentify)
             try {
                 val subRepoInfo = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
+                val repository = ArtifactContextHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryDetail = subRepoInfo) as ArtifactListContext
                 repository.list(subContext)?.let { map ->
                     list.add(map as NpmSearchResponse)

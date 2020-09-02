@@ -238,9 +238,9 @@ class UserNodeController(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @ApiParam(value = "当前页", required = true, defaultValue = "0")
-        @RequestParam page: Int = 0,
+        @RequestParam pageNumber: Int = 0,
         @ApiParam(value = "分页大小", required = true, defaultValue = "20")
-        @RequestParam size: Int = 20,
+        @RequestParam pageSize: Int = 20,
         @ApiParam("是否包含目录", required = false, defaultValue = "true")
         @RequestParam includeFolder: Boolean = true,
         @ApiParam("是否包含元数据", required = false, defaultValue = "false")
@@ -249,7 +249,7 @@ class UserNodeController(
         @RequestParam deep: Boolean = false
     ): Response<Page<NodeInfo>> {
         with(artifactInfo) {
-            val nodePage = nodeService.page(projectId, repoName, artifactUri, page, size, includeFolder, includeMetadata, deep)
+            val nodePage = nodeService.page(projectId, repoName, artifactUri, pageNumber, pageSize, includeFolder, includeMetadata, deep)
             return ResponseBuilder.success(nodePage)
         }
     }

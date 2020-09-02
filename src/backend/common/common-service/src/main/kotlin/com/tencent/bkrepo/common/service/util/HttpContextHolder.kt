@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.service.util
 
+import com.google.common.net.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
@@ -22,7 +23,7 @@ object HttpContextHolder {
 
     fun getClientAddress(): String {
         return (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request?.let {
-            val header = it.getHeader("X-Forwarded-For")
+            val header = it.getHeader(HttpHeaders.X_FORWARDED_FOR)
             if (header.isNullOrBlank()) it.remoteAddr else StringTokenizer(header, ",").nextToken()
         } ?: StringPool.UNKNOWN
     }

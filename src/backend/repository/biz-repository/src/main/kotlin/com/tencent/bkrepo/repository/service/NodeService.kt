@@ -50,8 +50,8 @@ interface NodeService {
         projectId: String,
         repoName: String,
         path: String,
-        page: Int,
-        size: Int,
+        pageNumber: Int,
+        pageSize: Int,
         includeFolder: Boolean = true,
         includeMetadata: Boolean = false,
         deep: Boolean = false

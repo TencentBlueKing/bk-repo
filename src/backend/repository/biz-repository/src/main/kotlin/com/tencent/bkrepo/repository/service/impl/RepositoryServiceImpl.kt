@@ -34,10 +34,10 @@ import com.tencent.bkrepo.repository.service.ProxyChannelService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
 import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
+import com.tencent.bkrepo.repository.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -94,13 +94,12 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
 
     }
 
-    override fun page(projectId: String, page: Int, size: Int, name: String?, type: String?): Page<RepositoryInfo> {
+    override fun page(projectId: String, pageNumber: Int, pageSize: Int, name: String?, type: String?): Page<RepositoryInfo> {
         val query = buildListQuery(projectId, name, type)
-        val count = mongoTemplate.count(query, TRepository::class.java)
-        val pageQuery = query.with(PageRequest.of(page, size))
-        val data = mongoTemplate.find(pageQuery, TRepository::class.java).map { convertToInfo(it)!! }
-
-        return Page(page, size, count, data)
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val totalRecords = mongoTemplate.count(query, TRepository::class.java)
+        val records = mongoTemplate.find(query.with(pageRequest), TRepository::class.java).map { convertToInfo(it)!! }
+        return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
     override fun exist(projectId: String, name: String, type: String?): Boolean {
@@ -140,8 +139,8 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
-            try {
-                return repoRepository.insert(repository)
+            return try {
+                repoRepository.insert(repository)
                     .also { nodeService.createRootNode(it.projectId, it.name, it.createdBy) }
                     .also { createRepoManager(it.projectId, it.name, it.createdBy) }
                     .also {
@@ -154,7 +153,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
                     .let { convertToDetail(repository, storageCredential)!! }
             } catch (exception: DuplicateKeyException) {
                 logger.warn("Insert repository[$projectId/$name] error: [${exception.message}]")
-                return getRepoDetail(projectId, name, type.name)!!
+                getRepoDetail(projectId, name, type.name)!!
             }
         }
     }

@@ -45,28 +45,26 @@ class CompositeRepository(
         }
     }
 
-    override fun search(context: ArtifactSearchContext): Any? {
-        return localRepository.search(context) ?: run {
-            mapEachProxyRepo(context) {
-                remoteRepository.search(it as ArtifactSearchContext)
-            }
-        }
-    }
-
-    override fun list(context: ArtifactListContext): Any? {
-        return localRepository.list(context) ?: run {
-            mapEachProxyRepo(context) {
-                remoteRepository.list(it as ArtifactListContext)
-            }
-        }
-    }
-
     override fun remove(context: ArtifactRemoveContext) {
         return localRepository.remove(context)
     }
 
-    override fun migrate(context: ArtifactMigrateContext): Any? {
-        return localRepository.migrate(context)
+    override fun <E> search(context: ArtifactSearchContext): List<E> {
+        val localResult = localRepository.search<E>(context)
+        return mapEachProxyRepo(context) {
+            remoteRepository.search<E>(it as ArtifactSearchContext)
+        }.apply { add(localResult) }.flatten()
+    }
+
+    override fun list(context: ArtifactListContext): List<Any> {
+        val localResult = localRepository.list(context)
+        return mapEachProxyRepo(context) {
+            remoteRepository.list(it as ArtifactListContext)
+        }.apply { add(localResult) }.flatten()
+    }
+
+    override fun <R> migrate(context: ArtifactMigrateContext): R? {
+        return localRepository.migrate<R>(context)
     }
 
     /**
@@ -76,13 +74,7 @@ class CompositeRepository(
         val proxyChannelList = getProxyChannelList(context)
         for (setting in proxyChannelList) {
             try {
-                val newContext = getContextFromProxyChannel(context, setting)
-                action(newContext)?.let {
-                    if (logger.isDebugEnabled) {
-                        logger.debug("Success to execute map with channel ${setting.name}")
-                    }
-                    return it
-                }
+                action(getContextFromProxyChannel(context, setting))?.let { return it }
             } catch (exception: Exception) {
                 logger.warn("Failed to execute map with channel ${setting.name}", exception)
             }
@@ -93,16 +85,12 @@ class CompositeRepository(
     /**
      * 遍历代理仓库列表，执行[action]操作，并将结果聚合成[List]返回
      */
-    private fun <R> mapEachProxyRepo(context: ArtifactContext, action: (ArtifactContext) -> R?): List<R> {
+    private fun <R> mapEachProxyRepo(context: ArtifactContext, action: (ArtifactContext) -> R?): MutableList<R> {
         val proxyChannelList = getProxyChannelList(context)
-        val mapResult = ArrayList<R>(proxyChannelList.size)
+        val mapResult = mutableListOf<R>()
         for (proxyChannel in proxyChannelList) {
             try {
-                val newContext = getContextFromProxyChannel(context, proxyChannel)
-                action(newContext)?.let { mapResult.add(it) }
-                if (logger.isDebugEnabled) {
-                    logger.debug("Success to execute map with channel ${proxyChannel.name}")
-                }
+                action(getContextFromProxyChannel(context, proxyChannel))?.let { mapResult.add(it) }
             } catch (exception: Exception) {
                 logger.warn("Failed to execute map with channel ${proxyChannel.name}", exception)
             }
@@ -117,11 +105,7 @@ class CompositeRepository(
         val proxyChannelList = getProxyChannelList(context)
         for (proxyChannel in proxyChannelList) {
             try {
-                val newContext = getContextFromProxyChannel(context, proxyChannel)
-                action(newContext)
-                if (logger.isDebugEnabled) {
-                    logger.debug("Success to execute action with channel ${proxyChannel.name}")
-                }
+                action(getContextFromProxyChannel(context, proxyChannel))
             } catch (exception: Exception) {
                 logger.warn("Failed to execute action with channel ${proxyChannel.name}", exception)
             }

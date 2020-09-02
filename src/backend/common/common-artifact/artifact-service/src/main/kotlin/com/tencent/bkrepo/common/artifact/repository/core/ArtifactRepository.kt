@@ -29,12 +29,12 @@ interface ArtifactRepository {
     /**
      * 构件搜索
      */
-    fun search(context: ArtifactSearchContext): Any?
+    fun search(context: ArtifactSearchContext): List<Any>
 
     /**
      * 构件列表
      */
-    fun list(context: ArtifactListContext): Any?
+    fun list(context: ArtifactListContext): List<Any>
 
     /**
      * 仓库数据迁移

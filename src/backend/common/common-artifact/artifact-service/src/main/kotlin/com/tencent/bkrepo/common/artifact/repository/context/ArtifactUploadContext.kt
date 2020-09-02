@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.artifact.repository.context
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
+import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.OctetStreamArtifactFile
 
@@ -10,11 +11,13 @@ import com.tencent.bkrepo.common.artifact.resolve.file.stream.OctetStreamArtifac
  */
 class ArtifactUploadContext : ArtifactContext {
 
-    private var artifactFileMap: ArtifactFileMap? = null
+    private var artifactFileMap: ArtifactFileMap
     private var artifactFile: ArtifactFile? = null
 
     constructor(artifactFile: ArtifactFile) {
         this.artifactFile = artifactFile
+        this.artifactFileMap = ArtifactFileMap()
+        this.artifactFileMap[OCTET_STREAM] = artifactFile
     }
 
     constructor(artifactFileMap: ArtifactFileMap) {
@@ -31,10 +34,48 @@ class ArtifactUploadContext : ArtifactContext {
     @Throws(NullPointerException::class)
     fun getArtifactFile(name: String? = null): ArtifactFile {
         return if (name.isNullOrBlank()) {
-            artifactFile!! as OctetStreamArtifactFile
+            artifactFile!!
         } else {
-            artifactFileMap!![name]!! as MultipartArtifactFile
+            artifactFileMap[name]!!
         }
+    }
+
+    /**
+     * 根据[name]获取构件文件[ArtifactFile]
+     *
+     * [name]为空则返回二进制流[OctetStreamArtifactFile]
+     * [name]不为空则返回字段为[name]的[MultipartArtifactFile]
+     * 如果[name]对应的构件文件不存在，则返回null
+     */
+    @Throws(NullPointerException::class)
+    fun getArtifactFileOrNull(name: String? = null): ArtifactFile? {
+        return if (name.isNullOrBlank()) {
+            artifactFile
+        } else {
+            artifactFileMap[name]
+        }
+    }
+
+    /**
+     * 获取[ArtifactFileMap]
+     */
+    fun getArtifactFileMap(): ArtifactFileMap {
+        return artifactFileMap
+    }
+
+    /**
+     * 获取[MultipartArtifactFile]
+     */
+    fun getMultipartArtifactFile(name: String): MultipartArtifactFile {
+        return artifactFileMap[name]!! as MultipartArtifactFile
+    }
+
+
+    /**
+     * 获取[OctetStreamArtifactFile]
+     */
+    fun getOctetStreamArtifactFile(): OctetStreamArtifactFile {
+        return artifactFile!! as OctetStreamArtifactFile
     }
 
     /**
@@ -44,7 +85,7 @@ class ArtifactUploadContext : ArtifactContext {
         return if (name.isNullOrBlank()) {
             return artifactFile != null
         } else {
-            artifactFileMap?.get(name) != null
+            artifactFileMap[name] != null
         }
     }
 

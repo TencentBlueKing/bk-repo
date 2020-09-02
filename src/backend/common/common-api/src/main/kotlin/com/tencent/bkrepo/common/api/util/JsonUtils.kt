@@ -21,6 +21,9 @@ import java.time.format.DateTimeFormatter.ISO_DATE
 import java.time.format.DateTimeFormatter.ISO_DATE_TIME
 import java.time.format.DateTimeFormatter.ISO_TIME
 
+/**
+ * Json工具类
+ */
 object JsonUtils {
     val objectMapper = jacksonObjectMapper().apply {
         val javaTimeModule = JavaTimeModule()
@@ -35,9 +38,9 @@ object JsonUtils {
         registerModule(ParameterNamesModule())
         registerModule(Jdk8Module())
 
-        configure(SerializationFeature.INDENT_OUTPUT, true)
-        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-        configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+        enable(SerializationFeature.INDENT_OUTPUT)
+        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
     }
 }
 
@@ -47,11 +50,11 @@ object JsonUtils {
 fun Any.toJsonString() = JsonUtils.objectMapper.writeValueAsString(this).orEmpty()
 
 /**
- * 将json字符串反序列化为java对象
+ * 将json字符串反序列化为对象
  */
 inline fun <reified T> String.readJsonString(): T = JsonUtils.objectMapper.readValue(this, jacksonTypeRef<T>())
 
 /**
- * 将json字符串流反序列化为java对象
+ * 将json字符串流反序列化为对象
  */
 inline fun <reified T> InputStream.readJsonString(): T = JsonUtils.objectMapper.readValue(this, jacksonTypeRef<T>())

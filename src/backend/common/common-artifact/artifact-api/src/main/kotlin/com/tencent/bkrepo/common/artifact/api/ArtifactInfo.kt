@@ -37,4 +37,12 @@ abstract class ArtifactInfo(
         version?.let { builder.append(StringPool.DASH).append(it) }
         return builder.toString()
     }
+
+    fun getRepoIdentify(): String {
+        val builder = StringBuilder()
+        builder.append(projectId)
+            .append(StringPool.SLASH)
+            .append(repoName)
+        return builder.toString()
+    }
 }

@@ -261,7 +261,7 @@ Repository仓库枚举值与配置部分请参考末尾部分
 
 ### 分页查询仓库
 
-- API: GET /repository/api/repo/page/{projectId}/{page}/{size}?name=local&type=GENERIC
+- API: GET /repository/api/repo/page/{projectId}/{pageNumber}/{pageSize}?name=local&type=GENERIC
 
 - API 名称: list_repo_page
 
@@ -279,8 +279,8 @@ Repository仓库枚举值与配置部分请参考末尾部分
   | 字段      | 类型   | 是否必须 | 默认值 | 说明                       | Description  |
   | --------- | ------ | -------- | ------ | -------------------------- | ------------ |
   | projectId | string | 是       | 无     | 项目名称                   | project name |
-  | page      | int    | 是       | 无     | 当前页                     | current page |
-  | size      | int    | 是       | 无     | 分页数量                   | page size    |
+  | pageNumber | int    | 是       | 无     | 当前页                     | page number |
+  | pageSize  | int    | 是       | 无     | 分页数量                   | page size    |
   | name      | string | 否       | 无     | 仓库名称，支持前缀模糊匹配 | repo name    |
   | type      | string | 否       | 无     | 仓库类型，枚举值           | repo type    |
 
@@ -291,9 +291,9 @@ Repository仓库枚举值与配置部分请参考末尾部分
     "code": 0,
     "message": null,
     "data": {
-      "count": 18,
-      "page": 0,
+      "pageNumber": 0,
       "pageSize": 1,
+      "totalRecords": 18,
       "totalPages": 2,
       "records": [
         {

@@ -39,12 +39,12 @@ interface RepositoryService {
      * 分页查询仓库列表
      *
      * @param projectId 项目id
-     * @param page 当前页，从0开始
-     * @param size 分页数量
+     * @param pageNumber 当前页
+     * @param pageSize 分页数量
      * @param name 仓库名称
      * @param type 仓库类型
      */
-    fun page(projectId: String, page: Int, size: Int, name: String? = null, type: String? = null): Page<RepositoryInfo>
+    fun page(projectId: String, pageNumber: Int, pageSize: Int, name: String? = null, type: String? = null): Page<RepositoryInfo>
 
     /**
      * 判断仓库是否存在
