@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.context
 
 /**
- * 构件列表context
+ * 构件查询context
  */
-class ArtifactListContext : ArtifactContext()
+open class ArtifactQueryContext : ArtifactContext()

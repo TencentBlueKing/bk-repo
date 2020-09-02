@@ -31,7 +31,7 @@ class ArtifactContextHolder(
     }
 
     companion object {
-        private lateinit var artifactConfiguration: ArtifactConfiguration
+        lateinit var artifactConfiguration: ArtifactConfiguration
         private lateinit var repositoryClient: RepositoryClient
 
         fun getRepository(repositoryCategory: RepositoryCategory? = null): ArtifactRepository {

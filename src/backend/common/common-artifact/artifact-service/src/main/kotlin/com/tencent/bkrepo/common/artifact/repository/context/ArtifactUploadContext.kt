@@ -7,9 +7,9 @@ import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifa
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.OctetStreamArtifactFile
 
 /**
- * 构件上传context
+ * 构件上传context，依赖源可根据需求继承
  */
-class ArtifactUploadContext : ArtifactContext {
+open class ArtifactUploadContext : ArtifactContext {
 
     private var artifactFileMap: ArtifactFileMap
     private var artifactFile: ArtifactFile? = null

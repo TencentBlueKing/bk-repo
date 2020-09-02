@@ -8,13 +8,13 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfig
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteProxyConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
@@ -31,7 +31,7 @@ class CompositeRepository(
     private val remoteRepository: RemoteRepository,
     private val repositoryClient: RepositoryClient,
     private val proxyChannelClient: ProxyChannelClient
-) : AbstractArtifactRepository() {
+) : LocalRepository() {
 
     override fun onUpload(context: ArtifactUploadContext) {
         localRepository.onUpload(context)
@@ -49,6 +49,15 @@ class CompositeRepository(
         return localRepository.remove(context)
     }
 
+
+    override fun <T> query(context: ArtifactQueryContext): T? {
+        return localRepository.query(context) ?: run {
+            mapFirstProxyRepo(context) {
+                remoteRepository.query<T>(it as ArtifactQueryContext)
+            }
+        }
+    }
+
     override fun <E> search(context: ArtifactSearchContext): List<E> {
         val localResult = localRepository.search<E>(context)
         return mapEachProxyRepo(context) {
@@ -56,15 +65,8 @@ class CompositeRepository(
         }.apply { add(localResult) }.flatten()
     }
 
-    override fun list(context: ArtifactListContext): List<Any> {
-        val localResult = localRepository.list(context)
-        return mapEachProxyRepo(context) {
-            remoteRepository.list(it as ArtifactListContext)
-        }.apply { add(localResult) }.flatten()
-    }
-
-    override fun <R> migrate(context: ArtifactMigrateContext): R? {
-        return localRepository.migrate<R>(context)
+    override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
+        return localRepository.migrate(context)
     }
 
     /**

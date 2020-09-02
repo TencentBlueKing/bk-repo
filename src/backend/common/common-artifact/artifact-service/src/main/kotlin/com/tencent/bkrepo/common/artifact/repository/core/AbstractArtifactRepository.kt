@@ -6,11 +6,12 @@ import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
 import com.tencent.bkrepo.repository.util.NodeUtils
@@ -21,7 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired
  * 构件仓库抽象类
  */
 @Suppress("TooGenericExceptionCaught")
-abstract class AbstractArtifactRepository : ArtifactRepository {
+abstract class AbstractArtifactRepository: ArtifactRepository {
 
     @Autowired
     lateinit var artifactMetrics: ArtifactMetrics
@@ -62,15 +63,15 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         throw UnsupportedMethodException()
     }
 
+    override fun <T> query(context: ArtifactQueryContext): T? {
+        throw UnsupportedMethodException()
+    }
+
     override fun <E> search(context: ArtifactSearchContext): List<E> {
         throw UnsupportedMethodException()
     }
 
-    override fun list(context: ArtifactListContext): List<Any> {
-        throw UnsupportedMethodException()
-    }
-
-    override fun <R> migrate(context: ArtifactMigrateContext): R? {
+    override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
         throw UnsupportedMethodException()
     }
 
@@ -147,25 +148,24 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onDownloadSuccess(context: ArtifactDownloadContext) {
         artifactMetrics.downloadedCounter.increment()
-
-        val artifactInfo = context.artifactInfo
-        val userId = context.userId
-        logger.info("User[$userId] download artifact[$artifactInfo] success")
+        logger.info("User[${context.userId}] download artifact[${context.artifactInfo}] success")
     }
 
     /**
      * 下载失败回调
+     *
+     * 默认向上抛异常，由全局异常处理器处理
      */
     open fun onDownloadFailed(context: ArtifactDownloadContext, exception: Exception) {
-        // 默认向上抛异常，由全局异常处理器处理
         throw exception
     }
 
     /**
      * 验证失败回调
+     *
+     * 默认向上抛异常，由全局异常处理器处理
      */
     open fun onValidateFailed(context: ArtifactContext, validateException: ArtifactValidateException) {
-        // 默认向上抛异常，由全局异常处理器处理
         throw validateException
     }
 

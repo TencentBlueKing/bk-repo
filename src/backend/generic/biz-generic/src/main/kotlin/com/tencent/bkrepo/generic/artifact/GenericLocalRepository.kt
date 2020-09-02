@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.generic.artifact
 
-import com.sun.org.apache.xalan.internal.lib.NodeInfo
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -8,7 +7,6 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -95,6 +93,14 @@ class GenericLocalRepository : LocalRepository() {
         }
     }
 
+    override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
+        return super.buildNodeCreateRequest(context).copy(
+            expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
+            overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
+            metadata = resolveMetadata(context.request)
+        )
+    }
+
     /**
      * 判断是否为分块上传
      */
@@ -112,15 +118,6 @@ class GenericLocalRepository : LocalRepository() {
         }
     }
 
-    override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val request = super.buildNodeCreateRequest(context)
-        return request.copy(
-            expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
-            overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
-            metadata = resolveMetadata(context.request)
-        )
-    }
-
     /**
      * 从header中提取metadata
      */
@@ -130,15 +127,11 @@ class GenericLocalRepository : LocalRepository() {
         for (headerName in headerNames) {
             if (headerName.startsWith(BKREPO_META_PREFIX, true)) {
                 val key = headerName.substring(BKREPO_META_PREFIX.length).trim()
-                if (key.isNotEmpty()) {
+                if (key.isNotBlank()) {
                     metadata[key] = HeaderUtils.getUrlDecodedHeader(headerName)!!
                 }
             }
         }
         return metadata
-    }
-
-    override fun <E> list(context: ArtifactListContext): List<E> {
-        return super.list(context)
     }
 }
