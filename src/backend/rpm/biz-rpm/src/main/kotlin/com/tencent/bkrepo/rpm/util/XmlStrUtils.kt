@@ -10,6 +10,7 @@ import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import org.slf4j.LoggerFactory
+import java.io.ByteArrayInputStream
 import java.io.InputStream
 
 object XmlStrUtils {
@@ -44,7 +45,7 @@ object XmlStrUtils {
 
     /**
      * 在原有xml索引文件开头写入新的内容
-     *  @return 更新后xml
+     * 返回更新后xml
      */
     fun insertPackage(
         indexType: String,
@@ -55,8 +56,18 @@ object XmlStrUtils {
         val stringBuilder = StringBuilder(String(inputStream.readBytes()))
         // 定位插入字符串的位置
         val start: Int = when (indexType) {
-            "others", "filelists" -> { stringBuilder.indexOf(PACKAGE_OTHER_START_MARK) }
-            "primary" -> { stringBuilder.indexOf(PACKAGE_START_MARK) }
+            "others" -> {
+                stringBuilder.indexOf(PACKAGE_OTHER_START_MARK).
+                takeUnless { it == -1 }?: OTHERS_METADATA_PREFIX.length-2
+            }
+            "filelists" -> {
+                stringBuilder.indexOf(PACKAGE_OTHER_START_MARK).
+                takeUnless { it == -1 }?: FILELISTS_METADATA_PREFIX.length-2
+            }
+            "primary" -> {
+                stringBuilder.indexOf(PACKAGE_START_MARK).
+                takeUnless { it == -1 }?: PRIMARY_METADATA_PREFIX.length-2
+            }
             else -> {
                 logger.error("$artifactUri 中解析出$indexType 是不受支持的索引类型")
                 throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
@@ -70,7 +81,6 @@ object XmlStrUtils {
 
     /**
      * 针对重复节点则替换相应数据
-     * @return 更新后xml
      */
     fun updatePackage(
         indexType: String,
@@ -107,11 +117,17 @@ object XmlStrUtils {
         val index = stringBuilder.indexOf(locationStr) + num
         val end = stringBuilder.indexOf(PACKAGE_END_MARK, index) + PACKAGE_END_MARK.length
         val start = stringBuilder.lastIndexOf(prefix, index)
-
-        val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
-
-        stringBuilder.replace(start, end, "  $packageXml")
-        return stringBuilder.toString()
+        //未找到正确位置
+        return if (start == -1 || end == -1) {
+            insertPackage(indexType,
+                    ByteArrayInputStream(stringBuilder.toString().toByteArray()),
+                    rpmXmlMetadata,
+                    artifactUri)
+        }else {
+            val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
+            stringBuilder.replace(start, end, "  $packageXml")
+            stringBuilder.toString()
+        }
     }
 
     /**
@@ -208,7 +224,7 @@ object XmlStrUtils {
 
     /**
      * 更新索引文件中 package 数量
-     * @param mark true:package加1，false: package减1
+     * [mark] true:package加1，false: package减1
      */
     fun StringBuilder.packagesModify(mark: Boolean): String {
         val start = this.indexOf(packages) + packages.length
@@ -219,5 +235,11 @@ object XmlStrUtils {
             this.substring(start, end).toInt().dec()
         }
         return this.replace(start, end, nullStr).insert(start, sum).toString()
+    }
+
+    fun StringBuilder.getPackageSum(): Int {
+        val start = this.indexOf(packages) + packages.length
+        val end = this.indexOf(end, start).dec()
+        return this.substring(start, end).toInt().dec()
     }
 }

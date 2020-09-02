@@ -11,5 +11,6 @@ class RpmArtifactInfo(
         const val RPM = "/{projectId}/{repoName}/**"
         const val RPM_CONFIGURATION = "/configuration/{projectId}/{repoName}/**"
         const val RPM_DEBUG_FLUSH = "/flush/{projectId}/{repoName}/**"
+        const val RPM_DEBUG_ALL_FLUSH = "/flush/all/{projectId}/{repoName}/**"
     }
 }

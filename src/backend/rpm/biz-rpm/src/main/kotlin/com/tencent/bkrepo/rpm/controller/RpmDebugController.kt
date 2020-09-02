@@ -19,4 +19,9 @@ class RpmDebugController(
     fun flushRepomd(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
         rpmDebugService.flushRepomd(rpmArtifactInfo)
     }
+
+    @GetMapping(RpmArtifactInfo.RPM_DEBUG_ALL_FLUSH)
+    fun flushAllRepomd(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
+        rpmDebugService.flushAllRepomd(rpmArtifactInfo)
+    }
 }
