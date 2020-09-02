@@ -3,6 +3,8 @@ package com.tencent.bkrepo.rpm.artifact
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
@@ -17,7 +19,12 @@ class SurplusNodeCleaner(
             val surplusNodes = list.subList(2, list.size)
             for (node in surplusNodes) {
                 nodeClient.delete(NodeDeleteRequest(node.projectId, node.repoName, node.fullPath, node.createdBy))
+                logger.info("Success to delete ${node.projectId}/${node.repoName}/${node.fullPath}")
             }
         }
+    }
+
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(SurplusNodeCleaner::class.java)
     }
 }

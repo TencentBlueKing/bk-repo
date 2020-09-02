@@ -6,7 +6,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_SHA256
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.repository.RpmLocalConfiguration
@@ -16,10 +15,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -70,6 +66,7 @@ import java.nio.channels.Channels
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.RPM
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
+import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.getRpmBooleanHeader
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
@@ -84,14 +81,13 @@ class RpmLocalRepository(
         context: ArtifactUploadContext,
         metadata: MutableMap<String, String>?,
         overwrite: Boolean
-    ):
-        NodeCreateRequest {
-            val nodeCreateRequest = super.getNodeCreateRequest(context)
-            return nodeCreateRequest.copy(
-                overwrite = overwrite,
-                metadata = metadata
-            )
-        }
+    ): NodeCreateRequest {
+        val nodeCreateRequest = super.getNodeCreateRequest(context)
+        return nodeCreateRequest.copy(
+            overwrite = overwrite,
+            metadata = metadata
+        )
+    }
 
     fun xmlIndexNodeCreate(
         userId: String,
@@ -136,22 +132,15 @@ class RpmLocalRepository(
             operator = userId
         )
     }
-    /**
-     * 查询仓库设置的repodata 深度
-     */
-    @Deprecated("getRpmRepoConf()")
-    private fun searchRpmRepoDataDepth(context: ArtifactUploadContext): Int {
-        (context.repositoryInfo.configuration as RpmLocalConfiguration).repodataDepth.let { return it }
-    }
 
     /**
      * 查询rpm仓库属性
      */
     private fun getRpmRepoConf(context: ArtifactTransferContext): RpmRepoConf {
         val rpmConfiguration = context.repositoryInfo.configuration as RpmLocalConfiguration
-        val repodataDepth = rpmConfiguration.repodataDepth
-        val enabledFileLists = rpmConfiguration.enabledFileLists
-        val groupXmlSet = rpmConfiguration.groupXmlSet
+        val repodataDepth = rpmConfiguration.repodataDepth ?: 0
+        val enabledFileLists = rpmConfiguration.enabledFileLists ?: true
+        val groupXmlSet = rpmConfiguration.groupXmlSet ?: mutableSetOf()
         return RpmRepoConf(repodataDepth, enabledFileLists, groupXmlSet)
     }
 
@@ -218,7 +207,7 @@ class RpmLocalRepository(
         rpmMetadata.packages[0].format.changeLogs.clear()
         // 更新primary.xml
         updateIndexXml(context, rpmMetadata, repeat, repodataPath, PRIMARY)
-        flushRepoMdXML(context)
+        flushRepoMdXML(context, null)
         return RpmVersion(
             rpmMetadata.packages[0].name,
             rpmMetadata.packages[0].arch,
@@ -356,10 +345,9 @@ class RpmLocalRepository(
                     metadata
                 )
                 storageService.store(xmlPrimaryNode.sha256!!, xmlGZArtifact, context.storageCredentials)
+                with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
                 nodeClient.create(xmlPrimaryNode)
-
-                // 更新repomd.xml
-                // xml文件sha1
+                logger.info("Success to insert $xmlPrimaryNode")
             } finally {
                 xmlGZFile.delete()
             }
@@ -426,12 +414,15 @@ class RpmLocalRepository(
         return when (format) {
             "xml" -> XML
             "rpm" -> RPM
-            else -> throw RpmArtifactFormatNotSupportedException("rpm not supported `$format` artifact")
+            else -> {
+                with(context.artifactInfo) { logger.info("$projectId/$repoName/$artifactUri: 格式不被接受") }
+                throw RpmArtifactFormatNotSupportedException("rpm not supported `$format` artifact")
+            }
         }
     }
 
     // 保存分组文件
-    private fun storeGroupFile(context: ArtifactUploadContext, repeat: ArtifactRepeat, rpmRepoConf: RpmRepoConf) {
+    private fun storeGroupFile(context: ArtifactUploadContext) {
         val xmlByteArray = context.getArtifactFile().getInputStream().readBytes()
         val filename = context.artifactInfo.artifactUri.split("/").last()
 
@@ -453,7 +444,9 @@ class RpmLocalRepository(
             metadata
         )
         storageService.store(xmlNode.sha256!!, xmlSha1ArtifactFile, context.storageCredentials)
+        with(xmlNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
         nodeClient.create(xmlNode)
+        logger.info("Success to insert $xmlNode")
         xmlSha1ArtifactFile.delete()
 
         // 保存xml.gz
@@ -476,7 +469,9 @@ class RpmLocalRepository(
                 metadataGZ
             )
             storageService.store(groupGZNode.sha256!!, groupGZArtifactFile, context.storageCredentials)
+            with(groupGZNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
             nodeClient.create(groupGZNode)
+            logger.info("Success to insert $groupGZNode")
             groupGZArtifactFile.delete()
         } finally {
             groupGZFile.delete()
@@ -484,66 +479,69 @@ class RpmLocalRepository(
 
         // todo
         // 删除多余节点
-        flushRepoMdXML(context)
+        flushRepoMdXML(context, null)
     }
 
-    // 刷新`repomd.xml`内容
-    fun flushRepoMdXML(context: ArtifactTransferContext) {
+    /**
+     * 默认刷新匹配请求路径对应的repodata目录下的`repomd.xml`内容，
+     * 当[repoDataPath]不为空时，刷新指定的[repoDataPath]目录下的`repomd.xml`内容
+     *
+     */
+    fun flushRepoMdXML(context: ArtifactTransferContext, repoDataPath: String?) {
         // 查询添加的groups
-        val configuration = (context.repositoryConfiguration as RpmLocalConfiguration)
-        val groupXmlSet = configuration.groupXmlSet
-        val repodataDepth = configuration.repodataDepth
-        val repodataUri = XmlStrUtils.splitUriByDepth(context.artifactInfo.artifactUri, repodataDepth)
-        val indexPath = "${repodataUri.repodataPath}$REPODATA"
+        val rpmRepoConf = getRpmRepoConf(context)
+        val groupXmlSet = rpmRepoConf.groupXmlSet
+        val repodataDepth = rpmRepoConf.repodataDepth
+        val indexPath = if (repoDataPath == null) {
+            val repodataUri = XmlStrUtils.splitUriByDepth(context.artifactInfo.artifactUri, repodataDepth)
+            "${repodataUri.repodataPath}$REPODATA"
+        } else {
+            repoDataPath
+        }
+        val limit = groupXmlSet.size * 3 + 9
 
         // 查询该请求路径对应的索引目录下所有文件
         val nodeList = with(context.artifactInfo) {
-            val projectQuery = Rule.QueryRule("projectId", projectId)
-            val repositoryQuery = Rule.QueryRule("repoName", repoName)
-            val pathQuery = Rule.QueryRule("path", "$SLASH$indexPath$SLASH")
-
-            val queryRule = Rule.NestedRule(
-                mutableListOf(projectQuery, repositoryQuery, pathQuery),
-                Rule.NestedRule.RelationType.AND
-            )
-            // TODO limit大小
-            val queryModel = QueryModel(
-                page = PageLimit(0, 15),
-                sort = Sort(listOf("lastModifiedDate"), Sort.Direction.DESC),
-                select = mutableListOf("projectId", "repoName", "path", "name", "lastModifiedDate", "metadata"),
-                rule = queryRule
-            )
-            nodeClient.query(queryModel).data?.records
+            (
+                nodeClient.page(
+                    projectId, repoName, 0, limit,
+                    "$SLASH$indexPath$SLASH",
+                    includeMetadata = true
+                ).data ?: return
+                ).records
+                .sortedByDescending {
+                    it
+                        .lastModifiedDate
+                }
         }
 
-        val targetIndexList = nodeList?.filterRpmCustom(groupXmlSet, configuration.enabledFileLists)
+        val targetIndexList = nodeList.filterRpmCustom(groupXmlSet, rpmRepoConf.enabledFileLists)
 
         val repoDataList = mutableListOf<RepoIndex>()
-        if (targetIndexList != null) {
-            for (index in targetIndexList) {
-                repoDataList.add(
-                    if ((index["name"] as String).contains(Regex("-filelists|-others|-primary"))) {
-                        RepoData(
-                            type = (index["metadata"] as Map<*, *>)["indexType"] as String,
-                            location = RpmLocation("$REPODATA$SLASH${index["name"] as String}"),
-                            checksum = RpmChecksum((index["metadata"] as Map<*, *>)["checksum"] as String),
-                            size = ((index["metadata"] as Map<*, *>)["size"] as String).toLong(),
-                            timestamp = (index["metadata"] as Map<*, *>)["timestamp"] as String,
-                            openChecksum = RpmChecksum((index["metadata"] as Map<*, *>)["openChecksum"] as String),
-                            openSize = (index["metadata"] as Map<String, String>)["size"]?.toInt() ?: 111
-                        )
-                    } else {
-                        RepoGroup(
-                            type = (index["metadata"] as Map<*, *>)["indexType"] as String,
-                            location = RpmLocation("$REPODATA$SLASH${index["name"] as String}"),
-                            checksum = RpmChecksum((index["metadata"] as Map<*, *>)["checksum"] as String),
-                            size = (index["metadata"] as Map<String, String>)["size"]?.toLong() ?: 111L,
-                            timestamp = (index["metadata"] as Map<*, *>)["timestamp"] as String
-                        )
-                    }
-                )
-            }
+        for (index in targetIndexList) {
+            repoDataList.add(
+                if ((index.name).contains(Regex("-filelists.xml.gz|-others|-primary"))) {
+                    RepoData(
+                        type = index.metadata?.get("indexType") as String,
+                        location = RpmLocation("$REPODATA$SLASH${index.name}"),
+                        checksum = RpmChecksum(index.metadata?.get("checksum") as String),
+                        size = (index.metadata?.get("size") as String).toLong(),
+                        timestamp = index.metadata?.get("timestamp") as String,
+                        openChecksum = RpmChecksum(index.metadata?.get("openChecksum") as String),
+                        openSize = (index.metadata?.get("openSize") as String).toInt()
+                    )
+                } else {
+                    RepoGroup(
+                        type = index.metadata?.get("indexType") as String,
+                        location = RpmLocation("$REPODATA$SLASH${index.name}"),
+                        checksum = RpmChecksum(index.metadata?.get("checksum") as String),
+                        size = (index.metadata?.get("size") as String).toLong(),
+                        timestamp = index.metadata?.get("timestamp") as String
+                    )
+                }
+            )
         }
+
         val repomd = Repomd(
             repoDataList
         )
@@ -554,77 +552,58 @@ class RpmLocalRepository(
             val xmlRepomdNode = xmlNodeCreate(
                 context.userId,
                 context.repositoryInfo,
-                "$SLASH${repodataUri.repodataPath}$REPODATA${SLASH}repomd.xml",
+                "$SLASH${indexPath}${SLASH}repomd.xml",
                 xmlRepodataArtifact
             )
             storageService.store(xmlRepomdNode.sha256!!, xmlRepodataArtifact, context.storageCredentials)
+            with(xmlRepomdNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
             nodeClient.create(xmlRepomdNode)
+            logger.info("Success to insert $xmlRepomdNode")
             xmlRepodataArtifact.delete()
         }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
-        val overwrite = HttpContextHolder.getRequest().getHeader("X-BKREPO-OVERWRITE").orEmpty().let {
-            if (it.isBlank()) {
-                true
-            } else {
-                it.toBoolean()
-            }
-        }
+        val overwrite = HeaderUtils.getRpmBooleanHeader("X-BKREPO-OVERWRITE")
         val artifactFormat = getArtifactFormat(context)
-        // 检查请求路径是否契合仓库repodataDepth 深度设置
         val rpmRepoConf = getRpmRepoConf(context)
         val mark: Boolean = checkRequestUri(context, rpmRepoConf.repodataDepth)
-        val nodeCreateRequest = if (mark) {
-            val repeat = checkRepeatArtifact(context)
-            if (repeat != FULLPATH_SHA256 && artifactFormat == RPM) {
-                val rpmVersion = indexer(context, repeat, rpmRepoConf)
-                rpmNodeCreateRequest(context, rpmVersion.toMetadata(), overwrite)
-            } else {
-                storeGroupFile(context, repeat, rpmRepoConf)
-                rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
-            }
-        } else {
-            rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
+        val repeat = checkRepeatArtifact(context)
+        if (repeat != FULLPATH_SHA256) {
+            val nodeCreateRequest = if (mark) {
+                when (artifactFormat) {
+                    RPM -> {
+                        val rpmVersion = indexer(context, repeat, rpmRepoConf)
+                        rpmNodeCreateRequest(context, rpmVersion.toMetadata(), overwrite)
+                    }
+                    XML -> {
+                        storeGroupFile(context)
+                        rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
+                    }
+                }
+            } else { rpmNodeCreateRequest(context, mutableMapOf(), overwrite) }
+
+            storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
+            with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/$artifactUri") }
+            nodeClient.create(nodeCreateRequest)
+            logger.info("Success to insert $nodeCreateRequest")
         }
-        storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
-        with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/$artifactUri") }
-        nodeClient.create(nodeCreateRequest)
-        logger.info("Success to insert $nodeCreateRequest")
         successUpload(context, mark, rpmRepoConf.repodataDepth)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
-            val nodeList = with(context.artifactInfo) {
-                val projectQuery = Rule.QueryRule("projectId", projectId)
-                val repositoryQuery = Rule.QueryRule("repoName", repoName)
-                val fullPathQuery = Rule.QueryRule("fullPath", artifactUri)
-
-                val queryRule = Rule.NestedRule(
-                    mutableListOf(projectQuery, repositoryQuery, fullPathQuery),
-                    Rule.NestedRule.RelationType.AND
-                )
-                val queryModel = QueryModel(
-                    page = PageLimit(0, 5),
-                    sort = Sort(listOf("lastModifiedDate"), Sort.Direction.DESC),
-                    select = mutableListOf("projectId", "repoName", "path", "name", "folder", "metadata"),
-                    rule = queryRule
-                )
-                nodeClient.query(queryModel).data?.records
-                    ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
-            }
-            if (nodeList.isEmpty()) {
+            val node = nodeClient.detail(projectId, repoName, artifactUri).data
+            if (node == null) {
                 deleteFailed(context, "未找到该构件或已经被删除")
                 return
             }
-            val node = nodeList.first()
-            if (node["folder"] as Boolean) {
+            if (node.folder) {
                 throw UnsupportedMethodException("Delete folder is forbidden")
             }
-            val nodeMetadata = node["metadata"] as Map<String, String>
+            val nodeMetadata = node.metadata
             val rpmVersion = RpmVersion(
                 nodeMetadata["name"] ?: throw RpmArtifactMetadataResolveException(
                     "$artifactUri: not found " +
@@ -657,10 +636,46 @@ class RpmLocalRepository(
             // 更新 primary, others
             deleteIndexXml(context, rpmVersion, repodataPath, PRIMARY)
             deleteIndexXml(context, rpmVersion, repodataPath, OTHERS)
-
+            if (rpmRepoConf.enabledFileLists) {
+                deleteIndexXml(context, rpmVersion, repodataPath, FILELISTS)
+            }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactUri, context.userId)
             nodeClient.delete(nodeDeleteRequest)
-            flushRepoMdXML(context)
+            logger.info("Success to delete node $nodeDeleteRequest")
+            flushRepoMdXML(context, null)
+        }
+    }
+
+    /**
+     * 刷新仓库下所有repodata
+     */
+    fun flushAllRepoData(context: ArtifactTransferContext) {
+        // 查询仓库索引层级
+        val rpmRepoConf = getRpmRepoConf(context)
+        val targetSet = mutableSetOf<String>()
+        listAllRepoDataFolder(context, "/", rpmRepoConf.repodataDepth, targetSet)
+        for (repoDataPath in targetSet) {
+            flushRepoMdXML(context, repoDataPath)
+        }
+    }
+
+    private fun listAllRepoDataFolder(
+        context: ArtifactTransferContext,
+        fullPath: String,
+        repodataDepth: Int,
+        repoDataSet: MutableSet<String>
+    ) {
+        with(context.artifactInfo) {
+            val nodeList = nodeClient.list(projectId, repoName, fullPath).data ?: return
+            if (repodataDepth == 0) {
+                for (node in nodeList.filter { it.folder }.filter { it.name == REPODATA }) {
+                    repoDataSet.add(node.fullPath)
+                }
+            } else {
+                for (node in nodeList.filter { it.folder }) {
+                    listAllRepoDataFolder(context, node.fullPath, repodataDepth.dec(), repoDataSet)
+                }
+            }
         }
     }
 

@@ -233,9 +233,9 @@ class RpmMetadataUtils {
             val dir = dirPaths.contains("$filePath/")
             val file = if (dir) RpmFile("dir", filePath) else RpmFile(null, filePath)
             (file.filePath).let {
-                if (it.startsWith("/etc/") ||
-                    it.startsWith("/usr/bin/") ||
-                    it.startsWith("/usr/sbin")
+                if (it.contains("bin/") ||
+                    it.startsWith("/etc/") ||
+                    it == "/usr/lib/sendmail"
                 )
                     files.add(file)
             }
