@@ -415,7 +415,7 @@ class RpmLocalRepository(
             "xml" -> XML
             "rpm" -> RPM
             else -> {
-                with(context.artifactInfo) { logger.info("$projectId$SLASH$repoName$SLASH$artifactUri: 格式不被接受") }
+                with(context.artifactInfo) { logger.info("$projectId/$repoName/$artifactUri: 格式不被接受") }
                 throw RpmArtifactFormatNotSupportedException("rpm not supported `$format` artifact")
             }
         }
@@ -483,7 +483,9 @@ class RpmLocalRepository(
     }
 
     /**
-     * 刷新`repomd.xml`内容
+     * 默认刷新匹配请求路径对应的repodata目录下的`repomd.xml`内容，
+     * 当[repoDataPath]不为空时，刷新指定的[repoDataPath]目录下的`repomd.xml`内容
+     *
      */
     fun flushRepoMdXML(context: ArtifactTransferContext, repoDataPath: String?) {
         // 查询添加的groups
@@ -565,27 +567,28 @@ class RpmLocalRepository(
     override fun onUpload(context: ArtifactUploadContext) {
         val overwrite = HeaderUtils.getRpmBooleanHeader("X-BKREPO-OVERWRITE")
         val artifactFormat = getArtifactFormat(context)
-        // 检查请求路径是否契合仓库repodataDepth 深度设置
         val rpmRepoConf = getRpmRepoConf(context)
         val mark: Boolean = checkRequestUri(context, rpmRepoConf.repodataDepth)
-        val nodeCreateRequest = if (mark) {
-            val repeat = checkRepeatArtifact(context)
-            if (repeat != FULLPATH_SHA256 && artifactFormat == RPM) {
-                val rpmVersion = indexer(context, repeat, rpmRepoConf)
-                rpmNodeCreateRequest(context, rpmVersion.toMetadata(), overwrite)
-            } else if (artifactFormat == XML) {
-                storeGroupFile(context)
-                rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
-            } else {
-                rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
-            }
-        } else {
-            rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
+        val repeat = checkRepeatArtifact(context)
+        if (repeat != FULLPATH_SHA256) {
+            val nodeCreateRequest = if (mark) {
+                when (artifactFormat) {
+                    RPM -> {
+                        val rpmVersion = indexer(context, repeat, rpmRepoConf)
+                        rpmNodeCreateRequest(context, rpmVersion.toMetadata(), overwrite)
+                    }
+                    XML -> {
+                        storeGroupFile(context)
+                        rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
+                    }
+                }
+            } else { rpmNodeCreateRequest(context, mutableMapOf(), overwrite) }
+
+            storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
+            with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/$artifactUri") }
+            nodeClient.create(nodeCreateRequest)
+            logger.info("Success to insert $nodeCreateRequest")
         }
-        storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
-        with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/$artifactUri") }
-        nodeClient.create(nodeCreateRequest)
-        logger.info("Success to insert $nodeCreateRequest")
         successUpload(context, mark, rpmRepoConf.repodataDepth)
     }
 
@@ -638,6 +641,7 @@ class RpmLocalRepository(
             }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactUri, context.userId)
             nodeClient.delete(nodeDeleteRequest)
+            logger.info("Success to delete node $nodeDeleteRequest")
             flushRepoMdXML(context, null)
         }
     }
@@ -667,10 +671,10 @@ class RpmLocalRepository(
                 for (node in nodeList.filter { it.folder }.filter { it.name == REPODATA }) {
                     repoDataSet.add(node.fullPath)
                 }
-                return
-            }
-            for (node in nodeList.filter { it.folder }) {
-                listAllRepoDataFolder(context, node.fullPath, repodataDepth.dec(), repoDataSet)
+            } else {
+                for (node in nodeList.filter { it.folder }) {
+                    listAllRepoDataFolder(context, node.fullPath, repodataDepth.dec(), repoDataSet)
+                }
             }
         }
     }

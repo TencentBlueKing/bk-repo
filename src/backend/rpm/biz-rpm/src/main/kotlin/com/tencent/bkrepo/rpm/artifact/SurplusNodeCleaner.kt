@@ -3,6 +3,7 @@ package com.tencent.bkrepo.rpm.artifact
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -24,6 +25,6 @@ class SurplusNodeCleaner(
     }
 
     companion object {
-        val logger = LoggerFactory.getLogger(SurplusNodeCleaner::class.java)
+        val logger: Logger = LoggerFactory.getLogger(SurplusNodeCleaner::class.java)
     }
 }
