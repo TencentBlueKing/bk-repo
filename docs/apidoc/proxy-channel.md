@@ -21,7 +21,7 @@ proxy channel接口使用统一接口协议，公共部分请参照[通用接口
 
   | 字段     | 类型   | 是否必须 | 默认值 | 说明             | Description |
   | -------- | ------ | -------- | ------ | ---------------- | ----------- |
-  | repoType | string | 是       | 无     | 仓库类别，枚举值 | repo type   |
+  | repoType | string | 是       | 无     | 仓库类型，枚举值 | repo type   |
 
 - 响应体
 
@@ -48,5 +48,5 @@ proxy channel接口使用统一接口协议，公共部分请参照[通用接口
   | public   | boolean | 是否为公有源 | is public channel |
   | name     | string  | 代理源名称   | repo name         |
   | url      | string  | 代理源url    | repo category     |
-  | repoType | boolean | 仓库类型     | repo type         |
+  | repoType | string  | 仓库类型     | repo type         |
 
