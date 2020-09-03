@@ -27,7 +27,23 @@ abstract class RepositoryConfiguration {
     val settings: Map<String, Any> = emptyMap()
 
     /**
-     * 获取字符串类型设置项
+     * 根据属性名[key]获取自定义context属性
+     */
+    @JsonIgnore
+    inline fun <reified T> getSetting(key: String): T? {
+        return settings[key] as T?
+    }
+
+    /**
+     * 根据属性名[key]获取字符串类型设置项
+     */
+    @JsonIgnore
+    fun getSetting(key: String): String? {
+        return settings[key]?.toString()
+    }
+
+    /**
+     * 根据属性名[key]获取字符串类型设置项
      */
     @JsonIgnore
     fun getStringSetting(key: String): String? {
@@ -35,7 +51,7 @@ abstract class RepositoryConfiguration {
     }
 
     /**
-     * 获取Boolean类型设置项
+     * 根据属性名[key]获取Boolean类型设置项
      */
     @JsonIgnore
     fun getBooleanSetting(key: String): Boolean? {

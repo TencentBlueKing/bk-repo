@@ -5,7 +5,7 @@ package com.tencent.bkrepo.common.artifact.repository.migration
  */
 data class VersionMigrateErrorDetail(
     /**
-     * 版本数量
+     * 版本号
      */
     val version: String,
     /**

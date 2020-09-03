@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.NetworkProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteProxyConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCredentialsConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -51,17 +51,6 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     @Autowired
     lateinit var storageManager: StorageManager
 
-    override fun <E> search(context: ArtifactSearchContext): List<E> {
-        val remoteConfiguration = context.getRemoteConfiguration()
-        val httpClient = createHttpClient(remoteConfiguration)
-        val downloadUri = createRemoteDownloadUrl(context)
-        val request = Request.Builder().url(downloadUri).build()
-        val response = httpClient.newCall(request).execute()
-        return if (checkResponse(response)) {
-            onSearchResponse(context, response)
-        } else emptyList()
-    }
-
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return getCacheArtifactResource(context) ?: run {
             val remoteConfiguration = context.getRemoteConfiguration()
@@ -75,6 +64,17 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         }
     }
 
+    override fun search(context: ArtifactSearchContext): List<Any> {
+        val remoteConfiguration = context.getRemoteConfiguration()
+        val httpClient = createHttpClient(remoteConfiguration)
+        val downloadUri = createRemoteDownloadUrl(context)
+        val request = Request.Builder().url(downloadUri).build()
+        val response = httpClient.newCall(request).execute()
+        return if (checkResponse(response)) {
+            onSearchResponse(context, response)
+        } else emptyList()
+    }
+
     /**
      * 尝试读取缓存的远程构件
      */
@@ -82,8 +82,8 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val configuration = context.getRemoteConfiguration()
         if (!configuration.cache.enabled) return null
 
-        val cacheNode = findCacheNodeDetail(context) ?: return null
-        if (cacheNode.folder) return null
+        val cacheNode = findCacheNodeDetail(context)
+        if (cacheNode == null || cacheNode.folder) return null
         return if (isExpired(cacheNode, configuration.cache.expiration)) {
             storageService.load(cacheNode.sha256!!, Range.full(cacheNode.size), context.storageCredentials)?.run {
                 if (logger.isDebugEnabled) {
@@ -139,7 +139,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 远程下载响应回调
      */
-    open fun <E> onSearchResponse(context: ArtifactSearchContext, response: Response): List<E> {
+    open fun onSearchResponse(context: ArtifactSearchContext, response: Response): List<Any> {
        return emptyList()
     }
 
@@ -167,7 +167,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val configuration = context.getRemoteConfiguration()
         val artifactUri = context.artifactInfo.artifactUri
         val queryString = context.request.queryString
-        return UrlFormatter.format(configuration.proxy!!.url, artifactUri, queryString)
+        return UrlFormatter.format(configuration.url, artifactUri, queryString)
     }
 
     /**
@@ -179,7 +179,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         builder.connectTimeout(configuration.network.connectTimeout, TimeUnit.MILLISECONDS)
         builder.proxy(createProxy(configuration.network.proxy))
         builder.proxyAuthenticator(createProxyAuthenticator(configuration.network.proxy))
-        createAuthenticateInterceptor(configuration.proxy!!)?.let { builder.addInterceptor(it) }
+        createAuthenticateInterceptor(configuration.credentials)?.let { builder.addInterceptor(it) }
         return builder.build()
     }
 
@@ -209,7 +209,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 创建身份认证拦截器
      */
-    private fun createAuthenticateInterceptor(configuration: RemoteProxyConfiguration): Interceptor? {
+    private fun createAuthenticateInterceptor(configuration: RemoteCredentialsConfiguration): Interceptor? {
         val username = configuration.username
         val password = configuration.password
         return if (username != null && password != null) {

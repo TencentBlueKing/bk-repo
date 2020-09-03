@@ -38,14 +38,14 @@ interface ArtifactRepository {
      *
      * @param context 构件查询上下文
      */
-    fun <T> query(context: ArtifactQueryContext): T?
+    fun query(context: ArtifactQueryContext): Any?
 
     /**
      * 构件搜索
      *
      * @param context 构件搜索上下文
      */
-    fun <E> search(context: ArtifactSearchContext): List<E>
+    fun search(context: ArtifactSearchContext): List<Any>
 
     /**
      * 仓库迁移

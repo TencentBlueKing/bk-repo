@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.core
 
+import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
@@ -17,6 +18,7 @@ import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 
 /**
  * 构件仓库抽象类
@@ -26,6 +28,9 @@ abstract class AbstractArtifactRepository: ArtifactRepository {
 
     @Autowired
     lateinit var artifactMetrics: ArtifactMetrics
+
+    @Autowired
+    lateinit var publisher: ApplicationEventPublisher
 
     override fun upload(context: ArtifactUploadContext) {
         try {
@@ -63,11 +68,11 @@ abstract class AbstractArtifactRepository: ArtifactRepository {
         throw UnsupportedMethodException()
     }
 
-    override fun <T> query(context: ArtifactQueryContext): T? {
+    override fun query(context: ArtifactQueryContext): Any? {
         throw UnsupportedMethodException()
     }
 
-    override fun <E> search(context: ArtifactSearchContext): List<E> {
+    override fun search(context: ArtifactSearchContext): List<Any> {
         throw UnsupportedMethodException()
     }
 
@@ -76,7 +81,7 @@ abstract class AbstractArtifactRepository: ArtifactRepository {
     }
 
     /**
-     * 判断构件名称
+     * 判断构件名称，用于构件下载时生成构建名
      */
     open fun determineArtifactName(context: ArtifactContext): String {
         val artifactUri = context.artifactInfo.artifactUri
@@ -109,6 +114,7 @@ abstract class AbstractArtifactRepository: ArtifactRepository {
      */
     open fun onUploadSuccess(context: ArtifactUploadContext) {
         artifactMetrics.uploadedCounter.increment()
+        publisher.publishEvent(ArtifactUploadedEvent(context))
         val artifactInfo = context.artifactInfo
         val userId = context.userId
         logger.info("User[$userId] upload artifact[$artifactInfo] success")

@@ -22,6 +22,7 @@ class WebHookService {
     private val jsonMediaType = MediaType.parse(MediaTypes.APPLICATION_JSON)
 
     fun hook(context: ArtifactContext, type: ArtifactEventType) {
+        // CompositeConfiguration extends LocalConfiguration
         if (context.getConfiguration() is LocalConfiguration) {
             val configuration = context.getLocalConfiguration()
             val artifact = context.artifactInfo

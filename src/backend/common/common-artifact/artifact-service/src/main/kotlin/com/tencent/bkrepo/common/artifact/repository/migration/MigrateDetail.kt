@@ -19,12 +19,12 @@ data class MigrateDetail (
     /**
      * 迁移包列表
      */
-    val packageList: List<PackageMigrateDetail>,
+    val packageList: MutableList<PackageMigrateDetail> = mutableListOf(),
 
     /**
      * 迁移总耗时
      */
-    val duration: Duration,
+    var duration: Duration = Duration.ZERO,
 
     /**
      * 描述
@@ -35,4 +35,8 @@ data class MigrateDetail (
      * 获取总的迁移包数量
      */
     fun getPackageCount(): Int = packageList.size
+
+    fun addPackageMigrateDetail(packageMigrateDetail: PackageMigrateDetail) {
+        packageList.add(packageMigrateDetail)
+    }
 }

@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.local
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -16,7 +15,6 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationEventPublisher
 import java.util.concurrent.Executor
 import javax.annotation.Resource
 
@@ -30,9 +28,6 @@ abstract class LocalRepository : AbstractArtifactRepository() {
 
     @Autowired
     lateinit var storageService: StorageService
-
-    @Autowired
-    lateinit var publisher: ApplicationEventPublisher
 
     @Autowired
     lateinit var downloadStatisticsClient: DownloadStatisticsClient
@@ -97,11 +92,6 @@ abstract class LocalRepository : AbstractArtifactRepository() {
             md5 = context.getArtifactMd5(),
             operator = context.userId
         )
-    }
-
-    override fun onUploadSuccess(context: ArtifactUploadContext) {
-        super.onUploadSuccess(context)
-        publisher.publishEvent(ArtifactUploadedEvent(context))
     }
 
     override fun onDownloadSuccess(context: ArtifactDownloadContext) {

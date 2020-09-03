@@ -457,25 +457,25 @@ Repository仓库枚举值与配置部分请参考末尾部分
 
 #### 3. remote远程仓库配置项
 
-| 字段    | 类型                       | 是否必须 | 默认值 | 说明     | Description                  |
-| ------- | -------------------------- | -------- | ------ | -------- | ---------------------------- |
-| proxy   | RemoteProxyConfiguration   | 否       | 无     | 代理配置 | remote proxy configuration   |
-| network | RemoteNetworkConfiguration | 否       | -      | 网络配置 | remote network configuration |
-| cache   | RemoteCacheConfiguration   | 否       | -      | 缓存配置 | remote cache configuration   |
+| 字段        | 类型                           | 是否必须 | 默认值   | 说明         | Description                      |
+| ----------- | ------------------------------ | -------- | -------- | ------------ | -------------------------------- |
+| url         | string                         | 否       | 空       | 远程地址     | remote repository url            |
+| credentials | RemoteCredentialsConfiguration | 否       | 默认配置 | 访问凭证配置 | remote credentials configuration |
+| network     | RemoteNetworkConfiguration     | 否       | 默认配置 | 网络配置     | remote network configuration     |
+| cache       | RemoteCacheConfiguration       | 否       | 默认配置 | 缓存配置     | remote cache configuration       |
 
-- ##### RemoteProxyConfiguration
+- ##### RemoteCredentialsConfiguration
 
   | 字段     | 类型   | 是否必须 | 默认值 | 说明            | Description          |
   | -------- | ------ | -------- | ------ | --------------- | -------------------- |
-  | url      | string | 是       | 无     | 远程仓库url     | remote repo url      |
   | username | string | 否       | 无     | 远程仓库 用户名 | remote repo username |
   | password | string | 否       | 无     | 远程仓库 密码   | remote repo password |
-
+  
 - ##### RemoteNetworkConfiguration
 
   | 字段           | 类型                      | 是否必须 | 默认值    | 说明                     | Description             |
   | -------------- | ------------------------- | -------- | --------- | ------------------------ | ----------------------- |
-  | proxy          | NetworkProxyConfiguration | 是       | 无        | 网络代理配置             | network proxy           |
+  | proxy          | NetworkProxyConfiguration | 否       | 无        | 网络代理配置             | network proxy           |
   | connectTimeout | long                      | 否       | 10 * 1000 | 网络连接超时时间(单位ms) | network connect timeout |
   | readTimeout    | long                      | 否       | 10 * 1000 | 网络读取超时时间(单位ms) | network read timeout    |
 

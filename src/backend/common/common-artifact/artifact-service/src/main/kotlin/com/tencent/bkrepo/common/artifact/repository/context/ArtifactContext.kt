@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletResponse
  */
 open class ArtifactContext(repo: RepositoryDetail? = null) {
     private var contextAttributes: MutableMap<String, Any> = mutableMapOf()
+        get() = field
     val request: HttpServletRequest = HttpContextHolder.getRequest()
     val response: HttpServletResponse = HttpContextHolder.getResponse()
     val userId: String
@@ -49,6 +50,11 @@ open class ArtifactContext(repo: RepositoryDetail? = null) {
     }
 
     /**
+     * 获取context Attributes map
+     */
+    fun getAttributes(): Map<String, Any> = contextAttributes
+
+    /**
      * 添加自定义context属性
      */
     fun putAttribute(key: String, value: Any) {
@@ -58,8 +64,8 @@ open class ArtifactContext(repo: RepositoryDetail? = null) {
     /**
      * 根据属性名[key]获取自定义context属性
      */
-    fun getAttribute(key: String): Any? {
-        return this.contextAttributes[key]
+    inline fun <reified T> getAttribute(key: String): T? {
+        return getAttributes()[key] as T?
     }
 
     /**

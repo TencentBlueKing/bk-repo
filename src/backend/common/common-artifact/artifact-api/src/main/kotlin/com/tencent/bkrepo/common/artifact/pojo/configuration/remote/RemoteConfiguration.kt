@@ -6,7 +6,8 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfigura
  * 远程仓库配置
  */
 data class RemoteConfiguration(
-    var proxy: RemoteProxyConfiguration? = null,
+    var url: String = "",
+    var credentials: RemoteCredentialsConfiguration = RemoteCredentialsConfiguration(),
     var network: RemoteNetworkConfiguration = RemoteNetworkConfiguration(),
     var cache: RemoteCacheConfiguration = RemoteCacheConfiguration()
 ) : RepositoryConfiguration() {

@@ -3,9 +3,9 @@ package com.tencent.bkrepo.common.artifact.repository.composite
 import com.tencent.bkrepo.common.artifact.constant.PRIVATE_PROXY_REPO_NAME
 import com.tencent.bkrepo.common.artifact.constant.PUBLIC_PROXY_PROJECT
 import com.tencent.bkrepo.common.artifact.constant.PUBLIC_PROXY_REPO_NAME
+import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteProxyConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
@@ -13,6 +13,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
@@ -31,10 +32,58 @@ class CompositeRepository(
     private val remoteRepository: RemoteRepository,
     private val repositoryClient: RepositoryClient,
     private val proxyChannelClient: ProxyChannelClient
-) : LocalRepository() {
+) : AbstractArtifactRepository() {
+
+    override fun onUploadValidate(context: ArtifactUploadContext) {
+        localRepository.onUploadValidate(context)
+    }
+
+    override fun onUploadBefore(context: ArtifactUploadContext) {
+        localRepository.onUploadBefore(context)
+    }
 
     override fun onUpload(context: ArtifactUploadContext) {
         localRepository.onUpload(context)
+    }
+
+    override fun onUploadSuccess(context: ArtifactUploadContext) {
+        localRepository.onUploadSuccess(context)
+    }
+
+    override fun onUploadFailed(context: ArtifactUploadContext, exception: Exception) {
+        localRepository.onUploadFailed(context, exception)
+    }
+
+    override fun onDownloadValidate(context: ArtifactDownloadContext) {
+        localRepository.onDownloadValidate(context)
+    }
+
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        localRepository.onDownloadBefore(context)
+    }
+
+    override fun onDownloadSuccess(context: ArtifactDownloadContext) {
+        localRepository.onDownloadSuccess(context)
+    }
+
+    override fun onDownloadFailed(context: ArtifactDownloadContext, exception: Exception) {
+        localRepository.onDownloadFailed(context, exception)
+    }
+
+    override fun onValidateFailed(context: ArtifactContext, validateException: ArtifactValidateException) {
+        localRepository.onValidateFailed(context, validateException)
+    }
+
+    override fun onUploadFinished(context: ArtifactUploadContext) {
+        localRepository.onUploadFinished(context)
+    }
+
+    override fun onDownloadFinished(context: ArtifactDownloadContext) {
+        localRepository.onDownloadFinished(context)
+    }
+
+    override fun remove(context: ArtifactRemoveContext) {
+        return localRepository.remove(context)
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
@@ -45,23 +94,18 @@ class CompositeRepository(
         }
     }
 
-    override fun remove(context: ArtifactRemoveContext) {
-        return localRepository.remove(context)
-    }
-
-
-    override fun <T> query(context: ArtifactQueryContext): T? {
+    override fun query(context: ArtifactQueryContext): Any? {
         return localRepository.query(context) ?: run {
             mapFirstProxyRepo(context) {
-                remoteRepository.query<T>(it as ArtifactQueryContext)
+                remoteRepository.query(it as ArtifactQueryContext)
             }
         }
     }
 
-    override fun <E> search(context: ArtifactSearchContext): List<E> {
-        val localResult = localRepository.search<E>(context)
+    override fun search(context: ArtifactSearchContext): List<Any> {
+        val localResult = localRepository.search(context)
         return mapEachProxyRepo(context) {
-            remoteRepository.search<E>(it as ArtifactSearchContext)
+            remoteRepository.search(it as ArtifactSearchContext)
         }.apply { add(localResult) }.flatten()
     }
 
@@ -114,10 +158,16 @@ class CompositeRepository(
         }
     }
 
+    /**
+     * 获取代理源设置列表
+     */
     private fun getProxyChannelList(context: ArtifactContext): List<ProxyChannelSetting> {
         return context.getCompositeConfiguration().proxy.channelList
     }
 
+    /**
+     * 根据原始上下文[context]以及代理源设置[setting]生成新的[ArtifactContext]
+     */
     private fun getContextFromProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
         return if (setting.public) {
             getContextFromPublicProxyChannel(context, setting)
@@ -126,6 +176,9 @@ class CompositeRepository(
         } as ArtifactDownloadContext
     }
 
+    /**
+     * 根据原始上下文[context]以及公共代理源设置[setting]生成新的[ArtifactContext]
+     */
     private fun getContextFromPublicProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
         // 查询公共源详情
         val proxyChannel = proxyChannelClient.getById(setting.channelId!!).data!!
@@ -136,11 +189,16 @@ class CompositeRepository(
         val remoteRepoDetail = repositoryClient.getRepoDetail(projectId, repoName, repoType).data!!
         // 构造proxyConfiguration
         val remoteConfiguration = remoteRepoDetail.configuration as RemoteConfiguration
-        remoteConfiguration.proxy = RemoteProxyConfiguration(proxyChannel.url, proxyChannel.username, proxyChannel.password)
+        remoteConfiguration.url = proxyChannel.url
+        remoteConfiguration.credentials.username = proxyChannel.username
+        remoteConfiguration.credentials.password = proxyChannel.password
 
         return context.copy(remoteRepoDetail)
     }
 
+    /**
+     * 根据原始上下文[context]以及私有代理源设置[setting]生成新的[ArtifactContext]
+     */
     private fun getContextFromPrivateProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
         // 查询远程仓库
         val projectId = context.repositoryDetail.projectId
@@ -149,7 +207,9 @@ class CompositeRepository(
         val remoteRepoDetail = repositoryClient.getRepoDetail(projectId, repoName, repoType).data!!
         // 构造proxyConfiguration
         val remoteConfiguration = remoteRepoDetail.configuration as RemoteConfiguration
-        remoteConfiguration.proxy = RemoteProxyConfiguration(setting.url!!, setting.username, setting.password)
+        remoteConfiguration.url = setting.url!!
+        remoteConfiguration.credentials.username = setting.username
+        remoteConfiguration.credentials.password = setting.password
 
         return context.copy(remoteRepoDetail)
     }
