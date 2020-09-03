@@ -48,12 +48,10 @@ import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PACKAGE
 import com.tencent.bkrepo.npm.constants.PKG_NAME
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
-import com.tencent.bkrepo.npm.constants.SHASUM
 import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.TIME
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
-import com.tencent.bkrepo.npm.exception.NpmCheckSumFailException
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
@@ -404,7 +402,7 @@ class NpmLocalRepository : LocalRepository() {
             remoteTimeJsons.remove(MODIFIED)
             val dateList = remoteTimeJsons.entrySet().stream().map { LocalDateTime.parse(it.value.asString, DateTimeFormatter.ISO_DATE_TIME) }.collect(Collectors.toList())
             val maxTime = Collections.max(dateList)
-            val latestTime = TimeUtil.getTime(maxTime)
+            val latestTime = maxTime.format(DateTimeFormatter.ofPattern(TimeUtil.FORMAT))
             remoteTimeJsons.entrySet().forEach {
                 if (it.value.asString == latestTime){
                     remoteDistTags.addProperty(LATEST, it.key)
@@ -436,9 +434,8 @@ class NpmLocalRepository : LocalRepository() {
                 measureTimeMillis {
                     val versionJson = versions.getAsJsonObject(version)
                     val tarball = versionJson.getAsJsonObject(DIST).get(TARBALL).asString
-                    val sha1 = versionJson.getAsJsonObject(DIST).get(SHASUM).asString
                     storeVersionArtifact(context, versionJson)
-                    storeTgzArtifact(context, tarball, name, sha1)
+                    storeTgzArtifact(context, tarball, name)
                 }.apply {
                     logger.info(
                         "migrate npm package [$name] for version [$version] success, elapse $this ms.  process rate: [${++count}/${totalSize}]"
@@ -516,9 +513,9 @@ class NpmLocalRepository : LocalRepository() {
     }
 
     /**
-     * 存储tgz文件，增加checksum校验
+     * 存储tgz文件
      */
-    private fun storeTgzArtifact(context: ArtifactMigrateContext, tarball: String, name: String, fileSha1: String) {
+    private fun storeTgzArtifact(context: ArtifactMigrateContext, tarball: String, name: String) {
         var response: Response? = null
         val tgzFilePath = tarball.substring(tarball.indexOf(name))
         context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
@@ -534,10 +531,6 @@ class NpmLocalRepository : LocalRepository() {
                 response = okHttpUtil.doGet(tarball)
                 if (checkResponse(response!!)) {
                     val artifactFile = createTempFile(response?.body()!!)
-                    val sha1 = artifactFile.getInputStream().sha1()
-                    if (fileSha1 != sha1){
-                        throw NpmCheckSumFailException("checksum file [$tgzFilePath] failed, can't be migrated.")
-                    }
                     putArtifact(context, artifactFile)
                     artifactFile.delete()
                 }
