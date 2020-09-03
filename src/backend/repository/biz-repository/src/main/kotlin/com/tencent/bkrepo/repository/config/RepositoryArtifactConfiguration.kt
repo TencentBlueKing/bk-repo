@@ -9,8 +9,7 @@ import org.springframework.context.annotation.Primary
 
 @Primary
 @Configuration
-class RepositoryArtifactConfiguration :
-    ArtifactConfiguration {
+class RepositoryArtifactConfiguration : ArtifactConfiguration {
 
     @Bean
     fun repositoryAuthSecurityCustomizer(): HttpAuthSecurityCustomizer {

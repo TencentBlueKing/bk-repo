@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletResponse
  */
 open class ArtifactContext(repo: RepositoryDetail? = null) {
     private var contextAttributes: MutableMap<String, Any> = mutableMapOf()
-        get() = field
     val request: HttpServletRequest = HttpContextHolder.getRequest()
     val response: HttpServletResponse = HttpContextHolder.getResponse()
     val userId: String
@@ -87,13 +86,6 @@ open class ArtifactContext(repo: RepositoryDetail? = null) {
      */
     fun getIntegerAttribute(key: String): Int? {
         return this.contextAttributes[key]?.toString()?.toInt()
-    }
-
-    /**
-     * 获取仓库配置
-     */
-    fun getConfiguration(): RepositoryConfiguration {
-        return this.repositoryDetail.configuration
     }
 
     /**

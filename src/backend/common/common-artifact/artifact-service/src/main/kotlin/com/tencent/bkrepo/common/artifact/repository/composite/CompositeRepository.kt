@@ -21,37 +21,44 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 组合仓库抽象逻辑
  */
-@Component
-class CompositeRepository(
-    private val localRepository: LocalRepository,
-    private val remoteRepository: RemoteRepository,
-    private val repositoryClient: RepositoryClient,
-    private val proxyChannelClient: ProxyChannelClient
-) : AbstractArtifactRepository() {
+class CompositeRepository: AbstractArtifactRepository() {
 
-    override fun onUploadValidate(context: ArtifactUploadContext) {
-        localRepository.onUploadValidate(context)
+    @Autowired
+    private lateinit var localRepository: LocalRepository
+
+    @Autowired
+    private lateinit var remoteRepository: RemoteRepository
+
+    @Autowired
+    private lateinit var repositoryClient: RepositoryClient
+
+    @Autowired
+    private lateinit var proxyChannelClient: ProxyChannelClient
+
+    /**
+     * upload复用local仓库逻辑
+     */
+    override fun upload(context: ArtifactUploadContext) {
+        localRepository.upload(context)
     }
 
-    override fun onUploadBefore(context: ArtifactUploadContext) {
-        localRepository.onUploadBefore(context)
+    /**
+     * migrate复用local仓库逻辑
+     */
+    override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
+        return localRepository.migrate(context)
     }
 
-    override fun onUpload(context: ArtifactUploadContext) {
-        localRepository.onUpload(context)
-    }
-
-    override fun onUploadSuccess(context: ArtifactUploadContext) {
-        localRepository.onUploadSuccess(context)
-    }
-
-    override fun onUploadFailed(context: ArtifactUploadContext, exception: Exception) {
-        localRepository.onUploadFailed(context, exception)
+    /**
+     * remove复用local仓库逻辑
+     */
+    override fun remove(context: ArtifactRemoveContext) {
+        return localRepository.remove(context)
     }
 
     override fun onDownloadValidate(context: ArtifactDownloadContext) {
@@ -62,9 +69,6 @@ class CompositeRepository(
         localRepository.onDownloadBefore(context)
     }
 
-    override fun onDownloadSuccess(context: ArtifactDownloadContext) {
-        localRepository.onDownloadSuccess(context)
-    }
 
     override fun onDownloadFailed(context: ArtifactDownloadContext, exception: Exception) {
         localRepository.onDownloadFailed(context, exception)
@@ -74,16 +78,15 @@ class CompositeRepository(
         localRepository.onValidateFailed(context, validateException)
     }
 
-    override fun onUploadFinished(context: ArtifactUploadContext) {
-        localRepository.onUploadFinished(context)
-    }
-
     override fun onDownloadFinished(context: ArtifactDownloadContext) {
         localRepository.onDownloadFinished(context)
     }
 
-    override fun remove(context: ArtifactRemoveContext) {
-        return localRepository.remove(context)
+    /**
+     * 下载成功后，如果是从本地下载，应该记录下载统计
+     */
+    override fun onDownloadSuccess(context: ArtifactDownloadContext, artifactResource: ArtifactResource) {
+        localRepository.onDownloadSuccess(context, artifactResource)
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
@@ -107,10 +110,6 @@ class CompositeRepository(
         return mapEachProxyRepo(context) {
             remoteRepository.search(it as ArtifactSearchContext)
         }.apply { add(localResult) }.flatten()
-    }
-
-    override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
-        return localRepository.migrate(context)
     }
 
     /**

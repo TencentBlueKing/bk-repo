@@ -6,17 +6,16 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.core.StorageManager
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.DownloadStatisticsClient
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.springframework.beans.factory.annotation.Autowired
-import java.util.concurrent.Executor
-import javax.annotation.Resource
 
 /**
  * 本地仓库抽象逻辑
@@ -30,13 +29,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
     lateinit var storageService: StorageService
 
     @Autowired
-    lateinit var downloadStatisticsClient: DownloadStatisticsClient
-
-    @Autowired
     lateinit var storageManager: StorageManager
-
-    @Resource
-    private lateinit var taskAsyncExecutor: Executor
 
     override fun onUpload(context: ArtifactUploadContext) {
         with(context) {
@@ -47,35 +40,12 @@ abstract class LocalRepository : AbstractArtifactRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val artifactUri = determineArtifactUri(this)
-            val artifactName = determineArtifactName(this)
-            val node = nodeClient.detail(projectId, repoName, artifactUri).data ?: return null
-            node.takeIf { !it.folder } ?: return null
+            val node = nodeClient.detail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            if (node == null || node.folder) return null
             val range = resolveRange(context, node.size)
             val inputStream = storageService.load(node.sha256!!, range, storageCredentials) ?: return null
-            return ArtifactResource(inputStream, artifactName, node)
+            return ArtifactResource(inputStream, artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
         }
-    }
-
-    open fun countDownloads(context: ArtifactDownloadContext) {
-        taskAsyncExecutor.execute {
-            val artifactInfo = context.artifactInfo
-            downloadStatisticsClient.add(
-                DownloadStatisticsAddRequest(
-                    artifactInfo.projectId,
-                    artifactInfo.repoName,
-                    artifactInfo.artifact,
-                    artifactInfo.version
-                )
-            )
-        }
-    }
-
-    /**
-     * 获取节点fullPath
-     */
-    open fun determineArtifactUri(context: ArtifactDownloadContext): String {
-        return context.artifactInfo.artifactUri
     }
 
     /**
@@ -86,7 +56,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
             projectId = context.repositoryDetail.projectId,
             repoName = context.repositoryDetail.name,
             folder = false,
-            fullPath = context.artifactInfo.artifactUri,
+            fullPath = context.artifactInfo.getArtifactFullPath(),
             size = context.getArtifactFile().getSize(),
             sha256 = context.getArtifactSha256(),
             md5 = context.getArtifactMd5(),
@@ -94,13 +64,11 @@ abstract class LocalRepository : AbstractArtifactRepository() {
         )
     }
 
-    override fun onDownloadSuccess(context: ArtifactDownloadContext) {
-        super.onDownloadSuccess(context)
-        countDownloads(context)
-    }
-
     open fun resolveRange(context: ArtifactDownloadContext, total: Long): Range {
         try {
+            if (HttpContextHolder.getRequestOrNull()?.method == HttpMethod.HEAD.name) {
+                return Range(0, 0, total)
+            }
             return HttpRangeUtils.resolveRange(context.request, total)
         } catch (exception: IllegalArgumentException) {
             throw ArtifactException(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)

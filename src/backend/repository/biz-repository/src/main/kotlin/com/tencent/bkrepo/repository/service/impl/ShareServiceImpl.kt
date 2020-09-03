@@ -34,11 +34,11 @@ class ShareServiceImpl(
 
     override fun create(userId: String, artifactInfo: ArtifactInfo, request: ShareRecordCreateRequest): ShareRecordInfo {
         with(artifactInfo) {
-            checkNode(projectId, repoName, artifactUri)
+            checkNode(projectId, repoName, getArtifactFullPath())
             val shareRecord = TShareRecord(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = artifactUri,
+                fullPath = getArtifactFullPath(),
                 expireDate = computeExpireDate(request.expireSeconds),
                 authorizedUserList = request.authorizedUserList,
                 authorizedIpList = request.authorizedIpList,
@@ -60,7 +60,7 @@ class ShareServiceImpl(
             val query = Query.query(
                 Criteria.where(TShareRecord::projectId.name).`is`(artifactInfo.projectId)
                     .and(TShareRecord::repoName.name).`is`(repoName)
-                    .and(TShareRecord::fullPath.name).`is`(artifactUri)
+                    .and(TShareRecord::fullPath.name).`is`(getArtifactFullPath())
                     .and(TShareRecord::token.name).`is`(token)
             )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, token)

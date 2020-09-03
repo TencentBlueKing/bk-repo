@@ -13,12 +13,16 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
-import com.tencent.bkrepo.repository.util.NodeUtils
+import com.tencent.bkrepo.repository.api.DownloadStatisticsClient
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
+import java.util.concurrent.Executor
+import javax.annotation.Resource
 
 /**
  * 构件仓库抽象类
@@ -31,6 +35,12 @@ abstract class AbstractArtifactRepository: ArtifactRepository {
 
     @Autowired
     lateinit var publisher: ApplicationEventPublisher
+
+    @Autowired
+    lateinit var downloadStatisticsClient: DownloadStatisticsClient
+
+    @Resource
+    private lateinit var taskAsyncExecutor: Executor
 
     override fun upload(context: ArtifactUploadContext) {
         try {
@@ -54,7 +64,7 @@ abstract class AbstractArtifactRepository: ArtifactRepository {
             val artifactResponse = this.onDownload(context)
                 ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
             ArtifactResourceWriter.write(artifactResponse)
-            this.onDownloadSuccess(context)
+            this.onDownloadSuccess(context, artifactResponse)
         } catch (validateException: ArtifactValidateException) {
             this.onValidateFailed(context, validateException)
         } catch (exception: Exception) {
@@ -78,14 +88,6 @@ abstract class AbstractArtifactRepository: ArtifactRepository {
 
     override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
         throw UnsupportedMethodException()
-    }
-
-    /**
-     * 判断构件名称，用于构件下载时生成构建名
-     */
-    open fun determineArtifactName(context: ArtifactContext): String {
-        val artifactUri = context.artifactInfo.artifactUri
-        return artifactUri.substring(artifactUri.lastIndexOf(NodeUtils.FILE_SEPARATOR) + 1)
     }
 
     /**
@@ -152,8 +154,20 @@ abstract class AbstractArtifactRepository: ArtifactRepository {
     /**
      * 下载成功回调
      */
-    open fun onDownloadSuccess(context: ArtifactDownloadContext) {
+    open fun onDownloadSuccess(context: ArtifactDownloadContext, artifactResource: ArtifactResource) {
         artifactMetrics.downloadedCounter.increment()
+        if (artifactResource.channel == ArtifactChannel.LOCAL) {
+            taskAsyncExecutor.execute {
+                downloadStatisticsClient.add(
+                    DownloadStatisticsAddRequest(
+                        context.artifactInfo.projectId,
+                        context.artifactInfo.repoName,
+                        context.artifactInfo.getArtifactName(),
+                        context.artifactInfo.getArtifactVersion()
+                    )
+                )
+            }
+        }
         logger.info("User[${context.userId}] download artifact[${context.artifactInfo}] success")
     }
 

@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.model.TNode
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -33,8 +34,8 @@ object QueryHelper {
     }
 
     fun nodeListCriteria(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Criteria {
-        val formattedPath = NodeUtils.formatPath(path)
-        val escapedPath = NodeUtils.escapeRegex(formattedPath)
+        val formattedPath = PathUtils.formatPath(path)
+        val escapedPath = PathUtils.escapeRegex(formattedPath)
         val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
             .and(TNode::repoName.name).`is`(repoName)
             .and(TNode::deleted.name).`is`(null)
@@ -75,9 +76,7 @@ object QueryHelper {
 
     fun nodeExpireDateUpdate(expireDate: LocalDateTime?, operator: String): Update {
         return update(operator).apply {
-            expireDate?.let {
-                set(TNode::expireDate.name, expireDate)
-            } ?: run { unset(TNode::expireDate.name) }
+            expireDate?.let { set(TNode::expireDate.name, expireDate) } ?: run { unset(TNode::expireDate.name) }
         }
     }
 

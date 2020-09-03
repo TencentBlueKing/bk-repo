@@ -57,8 +57,8 @@ class UserNodeController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<NodeDetail> {
         with(artifactInfo) {
-            val node = nodeService.detail(projectId, repoName, artifactUri)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
+            val node = nodeService.detail(projectId, repoName, getArtifactFullPath())
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactName())
             return ResponseBuilder.success(node)
         }
     }
@@ -75,7 +75,7 @@ class UserNodeController(
                 projectId = projectId,
                 repoName = repoName,
                 folder = true,
-                fullPath = artifactUri,
+                fullPath = getArtifactFullPath(),
                 overwrite = false,
                 operator = userId
             )
@@ -95,7 +95,7 @@ class UserNodeController(
             val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = artifactUri,
+                fullPath = getArtifactFullPath(),
                 operator = userId
             )
             nodeService.delete(deleteRequest)
@@ -115,7 +115,7 @@ class UserNodeController(
             val updateRequest = NodeUpdateRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = artifactUri,
+                fullPath = getArtifactFullPath(),
                 expires = request.expires,
                 operator = userId
             )
@@ -136,7 +136,7 @@ class UserNodeController(
             val renameRequest = NodeRenameRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = artifactUri,
+                fullPath = getArtifactFullPath(),
                 newFullPath = newFullPath,
                 operator = userId
             )
@@ -226,7 +226,7 @@ class UserNodeController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<NodeSizeInfo> {
         with(artifactInfo) {
-            val nodeSizeInfo = nodeService.computeSize(projectId, repoName, artifactUri)
+            val nodeSizeInfo = nodeService.computeSize(projectId, repoName, getArtifactFullPath())
             return ResponseBuilder.success(nodeSizeInfo)
         }
     }
@@ -249,7 +249,11 @@ class UserNodeController(
         @RequestParam deep: Boolean = false
     ): Response<Page<NodeInfo>> {
         with(artifactInfo) {
-            val nodePage = nodeService.page(projectId, repoName, artifactUri, pageNumber, pageSize, includeFolder, includeMetadata, deep)
+            val nodePage = nodeService.page(
+                projectId, repoName, getArtifactFullPath(),
+                pageNumber, pageSize,
+                includeFolder, includeMetadata, deep
+            )
             return ResponseBuilder.success(nodePage)
         }
     }

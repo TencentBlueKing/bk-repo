@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PRIVATE_PROXY_REPO_NAME
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
+import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
@@ -33,7 +34,6 @@ import com.tencent.bkrepo.repository.service.ProjectService
 import com.tencent.bkrepo.repository.service.ProxyChannelService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
-import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 import com.tencent.bkrepo.repository.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -184,10 +184,10 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         repoDeleteRequest.apply {
             val repository = checkRepository(projectId, name)
             if (repoDeleteRequest.forced) {
-                nodeService.deleteByPath(projectId, name, ROOT_PATH, operator, true)
+                nodeService.deleteByPath(projectId, name, ROOT, operator, true)
             } else {
                 nodeService.countFileNode(projectId, name).takeIf { it == 0L } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_CONTAINS_FILE)
-                nodeService.deleteByPath(projectId, name, ROOT_PATH, operator, false)
+                nodeService.deleteByPath(projectId, name, ROOT, operator, false)
             }
             repoRepository.delete(repository)
             // 删除关联的库
@@ -310,7 +310,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         val proxyRepo = queryRepository(projectId, proxyRepoName, null)
         proxyRepo?.let { repo ->
             // 删除仓库
-            nodeService.deleteByPath(repo.projectId, repo.name, ROOT_PATH, SYSTEM_USER, true)
+            nodeService.deleteByPath(repo.projectId, repo.name, ROOT, SYSTEM_USER, true)
             repoRepository.delete(proxyRepo)
             logger.info("Success to delete private proxy repository[$proxyRepo]")
         }

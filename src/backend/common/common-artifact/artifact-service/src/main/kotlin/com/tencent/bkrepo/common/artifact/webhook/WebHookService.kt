@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.artifact.webhook
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.webhook.WebHookSetting
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -23,14 +24,15 @@ class WebHookService {
 
     fun hook(context: ArtifactContext, type: ArtifactEventType) {
         // CompositeConfiguration extends LocalConfiguration
-        if (context.getConfiguration() is LocalConfiguration) {
-            val configuration = context.getLocalConfiguration()
-            val artifact = context.artifactInfo
-            configuration.webHook.webHookList.takeIf { it.isNotEmpty() }?.run {
-                val data = ArtifactWebHookData(artifact.projectId, artifact.repoName, artifact.artifact, artifact.version, type)
-                val requestBody = RequestBody.create(jsonMediaType, data.toJsonString())
-                this.forEach { info -> remoteCall(info, requestBody) }
-            }
+        val configuration = when(context.repositoryDetail.category) {
+            RepositoryCategory.LOCAL -> context.getLocalConfiguration()
+            RepositoryCategory.COMPOSITE -> context.getCompositeConfiguration()
+            else -> return
+        }
+        configuration.webHook.webHookList.takeIf { it.isNotEmpty() }?.run {
+            val data = ArtifactWebHookData(context.artifactInfo, type)
+            val requestBody = RequestBody.create(jsonMediaType, data.toJsonString())
+            this.forEach { info -> remoteCall(info, requestBody) }
         }
     }
 

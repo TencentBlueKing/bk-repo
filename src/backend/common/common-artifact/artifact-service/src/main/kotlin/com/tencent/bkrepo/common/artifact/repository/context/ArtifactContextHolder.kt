@@ -11,7 +11,11 @@ import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -22,24 +26,36 @@ import javax.servlet.http.HttpServletRequest
 @Component
 class ArtifactContextHolder(
     artifactConfiguration: ArtifactConfiguration,
-    repositoryClient: RepositoryClient
+    repositoryClient: RepositoryClient,
+    localRepository: LocalRepository,
+    remoteRepository: RemoteRepository,
+    virtualRepository: VirtualRepository,
+    compositeRepository: CompositeRepository
 ) {
 
     init {
         Companion.artifactConfiguration = artifactConfiguration
         Companion.repositoryClient = repositoryClient
+        Companion.localRepository = localRepository
+        Companion.remoteRepository = remoteRepository
+        Companion.virtualRepository = virtualRepository
+        Companion.compositeRepository = compositeRepository
     }
 
     companion object {
         lateinit var artifactConfiguration: ArtifactConfiguration
         private lateinit var repositoryClient: RepositoryClient
+        private lateinit var localRepository: LocalRepository
+        private lateinit var remoteRepository: RemoteRepository
+        private lateinit var virtualRepository: VirtualRepository
+        private lateinit var compositeRepository: CompositeRepository
 
         fun getRepository(repositoryCategory: RepositoryCategory? = null): ArtifactRepository {
             return when (repositoryCategory?: getRepoDetail()!!.category) {
-                RepositoryCategory.LOCAL -> artifactConfiguration.getLocalRepository()
-                RepositoryCategory.REMOTE -> artifactConfiguration.getRemoteRepository()
-                RepositoryCategory.VIRTUAL -> artifactConfiguration.getVirtualRepository()
-                RepositoryCategory.COMPOSITE -> artifactConfiguration.getCompositeRepository()
+                RepositoryCategory.LOCAL -> localRepository
+                RepositoryCategory.REMOTE -> remoteRepository
+                RepositoryCategory.VIRTUAL -> virtualRepository
+                RepositoryCategory.COMPOSITE -> compositeRepository
             }
         }
 

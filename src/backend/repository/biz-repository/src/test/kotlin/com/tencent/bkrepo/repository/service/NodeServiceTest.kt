@@ -18,7 +18,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
-import com.tencent.bkrepo.repository.util.NodeUtils
+import com.tencent.bkrepo.repository.util.PathUtils
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -73,7 +73,7 @@ class NodeServiceTest @Autowired constructor(
     @BeforeEach
     fun beforeEach() {
         initMock()
-        nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, NodeUtils.ROOT_PATH, UT_USER, false)
+        nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, PathUtils.ROOT, UT_USER, false)
     }
 
     @Test

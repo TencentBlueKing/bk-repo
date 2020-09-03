@@ -5,8 +5,9 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.ListViewObject
@@ -19,7 +20,6 @@ import com.tencent.bkrepo.repository.service.ListViewService
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.ProjectService
 import com.tencent.bkrepo.repository.service.RepositoryService
-import com.tencent.bkrepo.repository.util.NodeUtils
 import org.apache.commons.lang.StringEscapeUtils
 import org.springframework.stereotype.Service
 import java.io.PrintWriter
@@ -36,8 +36,8 @@ class ListViewServiceImpl(
 
     override fun listNodeView(artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
-            val node = nodeService.detail(projectId, repoName, artifactUri)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
+            val node = nodeService.detail(projectId, repoName, getArtifactFullPath())
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactName())
             val response = HttpContextHolder.getResponse()
             response.contentType = MediaTypes.TEXT_HTML
             if (node.folder) {
@@ -45,7 +45,7 @@ class ListViewServiceImpl(
                 val nodeList = nodeService.list(
                     artifactInfo.projectId,
                     artifactInfo.repoName,
-                    artifactUri,
+                    getArtifactFullPath(),
                     includeFolder = true,
                     includeMetadata = false,
                     deep = false
@@ -62,8 +62,7 @@ class ListViewServiceImpl(
                 writePageContent(ListViewObject(currentPath, headerList, rowList, FOOTER, true))
             } else {
                 val context = ArtifactDownloadContext()
-                val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-                repository.download(context)
+                ArtifactContextHolder.getRepository().download(context)
             }
         }
     }
@@ -152,13 +151,13 @@ class ListViewServiceImpl(
 
     private fun computeCurrentPath(currentNode: NodeDetail): String {
         val builder = StringBuilder()
-        builder.append(NodeUtils.FILE_SEPARATOR)
+        builder.append(PathUtils.SEPARATOR)
             .append(currentNode.projectId)
-            .append(NodeUtils.FILE_SEPARATOR)
+            .append(PathUtils.SEPARATOR)
             .append(currentNode.repoName)
             .append(currentNode.fullPath)
-        if (!NodeUtils.isRootPath(currentNode.fullPath)) {
-            builder.append(NodeUtils.FILE_SEPARATOR)
+        if (!PathUtils.isRoot(currentNode.fullPath)) {
+            builder.append(PathUtils.SEPARATOR)
         }
         return builder.toString()
     }

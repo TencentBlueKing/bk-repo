@@ -19,7 +19,7 @@ class OperateResourceImpl @Autowired constructor(
 
     override fun listFile(userId: String, artifactInfo: ArtifactInfo, includeFolder: Boolean, deep: Boolean): Response<List<FileInfo>> {
         return artifactInfo.run {
-            ResponseBuilder.success(operateService.listFile(userId, projectId, repoName, artifactUri, includeFolder, deep))
+            ResponseBuilder.success(operateService.listFile(userId, projectId, repoName, getArtifactFullPath(), includeFolder, deep))
         }
     }
 }

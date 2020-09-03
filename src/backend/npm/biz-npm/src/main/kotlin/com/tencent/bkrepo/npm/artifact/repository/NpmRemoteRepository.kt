@@ -24,7 +24,7 @@ import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.util.NodeUtils
+import com.tencent.bkrepo.repository.util.PathUtils
 import io.undertow.util.BadRequestException
 import okhttp3.Request
 import okhttp3.Response
@@ -90,7 +90,7 @@ class NpmRemoteRepository : RemoteRepository() {
 
     override fun determineArtifactName(context: ArtifactContext): String {
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        return NodeUtils.getName(fullPath)
+        return PathUtils.getName(fullPath)
     }
 
     /**

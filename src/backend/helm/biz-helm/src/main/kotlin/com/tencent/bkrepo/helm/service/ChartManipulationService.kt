@@ -25,7 +25,7 @@ import com.tencent.bkrepo.helm.pojo.HelmSuccessResponse
 import com.tencent.bkrepo.helm.pojo.IndexEntity
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.YamlUtils
-import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
+import com.tencent.bkrepo.repository.util.PathUtils.SEPARATOR
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -71,7 +71,7 @@ class ChartManipulationService {
     fun getChartFileFullPath(chartFile: Map<String, Any>?): String {
         val chartName = chartFile?.get(NAME) as String
         val chartVersion = chartFile[VERSION] as String
-        return String.format("$FILE_SEPARATOR%s-%s.%s", chartName, chartVersion, CHART_PACKAGE_FILE_EXTENSION)
+        return String.format("$SEPARATOR%s-%s.%s", chartName, chartVersion, CHART_PACKAGE_FILE_EXTENSION)
     }
 
     private fun getProvFileFullPath(artifactFileMap: ArtifactFileMap): String {
@@ -87,7 +87,7 @@ class ChartManipulationService {
     }
 
     private fun provenanceFilenameFromNameVersion(name: String, version: String): String {
-        return String.format("$FILE_SEPARATOR%s-%s.%s", name, version, PROVENANCE_FILE_EXTENSION)
+        return String.format("$SEPARATOR%s-%s.%s", name, version, PROVENANCE_FILE_EXTENSION)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -111,7 +111,7 @@ class ChartManipulationService {
     private fun uploadIndexYaml(indexEntity: IndexEntity) {
         val artifactFile = ArtifactFileFactory.build(YamlUtils.transEntityToStream(indexEntity))
         val uploadContext = ArtifactUploadContext(artifactFile)
-        uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
+        uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$SEPARATOR$INDEX_CACHE_YAML"
         val uploadRepository = ArtifactContextHolder.getRepository(uploadContext.repositoryDetail.category)
         uploadRepository.upload(uploadContext)
     }

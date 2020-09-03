@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.pojo.project
 
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
-import com.tencent.bkrepo.repository.util.NodeUtils
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -21,7 +21,7 @@ data class ProjectListViewItem(
 
         fun from(projectInfo: ProjectInfo): ProjectListViewItem {
             with(projectInfo) {
-                val normalizedName = name + NodeUtils.FILE_SEPARATOR
+                val normalizedName = name + PathUtils.SEPARATOR
                 val localDateTime = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
                 val lastModified = formatters.format(localDateTime)
                 val shardingIndex = name.hashCode() and SHARDING_COUNT - 1

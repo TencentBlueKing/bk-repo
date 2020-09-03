@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.core.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
@@ -89,7 +90,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
                 if (logger.isDebugEnabled) {
                     logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
                 }
-                ArtifactResource(this, determineArtifactName(context), cacheNode)
+                ArtifactResource(this, context.artifactInfo.getResponseName(), cacheNode, ArtifactChannel.PROXY)
             }
         } else null
     }
@@ -109,9 +110,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 尝试获取缓存的远程构件节点
      */
     private fun findCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
-        val artifactInfo = context.artifactInfo
-        val repositoryDetail = context.repositoryDetail
-        return nodeClient.detail(repositoryDetail.projectId, repositoryDetail.name, artifactInfo.artifactUri).data
+        return nodeClient.detail(context.projectId, context.repoName, context.artifactInfo.getArtifactFullPath()).data
     }
 
     /**
@@ -133,7 +132,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val node = cacheArtifactFile(context, artifactFile)
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().toArtifactStream(Range.full(size))
-        return ArtifactResource(artifactStream, determineArtifactName(context), node)
+        return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
     }
 
     /**
@@ -151,7 +150,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             projectId = context.repositoryDetail.projectId,
             repoName = context.repositoryDetail.name,
             folder = false,
-            fullPath = context.artifactInfo.artifactUri,
+            fullPath = context.artifactInfo.getArtifactFullPath(),
             size = artifactFile.getSize(),
             sha256 = artifactFile.getFileSha256(),
             md5 = artifactFile.getFileMd5(),
@@ -165,7 +164,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     open fun createRemoteDownloadUrl(context: ArtifactContext): String {
         val configuration = context.getRemoteConfiguration()
-        val artifactUri = context.artifactInfo.artifactUri
+        val artifactUri = context.artifactInfo.getArtifactName()
         val queryString = context.request.queryString
         return UrlFormatter.format(configuration.url, artifactUri, queryString)
     }

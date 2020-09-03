@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
 import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADED_BYTES_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADED_CONSUME_COUNT
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -17,7 +18,6 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.util.NodeUtils
 import io.micrometer.core.instrument.Metrics
 import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
@@ -113,7 +113,7 @@ object ArtifactResourceWriter {
     }
 
     private fun determineMediaType(name: String): String {
-        val extension = NodeUtils.getExtension(name).orEmpty()
+        val extension = PathUtils.resolveExtension(name).orEmpty()
         return mimeMappings.get(extension) ?: MediaTypes.APPLICATION_OCTET_STREAM
     }
 

@@ -60,7 +60,7 @@ import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAdd
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.util.NodeUtils
+import com.tencent.bkrepo.repository.util.PathUtils
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -158,7 +158,7 @@ class NpmLocalRepository : LocalRepository() {
 
     override fun determineArtifactName(context: ArtifactContext): String {
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        return NodeUtils.getName(fullPath)
+        return PathUtils.getName(fullPath)
     }
 
     override fun determineArtifactUri(context: ArtifactDownloadContext): String {
