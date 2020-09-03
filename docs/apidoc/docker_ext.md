@@ -204,7 +204,7 @@
 
 ### 获取repo的所有tag
 
-- API: GET /docker/api/tag/{projectId}/{repoName}/{repo}
+- API: GET /docker/api/tag/{projectId}/{repoName}/{name}
 - API 名称: get_repo_tag_list
 - 功能说明：
 	- 中文：获取repo对应的manifest文件
@@ -224,7 +224,7 @@
 |---|---|---|---|---|---|
 |projectId|string|是|无|项目id|the project id|
 |repoName|string|是|无|仓库名称| name of repo|
-|repo|string|是|无|docker 镜像名称| name of docker image|
+|name|string|是|无|docker 镜像名称| name of docker image|
 
 
 
@@ -331,6 +331,83 @@
 |message|result message|错误消息 |the failure message |
 |data | string array |image 名称列表 |the list of image|
 |traceId|string|请求跟踪id|the trace id|
+
+### 获取repo下指定tag的详情
+
+- API: GET /docker/api/tag/detail/{projectId}/{repoName}/{name}
+- API 名称: get_repo_tag_list
+- 功能说明：
+	- 中文：获取repo对应的manifest文件
+	- English：get image tag by repo 
+
+- input body:
+
+
+``` json
+
+```
+
+
+- input 字段说明
+
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|projectId|string|是|无|项目id|the project id|
+|repoName|string|是|无|仓库名称| name of repo|
+|name|string|是|无|docker 镜像名称| name of docker image|
+
+
+
+- output:
+
+```
+{
+    "code":0,
+    "message":null,
+    "data":{
+        "basic":{
+            "size":1024,
+            "sha256":"c7fea26579a7de970085f5f0d7f5fe28d055e642f7520a674614f9b428bdba05",
+            "tag":"v1",
+            "os":"linux",
+            "lastModifiedBy":"owen",
+            "lastModifiedDate":"2020-08-28 04:07:12.672Z",
+            "downloadCount":1223
+        },
+        "history":[
+            "DOCKER RUN"
+        ],
+        "metadata":{
+            "user":"owen"
+        },
+        "layers":[
+            {
+                "id":"sha256__8dc0e42f1f5b6325f3998409ab78543dfce3cb36aff37e64b432ee0c7accd1dc",
+                "size":123
+            },
+            {
+                "id":"sha256__8dc0e42f1f5b6325f3998409ab78543dfce3cb36aff37e64b432ee0c7accd1dc",
+                "size":1234
+            }
+        ]
+    },
+    "traceId":""
+}
+```
+
+- output 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
+|message|result message|错误消息 |the failure message |
+|data | object | tag详情数据 |tag list of the image|
+|traceId|string|请求跟踪id|the trace id|
+|basic|object|基础数据|the basic data|
+|history|object array|镜像构建历史|the history of build|
+|metadata|object|元数据信息|the metadata of image tag|
+|layers|object array|层级信息|the layer info of image|
+
 
 ### 鉴权示例
 
