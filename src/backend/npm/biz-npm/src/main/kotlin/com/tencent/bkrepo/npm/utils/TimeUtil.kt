@@ -9,6 +9,9 @@ import java.util.Date
 import java.util.TimeZone
 
 object TimeUtil {
+
+    const val FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+
     fun getGMTTime(): String {
         val ldt = LocalDateTime.now(ZoneId.of("GMT"))
         val atZone = ldt.atZone(ZoneOffset.UTC)
@@ -18,7 +21,7 @@ object TimeUtil {
     fun getGMTTime(dateTime: LocalDateTime): String {
         val timeZone = TimeZone.getTimeZone("GMT")
         val time = dateTime.toInstant(ZoneOffset.ofHours(8)).toEpochMilli()
-        val simpleDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        val simpleDateFormat = SimpleDateFormat(FORMAT)
         simpleDateFormat.timeZone = timeZone
         val date = Date(time)
         return simpleDateFormat.format(date)
