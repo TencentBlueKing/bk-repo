@@ -139,7 +139,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 远程下载响应回调
      */
     open fun onSearchResponse(context: ArtifactSearchContext, response: Response): List<Any> {
-       return emptyList()
+        return emptyList()
     }
 
     /**

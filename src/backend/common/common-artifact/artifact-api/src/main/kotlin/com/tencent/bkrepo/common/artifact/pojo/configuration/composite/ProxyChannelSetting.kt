@@ -7,7 +7,7 @@ import io.swagger.annotations.ApiModelProperty
  * 代理源
  */
 @ApiModel("代理源设置")
-data class ProxyChannelSetting (
+data class ProxyChannelSetting(
     @ApiModelProperty("是否为公有源", required = true)
     val public: Boolean,
     @ApiModelProperty("公有源id, 公有源必须提供", required = false)

@@ -5,7 +5,7 @@ import java.time.Duration
 /**
  * 迁移详情
  */
-data class MigrateDetail (
+data class MigrateDetail(
     /**
      * 项目
      */

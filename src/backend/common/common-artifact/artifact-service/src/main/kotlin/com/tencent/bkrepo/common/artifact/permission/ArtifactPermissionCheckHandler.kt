@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
 @Component
 class ArtifactPermissionCheckHandler(
     private val permissionManager: PermissionManager
-): PermissionCheckHandler {
+) : PermissionCheckHandler {
     override fun onPermissionCheck(userId: String, permission: Permission) {
         val repositoryDetail = ArtifactContextHolder.getRepoDetail()!!
         with(repositoryDetail) {

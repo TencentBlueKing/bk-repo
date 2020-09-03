@@ -11,7 +11,6 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.util.Pages
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime

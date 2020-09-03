@@ -70,7 +70,6 @@ open class ArtifactUploadContext : ArtifactContext {
         return artifactFileMap[name]!! as MultipartArtifactFile
     }
 
-
     /**
      * 获取[OctetStreamArtifactFile]
      */

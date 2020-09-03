@@ -64,8 +64,10 @@ class FileReferenceServiceImpl : FileReferenceService {
     override fun decrement(sha256: String, credentialsKey: String?): Boolean {
         val query = buildQuery(sha256, credentialsKey)
         val fileReference = fileReferenceDao.findOne(query) ?: run {
-            logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: " +
-                "reference not found, create new one.")
+            logger.error(
+                "Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: " +
+                    "reference not found, create new one."
+            )
             return false
         }
 
@@ -75,8 +77,10 @@ class FileReferenceServiceImpl : FileReferenceService {
             logger.info("Decrement references of file [$sha256] on credentialsKey [$credentialsKey].")
             true
         } else {
-            logger.error("Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: " +
-                "reference count is 0.")
+            logger.error(
+                "Failed to decrement reference of file [$sha256] on credentialsKey [$credentialsKey]: " +
+                    "reference count is 0."
+            )
             false
         }
     }

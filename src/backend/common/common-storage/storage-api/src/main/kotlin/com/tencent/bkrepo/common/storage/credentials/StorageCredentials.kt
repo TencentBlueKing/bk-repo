@@ -18,6 +18,4 @@ abstract class StorageCredentials(
     open var key: String? = null,
     open var cache: CacheProperties,
     open var upload: UploadProperties
-) {
-
-}
+)

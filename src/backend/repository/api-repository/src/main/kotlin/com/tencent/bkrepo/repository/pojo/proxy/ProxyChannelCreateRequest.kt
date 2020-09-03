@@ -8,7 +8,7 @@ import io.swagger.annotations.ApiModelProperty
  * 代理源创建请求
  */
 @ApiModel("代理源创建请求")
-data class ProxyChannelCreateRequest (
+data class ProxyChannelCreateRequest(
     @ApiModelProperty("是否为公有源", required = false)
     val public: Boolean = true,
     @ApiModelProperty("代理源名称", required = true)

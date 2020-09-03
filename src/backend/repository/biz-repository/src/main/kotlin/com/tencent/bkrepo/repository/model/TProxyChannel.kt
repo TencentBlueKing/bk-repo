@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.core.mapping.Document
  * 代理源模型
  */
 @Document("proxy_channel")
-data class TProxyChannel (
+data class TProxyChannel(
     /**
      * id
      */

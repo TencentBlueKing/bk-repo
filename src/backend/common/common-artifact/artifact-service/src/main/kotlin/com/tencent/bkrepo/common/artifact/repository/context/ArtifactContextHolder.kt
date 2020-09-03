@@ -51,7 +51,7 @@ class ArtifactContextHolder(
         private lateinit var compositeRepository: CompositeRepository
 
         fun getRepository(repositoryCategory: RepositoryCategory? = null): ArtifactRepository {
-            return when (repositoryCategory?: getRepoDetail()!!.category) {
+            return when (repositoryCategory ?: getRepoDetail()!!.category) {
                 RepositoryCategory.LOCAL -> localRepository
                 RepositoryCategory.REMOTE -> remoteRepository
                 RepositoryCategory.VIRTUAL -> virtualRepository

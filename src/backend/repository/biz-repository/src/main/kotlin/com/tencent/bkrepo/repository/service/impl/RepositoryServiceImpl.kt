@@ -91,7 +91,6 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     override fun list(projectId: String, name: String?, type: String?): List<RepositoryInfo> {
         val query = buildListQuery(projectId, name, type)
         return mongoTemplate.find(query, TRepository::class.java).map { convertToInfo(it)!! }
-
     }
 
     override fun page(projectId: String, pageNumber: Int, pageSize: Int, name: String?, type: String?): Page<RepositoryInfo> {
@@ -242,7 +241,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
      * 构造仓库初始化配置
      */
     private fun buildRepoConfiguration(request: RepoCreateRequest): RepositoryConfiguration {
-        return when(request.category) {
+        return when (request.category) {
             RepositoryCategory.LOCAL -> LocalConfiguration()
             RepositoryCategory.REMOTE -> RemoteConfiguration()
             RepositoryCategory.VIRTUAL -> VirtualConfiguration()

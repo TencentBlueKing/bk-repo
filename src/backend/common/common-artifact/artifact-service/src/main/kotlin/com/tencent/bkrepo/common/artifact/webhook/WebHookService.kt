@@ -4,7 +4,6 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.webhook.WebHookSetting
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
@@ -24,7 +23,7 @@ class WebHookService {
 
     fun hook(context: ArtifactContext, type: ArtifactEventType) {
         // CompositeConfiguration extends LocalConfiguration
-        val configuration = when(context.repositoryDetail.category) {
+        val configuration = when (context.repositoryDetail.category) {
             RepositoryCategory.LOCAL -> context.getLocalConfiguration()
             RepositoryCategory.COMPOSITE -> context.getCompositeConfiguration()
             else -> return

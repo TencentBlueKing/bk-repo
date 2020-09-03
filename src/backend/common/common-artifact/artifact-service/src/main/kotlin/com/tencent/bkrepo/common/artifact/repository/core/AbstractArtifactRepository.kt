@@ -28,7 +28,7 @@ import javax.annotation.Resource
  * 构件仓库抽象类
  */
 @Suppress("TooGenericExceptionCaught")
-abstract class AbstractArtifactRepository: ArtifactRepository {
+abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
     lateinit var artifactMetrics: ArtifactMetrics

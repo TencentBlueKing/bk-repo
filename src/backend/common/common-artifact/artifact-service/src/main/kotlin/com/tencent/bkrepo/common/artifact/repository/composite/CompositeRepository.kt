@@ -26,7 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired
 /**
  * 组合仓库抽象逻辑
  */
-class CompositeRepository: AbstractArtifactRepository() {
+class CompositeRepository : AbstractArtifactRepository() {
 
     @Autowired
     private lateinit var localRepository: LocalRepository
@@ -68,7 +68,6 @@ class CompositeRepository: AbstractArtifactRepository() {
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
         localRepository.onDownloadBefore(context)
     }
-
 
     override fun onDownloadFailed(context: ArtifactDownloadContext, exception: Exception) {
         localRepository.onDownloadFailed(context, exception)

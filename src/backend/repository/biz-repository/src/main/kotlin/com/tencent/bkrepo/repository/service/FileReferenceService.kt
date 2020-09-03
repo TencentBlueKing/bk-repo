@@ -39,7 +39,6 @@ interface FileReferenceService {
      */
     fun decrement(sha256: String, credentialsKey: String?): Boolean
 
-
     /**
      * 统计文件[sha256]在存储实例[credentialsKey]上的文件引用数量
      *
@@ -47,4 +46,3 @@ interface FileReferenceService {
      */
     fun count(sha256: String, credentialsKey: String?): Long
 }
-

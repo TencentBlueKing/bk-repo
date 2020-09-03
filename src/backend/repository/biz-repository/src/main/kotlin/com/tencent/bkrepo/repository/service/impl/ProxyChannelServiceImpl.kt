@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service
 @Service
 class ProxyChannelServiceImpl(
     private val proxyChannelRepository: ProxyChannelRepository
-): ProxyChannelService {
+) : ProxyChannelService {
 
     override fun findById(id: String): ProxyChannelInfo? {
         val tProxyChannel = proxyChannelRepository.findByIdOrNull(id)

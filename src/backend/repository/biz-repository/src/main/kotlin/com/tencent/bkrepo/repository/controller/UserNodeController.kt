@@ -126,7 +126,7 @@ class UserNodeController(
 
     @ApiOperation("重命名节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    @PostMapping( "/rename/$DEFAULT_MAPPING_URI")
+    @PostMapping("/rename/$DEFAULT_MAPPING_URI")
     fun rename(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
