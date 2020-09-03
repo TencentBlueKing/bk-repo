@@ -24,6 +24,15 @@ object TimeUtil {
         return simpleDateFormat.format(date)
     }
 
+    fun getTime(dateTime: LocalDateTime): String {
+        val timeZone = TimeZone.getTimeZone("GMT")
+        val time = dateTime.toInstant(ZoneOffset.UTC).toEpochMilli()
+        val simpleDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        simpleDateFormat.timeZone = timeZone
+        val date = Date(time)
+        return simpleDateFormat.format(date)
+    }
+
     fun compareTime(oldTime: String, newTime: String): Boolean {
         val oldLocalDateTime = LocalDateTime.parse(oldTime, DateTimeFormatter.ISO_DATE_TIME)
         val newLocalDateTime = LocalDateTime.parse(newTime, DateTimeFormatter.ISO_DATE_TIME)

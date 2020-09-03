@@ -48,10 +48,12 @@ import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PACKAGE
 import com.tencent.bkrepo.npm.constants.PKG_NAME
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
+import com.tencent.bkrepo.npm.constants.SHASUM
 import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.TIME
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
+import com.tencent.bkrepo.npm.exception.NpmCheckSumFailException
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
@@ -77,6 +79,9 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import java.io.IOException
 import java.io.InputStream
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Collections
 import java.util.stream.Collectors
 import kotlin.system.measureTimeMillis
 
@@ -375,6 +380,46 @@ class NpmLocalRepository : LocalRepository() {
         return cachePackageJson
     }
 
+    private fun comparePackageJson(remoteJson: JsonObject, failVersionSet: Set<String>): JsonObject? {
+        if (failVersionSet.isEmpty()) return remoteJson
+        val pkgName = remoteJson[NAME].asString
+        val remoteVersions = remoteJson.getAsJsonObject(VERSIONS)
+        val remoteVersionsSet = remoteVersions.keySet()
+        remoteVersionsSet.removeAll(failVersionSet)
+
+        val remoteDistTags = remoteJson.getAsJsonObject(DISTTAGS)
+        val remoteTimeJsons = remoteJson.getAsJsonObject(TIME)
+        val remoteLatest = remoteDistTags[LATEST].asString
+        // 将拉取的包的dist_tags迁移过来
+        val it = remoteDistTags.entrySet().iterator()
+            while (it.hasNext()){
+                val next = it.next()
+                if (failVersionSet.contains(next.value.asString)){
+                    it.remove()
+                    remoteTimeJsons.remove(next.value.asString)
+            }
+        }
+
+        if (!remoteTimeJsons.has(remoteLatest)){
+            remoteTimeJsons.remove(MODIFIED)
+            val dateList = remoteTimeJsons.entrySet().stream().map { LocalDateTime.parse(it.value.asString, DateTimeFormatter.ISO_DATE_TIME) }.collect(Collectors.toList())
+            val maxTime = Collections.max(dateList)
+            val latestTime = TimeUtil.getTime(maxTime)
+            remoteTimeJsons.entrySet().forEach {
+                if (it.value.asString == latestTime){
+                    remoteDistTags.addProperty(LATEST, it.key)
+                }
+            }
+            remoteTimeJsons.addProperty(MODIFIED, latestTime)
+        }
+        return if (remoteVersionsSet.isNotEmpty()) {
+            remoteJson
+        }else{
+            logger.warn("package [$pkgName] with all versions migration failed!")
+            null
+        }
+    }
+
     private fun installVersionAndTgzArtifact(
         context: ArtifactMigrateContext,
         remotePackageJson: JsonObject
@@ -383,38 +428,24 @@ class NpmLocalRepository : LocalRepository() {
         val migrationFailDataDetailInfo = MigrationFailDataDetailInfo(name, mutableSetOf())
         val versions = remotePackageJson.getAsJsonObject(VERSIONS)
         var count = 0
+        val totalSize = versions.keySet().size
 
-        val differentVersionSet: Set<String>
-        var cacheArtifact: InputStream? = null
-        getCacheNodeInfo(context)?.let {
-            cacheArtifact = getCacheArtifact(context)
-        }
-        differentVersionSet = if (cacheArtifact != null) {
-            val cachePackageJson = GsonUtils.transferInputStreamToJson(cacheArtifact!!)
-            compareVersions(remotePackageJson, cachePackageJson)
-        } else {
-            versions.keySet()
-        }
-        if (differentVersionSet.isEmpty()) {
-            logger.info("no different version were found in package [$name], return.")
-            return migrationFailDataDetailInfo
-        }
-        logger.info("different versions were found in package [$name] with $differentVersionSet")
-        // 只同步差异化的版本
-        differentVersionSet.forEach { version ->
+        // 每个版本进行比对同步
+        versions.keySet().forEach { version ->
             try {
                 measureTimeMillis {
                     val versionJson = versions.getAsJsonObject(version)
                     val tarball = versionJson.getAsJsonObject(DIST).get(TARBALL).asString
+                    val sha1 = versionJson.getAsJsonObject(DIST).get(SHASUM).asString
                     storeVersionArtifact(context, versionJson)
-                    storeTgzArtifact(context, tarball, name)
+                    storeTgzArtifact(context, tarball, name, sha1)
                 }.apply {
                     logger.info(
-                        "migrate npm package [$name] for version [$version] success, elapse $this ms.  process rate: [${++count}/${differentVersionSet.size}]"
+                        "migrate npm package [$name] for version [$version] success, elapse $this ms.  process rate: [${++count}/${totalSize}]"
                     )
                 }
             } catch (ignored: Exception) {
-                logger.warn("migrate package [$name] for version [$version] failed， message： ${ignored.message}")
+                logger.error("migrate package [$name] for version [$version] failed， message： ${ignored.message}")
                 // delete version json file
                 deleteVersionFile(context, name, version)
                 migrationFailDataDetailInfo.versionSet.add(VersionFailDetail(version, ignored.message))
@@ -437,13 +468,13 @@ class NpmLocalRepository : LocalRepository() {
         getCacheNodeInfo(context)?.let {
             cacheArtifact = getCacheArtifact(context)
         }
-        val newPackageJson = if (cacheArtifact != null) {
+        val newPackageJson = (if (cacheArtifact != null) {
             val cachePackageJson = GsonUtils.transferInputStreamToJson(cacheArtifact!!)
             // 对比合并package.json，去除掉迁移失败的版本
             addPackageVersion(cachePackageJson, remotePackageJson, failVersionSet)
         } else {
-            remotePackageJson
-        }
+            comparePackageJson(remotePackageJson, failVersionSet)
+        }) ?: return
         // store package json file
         val newArtifactFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(newPackageJson))
         putArtifact(context, newArtifactFile)
@@ -452,15 +483,6 @@ class NpmLocalRepository : LocalRepository() {
             context.userId, context.artifactInfo, newPackageJson, NpmOperationAction.MIGRATION
         )
         newArtifactFile.delete()
-    }
-
-    private fun compareVersions(remotePackageJson: JsonObject, cachePackageJson: JsonObject): Set<String> {
-        val remoteVersions = remotePackageJson.getAsJsonObject(VERSIONS)
-        val localVersions = cachePackageJson.getAsJsonObject(VERSIONS)
-        val remoteVersionsSet = remoteVersions.keySet()
-        val cacheVersionsSet = localVersions.keySet()
-        remoteVersionsSet.removeAll(cacheVersionsSet)
-        return remoteVersionsSet
     }
 
     private fun deleteVersionFile(context: ArtifactMigrateContext, name: String, version: String) {
@@ -493,7 +515,10 @@ class NpmLocalRepository : LocalRepository() {
         versionArtifactFile.delete()
     }
 
-    private fun storeTgzArtifact(context: ArtifactMigrateContext, tarball: String, name: String) {
+    /**
+     * 存储tgz文件，增加checksum校验
+     */
+    private fun storeTgzArtifact(context: ArtifactMigrateContext, tarball: String, name: String, fileSha1: String) {
         var response: Response? = null
         val tgzFilePath = tarball.substring(tarball.indexOf(name))
         context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
@@ -509,6 +534,10 @@ class NpmLocalRepository : LocalRepository() {
                 response = okHttpUtil.doGet(tarball)
                 if (checkResponse(response!!)) {
                     val artifactFile = createTempFile(response?.body()!!)
+                    val sha1 = artifactFile.getInputStream().sha1()
+                    if (fileSha1 != sha1){
+                        throw NpmCheckSumFailException("checksum file [$tgzFilePath] failed, can't be migrated.")
+                    }
                     putArtifact(context, artifactFile)
                     artifactFile.delete()
                 }
