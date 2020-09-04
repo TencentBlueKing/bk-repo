@@ -6,22 +6,31 @@ import kotlin.math.ceil
 
 @ApiModel("分页数据包装模型")
 data class Page<out T>(
-    @ApiModelProperty("总记录行数", required = true)
-    val count: Long,
-    @ApiModelProperty("第几页(0页开始)", required = true)
-    val page: Int,
-    @ApiModelProperty("每页多少条", required = true)
+    @ApiModelProperty("页码(从1页开始)")
+    val pageNumber: Int,
+    @ApiModelProperty("每页多少条")
     val pageSize: Int,
-    @ApiModelProperty("总共多少页", required = true)
-    val totalPages: Int,
-    @ApiModelProperty("数据", required = true)
+    @ApiModelProperty("总记录条数")
+    val totalRecords: Long,
+    @ApiModelProperty("总页数")
+    val totalPages: Long,
+    @ApiModelProperty("数据列表")
     val records: List<T>
 ) {
-    constructor(page: Int, pageSize: Int, count: Long, records: List<T>) : this(
-        count = count,
-        page = page,
+    constructor(pageNumber: Int, pageSize: Int, totalRecords: Long, records: List<T>) : this(
+        pageNumber = pageNumber,
         pageSize = pageSize,
-        totalPages = ceil(count * 1.0 / pageSize).toInt(),
+        totalRecords = totalRecords,
+        totalPages = ceil(totalRecords * 1.0 / pageSize).toLong(),
         records = records
     )
+
+    /**
+     * 兼容处理
+     */
+    @Deprecated("Will be removed", replaceWith = ReplaceWith("totalRecords"))
+    fun getCount(): Long = this.totalRecords
+
+    @Deprecated("Will be removed", replaceWith = ReplaceWith("pageNumber"))
+    fun getPage(): Int = this.pageNumber
 }

@@ -2,6 +2,7 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.path.PathUtils.formatFullPath
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.listener.event.metadata.MetadataDeletedEvent
 import com.tencent.bkrepo.repository.listener.event.metadata.MetadataSavedEvent
@@ -11,7 +12,6 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.service.MetadataService
 import com.tencent.bkrepo.repository.service.RepositoryService
-import com.tencent.bkrepo.repository.util.NodeUtils.formatFullPath
 import com.tencent.bkrepo.repository.util.QueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

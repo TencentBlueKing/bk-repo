@@ -5,6 +5,15 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.combinePath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.escapeRegex
+import com.tencent.bkrepo.common.artifact.path.PathUtils.formatFullPath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.formatPath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.isRoot
+import com.tencent.bkrepo.common.artifact.path.PathUtils.parseFullPath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
+import com.tencent.bkrepo.common.artifact.path.PathUtils.resolvePath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -30,16 +39,7 @@ import com.tencent.bkrepo.repository.service.FileReferenceService
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
-import com.tencent.bkrepo.repository.util.NodeUtils
-import com.tencent.bkrepo.repository.util.NodeUtils.combineFullPath
-import com.tencent.bkrepo.repository.util.NodeUtils.combinePath
-import com.tencent.bkrepo.repository.util.NodeUtils.escapeRegex
-import com.tencent.bkrepo.repository.util.NodeUtils.formatFullPath
-import com.tencent.bkrepo.repository.util.NodeUtils.formatPath
-import com.tencent.bkrepo.repository.util.NodeUtils.getName
-import com.tencent.bkrepo.repository.util.NodeUtils.getParentPath
-import com.tencent.bkrepo.repository.util.NodeUtils.isRootPath
-import com.tencent.bkrepo.repository.util.NodeUtils.parseFullPath
+import com.tencent.bkrepo.repository.util.Pages
 import com.tencent.bkrepo.repository.util.QueryHelper.nodeDeleteUpdate
 import com.tencent.bkrepo.repository.util.QueryHelper.nodeExpireDateUpdate
 import com.tencent.bkrepo.repository.util.QueryHelper.nodeListCriteria
@@ -49,7 +49,6 @@ import com.tencent.bkrepo.repository.util.QueryHelper.nodeQuery
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -78,7 +77,6 @@ class NodeServiceImpl : AbstractService(), NodeService {
 
     @Autowired
     private lateinit var storageService: StorageService
-
 
     /**
      * 查询节点详情
@@ -155,22 +153,21 @@ class NodeServiceImpl : AbstractService(), NodeService {
         projectId: String,
         repoName: String,
         path: String,
-        page: Int,
-        size: Int,
+        pageNumber: Int,
+        pageSize: Int,
         includeFolder: Boolean,
         includeMetadata: Boolean,
         deep: Boolean
     ): Page<NodeInfo> {
-        page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
-        size.takeIf { it in 0..LIST_THRESHOLD } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
+        pageNumber.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageNumber")
+        pageSize.takeIf { it in 0..LIST_THRESHOLD } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageSize")
         repositoryService.checkRepository(projectId, repoName)
-
         val query = nodeListQuery(projectId, repoName, path, includeFolder, includeMetadata, deep)
-        val count = nodeDao.count(query)
-        val pageNumber = if (page <= 0) 1 else page
-        val listData = nodeDao.find(query.with(PageRequest.of(pageNumber - 1, size))).map { convert(it)!! }
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val totalRecords = nodeDao.count(query)
+        val records = nodeDao.find(query.with(pageRequest)).map { convert(it)!! }
 
-        return Page(page, size, count, listData)
+        return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
     /**
@@ -216,12 +213,12 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 }
             }
             // 判断父目录是否存在，不存在先创建
-            mkdirs(projectId, repoName, getParentPath(fullPath), operator)
+            mkdirs(projectId, repoName, resolvePath(fullPath), operator)
             // 创建节点
             val node = TNode(
                 folder = folder,
-                path = getParentPath(fullPath),
-                name = getName(fullPath),
+                path = resolvePath(fullPath),
+                name = resolveName(fullPath),
                 fullPath = fullPath,
                 expireDate = if (folder) null else parseExpireDate(expires),
                 size = if (folder) 0 else size ?: 0,
@@ -231,9 +228,9 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 repoName = repoName,
                 metadata = MetadataServiceImpl.convert(metadata),
                 createdBy = createdBy ?: operator,
-                createdDate = createdDate?: LocalDateTime.now(),
+                createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
-                lastModifiedDate = lastModifiedDate?: LocalDateTime.now()
+                lastModifiedDate = lastModifiedDate ?: LocalDateTime.now()
             )
             return node.apply { doCreate(this, repo) }
                 .also { publishEvent(NodeCreatedEvent(createRequest)) }
@@ -248,9 +245,9 @@ class NodeServiceImpl : AbstractService(), NodeService {
             projectId = projectId,
             repoName = repoName,
             folder = true,
-            path = NodeUtils.FILE_SEPARATOR,
+            path = StringPool.ROOT,
             name = StringPool.EMPTY,
-            fullPath = NodeUtils.FILE_SEPARATOR,
+            fullPath = StringPool.ROOT,
             size = 0,
             createdBy = operator,
             createdDate = LocalDateTime.now(),
@@ -293,10 +290,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
         updateRequest.apply {
             val fullPath = formatFullPath(this.fullPath)
             repositoryService.checkRepository(projectId, repoName)
-            val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(
-                ArtifactMessageCode.NODE_NOT_FOUND,
-                fullPath
-            )
+            val node = queryNode(projectId, repoName, fullPath)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
             val selfUpdate = nodeExpireDateUpdate(parseExpireDate(expires), operator)
             nodeDao.updateFirst(selfQuery, selfUpdate)
@@ -352,8 +347,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
     private fun doRename(node: TNode, newFullPath: String, operator: String) {
         val projectId = node.projectId
         val repoName = node.repoName
-        val newPath = getParentPath(newFullPath)
-        val newName = getName(newFullPath)
+        val newPath = resolvePath(newFullPath)
+        val newName = resolveName(newFullPath)
 
         // 检查新路径是否被占用
         if (exist(projectId, repoName, newFullPath)) {
@@ -419,9 +414,9 @@ class NodeServiceImpl : AbstractService(), NodeService {
      */
     private fun mkdirs(projectId: String, repoName: String, path: String, createdBy: String) {
         if (!exist(projectId, repoName, path)) {
-            val parentPath = getParentPath(path)
-            val name = getName(path)
-            path.takeUnless { isRootPath(it) }?.run { mkdirs(projectId, repoName, parentPath, createdBy) }
+            val parentPath = resolvePath(path)
+            val name = resolveName(path)
+            path.takeUnless { isRoot(it) }?.run { mkdirs(projectId, repoName, parentPath, createdBy) }
             val node = TNode(
                 folder = true,
                 path = parentPath,
@@ -485,8 +480,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 }
                 val destRootNodePath = if (destNode == null) {
                     // 目录 -> 不存在的目录
-                    val path = getParentPath(destFullPath)
-                    val name = getName(destFullPath)
+                    val path = resolvePath(destFullPath)
+                    val name = resolveName(destFullPath)
                     // 创建dest父目录
                     mkdirs(destProjectId, destRepoName, path, operator)
                     // 操作节点
@@ -515,8 +510,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 }
             } else {
                 // 文件 ->
-                val destPath = if (destNode?.folder == true) formatPath(destNode.fullPath) else getParentPath(destFullPath)
-                val destName = if (destNode?.folder == true) srcNode.name else getName(destFullPath)
+                val destPath = if (destNode?.folder == true) formatPath(destNode.fullPath) else resolvePath(destFullPath)
+                val destName = if (destNode?.folder == true) srcNode.name else resolveName(destFullPath)
                 // 创建dest父目录
                 mkdirs(destProjectId, destRepoName, destPath, operator)
                 moveOrCopyNode(srcNode, destRepository, srcCredentials, destCredentials, destPath, destName, request, operator)
@@ -612,7 +607,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
      * 根据有效天数，计算到期时间
      */
     private fun parseExpireDate(expireDays: Long?): LocalDateTime? {
-        return expireDays?.takeIf { it > 0 }?.run { LocalDateTime.now().plusDays(this)  }
+        return expireDays?.takeIf { it > 0 }?.run { LocalDateTime.now().plusDays(this) }
     }
 
     companion object {

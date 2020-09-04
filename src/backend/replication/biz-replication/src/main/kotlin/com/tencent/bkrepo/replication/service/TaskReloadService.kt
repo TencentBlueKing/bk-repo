@@ -54,7 +54,9 @@ class TaskReloadService(
                 newTaskCount += 1
             }
         }
-        logger.debug("Success to reload replication task, total: $totalCount, new: $newTaskCount, expired: $expiredTaskCount")
+        if (logger.isDebugEnabled) {
+            logger.debug("Success to reload replication task, total: $totalCount, new: $newTaskCount, expired: $expiredTaskCount")
+        }
     }
 
     private fun createJobDetail(task: TReplicationTask): JobDetail {

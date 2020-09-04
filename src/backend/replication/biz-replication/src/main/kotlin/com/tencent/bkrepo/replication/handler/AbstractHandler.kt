@@ -20,10 +20,9 @@ abstract class AbstractHandler {
 
     fun convertReplicationRepo(localRepoInfo: RepositoryInfo, remoteRepoName: String? = null): ReplicationRepoDetail {
         return with(localRepoInfo) {
-            val fileCount = repoDataService.countFileNode(this)
             ReplicationRepoDetail(
-                localRepoInfo = this,
-                fileCount = fileCount,
+                localRepoDetail = repoDataService.getRepositoryDetail(projectId, name)!!,
+                fileCount = repoDataService.countFileNode(this),
                 remoteRepoName = remoteRepoName ?: this.name
             )
         }

@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
@@ -10,10 +11,9 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.repository.util.NodeUtils.ROOT_PATH
 
 /**
- * 节点服务
+ * 节点服务接口
  */
 interface NodeService {
     /**
@@ -29,7 +29,7 @@ interface NodeService {
     /**
      * 查询文件节点数量
      */
-    fun countFileNode(projectId: String, repoName: String, path: String = ROOT_PATH): Long
+    fun countFileNode(projectId: String, repoName: String, path: String = ROOT): Long
 
     /**
      * 列表查询节点
@@ -50,8 +50,8 @@ interface NodeService {
         projectId: String,
         repoName: String,
         path: String,
-        page: Int,
-        size: Int,
+        pageNumber: Int,
+        pageSize: Int,
         includeFolder: Boolean = true,
         includeMetadata: Boolean = false,
         deep: Boolean = false

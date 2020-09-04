@@ -10,7 +10,6 @@ import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
 import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.repository.RepoRepository
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import com.tencent.bkrepo.repository.service.RepositoryService
@@ -39,9 +38,6 @@ class StorageInstanceMigrationJob {
     private lateinit var repositoryService: RepositoryService
 
     @Autowired
-    private lateinit var repoRepository: RepoRepository
-
-    @Autowired
     private lateinit var fileReferenceService: FileReferenceService
 
     @Autowired
@@ -55,10 +51,10 @@ class StorageInstanceMigrationJob {
 
     fun migrate(projectId: String, repoName: String, destStorageKey: String) {
         logger.info("Start to migrate storage instance, projectId: $projectId, repoName: $repoName, dest key: $destStorageKey.")
-        val repository = repositoryService.queryRepository(projectId, repoName)
+        val repository = repositoryService.getRepoDetail(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
         // 限制只能由默认storage迁移
-        val srcStorageKey = repository.credentialsKey
+        val srcStorageKey = repository.storageCredentials?.key
         if (srcStorageKey != null) {
             throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
         }
@@ -78,8 +74,7 @@ class StorageInstanceMigrationJob {
         taskAsyncExecutor.submit {
             try {
                 // 修改repository配置，保证之后上传的文件直接保存到新存储实例中，文件下载时，当前实例找不到的情况下会去默认存储找
-                repository.credentialsKey = destStorageKey
-                repoRepository.save(repository)
+                repositoryService.updateStorageCredentialsKey(projectId, repoName, destStorageKey)
 
                 // 迁移老文件
                 migrateOldFile(projectId, repoName, startTime, srcBucket, srcStorageKey, destStorageKey, srcCosClient, destCosClient)

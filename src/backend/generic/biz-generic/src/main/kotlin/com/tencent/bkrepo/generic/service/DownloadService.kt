@@ -2,8 +2,8 @@ package com.tencent.bkrepo.generic.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import org.springframework.stereotype.Service
@@ -17,7 +17,7 @@ class DownloadService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun download(artifactInfo: GenericArtifactInfo) {
         val context = ArtifactDownloadContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = ArtifactContextHolder.getRepository()
         repository.download(context)
     }
 }

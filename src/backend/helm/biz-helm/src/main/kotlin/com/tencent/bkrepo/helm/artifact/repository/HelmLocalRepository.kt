@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component
 @Component
 class HelmLocalRepository : LocalRepository() {
 
-    override fun determineArtifactName(context: ArtifactTransferContext): String {
+    override fun determineArtifactName(context: ArtifactContext): String {
         val fileName = context.artifactInfo.artifactUri.trimStart('/')
         return if (StringUtils.isBlank(fileName)) INDEX_YAML else fileName
     }
@@ -33,9 +33,9 @@ class HelmLocalRepository : LocalRepository() {
         // 判断是否是强制上传
         val isForce = context.request.getParameter("force")?.let { true } ?: false
         context.contextAttributes["force"] = isForce
-        val repositoryInfo = context.repositoryInfo
-        val projectId = repositoryInfo.projectId
-        val repoName = repositoryInfo.name
+        val repositoryDetail = context.repositoryDetail
+        val projectId = repositoryDetail.projectId
+        val repoName = repositoryDetail.name
         context.artifactFileMap.entries.forEach { (name, _) ->
             val fullPath = context.contextAttributes[name + "_full_path"] as String
             val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
@@ -58,7 +58,7 @@ class HelmLocalRepository : LocalRepository() {
     }
 
     private fun getNodeCreateRequest(name: String, context: ArtifactUploadContext): NodeCreateRequest {
-        val repositoryInfo = context.repositoryInfo
+        val repositoryDetail = context.repositoryDetail
         val artifactFile = context.getArtifactFile(name) ?: context.getArtifactFile()
         val fileSha256Map = context.contextAttributes[ATTRIBUTE_SHA256MAP] as Map<*, *>
         val fileMd5Map = context.contextAttributes[ATTRIBUTE_MD5MAP] as Map<*, *>
@@ -67,8 +67,8 @@ class HelmLocalRepository : LocalRepository() {
         val fullPath = context.contextAttributes[name + "_full_path"] as String
         val isForce = context.contextAttributes["force"] as Boolean
         return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
+            projectId = repositoryDetail.projectId,
+            repoName = repositoryDetail.name,
             folder = false,
             fullPath = fullPath,
             size = artifactFile.getSize(),
@@ -104,9 +104,9 @@ class HelmLocalRepository : LocalRepository() {
     }
 
     private fun onSearch(context: ArtifactSearchContext): ArtifactInputStream? {
-        val repositoryInfo = context.repositoryInfo
-        val projectId = repositoryInfo.projectId
-        val repoName = repositoryInfo.name
+        val repositoryDetail = context.repositoryDetail
+        val projectId = repositoryDetail.projectId
+        val repoName = repositoryDetail.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
         val node = nodeClient.detail(projectId, repoName, fullPath).data
         if (node == null || node.folder) return null
@@ -116,9 +116,9 @@ class HelmLocalRepository : LocalRepository() {
     }
 
     override fun remove(context: ArtifactRemoveContext) {
-        val repositoryInfo = context.repositoryInfo
-        val projectId = repositoryInfo.projectId
-        val repoName = repositoryInfo.name
+        val repositoryDetail = context.repositoryDetail
+        val projectId = repositoryDetail.projectId
+        val repoName = repositoryDetail.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
         val userId = context.userId
         val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!

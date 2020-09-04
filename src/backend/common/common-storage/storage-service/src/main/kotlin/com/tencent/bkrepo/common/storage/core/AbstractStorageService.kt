@@ -50,18 +50,19 @@ abstract class AbstractStorageService : StorageService {
 
     private val healthCheckExecutor = Executors.newSingleThreadExecutor()
 
-    override fun store(digest: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?) {
+    override fun store(digest: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?): Int {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
         try {
-            if (doExist(path, digest, credentials)) {
+            return if (doExist(path, digest, credentials)) {
                 logger.info("Artifact file [$digest] exists, skip store.")
-                return
+                0
             } else {
                 val size = artifactFile.getSize()
                 val nanoTime = measureNanoTime { doStore(path, digest, artifactFile, credentials) }
                 val throughput = Throughput(size, nanoTime)
                 logger.info("Success to store artifact file [$digest], $throughput.")
+                1
             }
         } catch (exception: Exception) {
             logger.error("Failed to store artifact file [$digest].", exception)

@@ -1,753 +1,537 @@
-## Repository接口说明
+## Repository仓库接口说明
 
-Repository接口使用统一接口协议，公共部分请参照[通用接口协议说明](./common.md)
+Repository仓库接口使用统一接口协议，公共部分请参照[通用接口协议说明](./common.md)
 
-### 项目接口
+Repository仓库枚举值与配置部分请参考末尾部分
 
-- 暂未提供用户类接口
+### 创建仓库
 
-### 仓库接口
+- API: POST /repository/api/repo/create
 
-- 暂未提供用户类接口
+- API 名称: create_repo
 
-### 节点接口
-
-#### 查询节点详情
-
-- API: GET /repository/api/node/{project}/{repo}/{path}
-- API 名称: query_node_detail
 - 功能说明：
-  - 中文：查询节点详情
-  - English：query node detail
+
+  - 中文：创建仓库
+    - English：create repo
 
 - 请求体
-  此接口请求体为空
+
+  ```json
+  {
+    "projectId": "test",
+    "name": "generic-local",
+    "type": "GENERIC",
+    "category": "COMPOSITE",
+    "public": false,
+    "description": "repo description",
+    "configuration": null,
+    "storageCredentialsKey": null
+  }
+  ```
 
 - 请求字段说明
 
-| 字段    | 类型   | 是否必须 | 默认值 | 说明     | Description  |
-| ------- | ------ | -------- | ------ | -------- | ------------ |
-| project | string | 是       | 无     | 项目名称 | project name |
-| repo    | string | 是       | 无     | 仓库名称 | repo name    |
-| path    | string | 是       | 无     | 完整路径 | full path    |
+  | 字段                  | 类型    | 是否必须 | 默认值    | 说明               | Description             |
+  | --------------------- | ------- | -------- | --------- | ------------------ | ----------------------- |
+  | projectId             | string  | 是       | 无        | 项目名称           | project name            |
+  | name                  | string  | 是       | 无        | 仓库名称           | repo name               |
+  | type                  | string  | 是       | 无        | 仓库类型，枚举值   | repo type               |
+  | category              | string  | 否       | COMPOSITE | 仓库类别，枚举值   | repo category           |
+  | public                | boolean | 否       | false     | 是否公开           | is public repo          |
+  | description           | string  | 否       | 无        | 仓库描述           | repo description        |
+  | configuration         | object  | 否       | 无        | 仓库配置，参考后文 | repo configuration      |
+  | storageCredentialsKey | string  | 否       | 无        | 存储凭证key        | storage credentials key |
 
 - 响应体
 
-``` json
-{
-  "code": 0,
-  "message": null,
-  "data": {
-    "nodeInfo": {
-      "createdBy" : "admin",
-      "createdDate" : "2020-07-27T16:02:31.394",
-      "lastModifiedBy" : "admin",
-      "lastModifiedDate" : "2020-07-27T16:02:31.394",
-      "folder" : false,
-      "path" : "/",
-      "name" : "test.json",
-      "fullPath" : "/test.json",
-      "size" : 34,
-      "sha256" : "6a7983009447ecc725d2bb73a60b55d0ef5886884df0ffe3199f84b6df919895",
-      "md5" : "2947b3932900d4534175d73964ec22ef",
-      "projectId" : "test",
-      "repoName" : "generic-local"
-    },
-    "metadata": {
-      "key": "value"
-    }
-  },
-  "traceId": ""
-}
-```
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": ""
+  }
+  ```
 
 - data字段说明
 
-| 字段     | 类型   | 说明                        | Description      |
-| -------- | ------ | --------------------------- | ---------------- |
-| nodeInfo | object | 节点信息                    | node information |
-| metadata | object | 节点元数据，key-value键值对 | node metadata    |
+  请求成功无返回数据
 
-- nodeInfo字段说明
 
-| 字段             | 类型   | 说明         | Description          |
-| ---------------- | ------ | ------------ | -------------------- |
-| createdBy        | string | 创建者       | create user          |
-| createdDate      | string | 创建时间     | create time          |
-| lastModifiedBy   | string | 上次修改者   | last modify user     |
-| lastModifiedDate | string | 上次修改时间 | last modify time     |
-| folder           | bool   | 是否为文件夹 | is folder            |
-| path             | string | 节点目录     | node path            |
-| name             | string | 节点名称     | node name            |
-| fullPath         | string | 节点完整路径 | node full path       |
-| size             | long   | 节点大小     | file size            |
-| sha256           | string | 节点sha256   | file sha256          |
-| md5              | string | 节点md5      | file md5 checksum    |
-| projectId        | string | 节点所属项目 | node project id      |
-| repoName         | string | 节点所属仓库 | node repository name |
 
-#### 分页查询节点
+### 更新仓库信息
 
-- API: GET /repository/api/node/page/{project}/{repo}/{path}?page=0&size=20&includeFolder=true&deep=false
-- API 名称: list_node_page
+- API: POST /repository/api/repo/update/{projectId}/{repoName}
+
+- API 名称: update_repo
+
 - 功能说明：
-  - 中文：分页查询节点
-  - English：list node page
+
+  - 中文：更新仓库信息
+  - English：update repo
+
 - 请求体
-  此接口请求体为空
+
+  ```json
+  {
+    "public": false,
+    "description": "repo description",
+    "configuration": null
+  }
+  ```
+
 - 请求字段说明
 
-| 字段          | 类型    | 是否必须 | 默认值 | 说明               | Description       |
-| ------------- | ------- | -------- | ------ | ------------------ | ----------------- |
-| project       | string  | 是       | 无     | 项目名称           | project name      |
-| repo          | string  | 是       | 无     | 仓库名称           | repo name         |
-| path          | string  | 是       | 无     | 完整路径           | full path         |
-| page          | int     | 是       | 0      | 当前页             | current page      |
-| size          | int     | 是       | 20     | 分页大小           | page size         |
-| includeFolder | boolean | 否       | true   | 是否包含目录       | is include folder |
-| deep          | boolean | 否       | false  | 是否查询子目录节点 | query deep node   |
+  | 字段          | 类型                    | 是否必须 | 默认值 | 说明                             | Description        |
+  | ------------- | ----------------------- | -------- | ------ | -------------------------------- | ------------------ |
+  | projectId     | string                  | 是       | 无     | 项目名称                         | project name       |
+  | repoName      | string                  | 是       | 无     | 仓库名称                         | repo name          |
+  | public        | boolean                 | 否       | 无     | 是否公开。null则不修改           | is public repo     |
+  | description   | string                  | 否       | 无     | 仓库描述。null则不修改           | repo description   |
+  | configuration | RepositoryConfiguration | 否       | 无     | 仓库配置，参考后文。null则不修改 | repo configuration |
 
 - 响应体
 
-```json
-{
-  "code": 0,
-  "message": null,
-  "data": {
-    "count": 18,
-    "page": 0,
-    "pageSize": 1,
-    "totalPages": 18,
-    "records": [
-      {
-        "createdBy" : "admin",
-        "createdDate" : "2020-07-27T16:02:31.394",
-        "lastModifiedBy" : "admin",
-        "lastModifiedDate" : "2020-07-27T16:02:31.394",
-        "folder" : false,
-        "path" : "/",
-        "name" : "test.json",
-        "fullPath" : "/test.json",
-        "size" : 34,
-        "sha256" : "6a7983009447ecc725d2bb73a60b55d0ef5886884df0ffe3199f84b6df919895",
-        "md5" : "2947b3932900d4534175d73964ec22ef",
-        "projectId" : "test",
-        "repoName" : "generic-local"
-      }
-    ]
-  },
-  "traceId": ""
-}
-```
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  请求成功无返回数据
+
+
+
+### 删除仓库
+
+- API: DELETE /repository/api/repo/delete/{projectId}/{repoName}?forced=false
+
+- API 名称: delete_repo
+
+- 功能说明：
+
+  - 中文：删除仓库
+  - English：delete repo
+
+- 请求体
+
+  ```json
+  {
+    "public": false,
+    "description": "repo description",
+    "configuration": null
+  }
+  ```
+
+- 请求字段说明
+
+  | 字段      | 类型    | 是否必须 | 默认值 | 说明                                                         | Description          |
+  | --------- | ------- | -------- | ------ | ------------------------------------------------------------ | -------------------- |
+  | projectId | string  | 是       | 无     | 项目名称                                                     | project name         |
+  | repoName  | string  | 是       | 无     | 仓库名称                                                     | repo name            |
+  | forced    | boolean | 否       | false  | 是否强制删除。如果为false，当仓库中存在文件时，将无法删除仓库 | force to delete repo |
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  请求成功无返回数据
+
+
+
+### 查询仓库信息
+
+- API: GET /repository/api/repo/info/{projectId}/{repoName}/{type}
+
+- API 名称: get_repo_info
+
+- 功能说明：
+
+  - 中文：查询仓库详情
+  - English：get repo info
+
+- 请求体
+
+  此接口无请求体
+
+- 请求字段说明
+
+  | 字段      | 类型   | 是否必须 | 默认值 | 说明     | Description  |
+  | --------- | ------ | -------- | ------ | -------- | ------------ |
+  | projectId | string | 是       | 无     | 项目名称 | project name |
+  | repoName  | string | 是       | 无     | 仓库名称 | repo name    |
+  | type      | string | 否       | 无     | 仓库类型 | repo type    |
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": {
+      "projectId" : "test",
+      "name" : "local",
+      "type" : "GENERIC",
+      "category" : "LOCAL",
+      "public" : false,
+      "description" : "",
+      "configuration": {},
+      "createdBy" : "system",
+      "createdDate" : "2020-03-16T12:13:03.371",
+      "lastModifiedBy" : "system",
+      "lastModifiedDate" : "2020-03-16T12:13:03.371"
+    },
+    "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  | 字段             | 类型     | 说明                       | Description        |
+  | ---------------- | -------- | -------------------------- | ------------------ |
+  | projectId        | string   | 项目id                     | project id         |
+  | name             | string   | 仓库名称                   | repo name          |
+  | type             | string   | 仓库类型                   | repo type          |
+  | category         | string   | 仓库类别                   | repo category      |
+  | public           | boolean  | 是否公开项目               | is public repo     |
+  | description      | string   | 仓库描述                   | repo description   |
+  | configuration    | [object] | 仓库配置，参考仓库配置介绍 | repo configuration |
+  | createdBy        | string   | 创建者                     | create user        |
+  | createdDate      | string   | 创建时间                   | create time        |
+  | lastModifiedBy   | string   | 上次修改者                 | last modify user   |
+  | lastModifiedDate | string   | 上次修改时间               | last modify time   |
+
+
+
+### 校验仓库是否存在
+
+- API: GET /repository/api/repo/exist/{projectId}/{repoName}
+
+- API 名称: check_repo_exist
+
+- 功能说明：
+
+  - 中文：校验仓库是否存在
+  - English：check repo exist
+
+- 请求体
+
+  此接口无请求体
+
+- 请求字段说明
+
+  | 字段      | 类型   | 是否必须 | 默认值 | 说明     | Description  |
+  | --------- | ------ | -------- | ------ | -------- | ------------ |
+  | projectId | string | 是       | 无     | 项目名称 | project name |
+  | repoName  | string | 是       | 无     | 仓库名称 | repo name    |
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": true,
+    "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  | 字段 | 类型    | 说明         | Description       |
+  | ---- | ------- | ------------ | ----------------- |
+  | data | boolean | 仓库是否存在 | repo exist or not |
+
+
+
+### 分页查询仓库
+
+- API: GET /repository/api/repo/page/{projectId}/{pageNumber}/{pageSize}?name=local&type=GENERIC
+
+- API 名称: list_repo_page
+
+- 功能说明：
+
+  - 中文：分页查询仓库
+  - English：list repo page
+
+- 请求体
+
+  此接口无请求体
+
+- 请求字段说明
+
+  | 字段      | 类型   | 是否必须 | 默认值 | 说明                       | Description  |
+  | --------- | ------ | -------- | ------ | -------------------------- | ------------ |
+  | projectId | string | 是       | 无     | 项目名称                   | project name |
+  | pageNumber | int    | 是       | 无     | 当前页                     | page number |
+  | pageSize  | int    | 是       | 无     | 分页数量                   | page size    |
+  | name      | string | 否       | 无     | 仓库名称，支持前缀模糊匹配 | repo name    |
+  | type      | string | 否       | 无     | 仓库类型，枚举值           | repo type    |
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": {
+      "pageNumber": 0,
+      "pageSize": 1,
+      "totalRecords": 18,
+      "totalPages": 2,
+      "records": [
+        {
+          "projectId" : "test",
+          "name" : "local",
+          "type" : "GENERIC",
+          "category" : "LOCAL",
+          "public" : false,
+          "description" : "",
+          "createdBy" : "system",
+          "createdDate" : "2020-03-16T12:13:03.371",
+          "lastModifiedBy" : "system",
+          "lastModifiedDate" : "2020-03-16T12:13:03.371"
+        }
+      ]
+    },
+    "traceId": ""
+  }
+  ```
 
 - record字段说明
 
-| 字段             | 类型   | 说明         | Description          |
-| ---------------- | ------ | ------------ | -------------------- |
-| createdBy        | string | 创建者       | create user          |
-| createdDate      | string | 创建时间     | create time          |
-| lastModifiedBy   | string | 上次修改者   | last modify user     |
-| lastModifiedDate | string | 上次修改时间 | last modify time     |
-| folder           | bool   | 是否为文件夹 | is folder            |
-| path             | string | 节点目录     | node path            |
-| name             | string | 节点名称     | node name            |
-| fullPath         | string | 节点完整路径 | node full path       |
-| size             | long   | 节点大小     | file size            |
-| sha256           | string | 节点sha256   | file sha256          |
-| md5              | string | 节点md5      | file md5 checksum    |
-| projectId        | string | 节点所属项目 | node project id      |
-| repoName         | string | 节点所属仓库 | node repository name |
+  | 字段             | 类型    | 说明         | Description      |
+  | ---------------- | ------- | ------------ | ---------------- |
+  | projectId        | string  | 项目id       | project id       |
+  | name             | string  | 仓库名称     | repo name        |
+  | type             | string  | 仓库类型     | repo type        |
+  | category         | string  | 仓库类别     | repo category    |
+  | public           | boolean | 是否公开项目 | is public repo   |
+  | description      | string  | 仓库描述     | repo description |
+  | createdBy        | string  | 创建者       | create user      |
+  | createdDate      | string  | 创建时间     | create time      |
+  | lastModifiedBy   | string  | 上次修改者   | last modify user |
+  | lastModifiedDate | string  | 上次修改时间 | last modify time |
 
-#### 创建目录
 
-- API: POST /repository/api/node/{project}/{repo}/{path}
-- API 名称: mkdir
+
+### 列表查询仓库
+
+- API: GET /repository/api/repo/list/{projectId}?name=local&type=GENERIC
+
+- API 名称: list_repo
+
 - 功能说明：
-  - 中文：创建目录节点
-  - English：create directory node
-- 请求体
-  此接口请求体为空
-- 请求字段说明
 
-| 字段    | 类型   | 是否必须 | 默认值 | 说明     | Description  |
-| ------- | ------ | -------- | ------ | -------- | ------------ |
-| project | string | 是       | 无     | 项目名称 | project name |
-| repo    | string | 是       | 无     | 仓库名称 | repo name    |
-| path    | string | 是       | 无     | 完整路径 | full path    |
+  - 中文：列表查询仓库
+  - English：list repo
 
-- 响应体
-
-```json
-{
-  "code": 0,
-  "message": null,
-  "data": null,
-  "traceId": ""
-}
-```
-
-- data字段说明
-
-  请求成功无返回数据
-
-#### 删除节点
-
-- API: DELETE /repository/api/node/{project}/{repo}/{path}
-- API 名称: delete_node
-- 功能说明：
-  - 中文：删除节点，同时支持删除目录和文件节点
-  - English：delete node
-- 请求体
-  此接口请求体为空
-- 请求字段说明
-
-| 字段    | 类型   | 是否必须 | 默认值 | 说明     | Description  |
-| ------- | ------ | -------- | ------ | -------- | ------------ |
-| project | string | 是       | 无     | 项目名称 | project name |
-| repo    | string | 是       | 无     | 仓库名称 | repo name    |
-| path    | string | 是       | 无     | 完整路径 | full path    |
-
-- 响应体
-
-```json
-{
-  "code": 0,
-  "message": null,
-  "data": null,
-  "traceId": ""
-}
-```
-
-- data字段说明
-
-  请求成功无返回数据
-
-#### 更新节点
-
-- API: POST /repository/api/node/update
-- API 名称: update_node
-- 功能说明：
-  - 中文：更新节点信息，目前支持修改文件过期时间
-  - English：update node info
 - 请求体
 
-```json
-{
-  "projectId": "",
-  "repoName": "",
-  "fullPath": "",
-  "expires": 0
-}
-```
+  此接口无请求体
 
 - 请求字段说明
 
-| 字段      | 类型   | 是否必须 | 默认值 | 说明                            | Description  |
-| --------- | ------ | -------- | ------ | ------------------------------- | ------------ |
-| projectId | string | 是       | 无     | 项目名称                        | project name |
-| repoName  | string | 是       | 无     | 仓库名称                        | repo name    |
-| fullPath  | string | 是       | 无     | 完整路径                        | full path    |
-| expires   | long   | 否       | 0      | 过期时间，单位天(0代表永久保存) | expires day  |
+  | 字段      | 类型   | 是否必须 | 默认值 | 说明                       | Description  |
+  | --------- | ------ | -------- | ------ | -------------------------- | ------------ |
+  | projectId | string | 是       | 无     | 项目名称                   | project name |
+  | name      | string | 否       | 无     | 仓库名称，支持前缀模糊匹配 | repo name    |
+  | type      | string | 否       | 无     | 仓库类型，枚举值           | repo type    |
 
 - 响应体
 
-```json
-{
-  "code": 0,
-  "message": null,
-  "data": null,
-  "traceId": ""
-}
-```
-
-- data字段说明
-
-  请求成功无返回数据
-
-#### 重命名节点
-
-- API: POST /repository/api/node/rename
-- API 名称: rename_node
-- 功能说明：
-  - 中文：重命名节点
-  - English：rename node
-- 请求体
-
-```json
-{
-  "projectId": "",
-  "repoName": "",
-  "fullPath": "",
-  "expires": 0
-}
-```
-
-- 请求字段说明
-
-| 字段        | 类型   | 是否必须 | 默认值 | 说明         | Description  |
-| ----------- | ------ | -------- | ------ | ------------ | ------------ |
-| projectId   | string | 是       | 无     | 项目名称     | project name |
-| repoName    | string | 是       | 无     | 仓库名称     | repo name    |
-| fullPath    | string | 是       | 无     | 完整路径     | full path    |
-| newFullPath | string | 是       | 无     | 新的完整路径 | expires day  |
-
-- 响应体
-
-```json
-{
-  "code": 0,
-  "message": null,
-  "data": null,
-  "traceId": ""
-}
-```
-
-- data字段说明
-
-  请求成功无返回数据
-
-#### 移动节点
-
-- API: POST /repository/api/node/move
-- API 名称: move_node
-- 功能说明：
-  - 中文：移动节点
-  - English：move node
-- 请求体
-
-```json
-{
-  "srcProjectId": "",
-  "srcRepoName": "",
-  "srcFullPath": "",
-  "destProjectId": "",
-  "destRepoName": "",
-  "destFullPath": "",
-  "overwrite": false
-}
-```
-
-- 请求字段说明
-
-| 字段          | 类型    | 是否必须 | 默认值 | 说明                         | Description          |
-| ------------- | ------- | -------- | ------ | ---------------------------- | -------------------- |
-| srcProjectId  | string  | 是       | 无     | 源项目名称                   | src project name     |
-| srcRepoName   | string  | 是       | 无     | 源仓库名称                   | src repo name        |
-| srcFullPath   | string  | 是       | 无     | 源完整路径                   | src full path        |
-| destProjectId | string  | 否       | null   | 目的项目名称，null表示源项目 | dest project name    |
-| destRepoName  | string  | 否       | null   | 目的仓库名称，null表示源仓库 | dest repo name       |
-| destFullPath  | string  | 是       | 无     | 目的完整路径                 | dest full path       |
-| overwrite     | boolean | 否       | false  | 同名文件是否覆盖             | overwrite  same node |
-
-- 响应体
-
-```json
-{
-  "code": 0,
-  "message": null,
-  "data": null,
-  "traceId": ""
-}
-```
-
-- data字段说明
-
-  请求成功无返回数据
-
-#### 拷贝节点
-
-- API: POST /repository/api/node/copy
-- API 名称: copy_node
-- 功能说明：
-  - 中文：拷贝节点
-  - English：copy node
-- 请求体
-
-```json
-{
-  "srcProjectId": "",
-  "srcRepoName": "",
-  "srcFullPath": "",
-  "destProjectId": "",
-  "destRepoName": "",
-  "destFullPath": "",
-  "overwrite": false
-}
-```
-
-- 请求字段说明
-
-| 字段          | 类型    | 是否必须 | 默认值 | 说明                         | Description          |
-| ------------- | ------- | -------- | ------ | ---------------------------- | -------------------- |
-| srcProjectId  | string  | 是       | 无     | 源项目名称                   | src project name     |
-| srcRepoName   | string  | 是       | 无     | 源仓库名称                   | src repo name        |
-| srcFullPath   | string  | 是       | 无     | 源完整路径                   | src full path        |
-| destProjectId | string  | 否       | null   | 目的项目名称，null表示源项目 | dest project name    |
-| destRepoName  | string  | 否       | null   | 目的仓库名称，null表示源仓库 | dest repo name       |
-| destFullPath  | string  | 是       | 无     | 目的完整路径                 | dest full path       |
-| overwrite     | boolean | 否       | false  | 同名文件是否覆盖             | overwrite  same node |
-
-- 响应体
-
-```json
-{
-  "code": 0,
-  "message": null,
-  "data": null,
-  "traceId": ""
-}
-```
-
-- data字段说明
-
-  请求成功无返回数据
-
-#### 统计节点大小信息
-
-- API: GET /repository/api/node/size/{project}/{repo}/{path}
-- API 名称: compute_node_size
-- 功能说明：
-  - 中文：统计节点大小信息
-  - English：compute node size
-
-- 请求体
-  此接口请求体为空
-
-- 请求字段说明
-
-| 字段    | 类型   | 是否必须 | 默认值 | 说明     | Description  |
-| ------- | ------ | -------- | ------ | -------- | ------------ |
-| project | string | 是       | 无     | 项目名称 | project name |
-| repo    | string | 是       | 无     | 仓库名称 | repo name    |
-| path    | string | 是       | 无     | 完整路径 | full path    |
-
-- 响应体
-
-``` json
-{
-  "code": 0,
-  "message": null,
-  "data": {
-    "subNodeCount": 32,
-    "size": 443022203
-  },
-  "traceId": ""
-}
-```
-
-- data字段说明
-
-| 字段         | 类型 | 说明          | Description         |
-| ------------ | ---- | ------------- | ------------------- |
-| subNodeCount | long | 创建者        | sub node count      |
-| size         | long | 目录/文件大小 | directory/file size |
-
-#### 自定义查询
-
-- TODO
-
-### 元数据接口
-
-#### 查询元数据
-
-- API: GET /repository/api/metadata/{project}/{repo}/{path}
-- API 名称: query_metadata
-- 功能说明：
-  - 中文：查询元数据信息
-  - English：query metadata info
-
-- 请求体
-  此接口请求体为空
-
-- 请求字段说明
-
-| 字段    | 类型   | 是否必须 | 默认值 | 说明     | Description  |
-| ------- | ------ | -------- | ------ | -------- | ------------ |
-| project | string | 是       | 无     | 项目名称 | project name |
-| repo    | string | 是       | 无     | 仓库名称 | repo name    |
-| path    | string | 是       | 无     | 完整路径 | full path    |
-
-- 响应体
-
-``` json
-{
-  "code": 0,
-  "message": null,
-  "data": {
-    "key1": "value1",
-    "key2": "value2"
-  },
-  "traceId": ""
-}
-```
-
-- data字段说明
-
-  键值对，key为元数据名称，value为元数据值
-
-#### 保存（更新）元数据
-
-- API: POST /repository/api/metadata/{project}/{repo}/{path}
-- API 名称: save_metadata
-- 功能说明：
-  - 中文：保存（更新）元数据信息，元数据不存在则保存，存在则更新
-  - English：save metadata info
-- 请求体
-
-```json
-{
-  "key1": "value1",
-  "key2": "value2"
-}
-```
-
-- 请求字段说明
-
-| 字段    | 类型   | 是否必须 | 默认值 | 说明         | Description        |
-| ------- | ------ | -------- | ------ | ------------ | ------------------ |
-| project | string | 是       | 无     | 项目名称     | project name       |
-| repo    | string | 是       | 无     | 仓库名称     | repo name          |
-| path    | string | 是       | 无     | 完整路径     | full path          |
-| key     | string | 否       | 无     | 元数据键值对 | metadata key-value |
-
-- 响应体
-
-``` json
-{
-  "code": 0,
-  "message": null,
-  "data": null,
-  "traceId": ""
-}
-```
-
-- data字段说明
-
-  请求成功无返回数据
-
-#### 删除元数据
-
-- API: DELETE /repository/api/metadata/{project}/{repo}/{path}
-- API 名称: delete_metadata
-- 功能说明：
-  - 中文：根据提供的key列表删除元数据
-  - English：delete metadata info
-- 请求体
-
-```json
-{
-  "keyList": ["key1", "key2"]
-}
-```
-
-- 请求字段说明
-
-| 字段    | 类型   | 是否必须 | 默认值 | 说明                  | Description       |
-| ------- | ------ | -------- | ------ | --------------------- | ----------------- |
-| project | string | 是       | 无     | 项目名称              | project name      |
-| repo    | string | 是       | 无     | 仓库名称              | repo name         |
-| path    | string | 是       | 无     | 完整路径              | full path         |
-| keyList | string | 是       | 无     | 待删除的元数据key列表 | metadata key list |
-
-- 响应体
-
-``` json
-{
-  "code": 0,
-  "message": null,
-  "data": null,
-  "traceId": ""
-}
-```
-
-- data字段说明
-
-  请求成功无返回数据
-
-### 分享链接
-
-#### 创建分享下载链接
-
-- API: POST /repository/api/share/{project}/{repo}/{path}
-- API 名称: create_share_url
-- 功能说明：
-  - 中文：创建分享下载链接
-  - English：create share url
-- 请求体
-
-```json
-{
-  "authorizedUserList": ["user1", "user2"],
-  "authorizedIpList": ["192.168.1.1", "127.0.0.1"],
-  "expireSeconds": 3600
-}
-```
-
-- 请求字段说明
-
-| 字段               | 类型   | 是否必须 | 默认值 | 说明                               | Description     |
-| ------------------ | ------ | -------- | ------ | ---------------------------------- | --------------- |
-| project            | string | 是       | 无     | 项目名称                           | project name    |
-| repo               | string | 是       | 无     | 仓库名称                           | repo name       |
-| path               | string | 是       | 无     | 完整路径                           | full path       |
-| authorizedUserList | list   | 否       | []     | 授权用户列表，若为空所有用户可下载 | share user list |
-| authorizedIpList   | list   | 否       | []     | 授权ip列表，若为空所有ip可下载     | share ip list   |
-| expireSeconds      | long   | 否       | 0      | 下载链接有效时间，单位秒           | expire seconds  |
-
-- 响应体
-
-``` json
-{
-  "code": 0,
-  "message": null,
-  "data": {
-    "projectId": "test",
-    "repoName": "generic-local",
-    "fullPath": "/test.txt",
-    "shareUrl": "/api/share/test/generic-local/test.json?token=bef56a14c33342beba7fdb5f63508d24",
-    "authorizedUserList": [
-      "user1",
-      "user2"
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": [
+      {
+        "projectId" : "test",
+        "name" : "local",
+        "type" : "GENERIC",
+        "category" : "LOCAL",
+        "public" : false,
+        "description" : "",
+        "createdBy" : "system",
+        "createdDate" : "2020-03-16T12:13:03.371",
+        "lastModifiedBy" : "system",
+        "lastModifiedDate" : "2020-03-16T12:13:03.371"
+      }
     ],
-    "authorizedIpList": [
-      "192.168.1.1",
-      "127.0.0.1"
-    ],
-    "expireDate": "2020-08-13T12:35:38.541"
-  },
-  "traceId": ""
-}
-```
+    "traceId": ""
+  }
+  ```
 
-- data字段说明
+- 列表record字段说明
 
-| 字段               | 类型   | 说明         | Description          |
-| ------------------ | ------ | ------------ | -------------------- |
-| projectId          | string | 项目id       | project id           |
-| repoName           | string | 仓库名称     | repo name            |
-| fullPath           | string | 完整路径     | full path            |
-| shareUrl           | string | 分享下载链接 | share url            |
-| authorizedUserList | list   | 授权用户列表 | authorized user list |
-| authorizedIpList   | list   | 授权ip列表   | authorized ip list   |
-| expireDate         | string | 过期时间     | expire date          |
+  | 字段             | 类型    | 说明         | Description      |
+  | ---------------- | ------- | ------------ | ---------------- |
+  | projectId        | string  | 项目id       | project id       |
+  | name             | string  | 仓库名称     | repo name        |
+  | type             | string  | 仓库类型     | repo type        |
+  | category         | string  | 仓库类别     | repo category    |
+  | public           | boolean | 是否公开项目 | is public repo   |
+  | description      | string  | 仓库描述     | repo description |
+  | createdBy        | string  | 创建者       | create user      |
+  | createdDate      | string  | 创建时间     | create time      |
+  | lastModifiedBy   | string  | 上次修改者   | last modify user |
+  | lastModifiedDate | string  | 上次修改时间 | last modify time |
 
-#### 创建分享下载链接（批量）
 
-- API: POST /repository/api/share/batch
-- API 名称: create_batch_share_url
-- 功能说明：
-  - 中文：创建分享下载链接（批量）
-  - English：create batch share url
-- 请求体
 
-```json
-{
-  "projectId": "",
-  "repoName": "",
-  "fullPathList": "",
-  "authorizedUserList": ["user1", "user2"],
-  "authorizedIpList": ["192.168.1.1", "127.0.0.1"],
-  "expireSeconds": 3600
-}
-```
+### 仓库公共枚举值说明
 
-- 请求字段说明
+#### 1. 仓库类型
 
-| 字段               | 类型   | 是否必须 | 默认值 | 说明                               | Description     |
-| ------------------ | ------ | -------- | ------ | ---------------------------------- | --------------- |
-| projectId          | string | 是       | 无     | 项目名称                           | project name    |
-| repoName           | string | 是       | 无     | 仓库名称                           | repo name       |
-| fullPathList       | string | 是       | 无     | 完整路径列表                       | full path list  |
-| authorizedUserList | list   | 否       | []     | 授权用户列表，若为空所有用户可下载 | share user list |
-| authorizedIpList   | list   | 否       | []     | 授权ip列表，若为空所有ip可下载     | share ip list   |
-| expireSeconds      | long   | 否       | 0      | 下载链接有效时间，单位秒           | expire seconds  |
+> 用于标识仓库功能类型
 
-- 响应体
+| 枚举值   | 说明               |
+| -------- | ------------------ |
+| GENERIC  | 通用二进制文件仓库 |
+| DOCKER   | Docker仓库         |
+| MAVEN    | Maven仓库          |
+| PYPI     | Pypi仓库           |
+| NPM      | Npm仓库            |
+| HELM     | Helm仓库           |
+| COMPOSER | Composer仓库       |
+| RPM      | Rpm仓库            |
 
-``` json
-{
-  "code": 0,
-  "message": null,
-  "data": {
-    [
-      "projectId": "test",
-      "repoName": "generic-local",
-      "fullPath": "/test.txt",
-      "shareUrl": "/api/share/test/generic-local/test.json?token=bef56a14c33342beba7fdb5f63508d24",
-      "authorizedUserList": [
-        "user1",
-        "user2"
-      ],
-      "authorizedIpList": [
-        "192.168.1.1",
-        "127.0.0.1"
-      ],
-      "expireDate": "2020-08-13T12:35:38.541"
-    ]
-  },
-  "traceId": ""
-}
-```
+#### 2. 仓库类别
 
-- data字段说明
+> 用于标识仓库类别
 
-  ShareRecordInfo列表
+| 枚举值    | 说明                                                         |
+| --------- | ------------------------------------------------------------ |
+| LOCAL     | 本地仓库。普通仓库，上传/下载构件都在本地进行。              |
+| REMOTE    | 远程仓库。通过访问远程地址拉取构件，不支持上传               |
+| VIRTUAL   | 虚拟仓库。可以组合多个本地仓库和远程仓库拉取构件，不支持上传 |
+| COMPOSITE | 组合仓库。具有LOCAL的功能，同时也支持代理多个远程地址进行下载 |
 
-- ShareRecordInfo字段说明
 
-| 字段               | 类型   | 说明         | Description          |
-| ------------------ | ------ | ------------ | -------------------- |
-| projectId          | string | 项目id       | project id           |
-| repoName           | string | 仓库名称     | repo name            |
-| fullPath           | string | 完整路径     | full path            |
-| shareUrl           | string | 分享下载链接 | share url            |
-| authorizedUserList | list   | 授权用户列表 | authorized user list |
-| authorizedIpList   | list   | 授权ip列表   | authorized ip list   |
-| expireDate         | string | 过期时间     | expire date          |
 
-#### 分享链接下载
+### RepositoryConfiguration仓库配置项
 
-- API: GET /repository/api/share/{project}/{repo}/{path}?token=bef56a14c33342beba7fdb5f63508d24
-- API 名称: download_share_url
-- 功能说明：
-  - 中文：分享链接下载，支持HEAD操作
-  - English：download by share url
+#### 1. 公共配置项
 
-- 请求体
-  此接口请求体为空
+每一类配置都具有下列公共配置项
 
-- 请求字段说明
+| 字段     | 类型   | 是否必须 | 默认值 | 说明                                                         | Description        |
+| -------- | ------ | -------- | ------ | ------------------------------------------------------------ | ------------------ |
+| type     | string | 是       | 无     | 不同类型仓库分别对应local、remote、virtual、composite(小写)，用于反序列化，创建和修改时需要提供该字段 | configuration type |
+| settings | map    | 否       | 无     | 不同类型仓库可以通过该字段进行差异化配置                     | repo settings      |
 
-| 字段    | 类型   | 是否必须 | 默认值 | 说明     | Description    |
-| ------- | ------ | -------- | ------ | -------- | -------------- |
-| project | string | 是       | 无     | 项目名称 | project name   |
-| repo    | string | 是       | 无     | 仓库名称 | repo name      |
-| path    | string | 是       | 无     | 完整路径 | full path      |
-| token   | string | 是       | 无     | 下载凭证 | download token |
+#### 2. local本地仓库配置项
 
-- 请求头
+| 字段    | 类型    | 是否必须 | 默认值 | 说明            | Description |
+| :------ | ------- | -------- | ------ | --------------- | ----------- |
+| webHook | WebHook | 否       | 无     | WebHook相关配置 | web hook    |
 
-| 字段  | 类型   | 是否必须 | 默认值 | 说明                                                         | Description |
-| ----- | ------ | -------- | ------ | ------------------------------------------------------------ | ----------- |
-| Range | string | 否       | 无     | RFC 2616 中定义的字节范围，范围值必须使用 bytes=first-last 格式且仅支持单一范围，不支持多重范围。first 和 last 都是基于0开始的偏移量。例如 bytes=0-9，表示下载对象的开头10个字节的数据；bytes=5-9，表示下载对象的第6到第10个字节。此时返回 HTTP 状态码206（Partial Content）及 Content-Range 响应头部。如果 first 超过对象的大小，则返回 HTTP 状态码416（Requested Range Not Satisfiable）错误。如果不指定，则表示下载整个对象 | bytes range |
+- ##### WebHook配置项
 
-- 响应头
+  | 字段        | 类型             | 是否必须 | 默认值 | 说明         | Description   |
+  | :---------- | ---------------- | -------- | ------ | ------------ | ------------- |
+  | webHookList | [WebHookSetting] | 否       | 无     | WebHook 列表 | web hook list |
 
-| 字段                | 类型   | 说明                                                         | Description                  |
-| ------------------- | ------ | ------------------------------------------------------------ | ---------------------------- |
-| Accept-Ranges       | string | RFC 2616 中定义的服务器接收Range范围                         | RFC 2616 Accept-Ranges       |
-| Cache-Control       | string | RFC 2616 中定义的缓存指令                                    | RFC 2616 Cache-Control       |
-| Connection          | string | RFC 2616 中定义，表明响应完成后是否会关闭网络连接。枚举值：keep-alive，close。 | RFC 2616 Connection          |
-| Content-Disposition | string | RFC 2616 中定义的文件名称                                    | RFC 2616 Content-Disposition |
-| Content-Length      | long   | RFC 2616 中定义的 HTTP 响应内容长度（字节）                  | RFC 2616 Content Length      |
-| Content-Range       | string | RFC 2616 中定义的返回内容的字节范围，仅当请求中指定了 Range 请求头部时才会返回该头部 | RFC 2616 Content-Range       |
-| Content-Type        | string | RFC 2616 中定义的 HTTP 响应内容类型（MIME）                  | RFC 2616 Content Length      |
-| Date                | string | RFC 1123 中定义的 GMT 格式服务端响应时间，例如Mon, 27 Jul 2020 08:51:59 GMT | RFC 1123 Content Length      |
-| Etag                | string | ETag 全称为 Entity Tag，是文件被创建时标识对象内容的信息标签，可用于检查对象的内容是否发生变化，通用制品文件会返回文件的sha256值 | ETag, file sha256 checksum   |
-| Last-Modified       | string | 文件的最近一次上传的时间，例如Mon, 27 Jul 2020 08:51:58 GMT  | file last modified time      |
+- ##### WebHookSetting配置项
 
-- 响应体
-  [文件流]
+  | 字段    | 类型   | 是否必须 | 默认值 | 说明                       | Description         |
+  | :------ | ------ | -------- | ------ | -------------------------- | ------------------- |
+  | url     | string | 否       | 无     | 远程url地址                | remote web hook url |
+  | headers | map    | 否       | 无     | 发起远程url的自定义headers | web hook headers    |
 
-### 
+#### 3. remote远程仓库配置项
 
+| 字段        | 类型                           | 是否必须 | 默认值   | 说明         | Description                      |
+| ----------- | ------------------------------ | -------- | -------- | ------------ | -------------------------------- |
+| url         | string                         | 否       | 空       | 远程地址     | remote repository url            |
+| credentials | RemoteCredentialsConfiguration | 否       | 默认配置 | 访问凭证配置 | remote credentials configuration |
+| network     | RemoteNetworkConfiguration     | 否       | 默认配置 | 网络配置     | remote network configuration     |
+| cache       | RemoteCacheConfiguration       | 否       | 默认配置 | 缓存配置     | remote cache configuration       |
+
+- ##### RemoteCredentialsConfiguration
+
+  | 字段     | 类型   | 是否必须 | 默认值 | 说明            | Description          |
+  | -------- | ------ | -------- | ------ | --------------- | -------------------- |
+  | username | string | 否       | 无     | 远程仓库 用户名 | remote repo username |
+  | password | string | 否       | 无     | 远程仓库 密码   | remote repo password |
+  
+- ##### RemoteNetworkConfiguration
+
+  | 字段           | 类型                      | 是否必须 | 默认值    | 说明                     | Description             |
+  | -------------- | ------------------------- | -------- | --------- | ------------------------ | ----------------------- |
+  | proxy          | NetworkProxyConfiguration | 否       | 无        | 网络代理配置             | network proxy           |
+  | connectTimeout | long                      | 否       | 10 * 1000 | 网络连接超时时间(单位ms) | network connect timeout |
+  | readTimeout    | long                      | 否       | 10 * 1000 | 网络读取超时时间(单位ms) | network read timeout    |
+
+- ##### NetworkProxyConfiguration
+
+  | 字段     | 类型   | 是否必须 | 默认值 | 说明           | Description    |
+  | -------- | ------ | -------- | ------ | -------------- | -------------- |
+  | host     | string | 是       | 无     | 网络代理主机   | proxy host     |
+  | port     | int    | 是       | 无     | 网络代理端口   | proxy int      |
+  | username | string | 否       | 无     | 网络代理用户名 | proxy username |
+  | password | string | 否       | 无     | 网络代理密码   | proxy password |
+
+- ##### RemoteCacheConfiguration
+
+  | 字段       | 类型    | 是否必须 | 默认值 | 说明                                              | Description      |
+  | ---------- | ------- | -------- | ------ | ------------------------------------------------- | ---------------- |
+  | enabled    | boolean | 否       | true   | 是否开启缓存                                      | cache enabled    |
+  | expiration | long    | 否       | -1     | 构件缓存过期时间（单位分钟，0或负数表示永久缓存） | cache expiration |
+
+#### 4. virtual虚拟仓库配置项
+
+| 字段           | 类型                 | 是否必须 | 默认值 | 说明     | Description |
+| -------------- | -------------------- | -------- | ------ | -------- | ----------- |
+| repositoryList | [RepositoryIdentify] | 否       | 无     | 仓库列表 | repo list   |
+
+- ##### RepositoryIdentify
+
+  | 字段      | 类型   | 是否必须 | 默认值 | 说明         | Description |
+  | --------- | ------ | -------- | ------ | ------------ | ----------- |
+  | projectId | string | 是       | 无     | 代理项目名称 | project id  |
+  | name      | string | 是       | 无     | 代理仓库名称 | repo name   |
+
+#### 5. composite组合仓库配置项
+
+| 字段  | 类型               | 是否必须 | 默认值 | 说明         | Description              |
+| ----- | ------------------ | -------- | ------ | ------------ | ------------------------ |
+| proxy | ProxyConfiguration | 否       | 无     | 仓库代理配置 | repo proxy configuration |
+
+- ##### ProxyConfiguration
+
+  | 字段        | 类型                  | 是否必须 | 默认值 | 说明       | Description        |
+  | ----------- | --------------------- | -------- | ------ | ---------- | ------------------ |
+  | channelList | [ProxyChannelSetting] | 否       | 无     | 代理源列表 | proxy channel list |
+
+- ##### ProxyChannelSetting
+
+  | 字段          | 类型    | 是否必须 | 默认值 | 说明                             | Description                  |
+  | ------------- | ------- | -------- | ------ | -------------------------------- | ---------------------------- |
+  | public        | boolean | 是       | 无     | 是否为公有源                     | is public                    |
+  | channelId     | string  | 否       | 无     | 公有源id, 公有源必须提供         | public channel id            |
+  | name          | string  | 否       | 无     | 代理源名称，私有源必选参数       | private proxy channel name   |
+  | url           | string  | 否       | 无     | 代理源地址，私有源必选参数       | private proxy channel url    |
+  | credentialKey | string  | 否       | 无     | 鉴权凭据key，私有源可选参数      | private proxy credentials id |
+  | username      | string  | 否       | 无     | 代理源认证用户名，私有源可选参数 | private channel username     |
+  | password      | string  | 否       | 无     | 代理源认证密码，私有源可选参数   | private channel password     |
+
+#### 6. composite组合仓库配置项
+
+​	各个依赖源的差异化配置通过`settings`进行配置，每项配置的具体含义请参考依赖源文档。

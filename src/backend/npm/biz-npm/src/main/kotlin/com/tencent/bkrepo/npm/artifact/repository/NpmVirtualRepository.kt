@@ -1,8 +1,7 @@
 package com.tencent.bkrepo.npm.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
@@ -15,22 +14,19 @@ import org.springframework.stereotype.Component
 class NpmVirtualRepository : VirtualRepository() {
     override fun list(context: ArtifactListContext): NpmSearchResponse {
         val list = mutableListOf<NpmSearchResponse>()
-        val searchRequest = context.contextAttributes[SEARCH_REQUEST] as MetadataSearchRequest
-        val virtualConfiguration = context.repositoryConfiguration as VirtualConfiguration
+        val searchRequest = context.getAttribute(SEARCH_REQUEST) as MetadataSearchRequest
+        val virtualConfiguration = context.getVirtualConfiguration()
         val repoList = virtualConfiguration.repositoryList
         val traversedList = getTraversedList(context)
         for (repoIdentify in repoList) {
             if (repoIdentify in traversedList) {
-                if (logger.isDebugEnabled) {
-                    logger.debug("Repository[$repoIdentify] has been traversed, skip it.")
-                }
                 continue
             }
             traversedList.add(repoIdentify)
             try {
-                val subRepoInfo = repositoryClient.detail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
-                val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactListContext
+                val subRepoInfo = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
+                val repository = ArtifactContextHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
+                val subContext = context.copy(repositoryDetail = subRepoInfo) as ArtifactListContext
                 repository.list(subContext)?.let { map ->
                     list.add(map as NpmSearchResponse)
                 }

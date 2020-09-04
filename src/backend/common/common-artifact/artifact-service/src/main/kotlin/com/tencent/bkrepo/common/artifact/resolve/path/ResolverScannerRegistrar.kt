@@ -14,7 +14,7 @@ import org.springframework.core.type.filter.AnnotationTypeFilter
 import org.springframework.util.ClassUtils
 
 /**
- * 自动扫描@Resolver注解
+ * 自动扫描[Resolver]注解
  */
 class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
 
@@ -35,7 +35,7 @@ class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAw
                     val instance = clazz.newInstance() as ArtifactInfoResolver
                     if (!resolverMap.containsKey(annotation.value)) {
                         resolverMap.register(annotation.value, instance, annotation.default)
-                        logger.debug("Registering ArtifactInfo resolver: [${annotation.value} -> ${beanDefinition.beanClassName} (default: ${annotation.default})].")
+                        logger.info("Registering ArtifactInfo resolver: [${annotation.value} -> ${beanDefinition.beanClassName} (default: ${annotation.default})].")
                     }
                 }
             }

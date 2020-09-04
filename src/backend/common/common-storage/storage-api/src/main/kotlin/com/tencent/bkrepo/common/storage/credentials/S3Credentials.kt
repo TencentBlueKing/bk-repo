@@ -12,9 +12,10 @@ data class S3Credentials(
     var endpoint: String = "",
     var region: String = "",
     var bucket: String = "",
+    override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
     override var upload: UploadProperties = UploadProperties()
-) : StorageCredentials(cache, upload) {
+) : StorageCredentials(key, cache, upload) {
     companion object {
         const val type = "s3"
     }

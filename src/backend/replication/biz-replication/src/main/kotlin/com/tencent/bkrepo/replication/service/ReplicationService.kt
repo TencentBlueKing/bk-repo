@@ -30,7 +30,7 @@ class ReplicationService(val repoDataService: RepoDataService) {
     fun replicaFile(context: ReplicationContext, request: NodeCreateRequest) {
         with(context) {
             // 查询文件
-            val inputStream = repoDataService.getFile(request.sha256!!, request.size!!, currentRepoDetail.localRepoInfo)
+            val inputStream = repoDataService.getFile(request.sha256!!, request.size!!, currentRepoDetail.localRepoDetail)
             val fullPath = encode(request.fullPath, "utf-8")
             val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM, inputStream, request.size!!)
             val builder = MultipartBody.Builder()

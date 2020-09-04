@@ -4,7 +4,7 @@ repositories {
 
 dependencies {
     api project(":common:common-service")
-    api "de.codecentric:spring-boot-admin-starter-server:2.3.0-SNAPSHOT"
+    api "de.codecentric:spring-boot-admin-starter-server:2.3.0"
     api "org.springframework.boot:spring-boot-starter-security"
 }
 

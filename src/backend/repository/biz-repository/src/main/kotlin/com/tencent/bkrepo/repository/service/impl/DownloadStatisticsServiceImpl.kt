@@ -42,7 +42,7 @@ class DownloadStatisticsServiceImpl(
                 mongoTemplate.upsert(query, update, TDownloadStatistics::class.java)
             } catch (exception: DuplicateKeyException) {
                 // retry because upsert operation is not atomic
-                logger.error("DuplicateKeyException: " + exception.message.orEmpty())
+                logger.warn("DuplicateKeyException: " + exception.message.orEmpty())
                 mongoTemplate.upsert(query, update, TDownloadStatistics::class.java)
             }
 

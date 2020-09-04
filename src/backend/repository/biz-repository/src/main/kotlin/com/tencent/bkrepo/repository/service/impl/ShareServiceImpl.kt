@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.repository.model.TShareRecord
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
@@ -34,11 +34,11 @@ class ShareServiceImpl(
 
     override fun create(userId: String, artifactInfo: ArtifactInfo, request: ShareRecordCreateRequest): ShareRecordInfo {
         with(artifactInfo) {
-            checkNode(projectId, repoName, artifactUri)
+            checkNode(projectId, repoName, getArtifactFullPath())
             val shareRecord = TShareRecord(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = artifactUri,
+                fullPath = getArtifactFullPath(),
                 expireDate = computeExpireDate(request.expireSeconds),
                 authorizedUserList = request.authorizedUserList,
                 authorizedIpList = request.authorizedIpList,
@@ -60,7 +60,7 @@ class ShareServiceImpl(
             val query = Query.query(
                 Criteria.where(TShareRecord::projectId.name).`is`(artifactInfo.projectId)
                     .and(TShareRecord::repoName.name).`is`(repoName)
-                    .and(TShareRecord::fullPath.name).`is`(artifactUri)
+                    .and(TShareRecord::fullPath.name).`is`(getArtifactFullPath())
                     .and(TShareRecord::token.name).`is`(token)
             )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, token)
@@ -70,9 +70,9 @@ class ShareServiceImpl(
             if (shareRecord.expireDate?.isBefore(LocalDateTime.now()) == true) {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXPIRED, token)
             }
-            val repo = repositoryService.detail(projectId, repoName) ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+            val repo = repositoryService.getRepoDetail(projectId, repoName) ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo)
-            val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+            val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
         }
     }

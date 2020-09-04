@@ -68,14 +68,15 @@ class NodeController(
     override fun page(
         projectId: String,
         repoName: String,
-        page: Int,
-        size: Int,
+        pageNumber: Int,
+        pageSize: Int,
         path: String,
         includeFolder: Boolean,
         includeMetadata: Boolean,
         deep: Boolean
     ): Response<Page<NodeInfo>> {
-        return ResponseBuilder.success(nodeService.page(projectId, repoName, path, page, size, includeFolder, includeMetadata, deep))
+        val nodePage = nodeService.page(projectId, repoName, path, pageNumber, pageSize, includeFolder, includeMetadata, deep)
+        return ResponseBuilder.success(nodePage)
     }
 
     override fun create(nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {

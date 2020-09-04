@@ -183,7 +183,7 @@ class ReplicationController : ReplicationClient {
             val projectId = artifactInfo.projectId
             val repoName = artifactInfo.repoName
             val fullPath = artifactInfo.artifactUri
-            val repoInfo = repositoryClient.detail(projectId, repoName).data!!
+            val repoInfo = repositoryClient.getRepoDetail(projectId, repoName).data!!
             storageService.store(sha256, file, repoInfo.storageCredentials)
             // 保存节点
             val request = NodeCreateRequest(
@@ -228,7 +228,7 @@ class ReplicationController : ReplicationClient {
     }
 
     override fun replicaRepoCreateRequest(token: String, request: RepoCreateRequest): Response<RepositoryInfo> {
-        return repositoryClient.detail(request.projectId, request.name).data?.let { ResponseBuilder.success(it) }
+        return repositoryClient.getRepoDetail(request.projectId, request.name).data?.let { ResponseBuilder.success(it) }
             ?: repositoryClient.create(request)
     }
 

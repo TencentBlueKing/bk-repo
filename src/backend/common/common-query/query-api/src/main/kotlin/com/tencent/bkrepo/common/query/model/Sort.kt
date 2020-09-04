@@ -3,9 +3,6 @@ package com.tencent.bkrepo.common.query.model
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-/**
- * 排序规则
- */
 @ApiModel("排序规则")
 data class Sort(
     @ApiModelProperty("排序字段")

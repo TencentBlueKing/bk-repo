@@ -8,9 +8,10 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
  */
 data class FileSystemCredentials(
     var path: String = "data/store",
+    override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
     override var upload: UploadProperties = UploadProperties()
-) : StorageCredentials(cache, upload) {
+) : StorageCredentials(key, cache, upload) {
 
     companion object {
         const val type = "filesystem"

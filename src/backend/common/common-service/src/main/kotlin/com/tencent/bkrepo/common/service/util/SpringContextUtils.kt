@@ -18,6 +18,17 @@ class SpringContextUtils : ApplicationContextAware {
         private lateinit var applicationContext: ApplicationContext
 
         /**
+         * 获取对象
+         * @param <T> Bean
+         * @return 实例
+         * @throws BeansException 异常
+         */
+        @Throws(BeansException::class)
+        inline fun <reified T> getBean(): T {
+            return getBean(T::class.java)
+        }
+
+        /**
          * 获取对象 这里重写了bean方法，起主要作用
          * @param clazz 类名
          * @param <T> Bean

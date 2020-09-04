@@ -3,15 +3,12 @@ package com.tencent.bkrepo.common.query.model
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-/**
- * 自定义查询模型
- */
 @ApiModel("自定义查询模型")
 data class QueryModel(
-    val page: PageLimit = PageLimit(),
-    val sort: Sort?,
+    var page: PageLimit = PageLimit(),
+    var sort: Sort?,
     @ApiModelProperty("筛选字段列表")
-    val select: MutableList<String>?,
+    var select: List<String>?,
     var rule: Rule
 ) {
     fun addQueryRule(newRule: Rule.QueryRule) {

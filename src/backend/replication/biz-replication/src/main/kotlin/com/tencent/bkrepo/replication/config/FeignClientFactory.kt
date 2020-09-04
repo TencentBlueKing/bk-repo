@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.replication.config
 
-import com.tencent.bkrepo.common.artifact.util.http.CertTrustManager.createSSLSocketFactory
-import com.tencent.bkrepo.common.artifact.util.http.CertTrustManager.disableValidationSSLSocketFactory
-import com.tencent.bkrepo.common.artifact.util.http.CertTrustManager.trustAllHostname
+import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.createSSLSocketFactory
+import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
+import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
 import feign.Client

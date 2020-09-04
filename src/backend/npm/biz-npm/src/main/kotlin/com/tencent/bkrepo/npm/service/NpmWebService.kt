@@ -4,7 +4,7 @@ import com.google.gson.JsonObject
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.DEPENDENCIES
@@ -126,7 +126,7 @@ class NpmWebService {
         pkgName.takeIf { !pkgName.isBlank() } ?: throw NpmArgumentNotFoundException("argument [$pkgName] not found.")
         val context = ArtifactSearchContext()
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, pkgName)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.search(context)?.let { it as JsonObject }
             ?: throw NpmArtifactNotFoundException("package [$pkgName] not found.")
     }

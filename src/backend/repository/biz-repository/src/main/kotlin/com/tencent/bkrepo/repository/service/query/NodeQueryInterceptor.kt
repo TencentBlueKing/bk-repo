@@ -9,8 +9,10 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.model.TNode
 
 /**
- * - 校验node query model的格式
- * - 添加deleted属性为null的查询条件
+ * 节点自定义查询规则拦截器
+ *
+ * 1. 校验node query model的格式
+ * 2. 添加deleted属性为null的查询条件
  */
 class NodeQueryInterceptor : QueryModelInterceptor {
 
@@ -22,7 +24,7 @@ class NodeQueryInterceptor : QueryModelInterceptor {
     }
 
     /**
-     * 查询条件必须满足以下格式：
+     * 校验[queryModel]格式，查询条件必须满足以下格式：
      *   1. rule必须为AND类型的嵌套查询
      *   2. rule嵌套查询规则列表中，必须指定projectId条件，且为EQ操作
      *   3. rule嵌套查询规则列表中，必须指定repoName条件，且为EQ 或者 IN操作
@@ -50,7 +52,7 @@ class NodeQueryInterceptor : QueryModelInterceptor {
     }
 
     /**
-     * rule嵌套查询规则列表中，必须指定projectId条件，且为EQ操作
+     * [rule]嵌套查询规则列表中，必须指定`projectId`条件，且为`EQ`操作
      */
     private fun checkRepoName(rule: Rule): Boolean {
         if (rule is Rule.QueryRule && rule.field == TNode::repoName.name) {
@@ -62,7 +64,7 @@ class NodeQueryInterceptor : QueryModelInterceptor {
     }
 
     /**
-     * rule嵌套查询规则列表中，必须指定repoName条件，且为EQ 或者 IN操作
+     * [rule]嵌套查询规则列表中，必须指定`repoName`条件，且为`EQ`或者`IN`操作
      */
     private fun checkProjectId(rule: Rule): Boolean {
         if (rule is Rule.QueryRule && rule.field == TNode::projectId.name) {
@@ -74,7 +76,7 @@ class NodeQueryInterceptor : QueryModelInterceptor {
     }
 
     /**
-     * 添加deleted属性为null的查询条件
+     * 添加deleted属性为null的查询条件到[queryModel]中
      */
     private fun setDeletedNull(queryModel: QueryModel) {
         queryModel.addQueryRule(Rule.QueryRule(TNode::deleted.name, "", OperationType.NULL))

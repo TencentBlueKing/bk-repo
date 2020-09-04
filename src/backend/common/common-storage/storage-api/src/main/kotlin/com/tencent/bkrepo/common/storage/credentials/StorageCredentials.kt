@@ -15,6 +15,7 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
     JsonSubTypes.Type(value = HDFSCredentials::class, name = HDFSCredentials.type)
 )
 abstract class StorageCredentials(
+    open var key: String? = null,
     open var cache: CacheProperties,
     open var upload: UploadProperties
 )

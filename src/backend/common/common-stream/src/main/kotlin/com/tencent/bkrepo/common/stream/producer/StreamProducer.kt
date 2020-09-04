@@ -17,7 +17,7 @@ class StreamProducer {
 
     fun sendMessage(message: IMessage) {
         messageSource.output().send(MessageBuilder.withPayload(message).build())
-        logger.info("Send message[$message] to stream success.")
+        logger.debug("Send message[$message] to stream success.")
     }
 
     companion object {

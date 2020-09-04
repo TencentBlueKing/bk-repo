@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("节点服务接口")
 @Primary
-@FeignClient(SERVICE_NAME, contextId = "NodeResource")
+@FeignClient(SERVICE_NAME, contextId = "NodeClient")
 @RequestMapping("/service/node")
 interface NodeClient {
 
@@ -98,16 +98,16 @@ interface NodeClient {
     ): Response<List<NodeInfo>>
 
     @ApiOperation("分页查询指定目录下所有节点")
-    @GetMapping("/page/{projectId}/{repoName}/{page}/{size}")
+    @GetMapping("/page/{projectId}/{repoName}/{pageNumber}/{pageSize}")
     fun page(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "当前页", required = true, example = "0")
-        @PathVariable page: Int,
+        @ApiParam(value = "当前页", required = true, example = "1")
+        @PathVariable pageNumber: Int,
         @ApiParam(value = "分页大小", required = true, example = "20")
-        @PathVariable size: Int,
+        @PathVariable pageSize: Int,
         @ApiParam(value = "所属目录", required = true)
         @RequestParam path: String,
         @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")

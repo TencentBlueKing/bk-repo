@@ -7,9 +7,9 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.security.http.SecurityUtils
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
@@ -25,7 +25,7 @@ import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -43,14 +43,14 @@ class UploadService(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun delete(userId: String, artifactInfo: GenericArtifactInfo) {
         val context = ArtifactRemoveContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
         logger.info("User[${SecurityUtils.getPrincipal()}] delete artifact[$artifactInfo] success.")
     }
@@ -63,9 +63,9 @@ class UploadService(
 
             expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
             // 判断文件是否存在
-            if (!overwrite && nodeClient.exist(projectId, repoName, artifactUri).data == true) {
+            if (!overwrite && nodeClient.exist(projectId, repoName, getArtifactFullPath()).data == true) {
                 logger.warn("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: artifact already exists.")
-                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, artifactUri)
+                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
 
             val uploadId = storageService.createBlockId(getStorageCredentials())
@@ -100,7 +100,7 @@ class UploadService(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
                 folder = false,
-                fullPath = artifactInfo.artifactUri,
+                fullPath = artifactInfo.getArtifactFullPath(),
                 sha256 = mergedFileInfo.sha256,
                 md5 = mergedFileInfo.md5,
                 size = mergedFileInfo.size,
@@ -127,7 +127,7 @@ class UploadService(
     }
 
     private fun getStorageCredentials(): StorageCredentials? {
-        val repoInfo = HttpContextHolder.getRequest().getAttribute(REPO_KEY) as RepositoryInfo
+        val repoInfo = HttpContextHolder.getRequest().getAttribute(REPO_KEY) as RepositoryDetail
         return repoInfo.storageCredentials
     }
 

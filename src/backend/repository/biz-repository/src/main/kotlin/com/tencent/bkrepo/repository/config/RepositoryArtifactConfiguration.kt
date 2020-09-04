@@ -5,7 +5,9 @@ import com.tencent.bkrepo.common.security.http.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.HttpAuthSecurityCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 
+@Primary
 @Configuration
 class RepositoryArtifactConfiguration : ArtifactConfiguration {
 

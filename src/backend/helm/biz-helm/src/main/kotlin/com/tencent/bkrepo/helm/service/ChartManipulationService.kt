@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.security.permission.Permission
@@ -25,7 +25,7 @@ import com.tencent.bkrepo.helm.pojo.HelmSuccessResponse
 import com.tencent.bkrepo.helm.pojo.IndexEntity
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.YamlUtils
-import com.tencent.bkrepo.repository.util.NodeUtils.FILE_SEPARATOR
+import com.tencent.bkrepo.repository.util.PathUtils.SEPARATOR
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -42,7 +42,7 @@ class ChartManipulationService {
     @Transactional(rollbackFor = [Throwable::class])
     fun uploadProv(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): HelmSuccessResponse {
         val context = ArtifactUploadContext(artifactFileMap)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         context.contextAttributes = getContextAttrMap(artifactFileMap = artifactFileMap)
         if (!artifactFileMap.keys.contains(PROV)) throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
         repository.upload(context)
@@ -71,7 +71,7 @@ class ChartManipulationService {
     fun getChartFileFullPath(chartFile: Map<String, Any>?): String {
         val chartName = chartFile?.get(NAME) as String
         val chartVersion = chartFile[VERSION] as String
-        return String.format("$FILE_SEPARATOR%s-%s.%s", chartName, chartVersion, CHART_PACKAGE_FILE_EXTENSION)
+        return String.format("$SEPARATOR%s-%s.%s", chartName, chartVersion, CHART_PACKAGE_FILE_EXTENSION)
     }
 
     private fun getProvFileFullPath(artifactFileMap: ArtifactFileMap): String {
@@ -87,14 +87,14 @@ class ChartManipulationService {
     }
 
     private fun provenanceFilenameFromNameVersion(name: String, version: String): String {
-        return String.format("$FILE_SEPARATOR%s-%s.%s", name, version, PROVENANCE_FILE_EXTENSION)
+        return String.format("$SEPARATOR%s-%s.%s", name, version, PROVENANCE_FILE_EXTENSION)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): HelmSuccessResponse {
         val context = ArtifactUploadContext(artifactFileMap)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         val chartFileInfo = getChartFile(artifactFileMap)
         context.contextAttributes = getContextAttrMap(artifactFileMap, chartFileInfo)
         repository.upload(context)
@@ -111,8 +111,8 @@ class ChartManipulationService {
     private fun uploadIndexYaml(indexEntity: IndexEntity) {
         val artifactFile = ArtifactFileFactory.build(YamlUtils.transEntityToStream(indexEntity))
         val uploadContext = ArtifactUploadContext(artifactFile)
-        uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$FILE_SEPARATOR$INDEX_CACHE_YAML"
-        val uploadRepository = RepositoryHolder.getRepository(uploadContext.repositoryInfo.category)
+        uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$SEPARATOR$INDEX_CACHE_YAML"
+        val uploadRepository = ArtifactContextHolder.getRepository(uploadContext.repositoryDetail.category)
         uploadRepository.upload(uploadContext)
     }
 
@@ -122,7 +122,7 @@ class ChartManipulationService {
         chartRepositoryService.freshIndexFile(artifactInfo)
         val chartInfo = getChartInfo(artifactInfo)
         val context = ArtifactRemoveContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         val fullPath = String.format("/%s-%s.%s", chartInfo.first, chartInfo.second, CHART_PACKAGE_FILE_EXTENSION)
         context.contextAttributes[FULL_PATH] = fullPath
         repository.remove(context)

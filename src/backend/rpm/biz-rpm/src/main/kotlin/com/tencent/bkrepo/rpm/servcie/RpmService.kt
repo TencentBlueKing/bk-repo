@@ -4,8 +4,8 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.repository.RpmLocalConfiguration
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.security.permission.Permission
@@ -31,14 +31,14 @@ class RpmService {
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun install(rpmArtifactInfo: RpmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.download(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deploy(rpmArtifactInfo: RpmArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
 
@@ -46,22 +46,22 @@ class RpmService {
     fun addGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
         val context = ArtifactSearchContext()
         groups.removeAll(rpmIndexSet)
-        val rpmLocalConfiguration = (context.repositoryInfo.configuration as RpmLocalConfiguration)
+        val rpmLocalConfiguration = (context.repositoryDetail.configuration as RpmLocalConfiguration)
         (rpmLocalConfiguration.groupXmlSet ?: mutableSetOf()).addAll(groups)
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)
         repositoryClient.update(repoUpdateRequest)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         (repository as RpmLocalRepository).flushAllRepoData(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deleteGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
         val context = ArtifactSearchContext()
-        val rpmLocalConfiguration = context.repositoryInfo.configuration as RpmLocalConfiguration
+        val rpmLocalConfiguration = context.repositoryDetail.configuration as RpmLocalConfiguration
         (rpmLocalConfiguration.groupXmlSet ?: mutableSetOf()).removeAll(groups)
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)
         repositoryClient.update(repoUpdateRequest)
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         (repository as RpmLocalRepository).flushAllRepoData(context)
     }
 
@@ -72,9 +72,9 @@ class RpmService {
         return RepoUpdateRequest(
             context.artifactInfo.projectId,
             context.artifactInfo.repoName,
-            context.repositoryInfo.category,
-            context.repositoryInfo.public,
-            context.repositoryInfo.description,
+            context.repositoryDetail.category,
+            context.repositoryDetail.public,
+            context.repositoryDetail.description,
             rpmLocalConfiguration,
             context.userId
         )

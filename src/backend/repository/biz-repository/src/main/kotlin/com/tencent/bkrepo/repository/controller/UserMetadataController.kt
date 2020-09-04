@@ -41,7 +41,7 @@ class UserMetadataController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<Map<String, String>> {
         artifactInfo.run {
-            return ResponseBuilder.success(metadataService.query(projectId, repoName, artifactUri))
+            return ResponseBuilder.success(metadataService.query(projectId, repoName, getArtifactFullPath()))
         }
     }
 
@@ -57,7 +57,7 @@ class UserMetadataController(
             val request = MetadataSaveRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = artifactUri,
+                fullPath = getArtifactFullPath(),
                 metadata = metadataSaveRequest.metadata
             )
             metadataService.save(request)
@@ -77,7 +77,7 @@ class UserMetadataController(
             val request = MetadataDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = artifactUri,
+                fullPath = getArtifactFullPath(),
                 keyList = metadataDeleteRequest.keyList
             )
             metadataService.delete(request)

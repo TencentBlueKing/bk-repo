@@ -82,7 +82,7 @@ class RpmLocalRepository(
         metadata: MutableMap<String, String>?,
         overwrite: Boolean
     ): NodeCreateRequest {
-        val nodeCreateRequest = super.getNodeCreateRequest(context)
+        val nodeCreateRequest = super.buildNodeCreateRequest(context)
         return nodeCreateRequest.copy(
             overwrite = overwrite,
             metadata = metadata
@@ -137,7 +137,7 @@ class RpmLocalRepository(
      * 查询rpm仓库属性
      */
     private fun getRpmRepoConf(context: ArtifactTransferContext): RpmRepoConf {
-        val rpmConfiguration = context.repositoryInfo.configuration as RpmLocalConfiguration
+        val rpmConfiguration = context.repositoryDetail.configuration as RpmLocalConfiguration
         val repodataDepth = rpmConfiguration.repodataDepth ?: 0
         val enabledFileLists = rpmConfiguration.enabledFileLists ?: true
         val groupXmlSet = rpmConfiguration.groupXmlSet ?: mutableSetOf()
@@ -226,7 +226,7 @@ class RpmLocalRepository(
     ) {
         val target = "$DASH$indexType$DOT$XMLGZ"
 
-        with(context.artifactInfo) {
+        with(context.repositoryDetail) {
             // repodata下'-**.xml.gz'最新节点。
             val nodeList = nodeClient.list(
                 projectId, repoName,
@@ -339,7 +339,7 @@ class RpmLocalRepository(
                 )
                 val xmlPrimaryNode = xmlIndexNodeCreate(
                     context.userId,
-                    context.repositoryInfo,
+                    context.repositoryDetail,
                     fullPath,
                     xmlGZArtifact,
                     metadata

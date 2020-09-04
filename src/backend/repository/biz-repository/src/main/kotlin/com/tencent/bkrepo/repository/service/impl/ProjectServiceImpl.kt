@@ -10,6 +10,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.service.ProjectService
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
@@ -40,6 +41,9 @@ class ProjectServiceImpl(
     override fun create(request: ProjectCreateRequest): ProjectInfo {
         with(request) {
             validateParameter(this)
+            if (exist(name)) {
+                throw ErrorCodeException(ArtifactMessageCode.PROJECT_EXISTED, name)
+            }
             val project = TProject(
                 name = name,
                 displayName = displayName,
@@ -49,11 +53,16 @@ class ProjectServiceImpl(
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
-            return projectRepository.insert(project)
-                .also { createProjectManager(it.name, it.createdBy) }
-                .also { publishEvent(ProjectCreatedEvent(request)) }
-                .also { logger.info("Create project [$request] success.") }
-                .let { convert(it)!! }
+            return try {
+                projectRepository.insert(project)
+                    .also { createProjectManager(it.name, it.createdBy) }
+                    .also { publishEvent(ProjectCreatedEvent(request)) }
+                    .also { logger.info("Create project [$name] success.") }
+                    .let { convert(it)!! }
+            } catch (exception: DuplicateKeyException) {
+                logger.warn("Insert project[$name] error: [${exception.message}]")
+                query(name)!!
+            }
         }
     }
 
@@ -75,9 +84,6 @@ class ProjectServiceImpl(
             }
             if (displayName.isBlank() || displayName.length < DISPLAY_NAME_LENGTH_MIN || displayName.length > DISPLAY_NAME_LENGTH_MAX) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::displayName.name)
-            }
-            if (exist(name)) {
-                throw ErrorCodeException(ArtifactMessageCode.PROJECT_EXISTED, name)
             }
         }
     }

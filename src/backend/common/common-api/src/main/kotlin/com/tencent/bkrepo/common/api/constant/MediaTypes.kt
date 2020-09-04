@@ -6,5 +6,5 @@ object MediaTypes {
     const val TEXT_HTML = "text/html; charset=utf-8"
     const val APPLICATION_YAML = "application/x-yaml"
     const val APPLICATION_TGZ = "application/x-tar"
-    const val APPLICATION_ICO= "image/x-icon"
+    const val APPLICATION_ICO = "image/x-icon"
 }

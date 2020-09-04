@@ -7,6 +7,7 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.RepositoryService
 import org.springframework.web.bind.annotation.RestController
@@ -18,24 +19,27 @@ import org.springframework.web.bind.annotation.RestController
 class RepositoryController(
     private val repositoryService: RepositoryService
 ) : RepositoryClient {
-
-    override fun detail(projectId: String, name: String): Response<RepositoryInfo?> {
-        return ResponseBuilder.success(repositoryService.detail(projectId, name))
+    override fun getRepoInfo(projectId: String, repoName: String): Response<RepositoryInfo?> {
+        return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, null))
     }
 
-    override fun detail(projectId: String, name: String, type: String): Response<RepositoryInfo?> {
-        return ResponseBuilder.success(repositoryService.detail(projectId, name, type))
+    override fun getRepoDetail(projectId: String, repoName: String): Response<RepositoryDetail?> {
+        return ResponseBuilder.success(repositoryService.getRepoDetail(projectId, repoName, null))
+    }
+
+    override fun getRepoDetail(projectId: String, repoName: String, type: String?): Response<RepositoryDetail?> {
+        return ResponseBuilder.success(repositoryService.getRepoDetail(projectId, repoName, type))
     }
 
     override fun list(projectId: String): Response<List<RepositoryInfo>> {
         return ResponseBuilder.success(repositoryService.list(projectId))
     }
 
-    override fun page(page: Int, size: Int, projectId: String): Response<Page<RepositoryInfo>> {
-        return ResponseBuilder.success(repositoryService.page(projectId, page, size))
+    override fun page(pageNumber: Int, pageSize: Int, projectId: String): Response<Page<RepositoryInfo>> {
+        return ResponseBuilder.success(repositoryService.page(projectId, pageNumber, pageSize))
     }
 
-    override fun create(repoCreateRequest: RepoCreateRequest): Response<RepositoryInfo> {
+    override fun create(repoCreateRequest: RepoCreateRequest): Response<RepositoryDetail> {
         return ResponseBuilder.success(repositoryService.create(repoCreateRequest))
     }
 

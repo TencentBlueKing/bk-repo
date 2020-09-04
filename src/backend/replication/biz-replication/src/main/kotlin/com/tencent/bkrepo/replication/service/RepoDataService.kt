@@ -18,6 +18,7 @@ import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.stereotype.Service
 import java.io.InputStream
@@ -46,27 +47,28 @@ class RepoDataService(
         return if (repoName == null) {
             repositoryClient.list(projectId).data!!
         } else {
-            listOf(repositoryClient.detail(projectId, repoName).data!!)
+            listOf(repositoryClient.getRepoInfo(projectId, repoName).data!!)
         }
     }
 
-    fun getRepositoryDetail(projectId: String, repoName: String): RepositoryInfo? {
-        return repositoryClient.detail(projectId, repoName).data
+    fun getRepositoryDetail(projectId: String, repoName: String): RepositoryDetail? {
+        return repositoryClient.getRepoDetail(projectId, repoName).data
     }
 
     fun countFileNode(repositoryInfo: RepositoryInfo): Long {
         return nodeClient.countFileNode(repositoryInfo.projectId, repositoryInfo.name, ROOT).data!!
     }
 
-    fun listFileNode(projectId: String, repoName: String, path: String = ROOT, page: Int = 0, size: Int = 100): List<NodeInfo> {
-        return nodeClient.page(projectId, repoName, page, size, path, includeFolder = false, includeMetadata = true, deep = true).data!!.records
+    fun listFileNode(projectId: String, repoName: String, path: String = ROOT, pageNumber: Int, pageSize: Int): List<NodeInfo> {
+        val nodePage = nodeClient.page(projectId, repoName, pageNumber, pageSize, path, includeFolder = false, includeMetadata = true, deep = true)
+        return nodeClient.page(projectId, repoName, pageNumber, pageSize, path, includeFolder = false, includeMetadata = true, deep = true).data!!.records
     }
 
     fun getMetadata(nodeInfo: NodeInfo): Map<String, String> {
         return metadataClient.query(nodeInfo.projectId, nodeInfo.repoName, nodeInfo.fullPath).data!!
     }
 
-    fun getFile(sha256: String, length: Long, repoInfo: RepositoryInfo): InputStream {
+    fun getFile(sha256: String, length: Long, repoInfo: RepositoryDetail): InputStream {
         return storageService.load(sha256, Range.ofFull(length), repoInfo.storageCredentials)
             ?: throw ReplicationException("File data does not exist")
     }

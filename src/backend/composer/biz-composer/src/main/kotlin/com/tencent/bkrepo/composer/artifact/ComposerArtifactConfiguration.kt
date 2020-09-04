@@ -12,7 +12,8 @@ import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 
 @Configuration
-class ComposerArtifactConfiguration : ArtifactConfiguration {
+class ComposerArtifactConfiguration :
+    ArtifactConfiguration {
 
     override fun getRepositoryType() = RepositoryType.COMPOSER
 

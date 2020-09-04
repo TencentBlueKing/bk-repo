@@ -7,7 +7,8 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 class ArtifactResource(
     val inputStream: ArtifactInputStream,
     val artifact: String,
-    val node: NodeDetail?
+    val node: NodeDetail?,
+    val channel: ArtifactChannel
 ) {
     var characterEncoding: String = StringPool.UTF_8
 }

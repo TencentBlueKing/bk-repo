@@ -13,22 +13,23 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
  */
 interface StorageService {
     /**
-     * 存储文件
+     * 在存储实例[storageCredentials]上存储摘要为[digest]的构件[artifactFile]
+     * 返回文件影响数，如果文件已经存在则返回0，否则返回1
      */
-    fun store(digest: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?)
+    fun store(digest: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?): Int
 
     /**
-     * 加载文件
+     * 在存储实例[storageCredentials]上加载摘要为[digest]的文件
      */
     fun load(digest: String, range: Range, storageCredentials: StorageCredentials?): ArtifactInputStream?
 
     /**
-     * 删除文件
+     * 在存储实例[storageCredentials]上删除摘要为[digest]的文件
      */
     fun delete(digest: String, storageCredentials: StorageCredentials?)
 
     /**
-     * 判断是否存在
+     * 判断摘要为[digest]的文件在存储实例[storageCredentials]上是否存在
      */
     fun exist(digest: String, storageCredentials: StorageCredentials?): Boolean
 

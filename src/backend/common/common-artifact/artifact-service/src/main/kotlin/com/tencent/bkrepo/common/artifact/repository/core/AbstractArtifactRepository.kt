@@ -1,27 +1,29 @@
 package com.tencent.bkrepo.common.artifact.repository.core
 
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_MD5
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_SHA256
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
-import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.util.response.ArtifactResourceWriter
+import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
 import com.tencent.bkrepo.common.security.http.SecurityUtils
-import com.tencent.bkrepo.repository.util.NodeUtils
+import com.tencent.bkrepo.repository.api.DownloadStatisticsClient
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
+import java.util.concurrent.Executor
+import javax.annotation.Resource
 
 /**
  * 构件仓库抽象类
@@ -31,6 +33,15 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
     lateinit var artifactMetrics: ArtifactMetrics
+
+    @Autowired
+    lateinit var publisher: ApplicationEventPublisher
+
+    @Autowired
+    lateinit var downloadStatisticsClient: DownloadStatisticsClient
+
+    @Resource
+    private lateinit var taskAsyncExecutor: Executor
 
     override fun upload(context: ArtifactUploadContext) {
         try {
@@ -54,7 +65,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             val artifactResponse = this.onDownload(context)
                 ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
             ArtifactResourceWriter.write(artifactResponse)
-            this.onDownloadSuccess(context)
+            this.onDownloadSuccess(context, artifactResponse)
         } catch (validateException: ArtifactValidateException) {
             this.onValidateFailed(context, validateException)
         } catch (exception: Exception) {
@@ -64,25 +75,20 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         }
     }
 
-    override fun search(context: ArtifactSearchContext): Any? {
-        throw UnsupportedMethodException()
-    }
-
-    override fun list(context: ArtifactListContext): Any? {
-        throw UnsupportedMethodException()
-    }
-
     override fun remove(context: ArtifactRemoveContext) {
         throw UnsupportedMethodException()
     }
 
-    override fun migrate(context: ArtifactMigrateContext): Any? {
+    override fun query(context: ArtifactQueryContext): Any? {
         throw UnsupportedMethodException()
     }
 
-    open fun determineArtifactName(context: ArtifactTransferContext): String {
-        val artifactUri = context.artifactInfo.artifactUri
-        return artifactUri.substring(artifactUri.lastIndexOf(NodeUtils.FILE_SEPARATOR) + 1)
+    override fun search(context: ArtifactSearchContext): List<Any> {
+        throw UnsupportedMethodException()
+    }
+
+    override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
+        throw UnsupportedMethodException()
     }
 
     /**
@@ -90,19 +96,6 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     @Throws(ArtifactValidateException::class)
     open fun onUploadValidate(context: ArtifactUploadContext) {
-        val sha256Map = mutableMapOf<String, String>()
-        val md5Map = mutableMapOf<String, String>()
-        // 计算sha256和md5
-        context.artifactFileMap.entries.forEach { (name, file) ->
-            sha256Map[name] = file.getFileSha256()
-            md5Map[name] = file.getFileMd5()
-            if (name == OCTET_STREAM) {
-                context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] = sha256Map[name] as String
-                context.contextAttributes[ATTRIBUTE_OCTET_STREAM_MD5] = md5Map[name] as String
-            }
-        }
-        context.contextAttributes[ATTRIBUTE_SHA256MAP] = sha256Map
-        context.contextAttributes[ATTRIBUTE_MD5MAP] = md5Map
     }
 
     /**
@@ -124,6 +117,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onUploadSuccess(context: ArtifactUploadContext) {
         artifactMetrics.uploadedCounter.increment()
+        publisher.publishEvent(ArtifactUploadedEvent(context))
         val artifactInfo = context.artifactInfo
         logger.info("User[${SecurityUtils.getPrincipal()}] upload artifact[$artifactInfo] success")
     }
@@ -160,25 +154,38 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     /**
      * 下载成功回调
      */
-    open fun onDownloadSuccess(context: ArtifactDownloadContext) {
+    open fun onDownloadSuccess(context: ArtifactDownloadContext, artifactResource: ArtifactResource) {
         artifactMetrics.downloadedCounter.increment()
-        val artifactInfo = context.artifactInfo
-        logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[$artifactInfo] success")
+        if (artifactResource.channel == ArtifactChannel.LOCAL) {
+            taskAsyncExecutor.execute {
+                downloadStatisticsClient.add(
+                    DownloadStatisticsAddRequest(
+                        context.artifactInfo.projectId,
+                        context.artifactInfo.repoName,
+                        context.artifactInfo.getArtifactName(),
+                        context.artifactInfo.getArtifactVersion()
+                    )
+                )
+            }
+        }
+        logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success")
     }
 
     /**
      * 下载失败回调
+     *
+     * 默认向上抛异常，由全局异常处理器处理
      */
     open fun onDownloadFailed(context: ArtifactDownloadContext, exception: Exception) {
-        // 默认向上抛异常，由全局异常处理器处理
         throw exception
     }
 
     /**
      * 验证失败回调
+     *
+     * 默认向上抛异常，由全局异常处理器处理
      */
-    open fun onValidateFailed(context: ArtifactTransferContext, validateException: ArtifactValidateException) {
-        // 默认向上抛异常，由全局异常处理器处理
+    open fun onValidateFailed(context: ArtifactContext, validateException: ArtifactValidateException) {
         throw validateException
     }
 

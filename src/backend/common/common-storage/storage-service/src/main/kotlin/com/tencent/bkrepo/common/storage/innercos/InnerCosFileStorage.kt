@@ -62,5 +62,4 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
         require(credentials.bucket.isNotBlank())
         return CosClient(credentials)
     }
-
 }

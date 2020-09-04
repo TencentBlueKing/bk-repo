@@ -44,7 +44,9 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
                         val userId = authHandler.onAuthenticate(request, authCredentials)
                         request.setAttribute(USER_KEY, userId)
                         authHandler.onAuthenticateSuccess(request, response, userId)
-                        logger.debug("User[${SecurityUtils.getPrincipal()}] authenticate success by ${authHandler.javaClass.simpleName}.")
+                        if (logger.isDebugEnabled) {
+                            logger.debug("User[${SecurityUtils.getPrincipal()}] authenticate success by ${authHandler.javaClass.simpleName}.")
+                        }
                         return true
                     } else if (isLoginRequest) {
                         throw AuthenticationException()
@@ -57,7 +59,9 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
         }
         // 没有合适的认证handler或为匿名用户
         if (httpAuthSecurity.isAnonymousEnabled()) {
-            logger.debug("None of the auth handler authenticate success, set anonymous user.")
+            if (logger.isDebugEnabled) {
+                logger.debug("None of the auth handler authenticate success, set anonymous user.")
+            }
             request.setAttribute(USER_KEY, ANONYMOUS_USER)
             return true
         } else {

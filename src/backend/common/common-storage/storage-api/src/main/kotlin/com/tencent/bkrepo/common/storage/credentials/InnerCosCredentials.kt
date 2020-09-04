@@ -14,9 +14,10 @@ data class InnerCosCredentials(
     var modId: Int? = null,
     var cmdId: Int? = null,
     var timeout: Float = 0.5F,
+    override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
     override var upload: UploadProperties = UploadProperties()
-) : StorageCredentials(cache, upload) {
+) : StorageCredentials(key, cache, upload) {
 
     companion object {
         const val type = "innercos"

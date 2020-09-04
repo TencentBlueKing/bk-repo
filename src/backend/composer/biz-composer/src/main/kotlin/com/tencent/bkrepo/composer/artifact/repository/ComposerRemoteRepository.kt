@@ -21,7 +21,7 @@ class ComposerRemoteRepository : RemoteRepository(), ComposerRepository {
     }
 
     override fun getJson(context: ArtifactSearchContext): String? {
-        val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
+        val remoteConfiguration = context.getRemoteConfiguration()
         val artifactUri = context.artifactInfo.artifactUri
         val remotePackagesUri = "${remoteConfiguration.url.removeSuffix("/")}$artifactUri"
         val okHttpClient = createHttpClient(remoteConfiguration)

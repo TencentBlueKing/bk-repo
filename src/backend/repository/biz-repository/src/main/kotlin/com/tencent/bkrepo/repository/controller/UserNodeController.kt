@@ -2,6 +2,8 @@ package com.tencent.bkrepo.repository.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -51,21 +53,21 @@ class UserNodeController(
 
     @ApiOperation("根据路径查看节点详情")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    @GetMapping(DEFAULT_MAPPING_URI)
+    @GetMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/detail/$DEFAULT_MAPPING_URI")
     fun detail(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<NodeDetail> {
         with(artifactInfo) {
-            val node = nodeService.detail(projectId, repoName, artifactUri)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
+            val node = nodeService.detail(projectId, repoName, getArtifactFullPath())
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactName())
             return ResponseBuilder.success(node)
         }
     }
 
     @ApiOperation("创建文件夹")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    @PostMapping(DEFAULT_MAPPING_URI)
+    @PostMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/mkdir/$DEFAULT_MAPPING_URI")
     fun mkdir(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
@@ -75,7 +77,7 @@ class UserNodeController(
                 projectId = projectId,
                 repoName = repoName,
                 folder = true,
-                fullPath = artifactUri,
+                fullPath = getArtifactFullPath(),
                 overwrite = false,
                 operator = userId
             )
@@ -86,7 +88,7 @@ class UserNodeController(
 
     @ApiOperation("删除节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    @DeleteMapping(DEFAULT_MAPPING_URI)
+    @DeleteMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/delete/$DEFAULT_MAPPING_URI")
     fun delete(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
@@ -95,7 +97,7 @@ class UserNodeController(
             val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = artifactUri,
+                fullPath = getArtifactFullPath(),
                 operator = userId
             )
             nodeService.delete(deleteRequest)
@@ -104,18 +106,19 @@ class UserNodeController(
     }
 
     @ApiOperation("更新节点")
-    @PostMapping("/update")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    @PostMapping("/update/$DEFAULT_MAPPING_URI")
     fun update(
         @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestBody request: UserNodeUpdateRequest
     ): Response<Void> {
-        with(request) {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
+        with(artifactInfo) {
             val updateRequest = NodeUpdateRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = fullPath,
-                expires = expires,
+                fullPath = getArtifactFullPath(),
+                expires = request.expires,
                 operator = userId
             )
             nodeService.update(updateRequest)
@@ -123,6 +126,28 @@ class UserNodeController(
         }
     }
 
+    @ApiOperation("重命名节点")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    @PostMapping("/rename/$DEFAULT_MAPPING_URI")
+    fun rename(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @RequestParam newFullPath: String
+    ): Response<Void> {
+        with(artifactInfo) {
+            val renameRequest = NodeRenameRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = getArtifactFullPath(),
+                newFullPath = newFullPath,
+                operator = userId
+            )
+            nodeService.rename(renameRequest)
+            return ResponseBuilder.success()
+        }
+    }
+
+    @Deprecated("/rename/{projectId}/{repoName}/**")
     @ApiOperation("重命名节点")
     @PostMapping("/rename")
     fun rename(
@@ -203,7 +228,7 @@ class UserNodeController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<NodeSizeInfo> {
         with(artifactInfo) {
-            val nodeSizeInfo = nodeService.computeSize(projectId, repoName, artifactUri)
+            val nodeSizeInfo = nodeService.computeSize(projectId, repoName, getArtifactFullPath())
             return ResponseBuilder.success(nodeSizeInfo)
         }
     }
@@ -214,10 +239,10 @@ class UserNodeController(
     fun page(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
-        @ApiParam(value = "当前页", required = true, defaultValue = "0")
-        @RequestParam page: Int = 0,
+        @ApiParam(value = "当前页", required = true, defaultValue = "1")
+        @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
         @ApiParam(value = "分页大小", required = true, defaultValue = "20")
-        @RequestParam size: Int = 20,
+        @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE,
         @ApiParam("是否包含目录", required = false, defaultValue = "true")
         @RequestParam includeFolder: Boolean = true,
         @ApiParam("是否包含元数据", required = false, defaultValue = "false")
@@ -226,7 +251,11 @@ class UserNodeController(
         @RequestParam deep: Boolean = false
     ): Response<Page<NodeInfo>> {
         with(artifactInfo) {
-            val nodePage = nodeService.page(projectId, repoName, artifactUri, page, size, includeFolder, includeMetadata, deep)
+            val nodePage = nodeService.page(
+                projectId, repoName, getArtifactFullPath(),
+                pageNumber, pageSize,
+                includeFolder, includeMetadata, deep
+            )
             return ResponseBuilder.success(nodePage)
         }
     }

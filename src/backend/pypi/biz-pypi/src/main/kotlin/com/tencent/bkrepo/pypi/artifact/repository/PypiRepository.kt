@@ -12,6 +12,11 @@ import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
 interface PypiRepository {
     fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>?
 
+    /**
+     * searchNodeList
+     *
+     * query
+     */
     fun searchXml(context: ArtifactSearchContext, xmlString: String) {
         val response = HttpContextHolder.getResponse()
         response.contentType = "text/xml; charset=UTF-8"

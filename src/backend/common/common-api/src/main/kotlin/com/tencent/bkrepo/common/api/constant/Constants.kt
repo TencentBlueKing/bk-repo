@@ -26,3 +26,9 @@ const val ANONYMOUS_USER = "anonymous"
 const val EXCEPTION_LOGGER_NAME = "ExceptionLogger"
 const val JOB_LOGGER_NAME = "JobLogger"
 const val ACCESS_LOGGER_NAME = "AccessLogger"
+
+/**
+ * default pagination parameter
+ */
+const val DEFAULT_PAGE_NUMBER = 1
+const val DEFAULT_PAGE_SIZE = 20

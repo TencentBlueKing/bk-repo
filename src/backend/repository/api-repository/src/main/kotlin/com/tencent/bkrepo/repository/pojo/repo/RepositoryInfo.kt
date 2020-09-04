@@ -3,7 +3,6 @@ package com.tencent.bkrepo.repository.pojo.repo
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -26,8 +25,8 @@ data class RepositoryInfo(
     val description: String?,
     @ApiModelProperty("仓库配置信息")
     val configuration: RepositoryConfiguration,
-    @ApiModelProperty("存储身份信息")
-    var storageCredentials: StorageCredentials? = null,
+    @ApiModelProperty("存储凭证key")
+    val storageCredentialsKey: String?,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建日期")

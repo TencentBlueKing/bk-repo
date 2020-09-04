@@ -64,7 +64,7 @@ class DockerArtifactRepo @Autowired constructor(
      */
     fun startAppend(context: RequestContext): String {
         // check repository
-        val repository = repositoryClient.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryClient.getRepoDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user [$userId]  download file [$context] repository not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
@@ -81,7 +81,7 @@ class DockerArtifactRepo @Autowired constructor(
      */
     fun writeAppend(context: RequestContext, uuid: String, artifactFile: ArtifactFile): Long {
         // check repository
-        val repository = repositoryClient.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryClient.getRepoDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user [$userId] append file [$context] repository not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
@@ -97,7 +97,7 @@ class DockerArtifactRepo @Autowired constructor(
      */
     fun finishAppend(context: UploadContext, uuid: String): Boolean {
         // check repository
-        val repository = repositoryClient.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryClient.getRepoDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user[$userId]  finish append file  [$context] not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
@@ -132,7 +132,7 @@ class DockerArtifactRepo @Autowired constructor(
     fun download(downloadContext: DownloadContext): InputStream {
         // check repository
         val context = downloadContext.context
-        val repository = repositoryClient.detail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
+        val repository = repositoryClient.getRepoDetail(context.projectId, context.repoName, REPO_TYPE).data ?: run {
             logger.warn("user [$userId]  download file [$context] repository not found")
             throw DockerRepoNotFoundException(context.repoName)
         }
@@ -152,7 +152,7 @@ class DockerArtifactRepo @Autowired constructor(
     fun upload(uploadContext: UploadContext): Boolean {
         // check repository
         val repository =
-            repositoryClient.detail(uploadContext.projectId, uploadContext.repoName, REPO_TYPE).data ?: run {
+            repositoryClient.getRepoDetail(uploadContext.projectId, uploadContext.repoName, REPO_TYPE).data ?: run {
                 logger.warn("user [$userId]  upload file  [$uploadContext] repository not found")
                 throw DockerRepoNotFoundException(uploadContext.repoName)
             }
