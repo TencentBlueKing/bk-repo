@@ -1,15 +1,15 @@
-package com.tencent.bkrepo.repository.util
+package com.tencent.bkrepo.common.artifact.path
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.repository.util.PathUtils.ROOT
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-@DisplayName("节点工具类测试")
-class NodeUtilsTest {
+@DisplayName("路径工具类测试")
+class PathUtilsTest {
 
     @Test
     fun testParseDirName() {
@@ -26,7 +26,7 @@ class NodeUtilsTest {
             PathUtils.parseFullPath("  /   a  /b/")
         )
 
-        assertDoesNotThrow { PathUtils.parseFullPath("/1/2/3/4/5/6/7/8/9/10") }
+        Assertions.assertDoesNotThrow { PathUtils.parseFullPath("/1/2/3/4/5/6/7/8/9/10") }
         assertThrows<ErrorCodeException> {
             PathUtils.parseFullPath(
                 "/../"
@@ -37,8 +37,8 @@ class NodeUtilsTest {
                 "/./"
             )
         }
-        assertDoesNotThrow { PathUtils.parseFullPath("/.1/") }
-        assertDoesNotThrow { PathUtils.parseFullPath("/..../") }
+        Assertions.assertDoesNotThrow { PathUtils.parseFullPath("/.1/") }
+        Assertions.assertDoesNotThrow { PathUtils.parseFullPath("/..../") }
     }
 
     @Test
@@ -88,19 +88,19 @@ class NodeUtilsTest {
 
     @Test
     fun testGetParentPath() {
-        assertEquals("/a/", PathUtils.getParentPath("/a/b"))
-        assertEquals("/a/", PathUtils.getParentPath("/a/b.txt"))
-        assertEquals("/a/b/", PathUtils.getParentPath("/a/b/c/"))
-        assertEquals("/", PathUtils.getParentPath("/a"))
-        assertEquals("/", PathUtils.getParentPath("/"))
+        assertEquals("/a/", PathUtils.resolvePath("/a/b"))
+        assertEquals("/a/", PathUtils.resolvePath("/a/b.txt"))
+        assertEquals("/a/b/", PathUtils.resolvePath("/a/b/c/"))
+        assertEquals("/", PathUtils.resolvePath("/a"))
+        assertEquals("/", PathUtils.resolvePath("/"))
     }
 
     @Test
     fun testGetName() {
-        assertEquals("b", PathUtils.getName("/a/b"))
-        assertEquals("b.txt", PathUtils.getName("/a/b.txt"))
-        assertEquals("", PathUtils.getName("/"))
-        assertEquals("c", PathUtils.getName("/a/b/c/"))
+        assertEquals("b", PathUtils.resolveName("/a/b"))
+        assertEquals("b.txt", PathUtils.resolveName("/a/b.txt"))
+        assertEquals("", PathUtils.resolveName("/"))
+        assertEquals("c", PathUtils.resolveName("/a/b/c/"))
     }
 
     @Test
