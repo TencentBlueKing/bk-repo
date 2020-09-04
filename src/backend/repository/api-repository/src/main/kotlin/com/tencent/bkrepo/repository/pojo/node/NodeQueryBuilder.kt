@@ -14,7 +14,7 @@ import com.tencent.bkrepo.common.query.model.Sort
  * val queryModel = NodeQueryBuilder()
  *      .select("size", "name", "path")
  *      .sortByAsc("name")
- *      .page(0, 50)
+ *      .page(1, 50)
  *      .projectId("test")
  *      .repoName("generic-local")
  *      .and()

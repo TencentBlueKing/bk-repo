@@ -2,6 +2,8 @@ package com.tencent.bkrepo.repository.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -237,10 +239,10 @@ class UserNodeController(
     fun page(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
-        @ApiParam(value = "当前页", required = true, defaultValue = "0")
-        @RequestParam pageNumber: Int = 0,
+        @ApiParam(value = "当前页", required = true, defaultValue = "1")
+        @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
         @ApiParam(value = "分页大小", required = true, defaultValue = "20")
-        @RequestParam pageSize: Int = 20,
+        @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE,
         @ApiParam("是否包含目录", required = false, defaultValue = "true")
         @RequestParam includeFolder: Boolean = true,
         @ApiParam("是否包含元数据", required = false, defaultValue = "false")
