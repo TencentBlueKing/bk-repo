@@ -221,9 +221,9 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
      */
     private fun buildListQuery(projectId: String, repoName: String? = null, repoType: String? = null): Query {
         val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId)
-        criteria.and(TRepository::display.name).`is`(true)
-        repoName?.let { criteria.and(TRepository::name.name).regex("^$repoName") }
-        repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
+        criteria.and(TRepository::display.name).ne(false)
+        repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name.name).regex("^$this") }
+        repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type.name).`is`(this.toUpperCase()) }
         return Query(criteria).with(Sort.by(TRepository::name.name))
     }
 
@@ -233,7 +233,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     private fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
         val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId)
         criteria.and(TRepository::name.name).`is`(repoName)
-        repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
+        repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type.name).`is`(this.toUpperCase()) }
         return Query(criteria)
     }
 
