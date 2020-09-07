@@ -8,10 +8,10 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combinePath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.escapeRegex
-import com.tencent.bkrepo.common.artifact.path.PathUtils.formatFullPath
-import com.tencent.bkrepo.common.artifact.path.PathUtils.formatPath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizePath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.isRoot
-import com.tencent.bkrepo.common.artifact.path.PathUtils.parseFullPath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.validateFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolvePath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -56,6 +56,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import springfox.documentation.spring.web.paths.Paths
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -85,7 +86,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
      */
     override fun detail(projectId: String, repoName: String, fullPath: String, repoType: String?): NodeDetail? {
         repositoryService.checkRepository(projectId, repoName, repoType)
-        val formattedFullPath = formatFullPath(fullPath)
+        val formattedFullPath = normalizeFullPath(fullPath)
         return convertToDetail(nodeDao.findNode(projectId, repoName, formattedFullPath))
     }
 
@@ -95,16 +96,16 @@ class NodeServiceImpl : AbstractService(), NodeService {
     override fun computeSize(projectId: String, repoName: String, fullPath: String): NodeSizeInfo {
         repositoryService.checkRepository(projectId, repoName)
 
-        val formattedFullPath = formatFullPath(fullPath)
-        val node = nodeDao.findNode(projectId, repoName, formattedFullPath)
-            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, formattedFullPath)
+        val normalizedFullPath = normalizeFullPath(fullPath)
+        val node = nodeDao.findNode(projectId, repoName, normalizedFullPath)
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, normalizedFullPath)
         // 节点为文件直接返回
         if (!node.folder) {
             return NodeSizeInfo(subNodeCount = 0, size = node.size)
         }
 
         val criteria =
-            nodeListCriteria(projectId, repoName, formatPath(formattedFullPath), includeFolder = true, deep = true)
+            nodeListCriteria(projectId, repoName, normalizePath(normalizedFullPath), includeFolder = true, deep = true)
         val count = nodeDao.count(Query(criteria))
 
         val aggregation = Aggregation.newAggregation(
@@ -124,7 +125,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
      */
     override fun countFileNode(projectId: String, repoName: String, path: String): Long {
         repositoryService.checkRepository(projectId, repoName)
-        val formattedPath = formatPath(path)
+        val formattedPath = normalizePath(path)
         val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = false, includeMetadata = false, deep = true)
         return nodeDao.count(query)
     }
@@ -176,7 +177,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
      * 判断节点是否存在
      */
     override fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
-        val formattedPath = formatFullPath(fullPath)
+        val formattedPath = normalizeFullPath(fullPath)
         val query = nodeQuery(projectId, repoName, formattedPath)
 
         return nodeDao.exists(query)
@@ -186,7 +187,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
      * 判断节点列表是否存在
      */
     override fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String> {
-        val formatFullPathList = fullPathList.map { formatFullPath(it) }
+        val formatFullPathList = fullPathList.map { normalizeFullPath(it) }
         val query = nodeListQuery(projectId, repoName, formatFullPathList)
 
         return nodeDao.find(query).map { it.fullPath }
@@ -202,7 +203,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
             this.takeIf { folder || !md5.isNullOrBlank() }
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::md5.name)
-            val fullPath = parseFullPath(fullPath)
+            val fullPath = validateFullPath(fullPath)
             val repo = repositoryService.checkRepository(projectId, repoName)
             // 路径唯一性校验
             nodeDao.findNode(projectId, repoName, fullPath)?.let {
@@ -267,8 +268,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
     @Transactional(rollbackFor = [Throwable::class])
     override fun rename(renameRequest: NodeRenameRequest) {
         renameRequest.apply {
-            val fullPath = formatFullPath(this.fullPath)
-            val newFullPath = formatFullPath(this.newFullPath)
+            val fullPath = normalizeFullPath(this.fullPath)
+            val newFullPath = normalizeFullPath(this.newFullPath)
 
             repositoryService.checkRepository(projectId, repoName)
             val node = nodeDao.findNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(
@@ -290,7 +291,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
     @Transactional(rollbackFor = [Throwable::class])
     override fun update(updateRequest: NodeUpdateRequest) {
         updateRequest.apply {
-            val fullPath = formatFullPath(this.fullPath)
+            val fullPath = normalizeFullPath(this.fullPath)
             repositoryService.checkRepository(projectId, repoName)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
@@ -361,8 +362,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
         // 如果为文件夹，查询子节点并修改
         if (node.folder) {
             mkdirs(projectId, repoName, newFullPath, operator)
-            val newParentPath = formatPath(newFullPath)
-            val fullPath = formatPath(node.fullPath)
+            val newParentPath = normalizePath(newFullPath)
+            val fullPath = normalizePath(node.fullPath)
             val query = nodeListQuery(projectId, repoName, fullPath, includeFolder = true, includeMetadata = false, deep = false)
             nodeDao.find(query).forEach { doRename(it, newParentPath + it.name, operator) }
             // 删除自己
@@ -379,8 +380,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
      * 根据全路径删除文件或者目录
      */
     override fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String, soft: Boolean) {
-        val formattedFullPath = formatFullPath(fullPath)
-        val formattedPath = formatPath(formattedFullPath)
+        val formattedFullPath = normalizeFullPath(fullPath)
+        val formattedPath = normalizePath(formattedFullPath)
         val escapedPath = escapeRegex(formattedPath)
         val query = nodeQuery(projectId, repoName)
         query.addCriteria(
@@ -435,10 +436,10 @@ class NodeServiceImpl : AbstractService(), NodeService {
      */
     private fun moveOrCopy(request: CrossRepoNodeRequest, operator: String) {
         with(request) {
-            val srcFullPath = formatFullPath(srcFullPath)
+            val srcFullPath = normalizeFullPath(srcFullPath)
             val destProjectId = request.destProjectId ?: srcProjectId
             val destRepoName = request.destRepoName ?: srcRepoName
-            val destFullPath = formatFullPath(request.destFullPath)
+            val destFullPath = normalizeFullPath(request.destFullPath)
 
             val isSameRepository = srcProjectId == destProjectId && srcRepoName == destRepoName
             // 查询repository
@@ -465,7 +466,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
             // 同路径，跳过
             if (isSameRepository && srcNode.fullPath == destNode?.fullPath) return
             // src为dest目录下的子节点，跳过
-            if (isSameRepository && destNode?.folder == true && srcNode.path == formatPath(destNode.fullPath)) return
+            if (isSameRepository && destNode?.folder == true && srcNode.path == normalizePath(destNode.fullPath)) return
             // 目录 ->
             if (srcNode.folder) {
                 // 目录 -> 文件: error
@@ -483,12 +484,12 @@ class NodeServiceImpl : AbstractService(), NodeService {
                     combinePath(path, name)
                 } else {
                     // 目录 -> 存在的目录
-                    val path = formatPath(destNode.fullPath)
+                    val path = normalizePath(destNode.fullPath)
                     // 操作节点
                     moveOrCopyNode(srcNode, destRepository, srcCredentials, destCredentials, path, srcNode.name, request, operator)
                     combinePath(path, srcNode.name)
                 }
-                val srcRootNodePath = formatPath(srcNode.fullPath)
+                val srcRootNodePath = normalizePath(srcNode.fullPath)
                 val query = nodeListQuery(
                     srcNode.projectId,
                     srcNode.repoName,
@@ -504,7 +505,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 }
             } else {
                 // 文件 ->
-                val destPath = if (destNode?.folder == true) formatPath(destNode.fullPath) else resolvePath(destFullPath)
+                val destPath = if (destNode?.folder == true) normalizePath(destNode.fullPath) else resolvePath(destFullPath)
                 val destName = if (destNode?.folder == true) srcNode.name else resolveName(destFullPath)
                 // 创建dest父目录
                 mkdirs(destProjectId, destRepoName, destPath, operator)

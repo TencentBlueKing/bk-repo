@@ -41,7 +41,7 @@ class ArtifactInfoMethodArgumentResolver : HandlerMethodArgumentResolver {
             )
         }
         val resolver = resolverMap.getResolver(parameter.parameterType.kotlin as KClass<out ArtifactInfo>)
-        val artifactInfo = resolver.resolve(projectId, repoName, PathUtils.formatFullPath(artifactUri), request)
+        val artifactInfo = resolver.resolve(projectId, repoName, PathUtils.normalizeFullPath(artifactUri), request)
         request.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
         return artifactInfo
     }

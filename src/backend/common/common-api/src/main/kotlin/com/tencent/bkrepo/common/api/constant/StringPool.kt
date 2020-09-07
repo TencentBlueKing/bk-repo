@@ -28,3 +28,4 @@ object StringPool {
 }
 
 fun String.ensurePrefix(prefix: String) = if (startsWith(prefix)) this else prefix + this
+fun String.ensureSuffix(suffix: String) = if (endsWith(suffix)) this else this + suffix

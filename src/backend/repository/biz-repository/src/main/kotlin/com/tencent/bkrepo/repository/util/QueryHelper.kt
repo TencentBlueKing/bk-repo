@@ -33,7 +33,7 @@ object QueryHelper {
     }
 
     fun nodeListCriteria(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Criteria {
-        val formattedPath = PathUtils.formatPath(path)
+        val formattedPath = PathUtils.normalizePath(path)
         val escapedPath = PathUtils.escapeRegex(formattedPath)
         val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
             .and(TNode::repoName.name).`is`(repoName)

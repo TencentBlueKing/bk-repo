@@ -2,7 +2,7 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.path.PathUtils.formatFullPath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.listener.event.metadata.MetadataDeletedEvent
 import com.tencent.bkrepo.repository.listener.event.metadata.MetadataSavedEvent
@@ -44,7 +44,7 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
             return
         }
         request.apply {
-            val fullPath = formatFullPath(fullPath)
+            val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             val originalMetadata = convert(node.metadata).toMutableMap()
@@ -65,7 +65,7 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
             return
         }
         request.apply {
-            val fullPath = formatFullPath(request.fullPath)
+            val fullPath = normalizeFullPath(request.fullPath)
             repositoryService.checkRepository(projectId, repoName)
             val query = QueryHelper.nodeQuery(projectId, repoName, fullPath)
             val update = Update().pull(

@@ -12,65 +12,57 @@ import org.junit.jupiter.api.assertThrows
 class PathUtilsTest {
 
     @Test
-    fun testParseDirName() {
-        assertEquals(ROOT, PathUtils.parseFullPath("/"))
-        assertEquals(ROOT, PathUtils.parseFullPath("  /   "))
-        assertEquals(ROOT, PathUtils.parseFullPath("  "))
-        assertEquals("/a", PathUtils.parseFullPath("  /   a"))
+    fun testValidateFullPath() {
+        assertEquals(ROOT, PathUtils.validateFullPath("/"))
+        assertEquals(ROOT, PathUtils.validateFullPath("  /   "))
+        assertEquals(ROOT, PathUtils.validateFullPath("  "))
+        assertEquals("/a", PathUtils.validateFullPath("  /   a"))
         assertEquals(
             "/a/b",
-            PathUtils.parseFullPath("  /   a  /b")
+            PathUtils.validateFullPath("  /   a  /b")
         )
         assertEquals(
             "/a/b",
-            PathUtils.parseFullPath("  /   a  /b/")
+            PathUtils.validateFullPath("  /   a  /b/")
         )
 
-        Assertions.assertDoesNotThrow { PathUtils.parseFullPath("/1/2/3/4/5/6/7/8/9/10") }
-        assertThrows<ErrorCodeException> {
-            PathUtils.parseFullPath(
-                "/../"
-            )
-        }
-        assertThrows<ErrorCodeException> {
-            PathUtils.parseFullPath(
-                "/./"
-            )
-        }
-        Assertions.assertDoesNotThrow { PathUtils.parseFullPath("/.1/") }
-        Assertions.assertDoesNotThrow { PathUtils.parseFullPath("/..../") }
+        Assertions.assertDoesNotThrow { PathUtils.validateFullPath("/1/2/3/4/5/6/7/8/9/10") }
+        assertThrows<ErrorCodeException> { PathUtils.validateFullPath("/../") }
+        assertEquals(ROOT, PathUtils.validateFullPath("/./"))
+        assertEquals("/.1", PathUtils.validateFullPath("/.1/"))
+        assertEquals("/....", PathUtils.validateFullPath("/..../"))
     }
 
     @Test
-    fun testParseFileName() {
-        assertEquals("abc", PathUtils.parseFileName("abc"))
-        assertEquals("中文测试", PathUtils.parseFileName("中文测试"))
+    fun testValidateFileName() {
+        assertEquals("abc", PathUtils.validateFileName("abc"))
+        assertEquals("中文测试", PathUtils.validateFileName("中文测试"))
         assertEquals(
             "！@……&%#&¥*@#¥*（！——#！!@(#(!\$",
-            PathUtils.parseFileName("！@……&%#&¥*@#¥*（！——#！!@(#(!$")
+            PathUtils.validateFileName("！@……&%#&¥*@#¥*（！——#！!@(#(!$")
         )
         assertThrows<ErrorCodeException> {
-            PathUtils.parseFileName(
+            PathUtils.validateFileName(
                 ""
             )
         }
         assertThrows<ErrorCodeException> {
-            PathUtils.parseFileName(
+            PathUtils.validateFileName(
                 "   "
             )
         }
         assertThrows<ErrorCodeException> {
-            PathUtils.parseFileName(
+            PathUtils.validateFileName(
                 ".."
             )
         }
         assertThrows<ErrorCodeException> {
-            PathUtils.parseFileName(
+            PathUtils.validateFileName(
                 "."
             )
         }
         assertThrows<ErrorCodeException> {
-            PathUtils.parseFileName(
+            PathUtils.validateFileName(
                 "dsjfkjafk/dsajdklsak"
             )
         }
@@ -80,14 +72,11 @@ class PathUtilsTest {
     fun testCombineFullPath() {
         assertEquals("/a", PathUtils.combineFullPath("", "a"))
         assertEquals("/a/b", PathUtils.combineFullPath("/a", "b"))
-        assertEquals(
-            "/a/b",
-            PathUtils.combineFullPath("/a/", "b")
-        )
+        assertEquals("/a/b", PathUtils.combineFullPath("/a/", "b"))
     }
 
     @Test
-    fun testGetParentPath() {
+    fun testResolvePath() {
         assertEquals("/a/", PathUtils.resolvePath("/a/b"))
         assertEquals("/a/", PathUtils.resolvePath("/a/b.txt"))
         assertEquals("/a/b/", PathUtils.resolvePath("/a/b/c/"))
@@ -96,7 +85,7 @@ class PathUtilsTest {
     }
 
     @Test
-    fun testGetName() {
+    fun testResolveName() {
         assertEquals("b", PathUtils.resolveName("/a/b"))
         assertEquals("b.txt", PathUtils.resolveName("/a/b.txt"))
         assertEquals("", PathUtils.resolveName("/"))
@@ -114,13 +103,16 @@ class PathUtilsTest {
 
     @Test
     fun testFormatPath() {
-        assertEquals("/.*|^/a/", PathUtils.formatPath("/.*|^/a"))
+        assertEquals("/.*|^/a/", PathUtils.normalizePath("/.*|^/a"))
         assertEquals(
             "/.*|^/a",
-            PathUtils.formatFullPath("/.*|^/a")
+            PathUtils.normalizeFullPath("/.*|^/a")
         )
 
-        assertEquals("/a/b/", PathUtils.formatPath("/a/b"))
-        assertEquals("/a/b/", PathUtils.formatPath("/a/b/"))
+        assertEquals("/a/b/c", PathUtils.normalizeFullPath("./a/b/c"))
+        assertEquals("/.a/b/c", PathUtils.normalizeFullPath("./.a/./b/c/."))
+
+        assertEquals("/a/b/", PathUtils.normalizePath("/a/b"))
+        assertEquals("/a/b/", PathUtils.normalizePath("/a/b/"))
     }
 }

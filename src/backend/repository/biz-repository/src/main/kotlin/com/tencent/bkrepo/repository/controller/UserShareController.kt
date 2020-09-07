@@ -57,7 +57,7 @@ class UserShareController(
             permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
             val shareRecordCreateRequest = ShareRecordCreateRequest(authorizedUserList, authorizedIpList, expireSeconds)
             val recordInfoList = fullPathList.map {
-                val artifactInfo = DefaultArtifactInfo(projectId, repoName, PathUtils.formatFullPath(it))
+                val artifactInfo = DefaultArtifactInfo(projectId, repoName, PathUtils.normalizeFullPath(it))
                 shareService.create(userId, artifactInfo, shareRecordCreateRequest)
             }
             return ResponseBuilder.success(recordInfoList)
