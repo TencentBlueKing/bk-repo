@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.repository.service.query
 
-import com.tencent.bkrepo.common.api.constant.StringPool.DOT
 import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.repository.constant.METADATA_PREFIX
 import com.tencent.bkrepo.repository.model.TMetadata
 import com.tencent.bkrepo.repository.model.TNode
 import org.springframework.data.mongodb.core.query.Criteria
@@ -28,9 +28,5 @@ class MetadataRuleInterceptor : QueryRuleInterceptor {
         val criteria = context.resolveRule(nestedAndRule)
 
         return Criteria.where(TNode::metadata.name).elemMatch(criteria)
-    }
-
-    companion object {
-        private val METADATA_PREFIX = TNode::metadata.name + DOT
     }
 }

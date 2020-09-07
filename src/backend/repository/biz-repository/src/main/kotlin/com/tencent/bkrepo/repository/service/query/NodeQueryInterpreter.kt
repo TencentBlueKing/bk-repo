@@ -8,6 +8,7 @@ class NodeQueryInterpreter : MongoQueryInterpreter() {
     init {
         addModelInterceptor(NodeQueryInterceptor())
         addModelInterceptor(NodeSelectInterceptor())
+        addRuleInterceptor(StageTagRuleInterceptor())
         addRuleInterceptor(MetadataRuleInterceptor())
     }
 }

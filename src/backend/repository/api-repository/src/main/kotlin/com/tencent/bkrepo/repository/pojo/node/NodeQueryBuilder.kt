@@ -190,7 +190,7 @@ class NodeQueryBuilder {
      *
      */
     fun stage(stage: ArtifactStageEnum, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
-        return this.rule(true, METADATA_PREFIX + SystemMetadata.STAGE.key, stage.tag, operation)
+        return this.metadata(SystemMetadata.STAGE.key, stage.tag, operation)
     }
 
     /**
