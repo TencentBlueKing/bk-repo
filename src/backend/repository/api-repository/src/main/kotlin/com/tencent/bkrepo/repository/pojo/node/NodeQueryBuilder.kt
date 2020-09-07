@@ -5,6 +5,9 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.repository.constant.METADATA_PREFIX
+import com.tencent.bkrepo.repository.constant.SystemMetadata
+import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 
 /**
  * 节点自定义查询构造器
@@ -183,6 +186,14 @@ class NodeQueryBuilder {
     }
 
     /**
+     * 添加制品晋级状态规则
+     *
+     */
+    fun stage(stage: ArtifactStageEnum, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
+        return this.rule(true, METADATA_PREFIX + SystemMetadata.STAGE.key, stage.tag, operation)
+    }
+
+    /**
      * 添加文件名字段规则
      *
      * [value]为值，[operation]为查询操作类型，默认为EQ查询
@@ -237,7 +248,6 @@ class NodeQueryBuilder {
     }
 
     companion object {
-        private const val METADATA_PREFIX = "metadata."
         private const val SIZE_FILED = "size"
         private const val NAME_FILED = "name"
         private const val PATH_FILED = "path"

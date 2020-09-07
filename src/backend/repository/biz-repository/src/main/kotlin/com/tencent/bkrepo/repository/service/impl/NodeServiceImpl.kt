@@ -17,6 +17,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.resolvePath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.constant.SystemMetadata
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
@@ -624,7 +625,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                     sha256 = it.sha256,
                     md5 = it.md5,
                     metadata = metadata,
-                    stageTag = ArtifactStageEnum.of(metadata[StageServiceImpl.STAGE_METADATA_KEY]).getDisplayTag(),
+                    stageTag = ArtifactStageEnum.ofTagOrDefault(metadata[SystemMetadata.STAGE.key]).getDisplayTag(),
                     repoName = it.repoName,
                     projectId = it.projectId
                 )

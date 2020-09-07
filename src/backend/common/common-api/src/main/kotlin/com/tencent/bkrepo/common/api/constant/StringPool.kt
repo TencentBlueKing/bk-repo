@@ -26,3 +26,5 @@ object StringPool {
 
     fun uniqueId() = UUID.randomUUID().toString().replace(DASH, EMPTY).toLowerCase()
 }
+
+fun String.ensurePrefix(prefix: String) = if (startsWith(prefix)) this else prefix + this

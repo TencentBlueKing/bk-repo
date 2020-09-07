@@ -1,12 +1,13 @@
 package com.tencent.bkrepo.repository.pojo.stage
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.ensurePrefix
 
 /**
  * 制品晋级阶段枚举类
  */
 enum class ArtifactStageEnum(
-    val value: String
+    val tag: String
 ) {
     /**
      * 无
@@ -24,38 +25,26 @@ enum class ArtifactStageEnum(
     RELEASE("@release");
 
     /**
-     * 判断是否当前阶段是否能晋级
-     */
-    fun canUpgrade(): Boolean {
-        return this != RELEASE
-    }
-
-    /**
-     * 判断是否当前阶段是否能降级
-     */
-    fun canDowngrade(): Boolean {
-        return this != PRE_RELEASE && this != NONE
-    }
-
-    /**
      * 晋级
      */
-    fun upgrade(): ArtifactStageEnum {
+    @Throws(IllegalStateException::class)
+    fun upgrade(newStage: ArtifactStageEnum): ArtifactStageEnum {
+        when {
+            this == NONE && newStage == NONE -> throw IllegalStateException()
+            this == PRE_RELEASE && newStage != RELEASE -> throw IllegalStateException()
+            this == RELEASE -> throw IllegalStateException()
+        }
+        return newStage
+    }
+
+    /**
+     * 下一个阶段
+     */
+    fun nextStage(): ArtifactStageEnum {
         return when(this) {
             NONE -> PRE_RELEASE
             PRE_RELEASE -> RELEASE
             RELEASE -> throw IllegalStateException()
-        }
-    }
-
-    /**
-     * 降级
-     */
-    fun downgrade(): ArtifactStageEnum {
-        return when(this) {
-            NONE -> throw IllegalStateException()
-            PRE_RELEASE -> throw IllegalStateException()
-            RELEASE -> PRE_RELEASE
         }
     }
 
@@ -65,20 +54,38 @@ enum class ArtifactStageEnum(
     fun getDisplayTag(): String {
         return when(this) {
             NONE -> StringPool.EMPTY
-            PRE_RELEASE -> PRE_RELEASE.value
-            RELEASE -> listOf(PRE_RELEASE.value, RELEASE.value).joinToString { StringPool.COMMA }
+            PRE_RELEASE -> PRE_RELEASE.tag
+            RELEASE -> listOf(PRE_RELEASE.tag, RELEASE.tag).joinToString { StringPool.COMMA }
         }
     }
 
     companion object {
+        /**
+         * 根据[tag]反查[ArtifactStageEnum]
+         */
+        fun ofTag(tag: String?): ArtifactStageEnum? {
+            if (tag == null) {
+                return NONE
+            }
+            val normalizedTag = tag.ensurePrefix(StringPool.AT)
+            val lowerCase = normalizedTag.toLowerCase()
+            return values().find { it.tag == lowerCase }
+        }
 
         /**
-         * 根据[value]反查[ArtifactStageEnum]
+         * 根据[tag]反查[ArtifactStageEnum]，不存在返回默认[NONE]
          */
-        fun of(value: String?): ArtifactStageEnum {
-            if (value == null) return NONE
-            val upperCase = value.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
+        fun ofTagOrDefault(tag: String?): ArtifactStageEnum {
+            return ofTag(tag) ?: NONE
+        }
+
+        /**
+         * 根据[name]反查[ArtifactStageEnum]
+         */
+        fun ofName(name: String?): ArtifactStageEnum? {
+            if (name == null) return NONE
+            val upperCase = name.toUpperCase()
+            return values().find { it.name == upperCase }
         }
     }
 }

@@ -14,6 +14,7 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -35,8 +36,11 @@ class UserStageController(
     @ApiOperation("制品晋级")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     @PostMapping("/upgrade$DEFAULT_MAPPING_URI")
-    fun upgrade(@ArtifactPathVariable artifactInfo: ArtifactInfo): Response<Void> {
-        stageService.upgrade(artifactInfo)
+    fun upgrade(
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @RequestParam tag: String? = null
+    ): Response<Void> {
+        stageService.upgrade(artifactInfo, tag)
         return ResponseBuilder.success()
     }
 }

@@ -36,8 +36,4 @@ interface StageClient {
     @ApiOperation("制品晋级")
     @PostMapping("/upgrade")
     fun upgrade(@RequestBody request: StageUpgradeRequest): Response<Void>
-
-    @ApiOperation("制品降级")
-    @PostMapping("/downgrade")
-    fun downgrade(@RequestBody request: StageUpgradeRequest): Response<Void>
 }

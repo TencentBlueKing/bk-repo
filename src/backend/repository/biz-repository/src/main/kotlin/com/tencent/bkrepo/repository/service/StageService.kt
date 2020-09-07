@@ -16,10 +16,5 @@ interface StageService {
     /**
      * 晋级构件
      */
-    fun upgrade(artifactInfo: ArtifactInfo)
-
-    /**
-     * 降级构件
-     */
-    fun downgrade(artifactInfo: ArtifactInfo)
+    fun upgrade(artifactInfo: ArtifactInfo, tag: String?)
 }

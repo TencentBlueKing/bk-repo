@@ -13,6 +13,8 @@ data class StageUpgradeRequest(
     override val repoName: String,
     @ApiModelProperty("节点完整路径", required = true)
     override val fullPath: String,
+    @ApiModelProperty("新的tag", required = true)
+    val newTag: String ?= null,
     @ApiModelProperty("操作用户", required = true)
     override val operator: String
 ) : NodeRequest, ServiceRequest

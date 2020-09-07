@@ -25,15 +25,7 @@ class StageController(
     override fun upgrade(request: StageUpgradeRequest): Response<Void> {
         with(request) {
             val artifactInfo = DefaultArtifactInfo(projectId, repoName, fullPath)
-            stageService.upgrade(artifactInfo)
-            return ResponseBuilder.success()
-        }
-    }
-
-    override fun downgrade(request: StageUpgradeRequest): Response<Void> {
-        with(request) {
-            val artifactInfo = DefaultArtifactInfo(projectId, repoName, fullPath)
-            stageService.downgrade(artifactInfo)
+            stageService.upgrade(artifactInfo, newTag)
             return ResponseBuilder.success()
         }
     }
