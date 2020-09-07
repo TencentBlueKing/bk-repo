@@ -8,7 +8,8 @@ class ArtifactResource(
     val inputStream: ArtifactInputStream,
     val artifact: String,
     val node: NodeDetail?,
-    val channel: ArtifactChannel
+    val channel: ArtifactChannel,
+    var useDisposition: Boolean = true
 ) {
     var characterEncoding: String = StringPool.UTF_8
 }

@@ -52,14 +52,16 @@ object ArtifactResourceWriter {
         response.contentType = determineMediaType(artifact)
         response.status = resolveStatus(request)
         response.setHeader(HttpHeaders.ACCEPT_RANGES, BYTES)
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, encodeDisposition(artifact))
         response.setHeader(HttpHeaders.CACHE_CONTROL, NO_CACHE)
+        response.setHeader(HttpHeaders.CONTENT_LENGTH, resolveContentLength(range))
+        response.setHeader(HttpHeaders.CONTENT_RANGE, resolveContentRange(range))
+        if (resource.useDisposition) {
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, encodeDisposition(artifact))
+        }
         node?.let {
             response.setHeader(HttpHeaders.ETAG, resolveETag(it))
             response.setDateHeader(HttpHeaders.LAST_MODIFIED, resolveLastModified(it.lastModifiedDate))
         }
-        response.setHeader(HttpHeaders.CONTENT_LENGTH, resolveContentLength(range))
-        response.setHeader(HttpHeaders.CONTENT_RANGE, resolveContentRange(range))
 
         try {
             resource.inputStream.use {
