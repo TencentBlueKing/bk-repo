@@ -35,6 +35,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.RepositoryService
@@ -84,7 +85,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
     override fun detail(projectId: String, repoName: String, fullPath: String, repoType: String?): NodeDetail? {
         repositoryService.checkRepository(projectId, repoName, repoType)
         val formattedFullPath = formatFullPath(fullPath)
-        return convertToDetail(queryNode(projectId, repoName, formattedFullPath))
+        return convertToDetail(nodeDao.findNode(projectId, repoName, formattedFullPath))
     }
 
     /**
@@ -94,7 +95,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
         repositoryService.checkRepository(projectId, repoName)
 
         val formattedFullPath = formatFullPath(fullPath)
-        val node = queryNode(projectId, repoName, formattedFullPath)
+        val node = nodeDao.findNode(projectId, repoName, formattedFullPath)
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, formattedFullPath)
         // 节点为文件直接返回
         if (!node.folder) {
@@ -203,7 +204,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
             val fullPath = parseFullPath(fullPath)
             val repo = repositoryService.checkRepository(projectId, repoName)
             // 路径唯一性校验
-            queryNode(projectId, repoName, fullPath)?.let {
+            nodeDao.findNode(projectId, repoName, fullPath)?.let {
                 if (!overwrite) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
                 } else if (it.folder || this.folder) {
@@ -269,7 +270,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
             val newFullPath = formatFullPath(this.newFullPath)
 
             repositoryService.checkRepository(projectId, repoName)
-            val node = queryNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(
+            val node = nodeDao.findNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(
                 ArtifactMessageCode.NODE_NOT_FOUND,
                 fullPath
             )
@@ -290,7 +291,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
         updateRequest.apply {
             val fullPath = formatFullPath(this.fullPath)
             repositoryService.checkRepository(projectId, repoName)
-            val node = queryNode(projectId, repoName, fullPath)
+            val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
             val selfUpdate = nodeExpireDateUpdate(parseExpireDate(expires), operator)
@@ -402,14 +403,6 @@ class NodeServiceImpl : AbstractService(), NodeService {
     }
 
     /**
-     * 查询节点model
-     */
-    private fun queryNode(projectId: String, repoName: String, fullPath: String): TNode? {
-        val query = nodeQuery(projectId, repoName, formatFullPath(fullPath))
-        return nodeDao.findOne(query)
-    }
-
-    /**
      * 递归创建目录
      */
     private fun mkdirs(projectId: String, repoName: String, path: String, createdBy: String) {
@@ -424,7 +417,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 fullPath = combineFullPath(parentPath, name),
                 size = 0,
                 expireDate = null,
-                metadata = emptyList(),
+                metadata = mutableListOf(),
                 projectId = projectId,
                 repoName = repoName,
                 createdBy = createdBy,
@@ -463,11 +456,11 @@ class NodeServiceImpl : AbstractService(), NodeService {
             if (srcRepository.category != RepositoryCategory.LOCAL || destRepository.category != RepositoryCategory.LOCAL) {
                 throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
             }
-            val srcNode = queryNode(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(
+            val srcNode = nodeDao.findNode(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(
                 ArtifactMessageCode.NODE_NOT_FOUND,
                 srcFullPath
             )
-            val destNode = queryNode(destProjectId, destRepoName, destFullPath)
+            val destNode = nodeDao.findNode(destProjectId, destRepoName, destFullPath)
             // 同路径，跳过
             if (isSameRepository && srcNode.fullPath == destNode?.fullPath) return
             // src为dest目录下的子节点，跳过
@@ -543,7 +536,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
         val destName = nodeName ?: srcNode.name
         val destFullPath = combineFullPath(destPath, destName)
         // 冲突检查
-        val existNode = queryNode(destRepository.projectId, destRepository.name, destFullPath)
+        val existNode = nodeDao.findNode(destRepository.projectId, destRepository.name, destFullPath)
         // 目录 -> 目录: 跳过
         if (srcNode.folder && existNode?.folder == true) return
         // 目录 -> 文件: 出错
@@ -617,6 +610,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
 
         private fun convert(tNode: TNode?): NodeInfo? {
             return tNode?.let {
+                val metadata = MetadataServiceImpl.convert(it.metadata)
                 NodeInfo(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
@@ -629,7 +623,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
                     size = it.size,
                     sha256 = it.sha256,
                     md5 = it.md5,
-                    metadata = MetadataServiceImpl.convertOrNull(it.metadata),
+                    metadata = metadata,
+                    stageTag = ArtifactStageEnum.of(metadata[StageServiceImpl.STAGE_METADATA_KEY]).getDisplayTag(),
                     repoName = it.repoName,
                     projectId = it.projectId
                 )

@@ -5,10 +5,12 @@ import java.util.UUID
 object StringPool {
     const val EMPTY = ""
     const val DOT = "."
+    const val COMMA = ","
     const val SLASH = "/"
     const val ROOT = SLASH
     const val COLON = ":"
     const val DASH = "-"
+    const val AT = "@"
     const val QUESTION = "?"
     const val HTTP = "http://"
     const val HTTPS = "https://"

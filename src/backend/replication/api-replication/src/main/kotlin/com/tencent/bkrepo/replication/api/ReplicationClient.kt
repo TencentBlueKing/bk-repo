@@ -24,7 +24,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.http.HttpHeaders
 import org.springframework.web.bind.annotation.GetMapping
@@ -132,7 +132,7 @@ interface ReplicationClient {
     fun replicaRepoCreateRequest(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
         @RequestBody request: RepoCreateRequest
-    ): Response<RepositoryInfo>
+    ): Response<RepositoryDetail>
 
     @PostMapping("/repo/update")
     fun replicaRepoUpdateRequest(

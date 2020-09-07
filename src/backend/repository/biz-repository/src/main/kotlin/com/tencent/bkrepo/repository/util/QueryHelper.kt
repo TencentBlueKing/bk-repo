@@ -18,10 +18,9 @@ object QueryHelper {
         val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
             .and(TNode::repoName.name).`is`(repoName)
             .and(TNode::deleted.name).`is`(null)
-        val query = Query(criteria)
-        fullPath?.run { criteria.and(TNode::fullPath.name).`is`(fullPath) }
+            .apply { fullPath?.run { and(TNode::fullPath.name).`is`(fullPath) } }
 
-        return query
+        return Query(criteria)
     }
 
     fun nodeListQuery(projectId: String, repoName: String, fullPathList: List<String>): Query {

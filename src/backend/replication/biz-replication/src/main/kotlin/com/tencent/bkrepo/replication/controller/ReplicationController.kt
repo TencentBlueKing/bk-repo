@@ -44,7 +44,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
@@ -182,7 +182,7 @@ class ReplicationController : ReplicationClient {
             // 保存文件
             val projectId = artifactInfo.projectId
             val repoName = artifactInfo.repoName
-            val fullPath = artifactInfo.artifactUri
+            val fullPath = artifactInfo.getArtifactFullPath()
             val repoInfo = repositoryClient.getRepoDetail(projectId, repoName).data!!
             storageService.store(sha256, file, repoInfo.storageCredentials)
             // 保存节点
@@ -227,7 +227,7 @@ class ReplicationController : ReplicationClient {
         return nodeClient.delete(nodeDeleteRequest)
     }
 
-    override fun replicaRepoCreateRequest(token: String, request: RepoCreateRequest): Response<RepositoryInfo> {
+    override fun replicaRepoCreateRequest(token: String, request: RepoCreateRequest): Response<RepositoryDetail> {
         return repositoryClient.getRepoDetail(request.projectId, request.name).data?.let { ResponseBuilder.success(it) }
             ?: repositoryClient.create(request)
     }

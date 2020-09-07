@@ -63,8 +63,12 @@ abstract class ArtifactInfo(
     override fun toString(): String {
         val builder = StringBuilder()
         builder.append(getRepoIdentify())
-            .append(StringPool.SLASH)
-            .append(getArtifactName())
+        getArtifactName().let {
+            if (!it.startsWith(StringPool.SLASH)) {
+                builder.append(StringPool.SLASH)
+            }
+            builder.append(getArtifactName())
+        }
         getArtifactVersion()?.let { builder.append(StringPool.DASH).append(it) }
         return builder.toString()
     }

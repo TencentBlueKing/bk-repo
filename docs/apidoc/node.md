@@ -64,6 +64,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   | size             | long   | 节点大小                    | file size            |
   | sha256           | string | 节点sha256                  | file sha256          |
   | md5              | string | 节点md5                     | file md5 checksum    |
+  | stageTag         | string | 晋级状态标签                | stage status tag     |
   | metadata         | object | 节点元数据，key-value键值对 | node metadata        |
   | createdBy        | string | 创建者                      | create user          |
   | createdDate      | string | 创建时间                    | create time          |
@@ -141,6 +142,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   | size             | long   | 节点大小                    | file size            |
   | sha256           | string | 节点sha256                  | file sha256          |
   | md5              | string | 节点md5                     | file md5 checksum    |
+  | stageTag         | string | 晋级状态标签                | stage status tag     |
   | metadata         | object | 节点元数据，key-value键值对 | node metadata        |
   | createdBy        | string | 创建者                      | create user          |
   | createdDate      | string | 创建时间                    | create time          |
@@ -578,3 +580,4 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 - 列表record字段说明
 
   由`select`筛选字段条件决定
+

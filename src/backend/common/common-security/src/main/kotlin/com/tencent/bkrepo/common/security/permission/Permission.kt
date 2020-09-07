@@ -15,3 +15,7 @@ annotation class Permission(
     val type: ResourceType,
     val action: PermissionAction
 )
+
+fun Permission.string(): String {
+    return "type=$type, action=$action"
+}

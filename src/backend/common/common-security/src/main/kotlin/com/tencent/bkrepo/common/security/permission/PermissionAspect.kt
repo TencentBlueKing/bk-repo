@@ -32,12 +32,12 @@ class PermissionAspect {
         return try {
             permissionCheckHandler.onPermissionCheck(userId, permission)
             if (logger.isDebugEnabled) {
-                logger.debug("User[$SecurityUtils.getPrincipal()] check permission [$permission] success.")
+                logger.debug("User[${SecurityUtils.getPrincipal()}] check permission [${permission.string()}] success.")
             }
             permissionCheckHandler.onPermissionCheckSuccess()
             point.proceed()
         } catch (exception: PermissionException) {
-            logger.warn("User[$SecurityUtils.getPrincipal()] check permission [$permission] failed.")
+            logger.warn("User[${SecurityUtils.getPrincipal()}] check permission [${permission.string()}] failed.")
             permissionCheckHandler.onPermissionCheckFailed(exception)
             null
         }

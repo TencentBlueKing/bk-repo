@@ -34,26 +34,23 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
     private lateinit var nodeDao: NodeDao
 
     override fun query(projectId: String, repoName: String, fullPath: String): Map<String, String> {
-        repositoryService.checkRepository(projectId, repoName)
         return convert(nodeDao.findOne(QueryHelper.nodeQuery(projectId, repoName, fullPath))?.metadata)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun save(request: MetadataSaveRequest) {
+        if (request.metadata.isNullOrEmpty()) {
+            logger.info("Metadata key list is empty, skip saving[$this]")
+            return
+        }
         request.apply {
-            if (!metadata.isNullOrEmpty()) {
-                repositoryService.checkRepository(projectId, repoName)
-                val fullPath = formatFullPath(fullPath)
-                nodeDao.findOne(QueryHelper.nodeQuery(projectId, repoName, fullPath))?.let { node ->
-                    val originalMetadata = convert(node.metadata).toMutableMap()
-                    metadata!!.forEach { (key, value) -> originalMetadata[key] = value }
-                    node.metadata = convert(originalMetadata)
-                    nodeDao.save(node)
-                } ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            } else {
-                logger.info("Metadata key list is empty, skip saving[$this]")
-                return
-            }
+            val fullPath = formatFullPath(fullPath)
+            val node = nodeDao.findNode(projectId, repoName, fullPath)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            val originalMetadata = convert(node.metadata).toMutableMap()
+            metadata!!.forEach { (key, value) -> originalMetadata[key] = value }
+            node.metadata = convert(originalMetadata)
+            nodeDao.save(node)
         }.also {
             publishEvent(MetadataSavedEvent(it))
         }.also {
@@ -63,20 +60,19 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun delete(request: MetadataDeleteRequest) {
+        if (request.keyList.isEmpty()) {
+            logger.info("Metadata key list is empty, skip deleting[$this]")
+            return
+        }
         request.apply {
-            if (keyList.isNotEmpty()) {
-                val fullPath = formatFullPath(request.fullPath)
-                repositoryService.checkRepository(projectId, repoName)
-                val query = QueryHelper.nodeQuery(projectId, repoName, fullPath)
-                val update = Update().pull(
-                    TNode::metadata.name,
-                    Query.query(Criteria.where(TMetadata::key.name).`in`(keyList))
-                )
-                nodeDao.updateMulti(query, update)
-            } else {
-                logger.info("Metadata key list is empty, skip deleting[$this]")
-                return
-            }
+            val fullPath = formatFullPath(request.fullPath)
+            repositoryService.checkRepository(projectId, repoName)
+            val query = QueryHelper.nodeQuery(projectId, repoName, fullPath)
+            val update = Update().pull(
+                TNode::metadata.name,
+                Query.query(Criteria.where(TMetadata::key.name).`in`(keyList))
+            )
+            nodeDao.updateMulti(query, update)
         }.also {
             publishEvent(MetadataDeletedEvent(it))
         }.also {
@@ -87,8 +83,8 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
     companion object {
         private val logger = LoggerFactory.getLogger(MetadataServiceImpl::class.java)
 
-        fun convert(metadataMap: Map<String, String>?): List<TMetadata> {
-            return metadataMap?.filter { it.key.isNotBlank() }?.map { TMetadata(it.key, it.value) }.orEmpty()
+        fun convert(metadataMap: Map<String, String>?): MutableList<TMetadata> {
+            return metadataMap?.filter { it.key.isNotBlank() }?.map { TMetadata(it.key, it.value) }.orEmpty().toMutableList()
         }
 
         fun convert(metadataList: List<TMetadata>?): Map<String, String> {

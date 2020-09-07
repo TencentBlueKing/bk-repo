@@ -14,11 +14,13 @@
 
 **[7. 元数据相关接口](./metadata.md)**
 
-**[8. 节点分享相关接口](./share.md)**
+**[8. 制品晋级相关接口](./stage.md)**
 
-**[9. 通用二进制仓库相关接口](./generic.md)**
+**[9. 节点分享相关接口](./share.md)**
 
-**[10. docekr仓库相关接口](./docker.md)**
+**[10. 通用二进制仓库相关接口](./generic.md)**
 
-**[11.docekr仓库扩展相关接口](./docker_ext.md)**
+**[11. docker仓库相关接口](./docker.md)**
+
+**[12.docker仓库扩展相关接口](./docker_ext.md)**
 
