@@ -3,9 +3,9 @@ package com.tencent.bkrepo.common.security.http.platform
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.CharPool.COLON
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.security.constant.PLATFORM_AUTH_PREFIX
@@ -32,7 +32,7 @@ open class PlatformAuthHandler(
             try {
                 val encodedCredentials = authorizationHeader.removePrefix(PLATFORM_AUTH_PREFIX)
                 val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
-                val parts = decodedHeader.split(StringPool.COLON)
+                val parts = decodedHeader.split(COLON)
                 require(parts.size >= 2)
                 PlatformAuthCredentials(parts[0], parts[1])
             } catch (exception: IllegalArgumentException) {

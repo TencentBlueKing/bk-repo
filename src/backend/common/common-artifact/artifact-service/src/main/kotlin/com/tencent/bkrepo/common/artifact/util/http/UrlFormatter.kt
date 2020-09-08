@@ -1,15 +1,14 @@
 package com.tencent.bkrepo.common.artifact.util.http
 
+import com.tencent.bkrepo.common.api.constant.CharPool.QUESTION
+import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.constant.StringPool.HTTP
 import com.tencent.bkrepo.common.api.constant.StringPool.HTTPS
-import com.tencent.bkrepo.common.api.constant.StringPool.QUESTION
 
 /**
  * Http URL 格式化工具类
  */
 object UrlFormatter {
-
-    private const val SLASH = '/'
 
     /**
      * 格式化url

@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.repository.pojo.node
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
-import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.path.PathUtils.UNIX_SEPARATOR
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -25,7 +25,7 @@ data class NodeListViewItem(
     companion object {
         private val formatters = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
         fun from(nodeInfo: NodeInfo): NodeListViewItem {
-            val normalizedName = if (nodeInfo.folder) nodeInfo.name + PathUtils.SEPARATOR else nodeInfo.name
+            val normalizedName = if (nodeInfo.folder) nodeInfo.name + UNIX_SEPARATOR else nodeInfo.name
             val normalizedSize = if (nodeInfo.folder) "-" else HumanReadable.size(nodeInfo.size)
             val localDateTime = LocalDateTime.parse(nodeInfo.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
             val lastModified = formatters.format(localDateTime)

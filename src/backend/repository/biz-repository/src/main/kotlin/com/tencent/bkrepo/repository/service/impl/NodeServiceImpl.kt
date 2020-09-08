@@ -13,7 +13,6 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizePath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolvePath
-import com.tencent.bkrepo.common.artifact.path.PathUtils.validateFullPath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -203,7 +202,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
             this.takeIf { folder || !md5.isNullOrBlank() }
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::md5.name)
-            val fullPath = validateFullPath(fullPath)
+            val fullPath = normalizeFullPath(fullPath)
             val repo = repositoryService.checkRepository(projectId, repoName)
             // 路径唯一性校验
             nodeDao.findNode(projectId, repoName, fullPath)?.let {

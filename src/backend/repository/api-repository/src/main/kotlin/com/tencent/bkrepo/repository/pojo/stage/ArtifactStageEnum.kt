@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.repository.pojo.stage
 
-import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.CharPool.AT
+import com.tencent.bkrepo.common.api.constant.StringPool.COMMA
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.constant.ensurePrefix
 
 /**
@@ -53,9 +55,9 @@ enum class ArtifactStageEnum(
      */
     fun getDisplayTag(): String {
         return when(this) {
-            NONE -> StringPool.EMPTY
+            NONE -> EMPTY
             PRE_RELEASE -> PRE_RELEASE.tag
-            RELEASE -> listOf(PRE_RELEASE.tag, RELEASE.tag).joinToString { StringPool.COMMA }
+            RELEASE -> listOf(PRE_RELEASE.tag, RELEASE.tag).joinToString { COMMA }
         }
     }
 
@@ -67,7 +69,7 @@ enum class ArtifactStageEnum(
             if (tag == null) {
                 return NONE
             }
-            val normalizedTag = tag.ensurePrefix(StringPool.AT)
+            val normalizedTag = tag.ensurePrefix(AT)
             val lowerCase = normalizedTag.toLowerCase()
             return values().find { it.tag == lowerCase }
         }
