@@ -9,11 +9,6 @@ import com.tencent.bkrepo.repository.model.TMetadata
 import com.tencent.bkrepo.repository.model.TNode
 import org.springframework.data.mongodb.core.query.Criteria
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/15
- */
 class MetadataRuleInterceptor : QueryRuleInterceptor {
 
     override fun match(rule: Rule): Boolean {

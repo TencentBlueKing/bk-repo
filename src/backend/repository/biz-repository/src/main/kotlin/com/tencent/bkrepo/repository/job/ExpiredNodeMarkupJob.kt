@@ -16,8 +16,6 @@ import java.time.LocalDateTime
 
 /**
  * 标记已过期的节点为已删除
- * @author: carrypan
- * @date: 2019/12/24
  */
 @Component
 class ExpiredNodeMarkupJob {
@@ -32,32 +30,28 @@ class ExpiredNodeMarkupJob {
     @SchedulerLock(name = "ExpiredNodeMarkupJob", lockAtMostFor = "PT1H")
     fun markUp() {
         logger.info("Starting to mark up expired nodes.")
-        try {
-            var markupCount = 0L
-            val startTimeMillis = System.currentTimeMillis()
-            val query = Query.query(Criteria.where(TNode::expireDate.name).lt(LocalDateTime.now()))
-            val mongoTemplate = nodeDao.determineMongoTemplate()
-            for (sequence in 0 until SHARDING_COUNT) {
-                val collectionName = nodeDao.parseSequenceToCollectionName(sequence)
-                var page = 0
-                query.with(PageRequest.of(page, 1000))
-                var deletedNodeList = mongoTemplate.find(query, TNode::class.java, collectionName)
-                while (deletedNodeList.isNotEmpty()) {
-                    logger.info("Retrieved [${deletedNodeList.size}] expired records to be clean up.")
-                    deletedNodeList.forEach {
-                        nodeService.deleteByPath(it.projectId, it.repoName, it.fullPath, it.lastModifiedBy)
-                        markupCount += 1
-                    }
-                    page += 1
-                    query.with(PageRequest.of(page, 1000))
-                    deletedNodeList = mongoTemplate.find(query, TNode::class.java, collectionName)
+        var markupCount = 0L
+        val startTimeMillis = System.currentTimeMillis()
+        val query = Query.query(Criteria.where(TNode::expireDate.name).lt(LocalDateTime.now()))
+        val mongoTemplate = nodeDao.determineMongoTemplate()
+        for (sequence in 0 until SHARDING_COUNT) {
+            val collectionName = nodeDao.parseSequenceToCollectionName(sequence)
+            var page = 0
+            query.with(PageRequest.of(page, 1000))
+            var deletedNodeList = mongoTemplate.find(query, TNode::class.java, collectionName)
+            while (deletedNodeList.isNotEmpty()) {
+                logger.info("Retrieved [${deletedNodeList.size}] expired records to be clean up.")
+                deletedNodeList.forEach {
+                    nodeService.deleteByPath(it.projectId, it.repoName, it.fullPath, it.lastModifiedBy)
+                    markupCount += 1
                 }
+                page += 1
+                query.with(PageRequest.of(page, 1000))
+                deletedNodeList = mongoTemplate.find(query, TNode::class.java, collectionName)
             }
-            val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
-            logger.info("[$markupCount] nodes has been marked up with deleted status, elapse [$elapseTimeMillis] ms totally.")
-        } catch (exception: Exception) {
-            logger.error("Mark up deleted expired error.", exception)
         }
+        val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
+        logger.info("[$markupCount] nodes has been marked up with deleted status, elapse [$elapseTimeMillis] ms totally.")
     }
 
     companion object {

@@ -26,11 +26,6 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-/**
- *
- * @author: carrypan
- * @date: 2019-10-11
- */
 @Disabled
 @DisplayName("文件上传下载集成测试")
 class IntegrationTest {
@@ -60,7 +55,7 @@ class IntegrationTest {
             .header(HEADER_OVERWRITE, "true")
             .put(RequestBody.create(MediaType.parse("application/octet-stream"), content))
             .build()
-        checkResponse(client.newCall(request).execute(), object: TypeReference<Response<Void>>(){})
+        checkResponse(client.newCall(request).execute(), object : TypeReference<Response<Void>>() {})
 
         val downloadRequest = Request.Builder()
             .url(url)
@@ -85,7 +80,7 @@ class IntegrationTest {
             .header(HEADER_OVERWRITE, "true")
             .put(RequestBody.create(MediaType.parse("application/octet-stream"), file))
             .build()
-        checkResponse(client.newCall(request).execute(), object: TypeReference<Response<Void>>(){})
+        checkResponse(client.newCall(request).execute(), object : TypeReference<Response<Void>>() {})
 
         val totalTime = (System.currentTimeMillis() - start) / 1000
         val uploadSpeed = file.length().toFloat() / 1024 / 1024 / totalTime
@@ -115,16 +110,16 @@ class IntegrationTest {
             .post(RequestBody.create(null, ""))
             .header(HEADER_OVERWRITE, "true")
             .build()
-        val checkResponse = checkResponse(client.newCall(request).execute(), object: TypeReference<Response<UploadTransactionInfo>>(){})!!
+        val checkResponse = checkResponse(client.newCall(request).execute(), object : TypeReference<Response<UploadTransactionInfo>>() {})!!
         val uploadId = checkResponse.uploadId
         // 分块上传
         val inputStream = content.byteInputStream()
         val blockCount = 10
-        val blockSize = length/blockCount
+        val blockSize = length / blockCount
         val buffer = ByteArray(blockSize)
         val sha256List = mutableListOf<String>()
 
-        for(i in 1..blockCount) {
+        for (i in 1..blockCount) {
             inputStream.read(buffer)
             val byteArrayInputStream = ByteArrayInputStream(buffer)
             val blockSha256 = FileDigestUtils.fileSha256(listOf(byteArrayInputStream))
@@ -138,7 +133,7 @@ class IntegrationTest {
                 .header(HEADER_SIZE, blockSize.toString())
                 .put(RequestBody.create(MediaType.parse("application/octet-stream"), buffer))
                 .build()
-            checkResponse(client.newCall(blockRequest).execute(), object: TypeReference<Response<Void>>(){})
+            checkResponse(client.newCall(blockRequest).execute(), object : TypeReference<Response<Void>>() {})
         }
 
         // 查询分块
@@ -146,8 +141,8 @@ class IntegrationTest {
             .url(url)
             .header(HEADER_UPLOAD_ID, uploadId)
             .build()
-        
-        val blockList = checkResponse(client.newCall(blockInfoRequest).execute(), object: TypeReference<Response<List<BlockInfo>>>(){})!!
+
+        val blockList = checkResponse(client.newCall(blockInfoRequest).execute(), object : TypeReference<Response<List<BlockInfo>>>() {})!!
         Assertions.assertEquals(10, blockList.size)
         blockList.forEachIndexed { index, it -> Assertions.assertEquals(it.sha256, sha256List[index]) }
         // 完成上传
@@ -157,7 +152,7 @@ class IntegrationTest {
             .put(RequestBody.create(null, ""))
             .build()
 
-        checkResponse(client.newCall(completeRequest).execute(), object: TypeReference<Response<Void>>(){})
+        checkResponse(client.newCall(completeRequest).execute(), object : TypeReference<Response<Void>>() {})
         val downloadRequest = Request.Builder().url(uploadUrl).build()
         val downloadResponse = client.newCall(downloadRequest).execute()
         val downloadSha256 = FileDigestUtils.fileSha256(listOf(downloadResponse.body()!!.byteStream()))
@@ -175,5 +170,4 @@ class IntegrationTest {
 
         return responseData.data
     }
-
 }

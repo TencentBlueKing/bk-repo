@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.docker.resource
 
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.docker.api.User
 import com.tencent.bkrepo.docker.context.RequestContext
@@ -12,6 +15,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletRequest
 
+@Principal(PrincipalType.PLATFORM)
 @RestController
 class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) : User {
 
@@ -49,7 +53,7 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         repoName: String
     ): Response<List<String>> {
         val uId = UserUtil.getContextUserId(userId)
-        val context = RequestContext(uId, projectId, repoName, "")
+        val context = RequestContext(uId, projectId, repoName, EMPTY)
         val result = dockerRepo.getRepoList(context)
         return ResponseBuilder.success(result)
     }

@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.artifact.repository.remote
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.config.PROXY_AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCredentialsConfiguration
@@ -16,8 +16,8 @@ import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
 import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.NodeResource
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import okhttp3.Authenticator
 import okhttp3.Credentials
@@ -35,15 +35,10 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/26
- */
 abstract class RemoteRepository : AbstractArtifactRepository() {
 
     @Autowired
-    lateinit var nodeResource: NodeResource
+    lateinit var nodeClient: NodeClient
 
     @Autowired
     lateinit var storageService: StorageService
@@ -68,9 +63,10 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             val response = httpClient.newCall(request).execute()
             return if (checkResponse(response)) {
                 val artifactFile = createTempFile(response.body()!!)
-                val artifactStream = artifactFile.getInputStream().toArtifactStream()
-                val nodeInfo = putArtifactCache(context, artifactFile)
-                return ArtifactResource(artifactStream, determineArtifactName(context), nodeInfo)
+                val node = putArtifactCache(context, artifactFile)
+                val size = artifactFile.getSize()
+                val artifactStream = artifactFile.getInputStream().toArtifactStream(Range.full(size))
+                return ArtifactResource(artifactStream, determineArtifactName(context), node)
             } else null
         }
     }
@@ -83,14 +79,14 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
         if (!cacheConfiguration.cacheEnabled) return null
 
-        val nodeInfo = getCacheNodeInfo(context) ?: return null
-        if (nodeInfo.folder) return null
-        val createdDate = LocalDateTime.parse(nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
+        val node = getCacheNodeDetail(context) ?: return null
+        if (node.folder) return null
+        val createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
-            storageService.load(nodeInfo.sha256!!, Range.ofFull(nodeInfo.size), context.storageCredentials)?.run {
+            storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)?.run {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
-                ArtifactResource(this, determineArtifactName(context), nodeInfo)
+                ArtifactResource(this, determineArtifactName(context), node)
             }
         } else null
     }
@@ -98,22 +94,22 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 尝试获取缓存的远程构件节点
      */
-    private fun getCacheNodeInfo(context: ArtifactDownloadContext): NodeInfo? {
+    private fun getCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
         val artifactInfo = context.artifactInfo
         val repositoryInfo = context.repositoryInfo
-        return nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, artifactInfo.artifactUri).data?.nodeInfo
+        return nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, artifactInfo.artifactUri).data
     }
 
     /**
      * 将远程拉取的构件缓存本地
      */
-    protected fun putArtifactCache(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeInfo? {
+    protected fun putArtifactCache(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeDetail? {
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val cacheConfiguration = remoteConfiguration.cacheConfiguration
         return if (cacheConfiguration.cacheEnabled) {
             val nodeCreateRequest = getCacheNodeCreateRequest(context, artifactFile)
             storageService.store(nodeCreateRequest.sha256!!, artifactFile, context.storageCredentials)
-            nodeResource.create(nodeCreateRequest).data
+            nodeClient.create(nodeCreateRequest).data
         } else null
     }
 
@@ -166,10 +162,12 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             if (it.username.isNullOrBlank() || it.password.isNullOrBlank()) {
                 return Authenticator.NONE
             }
-            configuration.password
             Authenticator { _, response ->
                 val credential = Credentials.basic(it.username!!, it.password!!)
-                response.request().newBuilder().header(PROXY_AUTHORIZATION, credential).build()
+                response.request()
+                    .newBuilder()
+                    .header(HttpHeaders.PROXY_AUTHORIZATION, credential)
+                    .build()
             }
         } ?: Authenticator.NONE
     }
@@ -178,12 +176,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 创建身份认证
      */
     open fun createBasicAuthInterceptor(configuration: RemoteCredentialsConfiguration?): Interceptor? {
-        return configuration?.let {
-            return BasicAuthInterceptor(
-                it.username,
-                it.password
-            )
-        }
+        return configuration?.let { BasicAuthInterceptor(it.username, it.password) }
     }
 
     /**

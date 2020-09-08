@@ -6,11 +6,6 @@ import com.tencent.bkrepo.common.artifact.util.http.CertTrustManager.trustAllHos
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/3
- */
 object HttpClientBuilderFactory {
 
     private const val DEFAULT_READ_TIMEOUT_SECONDS = 10 * 1000L

@@ -46,8 +46,11 @@ class MongoLockDao {
         options.returnNew(true)
         return try {
             mongoTemplate.indexOps(TMongoLock::class.java).ensureIndex(
-                Index().named(INDEX_KEY_EXPIRE).on(TMongoLock::expire.name,
-                    Sort.Direction.ASC).expire(expire, TimeUnit.SECONDS))
+                Index().named(INDEX_KEY_EXPIRE).on(
+                    TMongoLock::expire.name,
+                    Sort.Direction.ASC
+                ).expire(expire, TimeUnit.SECONDS)
+            )
             val value = mongoTemplate.findAndModify(query, update, options, TMongoLock::class.java)?.value!!
             value == 1
         } catch (ex: RuntimeException) {

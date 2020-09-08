@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.artifact.webhook
 
-import com.tencent.bkrepo.common.api.constant.StringPool.MEDIA_TYPE_JSON
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
@@ -12,13 +12,14 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.io.IOException
 
 @Service
 class WebHookService {
 
     private val httpClient = HttpClientBuilderFactory.create().build()
 
-    private val jsonMediaType = MediaType.parse(MEDIA_TYPE_JSON)
+    private val jsonMediaType = MediaType.parse(MediaTypes.APPLICATION_JSON)
 
     fun hook(context: ArtifactTransferContext, type: ArtifactEventType) {
         if (context.repositoryConfiguration is LocalConfiguration) {
@@ -40,7 +41,7 @@ class WebHookService {
             val response = httpClient.newCall(request).execute()
             assert(response.isSuccessful)
             logger.info("Execute web hook[$webHookInfo] success.")
-        } catch (exception: Exception) {
+        } catch (exception: IOException) {
             logger.error("Execute web hook[$webHookInfo] error.", exception)
         }
     }

@@ -4,7 +4,7 @@ import org.springframework.boot.gradle.tasks.run.BootRun
 plugins {
     kotlin("jvm") version "1.3.72"
     kotlin("plugin.spring") version "1.3.72" apply false
-    id("org.springframework.boot") version "2.3.1.RELEASE" apply false
+    id("org.springframework.boot") version "2.3.2.RELEASE" apply false
     id("io.spring.dependency-management") version "1.0.9.RELEASE"
     id("maven-publish")
 }
@@ -33,12 +33,9 @@ allprojects {
         jcenter()
     }
 
-    // fix issue https://github.com/spring-projects/spring-boot/issues/21934
-    extra["reactor-bom.version"] = "Dysprosium-SR9"
-
     dependencyManagement {
         imports {
-            mavenBom("org.springframework.cloud:spring-cloud-dependencies:Hoxton.SR5")
+            mavenBom("org.springframework.cloud:spring-cloud-dependencies:Hoxton.SR7")
         }
         dependencies {
             dependency("io.swagger:swagger-annotations:1.5.22")
@@ -55,8 +52,9 @@ allprojects {
             dependency("org.apache.skywalking:apm-toolkit-trace:6.6.0")
             dependency("net.javacrumbs.shedlock:shedlock-spring:4.12.0")
             dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:4.12.0")
-            dependency("io.jsonwebtoken:jjwt-api:0.11.1")
-            dependency("io.jsonwebtoken:jjwt-impl:0.11.1")
+            dependency("io.jsonwebtoken:jjwt-api:0.11.2")
+            dependency("io.jsonwebtoken:jjwt-impl:0.11.2")
+            dependency("io.jsonwebtoken:jjwt-jackson:0.11.2")
             // fix issue https://github.com/spring-projects/spring-boot/issues/16407
             // https://issues.redhat.com/browse/UNDERTOW-1743
             dependency("io.undertow:undertow-core:2.1.1.Final")

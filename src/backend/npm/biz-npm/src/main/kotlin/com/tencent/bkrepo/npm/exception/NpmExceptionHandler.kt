@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.npm.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_HEADER
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_RESPONSE_VALUE
-import com.tencent.bkrepo.common.artifact.exception.ClientAuthException
+import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.pojo.AuthFailInfo
 import com.tencent.bkrepo.npm.pojo.NpmAuthFailResponse
@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import java.util.concurrent.ExecutionException
 
 /**
  * 统一异常处理
@@ -25,6 +26,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 class NpmExceptionHandler {
+
+    @ExceptionHandler(ExecutionException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handlerExecutionException(exception: ExecutionException) {
+        val responseObject = NpmErrorResponse("bad request", exception.message.orEmpty())
+        npmResponse(responseObject, exception)
+    }
+
     @ExceptionHandler(NpmArgumentResolverException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handlerNpmArgumentResolverException(exception: NpmArgumentResolverException) {
@@ -32,9 +41,9 @@ class NpmExceptionHandler {
         npmResponse(fail, exception)
     }
 
-    @ExceptionHandler(ClientAuthException::class)
+    @ExceptionHandler(AuthenticationException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun handlerClientAuthException(exception: ClientAuthException) {
+    fun handlerClientAuthException(exception: AuthenticationException) {
         val responseObject = NpmErrorResponse("Unauthorized", "Authentication required")
         npmResponse(responseObject, exception)
     }
@@ -56,7 +65,7 @@ class NpmExceptionHandler {
     @ExceptionHandler(NpmTokenIllegalException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handlerNpmTokenIllegalException(exception: NpmTokenIllegalException) {
-        HttpContextHolder.getResponse().setHeader(BASIC_AUTH_RESPONSE_HEADER, BASIC_AUTH_RESPONSE_VALUE)
+        HttpContextHolder.getResponse().setHeader(HttpHeaders.WWW_AUTHENTICATE, BASIC_AUTH_PROMPT)
         val authFailInfo = AuthFailInfo(HttpStatus.UNAUTHORIZED.value(), exception.message)
         val npmAuthFailResponse = NpmAuthFailResponse(errors = listOf(authFailInfo))
         npmResponse(npmAuthFailResponse, exception)

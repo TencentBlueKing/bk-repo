@@ -12,7 +12,7 @@ import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -96,7 +96,7 @@ interface ReplicationClient {
     fun replicaNodeCreateRequest(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
         @RequestBody nodeCreateRequest: NodeCreateRequest
-    ): Response<NodeInfo>
+    ): Response<NodeDetail>
 
     @PostMapping("/node/rename")
     fun replicaNodeRenameRequest(

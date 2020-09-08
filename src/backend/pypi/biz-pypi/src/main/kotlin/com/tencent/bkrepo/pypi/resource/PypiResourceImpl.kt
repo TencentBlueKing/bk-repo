@@ -12,9 +12,6 @@ import org.springframework.web.bind.annotation.ResponseBody
 
 /**
  * pypi服务接口实现类
- *
- * @author: carrypan
- * @date: 2019/12/4
  */
 @Controller
 class PypiResourceImpl : PypiResource {
@@ -50,15 +47,15 @@ class PypiResourceImpl : PypiResource {
     }
 
     @ResponseBody
-    override fun migrateByUrl(ArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
-        return pypiService.migrate(ArtifactInfo)
+    override fun migrateByUrl(pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
+        return pypiService.migrate(pypiArtifactInfo)
     }
 
     /**
      * 数据迁移结果查询接口
      */
     @ResponseBody
-    override fun migrateResult(ArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
-        return pypiService.migrateResult(ArtifactInfo)
+    override fun migrateResult(pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
+        return pypiService.migrateResult(pypiArtifactInfo)
     }
 }

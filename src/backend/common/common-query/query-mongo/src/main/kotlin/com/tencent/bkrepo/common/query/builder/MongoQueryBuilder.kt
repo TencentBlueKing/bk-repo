@@ -29,9 +29,6 @@ import org.springframework.data.mongodb.core.query.Query
 
 /**
  * MongoDB QueryBuilder
- *
- * @author: carrypan
- * @date: 2019/11/14
  */
 open class MongoQueryBuilder {
 
@@ -65,7 +62,8 @@ open class MongoQueryBuilder {
         }
 
         val query = Query()
-        newModel.page.let { query.with(PageRequest.of(it.current, it.size)) }
+        val pageNumber = if (newModel.page.current <= 0) 1 else newModel.page.current
+        newModel.page.let { query.with(PageRequest.of(pageNumber - 1, it.size)) }
         newModel.sort?.let { query.with(Sort.by(Sort.Direction.fromString(it.direction.name), *it.properties.toTypedArray())) }
         newModel.select?.forEach { query.fields().include(it) }
         query.addCriteria(resolveRule(queryModel.rule))

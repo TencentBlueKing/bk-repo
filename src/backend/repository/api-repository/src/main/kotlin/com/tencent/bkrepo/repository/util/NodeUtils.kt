@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.util
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_PATH_INVALID
 
@@ -8,9 +9,6 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_PATH_
  * path节点目录命名规则：以'/'开头，以'/'结尾
  * name节点文件命名规则：不含'/'
  * fullpath全路径命名规则：以'/'开头，结尾不含'/'
- *
- * @author: carrypan
- * @date: 2019-09-24
  */
 object NodeUtils {
 
@@ -49,21 +47,28 @@ object NodeUtils {
 
     /**
      * 格式化目录名称, 返回格式/a/b/c/，根目录返回/
+     * /a/b/c -> /a/b/c/
+     * /a/b/c/ -> /a/b/c/
      */
     fun formatPath(input: String): String {
         val path = formatFullPath(input)
         return if (isRootPath(path)) ROOT_PATH else path + FILE_SEPARATOR
     }
 
-    /**
+    /**x
      * 格式化全路径名称, 返回格式/a/b/c，根目录返回/
      */
     fun formatFullPath(input: String): String {
         val path = input.trim()
         if (isRootPath(path)) return ROOT_PATH
 
-        val nameList = path.split(FILE_SEPARATOR).filter { it.isNotBlank() }.map { it.trim() }.toList()
+        val nameList = path.split(FILE_SEPARATOR)
+            .asSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && it != StringPool.DOT}
+            .toList()
         val builder = StringBuilder()
+        nameList.takeIf { it.isEmpty() }?.apply { builder.append(FILE_SEPARATOR) }
         nameList.forEach { builder.append(FILE_SEPARATOR).append(it) }
         return builder.toString()
     }
@@ -78,12 +83,17 @@ object NodeUtils {
 
         fullPath.takeIf { it.startsWith(FILE_SEPARATOR) } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
 
-        val nameList = fullPath.split(FILE_SEPARATOR).filter { it.isNotBlank() }.map { parseFileName(it) }.toList()
+        val nameList = fullPath.split(FILE_SEPARATOR)
+            .asSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && it != StringPool.DOT }
+            .map { validateFileName(it) }
+            .toList()
         nameList.takeIf { it.size <= MAX_DIR_DEPTH } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
 
         val builder = StringBuilder()
+        nameList.takeIf { it.isEmpty() }?.apply { builder.append(FILE_SEPARATOR) }
         nameList.forEach { builder.append(FILE_SEPARATOR).append(it) }
-
         return builder.toString()
     }
 
@@ -91,13 +101,16 @@ object NodeUtils {
      * 处理并验证文件名称，返回格式abc.txt
      * 不能包含/，不能全为空，不能超过指定长度
      */
-    fun parseFileName(input: String): String {
-        val fileName = input.trim()
-        fileName.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
-        fileName.takeUnless { forbiddenNameList.contains(it) } ?: throw ErrorCodeException(NODE_PATH_INVALID)
-        fileName.takeUnless { it.contains(FILE_SEPARATOR) } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
-        fileName.takeIf { it.length <= MAX_FILENAME_LENGTH } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
-        return fileName
+    fun validateFileName(input: String): String {
+        try {
+            require(input.isNotBlank())
+            require(input.length <= MAX_FILENAME_LENGTH)
+            require(!forbiddenNameList.contains(input))
+            require(!input.contains(FILE_SEPARATOR))
+        } catch (exception: IllegalArgumentException) {
+            throw ErrorCodeException(NODE_PATH_INVALID, input)
+        }
+        return input
     }
 
     /**

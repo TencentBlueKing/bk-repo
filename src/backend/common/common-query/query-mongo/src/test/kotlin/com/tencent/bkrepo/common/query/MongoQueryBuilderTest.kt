@@ -9,11 +9,6 @@ import com.tencent.bkrepo.common.query.model.Sort
 import org.bson.Document
 import org.junit.jupiter.api.Test
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/15
- */
 class MongoQueryBuilderTest {
 
     @Test
@@ -41,9 +36,9 @@ class MongoQueryBuilderTest {
     }
 
     private fun findProjectId(document: Document): Any? {
-        for((key, value) in document) {
-            if(key == "projectId") return value
-            if(key == "\$and") {
+        for ((key, value) in document) {
+            if (key == "projectId") return value
+            if (key == "\$and") {
                 for (element in value as BasicDBList) {
                     findProjectId(element as Document)?.let { return it }
                 }

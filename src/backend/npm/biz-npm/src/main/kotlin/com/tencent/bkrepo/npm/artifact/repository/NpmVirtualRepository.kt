@@ -21,13 +21,14 @@ class NpmVirtualRepository : VirtualRepository() {
         val traversedList = getTraversedList(context)
         for (repoIdentify in repoList) {
             if (repoIdentify in traversedList) {
-                if (logger.isDebugEnabled)
-                logger.debug("Repository[$repoIdentify] has been traversed, skip it.")
+                if (logger.isDebugEnabled) {
+                    logger.debug("Repository[$repoIdentify] has been traversed, skip it.")
+                }
                 continue
             }
             traversedList.add(repoIdentify)
             try {
-                val subRepoInfo = repositoryResource.detail(repoIdentify.projectId, repoIdentify.name).data!!
+                val subRepoInfo = repositoryClient.detail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = RepositoryHolder.getRepository(subRepoInfo.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryInfo = subRepoInfo) as ArtifactListContext
                 repository.list(subContext)?.let { map ->

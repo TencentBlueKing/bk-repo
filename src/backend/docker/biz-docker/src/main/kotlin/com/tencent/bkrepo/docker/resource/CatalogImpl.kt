@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.docker.resource
 
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.docker.api.Catalog
-import com.tencent.bkrepo.docker.constant.EMPTYSTR
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.UserUtil
@@ -20,15 +20,15 @@ class CatalogImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServic
         last: String?
     ): ResponseEntity<Any> {
         var maxEntries = 0
-        var index = EMPTYSTR
-        if (n != null) {
+        var index = EMPTY
+        n?.let {
             maxEntries = n
         }
-        if (last != null) {
+        last?.let {
             index = last
         }
         val uId = UserUtil.getContextUserId(userId)
-        val pathContext = RequestContext(uId, projectId, repoName, "")
+        val pathContext = RequestContext(uId, projectId, repoName, EMPTY)
         return dockerRepo.catalog(pathContext, maxEntries, index)
     }
 }

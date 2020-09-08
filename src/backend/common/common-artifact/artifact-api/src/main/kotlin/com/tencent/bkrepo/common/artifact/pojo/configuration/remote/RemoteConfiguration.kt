@@ -4,8 +4,6 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfigura
 
 /**
  * 远程仓库配置
- * @author: carrypan
- * @date: 2019/11/26
  */
 open class RemoteConfiguration(
     val url: String,

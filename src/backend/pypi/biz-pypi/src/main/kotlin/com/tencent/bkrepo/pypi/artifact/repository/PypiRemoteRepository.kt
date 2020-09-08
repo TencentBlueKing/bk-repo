@@ -35,11 +35,6 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/4
- */
 @Component
 class PypiRemoteRepository : RemoteRepository(), PypiRepository {
 
@@ -79,13 +74,13 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = REMOTE_HTML_CACHE_FULL_PATH
-        val node = nodeResource.detail(projectId, repoName, fullPath).data
+        val node = nodeClient.detail(projectId, repoName, fullPath).data
         while (node == null) {
             cacheRemoteRepoList(context)
         }
-        node.nodeInfo.takeIf { !it.folder } ?: return null
+        node.takeIf { !it.folder } ?: return null
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
-        val date = LocalDateTime.parse(node.nodeInfo.lastModifiedDate, format)
+        val date = LocalDateTime.parse(node.lastModifiedDate, format)
         val currentTime = LocalDateTime.now()
         val duration = Duration.between(date, currentTime).toMinutes()
         val job = GlobalScope.launch {
@@ -94,7 +89,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
             }
         }
         job.start()
-        return storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)
+        return storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
     }
 
     /**
@@ -122,7 +117,7 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
 
     fun onUpload(context: ArtifactListContext, file: File) {
         val nodeCreateRequest = getNodeCreateRequest(context, file)
-        nodeResource.create(nodeCreateRequest)
+        nodeClient.create(nodeCreateRequest)
         storageService.store(nodeCreateRequest.sha256!!, ArtifactFileFactory.build(file.inputStream()), context.storageCredentials)
     }
 
@@ -160,9 +155,9 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
             .build()
         val htmlContent: String? = okHttpClient.newCall(build).execute().body()?.string()
         return htmlContent?.let {
-                    val methodResponse = XmlConvertUtil.xml2MethodResponse(it)
-                    return methodResponse.params.paramList[0].value.array?.data?.valueList
-                }
+            val methodResponse = XmlConvertUtil.xml2MethodResponse(it)
+            return methodResponse.params.paramList[0].value.array?.data?.valueList
+        }
     }
 
     companion object {

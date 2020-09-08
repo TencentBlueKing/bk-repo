@@ -2,11 +2,6 @@ package com.tencent.bkrepo.generic.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 
-/**
- *
- * @author: carrypan
- * @date: 2019/12/2
- */
 class GenericArtifactInfo(
     projectId: String,
     repoName: String,

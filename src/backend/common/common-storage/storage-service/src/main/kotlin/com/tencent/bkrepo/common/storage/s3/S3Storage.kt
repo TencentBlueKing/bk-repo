@@ -21,11 +21,6 @@ import java.io.InputStream
 import java.util.concurrent.Executor
 import javax.annotation.Resource
 
-/**
- *
- * @author: carrypan
- * @date: 2020/1/13
- */
 open class S3Storage : AbstractFileStorage<S3Credentials, S3Client>() {
 
     @Resource
@@ -46,15 +41,6 @@ open class S3Storage : AbstractFileStorage<S3Credentials, S3Client>() {
         client.s3Client.putObject(client.bucketName, filename, inputStream, metadata)
     }
 
-    override fun load(path: String, filename: String, received: File, client: S3Client): File? {
-        val transferManager = getTransferManager(client)
-        val getObjectRequest = GetObjectRequest(client.bucketName, filename)
-        val download = transferManager.download(getObjectRequest, received)
-        download.waitForCompletion()
-        shutdownTransferManager(transferManager)
-        return received
-    }
-
     override fun load(path: String, filename: String, range: Range, client: S3Client): InputStream? {
         val getObjectRequest = GetObjectRequest(client.bucketName, filename)
         getObjectRequest.setRange(range.start, range.end)
@@ -71,7 +57,7 @@ open class S3Storage : AbstractFileStorage<S3Credentials, S3Client>() {
     override fun exist(path: String, filename: String, client: S3Client): Boolean {
         return try {
             client.s3Client.doesObjectExist(client.bucketName, filename)
-        } catch (exception: Exception) {
+        } catch (ignored: Exception) {
             false
         }
     }

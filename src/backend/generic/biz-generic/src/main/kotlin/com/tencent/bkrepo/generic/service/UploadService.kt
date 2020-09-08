@@ -5,11 +5,13 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.config.REPO_KEY
+import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.permission.Permission
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
+import com.tencent.bkrepo.common.security.http.SecurityUtils
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -21,22 +23,18 @@ import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
-import com.tencent.bkrepo.repository.api.NodeResource
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
  * 通用文件上传服务类
- *
- * @author: carrypan
- * @date: 2019-10-08
  */
 @Service
-class UploadService @Autowired constructor(
-    private val nodeResource: NodeResource,
+class UploadService(
+    private val nodeClient: NodeClient,
     private val storageService: StorageService
 ) {
 
@@ -50,6 +48,14 @@ class UploadService @Autowired constructor(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    fun delete(userId: String, artifactInfo: GenericArtifactInfo) {
+        val context = ArtifactRemoveContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        repository.remove(context)
+        logger.info("User[${SecurityUtils.getPrincipal()}] delete artifact[$artifactInfo] success.")
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun startBlockUpload(userId: String, artifactInfo: GenericArtifactInfo): UploadTransactionInfo {
         with(artifactInfo) {
             val expires = getLongHeader(HEADER_EXPIRES)
@@ -57,8 +63,8 @@ class UploadService @Autowired constructor(
 
             expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
             // 判断文件是否存在
-            if (!overwrite && nodeResource.exist(projectId, repoName, artifactUri).data == true) {
-                logger.warn("User[$userId] start block upload [$artifactInfo] failed: artifact already exists.")
+            if (!overwrite && nodeClient.exist(projectId, repoName, artifactUri).data == true) {
+                logger.warn("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: artifact already exists.")
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, artifactUri)
             }
 
@@ -68,7 +74,7 @@ class UploadService @Autowired constructor(
                 expireSeconds = uploadTransactionExpires
             )
 
-            logger.info("User[$userId] start block upload [$artifactInfo] success: $uploadTransaction.")
+            logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success: $uploadTransaction.")
             return uploadTransaction
         }
     }
@@ -79,7 +85,7 @@ class UploadService @Autowired constructor(
         checkUploadId(uploadId, storageCredentials)
 
         storageService.deleteBlockId(uploadId, storageCredentials)
-        logger.info("User[$userId] abort upload block [$artifactInfo] success.")
+        logger.info("User[${SecurityUtils.getPrincipal()}] abort upload block [$artifactInfo] success.")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -89,7 +95,7 @@ class UploadService @Autowired constructor(
 
         val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials)
         // 保存节点
-        nodeResource.create(
+        nodeClient.create(
             NodeCreateRequest(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
@@ -102,7 +108,7 @@ class UploadService @Autowired constructor(
                 operator = userId
             )
         )
-        logger.info("User[$userId] complete upload [$artifactInfo] success.")
+        logger.info("User[${SecurityUtils.getPrincipal()}] complete upload [$artifactInfo] success.")
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)

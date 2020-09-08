@@ -24,5 +24,4 @@ internal class ZeroInputStreamTest {
 
         Assertions.assertEquals(-1, zeroInputStream.read(ByteArray(100)))
     }
-
 }

@@ -46,47 +46,34 @@ internal class ClientCacheTest {
         val credentials4 = FileSystemCredentials(path = "data").apply { upload.location = "1231" }
         clientCache.get(credentials4)
         Assertions.assertEquals(3, clientCache.size())
-
     }
 
     @Test
     fun testHashCode() {
         val credentials1 = FileSystemCredentials(path = "data")
         val hashCode1 = credentials1.hashCode()
-        println(hashCode1)
 
         val credentials2 = FileSystemCredentials(path = "data")
         val hashCode2 = credentials2.hashCode()
-        println(hashCode2)
-
         Assertions.assertEquals(hashCode1, hashCode2)
 
         val credentials3 = FileSystemCredentials(path = "data2")
         val hashCode3 = credentials3.hashCode()
-        println(hashCode3)
-
         Assertions.assertNotEquals(hashCode1, hashCode3)
 
         val credentials4 = FileSystemCredentials(path = "data")
         credentials4.upload.location = "123"
         val hashCode4 = credentials4.hashCode()
-        println(hashCode4)
-
         Assertions.assertNotEquals(hashCode1, hashCode4)
     }
 
     @Test
     fun testClassEquals() {
         val fsCredentials = FileSystemCredentials()
-        val fsCredentials2= FileSystemCredentials(path = "data")
-        println(fsCredentials::class)
-        println(fsCredentials2::class)
-
+        val fsCredentials2 = FileSystemCredentials(path = "data")
         val innerCredentials = InnerCosCredentials()
-        println(innerCredentials::class)
 
         Assertions.assertEquals(fsCredentials::class, fsCredentials2::class)
         Assertions.assertNotEquals(fsCredentials::class, innerCredentials::class)
     }
-
 }

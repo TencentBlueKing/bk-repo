@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.storage.monitor
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -48,7 +49,7 @@ class StorageHealthMonitor(
                         true
                     } catch (timeoutException: TimeoutException) {
                         changeToUnhealthy(IO_TIMEOUT_MESSAGE)
-                    } catch (exception: Exception) {
+                    } catch (exception: IOException) {
                         changeToUnhealthy(exception.message.orEmpty())
                     } finally {
                         checker.clean()

@@ -1,7 +1,8 @@
 package com.tencent.bkrepo.common.artifact.repository.local
 
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_MD5
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -10,28 +11,22 @@ import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactReposi
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.DownloadStatisticsResource
-import com.tencent.bkrepo.repository.api.NodeResource
+import com.tencent.bkrepo.repository.api.DownloadStatisticsClient
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpStatus
 import java.util.concurrent.Executor
 import java.util.regex.Pattern
 import javax.annotation.Resource
 
-/**
- *
- * @author: carrypan
- * @date: 2019/11/26
- */
 abstract class LocalRepository : AbstractArtifactRepository() {
 
     @Autowired
-    lateinit var nodeResource: NodeResource
+    lateinit var nodeClient: NodeClient
 
     @Autowired
     lateinit var storageService: StorageService
@@ -40,7 +35,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
     lateinit var publisher: ApplicationEventPublisher
 
     @Autowired
-    lateinit var downloadStatisticsResource: DownloadStatisticsResource
+    lateinit var downloadStatisticsClient: DownloadStatisticsClient
 
     @Resource
     private lateinit var taskAsyncExecutor: Executor
@@ -48,25 +43,25 @@ abstract class LocalRepository : AbstractArtifactRepository() {
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = getNodeCreateRequest(context)
         storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
-        nodeResource.create(nodeCreateRequest)
+        nodeClient.create(nodeCreateRequest)
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
             val artifactUri = determineArtifactUri(this)
             val artifactName = determineArtifactName(this)
-            val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, artifactUri).data ?: return null
-            node.nodeInfo.takeIf { !it.folder } ?: return null
-            val range = resolveRange(context, node.nodeInfo.size)
-            val inputStream = storageService.load(node.nodeInfo.sha256!!, range, storageCredentials) ?: return null
-            return ArtifactResource(inputStream, artifactName, node.nodeInfo)
+            val node = nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, artifactUri).data ?: return null
+            node.takeIf { !it.folder } ?: return null
+            val range = resolveRange(context, node.size)
+            val inputStream = storageService.load(node.sha256!!, range, storageCredentials) ?: return null
+            return ArtifactResource(inputStream, artifactName, node)
         }
     }
 
     open fun countDownloads(context: ArtifactDownloadContext) {
         taskAsyncExecutor.execute {
             val artifactInfo = context.artifactInfo
-            downloadStatisticsResource.add(
+            downloadStatisticsClient.add(
                 DownloadStatisticsAddRequest(
                     artifactInfo.projectId,
                     artifactInfo.repoName,
@@ -120,7 +115,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
         val request = context.request
         val rangeHeader = request.getHeader(HttpHeaders.RANGE)?.trim()
         try {
-            if (rangeHeader.isNullOrEmpty()) return Range.ofFull(total)
+            if (rangeHeader.isNullOrEmpty()) return Range.full(total)
             val matcher = RANGE_HEADER.matcher(rangeHeader)
             require(matcher.matches()) { "Invalid range header: $rangeHeader" }
             require(matcher.groupCount() >= 1) { "Invalid range header: $rangeHeader" }
@@ -133,9 +128,9 @@ abstract class LocalRepository : AbstractArtifactRepository() {
                 val end = if (matcher.group(2).isNullOrEmpty()) total - 1 else matcher.group(2).toLong()
                 Range(start, end, total)
             }
-        } catch (ex: Exception) {
-            logger.warn("Failed to parse range header: $rangeHeader, ex: ${ex.message}")
-            throw ArtifactException("Invalid range header", HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE.value())
+        } catch (exception: IllegalArgumentException) {
+            logger.warn("Failed to parse range header: $rangeHeader, message: ${exception.message}")
+            throw ArtifactException(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
         }
     }
 

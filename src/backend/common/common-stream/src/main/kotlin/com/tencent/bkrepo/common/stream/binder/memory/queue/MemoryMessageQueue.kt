@@ -19,17 +19,19 @@ class MemoryMessageQueue {
             synchronized(startingSync) {
                 if (!isRunning) {
                     val defaultSize = workerPoolSize ?: -1
-                    val concurrentLevel =
-                        if (defaultSize <= 0)
-                            (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
-                        else
-                            defaultSize
+                    val concurrentLevel = if (defaultSize <= 0) {
+                        (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+                    } else {
+                        defaultSize
+                    }
 
                     queue = LinkedBlockingQueue(queueSize)
                     this.startHandlers(concurrentLevel)
-                    Runtime.getRuntime().addShutdownHook(Thread {
-                        this.shutdown()
-                    })
+                    Runtime.getRuntime().addShutdownHook(
+                        Thread {
+                            this.shutdown()
+                        }
+                    )
                     isRunning = true
                     logger.info("Cloud stream memory queue was started ( qs: $queueSize, ps: $concurrentLevel ).")
                 }
@@ -63,7 +65,7 @@ class MemoryMessageQueue {
 
     fun produce(destination: String, message: Message<*>) {
         if (!isRunning) {
-            throw RuntimeException("MemoryMessageQueue is not running .")
+            throw IllegalStateException("MemoryMessageQueue is not running.")
         }
         var added = false
         while (!added) {

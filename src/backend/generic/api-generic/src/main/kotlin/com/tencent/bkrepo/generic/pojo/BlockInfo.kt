@@ -5,9 +5,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 分块信息
- *
- * @author: carrypan
- * @date: 2019-09-28
  */
 @ApiModel("分块信息")
 data class BlockInfo(

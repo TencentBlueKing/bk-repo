@@ -2,9 +2,6 @@ package com.tencent.bkrepo.common.artifact.pojo
 
 /**
  * 仓库类别枚举类
- *
- * @author: carrypan
- * @date: 2019-09-10
  */
 enum class RepositoryCategory {
     LOCAL, // 本地存储仓库

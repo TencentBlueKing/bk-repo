@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.common.artifact.repository.core
 
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_MD5
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_OCTET_STREAM_SHA256
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
-import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_MD5
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_SHA256
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
+import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
@@ -18,16 +18,15 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.response.ArtifactResourceWriter
+import com.tencent.bkrepo.common.security.http.SecurityUtils
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 构件仓库抽象类
- *
- * @author: carrypan
- * @date: 2019/11/27
  */
+@Suppress("TooGenericExceptionCaught")
 abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
@@ -77,7 +76,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         throw UnsupportedMethodException()
     }
 
-    override fun migrate(context: ArtifactMigrateContext) {
+    override fun migrate(context: ArtifactMigrateContext): Any? {
         throw UnsupportedMethodException()
     }
 
@@ -126,8 +125,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     open fun onUploadSuccess(context: ArtifactUploadContext) {
         artifactMetrics.uploadedCounter.increment()
         val artifactInfo = context.artifactInfo
-        val userId = context.userId
-        logger.info("User[$userId] upload artifact[$artifactInfo] success")
+        logger.info("User[${SecurityUtils.getPrincipal()}] upload artifact[$artifactInfo] success")
     }
 
     /**
@@ -164,10 +162,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onDownloadSuccess(context: ArtifactDownloadContext) {
         artifactMetrics.downloadedCounter.increment()
-
         val artifactInfo = context.artifactInfo
-        val userId = context.userId
-        logger.info("User[$userId] download artifact[$artifactInfo] success")
+        logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[$artifactInfo] success")
     }
 
     /**

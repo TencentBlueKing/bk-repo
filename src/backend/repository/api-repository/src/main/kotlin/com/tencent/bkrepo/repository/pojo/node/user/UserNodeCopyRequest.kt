@@ -7,9 +7,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 用户节点复制请求
- *
- * @author: carrypan
- * @date: 2019-10-15
  */
 @ApiModel("用户节点复制请求")
 data class UserNodeCopyRequest(
@@ -26,7 +23,7 @@ data class UserNodeCopyRequest(
     @ApiModelProperty("目的路径", required = true)
     override val destFullPath: String,
     @Deprecated("This property is deprecated!", ReplaceWith("destFullPath"))
-    @ApiModelProperty("目的路径", required = true)
+    @ApiModelProperty("目的路径", required = false)
     val destPath: String? = null,
     @ApiModelProperty("同名文件是否覆盖", required = false)
     override val overwrite: Boolean = false

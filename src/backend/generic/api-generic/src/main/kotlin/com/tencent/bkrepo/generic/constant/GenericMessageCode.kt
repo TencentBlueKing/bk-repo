@@ -4,11 +4,7 @@ import com.tencent.bkrepo.common.api.message.MessageCode
 
 /**
  * 通用文件错误码
- *
- * @author: carrypan
- * @date: 2019-10-11
  */
-
 enum class GenericMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
     UPLOAD_ID_NOT_FOUND(1, "generic.uploadId.notfound");
 

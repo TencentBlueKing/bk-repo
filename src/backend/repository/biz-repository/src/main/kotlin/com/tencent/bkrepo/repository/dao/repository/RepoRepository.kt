@@ -6,9 +6,6 @@ import org.springframework.stereotype.Repository
 
 /**
  * 仓库mongo repository
- *
- * @author: carrypan
- * @date: 2019-09-20
  */
 @Repository
 interface RepoRepository : MongoRepository<TRepository, String>

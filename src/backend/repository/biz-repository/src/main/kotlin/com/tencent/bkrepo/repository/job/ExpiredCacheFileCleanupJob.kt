@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.job
 
+import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -9,8 +10,6 @@ import org.springframework.stereotype.Component
 
 /**
  * 清理缓存文件定时任务
- * @author: carrypan
- * @date: 2019/12/24
  */
 @Component
 class ExpiredCacheFileCleanupJob {
@@ -22,12 +21,15 @@ class ExpiredCacheFileCleanupJob {
     @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "PT10H")
     fun cleanUp() {
         logger.info("Starting to clean up expired cache files.")
-        val startTimeMillis = System.currentTimeMillis()
-        val result = storageService.cleanUp()
-        val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
-        logger.info("[${result.getTotal()}] expired cache and temp files has been clean up" +
-            ", file[${result.fileCount}], folder[${result.folderCount}]" +
-            ", [${result.size}] bytes totally, elapse [$elapseTimeMillis] ms.")
+        executeAndMeasureTime {
+            storageService.cleanUp()
+        }.apply {
+            logger.info(
+                "[${first.getTotal()}] expired cache and temp files has been clean up" +
+                    ", file[${first.fileCount}], folder[${first.folderCount}]" +
+                    ", [${first.size}] bytes totally, elapse [${second.seconds}] s."
+            )
+        }
     }
 
     companion object {

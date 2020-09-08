@@ -35,16 +35,17 @@ class AsyncConfiguration : AsyncConfigurerSupport() {
         executor.setThreadNamePrefix(properties.threadNamePrefix)
         executor.setRejectedExecutionHandler(CallerRunsPolicy())
         executor.setWaitForTasksToCompleteOnShutdown(true)
-        executor.setAwaitTerminationSeconds(5 * 60)
+        executor.setAwaitTerminationSeconds(DEFAULT_AWAIT_TERMINATION_SECONDS)
         executor.initialize()
         return executor
     }
 
-    override fun getAsyncUncaughtExceptionHandler() = AsyncUncaughtExceptionHandler {
-            error, method, _ -> logger.error("Unexpected exception occurred invoking async method: {}", method, error)
+    override fun getAsyncUncaughtExceptionHandler() = AsyncUncaughtExceptionHandler { error, method, _ ->
+        logger.error("Unexpected exception occurred invoking async method: {}", method, error)
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(AsyncConfiguration::class.java)
+        private const val DEFAULT_AWAIT_TERMINATION_SECONDS = 5 * 60
     }
 }

@@ -5,15 +5,18 @@ import com.netflix.client.ClientException
 import com.netflix.hystrix.exception.HystrixRuntimeException
 import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.StatusCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.log.LoggerHolder.logBusinessException
 import com.tencent.bkrepo.common.service.log.LoggerHolder.logSystemException
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MissingRequestHeaderException
 import org.springframework.web.bind.MissingServletRequestParameterException
@@ -40,6 +43,13 @@ class GlobalExceptionHandler {
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
         logBusinessException(exception, "[${exception.messageCode.getCode()}]$errorMessage")
         return ResponseBuilder.fail(exception.messageCode.getCode(), errorMessage)
+    }
+
+    @ExceptionHandler(StatusCodeException::class)
+    fun handleException(exception: StatusCodeException): Response<Void> {
+        logBusinessException(exception)
+        HttpContextHolder.getResponse().status = exception.status.value
+        return ResponseBuilder.fail(exception.status.value, exception.message)
     }
 
     /**
@@ -94,6 +104,15 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     fun handleException(exception: HttpRequestMethodNotSupportedException): Response<Void> {
         val messageCode = CommonMessageCode.OPERATION_UNSUPPORTED
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
+        logBusinessException(exception, "[${messageCode.getCode()}]$errorMessage")
+        return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException::class)
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    fun handleException(exception: HttpMediaTypeNotSupportedException): Response<Void> {
+        val messageCode = CommonMessageCode.MEDIA_TYPE_UNSUPPORTED
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
         logBusinessException(exception, "[${messageCode.getCode()}]$errorMessage")
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)

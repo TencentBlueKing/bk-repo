@@ -65,9 +65,7 @@ abstract class AbstractServiceImpl constructor(
         val update = Update()
         update.set(key, value)
         val result = mongoTemplate.upsert(buildIdQuery(id), update, TPermission::class.java)
-        if (result.matchedCount == 1L) {
-            return true
-        }
+        if (result.matchedCount == 1L) return true
         return false
     }
 
@@ -76,9 +74,7 @@ abstract class AbstractServiceImpl constructor(
         var userAction = PermissionSet(id = urId, action = actions)
         update.addToSet(filed, userAction)
         val result = mongoTemplate.updateFirst(buildIdQuery(pId), update, TPermission::class.java)
-        if (result.matchedCount == 1L) {
-            return true
-        }
+        if (result.matchedCount == 1L) return true
         return false
     }
 
@@ -88,9 +84,7 @@ abstract class AbstractServiceImpl constructor(
         s["_id"] = uid
         update.pull(field, s)
         val result = mongoTemplate.updateFirst(buildIdQuery(id), update, TPermission::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
+        if (result.modifiedCount == 1L) return true
         return false
     }
 

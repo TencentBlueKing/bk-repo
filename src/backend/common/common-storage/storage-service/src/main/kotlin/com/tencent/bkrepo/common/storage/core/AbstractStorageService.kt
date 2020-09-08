@@ -10,12 +10,12 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.ZeroInputStream
-import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import com.tencent.bkrepo.common.storage.message.HealthCheckFailedException
 import com.tencent.bkrepo.common.storage.message.StorageException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
@@ -24,7 +24,6 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
-import java.io.InputStream
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -33,10 +32,8 @@ import kotlin.system.measureNanoTime
 
 /**
  * 存储服务抽象实现
- *
- * @author: carrypan
- * @date: 2019/12/26
  */
+@Suppress("TooGenericExceptionCaught")
 abstract class AbstractStorageService : StorageService {
 
     @Autowired
@@ -77,7 +74,12 @@ abstract class AbstractStorageService : StorageService {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
         try {
-            return doLoad(path, digest, range, credentials)?.toArtifactStream(range)
+            return doLoad(path, digest, range, credentials) ?: run {
+                if (credentials != storageProperties.defaultStorageCredentials()) {
+                    logger.warn("Fallback to default storage [$digest].")
+                    doLoad(path, digest, range, storageProperties.defaultStorageCredentials())
+                } else null
+            }
         } catch (exception: Exception) {
             logger.error("Failed to load file [$digest] on [$credentials].", exception)
             throw StorageException(StorageMessageCode.LOAD_ERROR, exception.message.toString())
@@ -104,6 +106,27 @@ abstract class AbstractStorageService : StorageService {
         } catch (exception: Exception) {
             logger.error("Failed to check file [$digest] exist on [$credentials].", exception)
             throw StorageException(StorageMessageCode.QUERY_ERROR, exception.message.toString())
+        }
+    }
+
+    override fun copy(digest: String, fromCredentials: StorageCredentials?, toCredentials: StorageCredentials?) {
+        val path = fileLocator.locate(digest)
+        val from = getCredentialsOrDefault(fromCredentials)
+        val to = getCredentialsOrDefault(toCredentials)
+        try {
+            if (from == to) {
+                logger.info("Source and destination credentials are same, skip copy file [$digest].")
+                return
+            }
+            if (doExist(path, digest, to)) {
+                logger.info("File [$digest] exist on destination credentials, skip copy file.")
+                return
+            }
+            fileStorage.copy(path, digest, from, to)
+            logger.info("Success to copy file [$digest] from [$from] to [$to].")
+        } catch (exception: Exception) {
+            logger.error("Failed to copy file [$digest] from [$from] to [$to].", exception)
+            throw StorageException(StorageMessageCode.COPY_ERROR, exception.message.toString())
         }
     }
 
@@ -273,15 +296,17 @@ abstract class AbstractStorageService : StorageService {
 
     override fun checkHealth(storageCredentials: StorageCredentials?) {
         val credentials = getCredentialsOrDefault(storageCredentials)
-        val future = healthCheckExecutor.submit(Callable {
-            doCheckHealth(credentials)
-        })
+        val future = healthCheckExecutor.submit(
+            Callable {
+                doCheckHealth(credentials)
+            }
+        )
         try {
             future.get(storageProperties.monitor.timeout.seconds, TimeUnit.SECONDS)
         } catch (timeoutException: TimeoutException) {
-            throw RuntimeException(StorageHealthMonitor.IO_TIMEOUT_MESSAGE)
+            throw HealthCheckFailedException(StorageHealthMonitor.IO_TIMEOUT_MESSAGE)
         } catch (exception: Exception) {
-            throw RuntimeException(exception.message.orEmpty())
+            throw HealthCheckFailedException(exception.message.orEmpty())
         }
     }
 
@@ -317,7 +342,7 @@ abstract class AbstractStorageService : StorageService {
     }
 
     protected abstract fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials)
-    protected abstract fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): InputStream?
+    protected abstract fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): ArtifactInputStream?
     protected abstract fun doDelete(path: String, filename: String, credentials: StorageCredentials)
     protected abstract fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean
 

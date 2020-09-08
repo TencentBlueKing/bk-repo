@@ -8,9 +8,6 @@ import org.springframework.data.mongodb.core.index.IndexDefinition
 
 /**
  * mongo db 索引解析
- *
- * @author: carrypan
- * @date: 2019/11/7
  */
 object MongoIndexResolver {
 

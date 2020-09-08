@@ -16,7 +16,7 @@ import java.io.InputStream
 import java.nio.charset.Charset
 
 class OctetStreamArtifactFileTest {
-    
+
     private val tempDir = System.getProperty("java.io.tmpdir")
 
     private val uploadProperties = UploadProperties(location = tempDir)

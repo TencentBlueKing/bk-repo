@@ -9,9 +9,6 @@ import io.swagger.annotations.ApiModelProperty
 /**
  * 查询规则
  * rules 与 {field, value} 需要存在
- *
- * @author: carrypan
- * @date: 2019/11/14
  */
 @ApiModel("查询规则")
 @JsonDeserialize(using = RuleDeserializer::class)

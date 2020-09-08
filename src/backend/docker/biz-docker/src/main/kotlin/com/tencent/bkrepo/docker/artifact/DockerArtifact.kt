@@ -1,19 +1,19 @@
 package com.tencent.bkrepo.docker.artifact
 
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
+
 /**
  * docker artifact describe class
- * @author: owenlxu
- * @date: 2020-03-12
  */
 class DockerArtifact(projectId: String, repoName: String, artifactName: String) {
 
-    var projectId: String = ""
-    var repoName: String = ""
-    var artifactName: String = ""
+    var projectId: String = EMPTY
+    var repoName: String = EMPTY
+    var artifactName: String = EMPTY
 
     var sha256: String? = null
     var length: Long = 0L
-    var fullPath: String = ""
+    var fullPath: String = EMPTY
 
     init {
         this.projectId = projectId

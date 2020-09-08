@@ -3,7 +3,7 @@ package com.tencent.bkrepo.common.artifact.resolve.file
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.OctetStreamArtifactFile
-import com.tencent.bkrepo.common.artifact.util.ArtifactContextHolder
+import com.tencent.bkrepo.common.security.manager.ArtifactContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
@@ -14,10 +14,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.io.InputStream
 
 /**
- * ArtifactFileItem工厂方法
- *
- * @author: carrypan
- * @date: 2019/10/30
+ * ArtifactFile工厂方法
  */
 @Component
 class ArtifactFileFactory(

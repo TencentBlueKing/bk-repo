@@ -7,9 +7,6 @@ import io.swagger.annotations.ApiModelProperty
 
 /**
  * 节点移动请求
- *
- * @author: carrypan
- * @date: 2019-10-17
  */
 @ApiModel("节点移动请求")
 data class NodeMoveRequest(

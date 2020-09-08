@@ -15,9 +15,6 @@ import java.io.IOException
 
 /**
  * 规则模型 反序列化类
- *
- * @author: carrypan
- * @date: 2019/11/15
  */
 class RuleDeserializer : JsonDeserializer<Rule>() {
 
@@ -41,7 +38,7 @@ class RuleDeserializer : JsonDeserializer<Rule>() {
 
                 Rule.QueryRule(field, value, operation)
             }
-        } catch (exception: Exception) {
+        } catch (exception: IOException) {
             throw QueryModelException("Failed to resolve rule.", exception)
         }
     }

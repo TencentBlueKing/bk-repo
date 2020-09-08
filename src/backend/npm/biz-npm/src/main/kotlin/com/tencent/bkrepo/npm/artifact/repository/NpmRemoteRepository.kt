@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
@@ -25,6 +26,7 @@ import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
+import io.undertow.util.BadRequestException
 import okhttp3.Request
 import okhttp3.Response
 import org.apache.commons.lang.StringUtils
@@ -74,14 +76,15 @@ class NpmRemoteRepository : RemoteRepository() {
         if (!cacheConfiguration.cacheEnabled) return null
         val repositoryInfo = context.repositoryInfo
         val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeResource.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
-        if (node == null || node.nodeInfo.folder) return null
-        val createdDate = LocalDateTime.parse(node.nodeInfo.createdDate, DateTimeFormatter.ISO_DATE_TIME)
+        val node = nodeClient.detail(repositoryInfo.projectId, repositoryInfo.name, fullPath).data
+        if (node == null || node.folder) return null
+        val createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
         return if (age <= cacheConfiguration.cachePeriod) {
-            storageService.load(node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials)?.run {
+            storageService.load(node.sha256!!, Range.full(node.size),
+                context.storageCredentials)?.run {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit")
-                ArtifactResource(this, determineArtifactName(context), node.nodeInfo)
+                ArtifactResource(this, determineArtifactName(context), node)
             }
         } else null
     }
@@ -201,6 +204,11 @@ class NpmRemoteRepository : RemoteRepository() {
                 GsonUtils.gsonToMaps<MutableList<Map<String, Any>>>(response.body()!!.string())?.get(OBJECTS)!!
             )
         } else NpmSearchResponse()
+    }
+
+    override fun migrate(context: ArtifactMigrateContext) {
+        logger.warn("Unable to migrate npm package into a remote repository")
+        throw BadRequestException("Unable to migrate npm package into a remote repository")
     }
 
     companion object {

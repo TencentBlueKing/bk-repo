@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.helm.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.config.ATTRIBUTE_SHA256MAP
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
+import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -38,7 +38,7 @@ class HelmLocalRepository : LocalRepository() {
         val repoName = repositoryInfo.name
         context.artifactFileMap.entries.forEach { (name, _) ->
             val fullPath = context.contextAttributes[name + "_full_path"] as String
-            val isExist = nodeResource.exist(projectId, repoName, fullPath).data!!
+            val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
             if (isExist && !isOverwrite(fullPath, isForce)) {
                 throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
             }
@@ -49,10 +49,11 @@ class HelmLocalRepository : LocalRepository() {
         context.artifactFileMap.entries.forEach { (name, _) ->
             val nodeCreateRequest = getNodeCreateRequest(name, context)
             storageService.store(
-                nodeCreateRequest.sha256!!, context.getArtifactFile(name)
-                    ?: context.getArtifactFile(), context.storageCredentials
+                nodeCreateRequest.sha256!!,
+                context.getArtifactFile(name) ?: context.getArtifactFile(),
+                context.storageCredentials
             )
-            nodeResource.create(nodeCreateRequest)
+            nodeClient.create(nodeCreateRequest)
         }
     }
 
@@ -107,10 +108,10 @@ class HelmLocalRepository : LocalRepository() {
         val projectId = repositoryInfo.projectId
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
-        val node = nodeResource.detail(projectId, repoName, fullPath).data
-        if (node == null || node.nodeInfo.folder) return null
+        val node = nodeClient.detail(projectId, repoName, fullPath).data
+        if (node == null || node.folder) return null
         return storageService.load(
-            node.nodeInfo.sha256!!, Range.ofFull(node.nodeInfo.size), context.storageCredentials
+            node.sha256!!, Range.ofFull(node.size), context.storageCredentials
         )?.also { logger.info("search artifact [$fullPath] success!") }
     }
 
@@ -120,11 +121,11 @@ class HelmLocalRepository : LocalRepository() {
         val repoName = repositoryInfo.name
         val fullPath = context.contextAttributes[FULL_PATH] as String
         val userId = context.userId
-        val isExist = nodeResource.exist(projectId, repoName, fullPath).data!!
+        val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
         if (!isExist) {
             throw HelmFileNotFoundException("remove $fullPath failed: no such file or directory")
         }
-        nodeResource.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
+        nodeClient.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
     }
 
     companion object {

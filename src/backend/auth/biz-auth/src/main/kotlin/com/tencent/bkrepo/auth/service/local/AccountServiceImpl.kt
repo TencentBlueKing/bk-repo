@@ -84,9 +84,7 @@ class AccountServiceImpl @Autowired constructor(
         val update = Update()
         update.set("locked", locked)
         val result = mongoTemplate.updateFirst(query, update, TAccount::class.java)
-        if (result.modifiedCount == 1L) {
-            return true
-        }
+        if (result.modifiedCount == 1L) return true
         return false
     }
 
@@ -157,9 +155,7 @@ class AccountServiceImpl @Autowired constructor(
             val update = Update()
             update.set("credentials.$.status", status.toString())
             val result = mongoTemplate.updateFirst(query, update, TAccount::class.java)
-            if (result.modifiedCount == 1L) {
-                return true
-            }
+            if (result.modifiedCount == 1L) return true
         }
         return false
     }

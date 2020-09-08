@@ -9,18 +9,12 @@ import org.slf4j.LoggerFactory
 /**
  * docker repo  utility
  * to deal with repo params
- * @author: owenlxu
- * @date: 2019-11-15
  */
-class RepoUtil constructor(repo: DockerArtifactRepo) {
+object RepoUtil {
 
-    val repo = repo
+    private val logger = LoggerFactory.getLogger(RepoUtil::class.java)
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(RepoUtil::class.java)
-    }
-
-    fun loadContext(context: RequestContext) {
+    fun loadContext(repo: DockerArtifactRepo, context: RequestContext) {
         with(context) {
             repo.userId = userId
             isRepoExist(repo, projectId, repoName)
@@ -29,8 +23,8 @@ class RepoUtil constructor(repo: DockerArtifactRepo) {
 
     private fun isRepoExist(repo: DockerArtifactRepo, projectId: String, repoName: String) {
         // check repository
-        repo.repositoryResource.detail(projectId, repoName, REPO_TYPE).data ?: run {
-            logger.error("get repository detail exception [$projectId] , [$repoName] ")
+        repo.repositoryClient.detail(projectId, repoName, REPO_TYPE).data ?: run {
+            logger.error("get repository detail exception [$projectId,$repoName] ")
             throw DockerRepoNotFoundException(repoName)
         }
     }

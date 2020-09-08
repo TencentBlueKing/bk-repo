@@ -2,9 +2,9 @@ package com.tencent.bkrepo.replication.job
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
-import com.tencent.bkrepo.common.artifact.config.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.artifact.util.http.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.http.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.replication.api.ReplicationClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.model.TReplicationTask
@@ -60,7 +60,7 @@ class ReplicationContext(val task: TReplicationTask) {
         fun encodeAuthToken(username: String, password: String): String {
             val byteArray = ("$username$COLON$password").toByteArray(Charsets.UTF_8)
             val encodedValue = Base64Utils.encodeToString(byteArray)
-            return "$BASIC_AUTH_HEADER_PREFIX $encodedValue"
+            return "$BEARER_AUTH_PREFIX $encodedValue"
         }
 
         fun normalizeUrl(remoteClusterInfo: RemoteClusterInfo): String {

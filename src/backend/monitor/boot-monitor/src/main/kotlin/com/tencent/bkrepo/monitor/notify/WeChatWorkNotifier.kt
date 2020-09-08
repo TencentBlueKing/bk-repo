@@ -62,11 +62,12 @@ class WeChatWorkNotifier(
     }
 
     companion object {
-        val MESSAGE_TEMPLATE = """
+        val MESSAGE_TEMPLATE =
+            """
             <font color="warning">【提醒】</font>服务实例[%s-%s]状态发生变化
              > 集群: %s
              > 状态: %s -> %s
              > 时间: %s
-        """.trimIndent()
+            """.trimIndent()
     }
 }

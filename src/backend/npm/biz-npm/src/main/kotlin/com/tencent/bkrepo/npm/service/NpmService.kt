@@ -5,9 +5,8 @@ import com.google.gson.JsonParser
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
-import com.tencent.bkrepo.common.artifact.config.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.artifact.permission.Permission
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -15,6 +14,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.async.NpmDependentHandler
@@ -60,7 +60,8 @@ import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.GsonUtils
-import com.tencent.bkrepo.repository.api.MetadataResource
+import com.tencent.bkrepo.npm.utils.TimeUtil
+import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.lang.StringUtils
@@ -69,19 +70,18 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.Date
 
 @Service
 class NpmService @Autowired constructor(
     private val npmDependentHandler: NpmDependentHandler,
-    private val metadataResource: MetadataResource
+    private val metadataClient: MetadataClient
 ) {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     fun publish(userId: String, artifactInfo: NpmArtifactInfo, body: String): NpmSuccessResponse {
         body.takeIf { StringUtils.isNotBlank(it) } ?: throw ArtifactNotFoundException("request body not found!")
-        val jsonObj = JsonParser().parse(body).asJsonObject
+        val jsonObj = JsonParser.parseString(body).asJsonObject
         val artifactFileMap = ArtifactFileMap()
         return if (jsonObj.has(ATTACHMENTS)) {
             val attributesMap = mutableMapOf<String, Any>()
@@ -108,7 +108,7 @@ class NpmService @Autowired constructor(
             val version = versions.getAsJsonObject(it)[VERSION].asString
             val metaData = buildMetaData(versions[it].asJsonObject)
             val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
-            metadataResource.save(
+            metadataClient.save(
                 MetadataSaveRequest(
                     artifactInfo.projectId,
                     artifactInfo.repoName,
@@ -133,19 +133,20 @@ class NpmService @Autowired constructor(
         }
 
         // first upload
+        val gmtTime = TimeUtil.getGMTTime()
         val timeMap = if (pkgInfo.size() == 0) pkgInfo else pkgInfo.getAsJsonObject(TIME)!!
         if (pkgInfo.size() == 0) {
             jsonObj.addProperty(REV, REV_VALUE)
             pkgInfo = jsonObj
-            timeMap.add(CREATED, GsonUtils.gson.toJsonTree(Date()))
+            timeMap.add(CREATED, GsonUtils.gson.toJsonTree(gmtTime))
         }
 
         pkgInfo.getAsJsonObject(VERSIONS).add(distTags.second, leastJsonObject.getAsJsonObject(distTags.second))
         pkgInfo.getAsJsonObject(DISTTAGS).addProperty(distTags.first, distTags.second)
-        timeMap.add(distTags.second, GsonUtils.gson.toJsonTree(Date()))
-        timeMap.add(MODIFIED, GsonUtils.gson.toJsonTree(Date()))
+        timeMap.add(distTags.second, GsonUtils.gson.toJsonTree(gmtTime))
+        timeMap.add(MODIFIED, GsonUtils.gson.toJsonTree(gmtTime))
         pkgInfo.add(TIME, timeMap)
-        val packageJsonFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(pkgInfo).byteInputStream())
+        val packageJsonFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(pkgInfo))
         artifactFileMap[NPM_PACKAGE_JSON_FILE] = packageJsonFile
     }
 
@@ -204,7 +205,6 @@ class NpmService @Autowired constructor(
     private fun getAttachmentsInfo(jsonObj: JsonObject, attributesMap: MutableMap<String, Any>): JsonObject {
         val distTags = getDistTags(jsonObj)!!
         val name = jsonObj.get(NAME).asString
-        // val version = jsonObj.getAsJsonObject(DISTTAGS).get(LATEST).asString
         logger.info("current pkgName : $name ,current version : ${distTags.second}")
         val attachKey = "$name$FILE_DASH${distTags.second}$FILE_SUFFIX"
         val mutableMap = jsonObj.getAsJsonObject(ATTACHMENTS).getAsJsonObject(attachKey)
@@ -293,7 +293,7 @@ class NpmService @Autowired constructor(
     fun updatePkg(artifactInfo: NpmArtifactInfo, body: String): NpmSuccessResponse {
         val attributesMap = mutableMapOf<String, Any>()
         body.takeIf { StringUtils.isNotBlank(it) } ?: throw ArtifactNotFoundException("request body not found!")
-        val jsonObj = JsonParser().parse(body).asJsonObject
+        val jsonObj = JsonParser.parseString(body).asJsonObject
         val name = jsonObj.get(NAME).asString
         attributesMap[NPM_PKG_JSON_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
 

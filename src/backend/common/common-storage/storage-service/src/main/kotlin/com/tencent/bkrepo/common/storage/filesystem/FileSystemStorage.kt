@@ -12,9 +12,6 @@ import java.nio.file.Paths
 
 /**
  * 文件系统存储
- *
- * @author: carrypan
- * @date: 2019-09-09
  */
 open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSystemClient>() {
 
@@ -27,17 +24,6 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
     override fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: FileSystemClient) {
         inputStream.use {
             client.store(path, filename, it, size)
-        }
-    }
-
-    override fun load(path: String, filename: String, received: File, client: FileSystemClient): File? {
-        return client.load(path, filename)?.run {
-            FileLockExecutor.executeInLock(this.inputStream()) { input ->
-                FileLockExecutor.executeInLock(received) { output ->
-                    client.transfer(input, output, this.length())
-                }
-            }
-            received
         }
     }
 
