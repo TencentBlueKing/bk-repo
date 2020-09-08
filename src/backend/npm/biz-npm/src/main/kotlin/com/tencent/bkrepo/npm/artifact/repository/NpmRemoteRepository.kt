@@ -24,6 +24,7 @@ import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
 import io.undertow.util.BadRequestException
@@ -63,7 +64,10 @@ class NpmRemoteRepository : RemoteRepository() {
         return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
     }
 
-    override fun getCacheNodeCreateRequest(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeCreateRequest {
+    override fun getCacheNodeCreateRequest(
+        context: ArtifactDownloadContext,
+        artifactFile: ArtifactFile
+    ): NodeCreateRequest {
         val nodeCreateRequest = super.getCacheNodeCreateRequest(context, artifactFile)
         return nodeCreateRequest.copy(
             fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
@@ -106,7 +110,7 @@ class NpmRemoteRepository : RemoteRepository() {
             String.format(NPM_PKG_FULL_PATH, pkgInfo.first)
         try {
             val artifactResource = getCacheArtifactResource(context) ?: return
-            val jsonFile = transFileToJson(artifactResource.inputStream)
+            val jsonFile = transFileToJson(artifactResource.inputStream, context)
             val versionFile = jsonFile.getAsJsonObject(VERSIONS).getAsJsonObject(pkgInfo.second)
             val artifact = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
             val name = jsonFile[NAME].asString
@@ -130,7 +134,7 @@ class NpmRemoteRepository : RemoteRepository() {
 
     override fun search(context: ArtifactSearchContext): JsonObject? {
         getCacheArtifactResource(context)?.let {
-            return transFileToJson(it.inputStream)
+            return transFileToJson(it.inputStream, context)
         }
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val httpClient = createHttpClient(remoteConfiguration)
@@ -143,7 +147,7 @@ class NpmRemoteRepository : RemoteRepository() {
                 val file = createTempFile(response.body()!!)
                 val downloadContext = ArtifactDownloadContext()
                 downloadContext.contextAttributes = context.contextAttributes
-                val resultJson = transFileToJson(file.getInputStream())
+                val resultJson = transFileToJson(file.getInputStream(), context)
                 putArtifactCache(downloadContext, file)
                 resultJson
             } else null
@@ -157,23 +161,32 @@ class NpmRemoteRepository : RemoteRepository() {
         }
     }
 
-    private fun transFileToJson(inputStream: InputStream): JsonObject {
+    private fun transFileToJson(inputStream: InputStream, context: ArtifactTransferContext): JsonObject {
         val pkgJson = GsonUtils.transferInputStreamToJson(inputStream)
         val name = pkgJson.get(NAME).asString
+        val projectId = context.repositoryInfo.projectId
+        val repoName = context.repositoryInfo.name
         val id = pkgJson[ID].asString
         if (id.substring(1).contains('@')) {
             val oldTarball = pkgJson.getAsJsonObject(DIST)[TARBALL].asString
-            val prefix = oldTarball.split(name)[0].trimEnd('/')
-            val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
-            pkgJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
+            // val prefix = oldTarball.split(name)[0].trimEnd('/')
+            // val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
+            // pkgJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
+            pkgJson.getAsJsonObject(DIST).addProperty(
+                TARBALL,
+                NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, projectId, repoName)
+            )
         } else {
             val versions = pkgJson.getAsJsonObject(VERSIONS)
             versions.keySet().forEach {
                 val versionObject = versions.getAsJsonObject(it)
                 val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
-                val prefix = oldTarball.split(name)[0].trimEnd('/')
-                val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
-                versionObject.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
+                // val prefix = oldTarball.split(name)[0].trimEnd('/')
+                // val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
+                versionObject.getAsJsonObject(DIST).addProperty(
+                    TARBALL,
+                    NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, projectId, repoName)
+                )
             }
         }
         return pkgJson
