@@ -19,6 +19,7 @@ class NodeQueryInterceptor : QueryModelInterceptor {
     override fun intercept(queryModel: QueryModel): QueryModel {
         validateModel(queryModel)
         setDeletedNull(queryModel)
+        filterRootNode(queryModel)
 
         return queryModel
     }
@@ -80,5 +81,12 @@ class NodeQueryInterceptor : QueryModelInterceptor {
      */
     private fun setDeletedNull(queryModel: QueryModel) {
         queryModel.addQueryRule(Rule.QueryRule(TNode::deleted.name, "", OperationType.NULL))
+    }
+
+    /**
+     * 添加name属性不为空的查询条件到[queryModel]中来过滤根节点
+     */
+    private fun filterRootNode(queryModel: QueryModel) {
+        queryModel.addQueryRule(Rule.QueryRule(TNode::name.name, "", OperationType.NE))
     }
 }
