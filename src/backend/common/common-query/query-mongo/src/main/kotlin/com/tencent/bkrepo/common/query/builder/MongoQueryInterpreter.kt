@@ -64,7 +64,7 @@ open class MongoQueryInterpreter {
         val query = Query()
         val pageNumber = newModel.page.getNormalizedPageNumber()
         val pageSize = newModel.page.getNormalizedPageSize()
-        newModel.page.let { query.with(PageRequest.of(pageNumber, pageSize)) }
+        newModel.page.let { query.with(PageRequest.of(pageNumber - 1, pageSize)) }
         newModel.sort?.let { query.with(Sort.by(Sort.Direction.fromString(it.direction.name), *it.properties.toTypedArray())) }
         newModel.select?.forEach { query.fields().include(it) }
         query.addCriteria(resolveRule(queryModel.rule))
