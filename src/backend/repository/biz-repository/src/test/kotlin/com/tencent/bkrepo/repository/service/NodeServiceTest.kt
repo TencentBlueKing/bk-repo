@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
@@ -18,7 +19,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
-import com.tencent.bkrepo.repository.util.PathUtils
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -73,7 +73,7 @@ class NodeServiceTest @Autowired constructor(
     @BeforeEach
     fun beforeEach() {
         initMock()
-        nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, PathUtils.ROOT, UT_USER, false)
+        nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER, false)
     }
 
     @Test
@@ -153,8 +153,8 @@ class NodeServiceTest @Autowired constructor(
 
         var page = nodeService.page(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 0, 10, includeFolder = false, deep = false)
         assertEquals(10, page.records.size)
-        assertEquals(size, page.count)
-        assertEquals(0, page.page)
+        assertEquals(size, page.totalRecords)
+        assertEquals(0, page.totalPages)
         assertEquals(10, page.pageSize)
 
         page = nodeService.page(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 5, 10, includeFolder = false, deep = false)
@@ -164,8 +164,8 @@ class NodeServiceTest @Autowired constructor(
 
         page = nodeService.page(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 0, 20, includeFolder = false, deep = false)
         assertEquals(20, page.records.size)
-        assertEquals(size, page.count)
-        assertEquals(0, page.page)
+        assertEquals(size, page.totalRecords)
+        assertEquals(0, page.totalPages)
         assertEquals(20, page.pageSize)
     }
 
