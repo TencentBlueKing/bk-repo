@@ -18,6 +18,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.response.ArtifactResourceWriter
+import com.tencent.bkrepo.common.security.http.SecurityUtils
 import com.tencent.bkrepo.repository.util.NodeUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -124,8 +125,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     open fun onUploadSuccess(context: ArtifactUploadContext) {
         artifactMetrics.uploadedCounter.increment()
         val artifactInfo = context.artifactInfo
-        val userId = context.userId
-        logger.info("User[$userId] upload artifact[$artifactInfo] success")
+        logger.info("User[${SecurityUtils.getPrincipal()}] upload artifact[$artifactInfo] success")
     }
 
     /**
@@ -162,10 +162,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onDownloadSuccess(context: ArtifactDownloadContext) {
         artifactMetrics.downloadedCounter.increment()
-
         val artifactInfo = context.artifactInfo
-        val userId = context.userId
-        logger.info("User[$userId] download artifact[$artifactInfo] success")
+        logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[$artifactInfo] success")
     }
 
     /**

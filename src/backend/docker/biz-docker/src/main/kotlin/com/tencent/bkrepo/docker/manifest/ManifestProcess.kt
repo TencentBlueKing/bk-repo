@@ -263,7 +263,7 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
             logger.warn("the node not exist [$context,$manifestPath]")
             return DockerV2Errors.manifestUnknown(manifestPath)
         }
-        logger.debug("get manifest by tag result [$manifest]")
+        logger.info("get manifest by tag result [$manifest]")
         val digest = DockerDigest.fromSha256(manifest.sha256!!)
         return buildManifestResponse(context, manifestPath, digest, manifest.length, headers)
     }

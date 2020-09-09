@@ -3,7 +3,7 @@
 -----
 ### 获取manifest文件
 
-- API: GET /api/docker/user/manifest/{projectId}/{repoName}/{repo}/{tag}
+- API: GET /docker/api/manifest/{projectId}/{repoName}/{name}/{tag}
 - API 名称: get_repo_manifest
 - 功能说明：
 	- 中文：获取repo对应的manifest文件
@@ -23,7 +23,7 @@
 |---|---|---|---|---|---|
 |projectId|string|是|无|项目id|the project id|
 |repoName|string|是|无|仓库名称| name of repo|
-|repo|string|是|无|docker镜像名| name of docker image|
+|name|string|是|无|docker镜像名| name of docker image|
 |tag|string|是|无|repo tag |tag of docker repo|
 
 
@@ -107,7 +107,7 @@
 
 ### 根据layerId下载layer文件
 
-- API: GET /api/docker/user/layer/{projectId}/{repoName}/{repo}/{Id}
+- API: GET /docker/api/layer/{projectId}/{repoName}/{name}/{Id}
 - API 名称: 
 - 功能说明：
 	- 中文：根据layerId获取layer文件
@@ -125,7 +125,7 @@
 |---|---|---|---|---|---|
 |projectId|string|是|无|项目id|the project id|
 |repoName|string|是|无|仓库名称| name of repo|
-|repo|string|是|无|docker镜像名| name of docker image|
+|name|string|是|无|docker镜像名| name of docker image|
 |Id|string|是|无|layer id|the  id of layer|
 
 
@@ -138,9 +138,9 @@
 
 - output 字段说明
 
-### 获取指定projectId和repoName下的所有repo
+### 获取指定projectId和repoName下的所有镜像
 
-- API: GET /api/docker/user/repo/{projectId}/{repoName}
+- API: GET /docker/api/repo/{projectId}/{repoName}?pageNumber=0&pageSize=10
 - API 名称: get_image_by_project_repository
 - 功能说明：
 	- 中文：获取指定project和仓库下的所有docker镜像
@@ -160,6 +160,8 @@
 |---|---|---|---|---|---|
 |projectId|string|是|无|项目id|the project id|
 |repoName|string|是|无|仓库名称| name of repo|
+|pageNumber|Int|是|无|页码数| number of page|
+|pageSize|Int|是|无|每页大小| limit of page|
 
 
 
@@ -171,9 +173,18 @@
     "message":null,
     "traceId":"",
     "data":[
-        "nginx",
-        "tomcat",
-        "linux"
+        {
+            "name":"mongo",
+            "createdBy":"yangjian",
+            "downloadCount":10,
+            "createdDate":"2020-08-28 04:07:12.672Z"
+        },
+        {
+            "name":"nginx",
+            "createdBy":"kim",
+            "downloadCount":12,
+            "createdDate":"2020-08-28 04:07:12.672Z"
+        }
     ]
 }
 
@@ -187,10 +198,13 @@
 |message|result message|错误消息 |the failure message |
 |data | string array |image 名称列表 |the list of image|
 |traceId|string|请求跟踪id|the trace id|
+|name|string|镜像ID|the id of image|
+|createdBy|string|创建人|the creator of image|
+|createdDate|time|创建时间|create date of image|
 
 ### 获取repo的所有tag
 
-- API: GET /api/docker/user/tag/{projectId}/{repoName}/{repo}
+- API: GET /docker/api/tag/{projectId}/{repoName}/{name}
 - API 名称: get_repo_tag_list
 - 功能说明：
 	- 中文：获取repo对应的manifest文件
@@ -210,7 +224,7 @@
 |---|---|---|---|---|---|
 |projectId|string|是|无|项目id|the project id|
 |repoName|string|是|无|仓库名称| name of repo|
-|repo|string|是|无|docker 镜像名称| name of docker image|
+|name|string|是|无|docker 镜像名称| name of docker image|
 
 
 
@@ -220,13 +234,26 @@
 {
     "code":0,
     "message":null,
-    "data":{
-        "v1":"owen"
-    },
+    "data":[
+        {
+            "tag":"latest",
+            "status":"@prerelease",
+            "size":1024,
+            "downloadCount":10,
+            "lastModifiedBy":"owen",
+            "lastModifiedDate":"2020-08-28 04:07:12.672Z"
+        },
+        {
+            "tag":"v1",
+            "status":"@prerelease",
+            "size":2096,
+            "downloadCount":10,
+            "lastModifiedBy":"owen",
+            "lastModifiedDate":"2020-08-28 04:07:12.672Z"
+        }
+    ],
     "traceId":""
 }
-
-
 ```
 
 - output 字段说明
@@ -237,11 +264,152 @@
 |message|result message|错误消息 |the failure message |
 |data | string array | image的tag列表 |tag list of the image|
 |traceId|string|请求跟踪id|the trace id|
+|tag|string|tag名称|the name of tag|
+|status|string|制品状态|the status of image|
+|size|Int|镜像大小|the size of image|
+|downloadCount|Int|下载次数|the download count of image|
+|lastModifiedBy|date|更新人|the man upload it|
+|lastModifiedDate|date|更新时间|the modified date|
+
+
+### 删除指定projectId和repoName下的的镜像
+
+- API: DELETE /docker/api/repo/{projectId}/{repoName}/{name}
+- API 名称: delete_image_by_project_repository_name
+- 功能说明：
+	- 中文：删除指定project和仓库下name的镜像
+	- English：delete image by project and repository and image name
+
+- input body:
+
+
+``` json
+
+```
+
+
+- input 字段说明
+
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|projectId|string|是|无|项目id|the project id|
+|repoName|string|是|无|仓库名称| name of repo|
+|name|string|是|无|镜像名称| name of image|
+
+
+
+- output:
+
+```
+{
+    "code":0,
+    "message":null,
+    "traceId":"",
+    "data":[
+        {
+            "name":"mongo",
+            "createdBy":"yangjian",
+            "downloadCount":10,
+            "createdDate":"2020-08-28 04:07:12.672Z"
+        },
+        {
+            "name":"nginx",
+            "createdBy":"kim",
+            "downloadCount":12,
+            "createdDate":"2020-08-28 04:07:12.672Z"
+        }
+    ]
+}
+
+```
+
+- output 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
+|message|result message|错误消息 |the failure message |
+|data | string array |image 名称列表 |the list of image|
+|traceId|string|请求跟踪id|the trace id|
+
+### 获取repo下指定tag的详情
+
+- API: GET /docker/api/tag/detail/{projectId}/{repoName}/{name}
+- API 名称: get_repo_tag_list
+- 功能说明：
+	- 中文：获取repo对应的manifest文件
+	- English：get image tag by repo 
+
+- input body:
+
+
+``` json
+
+```
+
+
+- input 字段说明
+
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|projectId|string|是|无|项目id|the project id|
+|repoName|string|是|无|仓库名称| name of repo|
+|name|string|是|无|docker 镜像名称| name of docker image|
+
+
+
+- output:
+
+```
+{
+    "code":0,
+    "message":null,
+    "data":{
+        "basic":{
+            "size":1024,
+            "sha256":"c7fea26579a7de970085f5f0d7f5fe28d055e642f7520a674614f9b428bdba05",
+            "tag":"v1",
+            "os":"linux",
+            "lastModifiedBy":"owen",
+            "lastModifiedDate":"2020-08-28 04:07:12.672Z",
+            "downloadCount":1223
+        },
+        "history":[
+            "DOCKER RUN"
+        ],
+        "metadata":{
+            "user":"owen"
+        },
+        "layers":[
+            {
+                "id":"sha256__8dc0e42f1f5b6325f3998409ab78543dfce3cb36aff37e64b432ee0c7accd1dc",
+                "size":123
+            },
+            {
+                "id":"sha256__8dc0e42f1f5b6325f3998409ab78543dfce3cb36aff37e64b432ee0c7accd1dc",
+                "size":1234
+            }
+        ]
+    },
+    "traceId":""
+}
+```
+
+- output 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
+|message|result message|错误消息 |the failure message |
+|data | object | tag详情数据 |tag list of the image|
+|traceId|string|请求跟踪id|the trace id|
+|basic|object|基础数据|the basic data|
+|history|object array|镜像构建历史|the history of build|
+|metadata|object|元数据信息|the metadata of image tag|
+|layers|object array|层级信息|the layer info of image|
+
 
 ### 鉴权示例
 
-```bash
-curl -X GET http://dev.bkrepo.oa.com/docker/user/repo/bk-extension/docker-local/  -H 'Authorization: Platform Y2I0NzVmMGItMGIyZS00YjliLTlhYjItOTc3Mzg1ZDM3ZTQ1OjZ1UzE5Yjg3WUlVNnZXTkhpTW9lQ2xhNngzdHN4OA==' -H 'X-BKREPO-UID: owenlxu'
-```
-Y2I0NzVmMGItMGIyZS00YjliLTlhYjItOTc3Mzg1ZDM3ZTQ1OjZ1UzE5Yjg3WUlVNnZXTkhpTW9lQ2xhNngzdHN4OA== 为 $AK:$SK base64编码之后的值
+
 

@@ -42,9 +42,9 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
                     val authCredentials = authHandler.extractAuthCredentials(request)
                     if (authCredentials !is AnonymousCredentials) {
                         val userId = authHandler.onAuthenticate(request, authCredentials)
-                        logger.debug("User[$userId] authenticate success by ${authHandler.javaClass.simpleName}.")
-                        authHandler.onAuthenticateSuccess(request, response, userId)
                         request.setAttribute(USER_KEY, userId)
+                        authHandler.onAuthenticateSuccess(request, response, userId)
+                        logger.debug("User[${SecurityUtils.getPrincipal()}] authenticate success by ${authHandler.javaClass.simpleName}.")
                         return true
                     } else if (isLoginRequest) {
                         throw AuthenticationException()

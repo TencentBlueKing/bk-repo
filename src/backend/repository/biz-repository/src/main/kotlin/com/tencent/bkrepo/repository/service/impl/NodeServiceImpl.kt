@@ -167,7 +167,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
 
         val query = nodeListQuery(projectId, repoName, path, includeFolder, includeMetadata, deep)
         val count = nodeDao.count(query)
-        val listData = nodeDao.find(query.with(PageRequest.of(page, size))).map { convert(it)!! }
+        val pageNumber = if (page <= 0) 1 else page
+        val listData = nodeDao.find(query.with(PageRequest.of(pageNumber - 1, size))).map { convert(it)!! }
 
         return Page(page, size, count, listData)
     }

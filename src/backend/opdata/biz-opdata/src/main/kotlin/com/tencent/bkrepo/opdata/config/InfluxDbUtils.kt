@@ -22,10 +22,10 @@ class InfluxDbUtils(
     fun getInstance(): InfluxDB? {
         influxDB ?: run {
             influxDB = InfluxDBFactory.connect(url, userName, password)
-            if (!influxDB!!.databaseExists(database)) {
-                influxDB!!.createDatabase(database)
-                influxDB!!.setDatabase(database)
-            }
+            // if (!influxDB!!.databaseExists(database)) {
+            //     influxDB!!.createDatabase(database)
+            //     influxDB!!.setDatabase(database)
+            // }
             influxDB!!.setRetentionPolicy(retentionPolicy)
             influxDB!!.setLogLevel(InfluxDB.LogLevel.BASIC)
         }
