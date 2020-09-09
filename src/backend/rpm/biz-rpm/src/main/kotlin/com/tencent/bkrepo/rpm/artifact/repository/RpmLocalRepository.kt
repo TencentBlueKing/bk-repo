@@ -3,11 +3,13 @@ package com.tencent.bkrepo.rpm.artifact.repository
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
 import com.tencent.bkrepo.common.api.constant.StringPool.DOT
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.hash.sha1
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.repository.RpmLocalConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
@@ -79,12 +81,10 @@ class RpmLocalRepository(
 
     fun rpmNodeCreateRequest(
         context: ArtifactUploadContext,
-        metadata: MutableMap<String, String>?,
-        overwrite: Boolean
+        metadata: MutableMap<String, String>?
     ): NodeCreateRequest {
         val nodeCreateRequest = super.getNodeCreateRequest(context)
         return nodeCreateRequest.copy(
-            overwrite = overwrite,
             metadata = metadata
         )
     }
@@ -354,16 +354,18 @@ class RpmLocalRepository(
         }
     }
 
+
+
     /**
      * 检查上传的构件是否已在仓库中，判断条件：uri && sha256
      * 降低并发对索引文件的影响
-     * @return ArtifactRepeat.FULLPATH_SHA256 存在完全相同构件，不操作索引
-     * @return ArtifactRepeat.FULLPATH 请求路径相同，但内容不同，更新索引
-     * @return ArtifactRepeat.NONE 无重复构件
+     * ArtifactRepeat.FULLPATH_SHA256 存在完全相同构件，不操作索引
+     * ArtifactRepeat.FULLPATH 请求路径相同，但内容不同，更新索引
+     * ArtifactRepeat.NONE 无重复构件
      */
     private fun checkRepeatArtifact(context: ArtifactUploadContext): ArtifactRepeat {
         val artifactUri = context.artifactInfo.artifactUri
-        val artifactSha256 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA256] as String
+        val artifactSha256 = context.getArtifactFile().getFileSha256()
 
         return with(context.artifactInfo) {
             val node = nodeClient.detail(projectId, repoName, artifactUri).data
@@ -566,6 +568,14 @@ class RpmLocalRepository(
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
         val overwrite = HeaderUtils.getRpmBooleanHeader("X-BKREPO-OVERWRITE")
+        if (!overwrite) {
+            with(context.artifactInfo) {
+                val node = nodeClient.detail(projectId, repoName, artifactUri).data
+                if (node != null) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, artifactUri)
+                }
+            }
+        }
         val artifactFormat = getArtifactFormat(context)
         val rpmRepoConf = getRpmRepoConf(context)
         val mark: Boolean = checkRequestUri(context, rpmRepoConf.repodataDepth)
@@ -575,14 +585,14 @@ class RpmLocalRepository(
                 when (artifactFormat) {
                     RPM -> {
                         val rpmVersion = indexer(context, repeat, rpmRepoConf)
-                        rpmNodeCreateRequest(context, rpmVersion.toMetadata(), overwrite)
+                        rpmNodeCreateRequest(context, rpmVersion.toMetadata())
                     }
                     XML -> {
                         storeGroupFile(context)
-                        rpmNodeCreateRequest(context, mutableMapOf(), overwrite)
+                        rpmNodeCreateRequest(context, mutableMapOf())
                     }
                 }
-            } else { rpmNodeCreateRequest(context, mutableMapOf(), overwrite) }
+            } else { rpmNodeCreateRequest(context, mutableMapOf()) }
 
             storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
             with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/$artifactUri") }
