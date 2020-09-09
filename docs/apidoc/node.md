@@ -73,7 +73,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 
 ### 分页查询节点
 
-- API: GET /repository/api/node/page/{projectId}/{repoName}/{fullPath}?pageNumber=0&pageSize=20&includeFolder=true&deep=false
+- API: GET /repository/api/node/page/{projectId}/{repoName}/{fullPath}?pageNumber=0&pageSize=20&includeFolder=true&includeMetadata=true&deep=false
 
 - API 名称: list_node_page
 
@@ -86,15 +86,16 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   
 - 请求字段说明
 
-  | 字段          | 类型    | 是否必须 | 默认值 | 说明               | Description       |
-  | ------------- | ------- | -------- | ------ | ------------------ | ----------------- |
-  | projectId     | string  | 是       | 无     | 项目名称           | project name      |
-  | repoName      | string  | 是       | 无     | 仓库名称           | repo name         |
-  | fullPath      | string  | 是       | 无     | 完整路径           | full path         |
-  | pageNumber    | int     | 否       | 0      | 当前页             | current page      |
-  | pageSize      | int     | 否       | 20     | 分页大小           | page size         |
-  | includeFolder | boolean | 否       | true   | 是否包含目录       | is include folder |
-  | deep          | boolean | 否       | false  | 是否查询子目录节点 | deep query        |
+  | 字段            | 类型    | 是否必须 | 默认值 | 说明               | Description       |
+  | --------------- | ------- | -------- | ------ | ------------------ | ----------------- |
+  | projectId       | string  | 是       | 无     | 项目名称           | project name      |
+  | repoName        | string  | 是       | 无     | 仓库名称           | repo name         |
+  | fullPath        | string  | 是       | 无     | 完整路径           | full path         |
+  | pageNumber      | int     | 否       | 0      | 当前页             | current page      |
+  | pageSize        | int     | 否       | 20     | 分页大小           | page size         |
+  | includeFolder   | boolean | 否       | true   | 是否包含目录       | include folder    |
+  | includeMetadata | boolean | 否       | false  | 是否包含元数据     | include  metadata |
+  | deep            | boolean | 否       | false  | 是否查询子目录节点 | deep query        |
 
 - 响应体
 
@@ -131,23 +132,23 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 
 - record字段说明
 
-  | 字段             | 类型   | 说明                        | Description          |
-  | ---------------- | ------ | --------------------------- | -------------------- |
-  | projectId        | string | 节点所属项目                | node project id      |
-  | repoName         | string | 节点所属仓库                | node repository name |
-  | path             | string | 节点目录                    | node path            |
-  | name             | string | 节点名称                    | node name            |
-  | fullPath         | string | 节点完整路径                | node full path       |
-  | folder           | bool   | 是否为文件夹                | is folder            |
-  | size             | long   | 节点大小                    | file size            |
-  | sha256           | string | 节点sha256                  | file sha256          |
-  | md5              | string | 节点md5                     | file md5 checksum    |
-  | stageTag         | string | 晋级状态标签                | stage status tag     |
-  | metadata         | object | 节点元数据，key-value键值对 | node metadata        |
-  | createdBy        | string | 创建者                      | create user          |
-  | createdDate      | string | 创建时间                    | create time          |
-  | lastModifiedBy   | string | 上次修改者                  | last modify user     |
-  | lastModifiedDate | string | 上次修改时间                | last modify time     |
+  | 字段             | 类型   | 说明                                                       | Description          |
+  | ---------------- | ------ | ---------------------------------------------------------- | -------------------- |
+  | projectId        | string | 节点所属项目                                               | node project id      |
+  | repoName         | string | 节点所属仓库                                               | node repository name |
+  | path             | string | 节点目录                                                   | node path            |
+  | name             | string | 节点名称                                                   | node name            |
+  | fullPath         | string | 节点完整路径                                               | node full path       |
+  | folder           | bool   | 是否为文件夹                                               | is folder            |
+  | size             | long   | 节点大小                                                   | file size            |
+  | sha256           | string | 节点sha256                                                 | file sha256          |
+  | md5              | string | 节点md5                                                    | file md5 checksum    |
+  | stageTag         | string | 晋级状态标签，includeMetadata=false将返回空                | stage status tag     |
+  | metadata         | object | 节点元数据，key-value键值对，includeMetadata=false将返回空 | node metadata        |
+  | createdBy        | string | 创建者                                                     | create user          |
+  | createdDate      | string | 创建时间                                                   | create time          |
+  | lastModifiedBy   | string | 上次修改者                                                 | last modify user     |
+  | lastModifiedDate | string | 上次修改时间                                               | last modify time     |
 
 
 
