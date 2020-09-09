@@ -85,7 +85,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
 
         val cacheNode = findCacheNodeDetail(context)
         if (cacheNode == null || cacheNode.folder) return null
-        return if (isExpired(cacheNode, configuration.cache.expiration)) {
+        return if (!isExpired(cacheNode, configuration.cache.expiration)) {
             storageService.load(cacheNode.sha256!!, Range.full(cacheNode.size), context.storageCredentials)?.run {
                 if (logger.isDebugEnabled) {
                     logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
@@ -103,7 +103,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             return false
         }
         val createdDate = LocalDateTime.parse(cacheNode.createdDate, DateTimeFormatter.ISO_DATE_TIME)
-        return Duration.between(createdDate, LocalDateTime.now()).toMinutes() <= expiration
+        return Duration.between(createdDate, LocalDateTime.now()).toMinutes() >= expiration
     }
 
     /**
