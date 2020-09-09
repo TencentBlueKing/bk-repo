@@ -88,7 +88,7 @@ class UserRepositoryController(
 
     @ApiOperation("分页查询仓库列表")
     @GetMapping("/page/{projectId}/{pageNumber}/{pageSize}")
-    fun page(
+    fun listRepoPage(
         @RequestAttribute userId: String,
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String,
@@ -107,7 +107,7 @@ class UserRepositoryController(
 
     @ApiOperation("列表查询项目所有仓库")
     @GetMapping("/list/{projectId}")
-    fun list(
+    fun listRepo(
         @RequestAttribute userId: String,
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String,
@@ -137,7 +137,7 @@ class UserRepositoryController(
     }
 
     @ApiOperation("更新仓库")
-    @DeleteMapping("/update/{projectId}/{repoName}")
+    @PostMapping("/update/{projectId}/{repoName}")
     fun updateRepo(
         @RequestAttribute userId: String,
         @ApiParam(value = "所属项目", required = true)
