@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.path.PathUtils.UNIX_SEPARATOR
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -151,13 +151,13 @@ class ListViewServiceImpl(
 
     private fun computeCurrentPath(currentNode: NodeDetail): String {
         val builder = StringBuilder()
-        builder.append(PathUtils.SEPARATOR)
+        builder.append(UNIX_SEPARATOR)
             .append(currentNode.projectId)
-            .append(PathUtils.SEPARATOR)
+            .append(UNIX_SEPARATOR)
             .append(currentNode.repoName)
             .append(currentNode.fullPath)
         if (!PathUtils.isRoot(currentNode.fullPath)) {
-            builder.append(PathUtils.SEPARATOR)
+            builder.append(UNIX_SEPARATOR)
         }
         return builder.toString()
     }
@@ -174,7 +174,7 @@ class ListViewServiceImpl(
 
     private fun trailingSlash() {
         val url = HttpContextHolder.getRequest().requestURL.toString()
-        if (!url.endsWith(StringPool.SLASH)) {
+        if (!url.endsWith(UNIX_SEPARATOR)) {
             HttpContextHolder.getResponse().sendRedirect("$url/")
         }
     }

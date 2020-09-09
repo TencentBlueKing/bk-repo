@@ -12,6 +12,7 @@ object StringPool {
     const val DASH = "-"
     const val AT = "@"
     const val QUESTION = "?"
+    const val DOUBLE_DOT = ".."
     const val HTTP = "http://"
     const val HTTPS = "https://"
     const val UNKNOWN = "Unknown"
@@ -22,10 +23,11 @@ object StringPool {
 
     private val alphabet: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
 
-    fun randomString(size: Int) = List(size) { alphabet.random() }.joinToString("")
-
+    fun randomString(size: Int) = List(size) { alphabet.random() }.joinToString(EMPTY)
     fun uniqueId() = UUID.randomUUID().toString().replace(DASH, EMPTY).toLowerCase()
 }
 
-fun String.ensurePrefix(prefix: String) = if (startsWith(prefix)) this else prefix + this
-fun String.ensureSuffix(suffix: String) = if (endsWith(suffix)) this else this + suffix
+fun String.ensurePrefix(prefix: CharSequence) = if (startsWith(prefix)) this else StringBuilder(prefix).append(this).toString()
+fun String.ensureSuffix(suffix: CharSequence) = if (endsWith(suffix)) this else this + suffix
+fun String.ensurePrefix(prefix: Char) = if (startsWith(prefix)) this else prefix + this
+fun String.ensureSuffix(suffix: Char) = if (endsWith(suffix)) this else this + suffix

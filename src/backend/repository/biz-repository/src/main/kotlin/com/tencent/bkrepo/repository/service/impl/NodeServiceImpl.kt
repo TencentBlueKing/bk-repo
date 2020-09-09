@@ -8,10 +8,9 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combinePath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.escapeRegex
+import com.tencent.bkrepo.common.artifact.path.PathUtils.isRoot
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizePath
-import com.tencent.bkrepo.common.artifact.path.PathUtils.isRoot
-import com.tencent.bkrepo.common.artifact.path.PathUtils.validateFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolvePath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -41,13 +40,13 @@ import com.tencent.bkrepo.repository.service.FileReferenceService
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
+import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeDeleteUpdate
+import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeExpireDateUpdate
+import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeListCriteria
+import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeListQuery
+import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodePathUpdate
+import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeQuery
 import com.tencent.bkrepo.repository.util.Pages
-import com.tencent.bkrepo.repository.util.QueryHelper.nodeDeleteUpdate
-import com.tencent.bkrepo.repository.util.QueryHelper.nodeExpireDateUpdate
-import com.tencent.bkrepo.repository.util.QueryHelper.nodeListCriteria
-import com.tencent.bkrepo.repository.util.QueryHelper.nodeListQuery
-import com.tencent.bkrepo.repository.util.QueryHelper.nodePathUpdate
-import com.tencent.bkrepo.repository.util.QueryHelper.nodeQuery
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -56,7 +55,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import springfox.documentation.spring.web.paths.Paths
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -187,10 +185,11 @@ class NodeServiceImpl : AbstractService(), NodeService {
      * 判断节点列表是否存在
      */
     override fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String> {
-        val formatFullPathList = fullPathList.map { normalizeFullPath(it) }
-        val query = nodeListQuery(projectId, repoName, formatFullPathList)
-
-        return nodeDao.find(query).map { it.fullPath }
+        val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
+            .and(TNode::repoName.name).`is`(repoName)
+            .and(TNode::deleted.name).`is`(null)
+            .and(TNode::fullPath.name).`in`(fullPathList)
+        return nodeDao.find(Query(criteria)).map { it.fullPath }
     }
 
     /**
@@ -203,7 +202,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
             this.takeIf { folder || !md5.isNullOrBlank() }
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::md5.name)
-            val fullPath = validateFullPath(fullPath)
+            val fullPath = normalizeFullPath(fullPath)
             val repo = repositoryService.checkRepository(projectId, repoName)
             // 路径唯一性校验
             nodeDao.findNode(projectId, repoName, fullPath)?.let {

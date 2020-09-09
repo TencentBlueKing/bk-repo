@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.artifact.api
 
-import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.CharPool.DASH
+import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 
 /**
@@ -55,7 +56,7 @@ abstract class ArtifactInfo(
     open fun getRepoIdentify(): String {
         val builder = StringBuilder()
         builder.append(projectId)
-            .append(StringPool.SLASH)
+            .append(SLASH)
             .append(repoName)
         return builder.toString()
     }
@@ -64,12 +65,12 @@ abstract class ArtifactInfo(
         val builder = StringBuilder()
         builder.append(getRepoIdentify())
         getArtifactName().let {
-            if (!it.startsWith(StringPool.SLASH)) {
-                builder.append(StringPool.SLASH)
+            if (!it.startsWith(SLASH)) {
+                builder.append(SLASH)
             }
             builder.append(getArtifactName())
         }
-        getArtifactVersion()?.let { builder.append(StringPool.DASH).append(it) }
+        getArtifactVersion()?.let { builder.append(DASH).append(it) }
         return builder.toString()
     }
 }

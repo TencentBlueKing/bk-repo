@@ -1,10 +1,12 @@
 package com.tencent.bkrepo.common.artifact.path
 
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.DOT
+import com.tencent.bkrepo.common.api.constant.StringPool.DOUBLE_DOT
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_PATH_INVALID
-import java.nio.file.Paths
 
 /**
  * 路径处理工具类
@@ -18,12 +20,12 @@ object PathUtils {
     /**
      * 禁用文件名
      */
-    private val forbiddenNameList = listOf(".", "..")
+    private val FORBIDDEN_NAME_LIST = listOf(DOT, DOUBLE_DOT)
 
     /**
      * 需要正则转移的关键字
      */
-    private val keywordList = listOf("\\", "$", "(", ")", "*", "+", ".", "[", "]", "?", "^", "{", "}", "|", "?", "&")
+    private val KEYWORD_LIST = listOf("\\", "$", "(", ")", "*", "+", ".", "[", "]", "?", "^", "{", "}", "|", "?", "&")
 
     /**
      * 最大目录深度
@@ -36,14 +38,19 @@ object PathUtils {
     private const val MAX_FILENAME_LENGTH = 1024
 
     /**
-     * 文件分隔符
+     * unix文件分隔字符
      */
-    const val SEPARATOR = StringPool.ROOT
+    private const val DOT_SEPARATOR = CharPool.DOT
 
     /**
-     * 文件分隔字符
+     * windows文件分隔符
      */
-    private const val SEPARATOR_CHAR = '/'
+    private const val WIN_SEPARATOR = CharPool.BACKSLASH
+
+    /**
+     * unix文件分隔字符
+     */
+    const val UNIX_SEPARATOR = CharPool.SLASH
 
     /**
      * 根目录
@@ -54,9 +61,11 @@ object PathUtils {
      * 格式化目录名称, 返回格式/a/b/c/，根目录返回/
      * /a/b/c -> /a/b/c/
      * /a/b/c/ -> /a/b/c/
+     *
+     * 格式不正确抛[ErrorCodeException]异常
      */
     fun normalizePath(input: String): String {
-        return normalizeFullPath(input).ensureSuffix(SEPARATOR)
+        return normalizeFullPath(input).ensureSuffix(UNIX_SEPARATOR)
     }
 
     /**
@@ -65,35 +74,26 @@ object PathUtils {
      * /a/b/c -> /a/b/c
      * /a/b/c/ -> /a/b/c
      */
-    fun normalizeFullPath(input: String): String {
-        val builder = StringBuilder()
-        val segments = input.split(SEPARATOR)
-            .asSequence()
-            .map { it.trim() }
-            .filter { it.isNotBlank() && it != StringPool.DOT }
-            .toList()
-        segments.takeIf { it.isNotEmpty() } ?: return ROOT
-        segments.forEach { builder.append(SEPARATOR).append(it) }
-        return builder.toString()
-    }
-
-    /**
-     * 解析目录名称，返回格式/a/b/c/，根目录返回/
-     * 格式不正确抛[ErrorCodeException]异常
-     */
     @Throws(ErrorCodeException::class)
-    fun validateFullPath(input: String): String {
-        val builder = StringBuilder()
-        val segments = input.split(SEPARATOR)
-            .asSequence()
+    fun normalizeFullPath(input: String): String {
+        val names = mutableListOf<String>()
+        input.replace(WIN_SEPARATOR, UNIX_SEPARATOR)
+            .splitToSequence(UNIX_SEPARATOR)
             .map { it.trim() }
-            .filter { it.isNotBlank() && it != StringPool.DOT }
-            .map { validateFileName(it) }
-            .toList()
-
-        segments.takeIf { it.isNotEmpty() } ?: return ROOT
-        segments.takeIf { it.size <= MAX_DIR_DEPTH } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
-        segments.forEach { builder.append(SEPARATOR).append(it) }
+            .filter { it.isNotBlank() && it != DOT }
+            .forEach {
+                if (it == DOUBLE_DOT) {
+                    if (names.isNotEmpty()) {
+                        names.removeAt(names.size - 1)
+                    }
+                    return@forEach
+                }
+                names.add(validateFileName(it))
+            }
+        val builder = StringBuilder()
+        names.takeIf { it.isNotEmpty() } ?: return ROOT
+        names.takeIf { it.size <= MAX_DIR_DEPTH } ?: throw ErrorCodeException(NODE_PATH_INVALID, input)
+        names.forEach { builder.append(UNIX_SEPARATOR).append(it) }
         return builder.toString()
     }
 
@@ -105,8 +105,10 @@ object PathUtils {
         try {
             require(input.isNotBlank())
             require(input.length <= MAX_FILENAME_LENGTH)
-            require(!forbiddenNameList.contains(input))
-            require(!input.contains(SEPARATOR_CHAR))
+            require(!FORBIDDEN_NAME_LIST.contains(input))
+            require(!input.contains(UNIX_SEPARATOR))
+            require(!input.contains(WIN_SEPARATOR))
+            checkIllegalByte(input)
         } catch (exception: IllegalArgumentException) {
             throw ErrorCodeException(NODE_PATH_INVALID, input)
         }
@@ -120,7 +122,7 @@ object PathUtils {
      * /a/b/c/ + d -> /a/b/c/d
      */
     fun combineFullPath(path: String, name: String): String {
-        return if (!path.endsWith(SEPARATOR)) path + SEPARATOR + name else path + name
+        return path.ensureSuffix(UNIX_SEPARATOR).plus(name.trimStart(UNIX_SEPARATOR))
     }
 
     /**
@@ -130,9 +132,9 @@ object PathUtils {
      * /a/b/c/ + d -> /a/b/c/d/
      */
     fun combinePath(parent: String, name: String): String {
-        val parentPath = if (!parent.endsWith(SEPARATOR)) parent + SEPARATOR else parent
-        val newPath = parentPath + name.trimStart(SEPARATOR_CHAR)
-        return if (!newPath.endsWith(SEPARATOR)) newPath + SEPARATOR else newPath
+        return parent.ensureSuffix(UNIX_SEPARATOR)
+            .plus(name.trimStart(UNIX_SEPARATOR))
+            .ensureSuffix(UNIX_SEPARATOR)
     }
 
     /**
@@ -142,7 +144,7 @@ object PathUtils {
      * /a/b/c/ -> /a/b/
      */
     fun resolvePath(fullPath: String): String {
-        val index = fullPath.trimEnd(SEPARATOR_CHAR).lastIndexOf(SEPARATOR)
+        val index = fullPath.trimEnd(UNIX_SEPARATOR).lastIndexOf(UNIX_SEPARATOR)
         return if (isRoot(fullPath) || index <= 0) ROOT else fullPath.substring(0, index + 1)
     }
 
@@ -154,11 +156,11 @@ object PathUtils {
      * / -> ""
      */
     fun resolveName(fullPath: String): String {
-        val trimmedPath = fullPath.trimEnd(SEPARATOR_CHAR)
+        val trimmedPath = fullPath.trimEnd(UNIX_SEPARATOR)
         return if (isRoot(trimmedPath)) {
             StringPool.EMPTY
         } else {
-            trimmedPath.substring(trimmedPath.lastIndexOf(SEPARATOR) + 1)
+            trimmedPath.substring(trimmedPath.lastIndexOf(UNIX_SEPARATOR) + 1)
         }
     }
 
@@ -166,7 +168,7 @@ object PathUtils {
      * 解析文件后缀
      */
     fun resolveExtension(fileName: String): String? {
-        return fileName.trim().substring(fileName.lastIndexOf(StringPool.DOT) + 1)
+        return fileName.trim().substring(fileName.lastIndexOf(DOT_SEPARATOR) + 1)
     }
 
     /**
@@ -182,12 +184,21 @@ object PathUtils {
     fun escapeRegex(input: String): String {
         var escapedString = input.trim()
         if (escapedString.isNotBlank()) {
-            keywordList.forEach {
+            KEYWORD_LIST.forEach {
                 if (escapedString.contains(it)) {
                     escapedString = escapedString.replace(it, "\\$it")
                 }
             }
         }
         return escapedString
+    }
+
+    /**
+     * 检查非法字符
+     */
+    private fun checkIllegalByte(name: String) {
+        for (char in name) {
+            require(char.toInt() != 0)
+        }
     }
 }

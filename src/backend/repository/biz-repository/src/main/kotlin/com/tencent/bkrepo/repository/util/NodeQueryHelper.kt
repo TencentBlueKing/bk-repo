@@ -12,22 +12,13 @@ import java.time.LocalDateTime
 /**
  * 查询条件构造工具
  */
-object QueryHelper {
+object NodeQueryHelper {
 
     fun nodeQuery(projectId: String, repoName: String, fullPath: String? = null): Query {
         val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
             .and(TNode::repoName.name).`is`(repoName)
             .and(TNode::deleted.name).`is`(null)
             .apply { fullPath?.run { and(TNode::fullPath.name).`is`(fullPath) } }
-
-        return Query(criteria)
-    }
-
-    fun nodeListQuery(projectId: String, repoName: String, fullPathList: List<String>): Query {
-        val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
-            .and(TNode::repoName.name).`is`(repoName)
-            .and(TNode::deleted.name).`is`(null)
-            .and(TNode::fullPath.name).`in`(fullPathList)
 
         return Query(criteria)
     }
@@ -53,7 +44,7 @@ object QueryHelper {
 
     fun nodeListQuery(projectId: String, repoName: String, path: String, includeFolder: Boolean, includeMetadata: Boolean, deep: Boolean): Query {
         return Query.query(nodeListCriteria(projectId, repoName, path, includeFolder, deep))
-            .with(Sort.by(TNode::folder.name, TNode::fullPath.name))
+            .with(Sort.by(Sort.Order(Sort.Direction.DESC, TNode::folder.name), Sort.Order(Sort.Direction.ASC, TNode::fullPath.name)))
             .apply {
                 // 强制使用fullPath索引，否则mongodb可能会使用path索引，不能达到最优索引
                 if (deep) {
