@@ -2,7 +2,6 @@ package com.tencent.bkrepo.repository.pojo.stage
 
 import com.tencent.bkrepo.common.api.constant.CharPool.AT
 import com.tencent.bkrepo.common.api.constant.StringPool.COMMA
-import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.constant.ensurePrefix
 
 /**
@@ -31,10 +30,8 @@ enum class ArtifactStageEnum(
      */
     @Throws(IllegalStateException::class)
     fun upgrade(newStage: ArtifactStageEnum): ArtifactStageEnum {
-        when {
-            this == NONE && newStage == NONE -> throw IllegalStateException()
-            this == PRE_RELEASE && newStage != RELEASE -> throw IllegalStateException()
-            this == RELEASE -> throw IllegalStateException()
+        if (newStage.ordinal <= this.ordinal) {
+            throw IllegalStateException()
         }
         return newStage
     }
@@ -43,22 +40,17 @@ enum class ArtifactStageEnum(
      * 下一个阶段
      */
     fun nextStage(): ArtifactStageEnum {
-        return when(this) {
-            NONE -> PRE_RELEASE
-            PRE_RELEASE -> RELEASE
-            RELEASE -> throw IllegalStateException()
+        if (this.ordinal == values().size - 1) {
+            throw IllegalStateException()
         }
+        return values()[this.ordinal + 1]
     }
 
     /**
      * 获取展示名称列表
      */
     fun getDisplayTag(): String {
-        return when(this) {
-            NONE -> EMPTY
-            PRE_RELEASE -> PRE_RELEASE.tag
-            RELEASE -> listOf(PRE_RELEASE.tag, RELEASE.tag).joinToString { COMMA }
-        }
+        return values().filter { it.ordinal <= this.ordinal && it != NONE }.joinToString(COMMA) { it.tag }
     }
 
     companion object {
