@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.service.util
 
 import org.springframework.beans.BeansException
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 
@@ -29,6 +30,16 @@ class SpringContextUtils : ApplicationContextAware {
         }
 
         /**
+         * 获取对象
+         * @param <T> Bean
+         * @return ObjectProvider
+         */
+        @Throws(BeansException::class)
+        inline fun <reified T> getBeanProvider(): ObjectProvider<T> {
+            return getBeanProvider(T::class.java)
+        }
+
+        /**
          * 获取对象 这里重写了bean方法，起主要作用
          * @param clazz 类名
          * @param <T> Bean
@@ -38,6 +49,16 @@ class SpringContextUtils : ApplicationContextAware {
         @Throws(BeansException::class)
         fun <T> getBean(clazz: Class<T>): T {
             return applicationContext.getBean(clazz)
+        }
+
+        /**
+         * 取指定类的ObjectProvider
+         * @param clazz 类名
+         * @param <T> Bean
+         * @return ObjectProvider
+         */
+        fun <T> getBeanProvider(clazz: Class<T>): ObjectProvider<T> {
+            return applicationContext.getBeanProvider(clazz)
         }
 
         /**
