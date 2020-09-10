@@ -2,6 +2,7 @@ package com.tencent.bkrepo.docker.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
 import com.tencent.bkrepo.docker.constant.BLOB_PATTERN
@@ -14,9 +15,12 @@ import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
-import com.tencent.bkrepo.docker.constant.DOCKER_TMP_UPLOAD_PATH
+import com.tencent.bkrepo.docker.constant.DOCKER_TAG
 import com.tencent.bkrepo.docker.constant.DOCKER_TMP_UPLOAD_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_UPLOAD_UUID
+import com.tencent.bkrepo.docker.constant.DOWNLOAD_COUNT
+import com.tencent.bkrepo.docker.constant.LAST_MODIFIED_BY
+import com.tencent.bkrepo.docker.constant.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.context.UploadContext
@@ -27,6 +31,10 @@ import com.tencent.bkrepo.docker.helpers.DockerPaginationElementsHolder
 import com.tencent.bkrepo.docker.manifest.ManifestProcess
 import com.tencent.bkrepo.docker.manifest.ManifestType
 import com.tencent.bkrepo.docker.model.DockerDigest
+import com.tencent.bkrepo.docker.model.DockerSchema2
+import com.tencent.bkrepo.docker.model.DockerSchema2Config
+import com.tencent.bkrepo.docker.pojo.DockerImage
+import com.tencent.bkrepo.docker.pojo.DockerTag
 import com.tencent.bkrepo.docker.response.CatalogResponse
 import com.tencent.bkrepo.docker.response.DockerResponse
 import com.tencent.bkrepo.docker.response.TagsResponse
@@ -138,27 +146,33 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         }
     }
 
-    override fun getManifestString(context: RequestContext, tag: String): String {
+    override fun getRepoList(context: RequestContext, pageNumber: Int, pageSize: Int): List<DockerImage> {
         RepoUtil.loadContext(repo, context)
-        val useManifestType = manifestProcess.chooseManifestType(context, tag, httpHeaders)
-        val manifestPath = ResponseUtil.buildManifestPath(context.artifactName, tag, useManifestType)
-        val manifest = repo.getArtifact(context.projectId, context.repoName, manifestPath) ?: run {
-            logger.warn("node not exist [$context]")
-            return EMPTY
-        }
-        val downloadContext = DownloadContext(context).sha256(manifest.sha256!!).length(manifest.length)
-        val inputStream = repo.download(downloadContext)
-        return inputStream.readBytes().toString(Charset.defaultCharset())
+        return repo.getDockerArtifactList(context.projectId, context.repoName, pageNumber, pageSize)
     }
 
-    override fun getRepoList(context: RequestContext): List<String> {
-        RepoUtil.loadContext(repo, context)
-        return repo.getDockerArtifactList(context.projectId, context.repoName)
-    }
-
-    override fun getRepoTagList(context: RequestContext): Map<String, String> {
+    override fun getRepoTagList(context: RequestContext): List<DockerTag> {
         RepoUtil.loadContext(repo, context)
         return repo.getRepoTagList(context)
+    }
+
+    override fun deleteTag(context: RequestContext, tag: String): Boolean {
+        RepoUtil.loadContext(repo, context)
+        with(context) {
+            return repo.deleteByTag(projectId, repoName, artifactName, tag)
+        }
+    }
+
+    fun deleteManifest(context: RequestContext): Boolean {
+        RepoUtil.loadContext(repo, context)
+        with(context) {
+            repo.getRepoTagList(context).forEach {
+                if (!repo.deleteByTag(projectId, repoName, artifactName, it.tag)) {
+                    return false
+                }
+            }
+        }
+        return true
     }
 
     override fun buildLayerResponse(context: RequestContext, layerId: String): DockerResponse {
@@ -345,6 +359,59 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         }
     }
 
+    // to get schema2 manifest
+    override fun getRepoTagDetail(context: RequestContext, tag: String): Map<String, Any>? {
+        val fullPath = "/${context.artifactName}/$tag/$DOCKER_MANIFEST"
+        val nodeDetail = repo.getNodeDetail(context, fullPath) ?: return null
+        val downloadCount = 0L
+        val manifestBytes = getManifestData(context, tag) ?: return null
+        try {
+            val manifest = JsonUtils.objectMapper.readValue(manifestBytes, DockerSchema2::class.java)
+            var size = manifest.config.size
+            val layers = manifest.layers
+
+            layers.forEach {
+                size += it.size
+            }
+            val configBytes = manifestProcess.getSchema2ConfigContent(context, manifestBytes, tag)
+            val configBlob = JsonUtils.objectMapper.readValue(configBytes, DockerSchema2Config::class.java)
+            val basic = mapOf(
+                DOCKER_NODE_SIZE to size,
+                DOCKER_TAG to tag,
+                LAST_MODIFIED_BY to nodeDetail.lastModifiedBy,
+                LAST_MODIFIED_DATE to nodeDetail.lastModifiedDate,
+                DOWNLOAD_COUNT to downloadCount,
+                "sha256" to DockerDigest(manifest.config.digest).hex,
+                "os" to configBlob.os
+            )
+            return mapOf(
+                "basic" to basic,
+                "history" to configBlob.history,
+                "metadata" to nodeDetail.metadata,
+                "layers" to layers
+            )
+        } catch (ignored: Exception) {
+            return null
+        }
+    }
+
+    override fun getManifestString(context: RequestContext, tag: String): String {
+        RepoUtil.loadContext(repo, context)
+        return getManifestData(context, tag)!!.toString(Charset.defaultCharset())
+    }
+
+    private fun getManifestData(context: RequestContext, tag: String): ByteArray? {
+        val useManifestType = manifestProcess.chooseManifestType(context, tag, httpHeaders)
+        val manifestPath = ResponseUtil.buildManifestPath(context.artifactName, tag, useManifestType)
+        val manifest = repo.getArtifact(context.projectId, context.repoName, manifestPath) ?: run {
+            logger.warn("node not exist [$context]")
+            return null
+        }
+        val downloadContext = DownloadContext(context).sha256(manifest.sha256!!).length(manifest.length)
+        val inputStream = repo.download(downloadContext)
+        return inputStream.readBytes()
+    }
+
     // delete a manifest file by tag first
     private fun deleteManifestByTag(context: RequestContext, tag: String): DockerResponse {
         with(context) {
@@ -353,7 +420,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
             if (!repo.exists(projectId, repoName, manifestPath)) {
                 logger.warn("repo not exist [$context]")
                 return DockerV2Errors.manifestUnknown(manifestPath)
-            } else if (repo.delete(tagPath)) {
+            } else if (repo.deleteByTag(context.projectId, context.repoName, context.artifactName, tag)) {
                 return ResponseEntity.status(HttpStatus.ACCEPTED).apply {
                     header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
                 }.build()
@@ -378,7 +445,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
                 val manifestDigest = repo.getAttribute(projectId, repoName, fullPath, digest.getDigestAlg())
                 manifestDigest.let {
                     if (StringUtils.equals(manifestDigest, digest.getDigestHex())) {
-                        repo.delete(fullPath)
+                        // repo.delete(fullPath)
                     }
                 }
             }

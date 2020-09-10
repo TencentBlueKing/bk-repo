@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletResponse
 class DockerBasicAuthLoginHandler(
     authenticationManager: AuthenticationManager,
     private val jwtProperties: JwtAuthProperties
-): BasicAuthHandler(authenticationManager) {
+) : BasicAuthHandler(authenticationManager) {
 
     private val signingKey = JwtUtils.createSigningKey(jwtProperties.secretKey)
 
