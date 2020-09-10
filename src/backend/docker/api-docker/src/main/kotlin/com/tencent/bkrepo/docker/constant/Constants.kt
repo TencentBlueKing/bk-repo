@@ -19,7 +19,9 @@ const val DOCKER_MANIFEST_REFERENCE_SUFFIX = "/{projectId}/{repoName}/**/manifes
 const val DOCKER_USER_MANIFEST_SUFFIX = "/manifest/{projectId}/{repoName}/**/{tag}"
 const val DOCKER_USER_LAYER_SUFFIX = "/layer/{projectId}/{repoName}/**/{id}"
 const val DOCKER_USER_REPO_SUFFIX = "/repo/{projectId}/{repoName}"
-const val DOCKER_USER_TAG_SUFFIX = "/repo/tag/{projectId}/{repoName}/**"
+const val DOCKER_USER_TAG_SUFFIX = "/tag/{projectId}/{repoName}/**"
+const val DOCKER_USER_DELETE_IMAGE_SUFFIX = "/repo/{projectId}/{repoName}/**"
+const val DOCKER_USER_REPO_TAG_SUFFIX = "/tag/{projectId}/{repoName}/**/{tag}"
 const val DOCKER_TAGS_SUFFIX = "/{projectId}/{repoName}/{name}/tags/list"
 
 const val DOCKER_CATALOG_SUFFIX = "_catalog"
@@ -82,3 +84,11 @@ const val DOCKER_BLOB_SUM = "blobSum"
 const val DOCKER_SCHEMA_VERSION = "schemaVersion"
 
 const val DOCKER_FOREIGN_KEY = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"
+
+const val PAGE_NUMBER = "pageNumber"
+const val PAGE_SIZE = "pageSize"
+
+const val LAST_MODIFIED_BY = "lastModifiedBy"
+const val LAST_MODIFIED_DATE = "lastModifiedDate"
+const val DOWNLOAD_COUNT = "downloadCount"
+const val STAGE_TAG = "stageTag"
