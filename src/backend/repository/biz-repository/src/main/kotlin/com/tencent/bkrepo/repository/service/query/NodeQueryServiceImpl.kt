@@ -13,7 +13,6 @@ import com.tencent.bkrepo.repository.constant.SystemMetadata
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -71,7 +70,7 @@ class NodeQueryServiceImpl(
                 it[TNode::metadata.name] = metadata
             }
             if (selectStageTag) {
-                it[NodeInfo::stageTag.name] = ArtifactStageEnum.ofTagOrDefault(metadata?.get(SystemMetadata.STAGE.key)).getDisplayTag()
+                it[NodeInfo::stageTag.name] = metadata?.get(SystemMetadata.STAGE.key)
             }
             it[TNode::createdDate.name]?.let { createDate -> it[TNode::createdDate.name] = convertDateTime(createDate) }
             it[TNode::lastModifiedDate.name]?.let { lastModifiedDate -> it[TNode::lastModifiedDate.name] = convertDateTime(lastModifiedDate) }

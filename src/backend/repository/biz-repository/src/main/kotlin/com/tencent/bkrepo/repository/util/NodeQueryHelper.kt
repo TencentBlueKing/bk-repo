@@ -1,7 +1,8 @@
 package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.path.PathUtils.escapeRegex
+import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.repository.model.TNode
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -24,8 +25,8 @@ object NodeQueryHelper {
     }
 
     fun nodeListCriteria(projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): Criteria {
-        val formattedPath = PathUtils.normalizePath(path)
-        val escapedPath = PathUtils.escapeRegex(formattedPath)
+        val nodePath = toPath(path)
+        val escapedPath = escapeRegex(nodePath)
         val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
             .and(TNode::repoName.name).`is`(repoName)
             .and(TNode::deleted.name).`is`(null)
@@ -34,7 +35,7 @@ object NodeQueryHelper {
         if (deep) {
             criteria.and(TNode::fullPath.name).regex("^$escapedPath")
         } else {
-            criteria.and(TNode::path.name).`is`(formattedPath)
+            criteria.and(TNode::path.name).`is`(nodePath)
         }
 
         if (!includeFolder) { criteria.and(TNode::folder.name).`is`(false) }
