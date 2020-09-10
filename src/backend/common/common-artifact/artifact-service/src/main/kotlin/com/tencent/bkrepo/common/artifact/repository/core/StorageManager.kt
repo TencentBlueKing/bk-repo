@@ -45,7 +45,7 @@ class StorageManager(
                 try {
                     storageService.delete(request.sha256!!, storageCredentials)
                 } catch (exception: Exception) {
-                    logger.error("Failed to remove added file", exception)
+                    logger.error("Failed to delete new created file[${request.sha256}]", exception)
                 }
             }
             // 异常往上抛
