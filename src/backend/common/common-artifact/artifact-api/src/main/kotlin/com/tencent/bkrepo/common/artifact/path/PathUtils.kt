@@ -58,6 +58,14 @@ object PathUtils {
     const val ROOT = StringPool.ROOT
 
     /**
+     * 转为path格式
+     *
+     */
+    fun toPath(input: String): String {
+        return input.ensureSuffix(UNIX_SEPARATOR)
+    }
+
+    /**
      * 格式化目录名称, 返回格式/a/b/c/，根目录返回/
      * /a/b/c -> /a/b/c/
      * /a/b/c/ -> /a/b/c/

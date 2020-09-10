@@ -28,11 +28,10 @@ enum class ArtifactStageEnum(
     /**
      * 晋级
      */
-    @Throws(IllegalStateException::class)
-    fun upgrade(newStage: ArtifactStageEnum): ArtifactStageEnum {
-        if (newStage.ordinal <= this.ordinal) {
-            throw IllegalStateException()
-        }
+    @Throws(IllegalArgumentException::class)
+    fun upgrade(toStage: ArtifactStageEnum?): ArtifactStageEnum {
+        val newStage = toStage ?: this.nextStage()
+        require(newStage.ordinal > this.ordinal) { "Illegal stage" }
         return newStage
     }
 
@@ -40,46 +39,44 @@ enum class ArtifactStageEnum(
      * 下一个阶段
      */
     fun nextStage(): ArtifactStageEnum {
-        if (this.ordinal == values().size - 1) {
-            throw IllegalStateException()
-        }
+        require(this.ordinal < values().size - 1) { "Illegal stage" }
         return values()[this.ordinal + 1]
-    }
-
-    /**
-     * 获取展示名称列表
-     */
-    fun getDisplayTag(): String {
-        return values().filter { it.ordinal <= this.ordinal && it != NONE }.joinToString(COMMA) { it.tag }
     }
 
     companion object {
         /**
          * 根据[tag]反查[ArtifactStageEnum]
+         *
+         * [tag]支持传入多个，以逗号分隔，返回最新的Stage
+         * [tag]为null则返回[NONE]
          */
         fun ofTag(tag: String?): ArtifactStageEnum? {
-            if (tag == null) {
+            if (tag.isNullOrBlank()) {
                 return NONE
             }
-            val normalizedTag = tag.ensurePrefix(AT)
-            val lowerCase = normalizedTag.toLowerCase()
-            return values().find { it.tag == lowerCase }
+            val lastTag = tag.split(COMMA).lastOrNull()?.ensurePrefix(AT)?.toLowerCase()
+            return values().find { stage -> stage.tag == lastTag }
         }
 
         /**
-         * 根据[tag]反查[ArtifactStageEnum]，不存在返回默认[NONE]
+         * 根据[tag]反查[ArtifactStageEnum]，[tag]为空或不存在返回默认[NONE]
          */
         fun ofTagOrDefault(tag: String?): ArtifactStageEnum {
             return ofTag(tag) ?: NONE
         }
 
         /**
-         * 根据[name]反查[ArtifactStageEnum]
+         * 根据[tag]反查[ArtifactStageEnum]
+         *
+         * [tag]为`null`则返回`null`
+         * [tag]不存在抛[IllegalArgumentException]
          */
-        fun ofName(name: String?): ArtifactStageEnum? {
-            if (name == null) return NONE
-            val upperCase = name.toUpperCase()
-            return values().find { it.name == upperCase }
+        @Throws(IllegalArgumentException::class)
+        fun ofTagOrNull(tag: String?): ArtifactStageEnum? {
+            if (tag.isNullOrBlank()) {
+                return null
+            }
+            return ofTag(tag) ?: throw IllegalArgumentException("Unknown tag")
         }
     }
 }

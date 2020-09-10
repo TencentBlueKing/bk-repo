@@ -28,19 +28,20 @@ class StageServiceImpl(
     override fun upgrade(artifactInfo: ArtifactInfo, tag: String?) {
         val node = findAndCheckNode(artifactInfo)
         val stageMetadata = findStageMetadata(node)
-        val oldStage = ArtifactStageEnum.ofTagOrDefault(stageMetadata.value)
-        val newStage = if (tag == null) {
-            oldStage.nextStage()
-        } else {
-            ArtifactStageEnum.ofTag(tag) ?: throw ErrorCodeException(ArtifactMessageCode.STAGE_UPGRADE_ERROR,  "Unknown tag")
-        }
         try {
-            stageMetadata.value = oldStage.upgrade(newStage).tag
-        } catch (exception: IllegalStateException) {
-            throw ErrorCodeException(ArtifactMessageCode.STAGE_UPGRADE_ERROR,  "Illegal state")
+            val oldStage = ArtifactStageEnum.ofTagOrDefault(stageMetadata.value)
+            var newStage = ArtifactStageEnum.ofTagOrNull(tag)
+            newStage = oldStage.upgrade(newStage)
+            stageMetadata.value = if (stageMetadata.value.isEmpty()) {
+                newStage.tag
+            } else {
+                stageMetadata.value + "," + newStage.tag
+            }
+            nodeDao.save(node)
+            logger.info("Upgrade stage[$artifactInfo] to $newStage success")
+        } catch (exception: IllegalArgumentException) {
+            throw ErrorCodeException(ArtifactMessageCode.STAGE_UPGRADE_ERROR,  exception.message.orEmpty())
         }
-        nodeDao.save(node)
-        logger.info("Upgrade stage[$artifactInfo] from $oldStage to $newStage success")
     }
 
     private fun findAndCheckNode(artifactInfo: ArtifactInfo): TNode {
