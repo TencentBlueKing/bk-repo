@@ -9,8 +9,11 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.repository.constant.SystemMetadata
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -28,12 +31,12 @@ class NodeQueryServiceImpl(
     private val permissionManager: PermissionManager
 ) : NodeQueryService {
 
-    override fun query(queryModel: QueryModel): Page<Map<String, Any>> {
+    override fun query(queryModel: QueryModel): Page<Map<String, Any?>> {
         val query = nodeQueryInterpreter.interpret(queryModel)
-        return doQuery(query)
+        return doQuery(query, queryModel)
     }
 
-    override fun userQuery(operator: String, queryModel: QueryModel): Page<Map<String, Any>> {
+    override fun userQuery(operator: String, queryModel: QueryModel): Page<Map<String, Any?>> {
         // 解析projectId和repoName
         val query = nodeQueryInterpreter.interpret(queryModel)
         var projectId: String? = null
@@ -54,16 +57,24 @@ class NodeQueryServiceImpl(
             permissionManager.checkPermission(operator, ResourceType.REPO, PermissionAction.READ, projectId!!, it)
         }
 
-        return doQuery(query)
+        return doQuery(query, queryModel)
     }
 
-    private fun doQuery(query: Query): Page<Map<String, Any>> {
-        val nodeList = nodeDao.find(query, MutableMap::class.java) as List<MutableMap<String, Any>>
+    private fun doQuery(query: Query, originalModel: QueryModel): Page<Map<String, Any?>> {
+        val nodeList = nodeDao.find(query, MutableMap::class.java) as List<MutableMap<String, Any?>>
+        val selectStageTag = originalModel.select.isNullOrEmpty() || originalModel.select!!.contains(NodeInfo::stageTag.name)
+        val selectMetadata = originalModel.select.isNullOrEmpty() || originalModel.select!!.contains(NodeInfo::metadata.name)
         // metadata格式转换，并排除id字段
         nodeList.forEach {
-            it[TNode::metadata.name]?.let { metadata -> it[TNode::metadata.name] = convert(metadata as List<Map<String, String>>) }
-            it[TNode::createdDate.name]?.let { createDate -> it[TNode::createdDate.name] = LocalDateTime.ofInstant((createDate as Date).toInstant(), ZoneId.systemDefault()) }
-            it[TNode::lastModifiedDate.name]?.let { lastModifiedDate -> it[TNode::lastModifiedDate.name] = LocalDateTime.ofInstant((lastModifiedDate as Date).toInstant(), ZoneId.systemDefault()) }
+            val metadata = it[TNode::metadata.name]?.let { metadata -> convert(metadata as List<Map<String, String>>) }
+            if (selectMetadata) {
+                it[TNode::metadata.name] = metadata
+            }
+            if (selectStageTag) {
+                it[NodeInfo::stageTag.name] = ArtifactStageEnum.ofTagOrDefault(metadata?.get(SystemMetadata.STAGE.key)).getDisplayTag()
+            }
+            it[TNode::createdDate.name]?.let { createDate -> it[TNode::createdDate.name] = convertDateTime(createDate) }
+            it[TNode::lastModifiedDate.name]?.let { lastModifiedDate -> it[TNode::lastModifiedDate.name] = convertDateTime(lastModifiedDate) }
             it.remove("_id")
         }
         val countQuery = Query.of(query).limit(0).skip(0)
@@ -78,6 +89,12 @@ class NodeQueryServiceImpl(
             return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
                 .map { it.getValue("key") to it.getValue("value") }
                 .toMap()
+        }
+
+        fun convertDateTime(value: Any): LocalDateTime? {
+            return if (value is Date) {
+                LocalDateTime.ofInstant(value.toInstant(), ZoneId.systemDefault())
+            } else null
         }
     }
 }

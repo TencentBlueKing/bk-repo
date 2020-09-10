@@ -111,8 +111,6 @@ open class MongoQueryInterpreter {
     }
 
     private fun findDefaultHandler(operation: OperationType): MongoQueryRuleHandler {
-        return defaultQueryRuleHandlerMap[operation] ?: throw QueryModelException(
-            "Unsupported operation [$operation]."
-        )
+        return defaultQueryRuleHandlerMap[operation] ?: throw QueryModelException("Unsupported operation [$operation].")
     }
 }

@@ -189,5 +189,5 @@ interface NodeClient {
 
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
-    fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any>>>
+    fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
 }

@@ -3,6 +3,7 @@ package com.tencent.bkrepo.repository.service.query
 import com.tencent.bkrepo.common.query.interceptor.QueryModelInterceptor
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 
 /**
  * 用户排除指定字段
@@ -20,6 +21,10 @@ class NodeSelectInterceptor : QueryModelInterceptor {
             for (constraint in constraintProperties) {
                 it.remove(constraint)
             }
+        }
+        // 如果指定了stageTag，添加metadata字段
+        if (newSelect?.contains(NodeInfo::stageTag.name) == true && !newSelect.contains(NodeInfo::metadata.name)) {
+            newSelect.add(NodeInfo::metadata.name)
         }
         queryModel.select = newSelect
         return queryModel
