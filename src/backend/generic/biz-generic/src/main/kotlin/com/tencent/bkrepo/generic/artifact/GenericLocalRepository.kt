@@ -75,7 +75,7 @@ class GenericLocalRepository : LocalRepository() {
                 context.storageCredentials
             )
             context.response.contentType = MediaTypes.APPLICATION_JSON
-            context.response.writer.println(nodeDetail.toJsonString())
+            context.response.writer.println(ResponseBuilder.success(nodeDetail).toJsonString())
         }
     }
 
