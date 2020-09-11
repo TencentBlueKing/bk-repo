@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.service.query
 
-import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
+import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.constant.METADATA_PREFIX
@@ -19,10 +19,10 @@ class StageTagRuleInterceptor : QueryRuleInterceptor {
         return rule is Rule.QueryRule && rule.field == NodeInfo::stageTag.name
     }
 
-    override fun intercept(rule: Rule, context: MongoQueryInterpreter): Criteria {
+    override fun intercept(rule: Rule, context: QueryContext): Criteria {
         with(rule as Rule.QueryRule) {
             val queryRule = Rule.QueryRule(METADATA_PREFIX + SystemMetadata.STAGE.key, value, operation)
-            return context.resolveRule(queryRule)
+            return context.interpreter.resolveRule(queryRule, context)
         }
     }
 }

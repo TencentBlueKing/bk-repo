@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service.query
 
+import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryModelInterceptor
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.model.TNode
@@ -15,16 +16,19 @@ class NodeSelectInterceptor : QueryModelInterceptor {
      */
     private val constraintProperties = listOf("_id", "_class", TNode::deleted.name)
 
-    override fun intercept(queryModel: QueryModel): QueryModel {
+    override fun intercept(queryModel: QueryModel, context: QueryContext): QueryModel {
         val newSelect = queryModel.select?.toMutableList()
         newSelect?.let {
             for (constraint in constraintProperties) {
                 it.remove(constraint)
             }
         }
-        // 如果指定了stageTag，添加metadata字段
-        if (newSelect?.contains(NodeInfo::stageTag.name) == true && !newSelect.contains(NodeInfo::metadata.name)) {
-            newSelect.add(NodeInfo::metadata.name)
+        with(context as NodeQueryContext) {
+            selectMetadata = newSelect?.contains(NodeInfo::metadata.name) ?: true
+            selectStageTag = newSelect?.contains(NodeInfo::stageTag.name) ?: true
+            if (selectStageTag || selectMetadata) {
+                newSelect?.add(NodeInfo::metadata.name)
+            }
         }
         queryModel.select = newSelect
         return queryModel

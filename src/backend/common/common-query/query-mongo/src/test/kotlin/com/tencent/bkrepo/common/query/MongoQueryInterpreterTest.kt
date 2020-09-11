@@ -28,8 +28,7 @@ class MongoQueryInterpreterTest {
         )
 
         val builder = MongoQueryInterpreter()
-        val query = builder.interpret(queryModel)
-        println(query)
+        val query = builder.interpret(queryModel).mongoQuery
         println(query.queryObject)
 
         println(findProjectId(query.queryObject))
