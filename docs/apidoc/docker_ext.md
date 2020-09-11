@@ -169,23 +169,23 @@
 
 ```
 {
-    "code":0,
-    "message":null,
-    "traceId":"",
-    "data":[
-        {
-            "name":"mongo",
-            "createdBy":"yangjian",
-            "downloadCount":10,
-            "createdDate":"2020-08-28 04:07:12.672Z"
-        },
-        {
-            "name":"nginx",
-            "createdBy":"kim",
-            "downloadCount":12,
-            "createdDate":"2020-08-28 04:07:12.672Z"
-        }
-    ]
+  "code": 0,
+  "message": null,
+  "data": [
+    {
+      "name": "hello-world",
+      "lastModifiedBy": "admin",
+      "lastModifiedDate": "2020-09-10T14:48:22.846",
+      "downloadCount": 0
+    },
+    {
+      "name": "mongo",
+      "lastModifiedBy": "admin",
+      "lastModifiedDate": "2020-08-28T12:07:12.672",
+      "downloadCount": 0
+    }
+  ],
+  "traceId": ""
 }
 
 ```
@@ -199,8 +199,8 @@
 |data | string array |image 名称列表 |the list of image|
 |traceId|string|请求跟踪id|the trace id|
 |name|string|镜像ID|the id of image|
-|createdBy|string|创建人|the creator of image|
-|createdDate|time|创建时间|create date of image|
+|lastModifiedBy|string|创建人|the creator of image|
+|lastModifiedDate|time|创建时间|create date of image|
 
 ### 获取repo的所有tag
 
@@ -232,27 +232,27 @@
 
 ```
 {
-    "code":0,
-    "message":null,
-    "data":[
-        {
-            "tag":"latest",
-            "status":"@prerelease",
-            "size":1024,
-            "downloadCount":10,
-            "lastModifiedBy":"owen",
-            "lastModifiedDate":"2020-08-28 04:07:12.672Z"
-        },
-        {
-            "tag":"v1",
-            "status":"@prerelease",
-            "size":2096,
-            "downloadCount":10,
-            "lastModifiedBy":"owen",
-            "lastModifiedDate":"2020-08-28 04:07:12.672Z"
-        }
-    ],
-    "traceId":""
+  "code": 0,
+  "message": null,
+  "data": [
+    {
+      "tag": "latest",
+      "stageTag": "",
+      "size": 524,
+      "lastModifiedBy": "admin",
+      "lastModifiedDate": "2020-09-10T14:48:22.846",
+      "downloadCount": 0
+    },
+    {
+      "tag": "v1",
+      "stageTag": "",
+      "size": 524,
+      "lastModifiedBy": "admin",
+      "lastModifiedDate": "2020-09-10T14:49:37.904",
+      "downloadCount": 0
+    }
+  ],
+  "traceId": ""
 }
 ```
 
@@ -265,7 +265,7 @@
 |data | string array | image的tag列表 |tag list of the image|
 |traceId|string|请求跟踪id|the trace id|
 |tag|string|tag名称|the name of tag|
-|status|string|制品状态|the status of image|
+|stageTag|string|制品状态|the status of image|
 |size|Int|镜像大小|the size of image|
 |downloadCount|Int|下载次数|the download count of image|
 |lastModifiedBy|date|更新人|the man upload it|
@@ -305,20 +305,7 @@
     "code":0,
     "message":null,
     "traceId":"",
-    "data":[
-        {
-            "name":"mongo",
-            "createdBy":"yangjian",
-            "downloadCount":10,
-            "createdDate":"2020-08-28 04:07:12.672Z"
-        },
-        {
-            "name":"nginx",
-            "createdBy":"kim",
-            "downloadCount":12,
-            "createdDate":"2020-08-28 04:07:12.672Z"
-        }
-    ]
+    "data":true
 }
 
 ```
@@ -329,16 +316,63 @@
 |---|---|---|---|
 |code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
 |message|result message|错误消息 |the failure message |
-|data | string array |image 名称列表 |the list of image|
+|data | bool |删除结果|the result of delete|
+|traceId|string|请求跟踪id|the trace id|
+
+### 删除指定projectId和repoName下的的镜像的镜像tag
+
+- API: DELETE /docker/api/tag/{projectId}/{repoName}/{name}/{tag}
+- API 名称: delete_image_by_project_repository_name)tag
+- 功能说明：
+	- 中文：删除指定project和仓库下name的镜像
+	- English：delete image by project and repository and image name
+
+- input body:
+
+
+``` json
+
+```
+
+
+- input 字段说明
+
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|projectId|string|是|无|项目id|the project id|
+|repoName|string|是|无|仓库名称| name of repo|
+|name|string|是|无|镜像名称| name of image|
+
+
+
+- output:
+
+```
+{
+    "code":0,
+    "message":null,
+    "traceId":"",
+    "data":true
+}
+
+```
+
+- output 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
+|message|result message|错误消息 |the failure message |
+|data | bool |删除结果 | the result of delete|
 |traceId|string|请求跟踪id|the trace id|
 
 ### 获取repo下指定tag的详情
 
-- API: GET /docker/api/tag/detail/{projectId}/{repoName}/{name}
-- API 名称: get_repo_tag_list
+- API: GET /docker/api/tag/{projectId}/{repoName}/{name}/{tag}
+- API 名称: get_repo_tag_detail
 - 功能说明：
-	- 中文：获取repo对应的manifest文件
-	- English：get image tag by repo 
+	- 中文：获取repo下tag对象的镜像相亲
+	- English：get image repo tag detail
 
 - input body:
 
@@ -355,6 +389,7 @@
 |projectId|string|是|无|项目id|the project id|
 |repoName|string|是|无|仓库名称| name of repo|
 |name|string|是|无|docker 镜像名称| name of docker image|
+|tag|string|是|无|镜像tag| the tag of docker image|
 
 
 
@@ -362,36 +397,44 @@
 
 ```
 {
-    "code":0,
-    "message":null,
-    "data":{
-        "basic":{
-            "size":1024,
-            "sha256":"c7fea26579a7de970085f5f0d7f5fe28d055e642f7520a674614f9b428bdba05",
-            "tag":"v1",
-            "os":"linux",
-            "lastModifiedBy":"owen",
-            "lastModifiedDate":"2020-08-28 04:07:12.672Z",
-            "downloadCount":1223
-        },
-        "history":[
-            "DOCKER RUN"
-        ],
-        "metadata":{
-            "user":"owen"
-        },
-        "layers":[
-            {
-                "id":"sha256__8dc0e42f1f5b6325f3998409ab78543dfce3cb36aff37e64b432ee0c7accd1dc",
-                "size":123
-            },
-            {
-                "id":"sha256__8dc0e42f1f5b6325f3998409ab78543dfce3cb36aff37e64b432ee0c7accd1dc",
-                "size":1234
-            }
-        ]
+  "code": 0,
+  "message": null,
+  "data": {
+    "basic": {
+      "size": 2487,
+      "tag": "v1",
+      "lastModifiedBy": "admin",
+      "lastModifiedDate": "2020-09-10T14:49:37.904",
+      "downloadCount": 0,
+      "sha256": "fce289e99eb9bca977dae136fbe2a82b6b7d4c372474c9235adc1741675f587e",
+      "os": "linux"
     },
-    "traceId":""
+    "history": [
+      {
+        "created": "2019-01-01T01:29:27.416803627Z",
+        "created_by": "/bin/sh -c #(nop) COPY file:f77490f70ce51da25bd21bfc30cb5e1a24b2b65eb37d4af0c327ddc24f0986a6 in / "
+      },
+      {
+        "created": "2019-01-01T01:29:27.650294696Z",
+        "created_by": "/bin/sh -c #(nop)  CMD [\"/hello\"]"
+      }
+    ],
+    "metadata": {
+      "docker.manifest": "v1",
+      "sha256": "92c7f9c92844bbbb5d0a101b22f7c2a7949e40f8ea90c8b3bc396879d95e899a",
+      "docker.repoName": "hello-world",
+      "docker.manifest.digest": "sha256:92c7f9c92844bbbb5d0a101b22f7c2a7949e40f8ea90c8b3bc396879d95e899a",
+      "docker.manifest.type": "application/vnd.docker.distribution.manifest.v2+json"
+    },
+    "layers": [
+      {
+        "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+        "size": 977,
+        "digest": "sha256:1b930d010525941c1d56ec53b97bd057a67ae1865eebf042686d2a2d18271ced"
+      }
+    ]
+  },
+  "traceId": ""
 }
 ```
 
