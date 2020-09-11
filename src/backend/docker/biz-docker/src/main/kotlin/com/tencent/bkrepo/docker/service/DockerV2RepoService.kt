@@ -34,9 +34,14 @@ interface DockerV2RepoService {
 
     fun catalog(context: RequestContext, maxEntries: Int, lastEntry: String): DockerResponse
 
-    fun getRepoList(context: RequestContext, pageNumber: Int, pageSize: Int): List<DockerImage>
+    fun getRepoList(context: RequestContext, pageNumber: Int, pageSize: Int, name: String?): List<DockerImage>
 
-    fun getRepoTagList(context: RequestContext): List<DockerTag>
+    fun getRepoTagList(
+        context: RequestContext,
+        pageNumber: Int,
+        pageSize: Int,
+        tag: String?
+    ): List<DockerTag>
 
     fun buildLayerResponse(context: RequestContext, layerId: String): DockerResponse
 

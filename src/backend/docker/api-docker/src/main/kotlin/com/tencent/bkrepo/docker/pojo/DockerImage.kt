@@ -12,5 +12,9 @@ data class DockerImage(
     @ApiModelProperty("最后修改时间")
     val lastModifiedDate: String,
     @ApiModelProperty("下载次数")
-    val downloadCount: Long
+    val downloadCount: Long,
+    @ApiModelProperty("镜像logo地址")
+    val logoUrl: String,
+    @ApiModelProperty("镜像描述")
+    val description: String
 )

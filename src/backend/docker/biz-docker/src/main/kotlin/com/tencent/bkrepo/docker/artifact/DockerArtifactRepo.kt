@@ -40,6 +40,7 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -370,25 +371,24 @@ class DockerArtifactRepo @Autowired constructor(
     }
 
     // get docker image list
-    fun getDockerArtifactList(projectId: String, repoName: String, pageNumber: Int, pageSize: Int): List<DockerImage> {
-        val projectRule = Rule.QueryRule(DOCKER_PROJECT_ID, projectId)
-        val repoNameRule = Rule.QueryRule(DOCKER_REPO_NAME, repoName)
-        val nameRule = Rule.QueryRule(DOCKER_NODE_NAME, DOCKER_MANIFEST)
-        val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule))
-        val queryModel = QueryModel(
-            page = PageLimit(pageNumber, pageSize),
-            sort = Sort(listOf(DOCKER_NODE_FULL_PATH), Sort.Direction.ASC),
-            select = mutableListOf(
-                DOCKER_NODE_FULL_PATH,
-                DOCKER_NODE_PATH,
-                DOCKER_NODE_SIZE,
-                LAST_MODIFIED_BY,
-                LAST_MODIFIED_DATE
-            ),
-            rule = rule
-        )
-
-        val result = nodeClient.query(queryModel).data ?: run {
+    fun getDockerArtifactList(
+        projectId: String,
+        repoName: String,
+        pageNumber: Int,
+        pageSize: Int,
+        name: String?
+    ): List<DockerImage> {
+        var queryModel = NodeQueryBuilder().select(
+            DOCKER_NODE_FULL_PATH,
+            DOCKER_NODE_PATH,
+            DOCKER_NODE_SIZE,
+            LAST_MODIFIED_BY,
+            LAST_MODIFIED_DATE
+        ).sortByAsc(DOCKER_NODE_FULL_PATH).projectId(projectId).repoName(repoName).name(DOCKER_MANIFEST)
+        name?.let {
+            queryModel.path("*$name*", OperationType.MATCH)
+        }
+        val result = nodeClient.query(queryModel.build()).data ?: run {
             logger.warn("find repo list failed: [$projectId, $repoName] ")
             return emptyList()
         }
@@ -401,7 +401,7 @@ class DockerArtifactRepo @Autowired constructor(
             val lastModifiedBy = it[LAST_MODIFIED_BY] as String
             val lastModifiedDate = it[LAST_MODIFIED_DATE] as String
             var downLoadCount = 0L
-            data.add(DockerImage(name, lastModifiedBy, lastModifiedDate, downLoadCount))
+            data.add(DockerImage(name, lastModifiedBy, lastModifiedDate, downLoadCount, "", ""))
             repoList.add(name)
         }
         var repoInfo = mutableListOf<DockerImage>()
@@ -416,35 +416,30 @@ class DockerArtifactRepo @Autowired constructor(
                     lastModifiedDate = it.lastModifiedDate
                 }
             }
-            repoInfo.add(DockerImage(its, lastModifiedBy, lastModifiedDate, downloadCount))
+            repoInfo.add(DockerImage(its, lastModifiedBy, lastModifiedDate, downloadCount, "", ""))
         }
         return repoInfo
     }
 
     // get repo tag list
-    fun getRepoTagList(context: RequestContext): List<DockerTag> {
+    fun getRepoTagList(context: RequestContext, pageNumber: Int, pageSize: Int, tag: String?): List<DockerTag> {
         with(context) {
-            val projectRule = Rule.QueryRule(DOCKER_PROJECT_ID, projectId)
-            val repoNameRule = Rule.QueryRule(DOCKER_REPO_NAME, repoName)
-            val nameRule = Rule.QueryRule(DOCKER_NODE_NAME, DOCKER_MANIFEST)
-            val pathRule = Rule.QueryRule(DOCKER_NODE_PATH, "/$artifactName/", OperationType.PREFIX)
-            val rule = Rule.NestedRule(mutableListOf(projectRule, repoNameRule, nameRule, pathRule))
-            val queryModel = QueryModel(
-                page = PageLimit(DOCKER_SEARCH_INDEX, DOCKER_SEARCH_LIMIT),
-                sort = Sort(listOf(DOCKER_NODE_FULL_PATH), Sort.Direction.ASC),
-                select = mutableListOf(
-                    DOCKER_NODE_FULL_PATH,
-                    DOCKER_NODE_PATH,
-                    DOCKER_NODE_SIZE,
-                    DOCKER_CREATE_BY,
-                    LAST_MODIFIED_BY,
-                    LAST_MODIFIED_DATE,
-                    STAGE_TAG
-                ),
-                rule = rule
-            )
+            var queryModel = NodeQueryBuilder().select(
+                DOCKER_NODE_FULL_PATH,
+                DOCKER_NODE_PATH,
+                DOCKER_NODE_SIZE,
+                DOCKER_CREATE_BY,
+                LAST_MODIFIED_BY,
+                LAST_MODIFIED_DATE,
+                STAGE_TAG
+            ).sortByAsc(DOCKER_NODE_FULL_PATH).page(pageNumber, pageSize).projectId(projectId).repoName(repoName)
+            queryModel = if (tag == null) {
+                queryModel.name(DOCKER_MANIFEST).path("/$artifactName/", OperationType.PREFIX)
+            } else {
+                queryModel.name(DOCKER_MANIFEST).path("/$artifactName/*$tag*", OperationType.MATCH)
+            }
 
-            val result = nodeClient.query(queryModel).data ?: run {
+            val result = nodeClient.query(queryModel.build()).data ?: run {
                 logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
                 return emptyList()
             }
@@ -460,6 +455,31 @@ class DockerArtifactRepo @Autowired constructor(
                 data.add(DockerTag(tag, stageTag, size, lastModifiedBy, lastModifiedDate, downLoadCount))
             }
             return data
+        }
+    }
+
+    fun getRepoTagCount(context: RequestContext, tag: String?): Long {
+        with(context) {
+            var queryModel = NodeQueryBuilder().select(
+                DOCKER_NODE_FULL_PATH,
+                DOCKER_NODE_PATH,
+                DOCKER_NODE_SIZE,
+                DOCKER_CREATE_BY,
+                LAST_MODIFIED_BY,
+                LAST_MODIFIED_DATE,
+                STAGE_TAG
+            ).sortByAsc(DOCKER_NODE_FULL_PATH).projectId(projectId).repoName(repoName)
+            queryModel = if (tag == null) {
+                queryModel.name(DOCKER_MANIFEST).path("/$artifactName/", OperationType.PREFIX)
+            } else {
+                queryModel.name(DOCKER_MANIFEST).path("/$artifactName/*$tag*", OperationType.MATCH)
+            }
+
+            val result = nodeClient.query(queryModel.build()).data ?: run {
+                logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
+                return 0L
+            }
+            return result.totalRecords
         }
     }
 

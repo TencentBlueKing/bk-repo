@@ -7,8 +7,8 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.docker.api.User
 import com.tencent.bkrepo.docker.context.RequestContext
-import com.tencent.bkrepo.docker.pojo.DockerImage
-import com.tencent.bkrepo.docker.pojo.DockerTag
+import com.tencent.bkrepo.docker.pojo.DockerImageResult
+import com.tencent.bkrepo.docker.pojo.DockerTagResult
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.PathUtil
 import com.tencent.bkrepo.docker.util.UserUtil
@@ -54,24 +54,38 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         projectId: String,
         repoName: String,
         pageNumber: Int,
-        pageSize: Int
-    ): Response<List<DockerImage>> {
+        pageSize: Int,
+        name: String?
+    ): Response<DockerImageResult> {
         val uId = UserUtil.getContextUserId(userId)
         val context = RequestContext(uId, projectId, repoName, EMPTY)
-        val result = dockerRepo.getRepoList(context, pageNumber, pageSize)
-        return ResponseBuilder.success(result)
+        val result = dockerRepo.getRepoList(context, pageNumber, pageSize, name)
+        val totalCount = result.size
+        // val start = (pageNumber - 1) * pageSize
+        // var end = pageNumber * pageSize
+        // if (end > totalCount) {
+        //     end = totalCount
+        // }
+        // val data = result.subList(start, end)
+        val repoInfo = DockerImageResult(totalCount, result)
+        return ResponseBuilder.success(repoInfo)
     }
 
     override fun getRepoTag(
         request: HttpServletRequest,
         userId: String?,
         projectId: String,
-        repoName: String
-    ): Response<List<DockerTag>> {
+        repoName: String,
+        pageNumber: Int,
+        pageSize: Int,
+        tag: String?
+    ): Response<DockerTagResult> {
         val uId = UserUtil.getContextUserId(userId)
         val artifactName = PathUtil.tagArtifactName(request, projectId, repoName)
         val context = RequestContext(uId, projectId, repoName, artifactName)
-        val result = dockerRepo.getRepoTagList(context)
+        val totalRecords = dockerRepo.getRepoTagCount(context, tag)
+        val data = dockerRepo.getRepoTagList(context, pageNumber, pageSize, tag)
+        val result = DockerTagResult(totalRecords, data)
         return ResponseBuilder.success(result)
     }
 
