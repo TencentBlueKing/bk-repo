@@ -146,14 +146,32 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
         }
     }
 
-    override fun getRepoList(context: RequestContext, pageNumber: Int, pageSize: Int): List<DockerImage> {
+    override fun getRepoList(
+        context: RequestContext,
+        pageNumber: Int,
+        pageSize: Int,
+        name: String?
+    ): List<DockerImage> {
         RepoUtil.loadContext(repo, context)
-        return repo.getDockerArtifactList(context.projectId, context.repoName, pageNumber, pageSize)
+        return repo.getDockerArtifactList(context.projectId, context.repoName, pageNumber, pageSize, name)
     }
 
-    override fun getRepoTagList(context: RequestContext): List<DockerTag> {
+    override fun getRepoTagList(
+        context: RequestContext,
+        pageNumber: Int,
+        pageSize: Int,
+        tag: String?
+    ): List<DockerTag> {
         RepoUtil.loadContext(repo, context)
-        return repo.getRepoTagList(context)
+        return repo.getRepoTagList(context, pageNumber, pageSize, tag)
+    }
+
+    fun getRepoTagCount(
+        context: RequestContext,
+        tag: String?
+    ): Long {
+        RepoUtil.loadContext(repo, context)
+        return repo.getRepoTagCount(context, tag)
     }
 
     override fun deleteTag(context: RequestContext, tag: String): Boolean {
@@ -166,7 +184,7 @@ class DockerV2LocalRepoService @Autowired constructor(val repo: DockerArtifactRe
     fun deleteManifest(context: RequestContext): Boolean {
         RepoUtil.loadContext(repo, context)
         with(context) {
-            repo.getRepoTagList(context).forEach {
+            repo.getRepoTagList(context, 0, 99999, null).forEach {
                 if (!repo.deleteByTag(projectId, repoName, artifactName, it.tag)) {
                     return false
                 }
