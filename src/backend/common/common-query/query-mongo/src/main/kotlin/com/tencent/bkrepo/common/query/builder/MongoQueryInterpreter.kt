@@ -18,6 +18,7 @@ import com.tencent.bkrepo.common.query.handler.impl.NotNullHandler
 import com.tencent.bkrepo.common.query.handler.impl.NullHandler
 import com.tencent.bkrepo.common.query.handler.impl.PrefixHandler
 import com.tencent.bkrepo.common.query.handler.impl.SuffixHandler
+import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryModelInterceptor
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -55,21 +56,26 @@ open class MongoQueryInterpreter {
         defaultQueryRuleHandlerMap[OperationType.NOT_NULL] = NotNullHandler()
     }
 
-    fun interpret(queryModel: QueryModel): Query {
+    open fun interpret(queryModel: QueryModel): QueryContext {
+        val mongoQuery = Query()
+        val queryContext = initContext(queryModel, mongoQuery)
         var newModel = queryModel
         for (interceptor in queryModelInterceptorList) {
-            newModel = interceptor.intercept(queryModel)
+            newModel = interceptor.intercept(newModel, queryContext)
+            queryContext.queryModel = newModel
         }
-
-        val query = Query()
         val pageNumber = newModel.page.getNormalizedPageNumber()
         val pageSize = newModel.page.getNormalizedPageSize()
-        newModel.page.let { query.with(PageRequest.of(pageNumber - 1, pageSize)) }
-        newModel.sort?.let { query.with(Sort.by(Sort.Direction.fromString(it.direction.name), *it.properties.toTypedArray())) }
-        newModel.select?.forEach { query.fields().include(it) }
-        query.addCriteria(resolveRule(queryModel.rule))
+        newModel.page.let { mongoQuery.with(PageRequest.of(pageNumber - 1, pageSize)) }
+        newModel.sort?.let { mongoQuery.with(Sort.by(Sort.Direction.fromString(it.direction.name), *it.properties.toTypedArray())) }
+        newModel.select?.forEach { mongoQuery.fields().include(it) }
 
-        return query
+        mongoQuery.addCriteria(resolveRule(queryModel.rule, queryContext))
+        return queryContext
+    }
+
+    open fun initContext(queryModel: QueryModel, mongoQuery: Query): QueryContext {
+        return QueryContext(queryModel, mongoQuery, this)
     }
 
     fun addRuleInterceptor(interceptor: QueryRuleInterceptor) {
@@ -80,34 +86,30 @@ open class MongoQueryInterpreter {
         this.queryModelInterceptorList.add(interceptor)
     }
 
-    fun resolveRule(rule: Rule): Criteria {
+    fun resolveRule(rule: Rule, context: QueryContext): Criteria {
         // interceptor
         if (rule !is Rule.FixedRule) {
             for (interceptor in queryRuleInterceptorList) {
                 if (interceptor.match(rule)) {
-                    return interceptor.intercept(rule, this)
+                    return interceptor.intercept(rule, context)
                 }
             }
         }
         // resolve
         return when (rule) {
-            is Rule.NestedRule -> resolveNestedRule(rule)
+            is Rule.NestedRule -> resolveNestedRule(rule, context)
             is Rule.QueryRule -> resolveQueryRule(rule)
-            is Rule.FixedRule -> resolveFixedRule(rule)
+            is Rule.FixedRule -> resolveQueryRule(rule.wrapperRule)
         }
     }
 
-    private fun resolveNestedRule(rule: Rule.NestedRule): Criteria {
-        return nestedRuleHandler.handle(rule, this)
+    private fun resolveNestedRule(rule: Rule.NestedRule, context: QueryContext): Criteria {
+        return nestedRuleHandler.handle(rule, context)
     }
 
     private fun resolveQueryRule(rule: Rule.QueryRule): Criteria {
         // 默认handler
         return findDefaultHandler(rule.operation).handle(rule)
-    }
-
-    private fun resolveFixedRule(rule: Rule.FixedRule): Criteria {
-        return resolveRule(rule.wrapperRule)
     }
 
     private fun findDefaultHandler(operation: OperationType): MongoQueryRuleHandler {

@@ -7,5 +7,5 @@ import com.tencent.bkrepo.common.query.model.QueryModel
  */
 interface QueryModelInterceptor {
 
-    fun intercept(queryModel: QueryModel): QueryModel
+    fun intercept(queryModel: QueryModel, context: QueryContext): QueryModel
 }

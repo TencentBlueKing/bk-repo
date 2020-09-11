@@ -263,10 +263,8 @@ class UserNodeController(
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
     fun query(
-        @RequestAttribute userId: String,
         @RequestBody queryModel: QueryModel
     ): Response<Page<Map<String, Any?>>> {
-        // 由于涉及到queryModel校验和解析规则，自定义查询在service内部鉴权
-        return ResponseBuilder.success(nodeQueryService.userQuery(userId, queryModel))
+        return ResponseBuilder.success(nodeQueryService.query(queryModel))
     }
 }
