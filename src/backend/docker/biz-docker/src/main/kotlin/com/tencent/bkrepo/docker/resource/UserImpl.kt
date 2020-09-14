@@ -124,7 +124,7 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         tag: String
     ): Response<Map<String, Any>?> {
         val uId = UserUtil.getContextUserId(userId)
-        val artifactName = PathUtil.repoTagArtifactName(request, projectId, repoName, tag)
+        val artifactName = PathUtil.repoTagDetailArtifactName(request, projectId, repoName, tag)
         val context = RequestContext(uId, projectId, repoName, artifactName)
         val result = dockerRepo.getRepoTagDetail(context, tag)
         return ResponseBuilder.success(result)

@@ -9,6 +9,7 @@ import com.tencent.bkrepo.docker.constant.DOCKER_USER_DELETE_IMAGE_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_LAYER_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_MANIFEST_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_REPO_SUFFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_USER_REPO_TAG_DETAIL_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_REPO_TAG_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_TAG_SUFFIX
 import com.tencent.bkrepo.docker.constant.PAGE_NUMBER
@@ -148,7 +149,7 @@ interface User {
     ): Response<Boolean>
 
     @ApiOperation("获取镜像tag下的详情")
-    @GetMapping(DOCKER_USER_REPO_TAG_SUFFIX)
+    @GetMapping(DOCKER_USER_REPO_TAG_DETAIL_SUFFIX)
     fun getRepoTagDetail(
         request: HttpServletRequest,
         @RequestAttribute

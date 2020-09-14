@@ -382,7 +382,7 @@
 
 ### 获取repo下指定tag的详情
 
-- API: GET /docker/api/tag/{projectId}/{repoName}/{name}/{tag}
+- API: GET /docker/api/tagdetail/{projectId}/{repoName}/{name}/{tag}
 - API 名称: get_repo_tag_detail
 - 功能说明：
 	- 中文：获取repo下tag对象的镜像相亲

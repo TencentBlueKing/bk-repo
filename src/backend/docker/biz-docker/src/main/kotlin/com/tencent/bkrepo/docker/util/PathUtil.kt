@@ -36,6 +36,11 @@ object PathUtil {
         return restOfTheUrl.removePrefix(tagPrefix(projectId, repoName)).removeSuffix("/$tag")
     }
 
+    fun repoTagDetailArtifactName(request: HttpServletRequest, projectId: String, repoName: String, tag: String): String {
+        val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
+        return restOfTheUrl.removePrefix(tagDetailPrefix(projectId, repoName)).removeSuffix("/$tag")
+    }
+
     fun repoArtifactName(request: HttpServletRequest, projectId: String, repoName: String): String {
         val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
         return restOfTheUrl.removePrefix(repoPrefix(projectId, repoName))
@@ -56,6 +61,10 @@ object PathUtil {
 
     private fun tagPrefix(projectId: String, repoName: String): String {
         return "$USER_API_PREFIX/tag/$projectId/$repoName/"
+    }
+
+    private fun tagDetailPrefix(projectId: String, repoName: String): String {
+        return "$USER_API_PREFIX/tagdetail/$projectId/$repoName/"
     }
 
     private fun repoPrefix(projectId: String, repoName: String): String {
