@@ -3,6 +3,7 @@ package com.tencent.bkrepo.auth.resource
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.ListRepoPermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -36,6 +37,11 @@ class ServicePermissionResourceImpl @Autowired constructor(
     override fun checkPermission(request: CheckPermissionRequest): Response<Boolean> {
         checkRequest(request)
         return ResponseBuilder.success(permissionService.checkPermission(request))
+    }
+
+    override fun listRepoPermission(request: ListRepoPermissionRequest): Response<List<String>> {
+        checkRequest(request)
+        return ResponseBuilder.success(permissionService.listRepoPermission(request))
     }
 
     override fun listPermission(resourceType: ResourceType?, projectId: String?, repoName: String?): Response<List<Permission>> {
