@@ -17,8 +17,8 @@ interface DownloadStatisticsService {
         repoName: String,
         artifact: String,
         version: String?,
-        startDate: LocalDate,
-        endDate: LocalDate
+        startDate: LocalDate?,
+        endDate: LocalDate?
     ): DownloadStatisticsResponse
 
     fun queryForSpecial(
