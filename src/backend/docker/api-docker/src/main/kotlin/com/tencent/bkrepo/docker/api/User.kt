@@ -1,20 +1,23 @@
 package com.tencent.bkrepo.docker.api
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
 import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
 import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
 import com.tencent.bkrepo.docker.constant.DOCKER_TAG
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_DELETE_IMAGE_SUFFIX
-import com.tencent.bkrepo.docker.constant.DOCKER_USER_REPO_TAG_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_LAYER_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_MANIFEST_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_REPO_SUFFIX
+import com.tencent.bkrepo.docker.constant.DOCKER_USER_REPO_TAG_SUFFIX
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_TAG_SUFFIX
 import com.tencent.bkrepo.docker.constant.PAGE_NUMBER
 import com.tencent.bkrepo.docker.constant.PAGE_SIZE
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
 import com.tencent.bkrepo.docker.pojo.DockerImage
+import com.tencent.bkrepo.docker.pojo.DockerImageResult
 import com.tencent.bkrepo.docker.pojo.DockerTag
+import com.tencent.bkrepo.docker.pojo.DockerTagResult
 import com.tencent.bkrepo.docker.response.DockerResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -85,8 +88,11 @@ interface User {
         pageNumber: Int,
         @RequestParam(required = true)
         @ApiParam(value = PAGE_SIZE, required = true)
-        pageSize: Int
-    ): Response<List<DockerImage>>
+        pageSize: Int,
+        @RequestParam(required = false)
+        @ApiParam(value = DOCKER_NODE_NAME, required = true)
+        name: String?
+    ): Response<DockerImageResult>
 
     @ApiOperation("获取repo所有的tag")
     @GetMapping(DOCKER_USER_TAG_SUFFIX)
@@ -99,8 +105,16 @@ interface User {
         projectId: String,
         @PathVariable
         @ApiParam(value = DOCKER_REPO_NAME, required = true)
-        repoName: String
-    ): Response<List<DockerTag>>
+        repoName: String,
+        @ApiParam(value = PAGE_NUMBER, required = true)
+        pageNumber: Int,
+        @RequestParam(required = true)
+        @ApiParam(value = PAGE_SIZE, required = true)
+        pageSize: Int,
+        @RequestParam(required = false)
+        @ApiParam(value = DOCKER_TAG, required = true)
+        tag: String?
+    ): Response<DockerTagResult>
 
     @ApiOperation("删除repo下的指定镜像")
     @DeleteMapping(DOCKER_USER_DELETE_IMAGE_SUFFIX)
@@ -133,7 +147,7 @@ interface User {
         tag: String
     ): Response<Boolean>
 
-    @ApiOperation("获取惊吓tag的详情")
+    @ApiOperation("获取镜像tag下的详情")
     @GetMapping(DOCKER_USER_REPO_TAG_SUFFIX)
     fun getRepoTagDetail(
         request: HttpServletRequest,

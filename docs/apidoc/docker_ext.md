@@ -140,7 +140,7 @@
 
 ### 获取指定projectId和repoName下的所有镜像
 
-- API: GET /docker/api/repo/{projectId}/{repoName}?pageNumber=0&pageSize=10
+- API: GET /docker/api/repo/{projectId}/{repoName}?pageNumber=0&pageSize=10&name=docker
 - API 名称: get_image_by_project_repository
 - 功能说明：
 	- 中文：获取指定project和仓库下的所有docker镜像
@@ -162,6 +162,7 @@
 |repoName|string|是|无|仓库名称| name of repo|
 |pageNumber|Int|是|无|页码数| number of page|
 |pageSize|Int|是|无|每页大小| limit of page|
+|name|string|否|无|镜像名称| image name|
 
 
 
@@ -169,23 +170,30 @@
 
 ```
 {
-  "code": 0,
-  "message": null,
-  "data": [
-    {
-      "name": "hello-world",
-      "lastModifiedBy": "admin",
-      "lastModifiedDate": "2020-09-10T14:48:22.846",
-      "downloadCount": 0
+    "code":0,
+    "message":null,
+    "data":{
+        "toatalRecords":100,
+        "records":[
+            {
+                "name":"hello-world",
+                "lastModifiedBy":"admin",
+                "lastModifiedDate":"2020-09-10T14:48:22.846",
+                "downloadCount":0,
+                "logoUrl":"",
+                "description":""
+            },
+            {
+                "name":"mongo",
+                "lastModifiedBy":"admin",
+                "lastModifiedDate":"2020-08-28T12:07:12.672",
+                "downloadCount":0,
+                "logoUrl":"",
+                "description":""
+            }
+        ]
     },
-    {
-      "name": "mongo",
-      "lastModifiedBy": "admin",
-      "lastModifiedDate": "2020-08-28T12:07:12.672",
-      "downloadCount": 0
-    }
-  ],
-  "traceId": ""
+    "traceId":""
 }
 
 ```
@@ -204,7 +212,7 @@
 
 ### 获取repo的所有tag
 
-- API: GET /docker/api/tag/{projectId}/{repoName}/{name}
+- API: GET /docker/api/tag/{projectId}/{repoName}/{name}?pageNumber=0&pageSize=10&tag=v1
 - API 名称: get_repo_tag_list
 - 功能说明：
 	- 中文：获取repo对应的manifest文件
@@ -225,6 +233,9 @@
 |projectId|string|是|无|项目id|the project id|
 |repoName|string|是|无|仓库名称| name of repo|
 |name|string|是|无|docker 镜像名称| name of docker image|
+|pageNumber|Int|是|无|页码数| number of page|
+|pageSize|Int|是|无|每页大小| limit of page|
+|tag|string|否|无|tag名称| the tag name|
 
 
 
@@ -232,27 +243,30 @@
 
 ```
 {
-  "code": 0,
-  "message": null,
-  "data": [
-    {
-      "tag": "latest",
-      "stageTag": "",
-      "size": 524,
-      "lastModifiedBy": "admin",
-      "lastModifiedDate": "2020-09-10T14:48:22.846",
-      "downloadCount": 0
+    "code":0,
+    "message":null,
+    "data":{
+        "toatalRecords":100,
+        "records":[
+            {
+                "tag":"latest",
+                "stageTag":"",
+                "size":524,
+                "lastModifiedBy":"admin",
+                "lastModifiedDate":"2020-09-10T14:48:22.846",
+                "downloadCount":0
+            },
+            {
+                "tag":"v1",
+                "stageTag":"",
+                "size":524,
+                "lastModifiedBy":"admin",
+                "lastModifiedDate":"2020-09-10T14:49:37.904",
+                "downloadCount":0
+            }
+        ]
     },
-    {
-      "tag": "v1",
-      "stageTag": "",
-      "size": 524,
-      "lastModifiedBy": "admin",
-      "lastModifiedDate": "2020-09-10T14:49:37.904",
-      "downloadCount": 0
-    }
-  ],
-  "traceId": ""
+    "traceId":""
 }
 ```
 
