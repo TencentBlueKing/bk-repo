@@ -1,0 +1,5 @@
+src/directives/member-selector/*.js
+src/directives/data-selector/*.js
+src/components/devops/qrcode/*.js
+src/assets/*
+node_modules/

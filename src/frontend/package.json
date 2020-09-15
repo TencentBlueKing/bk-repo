@@ -1,0 +1,39 @@
+{
+  "name": "root",
+  "private": true,
+  "devDependencies": {
+    "chalk": "^4.0.0",
+    "gulp": "^4.0.2",
+    "gulp-rename": "^1.4.0",
+    "lerna": "3.17.0",
+    "node-fetch": "^2.6.0",
+    "ora": "^3.4.0",
+    "husky": "^3.0.7",
+    "lint-staged": "^10.2.11",
+    "@commitlint/cli": "^9.1.1",
+    "@commitlint/config-conventional": "^9.1.1"
+  },
+  "scripts": {
+    "start": "lerna bootstrap",
+    "build:dev": "lerna run public:dev --parallel",
+    "build:test": "lerna run public:test --parallel",
+    "build:master": "lerna run public:master --parallel",
+    "build:external": "lerna run public:external --parallel",
+    "changelog": "conventional-changelog -c changelog.config.js -p github -i CHANGELOG.md -s",
+    "public": "gulp -d frontend"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx,vue}": [
+      "eslint --fix"
+    ]
+  },
+  "workspaces": [
+    "devops-repository"
+  ]
+}
