@@ -4,8 +4,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -85,9 +83,8 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         val artifactFile = context.artifactFileMap["content"]
         val metadata = context.request.parameterMaps()
         val filename = (artifactFile as MultipartArtifactFile).getOriginalFilename()
-        val sha256 = (context.contextAttributes[ATTRIBUTE_SHA256MAP] as Map<*, *>)["content"] as String
-        val md5 = (context.contextAttributes[ATTRIBUTE_MD5MAP] as Map<*, *>)["content"] as String
-
+        val sha256 = artifactFile.getFileSha256()
+        val md5 = artifactFile.getFileMd5()
         return NodeCreateRequest(
             projectId = repositoryInfo.projectId,
             repoName = repositoryInfo.name,
@@ -95,26 +92,30 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
             overwrite = true,
             fullPath = artifactInfo.artifactUri + "/$filename",
             size = artifactFile.getSize(),
-            sha256 = sha256 as String?,
-            md5 = md5 as String?,
+            sha256 = sha256,
+            md5 = md5,
             operator = context.userId,
             metadata = metadata
         )
     }
 
     override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
-        val repository = context.repositoryInfo
         val searchArgs = XmlUtil.getSearchArgs(xmlString)
         val packageName = searchArgs["packageName"]
         val summary = searchArgs["summary"]
         if (packageName != null && summary != null) {
-            with(repository) {
+            with(context.artifactInfo) {
                 val projectId = Rule.QueryRule("projectId", projectId)
-                val repoName = Rule.QueryRule("repoName", name)
-                val packageQuery = Rule.QueryRule("metadata.name", packageName, OperationType.MATCH)
-                val filetypeAuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
-                val rule1 = Rule.NestedRule(
-                    mutableListOf(repoName, projectId, packageQuery, filetypeAuery),
+                val repoName = Rule.QueryRule("repoName", repoName)
+                val packageQuery = Rule.QueryRule("metadata.name", "*$packageName*", OperationType.MATCH)
+                val summaryQuery = Rule.QueryRule("metadata.summary", "*$summary*", OperationType.MATCH)
+                val filetypeQuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
+                val matchQuery = Rule.NestedRule(
+                    mutableListOf(packageQuery, summaryQuery),
+                    Rule.NestedRule.RelationType.OR
+                )
+                val rule = Rule.NestedRule(
+                    mutableListOf(repoName, projectId, filetypeQuery, matchQuery),
                     Rule.NestedRule.RelationType.AND
                 )
 
@@ -122,7 +123,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                     page = PageLimit(pageLimitCurrent, pageLimitSize),
                     sort = Sort(listOf("name"), Sort.Direction.ASC),
                     select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-                    rule = rule1
+                    rule = rule
                 )
                 val nodeList: List<Map<String, Any>>? = nodeClient.query(queryModel).data?.records
                 if (nodeList != null) {

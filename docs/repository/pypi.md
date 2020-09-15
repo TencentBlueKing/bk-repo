@@ -19,28 +19,33 @@ curl -X POST http://127.0.0.1:8080/api/repo \
 **全局依赖源配置：**
 配置文件路径：`~/.pip/pip.conf`
 ```conf
-[global]
+[bkrepo]
 index-url = http://ip:port/projectId/repositoryId/simple
 username = admin
 password = password
 ```
 
-**Python 3.6.0开始不再支持`./pypirc`,所以upload指定仓库地址**
 
 **依赖源地址需要加上`/simple`**
 
 
 
-#### Upload：
+#### Upload:
+配置仓库地址和认证信息
+```txt
+[distutils]
+index-servers =
+    bkrepo
+[bkrepo]
+repository = http://ip:port/projectId/repositoryId/
+username = admin
+password = password
+```
 
 ```bash
 #使用twine作为上传工具
-python3 -m twine upload --repository-url {repositoryUrl} [-u user] [-p password] dist/*
-#Example
-python3 -m twine upload --repository-url http://ip:port/projectId/repositoryId -u admin -p password dist/*
+python3 -m twine upload -r {bkrepo} dist/*
 ```
-
-
 
 #### install
 
@@ -49,8 +54,6 @@ pip3 install -i {repositoryUrl} {package}=={version}
 #Example
 pip3 install -i http://ip:port/projectId/repositoryId/simple installPackage==0.0.1
 ```
-
-
 
 #### Search
 

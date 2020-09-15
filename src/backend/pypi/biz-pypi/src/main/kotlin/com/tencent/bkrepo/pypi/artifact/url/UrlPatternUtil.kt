@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.pypi.artifact.url
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import org.apache.commons.lang.StringUtils
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -15,7 +15,7 @@ object UrlPatternUtil {
         val metadata: MutableMap<String, String> = mutableMapOf()
         // 对字符串数组做处理
         for (entry in map) {
-            metadata[entry.key] = ObjectMapper().writeValueAsString(entry.value)
+            metadata[entry.key] = StringUtils.join(entry.value, ",")
         }
         return metadata
     }
@@ -27,12 +27,6 @@ object UrlPatternUtil {
     ): PypiArtifactInfo {
         val packageName: String = request.getParameter("name")
         val version: String = request.getParameter("version")
-        val map = request.parameterMap
-        val metadata: MutableMap<String, String> = mutableMapOf()
-        // 对字符串数组做处理
-        for (entry in map) {
-            metadata[entry.key] = ObjectMapper().writeValueAsString(entry.value)
-        }
         return PypiArtifactInfo(projectId, repoName, "/$packageName/$version")
     }
 }
