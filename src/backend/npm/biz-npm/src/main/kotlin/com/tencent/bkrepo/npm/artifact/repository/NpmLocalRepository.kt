@@ -113,7 +113,7 @@ class NpmLocalRepository : LocalRepository() {
                     "Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}"
                 )
                 // 计算sha1并校验
-                val calculatedSha1 = file.getFile()?.sha1()
+                val calculatedSha1 = file.getInputStream().sha1()
                 val uploadSha1 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA1] as String?
                 if (uploadSha1 != null && calculatedSha1 != uploadSha1) {
                     throw ArtifactValidateException("File shasum validate failed.")
