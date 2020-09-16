@@ -5,8 +5,8 @@
             <icon v-else size="100" name="default-docker" />
             <div class="ml20 docker-title flex-column">
                 <span class="mb10 title" :title="docker.name">{{ docker.name }}</span>
-                <span>{{ docker.lastModifiedBy }} 更新于 {{ new Date(docker.lastModifiedDate).toLocaleString() }}</span>
-                <div class="mt10 subtitle" :title="docker.description">{{ docker.description || '暂无描述信息' }}</div>
+                <span>{{ `${docker.lastModifiedBy} ${$t('modifiedOn')} ${new Date(docker.lastModifiedDate).toLocaleString()}` }}</span>
+                <div class="mt10 subtitle" :title="docker.description">{{ docker.description || $t('noDescription') }}</div>
             </div>
             <div class="docker-download">
                 <i class="mr5 devops-icon icon-download"></i>
@@ -21,13 +21,13 @@
                             <header class="docker-description-header">bkci base dockerimage</header>
                         </section>
                         <section>
-                            <header class="docker-description-header">Docker公共构建机构建机基础镜像</header>
-                            <code-area :code-list="['docker pull bkrepo/ci:latest']"></code-area>
+                            <header class="docker-description-header">{{ $t('dockerBaseInfo1') }}</header>
+                            <code-area :code-list="[`docker pull ${$route.query.name}/${$route.query.docker}:latest`]"></code-area>
                         </section>
                         <section>
-                            <header class="docker-description-header">Docker无编译环境基础镜像</header>
-                            <div class="docker-description-tip">无编译环境的特点是小，基础的。没有编译环境等特殊依赖</div>
-                            <code-area :code-list="['docker pull bkrepo/ci:latest']"></code-area>
+                            <header class="docker-description-header">{{ $t('dockerBaseInfo2') }}</header>
+                            <div class="docker-description-tip">{{ $t('dockerBaseInfo3') }}</div>
+                            <code-area :code-list="[`docker pull ${$route.query.name}/${$route.query.docker}:latest`]"></code-area>
                         </section>
                     </article>
                 </bk-tab-panel>

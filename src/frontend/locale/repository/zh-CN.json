@@ -86,5 +86,9 @@
     "upgradeTo": "晋级为",
     "dockerInfo": "镜像概述",
     "useTips": "使用说明",
-    "useSubTips": "使用如下命令去拉取包"
+    "useSubTips": "使用如下命令去拉取包",
+    "modifiedOn": "更新于",
+    "dockerBaseInfo1": "Docker公共构建机构建机基础镜像",
+    "dockerBaseInfo2": "Docker无编译环境基础镜像",
+    "dockerBaseInfo3": "无编译环境的特点是小，基础的。没有编译环境等特殊依赖"
 }

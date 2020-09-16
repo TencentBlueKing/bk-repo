@@ -7,7 +7,7 @@
                         <header class="base-info-header">{{ $t('useTips') }}</header>
                         <div class="mt20 base-info-guide-main flex-column">
                             <span class="mb10">{{ $t('useSubTips') }}</span>
-                            <code-area :code-list="[`docker pull ${$route.query.docker}:${$route.query.tag}`]"></code-area>
+                            <code-area :code-list="[`docker pull ${$route.query.name}/${$route.query.docker}:${$route.query.tag}`]"></code-area>
                         </div>
                     </div>
                     <div class="base-info-checksums">
