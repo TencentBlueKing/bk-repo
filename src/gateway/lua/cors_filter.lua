@@ -17,52 +17,43 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
-_M = {}
+local http_origin = ngx.var.http_origin
 
-function Split(szFullString, szSeparator)
-	local szFullStringLocal = ""
-	if (szFullString ~= nil and szFullString ~= "") then
-		szFullStringLocal = szFullString
-	end
-
-	local nFindStartIndex = 1
-	local nSplitIndex = 1
-	local nSplitArray = {}
-	while true do
-	   local nFindLastIndex = string.find(szFullStringLocal, szSeparator, nFindStartIndex)
-	   if not nFindLastIndex then
-	    nSplitArray[nSplitIndex] = string.sub(szFullStringLocal, nFindStartIndex, string.len(szFullStringLocal))
-	    break
-	   end
-	   nSplitArray[nSplitIndex] = string.sub(szFullStringLocal, nFindStartIndex, nFindLastIndex - 1)
-	   nFindStartIndex = nFindLastIndex + string.len(szSeparator)
-	   nSplitIndex = nSplitIndex + 1
-	end
-	return nSplitArray
+if not http_origin then
+  return
 end
 
-function _M:parseUrl(url)
-	local t1 = nil
-	--,
-	t1= Split(url,',')
-
-	--?
-	url = t1[1]
-	t1=Split(t1[1],'?')
-
-	url=t1[2]
-	--&
-
-	t1=Split(t1[2],'&')
-	local res = {}
-	for k,v in pairs(t1) do
-		i = 1
-		t1 = Split(v,'=')
-		res[t1[1]]={}
-		res[t1[1]]=t1[2]
-		i=i+1
-	end
-	return res
+if http_origin == "" then
+  return
 end
 
-return _M
+local allow_hosts = config.allow_hosts
+
+local matched = false
+for k, v in pairs(allow_hosts) do
+    local from, to, err = ngx.re.find(http_origin, v, "jo")
+    if from then
+        matched = true
+    end
+end
+
+if matched == false then
+  ngx.log(ngx.STDERR, "can not allow access: ", http_origin)
+  return
+end
+
+local m = ngx.req.get_method()
+
+if m == "OPTIONS" then
+  ngx.header["Access-Control-Allow-Origin"] = http_origin
+  ngx.header["Access-Control-Allow-Credentials"] = "true"
+  ngx.header["Access-Control-Max-Age"] = "1728000"
+  ngx.header["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+  ngx.header["Access-Control-Allow-Headers"] = config.allow_headers
+  ngx.header["Content-Length"] = "0"
+  ngx.header["Content-Type"] = "text/plain charset=UTF-8"
+  ngx.exit(204)
+end
+
+ngx.header["Access-Control-Allow-Origin"] = http_origin
+ngx.header["Access-Control-Allow-Credentials"] = "true"

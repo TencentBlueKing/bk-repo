@@ -17,52 +17,24 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
-_M = {}
-
-function Split(szFullString, szSeparator)
-	local szFullStringLocal = ""
-	if (szFullString ~= nil and szFullString ~= "") then
-		szFullStringLocal = szFullString
-	end
-
-	local nFindStartIndex = 1
-	local nSplitIndex = 1
-	local nSplitArray = {}
-	while true do
-	   local nFindLastIndex = string.find(szFullStringLocal, szSeparator, nFindStartIndex)
-	   if not nFindLastIndex then
-	    nSplitArray[nSplitIndex] = string.sub(szFullStringLocal, nFindStartIndex, string.len(szFullStringLocal))
-	    break
-	   end
-	   nSplitArray[nSplitIndex] = string.sub(szFullStringLocal, nFindStartIndex, nFindLastIndex - 1)
-	   nFindStartIndex = nFindLastIndex + string.len(szSeparator)
-	   nSplitIndex = nSplitIndex + 1
-	end
-	return nSplitArray
+--- 蓝鲸平台登录对接
+--- 获取Cookie中bk_token
+local bk_token, err = cookieUtil:get_cookie("bk_ticket")
+local devops_access_token =  ngx.var.http_x_devops_access_token
+if bk_token == nil and devops_access_token == nil then
+  ngx.log(ngx.STDERR, "failed to read user request bk_token or devops_access_token: ", err)
+  ngx.exit(401)
+  return
+end
+local ticket = nil
+if devops_access_token ~= nill then 
+  ticket = oauthUtil:verify_token(devops_access_token)
+else
+  ticket = oauthUtil:get_ticket(bk_token)
 end
 
-function _M:parseUrl(url)
-	local t1 = nil
-	--,
-	t1= Split(url,',')
-
-	--?
-	url = t1[1]
-	t1=Split(t1[1],'?')
-
-	url=t1[2]
-	--&
-
-	t1=Split(t1[2],'&')
-	local res = {}
-	for k,v in pairs(t1) do
-		i = 1
-		t1 = Split(v,'=')
-		res[t1[1]]={}
-		res[t1[1]]=t1[2]
-		i=i+1
-	end
-	return res
-end
-
-return _M
+--- 设置用户信息
+ngx.header["x-bkrepo-uid"] = ticket.user_id
+ngx.header["x-bkrepo-bk-token"] = bk_token
+ngx.header["x-bkrepo-access-token"] = ticket.access_token
+ngx.exit(200)
