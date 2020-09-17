@@ -67,7 +67,7 @@ class RepositoryServiceTest @Autowired constructor(
     fun beforeEach() {
         initMock()
         repositoryService.list(UT_PROJECT_ID).forEach {
-            repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, it.name, UT_USER))
+            repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, it.name, operator = UT_USER))
         }
     }
 
@@ -88,8 +88,8 @@ class RepositoryServiceTest @Autowired constructor(
         repeat(size.toInt()) { repositoryService.create(createRequest("repo$it")) }
         var page = repositoryService.page(UT_PROJECT_ID, 0, 10)
         assertEquals(10, page.records.size)
-        assertEquals(size, page.count)
-        assertEquals(0, page.page)
+        assertEquals(size, page.totalRecords)
+        assertEquals(0, page.totalPages)
         assertEquals(10, page.pageSize)
 
         page = repositoryService.page(UT_PROJECT_ID, 5, 10)
@@ -99,8 +99,8 @@ class RepositoryServiceTest @Autowired constructor(
 
         page = repositoryService.page(UT_PROJECT_ID, 0, 20)
         assertEquals(20, page.records.size)
-        assertEquals(size, page.count)
-        assertEquals(0, page.page)
+        assertEquals(size, page.totalRecords)
+        assertEquals(0, page.totalPages)
         assertEquals(20, page.pageSize)
     }
 
@@ -114,7 +114,7 @@ class RepositoryServiceTest @Autowired constructor(
         assertFalse(repositoryService.exist(UT_PROJECT_ID, ""))
         assertFalse(repositoryService.exist("", UT_REPO_NAME))
 
-        repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, UT_REPO_NAME, SYSTEM_USER))
+        repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, UT_REPO_NAME, operator = SYSTEM_USER))
         assertFalse(repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME))
     }
 
@@ -194,11 +194,11 @@ class RepositoryServiceTest @Autowired constructor(
     fun `test delete repository`() {
         repositoryService.create(createRequest("test1"))
         repositoryService.create(createRequest("test2"))
-        repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "test1", SYSTEM_USER))
+        repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER))
         assertNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test1"))
 
-        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "", SYSTEM_USER)) }
-        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "test1", SYSTEM_USER)) }
+        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "", operator = SYSTEM_USER)) }
+        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER)) }
 
         assertNotNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test2"))
     }

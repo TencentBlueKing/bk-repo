@@ -19,6 +19,7 @@ import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
@@ -27,10 +28,10 @@ import javax.servlet.http.HttpServletRequest
 class ArtifactContextHolder(
     artifactConfiguration: ArtifactConfiguration,
     repositoryClient: RepositoryClient,
-    localRepository: LocalRepository,
-    remoteRepository: RemoteRepository,
-    virtualRepository: VirtualRepository,
-    compositeRepository: CompositeRepository
+    localRepository: ObjectProvider<LocalRepository>,
+    remoteRepository: ObjectProvider<RemoteRepository>,
+    virtualRepository: ObjectProvider<VirtualRepository>,
+    compositeRepository: ObjectProvider<CompositeRepository>
 ) {
 
     init {
@@ -45,17 +46,17 @@ class ArtifactContextHolder(
     companion object {
         lateinit var artifactConfiguration: ArtifactConfiguration
         private lateinit var repositoryClient: RepositoryClient
-        private lateinit var localRepository: LocalRepository
-        private lateinit var remoteRepository: RemoteRepository
-        private lateinit var virtualRepository: VirtualRepository
-        private lateinit var compositeRepository: CompositeRepository
+        private lateinit var localRepository: ObjectProvider<LocalRepository>
+        private lateinit var remoteRepository: ObjectProvider<RemoteRepository>
+        private lateinit var virtualRepository: ObjectProvider<VirtualRepository>
+        private lateinit var compositeRepository: ObjectProvider<CompositeRepository>
 
         fun getRepository(repositoryCategory: RepositoryCategory? = null): ArtifactRepository {
             return when (repositoryCategory ?: getRepoDetail()!!.category) {
-                RepositoryCategory.LOCAL -> localRepository
-                RepositoryCategory.REMOTE -> remoteRepository
-                RepositoryCategory.VIRTUAL -> virtualRepository
-                RepositoryCategory.COMPOSITE -> compositeRepository
+                RepositoryCategory.LOCAL -> localRepository.`object`
+                RepositoryCategory.REMOTE -> remoteRepository.`object`
+                RepositoryCategory.VIRTUAL -> virtualRepository.`object`
+                RepositoryCategory.COMPOSITE -> compositeRepository.`object`
             }
         }
 

@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.node
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -29,38 +30,13 @@ import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 class NodeQueryBuilder {
     private var projectId: String? = null
     private var repoNames: List<String> = listOf()
+    private var repoType: RepositoryType? = null
 
     private var fields: List<String>? = null
     private var sort: Sort? = null
     private var pageLimit: PageLimit = PageLimit()
     private var rootRule: Rule.NestedRule = createNestedRule(Rule.NestedRule.RelationType.AND)
     private var currentRule: Rule.NestedRule = rootRule
-
-    /**
-     * 构造QueryModel
-     * 要求：project必须指定
-     */
-    fun build(): QueryModel {
-        requireNotNull(projectId) { "ProjectId must be specific" }
-        require(repoNames.isNotEmpty()) { "RepoName must be specific" }
-
-        val projectQuery = Rule.QueryRule("projectId", projectId!!, OperationType.EQ)
-        val repoQuery = if (repoNames.size == 1) {
-            Rule.QueryRule("repoName", repoNames.first(), OperationType.EQ)
-        } else {
-            Rule.QueryRule("repoName", repoNames, OperationType.IN)
-        }
-
-        rootRule.rules.add(projectQuery)
-        rootRule.rules.add(repoQuery)
-
-        return QueryModel(
-            select = fields,
-            page = pageLimit,
-            sort = sort,
-            rule = rootRule
-        )
-    }
 
     /**
      * 设置查询字段[fields]
@@ -127,6 +103,14 @@ class NodeQueryBuilder {
      */
     fun repoNames(vararg repoNames: String): NodeQueryBuilder {
         this.repoNames = repoNames.toList()
+        return this
+    }
+
+    /**
+     * 设置仓库类型为[repoType]
+     */
+    fun repoType(repoType: RepositoryType): NodeQueryBuilder {
+        this.repoType = repoType
         return this
     }
 
@@ -241,6 +225,32 @@ class NodeQueryBuilder {
      */
     fun excludeFile(): NodeQueryBuilder {
         return this.rule(true, FOLDER_FILED, true, OperationType.EQ)
+    }
+
+    /**
+     * 构造QueryModel
+     * 要求：project必须指定
+     */
+    fun build(): QueryModel {
+        requireNotNull(projectId) { "ProjectId must be specific" }
+
+        val projectQuery = projectId?.let { Rule.QueryRule("projectId", projectId!!, OperationType.EQ) }
+        val repoTypeQuery = repoType?.let { Rule.QueryRule("repoType", repoType!!.name, OperationType.EQ) }
+        val repoNameQuery = when {
+            repoNames.size == 1 -> Rule.QueryRule("repoName", repoNames.first(), OperationType.EQ)
+            repoNames.size > 1 -> Rule.QueryRule("repoName", repoNames, OperationType.IN)
+            else -> null
+        }
+        projectQuery?.let { rootRule.rules.add(it) }
+        repoTypeQuery?.let { rootRule.rules.add(it) }
+        repoNameQuery?.let { rootRule.rules.add(it) }
+
+        return QueryModel(
+            select = fields,
+            page = pageLimit,
+            sort = sort,
+            rule = rootRule
+        )
     }
 
     private fun createNestedRule(relation: Rule.NestedRule.RelationType): Rule.NestedRule {

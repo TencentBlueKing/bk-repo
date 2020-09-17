@@ -39,6 +39,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
       "size" : 34,
       "sha256" : "6a7983009447ecc725d2bb73a60b55d0ef5886884df0ffe3199f84b6df919895",
       "md5" : "2947b3932900d4534175d73964ec22ef",
+      "stageTag": "@release",
       "metadata": {
         "key": "value"
       },
@@ -73,7 +74,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 
 ### 分页查询节点
 
-- API: GET /repository/api/node/page/{projectId}/{repoName}/{fullPath}?pageNumber=0&pageSize=20&includeFolder=true&deep=false
+- API: GET /repository/api/node/page/{projectId}/{repoName}/{fullPath}?pageNumber=0&pageSize=20&includeFolder=true&includeMetadata=true&deep=false
 
 - API 名称: list_node_page
 
@@ -86,15 +87,16 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   
 - 请求字段说明
 
-  | 字段          | 类型    | 是否必须 | 默认值 | 说明               | Description       |
-  | ------------- | ------- | -------- | ------ | ------------------ | ----------------- |
-  | projectId     | string  | 是       | 无     | 项目名称           | project name      |
-  | repoName      | string  | 是       | 无     | 仓库名称           | repo name         |
-  | fullPath      | string  | 是       | 无     | 完整路径           | full path         |
-  | pageNumber    | int     | 否       | 0      | 当前页             | current page      |
-  | pageSize      | int     | 否       | 20     | 分页大小           | page size         |
-  | includeFolder | boolean | 否       | true   | 是否包含目录       | is include folder |
-  | deep          | boolean | 否       | false  | 是否查询子目录节点 | deep query        |
+  | 字段            | 类型    | 是否必须 | 默认值 | 说明               | Description       |
+  | --------------- | ------- | -------- | ------ | ------------------ | ----------------- |
+  | projectId       | string  | 是       | 无     | 项目名称           | project name      |
+  | repoName        | string  | 是       | 无     | 仓库名称           | repo name         |
+  | fullPath        | string  | 是       | 无     | 完整路径           | full path         |
+  | pageNumber      | int     | 否       | 0      | 当前页             | current page      |
+  | pageSize        | int     | 否       | 20     | 分页大小           | page size         |
+  | includeFolder   | boolean | 否       | true   | 是否包含目录       | include folder    |
+  | includeMetadata | boolean | 否       | false  | 是否包含元数据     | include  metadata |
+  | deep            | boolean | 否       | false  | 是否查询子目录节点 | deep query        |
 
 - 响应体
 
@@ -118,6 +120,8 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
           "size" : 34,
           "sha256" : "6a7983009447ecc725d2bb73a60b55d0ef5886884df0ffe3199f84b6df919895",
           "md5" : "2947b3932900d4534175d73964ec22ef",
+          "stageTag": "@release",
+          "metadata": {},
           "createdBy" : "admin",
           "createdDate" : "2020-07-27T16:02:31.394",
           "lastModifiedBy" : "admin",
@@ -131,23 +135,23 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 
 - record字段说明
 
-  | 字段             | 类型   | 说明                        | Description          |
-  | ---------------- | ------ | --------------------------- | -------------------- |
-  | projectId        | string | 节点所属项目                | node project id      |
-  | repoName         | string | 节点所属仓库                | node repository name |
-  | path             | string | 节点目录                    | node path            |
-  | name             | string | 节点名称                    | node name            |
-  | fullPath         | string | 节点完整路径                | node full path       |
-  | folder           | bool   | 是否为文件夹                | is folder            |
-  | size             | long   | 节点大小                    | file size            |
-  | sha256           | string | 节点sha256                  | file sha256          |
-  | md5              | string | 节点md5                     | file md5 checksum    |
-  | stageTag         | string | 晋级状态标签                | stage status tag     |
-  | metadata         | object | 节点元数据，key-value键值对 | node metadata        |
-  | createdBy        | string | 创建者                      | create user          |
-  | createdDate      | string | 创建时间                    | create time          |
-  | lastModifiedBy   | string | 上次修改者                  | last modify user     |
-  | lastModifiedDate | string | 上次修改时间                | last modify time     |
+  | 字段             | 类型   | 说明                                                       | Description          |
+  | ---------------- | ------ | ---------------------------------------------------------- | -------------------- |
+  | projectId        | string | 节点所属项目                                               | node project id      |
+  | repoName         | string | 节点所属仓库                                               | node repository name |
+  | path             | string | 节点目录                                                   | node path            |
+  | name             | string | 节点名称                                                   | node name            |
+  | fullPath         | string | 节点完整路径                                               | node full path       |
+  | folder           | bool   | 是否为文件夹                                               | is folder            |
+  | size             | long   | 节点大小                                                   | file size            |
+  | sha256           | string | 节点sha256                                                 | file sha256          |
+  | md5              | string | 节点md5                                                    | file md5 checksum    |
+  | stageTag         | string | 晋级状态标签，includeMetadata=false将返回空                | stage status tag     |
+  | metadata         | object | 节点元数据，key-value键值对，includeMetadata=false将返回空 | node metadata        |
+  | createdBy        | string | 创建者                                                     | create user          |
+  | createdDate      | string | 创建时间                                                   | create time          |
+  | lastModifiedBy   | string | 上次修改者                                                 | last modify user     |
+  | lastModifiedDate | string | 上次修改时间                                               | last modify time     |
 
 
 
@@ -316,6 +320,13 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   - 中文：移动节点
   - English：move node
   
+  移动文件或者文件夹，采用fast-failed模式，移动过程中出现错误则立即返回错误，剩下的文件不会再移动。该接口行为类似linux mv命令:
+  
+  - mv 文件 文件  -> 将源文件改名为目标文件
+  - mv 文件 目录  -> 将源文件移动到目标目录
+  - mv 目录 目录  -> 如果目标目录已存在，将源目录（目录本身及子文件）移动到目标目录；目标目录不存在则改名
+  - mv 目录 文件  -> 出错
+  
 - 请求体
 
   ``` json
@@ -366,6 +377,13 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 - 功能说明：
   - 中文：拷贝节点
   - English：copy node
+  
+  拷贝文件或者文件夹，采用fast-failed模式，拷贝过程中出现错误则立即返回错误，剩下的文件不会再拷贝。该接口行为类似linux cp命令:
+  
+  - cp 文件 文件  -> 将源文件拷贝到目标文件
+  - cp 文件 目录  -> 将文件移动到目标目录下
+  - cp 目录 目录  -> 如果目标目录已存在，将源目录（目录本身及子文件）拷贝到目标目录；否则将源目录下文件拷贝到目标目录
+  - cp 目录 文件  -> 出错
   
 - 请求体
 
@@ -458,7 +476,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 
 - 功能说明：
 
-  - 中文：节点自定义查询。最外层的查询条件中必须包含projectId条件和repoName条件，且projectId查询操作必须为EQ，repoName必须为EQ或IN。
+  - 中文：节点自定义查询。最外层的查询条件中必须包含projectId条件，可以传入repoType指定仓库类型或者repoName指定某个仓库查询。
   - English：query node
 
 - 请求体
@@ -570,9 +588,17 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   {
     "code": 0,
     "message": null,
-    "data": [
-      {}
-    ],
+    "data": {
+      "pageNumber": 0,
+      "pageSize": 1,
+      "totalRecords": 18,
+      "totalPages": 18,
+      "records": [
+        {
+          
+        }
+      ]
+    },
     "traceId": ""
   }
   ```

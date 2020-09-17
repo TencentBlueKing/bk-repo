@@ -42,12 +42,13 @@ sealed class Rule {
         val value: Any,
         @ApiModelProperty("操作类型")
         val operation: OperationType = OperationType.DEFAULT
-    ) : Rule()
+    ) : Rule() {
+        fun toFixed(): FixedRule {
+            return FixedRule(this)
+        }
+    }
 
     @ApiModel("固定查询规则")
-    data class FixedRule(val wrapperRule: Rule) : Rule()
+    data class FixedRule(val wrapperRule: QueryRule) : Rule()
 
-    fun toFixed(): FixedRule {
-        return FixedRule(this)
-    }
 }

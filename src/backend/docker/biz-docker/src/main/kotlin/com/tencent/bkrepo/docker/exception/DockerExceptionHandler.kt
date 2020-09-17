@@ -64,7 +64,7 @@ class DockerExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException::class)
-    fun handleException(exception: AuthenticationException){
+    fun handleException(exception: AuthenticationException) {
         logger.warn("Failed with authentication exception:[${exception.message}]")
         val response = HttpContextHolder.getResponse()
         val scopeStr = "repository:*/*/tb:push,pull"

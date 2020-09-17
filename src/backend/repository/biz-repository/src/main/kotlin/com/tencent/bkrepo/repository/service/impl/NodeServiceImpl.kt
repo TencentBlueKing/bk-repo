@@ -13,6 +13,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizePath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolvePath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -35,7 +36,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.RepositoryService
@@ -101,9 +101,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
         if (!node.folder) {
             return NodeSizeInfo(subNodeCount = 0, size = node.size)
         }
-
-        val criteria =
-            nodeListCriteria(projectId, repoName, normalizePath(normalizedFullPath), includeFolder = true, deep = true)
+        val criteria = nodeListCriteria(projectId, repoName, normalizedFullPath, includeFolder = true, deep = true)
         val count = nodeDao.count(Query(criteria))
 
         val aggregation = Aggregation.newAggregation(
@@ -361,9 +359,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
         // 如果为文件夹，查询子节点并修改
         if (node.folder) {
             mkdirs(projectId, repoName, newFullPath, operator)
-            val newParentPath = normalizePath(newFullPath)
-            val fullPath = normalizePath(node.fullPath)
-            val query = nodeListQuery(projectId, repoName, fullPath, includeFolder = true, includeMetadata = false, deep = false)
+            val newParentPath = toPath(newFullPath)
+            val query = nodeListQuery(projectId, repoName, node.fullPath, includeFolder = true, includeMetadata = false, deep = false)
             nodeDao.find(query).forEach { doRename(it, newParentPath + it.name, operator) }
             // 删除自己
             nodeDao.remove(nodeQuery(projectId, repoName, node.fullPath))
@@ -379,14 +376,14 @@ class NodeServiceImpl : AbstractService(), NodeService {
      * 根据全路径删除文件或者目录
      */
     override fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String, soft: Boolean) {
-        val formattedFullPath = normalizeFullPath(fullPath)
-        val formattedPath = normalizePath(formattedFullPath)
-        val escapedPath = escapeRegex(formattedPath)
+        val normalizedFullPath = normalizeFullPath(fullPath)
+        val normalizedPath = toPath(normalizedFullPath)
+        val escapedPath = escapeRegex(normalizedPath)
         val query = nodeQuery(projectId, repoName)
         query.addCriteria(
             Criteria().orOperator(
                 Criteria.where(TNode::fullPath.name).regex("^$escapedPath"),
-                Criteria.where(TNode::fullPath.name).`is`(formattedFullPath)
+                Criteria.where(TNode::fullPath.name).`is`(normalizedFullPath)
             )
         )
         if (soft) {
@@ -483,12 +480,12 @@ class NodeServiceImpl : AbstractService(), NodeService {
                     combinePath(path, name)
                 } else {
                     // 目录 -> 存在的目录
-                    val path = normalizePath(destNode.fullPath)
+                    val path = toPath(destNode.fullPath)
                     // 操作节点
                     moveOrCopyNode(srcNode, destRepository, srcCredentials, destCredentials, path, srcNode.name, request, operator)
                     combinePath(path, srcNode.name)
                 }
-                val srcRootNodePath = normalizePath(srcNode.fullPath)
+                val srcRootNodePath = toPath(srcNode.fullPath)
                 val query = nodeListQuery(
                     srcNode.projectId,
                     srcNode.repoName,
@@ -504,7 +501,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 }
             } else {
                 // 文件 ->
-                val destPath = if (destNode?.folder == true) normalizePath(destNode.fullPath) else resolvePath(destFullPath)
+                val destPath = if (destNode?.folder == true) toPath(destNode.fullPath) else resolvePath(destFullPath)
                 val destName = if (destNode?.folder == true) srcNode.name else resolveName(destFullPath)
                 // 创建dest父目录
                 mkdirs(destProjectId, destRepoName, destPath, operator)
@@ -625,7 +622,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                     sha256 = it.sha256,
                     md5 = it.md5,
                     metadata = metadata,
-                    stageTag = ArtifactStageEnum.ofTagOrDefault(metadata[SystemMetadata.STAGE.key]).getDisplayTag(),
+                    stageTag = metadata[SystemMetadata.STAGE.key],
                     repoName = it.repoName,
                     projectId = it.projectId
                 )

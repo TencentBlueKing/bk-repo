@@ -68,14 +68,13 @@ class GenericLocalRepository : LocalRepository() {
             context.response.contentType = MediaTypes.APPLICATION_JSON
             context.response.writer.println(ResponseBuilder.success().toJsonString())
         } else {
-            val nodeCreateRequest = buildNodeCreateRequest(context)
             val nodeDetail = storageManager.storeArtifactFile(
-                nodeCreateRequest,
+                buildNodeCreateRequest(context),
                 context.getArtifactFile(),
                 context.storageCredentials
             )
             context.response.contentType = MediaTypes.APPLICATION_JSON
-            context.response.writer.println(nodeDetail.toJsonString())
+            context.response.writer.println(ResponseBuilder.success(nodeDetail).toJsonString())
         }
     }
 

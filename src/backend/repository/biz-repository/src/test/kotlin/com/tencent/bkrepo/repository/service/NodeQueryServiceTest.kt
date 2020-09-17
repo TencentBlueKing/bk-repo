@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
@@ -20,7 +21,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.service.query.NodeQueryService
-import com.tencent.bkrepo.repository.util.PathUtils
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -75,7 +75,7 @@ class NodeQueryServiceTest @Autowired constructor(
     @BeforeEach
     fun beforeEach() {
         initMock()
-        nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, PathUtils.ROOT, UT_USER, false)
+        nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER, false)
     }
 
     @Test
@@ -101,7 +101,7 @@ class NodeQueryServiceTest @Autowired constructor(
         )
 
         val result = nodeQueryService.query(queryModel)
-        Assertions.assertEquals(21, result.count)
+        Assertions.assertEquals(21, result.totalRecords)
         Assertions.assertEquals(11, result.records.size)
     }
 
@@ -126,7 +126,7 @@ class NodeQueryServiceTest @Autowired constructor(
         )
 
         val result = nodeQueryService.userQuery(UT_USER, queryModel)
-        Assertions.assertEquals(1, result.count)
+        Assertions.assertEquals(1, result.totalRecords)
         Assertions.assertEquals(1, result.records.size)
         val node = result.records[0]
         val metadataMap = node["metadata"] as Map<*, *>
@@ -155,7 +155,7 @@ class NodeQueryServiceTest @Autowired constructor(
         )
 
         val result = nodeQueryService.userQuery(UT_USER, queryModel)
-        Assertions.assertEquals(2, result.count)
+        Assertions.assertEquals(2, result.totalRecords)
         Assertions.assertEquals(2, result.records.size)
     }
 
@@ -179,7 +179,7 @@ class NodeQueryServiceTest @Autowired constructor(
         )
 
         val result = nodeQueryService.userQuery(UT_USER, queryModel)
-        Assertions.assertEquals(2, result.count)
+        Assertions.assertEquals(2, result.totalRecords)
         Assertions.assertEquals(2, result.records.size)
     }
 

@@ -7,6 +7,8 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.docker.api.User
 import com.tencent.bkrepo.docker.context.RequestContext
+import com.tencent.bkrepo.docker.pojo.DockerImageResult
+import com.tencent.bkrepo.docker.pojo.DockerTagResult
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.PathUtil
 import com.tencent.bkrepo.docker.util.UserUtil
@@ -50,24 +52,81 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         request: HttpServletRequest,
         userId: String?,
         projectId: String,
-        repoName: String
-    ): Response<List<String>> {
+        repoName: String,
+        pageNumber: Int,
+        pageSize: Int,
+        name: String?
+    ): Response<DockerImageResult> {
         val uId = UserUtil.getContextUserId(userId)
         val context = RequestContext(uId, projectId, repoName, EMPTY)
-        val result = dockerRepo.getRepoList(context)
-        return ResponseBuilder.success(result)
+        val result = dockerRepo.getRepoList(context, pageNumber, pageSize, name)
+        val totalCount = result.size
+        // val start = (pageNumber - 1) * pageSize
+        // var end = pageNumber * pageSize
+        // if (end > totalCount) {
+        //     end = totalCount
+        // }
+        // val data = result.subList(start, end)
+        val repoInfo = DockerImageResult(totalCount, result)
+        return ResponseBuilder.success(repoInfo)
     }
 
     override fun getRepoTag(
         request: HttpServletRequest,
         userId: String?,
         projectId: String,
-        repoName: String
-    ): Response<Map<String, String>> {
+        repoName: String,
+        pageNumber: Int,
+        pageSize: Int,
+        tag: String?
+    ): Response<DockerTagResult> {
         val uId = UserUtil.getContextUserId(userId)
         val artifactName = PathUtil.tagArtifactName(request, projectId, repoName)
         val context = RequestContext(uId, projectId, repoName, artifactName)
-        val result = dockerRepo.getRepoTagList(context)
+        val totalRecords = dockerRepo.getRepoTagCount(context, tag)
+        val data = dockerRepo.getRepoTagList(context, pageNumber, pageSize, tag)
+        val result = DockerTagResult(totalRecords, data)
+        return ResponseBuilder.success(result)
+    }
+
+    override fun deleteRepo(
+        request: HttpServletRequest,
+        userId: String?,
+        projectId: String,
+        repoName: String
+    ): Response<Boolean> {
+        val uId = UserUtil.getContextUserId(userId)
+        val artifactName = PathUtil.repoArtifactName(request, projectId, repoName)
+        val context = RequestContext(uId, projectId, repoName, artifactName)
+        val result = dockerRepo.deleteManifest(context)
+        return ResponseBuilder.success(result)
+    }
+
+    override fun deleteRepoTag(
+        request: HttpServletRequest,
+        userId: String?,
+        projectId: String,
+        repoName: String,
+        tag: String
+    ): Response<Boolean> {
+        val uId = UserUtil.getContextUserId(userId)
+        val artifactName = PathUtil.repoTagArtifactName(request, projectId, repoName, tag)
+        val context = RequestContext(uId, projectId, repoName, artifactName)
+        val result = dockerRepo.deleteTag(context, tag)
+        return ResponseBuilder.success(result)
+    }
+
+    override fun getRepoTagDetail(
+        request: HttpServletRequest,
+        userId: String?,
+        projectId: String,
+        repoName: String,
+        tag: String
+    ): Response<Map<String, Any>?> {
+        val uId = UserUtil.getContextUserId(userId)
+        val artifactName = PathUtil.repoTagDetailArtifactName(request, projectId, repoName, tag)
+        val context = RequestContext(uId, projectId, repoName, artifactName)
+        val result = dockerRepo.getRepoTagDetail(context, tag)
         return ResponseBuilder.success(result)
     }
 }
