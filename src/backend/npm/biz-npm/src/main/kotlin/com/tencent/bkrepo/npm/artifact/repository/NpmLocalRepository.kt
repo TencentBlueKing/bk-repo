@@ -113,7 +113,7 @@ class NpmLocalRepository : LocalRepository() {
                     "Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}"
                 )
                 // 计算sha1并校验
-                val calculatedSha1 = file.getFile()?.sha1()
+                val calculatedSha1 = file.getInputStream().sha1()
                 val uploadSha1 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA1] as String?
                 if (uploadSha1 != null && calculatedSha1 != uploadSha1) {
                     throw ArtifactValidateException("File shasum validate failed.")
@@ -213,8 +213,6 @@ class NpmLocalRepository : LocalRepository() {
     private fun getPkgInfo(context: ArtifactSearchContext, inputStream: ArtifactInputStream): JsonObject {
         val fileJson = GsonUtils.transferInputStreamToJson(inputStream)
         val name = fileJson.get(NAME).asString
-        val projectId = context.repositoryInfo.projectId
-        val repoName = context.repositoryInfo.name
         val containsVersion = fileJson[ID].asString.substring(1).contains('@')
         if (containsVersion) {
             val version = fileJson[VERSION].asString
@@ -230,7 +228,7 @@ class NpmLocalRepository : LocalRepository() {
             val oldTarball = fileJson.getAsJsonObject(DIST)[TARBALL].asString
             fileJson.getAsJsonObject(DIST).addProperty(
                 TARBALL,
-                NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, projectId, repoName)
+                NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name)
             )
         } else {
             val versions = fileJson.getAsJsonObject(VERSIONS)
@@ -250,7 +248,7 @@ class NpmLocalRepository : LocalRepository() {
                 val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
                 versionObject.getAsJsonObject(DIST).addProperty(
                     TARBALL,
-                    NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, projectId, repoName)
+                    NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name)
                 )
             }
         }
