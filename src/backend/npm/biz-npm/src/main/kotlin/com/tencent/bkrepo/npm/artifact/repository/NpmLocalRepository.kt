@@ -213,8 +213,6 @@ class NpmLocalRepository : LocalRepository() {
     private fun getPkgInfo(context: ArtifactSearchContext, inputStream: ArtifactInputStream): JsonObject {
         val fileJson = GsonUtils.transferInputStreamToJson(inputStream)
         val name = fileJson.get(NAME).asString
-        val projectId = context.repositoryInfo.projectId
-        val repoName = context.repositoryInfo.name
         val containsVersion = fileJson[ID].asString.substring(1).contains('@')
         if (containsVersion) {
             val version = fileJson[VERSION].asString
@@ -230,7 +228,7 @@ class NpmLocalRepository : LocalRepository() {
             val oldTarball = fileJson.getAsJsonObject(DIST)[TARBALL].asString
             fileJson.getAsJsonObject(DIST).addProperty(
                 TARBALL,
-                NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, projectId, repoName)
+                NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name)
             )
         } else {
             val versions = fileJson.getAsJsonObject(VERSIONS)
@@ -250,7 +248,7 @@ class NpmLocalRepository : LocalRepository() {
                 val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
                 versionObject.getAsJsonObject(DIST).addProperty(
                     TARBALL,
-                    NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, projectId, repoName)
+                    NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name)
                 )
             }
         }

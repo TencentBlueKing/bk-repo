@@ -110,7 +110,7 @@ class NpmRemoteRepository : RemoteRepository() {
             String.format(NPM_PKG_FULL_PATH, pkgInfo.first)
         try {
             val artifactResource = getCacheArtifactResource(context) ?: return
-            val jsonFile = transFileToJson(artifactResource.inputStream, context)
+            val jsonFile = transFileToJson(artifactResource.inputStream)
             val versionFile = jsonFile.getAsJsonObject(VERSIONS).getAsJsonObject(pkgInfo.second)
             val artifact = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
             val name = jsonFile[NAME].asString
@@ -134,7 +134,7 @@ class NpmRemoteRepository : RemoteRepository() {
 
     override fun search(context: ArtifactSearchContext): JsonObject? {
         getCacheArtifactResource(context)?.let {
-            return transFileToJson(it.inputStream, context)
+            return transFileToJson(it.inputStream)
         }
         val remoteConfiguration = context.repositoryConfiguration as RemoteConfiguration
         val httpClient = createHttpClient(remoteConfiguration)
@@ -147,7 +147,7 @@ class NpmRemoteRepository : RemoteRepository() {
                 val file = createTempFile(response.body()!!)
                 val downloadContext = ArtifactDownloadContext()
                 downloadContext.contextAttributes = context.contextAttributes
-                val resultJson = transFileToJson(file.getInputStream(), context)
+                val resultJson = transFileToJson(file.getInputStream())
                 putArtifactCache(downloadContext, file)
                 resultJson
             } else null
@@ -161,31 +161,24 @@ class NpmRemoteRepository : RemoteRepository() {
         }
     }
 
-    private fun transFileToJson(inputStream: InputStream, context: ArtifactTransferContext): JsonObject {
+    private fun transFileToJson(inputStream: InputStream): JsonObject {
         val pkgJson = GsonUtils.transferInputStreamToJson(inputStream)
         val name = pkgJson.get(NAME).asString
-        val projectId = context.repositoryInfo.projectId
-        val repoName = context.repositoryInfo.name
         val id = pkgJson[ID].asString
         if (id.substring(1).contains('@')) {
             val oldTarball = pkgJson.getAsJsonObject(DIST)[TARBALL].asString
-            // val prefix = oldTarball.split(name)[0].trimEnd('/')
-            // val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
-            // pkgJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
             pkgJson.getAsJsonObject(DIST).addProperty(
                 TARBALL,
-                NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, projectId, repoName)
+                NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name)
             )
         } else {
             val versions = pkgJson.getAsJsonObject(VERSIONS)
             versions.keySet().forEach {
                 val versionObject = versions.getAsJsonObject(it)
                 val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
-                // val prefix = oldTarball.split(name)[0].trimEnd('/')
-                // val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
                 versionObject.getAsJsonObject(DIST).addProperty(
                     TARBALL,
-                    NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, projectId, repoName)
+                    NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name)
                 )
             }
         }
