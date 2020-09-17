@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.configuration.local.repository.RpmLocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import io.swagger.annotations.ApiModelProperty
@@ -15,8 +14,7 @@ import io.swagger.annotations.ApiModelProperty
     JsonSubTypes.Type(value = LocalConfiguration::class, name = LocalConfiguration.type),
     JsonSubTypes.Type(value = RemoteConfiguration::class, name = RemoteConfiguration.type),
     JsonSubTypes.Type(value = VirtualConfiguration::class, name = VirtualConfiguration.type),
-    JsonSubTypes.Type(value = CompositeConfiguration::class, name = CompositeConfiguration.type),
-    JsonSubTypes.Type(value = RpmLocalConfiguration::class, name = RpmLocalConfiguration.type)
+    JsonSubTypes.Type(value = CompositeConfiguration::class, name = CompositeConfiguration.type)
 )
 abstract class RepositoryConfiguration {
     /**
