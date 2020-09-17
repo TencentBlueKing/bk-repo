@@ -1,0 +1,8 @@
+{
+  "packages": [
+    "devops-repository"
+  ],
+  "npmClient": "yarn",
+  "version": "independent",
+  "useWorkspaces": true
+}

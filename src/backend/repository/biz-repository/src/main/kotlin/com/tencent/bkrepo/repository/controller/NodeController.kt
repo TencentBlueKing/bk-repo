@@ -124,7 +124,7 @@ class NodeController(
         return ResponseBuilder.success(shareService.list(projectId, repoName, fullPath))
     }
 
-    override fun query(queryModel: QueryModel): Response<Page<Map<String, Any>>> {
+    override fun query(queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
         return ResponseBuilder.success(nodeQueryService.query(queryModel))
     }
 }

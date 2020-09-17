@@ -3,6 +3,8 @@ package com.tencent.bkrepo.docker.service
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.model.DockerDigest
+import com.tencent.bkrepo.docker.pojo.DockerImage
+import com.tencent.bkrepo.docker.pojo.DockerTag
 import com.tencent.bkrepo.docker.response.DockerResponse
 
 /**
@@ -32,11 +34,20 @@ interface DockerV2RepoService {
 
     fun catalog(context: RequestContext, maxEntries: Int, lastEntry: String): DockerResponse
 
-    fun getRepoList(context: RequestContext): List<String>
+    fun getRepoList(context: RequestContext, pageNumber: Int, pageSize: Int, name: String?): List<DockerImage>
 
-    fun getRepoTagList(context: RequestContext): Map<String, String>
+    fun getRepoTagList(
+        context: RequestContext,
+        pageNumber: Int,
+        pageSize: Int,
+        tag: String?
+    ): List<DockerTag>
 
     fun buildLayerResponse(context: RequestContext, layerId: String): DockerResponse
 
     fun getManifestString(context: RequestContext, tag: String): String
+
+    fun deleteTag(context: RequestContext, tag: String): Boolean
+
+    fun getRepoTagDetail(context: RequestContext, tag: String): Map<String, Any>?
 }

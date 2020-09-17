@@ -8,8 +8,10 @@ import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionCheckHand
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.core.StorageManager
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.ResolverConfiguration
 import com.tencent.bkrepo.common.artifact.webhook.WebHookService
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
@@ -32,6 +34,7 @@ import org.springframework.context.annotation.PropertySource
 class ArtifactAutoConfiguration {
 
     @Bean
+    @ConditionalOnBean(LocalRepository::class)
     @ConditionalOnMissingBean
     fun compositeRepository(): CompositeRepository = CompositeRepository()
 

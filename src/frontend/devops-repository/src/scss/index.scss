@@ -1,0 +1,121 @@
+/*!
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+
+ @charset 'utf-8';
+ @import './conf';
+ @import './icon/iconfont';
+
+html,
+body {
+    height: 100%;
+    font-family: Helvetica Neue,Arial,PingFang SC,Hiragino Sans GB,Microsoft Yahei,WenQuanYi Micro Hei,sans-serif;
+    font-size: 14px;
+    color: $fontColor;
+}
+
+html,
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+ul,
+li,
+dl,
+dt,
+dd,
+p,
+td,
+th{
+	margin: 0;
+    padding: 0;
+}
+
+ul,
+li {
+	list-style: none;
+}
+
+a {
+	text-decoration: none;
+}
+
+button,
+label {
+	outline: none;
+}
+
+.hover-btn {
+    user-select: none;
+    cursor: pointer;
+    &:hover {
+        color: $primaryColor;
+    }
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.flex-align-center {
+    display: flex;
+    align-items: center;
+}
+
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+    background-color: lighten(#a5a5a5, 80%);
+}
+::-webkit-scrollbar-thumb {
+    height: 8px;
+    border-radius: 20px;
+    background-color: #a5a5a5;
+}
+
+.bk-table-body,
+.bk-table-footer,
+.bk-table-header,
+.bk-table-empty-block {
+    width: auto!important; /* ����bk-margic-vue����ʽ */
+}
+
+.bk-message-icon {
+    min-width: 20px !important;
+}
+
+.bk-page .bk-page-count .bk-select {
+    min-width: 80px !important;
+}
+
+.bk-option-name {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
