@@ -17,40 +17,6 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
---- 是否在白名单里面
-if (ngx.var.whitelist_deny and ngx.var.whitelist_deny ~= "") then
-  ngx.log(ngx.ERR, "owner_uin is not in whitelist!")
-  ngx.exit(423)
-  return
-end
-
-
--- 访问限制的工具
-local access_util = nil
-
--- 用户请求类型访问频率限制
-if ngx.var.access_type == 'user' then
-  access_util = require 'access_control_user'
-end
--- ip地址请求类型访问频率限制
-if ngx.var.access_type == 'build' or ngx.var.access_type == 'external' then
-  access_util = require 'access_control_ip'
-end
-
--- defect服务不做频率限制
-if ngx.var.service == 'report' then
-  access_util = nil
-end
-
--- 限制访问频率
-if access_util then 
-  local access_result,err = access_util:isAccess()
-  if not access_result then
-    ngx.log(ngx.ERR, "request excess!")
-    ngx.exit(503)
-    return
-  end
-end 
 
 local service_name = ngx.var.service
 if config.service_name ~= nil and config.service_name ~= "" then
@@ -69,37 +35,8 @@ if service_name == "" then
   return
 end
 
--- 当服务器为job的时候指向job的域名
-if service_name == "job" then
-  ngx.var.target = config.job.domain
-  return 
-end
-
-if service_name == "bkrepo" then
-  ngx.var.target = config.bkrepo.domain
-  return
-end
-
-
--- 获取灰度设置
-local devops_gray = grayUtil:get_gray()
-
--- ngx.log(ngx.ERR, "devops_gray:", devops_gray )
-local ns_config = nil
-if devops_gray ~= true then
-  ns_config = config.ns
-  -- ngx.log(ngx.ERR, "ns_config" )
-else
-  ns_config = config.ns_gray
-  -- ngx.log(ngx.ERR, "ns_config_gray" )
-end 
-
+local ns_config = config.ns
 local query_subdomain = config.ns.tag .. "." .. service_name .. ".service." .. ns_config.domain
-
-
-
-
-
 
 if not ns_config.ip then
   ngx.log(ngx.ERR, "DNS ip not exist!")
@@ -119,8 +56,8 @@ end
 
 local dns, err = resolver:new{
   nameservers = dnsIps,
-  retrans = 2,
-  timeout = 250
+  retrans = 5,
+  timeout = 2000
 }
 
 if not dns then

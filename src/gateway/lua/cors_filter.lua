@@ -17,43 +17,43 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
-local redis, err  = require("resty.redis")
-_M = {}
+local http_origin = ngx.var.http_origin
 
-local redisConfig = config.redis
-
-function _M:new()
-  if not redis then
-    ngx.log( ngx.ERR, "redis require error:", err )
-    return nil
-  end
-  local red, err = redis:new()
-  if not red then
-    ngx.log( ngx.ERR, "red new error:", res ,err)
-    return nil
-  end
-  red:set_timeout(2000) -- 2 second
-  local res, err  = red:connect(redisConfig['host'], redisConfig['port'])
-  if not res then
-      ngx.log( ngx.ERR, "red connect error:",redisConfig['host'],",",redisConfig['port']," ", err )
-      return nil
-  end
-  if redisConfig['pass'] ~= nil then
-      res, err  = red:auth(redisConfig['pass'])
-      if not res then
-          ngx.log( ngx.ERR, "red auth error:", err )
-          return nil
-      end
-  end
-  
-  if redisConfig['database'] ~= nil then
-      res, err  = red:select(redisConfig['database'])
-      if not res then
-          ngx.log( ngx.ERR, "red select error:", err )
-          return nil
-      end
-  end
-  return red
+if not http_origin then
+  return
 end
 
-return _M
+if http_origin == "" then
+  return
+end
+
+local allow_hosts = config.allow_hosts
+
+local matched = false
+for k, v in pairs(allow_hosts) do
+    local from, to, err = ngx.re.find(http_origin, v, "jo")
+    if from then
+        matched = true
+    end
+end
+
+if matched == false then
+  ngx.log(ngx.STDERR, "can not allow access: ", http_origin)
+  return
+end
+
+local m = ngx.req.get_method()
+
+if m == "OPTIONS" then
+  ngx.header["Access-Control-Allow-Origin"] = http_origin
+  ngx.header["Access-Control-Allow-Credentials"] = "true"
+  ngx.header["Access-Control-Max-Age"] = "1728000"
+  ngx.header["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+  ngx.header["Access-Control-Allow-Headers"] = config.allow_headers
+  ngx.header["Content-Length"] = "0"
+  ngx.header["Content-Type"] = "text/plain charset=UTF-8"
+  ngx.exit(204)
+end
+
+ngx.header["Access-Control-Allow-Origin"] = http_origin
+ngx.header["Access-Control-Allow-Credentials"] = "true"

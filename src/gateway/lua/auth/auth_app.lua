@@ -17,43 +17,28 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
-local redis, err  = require("resty.redis")
-_M = {}
+local x_ckey = ngx.var.http_x_ckey
+local querysArgs = urlUtil:parseUrl(ngx.var.request_uri)
+local ckey = querysArgs["cKey"]
 
-local redisConfig = config.redis
-
-function _M:new()
-  if not redis then
-    ngx.log( ngx.ERR, "redis require error:", err )
-    return nil
-  end
-  local red, err = redis:new()
-  if not red then
-    ngx.log( ngx.ERR, "red new error:", res ,err)
-    return nil
-  end
-  red:set_timeout(2000) -- 2 second
-  local res, err  = red:connect(redisConfig['host'], redisConfig['port'])
-  if not res then
-      ngx.log( ngx.ERR, "red connect error:",redisConfig['host'],",",redisConfig['port']," ", err )
-      return nil
-  end
-  if redisConfig['pass'] ~= nil then
-      res, err  = red:auth(redisConfig['pass'])
-      if not res then
-          ngx.log( ngx.ERR, "red auth error:", err )
-          return nil
-      end
-  end
-  
-  if redisConfig['database'] ~= nil then
-      res, err  = red:select(redisConfig['database'])
-      if not res then
-          ngx.log( ngx.ERR, "red select error:", err )
-          return nil
-      end
-  end
-  return red
+if ckey == nill and x_ckey == nil then
+ngx.log(ngx.STDERR, "request does not has header=x-ckey or arg_cKey.")
+ngx.exit(401)
+return
 end
 
-return _M
+local real_ckey = nil
+
+if x_ckey ~= nil then
+real_ckey = x_ckey
+end
+
+if ckey ~= nil then
+real_ckey = ckey
+end
+
+--- 请求itlogin后台查询用户信息
+local staff_info = itloginUtil:get_staff_info(real_ckey)
+
+--- 设置sid
+ngx.header["X-BKREPO-UID"] = staff_info.EnglishName
