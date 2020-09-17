@@ -36,7 +36,7 @@ config = {
     domain = "__BKCI_CONSUL_DOMAIN__",
     tag = "__BKCI_CONSUL_TAG__",
     nodes_url = "/v1/catalog/nodes"
-  }
+  },
   oauth = {  -- 对接蓝鲸权限中心才需要的配置
     ip = "__IAM_IP0__",
     env = "__IAM_ENV__",
