@@ -19,52 +19,181 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 _M = {}
 
-function _M:get_ticket(bk_token)
-    --- 初始化HTTP连接
-    local httpc = http.new()
-    --- 开始连接
-    httpc:set_timeout(3000)
-    httpc:connect(config.oauth.ip, config.oauth.port)
+function _M:get_ticket(bk_ticket)
+    local user_cache = ngx.shared.user_info_store
+    local user_cache_value = user_cache:get(bk_ticket)
+    if user_cache_value == nil then
+        ngx.log(ngx.STDERR, "no user info")
+        --- 初始化HTTP连接
+        local httpc = http.new()
+        --- 开始连接
+        httpc:set_timeout(3000)
+        httpc:connect(config.oauth.ip, config.oauth.port)
 
-    --- 组装请求body
+        --- 组装请求body
+        local requestBody = {
+            env_name = config.oauth.env, 
+            app_code = config.oauth.app_code, 
+            app_secret = config.oauth.app_secret, 
+            grant_type =  "authorization_code",  
+            id_provider = "bk_login_ied", 
+            bk_ticket = bk_ticket
+        }
+
+        --- 转换请求内容
+        local requestBodyJson = json.encode(requestBody)
+        if requestBodyJson == nil then
+            ngx.log(ngx.ERR, "failed to encode auth/token request body: ", logUtil:dump(requestBody))
+            ngx.exit(500)
+            return
+        end
+
+        --- 发送请求
+        -- local url = config.oauth.scheme .. config.oauth.ip  .. config.oauth.loginUrl .. bk_token
+        local url = config.oauth.url
+        local res, err = httpc:request({
+            path = url,
+            method = "POST",
+            headers = {
+            ["Host"] = config.oauth.host,
+            ["Accept"] = "application/json",
+            ["Content-Type"] = "application/json"
+            }, 
+            body = requestBodyJson
+        })
+        --- 判断是否出错了
+        if not res then
+            ngx.log(ngx.ERR, "failed to request get_ticket: ", err)
+            ngx.exit(500)
+            return
+        end
+        --- 判断返回的状态码是否是200
+        if res.status ~= 200 then
+            ngx.log(ngx.STDERR, "failed to request get_ticket, status: ", res.status)
+            ngx.exit(500)
+            return
+        end
+        --- 获取所有回复
+        local responseBody = res:read_body()
+        --- 设置HTTP保持连接
+        httpc:set_keepalive(60000, 5)
+        --- 转换JSON的返回数据为TABLE
+        local result = json.decode(responseBody)
+        --- 判断JSON转换是否成功
+        if result == nil then 
+            ngx.log(ngx.ERR, "failed to parse get_ticket response：", responseBody)
+            ngx.exit(500)
+            return
+        end
+
+        --- 判断返回码:Q!
+        if result.code ~= 0 then
+            ngx.log(ngx.STDERR, "invalid get_ticket: ", result.message)
+            ngx.exit(401)
+            return
+        end
+        user_cache:set(bk_ticket, responseBody, 180)
+        return result.data
+    else
+
+        ngx.log(ngx.STDERR, "has user info:", user_cache_value)
+        return json.decode(user_cache_value).data
+    end
+
+end
+
+function _M:verfiy_permis(project_code, service_code, policy_code, resource_code, resource_type, user_id, access_token)
     local requestBody = {
-        grant_type =  "authorization_code",  
-        id_provider = "bk_login", 
-        bk_token = bk_token
+        project_code = project_code,
+        service_code = service_code,
+        policy_code = policy_code,
+        resource_code = resource_code, 
+        resource_type = resource_type, 
+        user_id = user_id
     }
 
     --- 转换请求内容
     local requestBodyJson = json.encode(requestBody)
     if requestBodyJson == nil then
-        ngx.log(ngx.ERR, "failed to encode auth/token request body: ", logUtil:dump(requestBody))
-        ngx.exit(500)
-        return
+        ngx.log(ngx.ERR, "failed to encode verfiy_permis request body: ", logUtil:dump(requestBody))
+        return false
     end
 
+    --- 初始化HTTP连接
+    local httpc = http.new()
+    --- 开始连接
+    httpc:set_timeout(3000)
+    httpc:connect(config.oauth.ip, config.oauth.port)
     --- 发送请求
-    -- local url = config.oauth.scheme .. config.oauth.ip  .. config.oauth.loginUrl .. bk_token
-    local url = config.oauth.url
     local res, err = httpc:request({
-        path = url,
+        path = "/permission/project/service/policy/resource/user/verfiy?access_token=" .. access_token,
         method = "POST",
         headers = {
         ["Host"] = config.oauth.host,
         ["Accept"] = "application/json",
         ["Content-Type"] = "application/json",
-        ["X-BK-APP-CODE"] = config.oauth.app_code,
-        ["X-BK-APP-SECRET"] = config.oauth.app_secret
-        }, 
+        },
         body = requestBodyJson
     })
     --- 判断是否出错了
     if not res then
-        ngx.log(ngx.ERR, "failed to request get_ticket: ", err)
+        ngx.log(ngx.ERR, "failed to request verfiy_permis: ", err)
+        return false
+    end
+    --- 判断返回的状态码是否是200
+    if res.status ~= 200 then
+        ngx.log(ngx.STDERR, "failed to request verfiy_permis, status: ", res.status)
+        return false
+    end
+    --- 获取所有回复
+    local responseBody = res:read_body()
+    --- 设置HTTP保持连接
+    httpc:set_keepalive(60000, 5)
+    --- 转换JSON的返回数据为TABLE
+    local result = json.decode(responseBody)
+    --- 判断JSON转换是否成功
+    if result == nil then 
+        ngx.log(ngx.ERR, "failed to parse verfiy_permis response：", responseBody)
+        return false
+    end
+
+    --- 判断返回码
+    if result.code ~= 0 then
+        ngx.log(ngx.STDERR, "invalid verfiy_permis: ", result.message)
+        return false
+    end
+    return true
+end
+
+
+function _M:verify_token(access_token)
+    local requestBody = {
+        access_token = access_token
+    }
+    --- 初始化HTTP连接
+    local httpc = http.new()
+    --- 开始连接
+    httpc:set_timeout(3000)
+    httpc:connect(config.oauth.ip, config.oauth.port)
+    --- 发送请求
+    local res, err = httpc:request({
+        path = "/oauth/token" .. "?access_token=" .. access_token,
+        method = "GET",
+        headers = {
+        ["Host"] = config.oauth.host,
+        ["Accept"] = "application/json",
+        ["Content-Type"] = "application/json",
+        }
+    })
+    --- 判断是否出错了
+    if not res then
+        ngx.log(ngx.ERR, "failed to request verify_token: ", err)
         ngx.exit(500)
         return
     end
     --- 判断返回的状态码是否是200
     if res.status ~= 200 then
-        ngx.log(ngx.ERR, "failed to request get_ticket, status: ", res.status)
+        ngx.log(ngx.STDERR, "failed to request verify_token, status: ", res.status)
         ngx.exit(500)
         return
     end
@@ -76,19 +205,20 @@ function _M:get_ticket(bk_token)
     local result = json.decode(responseBody)
     --- 判断JSON转换是否成功
     if result == nil then 
-        ngx.log(ngx.ERR, "failed to parse get_ticket response：", responseBody)
+        ngx.log(ngx.ERR, "failed to parse verify_token response：", responseBody)
         ngx.exit(500)
         return
     end
 
     --- 判断返回码:Q!
     if result.code ~= 0 then
-        ngx.log(ngx.ERR, "invalid get_ticket: ", result.message)
+        ngx.log(ngx.STDERR, "invalid verify_token: ", result.message)
         ngx.exit(401)
         return
     end
-    -- 记录用户的访问情况
-    -- ngx.log(ngx.ERR, "access user‘s rtx :", result.data.user_id)
+    result.data.access_token = access_token
     return result.data
 end
+
+
 return _M

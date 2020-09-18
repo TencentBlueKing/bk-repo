@@ -17,43 +17,24 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
-local redis, err  = require("resty.redis")
-_M = {}
-
-local redisConfig = config.redis
-
-function _M:new()
-  if not redis then
-    ngx.log( ngx.ERR, "redis require error:", err )
-    return nil
-  end
-  local red, err = redis:new()
-  if not red then
-    ngx.log( ngx.ERR, "red new error:", res ,err)
-    return nil
-  end
-  red:set_timeout(2000) -- 2 second
-  local res, err  = red:connect(redisConfig['host'], redisConfig['port'])
-  if not res then
-      ngx.log( ngx.ERR, "red connect error:",redisConfig['host'],",",redisConfig['port']," ", err )
-      return nil
-  end
-  if redisConfig['pass'] ~= nil then
-      res, err  = red:auth(redisConfig['pass'])
-      if not res then
-          ngx.log( ngx.ERR, "red auth error:", err )
-          return nil
-      end
-  end
-  
-  if redisConfig['database'] ~= nil then
-      res, err  = red:select(redisConfig['database'])
-      if not res then
-          ngx.log( ngx.ERR, "red select error:", err )
-          return nil
-      end
-  end
-  return red
+--- 蓝鲸平台登录对接
+--- 获取Cookie中bk_token
+local bk_token, err = cookieUtil:get_cookie("bk_ticket")
+local devops_access_token =  ngx.var.http_x_devops_access_token
+if bk_token == nil and devops_access_token == nil then
+  ngx.log(ngx.STDERR, "failed to read user request bk_token or devops_access_token: ", err)
+  ngx.exit(401)
+  return
+end
+local ticket = nil
+if devops_access_token ~= nill then 
+  ticket = oauthUtil:verify_token(devops_access_token)
+else
+  ticket = oauthUtil:get_ticket(bk_token)
 end
 
-return _M
+--- 设置用户信息
+ngx.header["x-bkrepo-uid"] = ticket.user_id
+ngx.header["x-bkrepo-bk-token"] = bk_token
+ngx.header["x-bkrepo-access-token"] = ticket.access_token
+ngx.exit(200)
