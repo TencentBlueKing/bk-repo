@@ -24,6 +24,7 @@ import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
 import io.undertow.util.BadRequestException
@@ -63,7 +64,10 @@ class NpmRemoteRepository : RemoteRepository() {
         return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
     }
 
-    override fun getCacheNodeCreateRequest(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeCreateRequest {
+    override fun getCacheNodeCreateRequest(
+        context: ArtifactDownloadContext,
+        artifactFile: ArtifactFile
+    ): NodeCreateRequest {
         val nodeCreateRequest = super.getCacheNodeCreateRequest(context, artifactFile)
         return nodeCreateRequest.copy(
             fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
@@ -163,17 +167,19 @@ class NpmRemoteRepository : RemoteRepository() {
         val id = pkgJson[ID].asString
         if (id.substring(1).contains('@')) {
             val oldTarball = pkgJson.getAsJsonObject(DIST)[TARBALL].asString
-            val prefix = oldTarball.split(name)[0].trimEnd('/')
-            val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
-            pkgJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
+            pkgJson.getAsJsonObject(DIST).addProperty(
+                TARBALL,
+                NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name)
+            )
         } else {
             val versions = pkgJson.getAsJsonObject(VERSIONS)
             versions.keySet().forEach {
                 val versionObject = versions.getAsJsonObject(it)
                 val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
-                val prefix = oldTarball.split(name)[0].trimEnd('/')
-                val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
-                versionObject.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
+                versionObject.getAsJsonObject(DIST).addProperty(
+                    TARBALL,
+                    NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name)
+                )
             }
         }
         return pkgJson

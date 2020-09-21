@@ -58,6 +58,7 @@ import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.migration.MigrationFailDataDetailInfo
 import com.tencent.bkrepo.npm.pojo.migration.VersionFailDetail
 import com.tencent.bkrepo.npm.utils.GsonUtils
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.OkHttpUtil
 import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.api.MetadataClient
@@ -112,7 +113,7 @@ class NpmLocalRepository : LocalRepository() {
                     "Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}"
                 )
                 // 计算sha1并校验
-                val calculatedSha1 = file.getFile()?.sha1()
+                val calculatedSha1 = file.getInputStream().sha1()
                 val uploadSha1 = context.contextAttributes[ATTRIBUTE_OCTET_STREAM_SHA1] as String?
                 if (uploadSha1 != null && calculatedSha1 != uploadSha1) {
                     throw ArtifactValidateException("File shasum validate failed.")
@@ -211,9 +212,9 @@ class NpmLocalRepository : LocalRepository() {
 
     private fun getPkgInfo(context: ArtifactSearchContext, inputStream: ArtifactInputStream): JsonObject {
         val fileJson = GsonUtils.transferInputStreamToJson(inputStream)
+        val name = fileJson.get(NAME).asString
         val containsVersion = fileJson[ID].asString.substring(1).contains('@')
         if (containsVersion) {
-            val name = fileJson.get(NAME).asString
             val version = fileJson[VERSION].asString
             val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
             val metadataInfo =
@@ -222,12 +223,14 @@ class NpmLocalRepository : LocalRepository() {
                 if (StringUtils.isNotBlank(value)) fileJson.addProperty(key, value)
                 if (key == KEYWORDS || key == MAINTAINERS) fileJson.add(key, GsonUtils.stringToArray(value))
             }
+
+            // 根据配置和请求头来进行判断返回的URL
             val oldTarball = fileJson.getAsJsonObject(DIST)[TARBALL].asString
-            val prefix = oldTarball.split(name)[0].trimEnd('/')
-            val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
-            fileJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
+            fileJson.getAsJsonObject(DIST).addProperty(
+                TARBALL,
+                NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name)
+            )
         } else {
-            val name = fileJson.get(NAME).asString
             val versions = fileJson.getAsJsonObject(VERSIONS)
             versions.keySet().forEach {
                 val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, it)
@@ -243,13 +246,26 @@ class NpmLocalRepository : LocalRepository() {
                 }
                 val versionObject = versions.getAsJsonObject(it)
                 val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
-                val prefix = oldTarball.split(name)[0].trimEnd('/')
-                val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
-                versionObject.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
+                versionObject.getAsJsonObject(DIST).addProperty(
+                    TARBALL,
+                    NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name)
+                )
             }
         }
         return fileJson
     }
+
+    // private fun buildPackageTgzTarball(oldTarball: String, name: String, context: ArtifactSearchContext):String{
+    //     val tgzSuffix = oldTarball.substringAfter(name)
+    //     val npmPrefixHeader = HeaderUtils.getHeader(NPM_TGZ_TARBALL_PREFIX)
+    //     val newTarball = StringBuilder()
+    //     npmPrefixHeader?.let {
+    //         newTarball.append(it.trimEnd('/')).append('/').append(context.repositoryInfo.projectId).append('/')
+    //             .append(context.repositoryInfo.name).append('/').append(tgzSuffix.trimStart('/'))
+    //     } ?: newTarball.append(tarballPrefix.trimEnd('/')).append('/').append(context.repositoryInfo.projectId).append('/')
+    //         .append(context.repositoryInfo.name).append('/').append(tgzSuffix.trimStart('/'))
+    //     return newTarball.toString()
+    // }
 
     override fun remove(context: ArtifactRemoveContext) {
         val repositoryInfo = context.repositoryInfo
@@ -335,7 +351,11 @@ class NpmLocalRepository : LocalRepository() {
         }
     }
 
-    private fun addPackageVersion(cachePackageJson: JsonObject, remoteJson: JsonObject, failVersionSet: Set<String>): JsonObject {
+    private fun addPackageVersion(
+        cachePackageJson: JsonObject,
+        remoteJson: JsonObject,
+        failVersionSet: Set<String>
+    ): JsonObject {
         val pkgName = cachePackageJson[NAME].asString
         val remoteVersions = remoteJson.getAsJsonObject(VERSIONS)
         val localVersions = cachePackageJson.getAsJsonObject(VERSIONS)
@@ -390,21 +410,23 @@ class NpmLocalRepository : LocalRepository() {
         val remoteLatest = remoteDistTags[LATEST].asString
         // 将拉取的包的dist_tags迁移过来
         val it = remoteDistTags.entrySet().iterator()
-            while (it.hasNext()){
-                val next = it.next()
-                if (failVersionSet.contains(next.value.asString)){
-                    it.remove()
-                    remoteTimeJsons.remove(next.value.asString)
+        while (it.hasNext()) {
+            val next = it.next()
+            if (failVersionSet.contains(next.value.asString)) {
+                it.remove()
+                remoteTimeJsons.remove(next.value.asString)
             }
         }
 
-        if (!remoteTimeJsons.has(remoteLatest)){
+        if (!remoteTimeJsons.has(remoteLatest)) {
             remoteTimeJsons.remove(MODIFIED)
-            val dateList = remoteTimeJsons.entrySet().stream().map { LocalDateTime.parse(it.value.asString, DateTimeFormatter.ISO_DATE_TIME) }.collect(Collectors.toList())
+            val dateList = remoteTimeJsons.entrySet().stream()
+                .map { LocalDateTime.parse(it.value.asString, DateTimeFormatter.ISO_DATE_TIME) }
+                .collect(Collectors.toList())
             val maxTime = Collections.max(dateList)
             val latestTime = maxTime.format(DateTimeFormatter.ofPattern(TimeUtil.FORMAT))
             remoteTimeJsons.entrySet().forEach {
-                if (it.value.asString == latestTime){
+                if (it.value.asString == latestTime) {
                     remoteDistTags.addProperty(LATEST, it.key)
                 }
             }
@@ -412,7 +434,7 @@ class NpmLocalRepository : LocalRepository() {
         }
         return if (remoteVersionsSet.isNotEmpty()) {
             remoteJson
-        }else{
+        } else {
             logger.warn("package [$pkgName] with all versions migration failed!")
             null
         }
@@ -448,7 +470,8 @@ class NpmLocalRepository : LocalRepository() {
                 migrationFailDataDetailInfo.versionSet.add(VersionFailDetail(version, ignored.message))
             }
         }
-        val failVersionSet = migrationFailDataDetailInfo.versionSet.stream().map { it.version }.collect(Collectors.toSet())
+        val failVersionSet =
+            migrationFailDataDetailInfo.versionSet.stream().map { it.version }.collect(Collectors.toSet())
         putPackageJsonFile(context, name, failVersionSet, remotePackageJson)
         return migrationFailDataDetailInfo
     }
