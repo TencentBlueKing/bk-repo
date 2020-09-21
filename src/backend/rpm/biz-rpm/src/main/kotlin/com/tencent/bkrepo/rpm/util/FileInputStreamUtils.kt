@@ -6,7 +6,6 @@ import com.tencent.bkrepo.rpm.pojo.XmlIndex
 import java.io.IOException
 import java.io.File
 import java.io.FileInputStream
-import java.io.InputStream
 import java.io.BufferedOutputStream
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
@@ -40,8 +39,8 @@ object FileInputStreamUtils {
     }
 
     @Throws(IOException::class)
-    fun saveTempXmlFile(indexType: String, inputStream: InputStream): File {
-        val bufferedInputStream = BufferedInputStream(inputStream)
+    fun saveTempXmlFile(indexType: String, file: File): File {
+        val bufferedInputStream = BufferedInputStream(FileInputStream(file))
         val tempFile = File.createTempFile(indexType, "xml")
         val bufferedOutputStream = BufferedOutputStream(FileOutputStream(tempFile))
         val buffer = ByteArray(10 * 1024 * 1024)
@@ -54,6 +53,7 @@ object FileInputStreamUtils {
         } finally {
             bufferedInputStream.close()
             bufferedOutputStream.close()
+            file.delete()
         }
         return tempFile
     }
