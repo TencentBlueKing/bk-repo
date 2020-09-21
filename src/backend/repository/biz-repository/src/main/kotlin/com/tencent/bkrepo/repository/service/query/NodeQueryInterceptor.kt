@@ -20,8 +20,6 @@ class NodeQueryInterceptor : QueryModelInterceptor {
         validateModel(queryModel)
         // 添加deleted属性为null的查询条件
         setDeletedNull(queryModel)
-        // 过滤root节点
-        filterRootNode(queryModel)
 
         return queryModel
     }
@@ -45,13 +43,6 @@ class NodeQueryInterceptor : QueryModelInterceptor {
      * 添加deleted属性为null的查询条件到[queryModel]中
      */
     private fun setDeletedNull(queryModel: QueryModel) {
-        queryModel.addQueryRule(Rule.QueryRule(TNode::deleted.name, "", OperationType.NULL))
-    }
-
-    /**
-     * 添加name属性不为空的查询条件到[queryModel]中来过滤根节点
-     */
-    private fun filterRootNode(queryModel: QueryModel) {
-        queryModel.addQueryRule(Rule.QueryRule(TNode::name.name, "", OperationType.NE))
+        queryModel.addQueryRule(Rule.QueryRule(TNode::deleted.name, 0, OperationType.EQ))
     }
 }

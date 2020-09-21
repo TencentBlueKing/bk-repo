@@ -34,7 +34,7 @@ interface MetadataClient {
         @PathVariable repoName: String,
         @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
-    ): Response<Map<String, String>>
+    ): Response<Map<String, Any>>
 
     @ApiOperation("创建/更新元数据列表")
     @PostMapping

@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.repository.service.impl
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -12,11 +11,13 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.isRoot
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizePath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
-import com.tencent.bkrepo.common.artifact.path.PathUtils.resolvePath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveParent
+import com.tencent.bkrepo.common.artifact.path.PathUtils.toFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SystemMetadata
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
@@ -79,31 +80,23 @@ class NodeServiceImpl : AbstractService(), NodeService {
     @Autowired
     private lateinit var storageService: StorageService
 
-    /**
-     * 查询节点详情
-     */
+    @Autowired
+    private lateinit var repositoryProperties: RepositoryProperties
+
     override fun detail(projectId: String, repoName: String, fullPath: String, repoType: String?): NodeDetail? {
-        repositoryService.checkRepository(projectId, repoName, repoType)
-        val formattedFullPath = normalizeFullPath(fullPath)
-        return convertToDetail(nodeDao.findNode(projectId, repoName, formattedFullPath))
+        val node = nodeDao.findNode(projectId, repoName, normalizeFullPath(fullPath))
+        return convertToDetail(node)
     }
 
-    /**
-     * 计算文件或者文件夹大小
-     */
     override fun computeSize(projectId: String, repoName: String, fullPath: String): NodeSizeInfo {
-        repositoryService.checkRepository(projectId, repoName)
-
-        val normalizedFullPath = normalizeFullPath(fullPath)
-        val node = nodeDao.findNode(projectId, repoName, normalizedFullPath)
-            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, normalizedFullPath)
+        val node = detail(projectId, repoName, fullPath)
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
         // 节点为文件直接返回
         if (!node.folder) {
             return NodeSizeInfo(subNodeCount = 0, size = node.size)
         }
-        val criteria = nodeListCriteria(projectId, repoName, normalizedFullPath, includeFolder = true, deep = true)
+        val criteria = nodeListCriteria(projectId, repoName, node.fullPath, includeFolder = true, deep = true)
         val count = nodeDao.count(Query(criteria))
-
         val aggregation = Aggregation.newAggregation(
             Aggregation.match(criteria),
             Aggregation.group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
@@ -116,19 +109,17 @@ class NodeServiceImpl : AbstractService(), NodeService {
         return NodeSizeInfo(subNodeCount = count, size = size)
     }
 
-    /**
-     * 查询文件节点数量
-     */
     override fun countFileNode(projectId: String, repoName: String, path: String): Long {
-        repositoryService.checkRepository(projectId, repoName)
-        val formattedPath = normalizePath(path)
-        val query = nodeListQuery(projectId, repoName, formattedPath, includeFolder = false, includeMetadata = false, deep = true)
+        val normalizedPath = normalizePath(path)
+        val query = nodeListQuery(projectId, repoName, normalizedPath,
+            includeFolder = false,
+            includeMetadata = false,
+            deep = true,
+            sort = false
+        )
         return nodeDao.count(query)
     }
 
-    /**
-     * 列表查询节点
-     */
     override fun list(
         projectId: String,
         repoName: String,
@@ -137,17 +128,14 @@ class NodeServiceImpl : AbstractService(), NodeService {
         includeMetadata: Boolean,
         deep: Boolean
     ): List<NodeInfo> {
-        repositoryService.checkRepository(projectId, repoName)
-        val query = nodeListQuery(projectId, repoName, path, includeFolder, includeMetadata, deep)
-        if (nodeDao.count(query) >= LIST_THRESHOLD) {
+        val normalizedPath = normalizePath(path)
+        val query = nodeListQuery(projectId, repoName, normalizedPath, includeFolder, includeMetadata, deep, false)
+        if (nodeDao.count(query) > repositoryProperties.listThreshold) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
         }
         return nodeDao.find(query).map { convert(it)!! }
     }
 
-    /**
-     * 分页查询节点
-     */
     override fun page(
         projectId: String,
         repoName: String,
@@ -156,52 +144,44 @@ class NodeServiceImpl : AbstractService(), NodeService {
         pageSize: Int,
         includeFolder: Boolean,
         includeMetadata: Boolean,
-        deep: Boolean
+        deep: Boolean,
+        sort: Boolean
     ): Page<NodeInfo> {
-        pageNumber.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageNumber")
-        pageSize.takeIf { it in 0..LIST_THRESHOLD } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageSize")
-        repositoryService.checkRepository(projectId, repoName)
-        val query = nodeListQuery(projectId, repoName, path, includeFolder, includeMetadata, deep)
-        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        if (pageNumber < 0) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageNumber")
+        }
+        if (pageSize < 0 || pageSize > repositoryProperties.listThreshold) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageSize")
+        }
+        val query = nodeListQuery(projectId, repoName, path, includeFolder, includeMetadata, deep, sort)
         val totalRecords = nodeDao.count(query)
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val records = nodeDao.find(query.with(pageRequest)).map { convert(it)!! }
 
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
-    /**
-     * 判断节点是否存在
-     */
     override fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
-        val formattedPath = normalizeFullPath(fullPath)
-        val query = nodeQuery(projectId, repoName, formattedPath)
-
-        return nodeDao.exists(query)
+        return nodeDao.exists(projectId, repoName,  normalizeFullPath(fullPath))
     }
 
-    /**
-     * 判断节点列表是否存在
-     */
     override fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String> {
-        val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
-            .and(TNode::repoName.name).`is`(repoName)
-            .and(TNode::deleted.name).`is`(null)
-            .and(TNode::fullPath.name).`in`(fullPathList)
-        return nodeDao.find(Query(criteria)).map { it.fullPath }
+        val queryList = fullPathList.map { normalizeFullPath(it) }.filter { !isRoot(it) }
+        val nodeQuery = nodeQuery(projectId, repoName, queryList)
+        return nodeDao.find(nodeQuery).map { it.fullPath }
     }
 
-    /**
-     * 创建节点，返回id
-     */
     @Transactional(rollbackFor = [Throwable::class])
     override fun create(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
+            val fullPath = normalizeFullPath(fullPath)
+            this.takeIf { !isRoot(fullPath) }
+                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, this::fullPath.name)
             this.takeIf { folder || !sha256.isNullOrBlank() }
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::sha256.name)
             this.takeIf { folder || !md5.isNullOrBlank() }
                 ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, this::md5.name)
-            val fullPath = normalizeFullPath(fullPath)
-            val repo = repositoryService.checkRepository(projectId, repoName)
+
             // 路径唯一性校验
             nodeDao.findNode(projectId, repoName, fullPath)?.let {
                 if (!overwrite) {
@@ -213,26 +193,26 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 }
             }
             // 判断父目录是否存在，不存在先创建
-            mkdirs(projectId, repoName, resolvePath(fullPath), operator)
+            mkdirs(projectId, repoName, resolveParent(fullPath), operator)
             // 创建节点
             val node = TNode(
-                folder = folder,
-                path = resolvePath(fullPath),
+                projectId = projectId,
+                repoName = repoName,
+                path = resolveParent(fullPath),
                 name = resolveName(fullPath),
                 fullPath = fullPath,
+                folder = folder,
                 expireDate = if (folder) null else parseExpireDate(expires),
                 size = if (folder) 0 else size ?: 0,
                 sha256 = if (folder) null else sha256,
                 md5 = if (folder) null else md5,
-                projectId = projectId,
-                repoName = repoName,
                 metadata = MetadataServiceImpl.convert(metadata),
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now()
             )
-            return node.apply { doCreate(this, repo) }
+            return node.apply { doCreate(this) }
                 .also { publishEvent(NodeCreatedEvent(createRequest)) }
                 .also { logger.info("Create node [$createRequest] success.") }
                 .let { convertToDetail(it)!! }
@@ -240,56 +220,24 @@ class NodeServiceImpl : AbstractService(), NodeService {
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun createRootNode(projectId: String, repoName: String, operator: String) {
-        val rootNode = TNode(
-            projectId = projectId,
-            repoName = repoName,
-            folder = true,
-            path = StringPool.ROOT,
-            name = StringPool.EMPTY,
-            fullPath = StringPool.ROOT,
-            size = 0,
-            createdBy = operator,
-            createdDate = LocalDateTime.now(),
-            lastModifiedBy = operator,
-            lastModifiedDate = LocalDateTime.now()
-        )
-        rootNode.apply { doCreate(this) }.also { logger.info("Create node [$it] success.") }
-    }
-
-    /**
-     * 重命名文件或者文件夹
-     * 重命名过程中出现错误则抛异常，剩下的文件不会再移动
-     * 遇到同名文件或者文件夹直接抛异常
-     */
-    @Transactional(rollbackFor = [Throwable::class])
     override fun rename(renameRequest: NodeRenameRequest) {
         renameRequest.apply {
-            val fullPath = normalizeFullPath(this.fullPath)
-            val newFullPath = normalizeFullPath(this.newFullPath)
-
-            repositoryService.checkRepository(projectId, repoName)
-            val node = nodeDao.findNode(projectId, repoName, fullPath) ?: throw ErrorCodeException(
-                ArtifactMessageCode.NODE_NOT_FOUND,
-                fullPath
-            )
+            val fullPath = normalizeFullPath(fullPath)
+            val newFullPath = normalizeFullPath(newFullPath)
+            val node = nodeDao.findNode(projectId, repoName, fullPath)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             doRename(node, newFullPath, operator)
         }.also {
             publishEvent(NodeRenamedEvent(it))
         }.also {
             logger.info("Rename node [$it] success.")
         }
-        // notifyService.sendWechat(listOf("necrohuang"), "test wechat")
     }
 
-    /**
-     * 更新节点
-     */
     @Transactional(rollbackFor = [Throwable::class])
     override fun update(updateRequest: NodeUpdateRequest) {
         updateRequest.apply {
-            val fullPath = normalizeFullPath(this.fullPath)
-            repositoryService.checkRepository(projectId, repoName)
+            val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
@@ -302,43 +250,40 @@ class NodeServiceImpl : AbstractService(), NodeService {
         }
     }
 
-    /**
-     * 移动文件或者文件夹
-     * 采用fast-failed模式，移动过程中出现错误则抛异常，剩下的文件不会再移动
-     * 行为类似linux mv命令
-     * mv 文件名 文件名	将源文件名改为目标文件名
-     * mv 文件名 目录名	将文件移动到目标目录
-     * mv 目录名 目录名	目标目录已存在，将源目录（目录本身及子文件）移动到目标目录；目标目录不存在则改名
-     * mv 目录名 文件名	出错
-     */
     @Transactional(rollbackFor = [Throwable::class])
     override fun move(moveRequest: NodeMoveRequest) {
         moveOrCopy(moveRequest, moveRequest.operator)
     }
 
-    /**
-     * 拷贝文件或者文件夹
-     * 采用fast-failed模式，拷贝过程中出现错误则抛异常，剩下的文件不会再拷贝
-     * 行为类似linux cp命令
-     * cp 文件名 文件名	将源文件拷贝到目标文件
-     * cp 文件名 目录名	将文件移动到目标目录下
-     * cp 目录名 目录名	cp 目录名 目录名	目标目录已存在，将源目录（目录本身及子文件）拷贝到目标目录；目标目录不存在则将源目录下文件拷贝到目标目录
-     * cp 目录名 文件名	出错
-     */
     @Transactional(rollbackFor = [Throwable::class])
     override fun copy(copyRequest: NodeCopyRequest) {
         moveOrCopy(copyRequest, copyRequest.operator)
     }
 
-    /**
-     * 删除指定节点, 逻辑删除
-     */
     @Transactional(rollbackFor = [Throwable::class])
     override fun delete(deleteRequest: NodeDeleteRequest) {
         with(deleteRequest) {
-            repositoryService.checkRepository(this.projectId, this.repoName)
-            deleteByPath(this.projectId, this.repoName, this.fullPath, this.operator)
+            deleteByPath(projectId, repoName, fullPath, operator)
         }
+    }
+
+    override fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String) {
+        val normalizedFullPath = normalizeFullPath(fullPath)
+        val normalizedPath = toPath(normalizedFullPath)
+        val escapedPath = escapeRegex(normalizedPath)
+        val query = nodeQuery(projectId, repoName)
+        query.addCriteria(
+            Criteria().orOperator(
+                Criteria.where(TNode::fullPath.name).regex("^$escapedPath"),
+                Criteria.where(TNode::fullPath.name).`is`(normalizedFullPath)
+            )
+        )
+        try {
+            nodeDao.updateMulti(query, nodeDeleteUpdate(operator))
+        } catch (exception: DuplicateKeyException) {
+            logger.warn("Delete node[$projectId/$repoName$fullPath] error: [${exception.message}]")
+        }
+        logger.info("Delete node [$projectId/$repoName$fullPath] by [$operator] success.")
     }
 
     /**
@@ -347,7 +292,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
     private fun doRename(node: TNode, newFullPath: String, operator: String) {
         val projectId = node.projectId
         val repoName = node.repoName
-        val newPath = resolvePath(newFullPath)
+        val newPath = resolveParent(newFullPath)
         val newName = resolveName(newFullPath)
 
         // 检查新路径是否被占用
@@ -360,7 +305,12 @@ class NodeServiceImpl : AbstractService(), NodeService {
         if (node.folder) {
             mkdirs(projectId, repoName, newFullPath, operator)
             val newParentPath = toPath(newFullPath)
-            val query = nodeListQuery(projectId, repoName, node.fullPath, includeFolder = true, includeMetadata = false, deep = false)
+            val query = nodeListQuery(projectId, repoName, node.fullPath,
+                includeFolder = true,
+                includeMetadata = false,
+                deep = false,
+                sort = false
+            )
             nodeDao.find(query).forEach { doRename(it, newParentPath + it.name, operator) }
             // 删除自己
             nodeDao.remove(nodeQuery(projectId, repoName, node.fullPath))
@@ -373,41 +323,15 @@ class NodeServiceImpl : AbstractService(), NodeService {
     }
 
     /**
-     * 根据全路径删除文件或者目录
-     */
-    override fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String, soft: Boolean) {
-        val normalizedFullPath = normalizeFullPath(fullPath)
-        val normalizedPath = toPath(normalizedFullPath)
-        val escapedPath = escapeRegex(normalizedPath)
-        val query = nodeQuery(projectId, repoName)
-        query.addCriteria(
-            Criteria().orOperator(
-                Criteria.where(TNode::fullPath.name).regex("^$escapedPath"),
-                Criteria.where(TNode::fullPath.name).`is`(normalizedFullPath)
-            )
-        )
-        if (soft) {
-            // 软删除
-            try {
-                nodeDao.updateMulti(query, nodeDeleteUpdate(operator))
-            } catch (exception: DuplicateKeyException) {
-                logger.warn("Soft delete node[$projectId/$repoName$fullPath] error: [${exception.message}]")
-            }
-        } else {
-            // 硬删除
-            nodeDao.remove(query)
-        }
-        logger.info("Delete node [$projectId/$repoName$fullPath] by [$operator] success.")
-    }
-
-    /**
      * 递归创建目录
      */
     private fun mkdirs(projectId: String, repoName: String, path: String, createdBy: String) {
-        if (!exist(projectId, repoName, path)) {
-            val parentPath = resolvePath(path)
-            val name = resolveName(path)
-            path.takeUnless { isRoot(it) }?.run { mkdirs(projectId, repoName, parentPath, createdBy) }
+        //格式化
+        val fullPath = toFullPath(path)
+        if (!nodeDao.exists(projectId, repoName, fullPath)) {
+            val parentPath = resolveParent(fullPath)
+            val name = resolveName(fullPath)
+            mkdirs(projectId, repoName, parentPath, createdBy)
             val node = TNode(
                 folder = true,
                 path = parentPath,
@@ -423,7 +347,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 lastModifiedBy = createdBy,
                 lastModifiedDate = LocalDateTime.now()
             )
-            doCreate(node, null)
+            doCreate(node)
         }
     }
 
@@ -432,6 +356,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
      */
     private fun moveOrCopy(request: CrossRepoNodeRequest, operator: String) {
         with(request) {
+            // 准备数据
             val srcFullPath = normalizeFullPath(srcFullPath)
             val destProjectId = request.destProjectId ?: srcProjectId
             val destRepoName = request.destRepoName ?: srcRepoName
@@ -443,6 +368,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
             val destRepository = if (!isSameRepository) {
                 repositoryService.checkRepository(destProjectId, destRepoName)
             } else srcRepository
+
             // 查询storageCredentials
             val srcCredentials = srcRepository.credentialsKey?.let {
                 storageCredentialService.findByKey(it)
@@ -450,19 +376,19 @@ class NodeServiceImpl : AbstractService(), NodeService {
             val destCredentials = if (!isSameRepository) {
                 destRepository.credentialsKey?.let { storageCredentialService.findByKey(it) }
             } else srcCredentials
+
+
             // 只允许local类型仓库操作
             if (srcRepository.category != RepositoryCategory.LOCAL || destRepository.category != RepositoryCategory.LOCAL) {
                 throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
             }
-            val srcNode = nodeDao.findNode(srcProjectId, srcRepoName, srcFullPath) ?: throw ErrorCodeException(
-                ArtifactMessageCode.NODE_NOT_FOUND,
-                srcFullPath
-            )
+            val srcNode = nodeDao.findNode(srcProjectId, srcRepoName, srcFullPath)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, srcFullPath)
             val destNode = nodeDao.findNode(destProjectId, destRepoName, destFullPath)
             // 同路径，跳过
             if (isSameRepository && srcNode.fullPath == destNode?.fullPath) return
             // src为dest目录下的子节点，跳过
-            if (isSameRepository && destNode?.folder == true && srcNode.path == normalizePath(destNode.fullPath)) return
+            if (isSameRepository && destNode?.folder == true && srcNode.path == toPath(destNode.fullPath)) return
             // 目录 ->
             if (srcNode.folder) {
                 // 目录 -> 文件: error
@@ -471,7 +397,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 }
                 val destRootNodePath = if (destNode == null) {
                     // 目录 -> 不存在的目录
-                    val path = resolvePath(destFullPath)
+                    val path = resolveParent(destFullPath)
                     val name = resolveName(destFullPath)
                     // 创建dest父目录
                     mkdirs(destProjectId, destRepoName, path, operator)
@@ -492,7 +418,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
                     srcRootNodePath,
                     includeFolder = true,
                     includeMetadata = false,
-                    deep = true
+                    deep = true,
+                    sort = false
                 )
                 // 目录下的节点 -> 创建好的目录
                 nodeDao.find(query).forEach {
@@ -501,7 +428,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 }
             } else {
                 // 文件 ->
-                val destPath = if (destNode?.folder == true) toPath(destNode.fullPath) else resolvePath(destFullPath)
+                val destPath = if (destNode?.folder == true) toPath(destNode.fullPath) else resolveParent(destFullPath)
                 val destName = if (destNode?.folder == true) srcNode.name else resolveName(destFullPath)
                 // 创建dest父目录
                 mkdirs(destProjectId, destRepoName, destPath, operator)
@@ -604,8 +531,6 @@ class NodeServiceImpl : AbstractService(), NodeService {
     companion object {
         private val logger = LoggerFactory.getLogger(NodeServiceImpl::class.java)
 
-        private const val LIST_THRESHOLD: Long = 100000L
-
         private fun convert(tNode: TNode?): NodeInfo? {
             return tNode?.let {
                 val metadata = MetadataServiceImpl.convert(it.metadata)
@@ -614,6 +539,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    projectId = it.projectId,
+                    repoName = it.repoName,
                     folder = it.folder,
                     path = it.path,
                     name = it.name,
@@ -622,20 +549,13 @@ class NodeServiceImpl : AbstractService(), NodeService {
                     sha256 = it.sha256,
                     md5 = it.md5,
                     metadata = metadata,
-                    stageTag = metadata[SystemMetadata.STAGE.key],
-                    repoName = it.repoName,
-                    projectId = it.projectId
+                    stageTag = metadata[SystemMetadata.STAGE.key].toString()
                 )
             }
         }
 
         private fun convertToDetail(tNode: TNode?): NodeDetail? {
-            return convert(tNode)?.let {
-                NodeDetail(
-                    nodeInfo = it,
-                    metadata = it.metadata.orEmpty()
-                )
-            }
+            return convert(tNode)?.let { NodeDetail(it) }
         }
     }
 }

@@ -54,7 +54,8 @@ interface NodeService {
         pageSize: Int,
         includeFolder: Boolean = true,
         includeMetadata: Boolean = false,
-        deep: Boolean = false
+        deep: Boolean = false,
+        sort: Boolean = false
     ): Page<NodeInfo>
 
     /**
@@ -68,14 +69,9 @@ interface NodeService {
     fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String>
 
     /**
-     * 创建节点，返回id
+     * 创建节点，返回节点详情
      */
     fun create(createRequest: NodeCreateRequest): NodeDetail
-
-    /**
-     * 创建根节点
-     */
-    fun createRootNode(projectId: String, repoName: String, operator: String)
 
     /**
      * 重命名文件或者文件夹
@@ -119,5 +115,5 @@ interface NodeService {
     /**
      * 根据全路径删除文件或者目录
      */
-    fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String, soft: Boolean = true)
+    fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String)
 }

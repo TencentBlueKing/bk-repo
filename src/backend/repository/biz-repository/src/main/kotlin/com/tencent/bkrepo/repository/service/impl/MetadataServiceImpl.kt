@@ -33,7 +33,7 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
     @Autowired
     private lateinit var nodeDao: NodeDao
 
-    override fun query(projectId: String, repoName: String, fullPath: String): Map<String, String> {
+    override fun query(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
         return convert(nodeDao.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))?.metadata)
     }
 
@@ -83,16 +83,12 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
     companion object {
         private val logger = LoggerFactory.getLogger(MetadataServiceImpl::class.java)
 
-        fun convert(metadataMap: Map<String, String>?): MutableList<TMetadata> {
+        fun convert(metadataMap: Map<String, Any>?): MutableList<TMetadata> {
             return metadataMap?.filter { it.key.isNotBlank() }?.map { TMetadata(it.key, it.value) }.orEmpty().toMutableList()
         }
 
-        fun convert(metadataList: List<TMetadata>?): Map<String, String> {
+        fun convert(metadataList: List<TMetadata>?): Map<String, Any> {
             return metadataList?.map { it.key to it.value }?.toMap().orEmpty()
-        }
-
-        fun convertOrNull(metadataList: List<TMetadata>?): Map<String, String>? {
-            return metadataList?.map { it.key to it.value }?.toMap()
         }
     }
 }

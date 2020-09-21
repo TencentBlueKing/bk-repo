@@ -29,13 +29,13 @@ class StageServiceImpl(
         val node = findAndCheckNode(artifactInfo)
         val stageMetadata = findStageMetadata(node)
         try {
-            val oldStage = ArtifactStageEnum.ofTagOrDefault(stageMetadata.value)
+            val oldStage = ArtifactStageEnum.ofTagOrDefault(stageMetadata.value.toString())
             var newStage = ArtifactStageEnum.ofTagOrNull(tag)
             newStage = oldStage.upgrade(newStage)
-            stageMetadata.value = if (stageMetadata.value.isEmpty()) {
+            stageMetadata.value = if (stageMetadata.value.toString().isEmpty()) {
                 newStage.tag
             } else {
-                stageMetadata.value + "," + newStage.tag
+                stageMetadata.value.toString() + "," + newStage.tag
             }
             nodeDao.save(node)
             logger.info("Upgrade stage[$artifactInfo] to $newStage success")
@@ -53,7 +53,7 @@ class StageServiceImpl(
 
     private fun getNodeStage(node: TNode): ArtifactStageEnum {
         val tag = node.metadata?.firstOrNull { it.key == SystemMetadata.STAGE.key }?.value
-        return ArtifactStageEnum.ofTagOrDefault(tag)
+        return ArtifactStageEnum.ofTagOrDefault(tag?.toString())
     }
 
     private fun findStageMetadata(node: TNode): TMetadata {

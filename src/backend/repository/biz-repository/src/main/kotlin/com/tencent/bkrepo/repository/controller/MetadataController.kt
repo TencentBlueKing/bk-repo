@@ -16,7 +16,7 @@ class MetadataController(
     private val metadataService: MetadataService
 ) : MetadataClient {
 
-    override fun query(projectId: String, repoName: String, fullPath: String): Response<Map<String, String>> {
+    override fun query(projectId: String, repoName: String, fullPath: String): Response<Map<String, Any>> {
         return ResponseBuilder.success(metadataService.query(projectId, repoName, fullPath))
     }
 

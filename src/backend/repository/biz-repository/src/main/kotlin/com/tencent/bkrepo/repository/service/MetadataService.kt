@@ -14,7 +14,7 @@ interface MetadataService {
      * [projectId]为节点所属项目，[repoName]为节点所属仓库，[fullPath]为节点完整路径
      * 返回[Map]数据结构，`key`为元数据名称，`value`为元数据值
      */
-    fun query(projectId: String, repoName: String, fullPath: String): Map<String, String>
+    fun query(projectId: String, repoName: String, fullPath: String): Map<String, Any>
 
     /**
      * 根据请求[request]保存或者更新元数据

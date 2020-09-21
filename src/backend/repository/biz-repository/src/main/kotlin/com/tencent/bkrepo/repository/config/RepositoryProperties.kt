@@ -7,5 +7,6 @@ import org.springframework.context.annotation.Configuration
 @ConfigurationProperties("repository")
 data class RepositoryProperties(
     var deletedNodeReserveDays: Long = 14,
-    var defaultStorageCredentialsKey: String? = null
+    var defaultStorageCredentialsKey: String? = null,
+    var listThreshold: Long = 1000L
 )
