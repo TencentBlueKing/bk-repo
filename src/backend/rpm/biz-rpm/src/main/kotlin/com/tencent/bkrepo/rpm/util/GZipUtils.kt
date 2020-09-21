@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.rpm.util
 
+import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import java.io.File
 import java.io.FileOutputStream
 import java.io.BufferedOutputStream
@@ -41,9 +42,14 @@ object GZipUtils {
         val bufferedOutputStream = BufferedOutputStream(FileOutputStream(file))
         val buffer = ByteArray(5 * 1024 * 1024)
         var mark: Int
-        while (gZIPInputStream.read(buffer).also { mark = it } > 0) {
-            bufferedOutputStream.write(buffer, 0, mark)
-            bufferedOutputStream.flush()
+        try{
+            while (gZIPInputStream.read(buffer).also { mark = it } > 0) {
+                bufferedOutputStream.write(buffer, 0, mark)
+                bufferedOutputStream.flush()
+            }
+        } finally {
+            gZIPInputStream.closeQuietly()
+            bufferedOutputStream.closeQuietly()
         }
         return file
     }

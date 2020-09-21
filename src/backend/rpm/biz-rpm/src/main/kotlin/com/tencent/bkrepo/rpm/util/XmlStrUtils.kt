@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
+import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
 import com.tencent.bkrepo.rpm.exception.RpmIndexTypeResolveException
 import com.tencent.bkrepo.rpm.pojo.RepodataUri
@@ -251,7 +252,7 @@ object XmlStrUtils {
                 }
             }
         } finally {
-            bufferedOutputStream.close()
+            bufferedOutputStream.closeQuietly()
             this.delete()
         }
         return tempFile
