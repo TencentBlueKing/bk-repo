@@ -7,7 +7,7 @@
                 @click="showSelect(item, index)"
                 :class="{ 'pointer': item.list }">
                 <template v-if="item.showSelect">
-                    <bk-select class="breadcrumb-select" :clearable="false" :value="item.value" @change="item.changeHandler">
+                    <bk-select class="breadcrumb-select" searchable :clearable="false" :value="item.value" @change="item.changeHandler">
                         <bk-option
                             v-for="option in item.list"
                             :key="option.name"

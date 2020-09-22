@@ -24,7 +24,7 @@
                         main: [
                             {
                                 subTitle: '配置个人凭证',
-                                codeList: ['docker login -u <账号> canway-docker.pkg.canway.net']
+                                codeList: [`docker login -u <账号> ${location.host}`]
                             }
                         ]
                     },
@@ -33,11 +33,11 @@
                         main: [
                             {
                                 subTitle: '1、给本地的镜像打标签',
-                                codeList: ['docker tag <LOCAL_IMAGE_TAG> mianyang-docker.pkg.coding.net/oneprojects/test/<PACKAGE>']
+                                codeList: [`docker tag <LOCAL_IMAGE_TAG> ${location.host}/${this.$route.params.projectId}/${this.$route.query.name}/<PACKAGE>`]
                             },
                             {
                                 subTitle: '2、推送您的docker 镜像',
-                                codeList: ['docker push mianyang-docker.pkg.coding.net/oneprojects/test/<PACKAGE>']
+                                codeList: [`docker push ${location.host}/${this.$route.params.projectId}/${this.$route.query.name}/<PACKAGE>`]
                             }
                         ]
                     },
@@ -45,7 +45,7 @@
                         title: '下载',
                         main: [
                             {
-                                codeList: ['docker pull mianyang-docker.pkg.coding.net/oneprojects/test/<PACKAGE>']
+                                codeList: [`docker pull ${location.host}/${this.$route.params.projectId}/${this.$route.query.name}/<PACKAGE>`]
                             }
                         ]
                     }
