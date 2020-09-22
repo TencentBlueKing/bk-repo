@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.rpm.util
 
+import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.rpm.exception.RpmVersionNotFoundException
 import com.tencent.bkrepo.rpm.pojo.Index
 import com.tencent.bkrepo.rpm.pojo.XmlIndex
@@ -51,8 +52,8 @@ object FileInputStreamUtils {
                 bufferedOutputStream.flush()
             }
         } finally {
-            bufferedInputStream.close()
-            bufferedOutputStream.close()
+            bufferedInputStream.closeQuietly()
+            bufferedOutputStream.closeQuietly()
             file.delete()
         }
         return tempFile
@@ -102,8 +103,8 @@ object FileInputStreamUtils {
                 accessRandomPrefixTempFile.write(sufBuffer, 0, mark)
             }
         } finally {
-            accessRandomPrefixTempFile.close()
-            randomAccessFile.close()
+            accessRandomPrefixTempFile.closeQuietly()
+            randomAccessFile.closeQuietly()
             this.delete()
         }
         return prefixTempFile
@@ -143,6 +144,9 @@ object FileInputStreamUtils {
                     }
                 }
                 if (!location.isFound && prefix.isFound) {
+                    prefixIndex = prefix.index
+                }
+                if (location.isFound && prefix.isFound && prefix.index < location.index) {
                     prefixIndex = prefix.index
                 }
             }
