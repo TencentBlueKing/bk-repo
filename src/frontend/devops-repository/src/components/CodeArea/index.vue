@@ -1,9 +1,9 @@
 <template>
     <div class="code-area">
-        <span v-for="(code, index) in codeList" :key="code + Math.random()" class="code-main">
+        <div v-for="(code, index) in codeList" :key="code + Math.random()" class="code-main">
             <span v-if="lineNumber" class="code-index">{{index + 1}}</span>
             {{ code }}
-        </span>
+        </div>
         <i class="code-copy devops-icon icon-clipboard" @click="copyCode()"></i>
     </div>
 </template>

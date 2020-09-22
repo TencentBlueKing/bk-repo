@@ -21,7 +21,7 @@ export default {
             `${prefix}/repo/${projectId}/${repoName}/${dockerName}`
         )
     },
-    // delete docker
+    // delete docker tag
     deleteDockerTag (_, { projectId, repoName, dockerName, tagName }) {
         return Vue.prototype.$ajax.delete(
             `${prefix}/tag/${projectId}/${repoName}/${dockerName}/${tagName}`
