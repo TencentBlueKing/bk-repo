@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.npm.constants
 
+const val REPO_TYPE = "NPM"
+
 const val APPLICATION_OCTET_STEAM = "mime_type"
 
 /**
@@ -24,8 +26,8 @@ const val NPM_PKG_VERSION_JSON_FILE_FULL_PATH = NPM_PACKAGE_VERSION_JSON_FILE + 
 const val NPM_PKG_JSON_FILE_FULL_PATH = NPM_PACKAGE_JSON_FILE + "_full_path"
 // full path value
 const val NPM_PKG_TGZ_FULL_PATH = "/%s/-/%s-%s.tgz"
-const val NPM_PKG_VERSION_FULL_PATH = "/.npm/%s/%s-%s.json"
-const val NPM_PKG_FULL_PATH = "/.npm/%s/package.json"
+const val NPM_PKG_VERSION_METADATA_FULL_PATH = "/.npm/%s/%s-%s.json"
+const val NPM_PKG_METADATA_FULL_PATH = "/.npm/%s/package.json"
 
 const val NPM_FILE_FULL_PATH = "npm_file_full_path"
 
@@ -35,3 +37,5 @@ const val PKG_NAME = "pkg_name"
 
 // constants map
 val ERROR_MAP = mapOf("error" to "not_found", "reason" to "document not found")
+
+const val NPM_TGZ_TARBALL_PREFIX = "X-BKREPO-NPM-PREFIX"

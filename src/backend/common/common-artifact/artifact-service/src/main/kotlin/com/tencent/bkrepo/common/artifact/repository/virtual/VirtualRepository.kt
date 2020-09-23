@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryIdentify
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -19,6 +20,33 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
 
     @Autowired
     lateinit var repositoryClient: RepositoryClient
+
+    override fun query(context: ArtifactQueryContext): Any? {
+        val artifactInfo = context.artifactInfo
+        val virtualConfiguration = context.getVirtualConfiguration()
+        val repoList = virtualConfiguration.repositoryList
+        val traversedList = getTraversedList(context)
+        for (repoIdentify in repoList) {
+            if (repoIdentify in traversedList) {
+                continue
+            }
+            traversedList.add(repoIdentify)
+            try {
+                val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
+                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
+                val subContext = context.copy(subRepoDetail) as ArtifactQueryContext
+                repository.query(subContext)?.let {
+                    if (logger.isDebugEnabled) {
+                        logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
+                    }
+                    return it
+                }
+            } catch (ignored: Exception) {
+                logger.warn("Query Artifact[$artifactInfo] from repository[$repoIdentify] failed: ${ignored.message}")
+            }
+        }
+        return null
+    }
 
     override fun search(context: ArtifactSearchContext): List<Any> {
         val artifactInfo = context.artifactInfo

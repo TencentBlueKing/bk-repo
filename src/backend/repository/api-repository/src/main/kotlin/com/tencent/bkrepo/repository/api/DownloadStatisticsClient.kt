@@ -39,10 +39,10 @@ interface DownloadStatisticsClient {
         @PathVariable artifact: String,
         @ApiParam("构建版本", required = false)
         @RequestParam version: String? = null,
-        @ApiParam("开始日期", required = true)
-        @RequestParam startDay: LocalDate,
-        @ApiParam("结束日期", required = true)
-        @RequestParam endDay: LocalDate
+        @ApiParam("开始日期", required = false)
+        @RequestParam startDay: LocalDate?,
+        @ApiParam("结束日期", required = false)
+        @RequestParam endDay: LocalDate?
     ): Response<DownloadStatisticsResponse>
 
     @ApiOperation("查询构建在 日、周、月 的下载量")
