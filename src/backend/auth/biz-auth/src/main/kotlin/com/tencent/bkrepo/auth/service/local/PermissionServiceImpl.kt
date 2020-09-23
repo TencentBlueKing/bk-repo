@@ -4,6 +4,7 @@ import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.ListRepoPermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -13,6 +14,7 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -22,6 +24,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.util.stream.Collectors
 
 @Service
 @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
@@ -29,7 +32,8 @@ class PermissionServiceImpl @Autowired constructor(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
     private val permissionRepository: PermissionRepository,
-    private val mongoTemplate: MongoTemplate
+    private val mongoTemplate: MongoTemplate,
+    private val repositoryClient: RepositoryClient
 ) : PermissionService, AbstractServiceImpl(mongoTemplate, userRepository, roleRepository) {
 
     override fun deletePermission(id: String): Boolean {
@@ -203,6 +207,67 @@ class PermissionServiceImpl @Autowired constructor(
         return false
     }
 
+    override fun listRepoPermission(request: ListRepoPermissionRequest): List<String> {
+        logger.info("list repo permission  request : [$request] ")
+        if (request.repoNames.isNullOrEmpty()) return emptyList()
+        val user = userRepository.findFirstByUserId(request.uid) ?: run {
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+        if (user.admin || !request.appId.isNullOrBlank()) {
+            // 查询该项目下的所有仓库并过滤返回
+            val repoList =  repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
+            return filterRepos(repoList, request.repoNames)
+        }
+        val roles = user.roles
+
+        // check project admin
+        if (roles.isNotEmpty() && request.resourceType == ResourceType.PROJECT){
+            //val reposList = mutableListOf<String>()
+            roles.forEach { role->
+                val tRole = roleRepository.findFirstByIdAndProjectIdAndType(role, request.projectId, RoleType.PROJECT)
+                if (tRole != null && tRole.admin) {
+                    val repoList =  repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
+                    return filterRepos(repoList, request.repoNames)
+                }
+            }
+        }
+
+        val reposList = mutableListOf<String>()
+        // check repo admin
+        if (roles.isNotEmpty() && request.resourceType == ResourceType.REPO) {
+            roles.forEach { role ->
+                // check project admin first
+                val pRole = roleRepository.findFirstByIdAndProjectIdAndType(role, request.projectId, RoleType.PROJECT)
+                if (pRole != null && pRole.admin) {
+                    val repoList =  repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
+                    return filterRepos(repoList, request.repoNames)
+                }
+                // check repo admin then
+                val rRole = roleRepository.findFirstByIdAndProjectIdAndType(
+                    role,
+                    request.projectId,
+                    RoleType.REPO
+                )
+                if (rRole != null && rRole.admin) reposList.add(rRole.repoName!!)
+            }
+        }
+
+        // check repo permission
+        val criteria = Criteria()
+        var celeriac = criteria.orOperator(
+            Criteria.where("users._id").`is`(request.uid).and("users.action").`is`(request.action.toString()),
+            Criteria.where("roles._id").`in`(roles).and("users.action").`is`(request.action.toString())
+        ).and(TPermission::resourceType.name).`is`(request.resourceType.toString())
+        if (request.resourceType != ResourceType.SYSTEM) {
+            celeriac = celeriac.and(TPermission::projectId.name).`is`(request.projectId)
+        }
+        val query = Query.query(celeriac)
+        val result = mongoTemplate.find(query, TPermission::class.java)
+        val permissionRepoList = result.stream().flatMap { it.repos.stream() }.collect(Collectors.toList())
+        reposList.addAll(permissionRepoList)
+        return filterRepos(reposList, request.repoNames)
+    }
+
     private fun checkPermissionExist(pId: String) {
         permissionRepository.findFirstById(pId) ?: run {
             logger.warn("update permission repos [$pId]  not exist.")
@@ -212,5 +277,10 @@ class PermissionServiceImpl @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(PermissionServiceImpl::class.java)
+
+        fun filterRepos(repos: List<String>, originRepoNames: List<String>): List<String> {
+            (repos as MutableList).retainAll(originRepoNames)
+            return repos
+        }
     }
 }

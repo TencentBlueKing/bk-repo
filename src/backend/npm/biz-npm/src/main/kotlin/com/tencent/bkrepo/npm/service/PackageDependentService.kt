@@ -10,7 +10,7 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.artifact.repository.NpmLocalRepository
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
-import com.tencent.bkrepo.npm.constants.NPM_PKG_FULL_PATH
+import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PKG_NAME
 import com.tencent.bkrepo.npm.pojo.migration.NpmPackageDependentMigrationResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
@@ -155,8 +155,8 @@ class PackageDependentService {
 
     fun dependentMigrate(artifactInfo: NpmArtifactInfo, pkgName: String) {
         val context = ArtifactMigrateContext()
-        context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, pkgName)
-        context.contextAttributes[PKG_NAME] = pkgName
+        context.putAttribute(NPM_FILE_FULL_PATH, String.format(NPM_PKG_METADATA_FULL_PATH, pkgName))
+        context.putAttribute(PKG_NAME, pkgName)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         (repository as NpmLocalRepository).dependentMigrate(context)
     }

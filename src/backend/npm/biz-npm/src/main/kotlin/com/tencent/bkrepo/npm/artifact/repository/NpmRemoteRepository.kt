@@ -2,29 +2,32 @@ package com.tencent.bkrepo.npm.artifact.repository
 
 import com.google.gson.JsonObject
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.ID
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
-import com.tencent.bkrepo.npm.constants.NPM_PKG_FULL_PATH
-import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_FULL_PATH
-import com.tencent.bkrepo.npm.constants.OBJECTS
+import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
+import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.VERSIONS
+import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.utils.GsonUtils
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.util.PathUtils
 import io.undertow.util.BadRequestException
 import okhttp3.Request
 import okhttp3.Response
@@ -58,14 +61,14 @@ class NpmRemoteRepository : RemoteRepository() {
         val queryString = context.request.queryString
         val requestURL =
             context.request.requestURL.toString() + if (StringUtils.isNotEmpty(queryString)) "?$queryString" else ""
-        context.contextAttributes[NPM_FILE_FULL_PATH] = requestURL.removePrefix(tarballPrefix)
+        context.putAttribute(NPM_FILE_FULL_PATH, requestURL.removePrefix(tarballPrefix))
         return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
     }
 
-    override fun buildCacheNodeCreateRequest(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeCreateRequest {
+    override fun buildCacheNodeCreateRequest(context: ArtifactContext, artifactFile: ArtifactFile): NodeCreateRequest {
         val nodeCreateRequest = super.buildCacheNodeCreateRequest(context, artifactFile)
         return nodeCreateRequest.copy(
-            fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
+            fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
         )
     }
 
@@ -73,9 +76,8 @@ class NpmRemoteRepository : RemoteRepository() {
         val remoteConfiguration = context.getRemoteConfiguration()
         val cacheConfiguration = remoteConfiguration.cache
         if (!cacheConfiguration.enabled) return null
-        val repositoryDetail = context.repositoryDetail
-        val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        val node = nodeClient.detail(repositoryDetail.projectId, repositoryDetail.name, fullPath).data
+        val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
+        val node = nodeClient.detail(context.projectId, context.repoName, fullPath).data
         if (node == null || node.folder) return null
         val createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
@@ -85,32 +87,32 @@ class NpmRemoteRepository : RemoteRepository() {
                 context.storageCredentials
             )?.run {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit")
-                ArtifactResource(this, determineArtifactName(context), node)
+                ArtifactResource(this, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL, true)
             }
         } else null
     }
 
-    override fun determineArtifactName(context: ArtifactContext): String {
-        val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-        return PathUtils.getName(fullPath)
-    }
+    // override fun determineArtifactName(context: ArtifactContext): String {
+    //     val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
+    //     return PathUtils.getName(fullPath)
+    // }
 
     /**
      * install pkg-version json file when download tgzFile
      */
     fun installPkgVersionFile(context: ArtifactDownloadContext) {
-        val tgzFullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
+        val tgzFullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
         val pkgInfo = parseArtifactInfo(tgzFullPath)
-        context.contextAttributes[NPM_FILE_FULL_PATH] =
-            String.format(NPM_PKG_FULL_PATH, pkgInfo.first)
+        context.putAttribute(NPM_FILE_FULL_PATH,
+            String.format(NPM_PKG_METADATA_FULL_PATH, pkgInfo.first))
         try {
             val artifactResource = getCacheArtifactResource(context) ?: return
-            val jsonFile = transFileToJson(artifactResource.inputStream)
+            val jsonFile = transFileToJson(artifactResource.inputStream, context)
             val versionFile = jsonFile.getAsJsonObject(VERSIONS).getAsJsonObject(pkgInfo.second)
             val artifact = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
             val name = jsonFile[NAME].asString
-            context.contextAttributes[NPM_FILE_FULL_PATH] =
-                String.format(NPM_PKG_VERSION_FULL_PATH, name, name, pkgInfo.second)
+            context.putAttribute(NPM_FILE_FULL_PATH,
+                String.format(NPM_PKG_VERSION_METADATA_FULL_PATH, name, name, pkgInfo.second))
             cacheArtifactFile(context, artifact)
         } catch (ex: TypeCastException) {
             logger.warn("cache artifact [${pkgInfo.first}-${pkgInfo.second}.json] failed, {}", ex.message)
@@ -127,9 +129,9 @@ class NpmRemoteRepository : RemoteRepository() {
         return Pair(pkgName, version)
     }
 
-    override fun search(context: ArtifactSearchContext): JsonObject? {
+    override fun query(context: ArtifactQueryContext): JsonObject? {
         getCacheArtifactResource(context)?.let {
-            return transFileToJson(it.inputStream)
+            return transFileToJson(it.inputStream, context)
         }
         val remoteConfiguration = context.getRemoteConfiguration()
         val httpClient = createHttpClient(remoteConfiguration)
@@ -140,10 +142,8 @@ class NpmRemoteRepository : RemoteRepository() {
             response = httpClient.newCall(request).execute()
             if (checkResponse(response)) {
                 val file = createTempFile(response.body()!!)
-                val downloadContext = ArtifactDownloadContext()
-                downloadContext.contextAttributes = context.contextAttributes
-                val resultJson = transFileToJson(file.getInputStream())
-                cacheArtifactFile(downloadContext, file)
+                val resultJson = transFileToJson(file.getInputStream(), context)
+                cacheArtifactFile(context, file)
                 resultJson
             } else null
         } catch (exception: IOException) {
@@ -156,23 +156,25 @@ class NpmRemoteRepository : RemoteRepository() {
         }
     }
 
-    private fun transFileToJson(inputStream: InputStream): JsonObject {
+    private fun transFileToJson(inputStream: InputStream, context: ArtifactContext): JsonObject {
         val pkgJson = GsonUtils.transferInputStreamToJson(inputStream)
         val name = pkgJson.get(NAME).asString
         val id = pkgJson[ID].asString
         if (id.substring(1).contains('@')) {
             val oldTarball = pkgJson.getAsJsonObject(DIST)[TARBALL].asString
-            val prefix = oldTarball.split(name)[0].trimEnd('/')
-            val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
-            pkgJson.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
+            pkgJson.getAsJsonObject(DIST).addProperty(
+                TARBALL,
+                NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, context.artifactInfo)
+            )
         } else {
             val versions = pkgJson.getAsJsonObject(VERSIONS)
             versions.keySet().forEach {
                 val versionObject = versions.getAsJsonObject(it)
                 val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
-                val prefix = oldTarball.split(name)[0].trimEnd('/')
-                val newTarball = oldTarball.replace(prefix, tarballPrefix.trimEnd('/'))
-                versionObject.getAsJsonObject(DIST).addProperty(TARBALL, newTarball)
+                versionObject.getAsJsonObject(DIST).addProperty(
+                    TARBALL,
+                    NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, context.artifactInfo)
+                )
             }
         }
         return pkgJson
@@ -187,27 +189,26 @@ class NpmRemoteRepository : RemoteRepository() {
         return "$replace/$projectId/$repoName"
     }
 
-    private fun generateRemoteSearchUrl(context: ArtifactSearchContext): String {
+    private fun generateRemoteSearchUrl(context: ArtifactQueryContext): String {
         val remoteConfiguration = context.getRemoteConfiguration()
         val tarballPrefix = getTarballPrefix(context)
         val requestURL = context.request.requestURL.toString()
         return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
     }
 
-    override fun list(context: ArtifactListContext): NpmSearchResponse {
+    override fun search(context: ArtifactSearchContext): List<NpmSearchInfoMap> {
         val remoteConfiguration = context.getRemoteConfiguration()
         val httpClient = createHttpClient(remoteConfiguration)
         val downloadUri = createRemoteDownloadUrl(context)
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
         return if (checkResponse(response)) {
-            NpmSearchResponse(
-                GsonUtils.gsonToMaps<MutableList<Map<String, Any>>>(response.body()!!.string())?.get(OBJECTS)!!
-            )
-        } else NpmSearchResponse()
+            val npmSearchResponse = JsonUtils.objectMapper.readValue(response.body()!!.byteStream(), NpmSearchResponse::class.java)
+            npmSearchResponse.objects
+        } else emptyList()
     }
 
-    override fun migrate(context: ArtifactMigrateContext) {
+    override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
         logger.warn("Unable to migrate npm package into a remote repository")
         throw BadRequestException("Unable to migrate npm package into a remote repository")
     }
