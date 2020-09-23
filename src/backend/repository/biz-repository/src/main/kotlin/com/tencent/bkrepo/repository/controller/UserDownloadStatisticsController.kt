@@ -36,10 +36,10 @@ class UserDownloadStatisticsController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @ApiParam("构建名称", required = true) artifact: String,
         @ApiParam("构建版本", required = false) version: String? = null,
-        @ApiParam("开始日期", required = true)
-        @RequestParam startDate: LocalDate,
-        @ApiParam("结束日期", required = true)
-        @RequestParam endDate: LocalDate
+        @ApiParam("开始日期", required = false)
+        @RequestParam startDate: LocalDate?,
+        @ApiParam("结束日期", required = false)
+        @RequestParam endDate: LocalDate?
     ): Response<DownloadStatisticsResponse> {
         with(artifactInfo) {
             val downloadStatisticsInfo =

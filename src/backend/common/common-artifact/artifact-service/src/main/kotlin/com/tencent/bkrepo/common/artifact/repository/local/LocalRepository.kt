@@ -40,7 +40,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = nodeClient.detail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            val node =  nodeClient.detail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
             if (node == null || node.folder) return null
             val range = resolveRange(context, node.size)
             val inputStream = storageService.load(node.sha256!!, range, storageCredentials) ?: return null

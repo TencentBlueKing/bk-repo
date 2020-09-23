@@ -5,10 +5,10 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 class NpmArtifactInfo(
     projectId: String,
     repoName: String,
-    artifactUri: String,
+    val artifactUri: String,
     val scope: String,
     val pkgName: String,
-    override val version: String
+    val version: String
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
 
     constructor(projectId: String, repoName: String, artifactUri: String) : this(

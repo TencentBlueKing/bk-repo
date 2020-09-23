@@ -25,8 +25,8 @@ class DownloadStatisticsController(
         repoName: String,
         artifact: String,
         version: String?,
-        startDay: LocalDate,
-        endDay: LocalDate
+        startDay: LocalDate?,
+        endDay: LocalDate?
     ): Response<DownloadStatisticsResponse> {
         return ResponseBuilder.success(
             downloadStatisticsService.query(projectId, repoName, artifact, version, startDay, endDay)
