@@ -33,7 +33,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
             mavenArtifactInfo.groupId = stringBuilder.toString()
 
             require(mavenArtifactInfo.isValid()) {
-                throw IllegalArgumentException("Invalid unit info for '${mavenArtifactInfo.artifactUri}'.")
+                throw IllegalArgumentException("Invalid unit info for '${mavenArtifactInfo.getArtifactFullPath()}'.")
             }
         }
         return mavenArtifactInfo
