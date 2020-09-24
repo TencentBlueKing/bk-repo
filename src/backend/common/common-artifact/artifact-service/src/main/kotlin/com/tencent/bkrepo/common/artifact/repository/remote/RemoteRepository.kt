@@ -98,7 +98,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 判断缓存节点[cacheNode]是否过期，[expiration]表示有效期，单位分钟
      */
-    private fun isExpired(cacheNode: NodeDetail, expiration: Long): Boolean {
+    protected fun isExpired(cacheNode: NodeDetail, expiration: Long): Boolean {
         if (expiration <= 0) {
             return false
         }

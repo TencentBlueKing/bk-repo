@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.npm.pojo
+package com.tencent.bkrepo.npm.pojo.user
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.tencent.bkrepo.common.api.pojo.Page

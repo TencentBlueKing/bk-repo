@@ -12,6 +12,7 @@ import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.DEPENDENCIES
 import com.tencent.bkrepo.npm.constants.DESCRIPTION
 import com.tencent.bkrepo.npm.constants.DEV_DEPENDENCIES
+import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.DISTTAGS
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MAINTAINERS
@@ -20,20 +21,25 @@ import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.README
 import com.tencent.bkrepo.npm.constants.REPO_TYPE
+import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.TIME
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.exception.NpmArgumentNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
-import com.tencent.bkrepo.npm.pojo.DependenciesInfo
-import com.tencent.bkrepo.npm.pojo.DownloadCount
-import com.tencent.bkrepo.npm.pojo.MaintainerInfo
-import com.tencent.bkrepo.npm.pojo.PackageInfoResponse
-import com.tencent.bkrepo.npm.pojo.TagsInfo
+import com.tencent.bkrepo.npm.pojo.user.BasicInfo
+import com.tencent.bkrepo.npm.pojo.user.DependenciesInfo
+import com.tencent.bkrepo.npm.pojo.user.DownloadCount
+import com.tencent.bkrepo.npm.pojo.user.MaintainerInfo
+import com.tencent.bkrepo.npm.pojo.user.PackageInfoResponse
+import com.tencent.bkrepo.npm.pojo.user.TagsInfo
 import com.tencent.bkrepo.npm.pojo.user.NpmPackageInfo
 import com.tencent.bkrepo.npm.pojo.user.NpmPackageLatestVersionInfo
 import com.tencent.bkrepo.npm.pojo.user.NpmPackageVersionInfo
 import com.tencent.bkrepo.npm.pojo.user.PackageDeleteRequest
+import com.tencent.bkrepo.npm.pojo.user.PackageVersionDeleteRequest
+import com.tencent.bkrepo.npm.pojo.user.PackageVersionInfo
+import com.tencent.bkrepo.npm.pojo.user.VersionDependenciesInfo
 import com.tencent.bkrepo.npm.service.AbstractNpmService
 import com.tencent.bkrepo.npm.service.ModuleDepsService
 import com.tencent.bkrepo.npm.service.NpmService
@@ -61,12 +67,11 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
-    override fun queryPackageInfo(artifactInfo: NpmArtifactInfo): PackageInfoResponse {
-        val pkgName = artifactInfo.artifactUri.trimStart('/')
-        val packageJson = searchPkgInfo(pkgName)
-        val page = moduleDepsService.page(artifactInfo.projectId, artifactInfo.repoName, PAGE, SIZE, pkgName)
+    override fun queryPackageInfo(artifactInfo: NpmArtifactInfo, name: String): PackageInfoResponse {
+        val packageJson = searchPkgInfo(name)
+        val page = moduleDepsService.page(artifactInfo.projectId, artifactInfo.repoName, PAGE, SIZE, name)
         val query = downloadStatisticsClient.queryForSpecial(
-            artifactInfo.projectId, artifactInfo.repoName, artifactInfo.artifactUri
+            artifactInfo.projectId, artifactInfo.repoName, name
         )
         val latestVersion = packageJson.getAsJsonObject(DISTTAGS).get(LATEST).asString
         val versionJsonObject = packageJson.getAsJsonObject(VERSIONS).getAsJsonObject(latestVersion)
@@ -89,6 +94,51 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             devDependenciesList,
             page
         )
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun detailVersion(artifactInfo: NpmArtifactInfo, name: String, version: String): PackageVersionInfo {
+        val versionsInfo = searchPkgInfo(name).getAsJsonObject(VERSIONS)
+        if (!versionsInfo.keySet().contains(version)) throw NpmArtifactNotFoundException("version [$version] don't found in package [$name].")
+        val tarball = versionsInfo.getAsJsonObject(version).getAsJsonObject(DIST)[TARBALL].asString
+        val nodeFullPath = tarball.substring(tarball.indexOf(name) - 1, tarball.length)
+        with(artifactInfo) {
+            val nodeDetail = nodeClient.detail(projectId, repoName, REPO_TYPE, nodeFullPath).data ?: run {
+                logger.warn("node [$nodeFullPath] don't found.")
+                throw NpmArtifactNotFoundException("node [$nodeFullPath] don't found.")
+            }
+            with(nodeDetail) {
+                val downloadCount = downloadStatisticsClient.query(projectId, repoName, name, version).data!!.count
+                val basicInfo = BasicInfo(
+                    fullPath,
+                    size,
+                    sha256!!,
+                    md5!!,
+                    stageTag,
+                    projectId,
+                    repoName,
+                    downloadCount,
+                    createdBy,
+                    createdDate,
+                    lastModifiedBy,
+                    lastModifiedDate
+                )
+                val versionDependenciesInfo = queryVersionDependenciesInfo(artifactInfo, versionsInfo.getAsJsonObject(version), name)
+                return PackageVersionInfo(basicInfo, "", versionDependenciesInfo)
+            }
+        }
+    }
+
+    private fun queryVersionDependenciesInfo(
+        artifactInfo: NpmArtifactInfo,
+        versionInfo: JsonObject,
+        name: String
+    ): VersionDependenciesInfo {
+        val page = moduleDepsService.page(artifactInfo.projectId, artifactInfo.repoName, PAGE, SIZE, name)
+        val dependenciesList = parseDependencies(versionInfo)
+        val devDependenciesList = parseDevDependencies(versionInfo)
+        return VersionDependenciesInfo(dependenciesList, devDependenciesList, page)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
@@ -177,14 +227,34 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     override fun deletePackage(deleteRequest: PackageDeleteRequest) {
+        logger.info("npm delete package request: [$deleteRequest]")
+        with(deleteRequest) {
+            val artifactInfo = NpmArtifactInfo(projectId, repoName, "", scope, name, "")
+            npmService.unpublish(operator, artifactInfo)
+        }
+    }
 
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun deleteVersion(deleteRequest: PackageVersionDeleteRequest) {
+        logger.info("npm delete package version request: [$deleteRequest]")
+        with(deleteRequest) {
+            val artifactInfo = NpmArtifactInfo(projectId, repoName, "", scope, name, version)
+            npmService.unPublishPkgWithVersion(artifactInfo)
+        }
     }
 
     private fun parseDistTags(packageJson: JsonObject, timeJsonObject: JsonObject): MutableList<TagsInfo> {
         val currentTags: MutableList<TagsInfo> = mutableListOf()
         packageJson.getAsJsonObject(DISTTAGS).entrySet().forEach { (key, value) ->
             val time = timeJsonObject[value.asString].asString
-            currentTags.add(TagsInfo(tags = key, version = value.asString, time = time))
+            currentTags.add(
+                TagsInfo(
+                    tags = key,
+                    version = value.asString,
+                    time = time
+                )
+            )
         }
         return currentTags
     }
@@ -193,7 +263,12 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         val versionsList: MutableList<TagsInfo> = mutableListOf()
         timeJsonObject.entrySet().forEach { (key, value) ->
             if (!(key == "created" || key == "modified")) {
-                versionsList.add(TagsInfo(version = key, time = value.asString))
+                versionsList.add(
+                    TagsInfo(
+                        version = key,
+                        time = value.asString
+                    )
+                )
             }
         }
         return versionsList
@@ -203,7 +278,12 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         val maintainersList: MutableList<MaintainerInfo> = mutableListOf()
         packageJson.getAsJsonArray(MAINTAINERS)?.forEach {
             it.asJsonObject.entrySet().forEach { (key, value) ->
-                maintainersList.add(MaintainerInfo(key, value.asString))
+                maintainersList.add(
+                    MaintainerInfo(
+                        key,
+                        value.asString
+                    )
+                )
             }
         }
         return maintainersList
@@ -213,7 +293,12 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         val dependenciesList: MutableList<DependenciesInfo> = mutableListOf()
         if (versionJsonObject.has(DEPENDENCIES) && !versionJsonObject.getAsJsonObject(DEPENDENCIES).isJsonNull) {
             versionJsonObject.getAsJsonObject(DEPENDENCIES).entrySet().forEach { (key, value) ->
-                dependenciesList.add(DependenciesInfo(key, value.asString))
+                dependenciesList.add(
+                    DependenciesInfo(
+                        key,
+                        value.asString
+                    )
+                )
             }
         }
         return dependenciesList
@@ -223,7 +308,12 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         val devDependenciesList: MutableList<DependenciesInfo> = mutableListOf()
         if (versionJsonObject.has(DEV_DEPENDENCIES) && !versionJsonObject.getAsJsonObject(DEV_DEPENDENCIES).isJsonNull) {
             versionJsonObject.getAsJsonObject(DEV_DEPENDENCIES).entrySet().forEach { (key, value) ->
-                devDependenciesList.add(DependenciesInfo(key, value.asString))
+                devDependenciesList.add(
+                    DependenciesInfo(
+                        key,
+                        value.asString
+                    )
+                )
             }
         }
         return devDependenciesList
