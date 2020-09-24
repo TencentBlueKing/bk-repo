@@ -1,5 +1,5 @@
 export const repoEnum = [
-    'generic',
+    // 'generic',
     'docker',
     'maven',
     'pypi',
@@ -39,3 +39,18 @@ export const fileType = [
     'xsd',
     'zip'
 ]
+
+export function getIconName (name) {
+    let type = name.split('.').pop()
+    type = {
+        'gif': 'png',
+        'svg': 'png',
+        'jpg': 'png',
+        'psd': 'png',
+        'jpge': 'png',
+        'json': 'txt',
+        'jar': 'zip',
+        'rar': 'zip'
+    }[type] || type
+    return fileType.includes(type) ? type : 'file'
+}

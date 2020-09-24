@@ -63,6 +63,6 @@
 #app {
     height: 100%;
     padding: 20px;
-    background-color: #f1f2f3;
+    background-color: $bgLightColor;
 }
 </style>

@@ -105,7 +105,7 @@
         border-width: 0 1px;
         background-color: white;
         z-index: 1;
-        transition: all .5s;
+        transition: all .3s;
         .repo-select-search {
             padding: 5px 10px;
             border-top: 1px solid $borderWeightColor;
