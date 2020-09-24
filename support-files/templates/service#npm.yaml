@@ -1,0 +1,10 @@
+server:
+  port: __BK_REPO_NPM_PORT__
+### token过期时间，秒为单位
+jwt:
+  expire-second: -1
+auth:
+  enabled: false
+npm:
+  tarball:
+    prefix: http://__BK_REPO_HOST/npm/
