@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
+import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
 import com.tencent.bkrepo.rpm.exception.RpmIndexTypeResolveException
 import com.tencent.bkrepo.rpm.pojo.RepodataUri
@@ -13,7 +14,6 @@ import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import org.slf4j.LoggerFactory
-import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.BufferedReader
 import java.io.File
@@ -52,11 +52,11 @@ object XmlStrUtils {
      */
     fun insertPackage(
         indexType: String,
-        inputStream: InputStream,
+        file: File,
         rpmXmlMetadata: RpmXmlMetadata
     ): File {
         val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
-        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, inputStream)
+        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
         tempFile.insertContent(packageXml)
         return tempFile.packagesModify(indexType, true)
     }
@@ -66,7 +66,7 @@ object XmlStrUtils {
      */
     fun updatePackage(
         indexType: String,
-        inputStream: InputStream,
+        file: File,
         rpmXmlMetadata: RpmXmlMetadata,
         artifactUri: String
     ): File {
@@ -97,7 +97,7 @@ object XmlStrUtils {
         }
 
         val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
-        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, inputStream)
+        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
         val xmlIndex = tempFile.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
 
         return tempFile.deleteContent(xmlIndex).insertContent(packageXml)
@@ -109,7 +109,7 @@ object XmlStrUtils {
      */
     fun deletePackage(
         indexType: String,
-        inputStream: InputStream,
+        file: File,
         rpmVersion: RpmVersion,
         location: String
     ): File {
@@ -139,7 +139,7 @@ object XmlStrUtils {
                 throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
             }
         }
-        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, inputStream)
+        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
         val xmlIndex = tempFile.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
         val resultFile = tempFile.deleteContent(xmlIndex)
         return resultFile.packagesModify(indexType, false)
@@ -252,7 +252,7 @@ object XmlStrUtils {
                 }
             }
         } finally {
-            bufferedOutputStream.close()
+            bufferedOutputStream.closeQuietly()
             this.delete()
         }
         return tempFile

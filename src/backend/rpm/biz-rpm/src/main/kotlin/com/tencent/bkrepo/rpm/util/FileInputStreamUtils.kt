@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.rpm.util
 
+import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.rpm.exception.RpmVersionNotFoundException
 import com.tencent.bkrepo.rpm.pojo.Index
 import com.tencent.bkrepo.rpm.pojo.XmlIndex
 import java.io.IOException
 import java.io.File
 import java.io.FileInputStream
-import java.io.InputStream
 import java.io.BufferedOutputStream
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
@@ -40,8 +40,8 @@ object FileInputStreamUtils {
     }
 
     @Throws(IOException::class)
-    fun saveTempXmlFile(indexType: String, inputStream: InputStream): File {
-        val bufferedInputStream = BufferedInputStream(inputStream)
+    fun saveTempXmlFile(indexType: String, file: File): File {
+        val bufferedInputStream = BufferedInputStream(FileInputStream(file))
         val tempFile = File.createTempFile(indexType, "xml")
         val bufferedOutputStream = BufferedOutputStream(FileOutputStream(tempFile))
         val buffer = ByteArray(10 * 1024 * 1024)
@@ -52,8 +52,9 @@ object FileInputStreamUtils {
                 bufferedOutputStream.flush()
             }
         } finally {
-            bufferedInputStream.close()
-            bufferedOutputStream.close()
+            bufferedInputStream.closeQuietly()
+            bufferedOutputStream.closeQuietly()
+            file.delete()
         }
         return tempFile
     }
@@ -102,8 +103,8 @@ object FileInputStreamUtils {
                 accessRandomPrefixTempFile.write(sufBuffer, 0, mark)
             }
         } finally {
-            accessRandomPrefixTempFile.close()
-            randomAccessFile.close()
+            accessRandomPrefixTempFile.closeQuietly()
+            randomAccessFile.closeQuietly()
             this.delete()
         }
         return prefixTempFile
@@ -143,6 +144,9 @@ object FileInputStreamUtils {
                     }
                 }
                 if (!location.isFound && prefix.isFound) {
+                    prefixIndex = prefix.index
+                }
+                if (location.isFound && prefix.isFound && prefix.index < location.index) {
                     prefixIndex = prefix.index
                 }
             }
