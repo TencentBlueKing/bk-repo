@@ -38,9 +38,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.IOException
 import java.io.InputStream
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Component
 class NpmRemoteRepository : RemoteRepository() {
@@ -74,28 +71,20 @@ class NpmRemoteRepository : RemoteRepository() {
 
     private fun getCacheArtifactResource(context: ArtifactContext): ArtifactResource? {
         val remoteConfiguration = context.getRemoteConfiguration()
-        val cacheConfiguration = remoteConfiguration.cache
-        if (!cacheConfiguration.enabled) return null
+        if (!remoteConfiguration.cache.enabled) return null
         val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
-        val node = nodeClient.detail(context.projectId, context.repoName, fullPath).data
-        if (node == null || node.folder) return null
-        val createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
-        val age = Duration.between(createdDate, LocalDateTime.now()).toMinutes()
-        return if (age <= cacheConfiguration.expiration) {
+        val cacheNode = nodeClient.detail(context.projectId, context.repoName, fullPath).data
+        if (cacheNode == null || cacheNode.folder) return null
+        return if (!isExpired(cacheNode, remoteConfiguration.cache.expiration)) {
             storageService.load(
-                node.sha256!!, Range.full(node.size),
+                cacheNode.sha256!!, Range.full(cacheNode.size),
                 context.storageCredentials
             )?.run {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit")
-                ArtifactResource(this, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL, true)
+                ArtifactResource(this, context.artifactInfo.getResponseName(), cacheNode, ArtifactChannel.LOCAL, true)
             }
         } else null
     }
-
-    // override fun determineArtifactName(context: ArtifactContext): String {
-    //     val fullPath = context.contextAttributes[NPM_FILE_FULL_PATH] as String
-    //     return PathUtils.getName(fullPath)
-    // }
 
     /**
      * install pkg-version json file when download tgzFile
