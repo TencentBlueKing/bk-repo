@@ -6,6 +6,7 @@
                 <bk-select
                     v-model="query.type"
                     class="form-input"
+                    @change="getListData"
                     :placeholder="$t('allTypes')">
                     <bk-option
                         v-for="type in repoEnum"
@@ -45,8 +46,8 @@
                 :row-border="false"
                 size="small"
                 :pagination="pagination"
-                @page-change="current => paginationChange({ current })"
-                @page-limit-change="limit => paginationChange({ limit })"
+                @page-change="current => handlerPaginationChange({ current })"
+                @page-limit-change="limit => handlerPaginationChange({ limit })"
             >
                 <bk-table-column :label="$t('repoName')">
                     <template slot-scope="props">
@@ -145,7 +146,7 @@
             }
         },
         created () {
-            this.getListData()
+            this.handlerPaginationChange()
         },
         methods: {
             ...mapActions(['getRepoList', 'deleteRepoList']),
@@ -161,7 +162,7 @@
                 this.repoList = records.map(v => ({ ...v, type: v.type.toLowerCase() }))
                 this.pagination.count = totalRecords
             },
-            paginationChange ({ current = 1, limit = this.pagination.limit }) {
+            handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
                 this.getListData()

@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.api.util.toXmlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha1
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -12,8 +13,9 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.maven.pojo.MavenArtifact
+import com.tencent.bkrepo.maven.pojo.Basic
+import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenMetadata
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.apache.commons.lang.StringUtils
@@ -24,6 +26,7 @@ import java.io.ByteArrayInputStream
 
 @Component
 class MavenLocalRepository : LocalRepository() {
+
     /**
      * 获取MAVEN节点创建请求
      */
@@ -118,6 +121,37 @@ class MavenLocalRepository : LocalRepository() {
                 updateMetadata("${packagePath}maven-metadata.xml.sha1", metadataArtifactSha1)
                 metadataArtifactSha1.delete()
             }
+        }
+    }
+
+    override fun query(context: ArtifactQueryContext): MavenArtifactVersionData? {
+        val artifactInfo = context.artifactInfo
+        val pathList = artifactInfo.getArtifactFullPath()
+                .removePrefix("/")
+                .removeSuffix("/")
+                .split("/")
+        val version = pathList.last()
+        val artifactId = pathList[pathList.size - 2]
+        val groupId = StringUtils.join(pathList.subList(0, pathList.size-1), ".")
+        with(artifactInfo) {
+            val nodeDetail = nodeClient.list(projectId, repoName, getArtifactFullPath()).data ?: return null
+            val jarNode = nodeDetail.filter { it.name.matches(Regex("(.)+-(.)+.jar")) }[0]
+            //TODO
+//            val countData = downloadStatisticsClient.query(projectId, repoName, jarNode.fullPath.removePrefix("/"),
+//                    null, null, null).data
+//            val count = countData?.count ?: 0
+            val mavenArtifactBasic = Basic(
+                    groupId,
+                    artifactId,
+                    version,
+                    jarNode.size, jarNode.fullPath, jarNode.lastModifiedBy, jarNode.lastModifiedDate,
+                    0L,
+                    jarNode.sha256,
+                    jarNode.md5,
+                    null
+            )
+            val mavenArtifactMetadata = jarNode.metadata?: mutableMapOf()
+            return MavenArtifactVersionData(mavenArtifactBasic, mavenArtifactMetadata)
         }
     }
 

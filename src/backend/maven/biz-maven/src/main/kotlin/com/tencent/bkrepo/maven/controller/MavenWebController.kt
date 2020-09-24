@@ -24,4 +24,8 @@ class MavenWebController(
         return ResponseBuilder.success(mavenService.listVersion(mavenArtifactInfo))
     }
 
+    override fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo): Response<Any?> {
+        return ResponseBuilder.success(mavenService.artifactDetail(mavenArtifactInfo))
+    }
+
 }

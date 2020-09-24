@@ -13,4 +13,7 @@ interface MavenWebResource {
     @GetMapping(MavenArtifactInfo.MAVEN_MAPPING_URI)
     fun listVersion(@ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo): Response<List<Any>>
 
+    @GetMapping(MavenArtifactInfo.MAVEN_ARTIFACT_DETAIL)
+    fun artifactDetail(@ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo): Response<Any?>
+
 }

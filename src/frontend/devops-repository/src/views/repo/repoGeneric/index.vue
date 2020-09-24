@@ -39,8 +39,8 @@
                     :pagination="pagination"
                     @row-click="selectRow"
                     @row-dblclick="openFolder"
-                    @page-change="current => paginationChange({ current })"
-                    @page-limit-change="limit => paginationChange({ limit })"
+                    @page-change="current => handlerPaginationChange({ current })"
+                    @page-limit-change="limit => handlerPaginationChange({ limit })"
                 >
                     <bk-table-column :label="$t('fileName')">
                         <template slot-scope="props">
@@ -52,7 +52,7 @@
                     </bk-table-column>
                     <bk-table-column :label="$t('artiStatus')">
                         <template v-if="props.row.stageTag" slot-scope="props">
-                            <span class="mr5 repo-generic-tag" v-for="tag in props.row.stageTag.split(',')"
+                            <span class="mr5 repo-tag" v-for="tag in props.row.stageTag.split(',')"
                                 :key="props.row.fullPath + tag">{{ tag }}</span>
                         </template>
                     </bk-table-column>
@@ -114,7 +114,7 @@
                         <template v-if="repoName === 'custom'">
                             <bk-button @click.stop="addFolder()" text theme="primary">
                                 <i class="mr5 devops-icon icon-folder-plus"></i>
-                                {{$t('create') + $t('repository')}}
+                                {{$t('create') + $t('folder')}}
                             </bk-button>
                             <bk-button @click.stop="handlerUpload()" text theme="primary">
                                 <i class="mr5 devops-icon icon-upload"></i>
@@ -260,7 +260,7 @@
     </div>
 </template>
 <script>
-    import RepoTree from './repoTree'
+    import RepoTree from '@/components/repoTree'
     import ArtifactoryUpload from '@/components/ArtifactoryUpload'
     import { convertFileSize } from '@/utils'
     import { fileType } from '@/store/publicEnum'
@@ -401,12 +401,13 @@
         watch: {
             '$route.query.name' () {
                 this.initPage()
+                this.getArtifactories()
             },
             'selectedTreeNode.fullPath' () {
                 // 重置选中行
                 this.selectedRow.element && this.selectedRow.element.classList.remove('selected-row')
                 this.selectedRow = this.selectedTreeNode
-                this.query && this.getArtifactories()
+                this.handlerPaginationChange()
             }
         },
         created () {
@@ -435,7 +436,6 @@
                 this.INIT_GENERIC_TREE()
                 this.sideTreeOpenList = []
                 await this.itemClickHandler(this.genericTree[0])
-                this.getArtifactories()
             },
             // 获取中间列表数据
             getArtifactories () {
@@ -461,7 +461,6 @@
             // 搜索文件函数
             searchHandler (query) {
                 this.query = query
-                this.selectedTreeNode = this.genericTree[0]
                 this.isLoading = true
                 this.getArtifactoryListByQuery({
                     projectId: this.projectId,
@@ -481,9 +480,9 @@
                 this.query = null
                 this.selectedRow.element && this.selectedRow.element.classList.remove('selected-row')
                 this.selectedRow = this.selectedTreeNode
-                this.initPage()
+                this.getArtifactories()
             },
-            paginationChange ({ current = 1, limit = this.pagination.limit }) {
+            handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
                 this.getArtifactories()
@@ -523,12 +522,13 @@
                 this.rowClickCallback && clearTimeout(this.rowClickCallback)
                 const node = this.selectedTreeNode.children.find(v => v.fullPath === row.fullPath)
                 this.itemClickHandler(node)
+                // 打开选中节点的左侧树的父节点
                 node.roadMap.split(',').forEach((v, i) => {
                     const roadMap = node.roadMap.slice(0, 2 * i + 1)
                     !this.sideTreeOpenList.includes(roadMap) && this.sideTreeOpenList.push(roadMap)
                 })
             },
-            // 控制选中的行
+            // 控制选中的行，手动添加样式
             getParentElement (element) {
                 let parent = element.parentElement
                 while (!parent.className.includes('bk-table-row') && !parent.className.includes('repo-generic-container')) {
@@ -745,6 +745,7 @@
                 }).then(res => {
                     this.treeDialog.show = false
                     this.selectRow(this.selectedTreeNode)
+                    // 更新源和目的的节点信息
                     this.updateGenericTreeNode(this.selectedTreeNode)
                     this.updateGenericTreeNode(this.treeDialog.selectedNode)
                     this.getArtifactories()
@@ -866,13 +867,6 @@
         .repo-generic-table {
             flex: 1;
             font-size: 0;
-            .repo-generic-tag {
-                display: inline-block;
-                padding: 5px;
-                border-radius: 5px;
-                font-size: 14px;
-                background-color: $primaryLightColor;
-            }
         }
     }
     .repo-generic-actions {

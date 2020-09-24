@@ -1,18 +1,14 @@
 <template>
-    <div class="repo-docker-container flex-column">
-        <template v-if="$route.query.tag">
-            <docker-tag-detail :tag="currentTag"></docker-tag-detail>
-        </template>
-        <template v-else-if="$route.query.docker">
-            <docker-detail
-                :docker="currentDocker"
-                :docker-tag-list="currentDocker.tagList || []"
-                @delete-tag="deleteTag"
-                @show-tag-detail="showDockerTagDetail">
-            </docker-detail>
-        </template>
+    <div class="repo-docker-container flex-column" v-bkloading="{ isLoading }">
+        <docker-tag-detail v-if="dockerTag" :tag="currentTag"></docker-tag-detail>
+        <docker-detail v-else-if="dockerName"
+            :docker="currentDocker"
+            :docker-tag-list="currentDocker.tagList || []"
+            @delete-tag="deleteTag"
+            @show-tag-detail="showDockerTagDetail">
+        </docker-detail>
         <template v-else-if="dockerList.length">
-            <main class="mb10 repo-docker-main" v-bkloading="{ isLoading }">
+            <main class="mb10 repo-docker-main">
                 <docker-card
                     class="mb20"
                     v-for="docker in dockerList"
@@ -34,9 +30,7 @@
                 :limit-list="pagination.limitList">
             </bk-pagination>
         </template>
-        <template v-else>
-            <div class="flex-column flex-center">{{ $t('noData') }}</div>
-        </template>
+        <div v-else class="flex-column flex-center">{{ $t('noData') }}</div>
     </div>
 </template>
 <script>
@@ -67,11 +61,17 @@
             repoName () {
                 return this.$route.query.name
             },
+            dockerName () {
+                return this.$route.query.docker
+            },
+            dockerTag () {
+                return this.$route.query.tag
+            },
             currentDocker () {
-                return this.dockerList.find(docker => docker.name === this.$route.query.docker) || {}
+                return this.dockerList.find(docker => docker.name === this.dockerName) || {}
             },
             currentTag () {
-                return ((this.currentDocker || {}).tagList || []).find(v => v.tag === this.$route.query.tag)
+                return (this.currentDocker.tagList || []).find(v => v.tag === this.dockerTag)
             }
         },
         watch: {
@@ -79,15 +79,17 @@
                 this.setBreadcrumb()
             },
             '$route.query.name' (repoName) {
-                this.initPage()
+                this.handlerPaginationChange()
             },
             '$route.query.docker' (dockerName) {
                 if (!dockerName) return
                 this.getTagList()
             }
         },
-        async mounted () {
-            this.initPage()
+        created () {
+            this.handlerPaginationChange().then(() => {
+                this.getTagList()
+            })
         },
         beforeDestroy () {
             this.SET_BREADCRUMB([])
@@ -100,13 +102,10 @@
                 'getDockerTagList',
                 'deleteDockerTag'
             ]),
-            initPage () {
-                this.searchHandler()
-            },
             searchHandler (query) {
                 if (query) this.queryName = query.name.join('')
                 this.isLoading = true
-                this.getDockerList({
+                return this.getDockerList({
                     projectId: this.projectId,
                     repoName: this.repoName,
                     current: this.pagination.current,
@@ -116,7 +115,6 @@
                     this.dockerList = records
                     this.pagination.count = totalRecords
                     this.setBreadcrumb()
-                    this.getTagList()
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -125,7 +123,7 @@
                 this.$bkInfo({
                     type: 'error',
                     title: this.$t('deleteDockerTitle', [docker.name]),
-                    subTitle: this.$t('deleteRepoSubTitle'),
+                    subTitle: this.$t('deleteDockerSubTitle'),
                     showFooter: true,
                     confirmFn: () => {
                         this.deleteDocker({
@@ -146,13 +144,13 @@
                 this.$bkInfo({
                     type: 'error',
                     title: this.$t('deleteTagTitle', [tagName]),
-                    subTitle: this.$t('deleteRepoSubTitle'),
+                    subTitle: this.$t('deleteTagSubTitle'),
                     showFooter: true,
                     confirmFn: () => {
                         this.deleteDockerTag({
                             projectId: this.projectId,
                             repoName: this.repoName,
-                            dockerName: this.$route.query.docker,
+                            dockerName: this.dockerName,
                             tagName
                         }).then(data => {
                             this.getTagList()
@@ -166,29 +164,29 @@
             },
             resetQueryAndBack () {
                 this.queryName = ''
-                this.initPage()
+                this.handlerPaginationChange()
             },
-            handlerPaginationChange ({ current = 1, limit = this.pagination.limit }) {
+            handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
-                this.searchHandler()
+                return this.searchHandler()
             },
             showDockerDetail (docker) {
                 this.$router.push({
                     path: this.$route.path,
                     query: {
-                        name: this.$route.query.name,
+                        name: this.repoName,
                         docker: docker.name
                     }
                 })
             },
             getTagList () {
-                if (!this.$route.query.docker) return
-                const docker = this.dockerList.find(v => v.name === this.$route.query.docker)
+                if (!this.dockerName) return
+                const docker = this.dockerList.find(v => v.name === this.dockerName)
                 this.getDockerTagList({
                     projectId: this.projectId,
                     repoName: this.repoName,
-                    dockerName: this.currentDocker.name
+                    dockerName: this.dockerName
                 }).then(({ records }) => {
                     this.$set(docker, 'tagList', records)
                     this.setBreadcrumb()
@@ -198,30 +196,28 @@
                 this.$router.push({
                     path: this.$route.path,
                     query: {
-                        name: this.$route.query.name,
-                        docker: this.currentDocker.name,
+                        name: this.repoName,
+                        docker: this.dockerName,
                         tag: tag.tag
                     }
                 })
             },
             setBreadcrumb () {
                 const breadcrumb = []
-                const dockerName = this.$route.query.docker
-                const tagName = this.$route.query.tag
-                if (dockerName) {
+                if (this.dockerName) {
                     breadcrumb.push({
-                        name: dockerName,
-                        value: dockerName,
+                        name: this.dockerName,
+                        value: this.dockerName,
                         list: this.dockerList.map(v => ({ name: v.name, value: v.name })),
                         changeHandler: name => {
                             this.showDockerDetail(this.dockerList.find(v => v.name === name))
                         },
                         cilckHandler: this.showDockerDetail
                     })
-                    if (tagName && this.currentDocker && this.currentDocker.tagList) {
+                    if (this.dockerTag && this.currentDocker.tagList) {
                         breadcrumb.push({
-                            name: tagName,
-                            value: tagName,
+                            name: this.dockerTag,
+                            value: this.dockerTag,
                             list: this.currentDocker.tagList.map(v => ({ name: v.tag, value: v.tag })),
                             changeHandler: name => {
                                 this.showDockerTagDetail(this.currentDocker.tagList.find(v => v.tag === name))

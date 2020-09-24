@@ -7,7 +7,7 @@
                 @click="showSelect(item, index)"
                 :class="{ 'pointer': item.list }">
                 <template v-if="item.showSelect">
-                    <bk-select class="breadcrumb-select" searchable :clearable="false" :value="item.value" @change="item.changeHandler">
+                    <bk-select ref="breadcrumbSelect" class="breadcrumb-select" searchable :clearable="false" :value="item.value" @change="item.changeHandler">
                         <bk-option
                             v-for="option in item.list"
                             :key="option.name"
@@ -46,6 +46,13 @@
                 })
                 if (selected.list && index === this.list.length - 1) {
                     this.$set(selected, 'showSelect', true)
+                    this.$nextTick(() => {
+                        const parent = this.$refs.breadcrumbSelect[0].$el
+                        parent.addEventListener('click', e => {
+                            e.stopPropagation()
+                        }, { capture: false, once: true })
+                        parent.querySelector('.bk-select-name').click()
+                    })
                 } else {
                     selected.cilckHandler(selected)
                 }

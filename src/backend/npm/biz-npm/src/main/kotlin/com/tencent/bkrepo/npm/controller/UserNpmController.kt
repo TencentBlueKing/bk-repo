@@ -7,10 +7,12 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.pojo.PackageInfoResponse
+import com.tencent.bkrepo.npm.pojo.user.PackageInfoResponse
 import com.tencent.bkrepo.npm.pojo.user.NpmPackageInfo
 import com.tencent.bkrepo.npm.pojo.user.NpmPackageVersionInfo
 import com.tencent.bkrepo.npm.pojo.user.PackageDeleteRequest
+import com.tencent.bkrepo.npm.pojo.user.PackageVersionDeleteRequest
+import com.tencent.bkrepo.npm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.npm.service.NpmWebService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -31,9 +33,53 @@ class UserNpmController(
 ) {
 
     @ApiOperation("查询包的相关信息")
-    @GetMapping("/query/{projectId}/{repoName}/*")
-    fun queryPackageInfo(@ArtifactPathVariable artifactInfo: NpmArtifactInfo): Response<PackageInfoResponse> {
-        return ResponseBuilder.success(npmWebService.queryPackageInfo(artifactInfo))
+    @GetMapping("/query/{projectId}/{repoName}/{name}")
+    fun queryPackageInfo(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @ApiParam(value = "包名称", required = true)
+        @PathVariable name: String
+    ): Response<PackageInfoResponse> {
+        return ResponseBuilder.success(npmWebService.queryPackageInfo(artifactInfo, name))
+    }
+
+    @ApiOperation("查询包的相关信息")
+    @GetMapping("/query/{projectId}/{repoName}/@{scope}/{name}")
+    fun queryPackageInfo(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @ApiParam(value = "scope包名称", required = true)
+        @PathVariable scope: String,
+        @ApiParam(value = "包名称", required = true)
+        @PathVariable name: String
+    ): Response<PackageInfoResponse> {
+        val pkgName = String.format("@%s/%s", scope, name)
+        return ResponseBuilder.success(npmWebService.queryPackageInfo(artifactInfo, pkgName))
+    }
+
+    @ApiOperation("查询包的版本详情")
+    @GetMapping("/detail/{projectId}/{repoName}/{name}/{version}")
+    fun detailVersion(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @ApiParam(value = "包名称", required = true)
+        @PathVariable name: String,
+        @ApiParam(value = "包名称", required = true)
+        @PathVariable version: String
+    ): Response<PackageVersionInfo> {
+        return ResponseBuilder.success(npmWebService.detailVersion(artifactInfo, name, version))
+    }
+
+    @ApiOperation("查询包的版本详情")
+    @GetMapping("/detail/{projectId}/{repoName}/@{scope}/{name}/{version}")
+    fun detailVersion(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @ApiParam(value = "包scope名称", required = true)
+        @PathVariable scope: String,
+        @ApiParam(value = "包名称", required = true)
+        @PathVariable name: String,
+        @ApiParam(value = "包名称", required = true)
+        @PathVariable version: String
+    ): Response<PackageVersionInfo> {
+        val pkgName = String.format("@%s/%s", scope, name)
+        return ResponseBuilder.success(npmWebService.detailVersion(artifactInfo, pkgName, version))
     }
 
     @ApiOperation("查询仓库下对应的包列表")
@@ -87,6 +133,33 @@ class UserNpmController(
         )
     }
 
+    @ApiOperation("查询仓库下包对应的版本列表")
+    @GetMapping("/page/{projectId}/{repoName}/@{scope}/{name}")
+    fun queryPkgVersionList(
+        @RequestAttribute
+        userId: String?,
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @ApiParam(value = "当前页", required = true, defaultValue = "1")
+        @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
+        @ApiParam(value = "分页大小", required = true, defaultValue = "20")
+        @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE,
+        @ApiParam(value = "包scope名称", required = true)
+        @PathVariable scope: String,
+        @ApiParam(value = "包名称", required = true)
+        @PathVariable name: String
+    ): Response<Page<NpmPackageVersionInfo>> {
+        val pkgName = String.format("@%s/%s", scope, name)
+        return ResponseBuilder.success(
+            npmWebService.queryPkgVersionList(
+                userId,
+                artifactInfo,
+                pageNumber,
+                pageSize,
+                pkgName
+            )
+        )
+    }
+
     @ApiOperation("删除仓库下的包")
     @DeleteMapping("/delete/{projectId}/{repoName}/{name}")
     fun deletePackage(
@@ -98,9 +171,74 @@ class UserNpmController(
     ): Response<Void> {
         with(artifactInfo) {
             val deleteRequest = PackageDeleteRequest(
-                projectId, repoName, artifactUri, userId
+                projectId, repoName, "", name, userId
             )
             npmWebService.deletePackage(deleteRequest)
+            return ResponseBuilder.success()
+        }
+    }
+
+    @ApiOperation("删除仓库下的包")
+    @DeleteMapping("/delete/{projectId}/{repoName}/@{scope}/{name}")
+    fun deletePackage(
+        @RequestAttribute
+        userId: String,
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @ApiParam(value = "scope名称", required = true)
+        @PathVariable scope: String,
+        @ApiParam(value = "包名称", required = true)
+        @PathVariable name: String
+    ): Response<Void> {
+        with(artifactInfo) {
+            //val pkgName = String.format("@%s/%s", scope, name)
+            val deleteRequest = PackageDeleteRequest(
+                projectId, repoName, scope, name, userId
+            )
+            npmWebService.deletePackage(deleteRequest)
+            return ResponseBuilder.success()
+        }
+    }
+
+    @ApiOperation("删除仓库下的包")
+    @DeleteMapping("/delete/{projectId}/{repoName}/{name}/{version}")
+    fun deleteVersion(
+        @RequestAttribute
+        userId: String,
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @ApiParam(value = "包名称", required = true)
+        @PathVariable name: String,
+        @ApiParam(value = "包版本", required = true)
+        @PathVariable version: String
+    ): Response<Void> {
+        with(artifactInfo) {
+            //val pkgName = String.format("@%s/%s", scope, name)
+            val deleteRequest = PackageVersionDeleteRequest(
+                projectId, repoName, "", name, version, userId
+            )
+            npmWebService.deleteVersion(deleteRequest)
+            return ResponseBuilder.success()
+        }
+    }
+
+    @ApiOperation("删除仓库下的包")
+    @DeleteMapping("/delete/{projectId}/{repoName}/@{scope}/{name}/{version}")
+    fun deleteVersion(
+        @RequestAttribute
+        userId: String,
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @ApiParam(value = "scope名称", required = true)
+        @PathVariable scope: String,
+        @ApiParam(value = "包名称", required = true)
+        @PathVariable name: String,
+        @ApiParam(value = "包版本", required = true)
+        @PathVariable version: String
+    ): Response<Void> {
+        with(artifactInfo) {
+            //val pkgName = String.format("@%s/%s", scope, name)
+            val deleteRequest = PackageVersionDeleteRequest(
+                projectId, repoName, scope, name, version, userId
+            )
+            npmWebService.deleteVersion(deleteRequest)
             return ResponseBuilder.success()
         }
     }
