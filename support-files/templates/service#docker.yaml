@@ -4,4 +4,4 @@ server:
 
 auth:
   enable: true
-  url: http://__BK_REPO_HOST/docker/v2/auth
+  url: http://__BK_REPO_HOST__/docker/v2/auth
