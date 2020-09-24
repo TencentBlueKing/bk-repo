@@ -3,12 +3,14 @@ import Vue from 'vue'
 import generic from './generic'
 import docker from './docker'
 import search from './search'
+import npm from './npm'
 
 const prefix = 'repository/api'
 
 export default {
     ...generic,
     ...docker,
+    ...npm,
     ...search,
     /*
         创建仓库

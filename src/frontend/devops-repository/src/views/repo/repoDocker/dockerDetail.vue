@@ -49,8 +49,8 @@
                         size="small"
                         @row-click="toDockerTagDetail"
                         :pagination="pagination"
-                        @page-change="current => paginationChange({ current })"
-                        @page-limit-change="limit => paginationChange({ limit })"
+                        @page-change="current => handlerPaginationChange({ current })"
+                        @page-limit-change="limit => handlerPaginationChange({ limit })"
                     >
                         <bk-table-column :label="$t('name')" prop="tag"></bk-table-column>
                         <bk-table-column :label="$t('artiStatus')">
@@ -100,30 +100,6 @@
             return {
                 convertFileSize,
                 tagNameInput: '',
-                filterList: [
-                    {
-                        id: 'tagName',
-                        name: 'Tag'
-                    },
-                    {
-                        id: 'status',
-                        name: '状态',
-                        children: [
-                            {
-                                id: 'all',
-                                name: '全部'
-                            },
-                            {
-                                id: 'prelease',
-                                name: '@prerelease'
-                            },
-                            {
-                                id: 'release',
-                                name: '@release'
-                            }
-                        ]
-                    }
-                ],
                 pagination: {
                     count: this.dockerTagList.length,
                     current: 1,
@@ -142,12 +118,14 @@
             }
         },
         watch: {
-            tagNameInput () {
-                console.log(this.tagNameInput)
+            dockerTagList (list) {
+                if (list.length < (this.pagination.current - 1) * this.pagination.limit) {
+                    this.pagination.current--
+                }
             }
         },
         methods: {
-            paginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
+            handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
             },

@@ -30,9 +30,9 @@
                 </bk-radio-group>
             </div>
         </div>
-        <main class="repo-search-result flex-column">
+        <main class="repo-search-result flex-column" v-bkloading="{ isLoading }">
             <template v-if="resultList.length">
-                <main class="mb10 result-list" v-bkloading="{ isLoading }">
+                <main class="mb10 result-list">
                     <div class="hover-btn result-item"
                         @click="toRepoDetail(result)"
                         v-for="result in resultList"
@@ -41,7 +41,7 @@
                             <icon size="24" :name="currentRepoType" />
                             <span class="ml20 mr20 result-repo-name">{{result.repoName}}</span>
                             <template v-if="result.stageTag">
-                                <span class="mr5 result-tag" v-for="tag in result.stageTag.split(',')" :key="tag + result.repoName + result.fullPath">
+                                <span class="mr5 repo-tag" v-for="tag in result.stageTag.split(',')" :key="tag + result.repoName + result.fullPath">
                                     {{tag}}
                                 </span>
                             </template>
@@ -95,7 +95,7 @@
             }
         },
         created () {
-            this.searchHandler()
+            this.handlerPaginationChange()
         },
         methods: {
             ...mapActions([
@@ -130,7 +130,7 @@
                     }
                 })
             },
-            handlerPaginationChange ({ current = 1, limit = this.pagination.limit }) {
+            handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
                 this.searchHandler()
@@ -216,13 +216,6 @@
                 margin-bottom: 20px;
                 .result-repo-name {
                     font-size: 16px;
-                }
-                .result-tag {
-                    display: inline-block;
-                    padding: 5px;
-                    border-radius: 5px;
-                    font-size: 14px;
-                    background-color: $primaryLightColor;
                 }
                 .result-path {
                     display: inline-block;

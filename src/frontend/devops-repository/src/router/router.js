@@ -28,6 +28,8 @@ const repoGeneric = () => import(/* webpackChunkName: "repoGeneric" */'@/views/r
 
 const repoDocker = () => import(/* webpackChunkName: "repoDocker" */'@/views/repo/repoDocker')
 
+const repoNpm = () => import(/* webpackChunkName: "repoNpm" */'@/views/repo/repoNpm')
+
 const repoSearch = () => import(/* webpackChunkName: "repoSearch" */'@/views/repoSearch')
 
 const routes = [
@@ -94,6 +96,11 @@ const routes = [
                         path: 'docker',
                         name: 'docker',
                         component: repoDocker
+                    },
+                    {
+                        path: 'npm',
+                        name: 'npm',
+                        component: repoNpm
                     }
                 ]
             },

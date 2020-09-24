@@ -56,11 +56,17 @@
     import Breadcrumb from '@/components/Breadcrumb'
     import RepoSelect from '@/components/RepoSelect'
     import dockerGuide from './repoDocker/dockerGuide'
+    import npmGuide from './repoNpm/npmGuide'
     import filterList from './filter'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'repoDetail',
-        components: { Breadcrumb, RepoSelect, 'docker-guide': dockerGuide },
+        components: {
+            Breadcrumb,
+            RepoSelect,
+            'docker-guide': dockerGuide,
+            'npm-guide': npmGuide
+        },
         data () {
             return {
                 repoList: [],

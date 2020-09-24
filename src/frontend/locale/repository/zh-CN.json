@@ -32,8 +32,12 @@
     "enterSearch": "按下Enter键搜索",
     "deleteRepoTitle": "确定删除仓库 {0} ?",
     "deleteDockerTitle": "确定删除Docker镜像 {0} ?",
+    "deleteNpmTitle": "确定删除Npm包 {0} ?",
     "deleteTagTitle": "确定删除Tag {0} ?",
-    "deleteRepoSubTitle": "此操作不可撤销，将永久删除仓库和其下所有制品。",
+    "deleteRepoSubTitle": "此操作不可撤销，将永久删除仓库和其下所有制品",
+    "deleteDockerSubTitle": "此操作不可撤销，将永久删除Docker镜像和其下所有Tag",
+    "deleteTagSubTitle": "此操作不可撤销，将永久删除Tag",
+    "deleteNpmSubTitle": "此操作不可撤销，将永久删除Npm包和其下所有版本",
     "delete": "删除",
     "success": "成功",
     "fail": "失败",
@@ -90,5 +94,7 @@
     "modifiedOn": "更新于",
     "dockerBaseInfo1": "Docker公共构建机构建机基础镜像",
     "dockerBaseInfo2": "Docker无编译环境基础镜像",
-    "dockerBaseInfo3": "无编译环境的特点是小，基础的。没有编译环境等特殊依赖"
+    "dockerBaseInfo3": "无编译环境的特点是小，基础的。没有编译环境等特殊依赖",
+    "packageName": "包名称",
+    "latestVersion": "最新版本"
 }
