@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import org.springframework.stereotype.Service
@@ -45,5 +46,12 @@ class MavenService{
         val context = ArtifactSearchContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.search(context)
+    }
+
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo): Any? {
+        val context = ArtifactQueryContext()
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+        return repository.query(context)
     }
 }
