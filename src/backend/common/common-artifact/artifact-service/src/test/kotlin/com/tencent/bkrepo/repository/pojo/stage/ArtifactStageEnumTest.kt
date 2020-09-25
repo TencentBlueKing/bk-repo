@@ -30,12 +30,12 @@ internal class ArtifactStageEnumTest {
     @Test
     @DisplayName("测试ofTag")
     fun testOfTag() {
-        Assertions.assertEquals(ArtifactStageEnum.NONE, ArtifactStageEnum.ofTag(""))
-        Assertions.assertEquals(ArtifactStageEnum.NONE, ArtifactStageEnum.ofTag("  "))
-        Assertions.assertEquals(ArtifactStageEnum.NONE, ArtifactStageEnum.ofTag(null))
-        Assertions.assertEquals(ArtifactStageEnum.RELEASE, ArtifactStageEnum.ofTag("@release"))
-        Assertions.assertEquals(ArtifactStageEnum.RELEASE, ArtifactStageEnum.ofTag("release"))
-        Assertions.assertNull(ArtifactStageEnum.ofTag("xxx"))
+        Assertions.assertEquals(ArtifactStageEnum.NONE, ArtifactStageEnum.ofTagOrDefault(""))
+        Assertions.assertEquals(ArtifactStageEnum.NONE, ArtifactStageEnum.ofTagOrDefault("  "))
+        Assertions.assertEquals(ArtifactStageEnum.NONE, ArtifactStageEnum.ofTagOrDefault(null))
+        Assertions.assertEquals(ArtifactStageEnum.RELEASE, ArtifactStageEnum.ofTagOrDefault("@release"))
+        Assertions.assertEquals(ArtifactStageEnum.RELEASE, ArtifactStageEnum.ofTagOrDefault("release"))
+        Assertions.assertNull(ArtifactStageEnum.ofTagOrDefault("xxx"))
     }
 
     @Test

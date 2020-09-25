@@ -1,18 +1,12 @@
 package com.tencent.bkrepo.repository.pojo.stage
 
-import com.tencent.bkrepo.common.api.constant.CharPool.AT
-import com.tencent.bkrepo.common.api.constant.StringPool.COMMA
-import com.tencent.bkrepo.common.api.constant.ensurePrefix
-
 /**
  * 制品晋级阶段枚举类
  */
 enum class ArtifactStageEnum(
     val tag: String
 ) {
-    /**
-     * 无
-     */
+
     NONE(""),
 
     /**
@@ -47,22 +41,14 @@ enum class ArtifactStageEnum(
         /**
          * 根据[tag]反查[ArtifactStageEnum]
          *
-         * [tag]支持传入多个，以逗号分隔，返回最新的Stage
-         * [tag]为null则返回[NONE]
+         * 当找不到[tag]对应的值时返回[NONE]
          */
-        fun ofTag(tag: String?): ArtifactStageEnum? {
+        @Throws(IllegalArgumentException::class)
+        fun ofTagOrDefault(tag: String?): ArtifactStageEnum {
             if (tag.isNullOrBlank()) {
                 return NONE
             }
-            val lastTag = tag.split(COMMA).lastOrNull()?.ensurePrefix(AT)?.toLowerCase()
-            return values().find { stage -> stage.tag == lastTag }
-        }
-
-        /**
-         * 根据[tag]反查[ArtifactStageEnum]，[tag]为空或不存在返回默认[NONE]
-         */
-        fun ofTagOrDefault(tag: String?): ArtifactStageEnum {
-            return ofTag(tag) ?: NONE
+            return values().find { stage -> stage.tag == tag } ?: NONE
         }
 
         /**
@@ -76,7 +62,8 @@ enum class ArtifactStageEnum(
             if (tag.isNullOrBlank()) {
                 return null
             }
-            return ofTag(tag) ?: throw IllegalArgumentException("Unknown tag")
+            return values().find { stage -> stage.tag == tag } ?: throw IllegalArgumentException("Unknown tag")
         }
+
     }
 }

@@ -68,6 +68,8 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao remove: [$query]")
         }
+        val determineCollectionName = determineCollectionName(query)
+        val determineMongoTemplate = determineMongoTemplate()
         return determineMongoTemplate().remove(query, classType, determineCollectionName(query))
     }
 
@@ -117,7 +119,7 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         var collectionName: String? = null
         if (classType.isAnnotationPresent(Document::class.java)) {
             val document = classType.getAnnotation(Document::class.java)
-            collectionName = document.collection
+            collectionName = if(document.collection.isNotBlank()) document.collection else document.value
         }
 
         return if (collectionName.isNullOrEmpty()) MongoCollectionUtils.getPreferredCollectionName(classType) else collectionName

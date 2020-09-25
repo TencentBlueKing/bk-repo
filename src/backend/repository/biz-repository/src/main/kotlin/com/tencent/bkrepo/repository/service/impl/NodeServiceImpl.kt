@@ -41,6 +41,7 @@ import com.tencent.bkrepo.repository.service.FileReferenceService
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
+import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeDeleteUpdate
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeExpireDateUpdate
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeListCriteria
@@ -130,7 +131,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
     ): List<NodeInfo> {
         val normalizedPath = normalizePath(path)
         val query = nodeListQuery(projectId, repoName, normalizedPath, includeFolder, includeMetadata, deep, false)
-        if (nodeDao.count(query) > repositoryProperties.listThreshold) {
+        if (nodeDao.count(query) > repositoryProperties.listCountLimit) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
         }
         return nodeDao.find(query).map { convert(it)!! }
@@ -150,7 +151,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
         if (pageNumber < 0) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageNumber")
         }
-        if (pageSize < 0 || pageSize > repositoryProperties.listThreshold) {
+        if (pageSize < 0 || pageSize > repositoryProperties.listCountLimit) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageSize")
         }
         val query = nodeListQuery(projectId, repoName, path, includeFolder, includeMetadata, deep, sort)
@@ -206,7 +207,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 size = if (folder) 0 else size ?: 0,
                 sha256 = if (folder) null else sha256,
                 md5 = if (folder) null else md5,
-                metadata = MetadataServiceImpl.convert(metadata),
+                metadata = MetadataUtils.fromMap(metadata),
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
@@ -533,7 +534,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
 
         private fun convert(tNode: TNode?): NodeInfo? {
             return tNode?.let {
-                val metadata = MetadataServiceImpl.convert(it.metadata)
+                val metadata = MetadataUtils.toMap(it.metadata)
                 NodeInfo(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),

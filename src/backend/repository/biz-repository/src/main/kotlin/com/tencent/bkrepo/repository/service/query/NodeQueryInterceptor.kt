@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service.query
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -43,6 +44,6 @@ class NodeQueryInterceptor : QueryModelInterceptor {
      * 添加deleted属性为null的查询条件到[queryModel]中
      */
     private fun setDeletedNull(queryModel: QueryModel) {
-        queryModel.addQueryRule(Rule.QueryRule(TNode::deleted.name, 0, OperationType.EQ))
+        queryModel.addQueryRule(Rule.QueryRule(TNode::deleted.name, StringPool.EMPTY, OperationType.NULL))
     }
 }

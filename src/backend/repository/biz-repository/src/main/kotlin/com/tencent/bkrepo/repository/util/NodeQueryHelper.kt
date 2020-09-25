@@ -18,7 +18,7 @@ object NodeQueryHelper {
     fun nodeQuery(projectId: String, repoName: String, fullPath: String? = null): Query {
         val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
             .and(TNode::repoName.name).`is`(repoName)
-            .and(TNode::deleted.name).`is`(0)
+            .and(TNode::deleted.name).`is`(null)
             .apply { fullPath?.run { and(TNode::fullPath.name).`is`(fullPath) } }
         return Query(criteria)
     }
@@ -27,7 +27,7 @@ object NodeQueryHelper {
         val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
             .and(TNode::repoName.name).`is`(repoName)
             .and(TNode::fullPath.name).`in`(fullPath)
-            .and(TNode::deleted.name).`is`(0)
+            .and(TNode::deleted.name).`is`(null)
         return Query(criteria)
     }
 
@@ -36,7 +36,7 @@ object NodeQueryHelper {
         val escapedPath = escapeRegex(nodePath)
         val criteria = Criteria.where(TNode::projectId.name).`is`(projectId)
             .and(TNode::repoName.name).`is`(repoName)
-            .and(TNode::deleted.name).`is`(0)
+            .and(TNode::deleted.name).`is`(null)
         if (deep) {
             if (!isRoot(nodePath)) {
                 criteria.and(TNode::fullPath.name).regex("^$escapedPath")
