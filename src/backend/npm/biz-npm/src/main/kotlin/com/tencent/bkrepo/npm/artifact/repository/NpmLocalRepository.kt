@@ -84,10 +84,10 @@ class NpmLocalRepository : LocalRepository() {
     @Autowired
     lateinit var metadataClient: MetadataClient
 
-    @Value("\${npm.migration.remote.registry}")
+    @Value("\${npm.migration.remote.registry: ${StringPool.EMPTY}}")
     private val registry: String = StringPool.EMPTY
 
-    @Value("\${npm.tarball.prefix}")
+    @Value("\${npm.tarball.prefix: ${StringPool.SLASH}}")
     private val tarballPrefix: String = StringPool.SLASH
 
     @Autowired

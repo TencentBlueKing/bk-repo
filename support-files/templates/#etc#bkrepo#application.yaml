@@ -5,7 +5,7 @@ spring:
         tags: bkce
   data:
     mongodb:
-      uri: mongodb://__BK_REPO_MONGODB_HOST__:__BK_REPO_MONGODB_PORT__/__BK_REPO_MONGODB_DB_NAME__?maxPoolSize=100
+      uri: mongodb://__BK_REPO_MONGODB_ADDR__/__BK_REPO_MONGODB_DB_NAME__?maxPoolSize=100
       transaction:
         enabled: false
 
