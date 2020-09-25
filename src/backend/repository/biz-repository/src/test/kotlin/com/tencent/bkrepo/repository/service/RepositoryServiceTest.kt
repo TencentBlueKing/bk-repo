@@ -46,6 +46,7 @@ class RepositoryServiceTest @Autowired constructor(
     private lateinit var nodeService: NodeService
 
     private val storageCredentials = FileSystemCredentials().apply {
+        key = UT_STORAGE_CREDENTIALS_KEY
         path = "test"
         cache.enabled = true
         cache.path = "cache-test"
@@ -86,22 +87,36 @@ class RepositoryServiceTest @Autowired constructor(
         assertEquals(0, repositoryService.list(UT_PROJECT_ID).size)
         val size = 51L
         repeat(size.toInt()) { repositoryService.create(createRequest("repo$it")) }
+        // 兼容性测试
         var page = repositoryService.page(UT_PROJECT_ID, 0, 10)
         assertEquals(10, page.records.size)
         assertEquals(size, page.totalRecords)
-        assertEquals(0, page.totalPages)
+        assertEquals(6, page.totalPages)
         assertEquals(10, page.pageSize)
+        assertEquals(1, page.pageNumber)
 
-        page = repositoryService.page(UT_PROJECT_ID, 5, 10)
-        assertEquals(1, page.records.size)
-        page = repositoryService.page(UT_PROJECT_ID, 6, 10)
-        assertEquals(0, page.records.size)
-
-        page = repositoryService.page(UT_PROJECT_ID, 0, 20)
-        assertEquals(20, page.records.size)
+        // 测试第一页
+        page = repositoryService.page(UT_PROJECT_ID, 1, 10)
+        assertEquals(10, page.records.size)
         assertEquals(size, page.totalRecords)
-        assertEquals(0, page.totalPages)
-        assertEquals(20, page.pageSize)
+        assertEquals(6, page.totalPages)
+        assertEquals(10, page.pageSize)
+        assertEquals(1, page.pageNumber)
+
+        page = repositoryService.page(UT_PROJECT_ID, 6, 10)
+        assertEquals(1, page.records.size)
+        assertEquals(size, page.totalRecords)
+        assertEquals(6, page.totalPages)
+        assertEquals(10, page.pageSize)
+        assertEquals(6, page.pageNumber)
+
+        // 测试空页码
+        page = repositoryService.page(UT_PROJECT_ID, 7, 10)
+        assertEquals(0, page.records.size)
+        assertEquals(size, page.totalRecords)
+        assertEquals(6, page.totalPages)
+        assertEquals(10, page.pageSize)
+        assertEquals(7, page.pageNumber)
     }
 
     @Test
@@ -158,10 +173,8 @@ class RepositoryServiceTest @Autowired constructor(
         repositoryProperties.defaultStorageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY
         repositoryService.create(createRequest())
         val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
-
         val dbCredential = repository.storageCredentials
         assertEquals(storageCredentials, dbCredential)
-        assertNull(repository.storageCredentials!!.key)
     }
 
     @Test

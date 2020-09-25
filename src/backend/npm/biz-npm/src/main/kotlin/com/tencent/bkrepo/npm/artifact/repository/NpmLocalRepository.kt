@@ -84,10 +84,10 @@ class NpmLocalRepository : LocalRepository() {
     @Autowired
     lateinit var metadataClient: MetadataClient
 
-    @Value("\${npm.migration.remote.registry}")
+    @Value("\${npm.migration.remote.registry: ${StringPool.EMPTY}}")
     private val registry: String = StringPool.EMPTY
 
-    @Value("\${npm.tarball.prefix}")
+    @Value("\${npm.tarball.prefix: ${StringPool.SLASH}}")
     private val tarballPrefix: String = StringPool.SLASH
 
     @Autowired
@@ -181,8 +181,9 @@ class NpmLocalRepository : LocalRepository() {
             val metadataInfo =
                 metadataClient.query(context.artifactInfo.projectId, context.artifactInfo.repoName, tgzFullPath).data
             metadataInfo?.forEach { (key, value) ->
-                if (StringUtils.isNotBlank(value)) fileJson.addProperty(key, value)
-                if (key == KEYWORDS || key == MAINTAINERS) fileJson.add(key, GsonUtils.stringToArray(value))
+
+                if (value is String && StringUtils.isNotBlank(value)) fileJson.addProperty(key, value)
+                if (key == KEYWORDS || key == MAINTAINERS) fileJson.add(key, GsonUtils.stringToArray(value as String))
             }
             // 根据配置和请求头来进行判断返回的URL
             val oldTarball = fileJson.getAsJsonObject(DIST)[TARBALL].asString
@@ -197,10 +198,10 @@ class NpmLocalRepository : LocalRepository() {
                     metadataClient.query(context.artifactInfo.projectId, context.artifactInfo.repoName, tgzFullPath)
                         .data
                 metadataInfo?.forEach { (key, value) ->
-                    if (StringUtils.isNotBlank(value)) versions.getAsJsonObject(it).addProperty(key, value)
+                    if (value is String && StringUtils.isNotBlank(value)) versions.getAsJsonObject(it).addProperty(key, value)
                     if (key == KEYWORDS || key == MAINTAINERS) versions.getAsJsonObject(it).add(
                         key,
-                        GsonUtils.stringToArray(value)
+                        GsonUtils.stringToArray(value as String)
                     )
                 }
                 val versionObject = versions.getAsJsonObject(it)

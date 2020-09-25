@@ -1,10 +1,7 @@
 package com.tencent.bkrepo.maven.service.impl
 
 import com.tencent.bkrepo.common.api.util.readXmlString
-import com.tencent.bkrepo.common.api.util.toXmlString
 import com.tencent.bkrepo.maven.pojo.MavenMetadata
-import com.tencent.bkrepo.maven.pojo.MavenVersioning
-import com.tencent.bkrepo.maven.pojo.MavenVersions
 import org.junit.jupiter.api.Test
 
 class MavenServiceImplTest {

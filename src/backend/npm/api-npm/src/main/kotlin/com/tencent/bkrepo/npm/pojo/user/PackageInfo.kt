@@ -1,13 +1,12 @@
 package com.tencent.bkrepo.npm.pojo.user
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.npm.pojo.module.des.ModuleDepsInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiModelProperty
 
 @Api("npm页面返回包装模型")
-data class PackageInfoResponse(
+data class PackageInfo(
     @ApiModelProperty("包名称")
     val name: String,
     @ApiModelProperty("包描述信息")
@@ -27,7 +26,7 @@ data class PackageInfoResponse(
     @ApiModelProperty("包的开发依赖信息")
     val devDependencies: List<DependenciesInfo>,
     @ApiModelProperty("包的被依赖信息")
-    val dependents: Page<ModuleDepsInfo>
+    val dependents: List<ModuleDepsInfo>
 )
 
 data class TagsInfo(

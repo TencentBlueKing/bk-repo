@@ -270,7 +270,7 @@ class DockerArtifactRepo @Autowired constructor(
     fun getAttribute(projectId: String, repoName: String, fullPath: String, key: String): String? {
         val result = metadataService.query(projectId, repoName, fullPath).data!!
         logger.debug("get attribute params : [$projectId,$repoName,$fullPath,$key] ,result: [$result]")
-        return result[key]
+        return result[key] as String
     }
 
     /**

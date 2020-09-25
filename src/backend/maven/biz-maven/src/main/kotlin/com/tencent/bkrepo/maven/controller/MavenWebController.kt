@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class MavenWebController(
-        private val mavenService: MavenService
+    private val mavenService: MavenService
 ) : MavenWebResource {
     @DeleteMapping(MavenArtifactInfo.MAVEN_MAPPING_URI)
     override fun delete(@ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo): Response<String> {
@@ -27,5 +27,4 @@ class MavenWebController(
     override fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo): Response<Any?> {
         return ResponseBuilder.success(mavenService.artifactDetail(mavenArtifactInfo))
     }
-
 }
