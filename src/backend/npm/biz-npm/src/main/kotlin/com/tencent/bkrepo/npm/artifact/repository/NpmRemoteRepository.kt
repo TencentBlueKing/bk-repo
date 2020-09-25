@@ -42,7 +42,7 @@ import java.io.InputStream
 @Component
 class NpmRemoteRepository : RemoteRepository() {
 
-    @Value("\${npm.tarball.prefix}")
+    @Value("\${npm.tarball.prefix: ${StringPool.SLASH}}")
     private val tarballPrefix: String = StringPool.SLASH
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
