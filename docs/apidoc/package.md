@@ -150,7 +150,7 @@
 
 ### 删除包
 
-- API: GET /repository/api/package/delete/{projectId}/{repoName}?packageKey=gav://com.tencent:test
+- API: DELETE /repository/api/package/delete/{projectId}/{repoName}?packageKey=gav://com.tencent:test
 
 - API 名称: delete_package
 
@@ -262,7 +262,7 @@
 
 ### 删除版本
 
-- API: GET /repository/api/version/delete/{projectId}/{repoName}?packageKey=npm://test&version=0.0.1
+- API: DELETE /repository/api/version/delete/{projectId}/{repoName}?packageKey=npm://test&version=0.0.1
 
 - API 名称: delete_version
 
