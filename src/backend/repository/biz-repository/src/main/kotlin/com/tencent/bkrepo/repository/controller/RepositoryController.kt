@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
@@ -37,6 +38,10 @@ class RepositoryController(
 
     override fun page(pageNumber: Int, pageSize: Int, projectId: String): Response<Page<RepositoryInfo>> {
         return ResponseBuilder.success(repositoryService.page(projectId, pageNumber, pageSize))
+    }
+
+    override fun rangeQuery(request: RepoRangeQueryRequest): Response<Page<RepositoryInfo?>> {
+        return ResponseBuilder.success(repositoryService.rangeQuery(request))
     }
 
     override fun create(repoCreateRequest: RepoCreateRequest): Response<RepositoryDetail> {

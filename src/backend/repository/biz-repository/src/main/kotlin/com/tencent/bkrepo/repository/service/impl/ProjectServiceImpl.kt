@@ -2,17 +2,20 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.repository.dao.repository.ProjectRepository
 import com.tencent.bkrepo.repository.listener.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.repository.model.TProject
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.service.ProjectService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -32,6 +35,21 @@ class ProjectServiceImpl(
 
     override fun list(): List<ProjectInfo> {
         return projectRepository.findAll().map { convert(it)!! }
+    }
+
+    override fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?> {
+        val limit = request.limit
+        val skip = request.offset
+        return if (request.projectIds.isEmpty()) {
+            val totalCount = projectRepository.count()
+            val records = mongoTemplate.find(Query().skip(skip).limit(limit), TProject::class.java).map { convert(it) }
+            Page(0, limit, totalCount, records)
+        } else {
+            val criteria = Criteria.where(TProject::name.name).inValues(request.projectIds)
+            val totalCount = mongoTemplate.count(Query(criteria), TProject::class.java)
+            val records = mongoTemplate.find(Query(criteria).limit(limit).skip(skip), TProject::class.java).map { convert(it) }
+            Page(0, limit, totalCount, records)
+        }
     }
 
     override fun exist(name: String): Boolean {

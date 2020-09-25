@@ -3,6 +3,7 @@ package com.tencent.bkrepo.repository.api
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
+import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
@@ -76,6 +77,10 @@ interface RepositoryClient {
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String
     ): Response<Page<RepositoryInfo>>
+
+    @ApiOperation("仓库分页查询")
+    @GetMapping("/rangeQuery")
+    fun rangeQuery(@RequestBody request: RepoRangeQueryRequest): Response<Page<RepositoryInfo?>>
 
     @ApiOperation("创建仓库")
     @PostMapping

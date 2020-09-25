@@ -1,8 +1,10 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 
 /**
  * 项目服务接口
@@ -18,6 +20,11 @@ interface ProjectService {
      * 查询项目列表
      */
     fun list(): List<ProjectInfo>
+
+    /**
+     * 分页查询项目列表
+     */
+    fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?>
 
     /**
      * 判断名称为[name]的项目是否存在
