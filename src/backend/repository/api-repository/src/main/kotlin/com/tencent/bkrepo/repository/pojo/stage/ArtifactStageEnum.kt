@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.repository.pojo.stage
 
+import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.common.api.constant.ensurePrefix
+
 /**
  * 制品晋级阶段枚举类
  */
@@ -48,7 +51,8 @@ enum class ArtifactStageEnum(
             if (tag.isNullOrBlank()) {
                 return NONE
             }
-            return values().find { stage -> stage.tag == tag } ?: NONE
+            val normalizedTag = tag.ensurePrefix(CharPool.AT).toLowerCase()
+            return values().find { stage -> stage.tag == normalizedTag } ?: NONE
         }
 
         /**

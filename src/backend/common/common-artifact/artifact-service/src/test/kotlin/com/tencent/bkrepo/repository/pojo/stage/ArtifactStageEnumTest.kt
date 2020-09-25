@@ -28,17 +28,6 @@ internal class ArtifactStageEnumTest {
     }
 
     @Test
-    @DisplayName("测试ofTag")
-    fun testOfTag() {
-        Assertions.assertEquals(ArtifactStageEnum.NONE, ArtifactStageEnum.ofTagOrDefault(""))
-        Assertions.assertEquals(ArtifactStageEnum.NONE, ArtifactStageEnum.ofTagOrDefault("  "))
-        Assertions.assertEquals(ArtifactStageEnum.NONE, ArtifactStageEnum.ofTagOrDefault(null))
-        Assertions.assertEquals(ArtifactStageEnum.RELEASE, ArtifactStageEnum.ofTagOrDefault("@release"))
-        Assertions.assertEquals(ArtifactStageEnum.RELEASE, ArtifactStageEnum.ofTagOrDefault("release"))
-        Assertions.assertNull(ArtifactStageEnum.ofTagOrDefault("xxx"))
-    }
-
-    @Test
     @DisplayName("测试ofTagOrDefault")
     fun testOfTagOrDefault() {
         Assertions.assertEquals(ArtifactStageEnum.NONE, ArtifactStageEnum.ofTagOrDefault(""))
@@ -49,8 +38,8 @@ internal class ArtifactStageEnumTest {
     }
 
     @Test
-    @DisplayName("测试ofTagOrThrow")
-    fun testOfTagOrThrow() {
+    @DisplayName("测试ofTagOrNull")
+    fun testOfTagOrNull() {
         Assertions.assertNull(ArtifactStageEnum.ofTagOrNull(""))
         Assertions.assertNull(ArtifactStageEnum.ofTagOrNull("  "))
         Assertions.assertNull(ArtifactStageEnum.ofTagOrNull(null))
