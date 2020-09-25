@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,9 +24,11 @@ class RootNodeCleanupJob {
         val startTimeMillis = System.currentTimeMillis()
         val mongoTemplate = nodeDao.determineMongoTemplate()
         val query = Query.query(Criteria.where(TNode::name.name).`in`("", null))
-        val collectionName = "node_test"
-        val deleteResult = mongoTemplate.remove(query, collectionName)
-        deletedCount += deleteResult.deletedCount
+        for (sequence in 0 until SHARDING_COUNT) {
+            val collectionName = nodeDao.parseSequenceToCollectionName(sequence)
+            val deleteResult = mongoTemplate.remove(query, collectionName)
+            deletedCount += deleteResult.deletedCount
+        }
         val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
         logger.info(
             "deletedCount: $deletedCount, elapse [$elapseTimeMillis] ms totally."

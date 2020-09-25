@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import org.springframework.beans.factory.annotation.Autowired
@@ -26,10 +27,12 @@ class NodeDeletedCorrectionJob {
         val mongoTemplate = nodeDao.determineMongoTemplate()
         val query = Query.query(Criteria.where(TNode::deleted.name).`is`(null))
         val update = Update.update(TNode::deleted.name, 0)
-        val collectionName = "node_test"
-        val updateResult = mongoTemplate.updateMulti(query, update, collectionName)
-        matchedCount += updateResult.matchedCount
-        modifiedCount += updateResult.modifiedCount
+        for (sequence in 0 until SHARDING_COUNT) {
+            val collectionName = nodeDao.parseSequenceToCollectionName(sequence)
+            val updateResult = mongoTemplate.updateMulti(query, update, collectionName)
+            matchedCount += updateResult.matchedCount
+            modifiedCount += updateResult.modifiedCount
+        }
         val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
         logger.info(
             "matchedCount: $matchedCount, modifiedCount: $modifiedCount, elapse [$elapseTimeMillis] ms totally."
