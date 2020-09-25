@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(tags = ["BKIAM_USER"], description = "蓝鲸权限中心回调接口")
 @FeignClient(SERVICE_NAME, contextId = "BkiamUserResource")
-@RequestMapping("/api/bkiam/callback")
+@RequestMapping("/external/bkiam/callback")
 interface BkiamCallbackResource {
 
     @ApiOperation("项目列表")

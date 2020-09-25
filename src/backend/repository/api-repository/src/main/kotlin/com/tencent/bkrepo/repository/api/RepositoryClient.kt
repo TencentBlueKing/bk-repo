@@ -42,7 +42,6 @@ interface RepositoryClient {
         @PathVariable type: String
     ): Response<RepositoryDetail?>
 
-
     @Deprecated("replace with getRepoDetail")
     @GetMapping("/query/{projectId}/{repoName}")
     fun query(
@@ -51,7 +50,6 @@ interface RepositoryClient {
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String
     ): Response<RepositoryDetail?>
-
 
     @ApiOperation("查询仓库信息")
     @GetMapping("/info/{projectId}/{repoName}")
