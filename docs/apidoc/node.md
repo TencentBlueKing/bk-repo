@@ -39,6 +39,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
       "size" : 34,
       "sha256" : "6a7983009447ecc725d2bb73a60b55d0ef5886884df0ffe3199f84b6df919895",
       "md5" : "2947b3932900d4534175d73964ec22ef",
+      "stageTag": "@release",
       "metadata": {
         "key": "value"
       },
@@ -73,7 +74,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 
 ### 分页查询节点
 
-- API: GET /repository/api/node/page/{projectId}/{repoName}/{fullPath}?pageNumber=0&pageSize=20&includeFolder=true&includeMetadata=true&deep=false
+- API: GET /repository/api/node/page/{projectId}/{repoName}/{fullPath}?pageNumber=0&pageSize=20&includeFolder=true&includeMetadata=true&deep=false&sort=false
 
 - API 名称: list_node_page
 
@@ -96,6 +97,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   | includeFolder   | boolean | 否       | true   | 是否包含目录       | include folder    |
   | includeMetadata | boolean | 否       | false  | 是否包含元数据     | include  metadata |
   | deep            | boolean | 否       | false  | 是否查询子目录节点 | deep query        |
+  | sort            | boolean | 否       | false  | 是否排序输出结果   | sort result       |
 
 - 响应体
 
@@ -119,6 +121,8 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
           "size" : 34,
           "sha256" : "6a7983009447ecc725d2bb73a60b55d0ef5886884df0ffe3199f84b6df919895",
           "md5" : "2947b3932900d4534175d73964ec22ef",
+          "stageTag": "@release",
+          "metadata": {},
           "createdBy" : "admin",
           "createdDate" : "2020-07-27T16:02:31.394",
           "lastModifiedBy" : "admin",
@@ -473,7 +477,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 
 - 功能说明：
 
-  - 中文：节点自定义查询。最外层的查询条件中必须包含projectId条件和repoName条件，且projectId查询操作必须为EQ，repoName必须为EQ或IN。
+  - 中文：节点自定义查询。最外层的查询条件中必须包含projectId条件，可以传入repoType指定仓库类型或者repoName指定某个仓库查询。
   - English：query node
 
 - 请求体
@@ -585,9 +589,17 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   {
     "code": 0,
     "message": null,
-    "data": [
-      {}
-    ],
+    "data": {
+      "pageNumber": 0,
+      "pageSize": 1,
+      "totalRecords": 18,
+      "totalPages": 18,
+      "records": [
+        {
+          
+        }
+      ]
+    },
     "traceId": ""
   }
   ```

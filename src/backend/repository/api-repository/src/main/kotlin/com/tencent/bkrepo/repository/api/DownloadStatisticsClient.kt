@@ -29,31 +29,31 @@ interface DownloadStatisticsClient {
     fun add(@RequestBody statisticsAddRequest: DownloadStatisticsAddRequest): Response<Void>
 
     @ApiOperation("查询构建下载量")
-    @GetMapping("/query/{projectId}/{repoName}/{artifact}")
+    @GetMapping("/query/{projectId}/{repoName}")
     fun query(
         @ApiParam("所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam("仓库名称", required = true)
         @PathVariable repoName: String,
         @ApiParam("构建名称", required = true)
-        @PathVariable artifact: String,
+        @RequestParam artifact: String,
         @ApiParam("构建版本", required = false)
         @RequestParam version: String? = null,
-        @ApiParam("开始日期", required = true)
-        @RequestParam startDay: LocalDate,
-        @ApiParam("结束日期", required = true)
-        @RequestParam endDay: LocalDate
+        @ApiParam("开始日期", required = false)
+        @RequestParam startDay: LocalDate? = null,
+        @ApiParam("结束日期", required = false)
+        @RequestParam endDay: LocalDate? = null
     ): Response<DownloadStatisticsResponse>
 
     @ApiOperation("查询构建在 日、周、月 的下载量")
-    @GetMapping("/query/special/{projectId}/{repoName}/{artifact}")
+    @GetMapping("/query/special/{projectId}/{repoName}/")
     fun queryForSpecial(
         @ApiParam("所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam("仓库名称", required = true)
         @PathVariable repoName: String,
         @ApiParam("构建名称", required = true)
-        @PathVariable artifact: String,
+        @RequestParam artifact: String,
         @ApiParam("构建版本", required = false)
         @RequestParam version: String? = null
     ): Response<DownloadStatisticsMetricResponse>

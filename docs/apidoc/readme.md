@@ -12,15 +12,17 @@
 
 **[6. 节点相关接口](./node.md)**
 
-**[7. 元数据相关接口](./metadata.md)**
+**[7. 节点分享相关接口](./share.md)**
 
-**[8. 制品晋级相关接口](./stage.md)**
+**[8. 元数据相关接口](./metadata.md)**
 
-**[9. 节点分享相关接口](./share.md)**
+**[9. 包管理相关接口](./package.md)**
 
-**[10. 通用二进制仓库相关接口](./generic.md)**
+**[10. 制品晋级相关接口](./stage.md)**
 
-**[11. docker仓库相关接口](./docker.md)**
+**[11. 通用二进制仓库相关接口](./generic.md)**
 
-**[12.docker仓库扩展相关接口](./docker_ext.md)**
+**[12. docker仓库相关接口](./docker.md)**
+
+**[13. docker仓库扩展相关接口](./docker_ext.md)**
 

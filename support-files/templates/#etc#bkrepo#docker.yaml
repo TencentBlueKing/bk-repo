@@ -1,0 +1,7 @@
+server:
+  port: __BK_REPO_DOCKER_PORT__
+
+
+auth:
+  enable: true
+  url: http://__BK_REPO_HOST__/docker/v2/auth

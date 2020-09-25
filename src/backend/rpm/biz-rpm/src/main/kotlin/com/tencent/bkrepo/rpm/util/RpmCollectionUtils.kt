@@ -4,7 +4,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 
 object RpmCollectionUtils {
 
-    fun List<NodeInfo>.filterRpmCustom(set: MutableSet<String>, enabledFileLists: Boolean): List<NodeInfo> {
+    fun List<NodeInfo>.filterRpmCustom(set: MutableList<String>, enabledFileLists: Boolean): List<NodeInfo> {
         val resultList = mutableListOf<NodeInfo>()
         try {
             resultList.add(
@@ -47,5 +47,15 @@ object RpmCollectionUtils {
             }
         }
         return resultList
+    }
+
+    fun MutableList<String>.updateList(set: MutableSet<String>, mark: Boolean) {
+        if (mark) {
+            for (group in set) {
+                if (!this.contains(group)) this.add(group)
+            }
+        } else {
+            this.removeAll(set)
+        }
     }
 }

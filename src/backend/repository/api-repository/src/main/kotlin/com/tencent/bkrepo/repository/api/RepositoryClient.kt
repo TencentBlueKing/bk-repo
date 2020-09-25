@@ -31,6 +31,28 @@ import org.springframework.web.bind.annotation.RequestMapping
 @RequestMapping("/service/repo")
 interface RepositoryClient {
 
+    @Deprecated("replace with getRepoDetail")
+    @GetMapping("/query/{projectId}/{repoName}/{type}")
+    fun query(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "仓库类型", required = true)
+        @PathVariable type: String
+    ): Response<RepositoryDetail?>
+
+
+    @Deprecated("replace with getRepoDetail")
+    @GetMapping("/query/{projectId}/{repoName}")
+    fun query(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String
+    ): Response<RepositoryDetail?>
+
+
     @ApiOperation("查询仓库信息")
     @GetMapping("/info/{projectId}/{repoName}")
     fun getRepoInfo(

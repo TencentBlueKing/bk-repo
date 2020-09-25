@@ -29,7 +29,7 @@ import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import com.tencent.bkrepo.repository.service.NodeService
-import com.tencent.bkrepo.repository.service.query.NodeQueryService
+import com.tencent.bkrepo.repository.service.NodeQueryService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -248,13 +248,15 @@ class UserNodeController(
         @ApiParam("是否包含元数据", required = false, defaultValue = "false")
         @RequestParam includeMetadata: Boolean = false,
         @ApiParam("是否深度查询文件", required = false, defaultValue = "false")
-        @RequestParam deep: Boolean = false
+        @RequestParam deep: Boolean = false,
+        @ApiParam("是否排序", required = false, defaultValue = "false")
+        @RequestParam sort: Boolean = false
     ): Response<Page<NodeInfo>> {
         with(artifactInfo) {
             val nodePage = nodeService.page(
                 projectId, repoName, getArtifactFullPath(),
                 pageNumber, pageSize,
-                includeFolder, includeMetadata, deep
+                includeFolder, includeMetadata, deep, sort
             )
             return ResponseBuilder.success(nodePage)
         }
@@ -263,10 +265,8 @@ class UserNodeController(
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
     fun query(
-        @RequestAttribute userId: String,
         @RequestBody queryModel: QueryModel
     ): Response<Page<Map<String, Any?>>> {
-        // 由于涉及到queryModel校验和解析规则，自定义查询在service内部鉴权
-        return ResponseBuilder.success(nodeQueryService.userQuery(userId, queryModel))
+        return ResponseBuilder.success(nodeQueryService.query(queryModel))
     }
 }

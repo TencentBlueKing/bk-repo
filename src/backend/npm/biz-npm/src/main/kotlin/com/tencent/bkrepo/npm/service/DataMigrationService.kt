@@ -9,11 +9,10 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
-import com.tencent.bkrepo.npm.constants.NPM_PKG_FULL_PATH
+import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PKG_NAME
 import com.tencent.bkrepo.npm.dao.repository.MigrationErrorDataRepository
 import com.tencent.bkrepo.npm.model.TMigrationErrorData
@@ -22,9 +21,8 @@ import com.tencent.bkrepo.npm.pojo.migration.MigrationErrorDataInfo
 import com.tencent.bkrepo.npm.pojo.migration.MigrationFailDataDetailInfo
 import com.tencent.bkrepo.npm.pojo.migration.service.MigrationErrorDataCreateRequest
 import com.tencent.bkrepo.npm.utils.GsonUtils
+import com.tencent.bkrepo.npm.utils.OkHttpUtil
 import com.tencent.bkrepo.npm.utils.ThreadPoolManager
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -43,7 +41,6 @@ import java.io.InputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.Callable
-import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 import kotlin.system.measureTimeMillis
 
@@ -53,18 +50,14 @@ class DataMigrationService {
     @Value("\${npm.migration.data.url: ''}")
     private val url: String = StringPool.EMPTY
 
-    @Value("\${npm.migration.package.count: 100}")
-    private val count: Int = DEFAULT_COUNT
-
     @Autowired
     private lateinit var migrationErrorDataRepository: MigrationErrorDataRepository
 
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
 
-    private val okHttpClient: OkHttpClient by lazy {
-        HttpClientBuilderFactory.create().readTimeout(TIMEOUT, TimeUnit.SECONDS).build()
-    }
+    @Autowired
+    private lateinit var okHttpUtil: OkHttpUtil
 
     private final fun initTotalDataSetByUrl(): Set<String> {
         var totalDataSet: Set<String> = emptySet()
@@ -73,12 +66,11 @@ class DataMigrationService {
         }
         var response: Response? = null
         try {
-            val request = Request.Builder().url(url).get().build()
-            response = okHttpClient.newCall(request).execute()
+            response = okHttpUtil.doGet(url)
             if (checkResponse(response)) {
-                val use = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }
+                val pkgNameData = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }
                 totalDataSet =
-                    use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
+                    pkgNameData.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
             }
         } catch (exception: IOException) {
             logger.error("http send [$url] for get all package name data failed, {}", exception.message)
@@ -91,14 +83,13 @@ class DataMigrationService {
 
     private final fun initTotalDataSetByFile(): Set<String> {
         val inputStream: InputStream = this.javaClass.classLoader.getResourceAsStream(FILE_NAME) ?: return emptySet()
-        val use = inputStream.use { GsonUtils.transferInputStreamToJson(it) }
-        return use.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
+        val pkgNameData = inputStream.use { GsonUtils.transferInputStreamToJson(it) }
+        return pkgNameData.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
     }
 
     private final fun initTotalDataSetByPkgName(pkgName: String): Set<String> {
         if (pkgName.isNotBlank()) {
-            val pkgNameSet = pkgName.split(',').filter { it.isNotBlank() }.map { it.trim() }.toMutableSet()
-            return pkgNameSet
+            return pkgName.split(',').filter { it.isNotBlank() }.map { it.trim() }.toMutableSet()
         }
         return emptySet()
     }
@@ -224,8 +215,8 @@ class DataMigrationService {
 
     fun migrate(artifactInfo: NpmArtifactInfo, pkgName: String): MigrationFailDataDetailInfo {
         val context = ArtifactMigrateContext()
-        context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, pkgName)
-        context.contextAttributes[PKG_NAME] = pkgName
+        context.putAttribute(NPM_FILE_FULL_PATH, String.format(NPM_PKG_METADATA_FULL_PATH, pkgName))
+        context.putAttribute(PKG_NAME, pkgName)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.migrate(context) as MigrationFailDataDetailInfo
     }
@@ -273,7 +264,6 @@ class DataMigrationService {
     }
 
     fun find(projectId: String, repoName: String): MigrationErrorDataInfo? {
-        // repositoryService.checkRepository(projectId, repoName)
         val criteria = Criteria.where(TMigrationErrorData::projectId.name).`is`(projectId)
             .and(TMigrationErrorData::repoName.name).`is`(repoName)
         val query = Query.query(criteria).with(Sort.by(Sort.Direction.DESC, TMigrationErrorData::counter.name)).limit(0)
@@ -282,8 +272,6 @@ class DataMigrationService {
 
     companion object {
         const val FILE_NAME = "pkgName.json"
-        const val TIMEOUT = 5 * 60L
-        const val DEFAULT_COUNT = 1
         const val MILLIS_RATE = 1000L
         const val SLEEP_MILLIS = 20L
 

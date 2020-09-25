@@ -158,7 +158,6 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
             )
             return try {
                 repoRepository.insert(repository)
-                    .also { nodeService.createRootNode(it.projectId, it.name, it.createdBy) }
                     .also { createRepoManager(it.projectId, it.name, it.createdBy) }
                     .also {
                         if (repoConfiguration is CompositeConfiguration) {
@@ -201,10 +200,10 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         repoDeleteRequest.apply {
             val repository = checkRepository(projectId, name)
             if (repoDeleteRequest.forced) {
-                nodeService.deleteByPath(projectId, name, ROOT, operator, true)
+                nodeService.deleteByPath(projectId, name, ROOT, operator)
             } else {
                 nodeService.countFileNode(projectId, name).takeIf { it == 0L } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_CONTAINS_FILE)
-                nodeService.deleteByPath(projectId, name, ROOT, operator, false)
+                nodeService.deleteByPath(projectId, name, ROOT, operator)
             }
             repoRepository.delete(repository)
             // 删除关联的库
@@ -327,7 +326,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         val proxyRepo = queryRepository(projectId, proxyRepoName, null)
         proxyRepo?.let { repo ->
             // 删除仓库
-            nodeService.deleteByPath(repo.projectId, repo.name, ROOT, SYSTEM_USER, true)
+            nodeService.deleteByPath(repo.projectId, repo.name, ROOT, SYSTEM_USER)
             repoRepository.delete(proxyRepo)
             logger.info("Success to delete private proxy repository[$proxyRepo]")
         }
@@ -356,7 +355,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
 
     companion object {
         private val logger = LoggerFactory.getLogger(RepositoryServiceImpl::class.java)
-        private const val REPO_NAME_PATTERN = "[a-z][a-zA-Z0-9\\-_]{1,31}"
+        private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,31}"
         private const val REPO_DESCRIPTION_MAX_LENGTH = 200
 
         private fun convertToDetail(tRepository: TRepository?, storageCredentials: StorageCredentials? = null): RepositoryDetail? {

@@ -38,7 +38,7 @@ data class NodeDetail(
     @ApiModelProperty("晋级状态标签")
     val stageTag: String? = nodeInfo.stageTag,
     @ApiModelProperty("元数据")
-    val metadata: Map<String, String>,
+    val metadata: Map<String, Any> = nodeInfo.metadata.orEmpty(),
     @ApiModelProperty("所属项目id")
     val projectId: String = nodeInfo.projectId,
     @ApiModelProperty("所属仓库名称")

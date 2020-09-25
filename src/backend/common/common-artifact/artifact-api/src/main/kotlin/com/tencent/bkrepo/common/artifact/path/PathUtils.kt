@@ -66,6 +66,14 @@ object PathUtils {
     }
 
     /**
+     * 转为fullPath格式
+     *
+     */
+    fun toFullPath(input: String): String {
+        return if (isRoot(input)) ROOT else input.removeSuffix(StringPool.SLASH)
+    }
+
+    /**
      * 格式化目录名称, 返回格式/a/b/c/，根目录返回/
      * /a/b/c -> /a/b/c/
      * /a/b/c/ -> /a/b/c/
@@ -151,7 +159,7 @@ object PathUtils {
      * /a/b/c -> /a/b/
      * /a/b/c/ -> /a/b/
      */
-    fun resolvePath(fullPath: String): String {
+    fun resolveParent(fullPath: String): String {
         val index = fullPath.trimEnd(UNIX_SEPARATOR).lastIndexOf(UNIX_SEPARATOR)
         return if (isRoot(fullPath) || index <= 0) ROOT else fullPath.substring(0, index + 1)
     }

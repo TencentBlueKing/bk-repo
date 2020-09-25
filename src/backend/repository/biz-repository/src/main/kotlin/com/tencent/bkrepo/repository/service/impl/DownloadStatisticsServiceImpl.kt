@@ -55,13 +55,18 @@ class DownloadStatisticsServiceImpl(
         repoName: String,
         artifact: String,
         version: String?,
-        startDate: LocalDate,
-        endDate: LocalDate
+        startDate: LocalDate?,
+        endDate: LocalDate?
     ): DownloadStatisticsResponse {
         artifact.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "artifact")
         repositoryService.checkRepository(projectId, repoName)
         val criteria = criteria(projectId, repoName, artifact, version)
-        criteria.and(TDownloadStatistics::date.name).lte(endDate).gte(startDate)
+        if (startDate != null && endDate != null) {
+            criteria.and(TDownloadStatistics::date.name).lte(endDate).gte(startDate)
+        } else {
+            startDate?.let { criteria.and(TDownloadStatistics::date.name).gte(it) }
+            endDate?.let { criteria.and(TDownloadStatistics::date.name).lte(it) }
+        }
         val aggregation = Aggregation.newAggregation(
             Aggregation.match(criteria),
             Aggregation.group().sum(TDownloadStatistics::count.name).`as`(DownloadStatisticsResponse::count.name)

@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
 import org.junit.jupiter.api.Test
 
 class NodeQueryInterpreterTest {

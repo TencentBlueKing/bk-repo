@@ -12,6 +12,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.service.MetadataService
 import com.tencent.bkrepo.repository.service.RepositoryService
+import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -33,8 +34,8 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
     @Autowired
     private lateinit var nodeDao: NodeDao
 
-    override fun query(projectId: String, repoName: String, fullPath: String): Map<String, String> {
-        return convert(nodeDao.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))?.metadata)
+    override fun query(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
+        return MetadataUtils.toMap(nodeDao.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))?.metadata)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -47,9 +48,9 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
             val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            val originalMetadata = convert(node.metadata).toMutableMap()
+            val originalMetadata = MetadataUtils.toMap(node.metadata).toMutableMap()
             metadata!!.forEach { (key, value) -> originalMetadata[key] = value }
-            node.metadata = convert(originalMetadata)
+            node.metadata = MetadataUtils.fromMap(originalMetadata)
             nodeDao.save(node)
         }.also {
             publishEvent(MetadataSavedEvent(it))
@@ -82,17 +83,5 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
 
     companion object {
         private val logger = LoggerFactory.getLogger(MetadataServiceImpl::class.java)
-
-        fun convert(metadataMap: Map<String, String>?): MutableList<TMetadata> {
-            return metadataMap?.filter { it.key.isNotBlank() }?.map { TMetadata(it.key, it.value) }.orEmpty().toMutableList()
-        }
-
-        fun convert(metadataList: List<TMetadata>?): Map<String, String> {
-            return metadataList?.map { it.key to it.value }?.toMap().orEmpty()
-        }
-
-        fun convertOrNull(metadataList: List<TMetadata>?): Map<String, String>? {
-            return metadataList?.map { it.key to it.value }?.toMap()
-        }
     }
 }

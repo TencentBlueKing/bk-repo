@@ -15,8 +15,7 @@ class MavenResourceImpl(
 
     @PutMapping(MavenArtifactInfo.MAVEN_MAPPING_URI)
     fun deploy(
-        @ArtifactPathVariable
-        mavenArtifactInfo: MavenArtifactInfo,
+        @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
         file: ArtifactFile
     ) {
         return mavenService.deploy(mavenArtifactInfo, file)

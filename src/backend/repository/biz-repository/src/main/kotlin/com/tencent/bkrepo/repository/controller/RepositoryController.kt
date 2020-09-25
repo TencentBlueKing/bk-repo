@@ -20,6 +20,14 @@ import org.springframework.web.bind.annotation.RestController
 class RepositoryController(
     private val repositoryService: RepositoryService
 ) : RepositoryClient {
+    override fun query(projectId: String, repoName: String, type: String): Response<RepositoryDetail?> {
+        return ResponseBuilder.success(repositoryService.getRepoDetail(projectId, repoName, type))
+    }
+
+    override fun query(projectId: String, repoName: String): Response<RepositoryDetail?> {
+        return ResponseBuilder.success(repositoryService.getRepoDetail(projectId, repoName, null))
+    }
+
     override fun getRepoInfo(projectId: String, repoName: String): Response<RepositoryInfo?> {
         return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, null))
     }

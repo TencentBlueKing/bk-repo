@@ -35,6 +35,10 @@ object GsonUtils {
         return gson.fromJson(gsonString, object : TypeToken<List<T>>() {}.type)
     }
 
+    fun <T> parseJsonArrayToList(jsonArray: String?): List<T> {
+        return jsonArray?.let { gsonToList<T>(it) } ?: emptyList()
+    }
+
     fun <T> gsonToBean(gsonString: String, cls: Class<T>): T? {
         return gson.fromJson(gsonString, cls)
     }

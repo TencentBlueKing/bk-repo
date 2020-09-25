@@ -5,5 +5,5 @@ package com.tencent.bkrepo.repository.model
  */
 data class TMetadata(
     val key: String,
-    var value: String
+    var value: Any
 )

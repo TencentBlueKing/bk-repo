@@ -7,8 +7,8 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.npm.pojo.AuthFailInfo
-import com.tencent.bkrepo.npm.pojo.NpmAuthFailResponse
+import com.tencent.bkrepo.npm.pojo.auth.AuthFailInfo
+import com.tencent.bkrepo.npm.pojo.auth.NpmAuthFailResponse
 import com.tencent.bkrepo.npm.pojo.NpmErrorResponse
 import com.tencent.bkrepo.npm.pojo.auth.NpmAuthResponse
 import org.slf4j.LoggerFactory
@@ -26,6 +26,13 @@ import java.util.concurrent.ExecutionException
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 class NpmExceptionHandler {
+
+    @ExceptionHandler(NpmRepoNotFoundException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handlerExecutionException(exception: NpmRepoNotFoundException) {
+        val responseObject = NpmErrorResponse("bad request", exception.message)
+        npmResponse(responseObject, exception)
+    }
 
     @ExceptionHandler(ExecutionException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -66,8 +73,12 @@ class NpmExceptionHandler {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handlerNpmTokenIllegalException(exception: NpmTokenIllegalException) {
         HttpContextHolder.getResponse().setHeader(HttpHeaders.WWW_AUTHENTICATE, BASIC_AUTH_PROMPT)
-        val authFailInfo = AuthFailInfo(HttpStatus.UNAUTHORIZED.value(), exception.message)
-        val npmAuthFailResponse = NpmAuthFailResponse(errors = listOf(authFailInfo))
+        val authFailInfo = AuthFailInfo(
+            HttpStatus.UNAUTHORIZED.value(),
+            exception.message
+        )
+        val npmAuthFailResponse =
+            NpmAuthFailResponse(errors = listOf(authFailInfo))
         npmResponse(npmAuthFailResponse, exception)
     }
 
