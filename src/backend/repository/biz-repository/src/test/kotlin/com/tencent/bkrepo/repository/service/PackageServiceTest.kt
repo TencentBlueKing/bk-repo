@@ -123,7 +123,7 @@ class PackageServiceTest @Autowired constructor(
             )
             packageService.createPackageVersion(request2)
         }
-        val page = packageService.listVersionPage(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, 1, 10)
+        val page = packageService.listVersionPage(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, null, null, 1, 10)
         Assertions.assertEquals(10, page.records.size)
         Assertions.assertEquals(size, page.totalRecords.toInt())
         Assertions.assertEquals(2, page.totalPages)
@@ -199,7 +199,8 @@ class PackageServiceTest @Autowired constructor(
             packageDescription = "some description",
             versionName = version,
             size = 1024,
-            filePath = "/com/tencent/bkrepo/test/$version",
+            manifestPath = "/com/tencent/bkrepo/test/$version",
+            contentPath = "/com/tencent/bkrepo/test/$version",
             stageTag = listOf(ArtifactStageEnum.RELEASE.toString() ),
             metadata = mapOf("key" to "value"),
             overwrite = overwrite,

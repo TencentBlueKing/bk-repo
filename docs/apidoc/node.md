@@ -74,7 +74,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
 
 ### 分页查询节点
 
-- API: GET /repository/api/node/page/{projectId}/{repoName}/{fullPath}?pageNumber=0&pageSize=20&includeFolder=true&includeMetadata=true&deep=false
+- API: GET /repository/api/node/page/{projectId}/{repoName}/{fullPath}?pageNumber=0&pageSize=20&includeFolder=true&includeMetadata=true&deep=false&sort=false
 
 - API 名称: list_node_page
 
@@ -97,6 +97,7 @@ Node接口使用统一接口协议，公共部分请参照[通用接口协议说
   | includeFolder   | boolean | 否       | true   | 是否包含目录       | include folder    |
   | includeMetadata | boolean | 否       | false  | 是否包含元数据     | include  metadata |
   | deep            | boolean | 否       | false  | 是否查询子目录节点 | deep query        |
+  | sort            | boolean | 否       | false  | 是否排序输出结果   | sort result       |
 
 - 响应体
 

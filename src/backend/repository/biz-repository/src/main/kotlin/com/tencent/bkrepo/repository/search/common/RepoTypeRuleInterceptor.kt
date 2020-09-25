@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.service.query
+package com.tencent.bkrepo.repository.search.common
 
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
@@ -27,7 +27,7 @@ class RepoTypeRuleInterceptor : QueryRuleInterceptor {
 
     override fun intercept(rule: Rule, context: QueryContext): Criteria {
         with(rule as Rule.QueryRule) {
-            val projectId = (context as NodeQueryContext).findProjectId()
+            val projectId = (context as CommonQueryContext).findProjectId()
             val repoNameList = repositoryService.list(projectId, name = null, type = value.toString())
                 .apply { context.repoList = this }
                 .map { it.name }

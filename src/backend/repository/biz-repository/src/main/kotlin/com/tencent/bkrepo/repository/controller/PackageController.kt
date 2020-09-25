@@ -23,9 +23,9 @@ class PackageController(
         projectId: String,
         repoName: String,
         packageKey: String,
-        versionName: String
+        version: String
     ): Response<PackageVersion?> {
-        val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, versionName)
+        val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, version)
         return ResponseBuilder.success(packageVersion)
     }
 
@@ -43,9 +43,9 @@ class PackageController(
         projectId: String,
         repoName: String,
         packageKey: String,
-        versionName: String
+        version: String
     ): Response<Void> {
-        packageService.deleteVersion(projectId, repoName, packageKey, versionName)
+        packageService.deleteVersion(projectId, repoName, packageKey, version)
         return ResponseBuilder.success()
     }
 }

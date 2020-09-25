@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.service.query
+package com.tencent.bkrepo.repository.search.common
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -31,7 +31,7 @@ class RepoNameRuleInterceptor : QueryRuleInterceptor {
     override fun intercept(rule: Rule, context: QueryContext): Criteria {
         with(rule as Rule.QueryRule) {
             val userId = SecurityUtils.getUserId()
-            val projectId = (context as NodeQueryContext).findProjectId()
+            val projectId = (context as CommonQueryContext).findProjectId()
             val queryRule = when(operation) {
                 OperationType.EQ -> handleRepoNameEq(userId, projectId, value.toString())
                 OperationType.IN -> handleRepoNameIn(userId, projectId, value as List<*>, context)
@@ -54,14 +54,18 @@ class RepoNameRuleInterceptor : QueryRuleInterceptor {
         userId: String,
         projectId: String,
         value: List<*>,
-        context: NodeQueryContext
+        context: CommonQueryContext
     ): Rule.QueryRule  {
         val repoNameList = if (context.repoList != null) {
             context.repoList!!.filter { hasRepoPermission(userId, projectId, it.name, it.public) }.map { it.name }
         } else {
-            value.filter { hasRepoPermission(userId, projectId, it.toString()) }
+            value.filter { hasRepoPermission(userId, projectId, it.toString()) }.map { it.toString() }
         }
-        return Rule.QueryRule(NodeInfo::repoName.name, repoNameList, OperationType.IN)
+        return if (repoNameList.size == 1) {
+            Rule.QueryRule(NodeInfo::repoName.name, repoNameList.first(), OperationType.EQ)
+        } else {
+            Rule.QueryRule(NodeInfo::repoName.name, repoNameList, OperationType.IN)
+        }
     }
 
     private fun hasRepoPermission(

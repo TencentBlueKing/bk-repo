@@ -62,7 +62,4 @@ class SystemJobController(
         return ResponseBuilder.success()
     }
 
-    data class TestNode(
-        val deleted: Long
-    )
 }

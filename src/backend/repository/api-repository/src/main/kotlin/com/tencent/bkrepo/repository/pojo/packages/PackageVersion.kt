@@ -27,5 +27,7 @@ data class PackageVersion(
     @ApiModelProperty("制品晋级阶段")
     val stageTag: List<String>,
     @ApiModelProperty("元数据")
-    val metadata: Map<String, Any>
+    val metadata: Map<String, Any>,
+    @ApiModelProperty("包内容文件路径")
+    val contentPath: String? = null
 )

@@ -4,8 +4,10 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -15,6 +17,8 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -43,35 +47,42 @@ class UserPackageController(
 
     @ApiOperation("分页查询版本")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    @GetMapping("/version/page/{projectId}/{repoName}/{packageKey}")
+    @GetMapping("/version/page/{projectId}/{repoName}")
     fun listVersionPage(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @PathVariable packageKey: String,
+        @RequestParam packageKey: String,
+        @RequestParam version: String? = null,
+        @RequestParam stageTag: String? = null,
         @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
         @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE
     ): Response<Page<PackageVersion>> {
-        return ResponseBuilder.success(packageService.listVersionPage(projectId, repoName, packageKey, pageNumber, pageSize))
+        val stageTagList = stageTag?.split(StringPool.COMMA)
+        val pageResult = packageService.listVersionPage(
+            projectId, repoName, packageKey,
+            version, stageTagList, pageNumber, pageSize
+        )
+        return ResponseBuilder.success(pageResult)
     }
 
     @ApiOperation("查询包信息")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    @GetMapping("/package/info/{projectId}/{repoName}/{packageKey}")
+    @GetMapping("/package/info/{projectId}/{repoName}")
     fun findPackageByKey(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @PathVariable packageKey: String
+        @RequestParam packageKey: String
     ): Response<PackageSummary?> {
         return ResponseBuilder.success(packageService.findPackageByKey(projectId, repoName, packageKey))
     }
 
     @ApiOperation("删除包")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    @DeleteMapping("/package/delete/{projectId}/{repoName}/{packageKey}")
+    @DeleteMapping("/package/delete/{projectId}/{repoName}")
     fun deletePackage(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @PathVariable packageKey: String
+        @RequestParam packageKey: String
     ): Response<Void> {
         packageService.deletePackage(projectId, repoName, packageKey)
         return ResponseBuilder.success()
@@ -79,14 +90,45 @@ class UserPackageController(
 
     @ApiOperation("删除版本")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    @DeleteMapping("/version/delete/{projectId}/{repoName}/{packageKey}/{version}")
+    @DeleteMapping("/version/delete/{projectId}/{repoName}")
     fun deleteVersion(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @PathVariable packageKey: String,
-        @PathVariable version: String
+        @RequestParam packageKey: String,
+        @RequestParam version: String
     ): Response<Void> {
         packageService.deleteVersion(projectId, repoName, packageKey, version)
+        return ResponseBuilder.success()
+    }
+
+    @ApiOperation("搜索包")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    @PostMapping("/package/search")
+    fun searchPackage(
+        @RequestBody queryModel: QueryModel
+    ): Response<Page<PackageSummary>> {
+        return ResponseBuilder.success(packageService.searchPackage(queryModel))
+    }
+
+    @ApiOperation("搜索版本")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    @PostMapping("/version/search")
+    fun searchVersion(
+        @RequestBody queryModel: QueryModel
+    ): Response<Page<PackageVersion>> {
+        return ResponseBuilder.success(packageService.searchVersion(queryModel))
+    }
+
+    @ApiOperation("下载版本")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    @DeleteMapping("/version/download/{projectId}/{repoName}")
+    fun downloadVersion(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestParam version: String
+    ): Response<Void> {
+        packageService.downloadVersion(projectId, repoName, packageKey, version)
         return ResponseBuilder.success()
     }
 }

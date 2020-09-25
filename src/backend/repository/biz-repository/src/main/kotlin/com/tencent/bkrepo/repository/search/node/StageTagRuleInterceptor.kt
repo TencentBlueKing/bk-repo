@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.service.query
+package com.tencent.bkrepo.repository.search.node
 
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor

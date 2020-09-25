@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.service.query
+package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.query.model.QueryModel

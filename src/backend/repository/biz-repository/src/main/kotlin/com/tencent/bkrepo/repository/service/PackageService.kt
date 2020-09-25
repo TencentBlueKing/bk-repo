@@ -62,6 +62,8 @@ interface PackageService {
      * @param projectId 项目id
      * @param repoName 仓库id
      * @param packageKey 包唯一标识
+     * @param versionName 版本名称，前缀匹配
+     * @param stageTag 晋级标签过滤
      * @param pageNumber 页码
      * @param pageSize 每页数量
      */
@@ -69,6 +71,8 @@ interface PackageService {
         projectId: String,
         repoName: String,
         packageKey: String,
+        versionName: String? = null,
+        stageTag: List<String>? = null,
         pageNumber: Int,
         pageSize: Int
     ): Page<PackageVersion>
@@ -110,7 +114,22 @@ interface PackageService {
     )
 
     /**
+     * 下载包版本
+     *
+     * @param projectId 项目id
+     * @param repoName 项目id
+     * @param packageKey 包唯一标识
+     * @param versionName 版本名称
+     */
+    fun downloadVersion(projectId: String, repoName: String, packageKey: String, versionName: String)
+
+    /**
      * 根据[queryModel]搜索包
      */
-    fun search(queryModel: QueryModel): Page<PackageSummary>
+    fun searchPackage(queryModel: QueryModel): Page<PackageSummary>
+
+    /**
+     * 根据[queryModel]搜索包版本
+     */
+    fun searchVersion(queryModel: QueryModel): Page<PackageVersion>
 }

@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.artifact.repository.context
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
 /**
@@ -7,5 +8,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
  */
 open class ArtifactDownloadContext(
     repo: RepositoryDetail? = null,
+    artifact: ArtifactInfo? = null,
     val useDisposition: Boolean = true
-) : ArtifactContext(repo)
+) : ArtifactContext(repo, artifact)

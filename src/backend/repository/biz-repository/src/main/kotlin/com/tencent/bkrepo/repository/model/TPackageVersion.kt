@@ -21,12 +21,13 @@ data class TPackageVersion(
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime,
 
-    var packageKey: String,
+    var packageId: String,
     var name: String,
     var size: Long,
     var ordinal: Long,
     var downloads: Long,
-    var filePath: String? = null,
+    var manifestPath: String? = null,
+    var contentPath: String? = null,
     var stageTag: List<String>,
     var metadata: List<TMetadata>? = null
 ) {
@@ -34,7 +35,7 @@ data class TPackageVersion(
         const val VERSION_NAME_IDX = "version_name_idx"
         const val VERSION_METADATA_IDX = "version_metadata_idx"
 
-        const val VERSION_NAME_IDX_DEF = "{'packageKey': 1, 'name': 1}"
-        const val VERSION_METADATA_IDX_DEF = "{'packageKey': 1, 'metadata': 1}"
+        const val VERSION_NAME_IDX_DEF = "{'packageId': 1, 'name': 1}"
+        const val VERSION_METADATA_IDX_DEF = "{'packageId': 1, 'metadata': 1}"
     }
 }

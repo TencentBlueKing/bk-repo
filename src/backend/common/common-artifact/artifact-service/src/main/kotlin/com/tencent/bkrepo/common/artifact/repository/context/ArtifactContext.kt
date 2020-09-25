@@ -19,8 +19,7 @@ import javax.servlet.http.HttpServletResponse
 /**
  * 构件上下文
  */
-open class ArtifactContext(repo: RepositoryDetail? = null) {
-    private var contextAttributes: MutableMap<String, Any> = mutableMapOf()
+open class ArtifactContext(repo: RepositoryDetail? = null, artifact: ArtifactInfo? = null) {
     val request: HttpServletRequest = HttpContextHolder.getRequest()
     val response: HttpServletResponse = HttpContextHolder.getResponse()
     val userId: String
@@ -30,9 +29,11 @@ open class ArtifactContext(repo: RepositoryDetail? = null) {
     val projectId: String get() = repositoryDetail.projectId
     val repoName: String get() = repositoryDetail.name
 
+    private var contextAttributes: MutableMap<String, Any> = mutableMapOf()
+
     init {
         this.userId = request.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
-        this.artifactInfo = request.getAttribute(ARTIFACT_INFO_KEY) as ArtifactInfo
+        this.artifactInfo = artifact ?: request.getAttribute(ARTIFACT_INFO_KEY) as ArtifactInfo
         this.repositoryDetail = repo ?: request.getAttribute(REPO_KEY) as RepositoryDetail
     }
 

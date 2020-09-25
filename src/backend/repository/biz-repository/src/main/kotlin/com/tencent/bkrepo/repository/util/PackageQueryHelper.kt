@@ -33,19 +33,27 @@ object PackageQueryHelper {
 
     // version
     fun versionQuery(packageId: String, name: String? = null): Query {
-        val criteria = Criteria.where(TPackageVersion::packageKey.name).`is`(packageId)
+        val criteria = Criteria.where(TPackageVersion::packageId.name).`is`(packageId)
             .apply {
                 name?.let { and(TPackageVersion::name.name).`is`(name) }
             }
         return Query(criteria)
     }
 
-    fun versionListCriteria(packageId: String): Criteria {
-        return Criteria.where(TPackageVersion::packageKey.name).`is`(packageId)
+    fun versionListCriteria(packageId: String, name: String? = null, stageTag: List<String>? = null): Criteria {
+        return Criteria.where(TPackageVersion::packageId.name).`is`(packageId)
+            .apply {
+                name?.let { and(TPackageVersion::name.name).regex("^$name") }
+            }.apply {
+                if (!stageTag.isNullOrEmpty()) {
+                    and(TPackageVersion::stageTag.name).all(stageTag)
+                }
+            }
     }
 
-    fun versionListQuery(packageId: String): Query {
-        return Query(versionListCriteria(packageId)).with(Sort.by(Sort.Order(Sort.Direction.DESC, TPackageVersion::ordinal.name)))
+    fun versionListQuery(packageId: String, name: String? = null, stageTag: List<String>? = null): Query {
+        return Query(versionListCriteria(packageId, name, stageTag))
+            .with(Sort.by(Sort.Order(Sort.Direction.DESC, TPackageVersion::ordinal.name)))
     }
 
     fun versionLatestQuery(packageId: String): Query {

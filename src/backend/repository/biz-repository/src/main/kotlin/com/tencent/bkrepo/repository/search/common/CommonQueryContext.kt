@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.service.query
+package com.tencent.bkrepo.repository.search.common
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -10,15 +10,13 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.data.mongodb.core.query.Query
 
-class NodeQueryContext(
+open class CommonQueryContext(
     override var queryModel: QueryModel,
     override val mongoQuery: Query,
     override val interpreter: MongoQueryInterpreter
 ): QueryContext(queryModel, mongoQuery, interpreter) {
 
     private var projectId: String? = null
-    var selectMetadata: Boolean = false
-    var selectStageTag: Boolean = false
     var repoList: List<RepositoryInfo>? = null
 
     fun findProjectId(): String {

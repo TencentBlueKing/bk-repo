@@ -17,7 +17,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.ShareService
-import com.tencent.bkrepo.repository.service.query.NodeQueryService
+import com.tencent.bkrepo.repository.service.NodeQueryService
 import org.springframework.web.bind.annotation.RestController
 
 /**

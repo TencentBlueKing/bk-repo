@@ -81,7 +81,7 @@
 
 ### 查询包信息
 
-- API: GET /repository/api/package/info/{projectId}/{repoName}/{packageKey}
+- API: GET /repository/api/package/info/{projectId}/{repoName}?packageKey=docker://nginx
 
 - API 名称: get_package_info
 
@@ -150,7 +150,7 @@
 
 ### 删除包
 
-- API: GET /repository/api/package/delete/{projectId}/{repoName}/{packageKey}
+- API: GET /repository/api/package/delete/{projectId}/{repoName}?packageKey=gav://com.tencent:test
 
 - API 名称: delete_package
 
@@ -189,7 +189,7 @@
 
 ### 分页查询包版本
 
-- API: GET /repository/api/version/page/{projectId}/{repoName}/{packageKey}?pageNumber=0&pageSize=20
+- API: GET /repository/api/version/page/{projectId}/{repoName}?packageKey=gav://com.tencent:test&version=0.0.1&stageTag=release&pageNumber=0&pageSize=20
 
 - API 名称: list_version_page
 
@@ -203,13 +203,15 @@
 
 - 请求字段说明
 
-  | 字段       | 类型   | 是否必须 | 默认值 | 说明      | Description        |
-  | ---------- | ------ | -------- | ------ | --------- | ------------------ |
-  | projectId  | string | 是       | 无     | 项目名称  | project name       |
-  | repoName   | string | 是       | 无     | 仓库名称  | repo name          |
-  | packageKey | string | 否       | 无     | 包唯一key | package unique key |
-  | pageNumber | Int    | 是       | 无     | 页码      | page number        |
-  | pageSize   | Int    | 是       | 无     | 每页数量  | page size          |
+  | 字段       | 类型   | 是否必须 | 默认值 | 说明                | Description        |
+  | ---------- | ------ | -------- | ------ | ------------------- | ------------------ |
+  | projectId  | string | 是       | 无     | 项目名称            | project name       |
+  | repoName   | string | 是       | 无     | 仓库名称            | repo name          |
+  | packageKey | string | 否       | 无     | 包唯一key           | package unique key |
+  | version    | string | 否       | 无     | 版本名称，前缀匹配  | version name       |
+  | stageTag   | string | 否       | 无     | 晋级标签， 逗号分隔 | stage tag list     |
+  | pageNumber | Int    | 是       | 无     | 页码                | page number        |
+  | pageSize   | Int    | 是       | 无     | 每页数量            | page size          |
 
 - 响应体
 
@@ -260,7 +262,7 @@
 
 ### 删除版本
 
-- API: GET /repository/api/version/delete/{projectId}/{repoName}/{packageKey}/{version}
+- API: GET /repository/api/version/delete/{projectId}/{repoName}?packageKey=npm://test&version=0.0.1
 
 - API 名称: delete_version
 
@@ -295,6 +297,47 @@
 - record字段说明
 
   请求成功无返回数据
+
+
+
+### 自定义搜索包
+
+- 待补充
+
+
+
+### 自定义搜索版本
+
+- 待补充
+
+
+
+### 下载版本
+
+- API: GET /repository/api/version/download/{projectId}/{repoName}?packageKey=npm://test&version=0.0.1
+
+- API 名称: download_version
+
+- 功能说明：
+
+  - 中文：下载版本
+  - English：download version
+
+- 请求体
+  此接口请求体为空
+
+- 请求字段说明
+
+  | 字段       | 类型   | 是否必须 | 默认值 | 说明      | Description        |
+  | ---------- | ------ | -------- | ------ | --------- | ------------------ |
+  | projectId  | string | 是       | 无     | 项目名称  | project name       |
+  | repoName   | string | 是       | 无     | 仓库名称  | repo name          |
+  | packageKey | string | 是       | 无     | 包唯一key | package unique key |
+  | version    | string | 是       | 无     | 版本名称  | version name       |
+
+- 响应体
+
+  文件流
 
 
 

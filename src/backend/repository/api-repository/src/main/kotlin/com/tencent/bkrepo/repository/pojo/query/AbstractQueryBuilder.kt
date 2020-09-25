@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.pojo.node
+package com.tencent.bkrepo.repository.pojo.query
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -7,27 +7,8 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.constant.METADATA_PREFIX
-import com.tencent.bkrepo.repository.constant.SystemMetadata
-import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 
-/**
- * 节点自定义查询构造器
- *
- * 链式构造节点QueryModel
- * example:  查询/data目录下大于1024字节的文件
- * val queryModel = NodeQueryBuilder()
- *      .select("size", "name", "path")
- *      .sortByAsc("name")
- *      .page(1, 50)
- *      .projectId("test")
- *      .repoName("generic-local")
- *      .and()
- *        .path("/data")
- *        .size(1024, OperationType.GT)
- *        .excludeFolder()
- *      .build()
- */
-class NodeQueryBuilder {
+abstract class AbstractQueryBuilder {
     private var projectId: String? = null
     private var repoNames: List<String> = listOf()
     private var repoType: RepositoryType? = null
@@ -41,7 +22,7 @@ class NodeQueryBuilder {
     /**
      * 设置查询字段[fields]
      */
-    fun select(vararg fields: String): NodeQueryBuilder {
+    fun select(vararg fields: String): AbstractQueryBuilder {
         if (fields.isNotEmpty()) {
             this.fields = fields.toList()
         }
@@ -51,21 +32,21 @@ class NodeQueryBuilder {
     /**
      * 按字段[fields]降序排序
      */
-    fun sortByAsc(vararg fields: String): NodeQueryBuilder {
+    fun sortByAsc(vararg fields: String): AbstractQueryBuilder {
         return sort(Sort.Direction.ASC, *fields)
     }
 
     /**
      * 按字段[fields]升序排序
      */
-    fun sortByDesc(vararg fields: String): NodeQueryBuilder {
+    fun sortByDesc(vararg fields: String): AbstractQueryBuilder {
         return sort(Sort.Direction.DESC, *fields)
     }
 
     /**
      * 按字段[fields]排序，排序方向为[direction]
      */
-    fun sort(direction: Sort.Direction, vararg fields: String): NodeQueryBuilder {
+    fun sort(direction: Sort.Direction, vararg fields: String): AbstractQueryBuilder {
         if (fields.isNotEmpty()) {
             this.sort = Sort(fields.toList(), direction)
         }
@@ -75,7 +56,7 @@ class NodeQueryBuilder {
     /**
      * 设置分页查询条件，[pageNumber]代表当前页, 从1开始，[pageSize]代表分页大小
      */
-    fun page(pageNumber: Int, pageSize: Int): NodeQueryBuilder {
+    fun page(pageNumber: Int, pageSize: Int): AbstractQueryBuilder {
         require(pageNumber >= 0) { "page index must gte 0" }
         require(pageSize > 0) { "page size must gt 0" }
         this.pageLimit = PageLimit(pageNumber, pageSize)
@@ -85,7 +66,7 @@ class NodeQueryBuilder {
     /**
      * 设置项目id为[projectId]
      */
-    fun projectId(projectId: String): NodeQueryBuilder {
+    fun projectId(projectId: String): AbstractQueryBuilder {
         this.projectId = projectId
         return this
     }
@@ -93,7 +74,7 @@ class NodeQueryBuilder {
     /**
      * 设置仓库名称为[repoName]
      */
-    fun repoName(repoName: String): NodeQueryBuilder {
+    fun repoName(repoName: String): AbstractQueryBuilder {
         this.repoNames = listOf(repoName)
         return this
     }
@@ -101,7 +82,7 @@ class NodeQueryBuilder {
     /**
      * 设置多个仓库
      */
-    fun repoNames(vararg repoNames: String): NodeQueryBuilder {
+    fun repoNames(vararg repoNames: String): AbstractQueryBuilder {
         this.repoNames = repoNames.toList()
         return this
     }
@@ -109,7 +90,7 @@ class NodeQueryBuilder {
     /**
      * 设置仓库类型为[repoType]
      */
-    fun repoType(repoType: RepositoryType): NodeQueryBuilder {
+    fun repoType(repoType: RepositoryType): AbstractQueryBuilder {
         this.repoType = repoType
         return this
     }
@@ -119,7 +100,7 @@ class NodeQueryBuilder {
      *
      * 执行后接下来添加的查询为and关系
      */
-    fun and(): NodeQueryBuilder {
+    fun and(): AbstractQueryBuilder {
         val newRule = createNestedRule(Rule.NestedRule.RelationType.AND)
         currentRule.rules.add(newRule)
         currentRule = newRule
@@ -131,7 +112,7 @@ class NodeQueryBuilder {
      *
      * 执行后接下来添加的查询为or关系
      */
-    fun or(): NodeQueryBuilder {
+    fun or(): AbstractQueryBuilder {
         val newRule = createNestedRule(Rule.NestedRule.RelationType.OR)
         currentRule.rules.add(newRule)
         currentRule = newRule
@@ -143,7 +124,7 @@ class NodeQueryBuilder {
      *
      * [field]为字段名称，[value]为值，[operation]为查询操作类型，默认为EQ查询
      */
-    fun rule(field: String, value: Any, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
+    fun rule(field: String, value: Any, operation: OperationType = OperationType.EQ): AbstractQueryBuilder {
         return this.rule(true, field, value, operation)
     }
 
@@ -152,7 +133,7 @@ class NodeQueryBuilder {
      *
      * [field]为字段名称，[value]为值，[operation]为查询操作类型，默认为EQ查询
      */
-    fun rule(condition: Boolean, field: String, value: Any, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
+    fun rule(condition: Boolean, field: String, value: Any, operation: OperationType = OperationType.EQ): AbstractQueryBuilder {
         if (condition) {
             val queryRule = Rule.QueryRule(field, value, operation)
             currentRule.rules.add(queryRule)
@@ -165,66 +146,8 @@ class NodeQueryBuilder {
      *
      * [key]为元数据名称，[value]为值，[operation]为查询操作类型，默认为EQ查询
      */
-    fun metadata(key: String, value: Any, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
+    fun metadata(key: String, value: Any, operation: OperationType = OperationType.EQ): AbstractQueryBuilder {
         return this.rule(true, METADATA_PREFIX + key, value, operation)
-    }
-
-    /**
-     * 添加制品晋级状态规则
-     *
-     */
-    fun stage(stage: ArtifactStageEnum, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
-        return this.metadata(SystemMetadata.STAGE.key, stage.tag, operation)
-    }
-
-    /**
-     * 添加文件名字段规则
-     *
-     * [value]为值，[operation]为查询操作类型，默认为EQ查询
-     */
-    fun name(value: String, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
-        return this.rule(true, NAME_FILED, value, operation)
-    }
-
-    /**
-     * 添加路径字段规则
-     *
-     * [value]为值，[operation]为查询操作类型，默认为EQ查询
-     */
-    fun path(value: String, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
-        return this.rule(true, PATH_FILED, value, operation)
-    }
-
-    /**
-     * 添加路径字段规则
-     *
-     * [value]为值，[operation]为查询操作类型，默认为EQ查询
-     */
-    fun fullPath(value: String, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
-        return this.rule(true, FULL_PATH_FILED, value, operation)
-    }
-
-    /**
-     * 添加文件大小字段规则
-     *
-     * [value]为值，[operation]为查询操作类型，默认为EQ查询
-     */
-    fun size(value: Long, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
-        return this.rule(true, SIZE_FILED, value, operation)
-    }
-
-    /**
-     * 排除目录
-     */
-    fun excludeFolder(): NodeQueryBuilder {
-        return this.rule(true, FOLDER_FILED, false, OperationType.EQ)
-    }
-
-    /**
-     * 排除文件
-     */
-    fun excludeFile(): NodeQueryBuilder {
-        return this.rule(true, FOLDER_FILED, true, OperationType.EQ)
     }
 
     /**
@@ -255,13 +178,5 @@ class NodeQueryBuilder {
 
     private fun createNestedRule(relation: Rule.NestedRule.RelationType): Rule.NestedRule {
         return Rule.NestedRule(mutableListOf(), relation)
-    }
-
-    companion object {
-        private const val SIZE_FILED = "size"
-        private const val NAME_FILED = "name"
-        private const val PATH_FILED = "path"
-        private const val FULL_PATH_FILED = "fullPath"
-        private const val FOLDER_FILED = "folder"
     }
 }

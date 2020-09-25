@@ -3,6 +3,9 @@ package com.tencent.bkrepo.repository.service.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
@@ -60,6 +63,8 @@ class PackageServiceImpl(
         projectId: String,
         repoName: String,
         packageKey: String,
+        versionName: String?,
+        stageTag: List<String>?,
         pageNumber: Int,
         pageSize: Int
     ): Page<PackageVersion> {
@@ -68,7 +73,7 @@ class PackageServiceImpl(
         return if (tPackage == null) {
             Pages.ofResponse(pageRequest, 0, emptyList())
         } else {
-            val query = PackageQueryHelper.versionListQuery(tPackage.id!!)
+            val query = PackageQueryHelper.versionListQuery(tPackage.id!!, versionName, stageTag)
             val totalRecords = packageVersionDao.count(query)
             val records = packageVersionDao.find(query.with(pageRequest)).map { convert(it)!! }
             Pages.ofResponse(pageRequest, totalRecords, records)
@@ -90,7 +95,8 @@ class PackageServiceImpl(
                     lastModifiedBy = request.createdBy
                     lastModifiedDate = LocalDateTime.now()
                     size = request.size
-                    filePath = request.filePath
+                    manifestPath = request.manifestPath
+                    contentPath = request.contentPath
                     stageTag = request.stageTag.orEmpty()
                     metadata = MetadataUtils.fromMap(request.metadata)
                 }
@@ -102,12 +108,13 @@ class PackageServiceImpl(
                     createdDate = LocalDateTime.now(),
                     lastModifiedBy = createdBy,
                     lastModifiedDate = LocalDateTime.now(),
-                    packageKey = tPackage.id!!,
+                    packageId = tPackage.id!!,
                     name = versionName,
                     size = size,
                     ordinal = SemVerUtils.ordinal(versionName),
                     downloads = 0,
-                    filePath = filePath,
+                    manifestPath = manifestPath,
+                    contentPath = contentPath,
                     stageTag = stageTag.orEmpty(),
                     metadata = MetadataUtils.fromMap(metadata)
                 )
@@ -131,7 +138,7 @@ class PackageServiceImpl(
     override fun deleteVersion(projectId: String, repoName: String, packageKey: String, versionName: String) {
         val tPackage = checkPackage(projectId, repoName, packageKey)
         val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
-        packageVersionDao.deleteByName(tPackageVersion.packageKey, tPackageVersion.name)
+        packageVersionDao.deleteByName(tPackageVersion.packageId, tPackageVersion.name)
         if (tPackage.latest == tPackageVersion.name) {
             val latestVersion = packageVersionDao.findLatest(tPackage.id!!)
             tPackage.latest = latestVersion?.name.orEmpty()
@@ -140,7 +147,22 @@ class PackageServiceImpl(
         packageDao.save(tPackage)
     }
 
-    override fun search(queryModel: QueryModel): Page<PackageSummary> {
+    override fun downloadVersion(projectId: String, repoName: String, packageKey: String, versionName: String) {
+        val tPackage = checkPackage(projectId, repoName, packageKey)
+        val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
+        if (tPackageVersion.contentPath.isNullOrBlank()) {
+            throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
+        }
+        val artifactInfo = DefaultArtifactInfo(projectId, repoName, tPackageVersion.contentPath!!)
+        val context = ArtifactDownloadContext(artifact = artifactInfo)
+        ArtifactContextHolder.getRepository().download(context)
+    }
+
+    override fun searchPackage(queryModel: QueryModel): Page<PackageSummary> {
+        TODO("Not yet implemented")
+    }
+
+    override fun searchVersion(queryModel: QueryModel): Page<PackageVersion> {
         TODO("Not yet implemented")
     }
 
@@ -224,7 +246,8 @@ class PackageServiceImpl(
                     size = it.size,
                     downloads = it.downloads,
                     stageTag = it.stageTag,
-                    metadata = MetadataUtils.toMap(it.metadata)
+                    metadata = MetadataUtils.toMap(it.metadata),
+                    contentPath = it.contentPath
                 )
             }
         }

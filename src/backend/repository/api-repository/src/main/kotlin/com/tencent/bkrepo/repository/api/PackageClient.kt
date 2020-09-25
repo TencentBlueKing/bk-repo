@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @Primary
 @FeignClient(SERVICE_NAME, contextId = "PackageClient")
@@ -21,20 +22,20 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface PackageClient {
 
     @ApiOperation("查询包信息")
-    @GetMapping("/package/info/{projectId}/{repoName}/{packageKey}")
+    @GetMapping("/package/info/{projectId}/{repoName}")
     fun findPackageByKey(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @PathVariable packageKey: String
+        @RequestParam packageKey: String
     ): Response<PackageSummary?>
 
     @ApiOperation("查询版本信息")
-    @GetMapping("/version/info/{projectId}/{repoName}/{packageKey}/{versionName}")
+    @GetMapping("/version/info/{projectId}/{repoName}")
     fun findVersionByName(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @PathVariable packageKey: String,
-        @PathVariable versionName: String
+        @RequestParam packageKey: String,
+        @RequestParam version: String
     ): Response<PackageVersion?>
 
     @ApiOperation("创建包版本")
@@ -44,19 +45,19 @@ interface PackageClient {
     ): Response<Void>
 
     @ApiOperation("删除包")
-    @DeleteMapping("/package/delete/{projectId}/{repoName}/{packageKey}")
+    @DeleteMapping("/package/delete/{projectId}/{repoName}")
     fun deletePackage(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @PathVariable packageKey: String
+        @RequestParam packageKey: String
     ): Response<Void>
 
     @ApiOperation("删除版本")
-    @DeleteMapping("/version/delete/{projectId}/{repoName}/{packageKey}/{versionName}")
+    @DeleteMapping("/version/delete/{projectId}/{repoName}")
     fun deleteVersion(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @PathVariable packageKey: String,
-        @PathVariable versionName: String
+        @RequestParam packageKey: String,
+        @RequestParam version: String
     ): Response<Void>
 }
