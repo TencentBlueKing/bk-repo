@@ -5,7 +5,7 @@ spring:
         tags: bkce
   data:
     mongodb:
-      uri: mongodb://__BK_REPO_MONGODB_HOST__:__BK_REPO_MONGODB_PORT__/__BK_REPO_MONGODB_DB_NAME__?maxPoolSize=100
+      uri: mongodb://__BK_REPO_MONGODB_ADDR__/__BK_REPO_MONGODB_DB_NAME__?maxPoolSize=100
       transaction:
         enabled: false
 
@@ -18,20 +18,9 @@ logging:
   path: __BK_REPO_LOG_PATH__
 
 storage:
-  type: innercos
-  innercos:
-    secretId: __BK_REPO_SECRET_ID__
-    secretKey: __BK_REPO_SECRET_KEY__
-    region: __BK_REPO_REGION__
-    bucket: __BK_REPO_S3_BUCKET__
-    endpoint: __BK_REPO_S3_ENDPOINT__
-    cache:
-      enabled: true
-      path: __BK_REPO_CACHE_PATH__
-      expireDays: -1
-      loadCacheFirst: true
-    upload:
-      location: __BK_REPO_TEMP_PATH__
+  type: filesystem
+  filesystem:
+    path: __BK_REPO_FILE_PATH__
   monitor:
     enabled: false
   fileSizeThreshold: 5MB

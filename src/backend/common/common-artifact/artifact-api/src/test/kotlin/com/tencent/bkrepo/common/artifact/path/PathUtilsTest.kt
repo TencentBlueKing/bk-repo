@@ -77,12 +77,12 @@ class PathUtilsTest {
 
     @Test
     fun testResolvePath() {
-        assertEquals("/", PathUtils.resolvePath(""))
-        assertEquals("/", PathUtils.resolvePath("/"))
-        assertEquals("/a/", PathUtils.resolvePath("/a/b"))
-        assertEquals("/a/", PathUtils.resolvePath("/a/b.txt"))
-        assertEquals("/a/b/", PathUtils.resolvePath("/a/b/c/"))
-        assertEquals("/", PathUtils.resolvePath("/a"))
+        assertEquals("/", PathUtils.resolveParent(""))
+        assertEquals("/", PathUtils.resolveParent("/"))
+        assertEquals("/a/", PathUtils.resolveParent("/a/b"))
+        assertEquals("/a/", PathUtils.resolveParent("/a/b.txt"))
+        assertEquals("/a/b/", PathUtils.resolveParent("/a/b/c/"))
+        assertEquals("/", PathUtils.resolveParent("/a"))
     }
 
     @Test

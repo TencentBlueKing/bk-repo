@@ -260,7 +260,7 @@
     </div>
 </template>
 <script>
-    import RepoTree from '@/components/repoTree'
+    import RepoTree from '@/components/RepoTree'
     import ArtifactoryUpload from '@/components/ArtifactoryUpload'
     import { convertFileSize } from '@/utils'
     import { fileType } from '@/store/publicEnum'

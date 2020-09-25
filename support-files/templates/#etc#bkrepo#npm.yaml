@@ -7,4 +7,4 @@ auth:
   enabled: false
 npm:
   tarball:
-    prefix: http://__BK_REPO_HOST/npm/
+    prefix: http://__BK_REPO_HOST__/npm/

@@ -10,6 +10,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_DESC
 import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
@@ -75,7 +76,7 @@ class NodeQueryServiceTest @Autowired constructor(
     @BeforeEach
     fun beforeEach() {
         initMock()
-        nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER, false)
+        nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER)
     }
 
     @Test
@@ -125,7 +126,7 @@ class NodeQueryServiceTest @Autowired constructor(
             rule = rule
         )
 
-        val result = nodeQueryService.userQuery(UT_USER, queryModel)
+        val result = nodeQueryService.query(queryModel)
         Assertions.assertEquals(1, result.totalRecords)
         Assertions.assertEquals(1, result.records.size)
         val node = result.records[0]
@@ -154,7 +155,7 @@ class NodeQueryServiceTest @Autowired constructor(
             rule = rule
         )
 
-        val result = nodeQueryService.userQuery(UT_USER, queryModel)
+        val result = nodeQueryService.query(queryModel)
         Assertions.assertEquals(2, result.totalRecords)
         Assertions.assertEquals(2, result.records.size)
     }
@@ -178,7 +179,7 @@ class NodeQueryServiceTest @Autowired constructor(
             rule = rule
         )
 
-        val result = nodeQueryService.userQuery(UT_USER, queryModel)
+        val result = nodeQueryService.query(queryModel)
         Assertions.assertEquals(2, result.totalRecords)
         Assertions.assertEquals(2, result.records.size)
     }

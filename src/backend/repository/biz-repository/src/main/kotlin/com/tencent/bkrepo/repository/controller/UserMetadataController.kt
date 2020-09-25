@@ -39,7 +39,7 @@ class UserMetadataController(
     fun query(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
-    ): Response<Map<String, String>> {
+    ): Response<Map<String, Any>> {
         artifactInfo.run {
             return ResponseBuilder.success(metadataService.query(projectId, repoName, getArtifactFullPath()))
         }

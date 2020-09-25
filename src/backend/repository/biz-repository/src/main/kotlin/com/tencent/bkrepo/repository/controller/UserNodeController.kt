@@ -248,13 +248,15 @@ class UserNodeController(
         @ApiParam("是否包含元数据", required = false, defaultValue = "false")
         @RequestParam includeMetadata: Boolean = false,
         @ApiParam("是否深度查询文件", required = false, defaultValue = "false")
-        @RequestParam deep: Boolean = false
+        @RequestParam deep: Boolean = false,
+        @ApiParam("是否排序", required = false, defaultValue = "false")
+        @RequestParam sort: Boolean = false
     ): Response<Page<NodeInfo>> {
         with(artifactInfo) {
             val nodePage = nodeService.page(
                 projectId, repoName, getArtifactFullPath(),
                 pageNumber, pageSize,
-                includeFolder, includeMetadata, deep
+                includeFolder, includeMetadata, deep, sort
             )
             return ResponseBuilder.success(nodePage)
         }
