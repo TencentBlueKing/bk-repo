@@ -29,7 +29,7 @@ interface PackageClient {
     ): Response<PackageSummary?>
 
     @ApiOperation("查询版本信息")
-    @GetMapping("/package/info/{projectId}/{repoName}/{packageKey}/{versionName}")
+    @GetMapping("/version/info/{projectId}/{repoName}/{packageKey}/{versionName}")
     fun findVersionByName(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
