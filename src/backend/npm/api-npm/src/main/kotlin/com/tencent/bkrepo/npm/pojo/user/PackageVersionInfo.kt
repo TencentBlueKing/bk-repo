@@ -1,18 +1,17 @@
 package com.tencent.bkrepo.npm.pojo.user
 
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.npm.pojo.module.des.ModuleDepsInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiModelProperty
 
 @Api("npm版本详情页返回包装模型")
-data class PackageVersionInfo (
+data class PackageVersionInfo(
     @ApiModelProperty("基础信息")
     val basic: BasicInfo,
     @ApiModelProperty("元数据信息")
-    val metadata: String,
+    val metadata: Map<String, String>,
     @ApiModelProperty("依赖信息")
-    val dependencies: VersionDependenciesInfo
+    val dependencyInfo: VersionDependenciesInfo
 )
 
 @Api("基础信息")
@@ -50,5 +49,5 @@ data class VersionDependenciesInfo(
     @ApiModelProperty("包的开发依赖信息")
     val devDependencies: List<DependenciesInfo>,
     @ApiModelProperty("包的被依赖信息")
-    val dependents: Page<ModuleDepsInfo>
+    val dependents: List<ModuleDepsInfo>
 )
