@@ -32,7 +32,7 @@ interface ProjectClient {
     fun list(): Response<List<ProjectInfo>>
 
     @ApiOperation("项目分页查询")
-    @GetMapping("/rangeQuery")
+    @PostMapping("/rangeQuery")
     fun rangeQuery(@RequestBody request: ProjectRangeQueryRequest): Response<Page<ProjectInfo?>>
 
     @ApiOperation("创建项目")

@@ -101,7 +101,7 @@ interface RepositoryClient {
     ): Response<Page<RepositoryInfo>>
 
     @ApiOperation("仓库分页查询")
-    @GetMapping("/rangeQuery")
+    @PostMapping("/rangeQuery")
     fun rangeQuery(@RequestBody request: RepoRangeQueryRequest): Response<Page<RepositoryInfo?>>
 
     @ApiOperation("创建仓库")
