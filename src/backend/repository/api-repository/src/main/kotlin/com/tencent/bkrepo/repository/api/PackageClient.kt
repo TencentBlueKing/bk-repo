@@ -63,7 +63,7 @@ interface PackageClient {
         @RequestParam version: String
     ): Response<Void>
 
-    @ApiOperation("搜搜包")
+    @ApiOperation("搜索包")
     @DeleteMapping("/package/search")
     fun searchPackage(
         @RequestBody queryModel: QueryModel
