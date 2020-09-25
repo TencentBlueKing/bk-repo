@@ -14,12 +14,12 @@ import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import org.springframework.stereotype.Service
 
 @Service
-class MavenService{
+class MavenService {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deploy(
-            mavenArtifactInfo: MavenArtifactInfo,
-            file: ArtifactFile
+        mavenArtifactInfo: MavenArtifactInfo,
+        file: ArtifactFile
     ) {
         val context = ArtifactUploadContext(file)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
