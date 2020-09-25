@@ -5,6 +5,7 @@ import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.security.http.HttpAuthProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import org.mockito.ArgumentMatchers
@@ -22,6 +23,9 @@ import org.springframework.test.context.TestPropertySource
 @ComponentScan("com.tencent.bkrepo.repository.service")
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 abstract class ServiceBaseTest {
+
+    @MockBean
+    lateinit var storageService: StorageService
 
     @MockBean
     lateinit var roleResource: ServiceRoleResource

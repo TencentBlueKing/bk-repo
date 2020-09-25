@@ -6,9 +6,13 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.job.FileReferenceCleanupJob
 import com.tencent.bkrepo.repository.job.FileSynchronizeJob
+import com.tencent.bkrepo.repository.job.NodeDeletedCorrectionJob
+import com.tencent.bkrepo.repository.job.RootNodeCleanupJob
 import com.tencent.bkrepo.repository.job.StorageInstanceMigrationJob
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -18,7 +22,10 @@ import org.springframework.web.bind.annotation.RestController
 class SystemJobController(
     private val fileSynchronizeJob: FileSynchronizeJob,
     private val storageInstanceMigrationJob: StorageInstanceMigrationJob,
-    private val fileReferenceCleanupJob: FileReferenceCleanupJob
+    private val fileReferenceCleanupJob: FileReferenceCleanupJob,
+    private val rootNodeCleanupJob: RootNodeCleanupJob,
+    private val nodeDeletedCorrectionJob: NodeDeletedCorrectionJob,
+    private val mongoTemplate: MongoTemplate
 ) {
 
     @GetMapping("/synchronizeFile")
@@ -42,4 +49,20 @@ class SystemJobController(
         fileReferenceCleanupJob.cleanUp()
         return ResponseBuilder.success()
     }
+
+    @PostMapping("/correct/node")
+    fun correct(): Response<Void> {
+        nodeDeletedCorrectionJob.correct()
+        return ResponseBuilder.success()
+    }
+
+    @PostMapping("/cleanup/rootNode")
+    fun cleanupRootNode(): Response<Void> {
+        rootNodeCleanupJob.cleanup()
+        return ResponseBuilder.success()
+    }
+
+    data class TestNode(
+        val deleted: Long
+    )
 }
