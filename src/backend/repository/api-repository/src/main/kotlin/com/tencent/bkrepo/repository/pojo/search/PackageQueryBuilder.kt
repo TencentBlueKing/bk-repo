@@ -25,7 +25,6 @@ class PackageQueryBuilder : AbstractQueryBuilder<PackageQueryBuilder>() {
         return this.rule(true, TYPE_FILED, value, operation)
     }
 
-
     companion object {
         private const val KEY_FILED = "key"
         private const val NAME_FILED = "name"

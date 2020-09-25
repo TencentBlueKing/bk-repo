@@ -8,7 +8,8 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.constant.METADATA_PREFIX
 
-abstract class AbstractQueryBuilder<T> {
+@Suppress("UNCHECKED_CAST")
+abstract class AbstractQueryBuilder<T : AbstractQueryBuilder<T>> {
     private var projectId: String? = null
     private var repoNames: List<String> = listOf()
     private var repoType: RepositoryType? = null
