@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -60,4 +62,10 @@ interface PackageClient {
         @RequestParam packageKey: String,
         @RequestParam version: String
     ): Response<Void>
+
+    @ApiOperation("搜搜包")
+    @DeleteMapping("/package/search")
+    fun searchPackage(
+        @RequestBody queryModel: QueryModel
+    ): Response<Page<MutableMap<*, *>>>
 }

@@ -14,6 +14,8 @@ import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.search.packages.PackageQueryContext
+import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.PackageService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
@@ -21,13 +23,15 @@ import com.tencent.bkrepo.repository.util.Pages
 import com.tencent.bkrepo.repository.util.SemVerUtils
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
 class PackageServiceImpl(
     private val packageDao: PackageDao,
-    private val packageVersionDao: PackageVersionDao
+    private val packageVersionDao: PackageVersionDao,
+    private val packageSearchInterpreter: PackageSearchInterpreter
 ) : AbstractService(), PackageService {
 
     override fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary? {
@@ -158,12 +162,14 @@ class PackageServiceImpl(
         ArtifactContextHolder.getRepository().download(context)
     }
 
-    override fun searchPackage(queryModel: QueryModel): Page<PackageSummary> {
-        TODO("Not yet implemented")
-    }
-
-    override fun searchVersion(queryModel: QueryModel): Page<PackageVersion> {
-        TODO("Not yet implemented")
+    override fun searchPackage(queryModel: QueryModel): Page<MutableMap<*, *>> {
+        val context = packageSearchInterpreter.interpret(queryModel) as PackageQueryContext
+        val query = context.mongoQuery
+        val countQuery = Query.of(query).limit(0).skip(0)
+        val totalRecords = packageDao.count(countQuery)
+        val packageList = packageDao.find(query, MutableMap::class.java)
+        val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
+        return Page(pageNumber + 1, query.limit, totalRecords, packageList)
     }
 
     /**
