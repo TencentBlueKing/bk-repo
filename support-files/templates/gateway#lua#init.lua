@@ -19,12 +19,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 config = {
   env = "__BK_REPO_ENV__",
-  static_dir = "__INSTALL_PATH__/__MODULE__",
-  http_schema = "__HTTP_SCHEMA__", -- 蓝鲸PaaS平台访问协议 http or https, 如果有对接才配置修改，开源默认没对接
-  login_url = "__PAAS_LOGIN_URL__",   -- 蓝鲸PaaS平台域名, 如果有对接才配置修改，开源默认没对接
+  static_dir = "__BK_REPO_HOME__/frontend",
+  http_schema = "__BK_HTTP_SCHEMA__", -- 蓝鲸PaaS平台访问协议 http or https, 如果有对接才配置修改，开源默认没对接
+  login_url = "__BK_REPO_PAAS_LOGIN_URL__",   -- 蓝鲸PaaS平台域名, 如果有对接才配置修改，开源默认没对接
   service_name = "",  -- 指定后台微服务名称，如果对接后端是boot-assembly的单体微服务，则该配置项为bk-ci, 否则请置空会自动路由相应微服务
   allow_hosts = {
-    __BK_REPO_ALLOW_HOST__
+    "__BK_REPO_GATEWAY_CORS_ALLOW_LIST__"
   },
   allow_headers = "Authorization,Content-Type,withcredentials,credentials,Accept,Origin,User-Agent,Cache-Control,Keep-Alive,X-Requested-With,If-Modified-Since,X-CSRFToken,X-DEVOPS-PROJECT-ID,X-DEVOPS-TASK-ID,X-BKREPO-UID,X-BKREPO-API-TYPE",
   ns = {
@@ -38,22 +38,22 @@ config = {
     nodes_url = "/v1/catalog/nodes"
   },
   oauth = {  -- 对接蓝鲸权限中心才需要的配置
-    ip = "__IAM_IP0__",
-    env = "__IAM_ENV__",
-    port = "__IAM_HTTP_PORT__",
-    host = "__IAM_HOST__",
-    url = "__IAM_TOKEN_URL__",     -- 接口路径
-    app_code = "__APP_CODE__",
-    app_secret = "__APP_TOKEN__",
+    ip = "__BK_REPO_IAM_IP0__",
+    env = "__BK_REPO_IAM_ENV__",
+    port = "__BK_REPO_IAM_HTTP_PORT__",
+    host = "__BK_REPO_IAM_HOST__",
+    url = "__BK_REPO_IAM_TOKEN_URL__",     -- 接口路径
+    app_code = "__BK_REPO_APP_CODE__",
+    app_secret = "__BK_REPO_APP_TOKEN__",
   },
   itlogin = {
-    ip = "__BK_REPO_ITLOGIN_IP__",
-    port = "__BK_REPO_ITLOGIN_PORT__",
-    host = "__BK_REPO_ITLOGIN_HOST__"
+    ip = "__BK_REPO_GATEWAY_ITLOGIN_IP__",
+    port = "__BK_REPO_GATEWAY_ITLOGIN_PORT__",
+    host = "__BK_REPO_GATEWAY_ITLOGIN_HOST__"
   },
   bkrepo = {
     domain = "__BK_REPO_HOST__",
-    authorization = "__BKRPO_AUTHORIZATION__"
+    authorization = "__BK_REPO_AUTHORIZATION__"
   },
   apigwUrl = "__BK_REPO_APIGW_URL__"
 }
