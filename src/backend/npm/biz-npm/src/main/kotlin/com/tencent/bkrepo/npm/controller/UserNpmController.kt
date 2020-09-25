@@ -7,7 +7,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.pojo.user.PackageInfoResponse
+import com.tencent.bkrepo.npm.pojo.user.PackageInfo
 import com.tencent.bkrepo.npm.pojo.user.NpmPackageInfo
 import com.tencent.bkrepo.npm.pojo.user.NpmPackageVersionInfo
 import com.tencent.bkrepo.npm.pojo.user.PackageDeleteRequest
@@ -38,7 +38,7 @@ class UserNpmController(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
         @ApiParam(value = "包名称", required = true)
         @PathVariable name: String
-    ): Response<PackageInfoResponse> {
+    ): Response<PackageInfo> {
         return ResponseBuilder.success(npmWebService.queryPackageInfo(artifactInfo, name))
     }
 
@@ -50,7 +50,7 @@ class UserNpmController(
         @PathVariable scope: String,
         @ApiParam(value = "包名称", required = true)
         @PathVariable name: String
-    ): Response<PackageInfoResponse> {
+    ): Response<PackageInfo> {
         val pkgName = String.format("@%s/%s", scope, name)
         return ResponseBuilder.success(npmWebService.queryPackageInfo(artifactInfo, pkgName))
     }

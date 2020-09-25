@@ -2,7 +2,7 @@ package com.tencent.bkrepo.npm.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.pojo.user.PackageInfoResponse
+import com.tencent.bkrepo.npm.pojo.user.PackageInfo
 import com.tencent.bkrepo.npm.pojo.user.NpmPackageInfo
 import com.tencent.bkrepo.npm.pojo.user.NpmPackageVersionInfo
 import com.tencent.bkrepo.npm.pojo.user.PackageDeleteRequest
@@ -14,7 +14,7 @@ interface NpmWebService {
     /**
      * 查询npm包的信息
      */
-    fun queryPackageInfo(artifactInfo: NpmArtifactInfo, name: String): PackageInfoResponse
+    fun queryPackageInfo(artifactInfo: NpmArtifactInfo, name: String): PackageInfo
 
     /**
      * 查询版本信息

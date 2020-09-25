@@ -31,7 +31,7 @@ import com.tencent.bkrepo.npm.pojo.user.BasicInfo
 import com.tencent.bkrepo.npm.pojo.user.DependenciesInfo
 import com.tencent.bkrepo.npm.pojo.user.DownloadCount
 import com.tencent.bkrepo.npm.pojo.user.MaintainerInfo
-import com.tencent.bkrepo.npm.pojo.user.PackageInfoResponse
+import com.tencent.bkrepo.npm.pojo.user.PackageInfo
 import com.tencent.bkrepo.npm.pojo.user.TagsInfo
 import com.tencent.bkrepo.npm.pojo.user.NpmPackageInfo
 import com.tencent.bkrepo.npm.pojo.user.NpmPackageLatestVersionInfo
@@ -67,9 +67,9 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
-    override fun queryPackageInfo(artifactInfo: NpmArtifactInfo, name: String): PackageInfoResponse {
+    override fun queryPackageInfo(artifactInfo: NpmArtifactInfo, name: String): PackageInfo {
         val packageJson = searchPkgInfo(name)
-        val page = moduleDepsService.page(artifactInfo.projectId, artifactInfo.repoName, PAGE, SIZE, name)
+        val dependentList = moduleDepsService.list(artifactInfo.projectId, artifactInfo.repoName, name)
         val query = downloadStatisticsClient.queryForSpecial(
             artifactInfo.projectId, artifactInfo.repoName, name
         )
@@ -82,7 +82,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         val maintainersList = parseMaintainers(packageJson)
         val dependenciesList = parseDependencies(versionJsonObject)
         val devDependenciesList = parseDevDependencies(versionJsonObject)
-        return PackageInfoResponse(
+        return PackageInfo(
             packageJson[NAME].asString,
             packageJson[DESCRIPTION].asString,
             packageJson[README].asString,
@@ -92,7 +92,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             query.data!!.statisticsMetrics.map { convert(it) },
             dependenciesList,
             devDependenciesList,
-            page
+            dependentList
         )
     }
 
@@ -125,7 +125,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                     lastModifiedDate
                 )
                 val versionDependenciesInfo = queryVersionDependenciesInfo(artifactInfo, versionsInfo.getAsJsonObject(version), name)
-                return PackageVersionInfo(basicInfo, "", versionDependenciesInfo)
+                return PackageVersionInfo(basicInfo, emptyMap(), versionDependenciesInfo)
             }
         }
     }
@@ -135,10 +135,10 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         versionInfo: JsonObject,
         name: String
     ): VersionDependenciesInfo {
-        val page = moduleDepsService.page(artifactInfo.projectId, artifactInfo.repoName, PAGE, SIZE, name)
+        val moduleDepsList = moduleDepsService.list(artifactInfo.projectId, artifactInfo.repoName, name)
         val dependenciesList = parseDependencies(versionInfo)
         val devDependenciesList = parseDevDependencies(versionInfo)
-        return VersionDependenciesInfo(dependenciesList, devDependenciesList, page)
+        return VersionDependenciesInfo(dependenciesList, devDependenciesList, moduleDepsList)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
@@ -329,9 +329,6 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
     }
 
     companion object {
-        const val PAGE = 0
-        const val SIZE = 20
-
         fun convert(downloadStatisticsMetric: DownloadStatisticsMetric): DownloadCount {
             with(downloadStatisticsMetric) {
                 return DownloadCount(description, count)
