@@ -27,25 +27,25 @@ class UserStageController(
 
     @ApiOperation("查询制品状态")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    @GetMapping("/{projectId}/{repoName}/{packageKey}/{version}")
+    @GetMapping("/{projectId}/{repoName}")
     fun query(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @PathVariable packageKey: String,
-        @PathVariable version: String
+        @RequestParam packageKey: String,
+        @RequestParam version: String
     ): Response<List<String>> {
         return ResponseBuilder.success(stageService.query(projectId, repoName, packageKey, version))
     }
 
     @ApiOperation("制品晋级")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    @PostMapping("/upgrade/{projectId}/{repoName}/{packageKey}/{version}")
+    @PostMapping("/upgrade/{projectId}/{repoName}")
     fun upgrade(
         @RequestAttribute userId: String,
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @PathVariable packageKey: String,
-        @PathVariable version: String,
+        @RequestParam packageKey: String,
+        @RequestParam version: String,
         @RequestParam tag: String? = null
     ): Response<Void> {
         val request = StageUpgradeRequest(
