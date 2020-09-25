@@ -16,16 +16,21 @@ import com.tencent.bkrepo.maven.pojo.MavenArtifact
 import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenMetadata
+import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 
 @Component
 class MavenLocalRepository : LocalRepository() {
+
+    @Autowired
+    lateinit var packageClient: PackageClient
 
     /**
      * 获取MAVEN节点创建请求
@@ -33,6 +38,10 @@ class MavenLocalRepository : LocalRepository() {
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val request = super.buildNodeCreateRequest(context)
         return request.copy(overwrite = true)
+    }
+
+    override fun onUpload(context: ArtifactUploadContext) {
+        super.onUpload(context)
     }
 
     fun metadataNodeCreateRequest(
@@ -138,22 +147,23 @@ class MavenLocalRepository : LocalRepository() {
         val groupId = StringUtils.join(pathList.subList(0, pathList.size - 2), ".")
         with(artifactInfo) {
             val jarNode = nodeClient.detail(
-                    projectId, repoName, "${getArtifactFullPath()}/$artifactId-$version.jar").data ?: return null
-            val mavenArtifactMetadata = jarNode.metadata ?: mutableMapOf()
+                projectId, repoName, "${getArtifactFullPath()}/$artifactId-$version.jar"
+            ).data ?: return null
+            val mavenArtifactMetadata = jarNode.metadata
             val countData = downloadStatisticsClient.query(
                 projectId, repoName, jarNode.fullPath,
                 null, null, null
             ).data
             val count = countData?.count ?: 0
             val mavenArtifactBasic = Basic(
-                    groupId,
-                    artifactId,
-                    version,
-                    jarNode.size, jarNode.fullPath, jarNode.lastModifiedBy, jarNode.lastModifiedDate,
-                    count,
-                    jarNode.sha256,
-                    jarNode.md5,
-                    jarNode.stageTag,
+                groupId,
+                artifactId,
+                version,
+                jarNode.size, jarNode.fullPath, jarNode.lastModifiedBy, jarNode.lastModifiedDate,
+                count,
+                jarNode.sha256,
+                jarNode.md5,
+                jarNode.stageTag,
                 null
             )
 
