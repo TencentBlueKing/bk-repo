@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.pojo.query
+package com.tencent.bkrepo.repository.pojo.search
 
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.repository.constant.SystemMetadata
@@ -21,13 +21,13 @@ import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
  *        .excludeFolder()
  *      .build()
  */
-class NodeQueryBuilder : AbstractQueryBuilder() {
+class NodeQueryBuilder : AbstractQueryBuilder<NodeQueryBuilder>() {
 
     /**
      * 添加制品晋级状态规则
      *
      */
-    fun stage(stage: ArtifactStageEnum, operation: OperationType = OperationType.EQ): AbstractQueryBuilder {
+    fun stage(stage: ArtifactStageEnum, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
         return this.metadata(SystemMetadata.STAGE.key, stage.tag, operation)
     }
 
@@ -36,7 +36,7 @@ class NodeQueryBuilder : AbstractQueryBuilder() {
      *
      * [value]为值，[operation]为查询操作类型，默认为EQ查询
      */
-    fun name(value: String, operation: OperationType = OperationType.EQ): AbstractQueryBuilder {
+    fun name(value: String, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
         return this.rule(true, NAME_FILED, value, operation)
     }
 
@@ -45,7 +45,7 @@ class NodeQueryBuilder : AbstractQueryBuilder() {
      *
      * [value]为值，[operation]为查询操作类型，默认为EQ查询
      */
-    fun path(value: String, operation: OperationType = OperationType.EQ): AbstractQueryBuilder {
+    fun path(value: String, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
         return this.rule(true, PATH_FILED, value, operation)
     }
 
@@ -54,7 +54,7 @@ class NodeQueryBuilder : AbstractQueryBuilder() {
      *
      * [value]为值，[operation]为查询操作类型，默认为EQ查询
      */
-    fun fullPath(value: String, operation: OperationType = OperationType.EQ): AbstractQueryBuilder {
+    fun fullPath(value: String, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
         return this.rule(true, FULL_PATH_FILED, value, operation)
     }
 
@@ -63,21 +63,21 @@ class NodeQueryBuilder : AbstractQueryBuilder() {
      *
      * [value]为值，[operation]为查询操作类型，默认为EQ查询
      */
-    fun size(value: Long, operation: OperationType = OperationType.EQ): AbstractQueryBuilder {
+    fun size(value: Long, operation: OperationType = OperationType.EQ): NodeQueryBuilder {
         return this.rule(true, SIZE_FILED, value, operation)
     }
 
     /**
      * 排除目录
      */
-    fun excludeFolder(): AbstractQueryBuilder {
+    fun excludeFolder(): NodeQueryBuilder {
         return this.rule(true, FOLDER_FILED, false, OperationType.EQ)
     }
 
     /**
      * 排除文件
      */
-    fun excludeFile(): AbstractQueryBuilder {
+    fun excludeFile(): NodeQueryBuilder {
         return this.rule(true, FOLDER_FILED, true, OperationType.EQ)
     }
 

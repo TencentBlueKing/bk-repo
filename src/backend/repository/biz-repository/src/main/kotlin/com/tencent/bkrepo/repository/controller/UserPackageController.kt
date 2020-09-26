@@ -106,17 +106,8 @@ class UserPackageController(
     @PostMapping("/package/search")
     fun searchPackage(
         @RequestBody queryModel: QueryModel
-    ): Response<Page<PackageSummary>> {
+    ): Response<Page<MutableMap<*, *>>> {
         return ResponseBuilder.success(packageService.searchPackage(queryModel))
-    }
-
-    @ApiOperation("搜索版本")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    @PostMapping("/version/search")
-    fun searchVersion(
-        @RequestBody queryModel: QueryModel
-    ): Response<Page<PackageVersion>> {
-        return ResponseBuilder.success(packageService.searchVersion(queryModel))
     }
 
     @ApiOperation("下载版本")

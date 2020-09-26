@@ -126,10 +126,5 @@ interface PackageService {
     /**
      * 根据[queryModel]搜索包
      */
-    fun searchPackage(queryModel: QueryModel): Page<PackageSummary>
-
-    /**
-     * 根据[queryModel]搜索包版本
-     */
-    fun searchVersion(queryModel: QueryModel): Page<PackageVersion>
+    fun searchPackage(queryModel: QueryModel): Page<MutableMap<*, *>>
 }

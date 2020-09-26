@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.repository.controller
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -47,5 +49,9 @@ class PackageController(
     ): Response<Void> {
         packageService.deleteVersion(projectId, repoName, packageKey, version)
         return ResponseBuilder.success()
+    }
+
+    override fun searchPackage(queryModel: QueryModel): Response<Page<MutableMap<*, *>>> {
+        return ResponseBuilder.success(packageService.searchPackage(queryModel))
     }
 }

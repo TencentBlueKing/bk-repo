@@ -72,17 +72,18 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         manifestPath: String,
         manifestType: ManifestType,
         artifactFile: ArtifactFile
-    ): DockerDigest {
+    ): Pair<DockerDigest, Long> {
         val manifestBytes = artifactFile.getInputStream().readBytes()
         val digest = DockerManifestDigester.calcDigest(manifestBytes)
         logger.info("manifest file digest content digest : [$digest]")
         if (ManifestType.Schema2List == manifestType) {
             processManifestList(context, tag, manifestPath, digest!!, manifestBytes)
-            return digest
+            return Pair(digest, 0L)
         }
 
         // process scheme2 manifest
         val metadata = ManifestDeserializer.deserialize(repo, context, tag, manifestType, manifestBytes, digest!!)
+        val size = metadata.tagInfo.totalSize
         addManifestsBlobs(context, manifestType, manifestBytes, metadata)
         if (!DockerManifestSyncer.syncBlobs(context, repo, metadata, tag)) {
             logger.warn("fail to sync manifest blobs, cancel manifest upload")
@@ -101,7 +102,7 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
             logger.warn("upload manifest fail [$uploadContext]")
             throw DockerFileSaveFailedException(manifestPath)
         }
-        return digest
+        return Pair(digest, size)
     }
 
     /**
