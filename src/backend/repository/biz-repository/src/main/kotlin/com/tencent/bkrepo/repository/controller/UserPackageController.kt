@@ -112,7 +112,7 @@ class UserPackageController(
 
     @ApiOperation("下载版本")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    @DeleteMapping("/version/download/{projectId}/{repoName}")
+    @GetMapping("/version/download/{projectId}/{repoName}")
     fun downloadVersion(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
