@@ -8,7 +8,7 @@ import com.tencent.bk.sdk.iam.dto.callback.response.CallbackBaseResponseDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.FetchInstanceInfoResponseDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.InstanceInfoDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.ListInstanceResponseDTO
-import com.tencent.bk.sdk.iam.service.impl.TokenServiceImpl
+import com.tencent.bk.sdk.iam.service.TokenService
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.BadCredentialsException
@@ -27,12 +27,12 @@ import java.util.Base64
 class BkiamCallbackService @Autowired constructor(
     private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,
-    val tokenServiceImpl: TokenServiceImpl
+    private val tokenService: TokenService
 ) {
     @Value("\${auth.iam.callbackUser}")
-    val callbackUser = ""
+    private val callbackUser = ""
 
-    var bufferedToken = ""
+    private var bufferedToken = ""
 
     fun queryProject(token: String, request: CallbackRequestDTO): CallbackBaseResponseDTO? {
         logger.info("queryProject, token: $token, request: $request")
@@ -152,7 +152,7 @@ class BkiamCallbackService @Autowired constructor(
         if (bufferedToken.isNotBlank() && bufferedToken == tokenToCheck) {
             return
         }
-        bufferedToken = tokenServiceImpl.token
+        bufferedToken = tokenService.token
         if (bufferedToken != tokenToCheck) {
             throw BadCredentialsException("[$tokenToCheck] is not a valid credentials")
         }

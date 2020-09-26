@@ -5,5 +5,7 @@ enum class PermissionAction {
     WRITE,
     READ,
     UPDATE,
-    DELETE
+    DELETE;
+
+    fun id() = this.name.toLowerCase()
 }

@@ -11,7 +11,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
-class RoleServiceImpl @Autowired constructor(
+class RoleServiceImpl constructor(
     private val roleRepository: RoleRepository
 ) : RoleService {
 

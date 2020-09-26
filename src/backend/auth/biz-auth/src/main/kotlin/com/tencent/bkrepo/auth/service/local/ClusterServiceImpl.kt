@@ -19,7 +19,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 
-class ClusterServiceImpl @Autowired constructor(
+class ClusterServiceImpl constructor(
     private val clusterRepository: ClusterRepository,
     private val mongoTemplate: MongoTemplate
 ) : ClusterService {

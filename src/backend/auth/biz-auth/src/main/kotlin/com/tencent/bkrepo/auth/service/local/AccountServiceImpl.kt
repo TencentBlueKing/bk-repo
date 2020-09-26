@@ -23,7 +23,7 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
-class AccountServiceImpl @Autowired constructor(
+class AccountServiceImpl constructor(
     private val accountRepository: AccountRepository,
     private val mongoTemplate: MongoTemplate
 ) : AccountService {

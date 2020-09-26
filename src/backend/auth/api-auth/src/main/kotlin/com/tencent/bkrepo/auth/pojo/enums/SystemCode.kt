@@ -1,10 +1,8 @@
 package com.tencent.bkrepo.auth.pojo.enums
 
-enum class ResourceType {
-    SYSTEM,
-    PROJECT,
-    REPO,
-    NODE;
+enum class SystemCode {
+    BK_CI,
+    BKREPO;
 
     fun id() = this.name.toLowerCase()
 }
