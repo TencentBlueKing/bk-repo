@@ -16,3 +16,5 @@ spring:
 
 auth:
   realm: local
+  iam:
+    callbackUser: bk_iam

@@ -10,11 +10,7 @@ import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.stereotype.Service
 
-@Service
-@ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
 class RoleServiceImpl @Autowired constructor(
     private val roleRepository: RoleRepository
 ) : RoleService {

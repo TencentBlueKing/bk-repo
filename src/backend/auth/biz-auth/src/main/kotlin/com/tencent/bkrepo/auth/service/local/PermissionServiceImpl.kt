@@ -17,17 +17,13 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.stream.Collectors
 
-@Service
-@ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
 class PermissionServiceImpl @Autowired constructor(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
