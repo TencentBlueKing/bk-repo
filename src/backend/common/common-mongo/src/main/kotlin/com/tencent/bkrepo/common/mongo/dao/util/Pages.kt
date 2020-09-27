@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.repository.util
+package com.tencent.bkrepo.common.mongo.dao.util
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
