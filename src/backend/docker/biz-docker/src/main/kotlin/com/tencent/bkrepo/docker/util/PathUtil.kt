@@ -54,7 +54,6 @@ object PathUtil {
         return "$USER_API_PREFIX/manifest/$projectId/$repoName/"
     }
 
-
     private fun layerPrefix(projectId: String, repoName: String): String {
         return "$USER_API_PREFIX/layer/$projectId/$repoName/"
     }

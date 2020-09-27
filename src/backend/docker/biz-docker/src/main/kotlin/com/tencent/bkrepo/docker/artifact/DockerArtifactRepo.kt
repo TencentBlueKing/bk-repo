@@ -451,7 +451,7 @@ class DockerArtifactRepo @Autowired constructor(
                 val lastModifiedDate = it[LAST_MODIFIED_DATE] as String
                 val size = it[DOCKER_NODE_SIZE] as Int
                 val downLoadCount = 0L
-                val stageTag = ""//it[STAGE_TAG] as String
+                val stageTag = "" // it[STAGE_TAG] as String
                 data.add(DockerTag(tag, stageTag, size, lastModifiedBy, lastModifiedDate, downLoadCount))
             }
             return data
