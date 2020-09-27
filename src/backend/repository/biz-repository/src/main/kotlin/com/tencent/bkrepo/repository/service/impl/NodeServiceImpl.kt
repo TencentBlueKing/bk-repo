@@ -15,6 +15,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveParent
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -48,7 +49,6 @@ import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeListCriteria
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeListQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodePathUpdate
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeQuery
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -379,8 +379,10 @@ class NodeServiceImpl : AbstractService(), NodeService {
             } else srcCredentials
 
 
-            // 只允许local类型仓库操作
-            if (srcRepository.category != RepositoryCategory.LOCAL || destRepository.category != RepositoryCategory.LOCAL) {
+            // 只允许local或者composite类型仓库操作
+            val canSrcRepoMove = srcRepository.category.let { it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE}
+            val canDestRepoMove = destRepository.category.let { it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE}
+            if (!canSrcRepoMove || !canDestRepoMove) {
                 throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
             }
             val srcNode = nodeDao.findNode(srcProjectId, srcRepoName, srcFullPath)
