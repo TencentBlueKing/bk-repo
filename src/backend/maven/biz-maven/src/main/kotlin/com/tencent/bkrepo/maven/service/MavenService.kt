@@ -33,15 +33,14 @@ class MavenService {
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
-    fun delete(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String?): String {
+    fun delete(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String?) {
         val context = ArtifactRemoveContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
-        return mavenArtifactInfo.getArtifactFullPath()
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo): Any? {
+    fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String?): Any? {
         val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.query(context)
