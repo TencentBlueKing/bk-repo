@@ -124,6 +124,16 @@ interface PackageService {
     fun downloadVersion(projectId: String, repoName: String, packageKey: String, versionName: String)
 
     /**
+     * 包下载数量统计
+     *
+     * @param projectId 项目id
+     * @param repoName 项目id
+     * @param packageKey 包唯一标识
+     * @param versionName 版本名称
+     */
+    fun addDownloadMetric(projectId: String, repoName: String, packageKey: String, versionName: String)
+
+    /**
      * 根据[queryModel]搜索包
      */
     fun searchPackage(queryModel: QueryModel): Page<MutableMap<*, *>>

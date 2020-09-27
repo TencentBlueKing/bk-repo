@@ -11,6 +11,7 @@ import com.tencent.bkrepo.npm.pojo.module.des.service.DepsCreateRequest
 import com.tencent.bkrepo.npm.pojo.module.des.service.DepsDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -176,16 +177,17 @@ class ModuleDepsService {
         return mongoTemplate.find(query, TModuleDeps::class.java).map { convert(it)!! }
     }
 
-    fun page(projectId: String, repoName: String, page: Int, size: Int, name: String): Page<ModuleDepsInfo> {
-        page.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "page")
-        size.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
+    fun page(projectId: String, repoName: String, pageNumber: Int, pageSize: Int, name: String): Page<ModuleDepsInfo> {
+        pageNumber.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageNumber")
+        pageSize.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageSize")
         val criteria =
             Criteria.where(TModuleDeps::projectId.name).`is`(projectId).and(TModuleDeps::repoName.name).`is`(repoName)
                 .and(TModuleDeps::name.name).`is`(name)
         val query = Query.query(criteria).with(Sort.by(TModuleDeps::createdDate.name))
-        val listData = mongoTemplate.find(query, TModuleDeps::class.java).map { convert(it)!! }
+        val pageRequest = PageRequest.of(pageNumber - 1 ,pageSize)
+        val listData = mongoTemplate.find(query.with(pageRequest), TModuleDeps::class.java).map { convert(it)!! }
         val count = mongoTemplate.count(query, TModuleDeps::class.java)
-        return Page(page, size, count, listData)
+        return Page(pageNumber, pageSize, count, listData)
     }
 
     companion object {

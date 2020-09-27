@@ -6,5 +6,5 @@ data class DownloadStatisticsMetric(
     @ApiModelProperty("时间段")
     val description: String,
     @ApiModelProperty("下载量")
-    val count: Int
+    val count: Long
 )
