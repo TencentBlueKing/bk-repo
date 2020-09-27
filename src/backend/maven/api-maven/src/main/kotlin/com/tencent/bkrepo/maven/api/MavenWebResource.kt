@@ -18,17 +18,21 @@ interface MavenWebResource {
     fun deletePackage(
         @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
         @RequestParam packageKey: String
-    ): Response<String>
+    ): Response<Void>
 
-    @ApiOperation("maven jar 包删除接口")
+    @ApiOperation("maven jar 包版本删除接口")
     @DeleteMapping(MavenArtifactInfo.MAVEN_EXT_VERSION_DELETE)
     fun deleteVersion(
-            @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
-            @RequestParam packageKey: String,
-            @RequestParam version: String?
-    ): Response<String>
+        @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
+        @RequestParam packageKey: String,
+        @RequestParam version: String?
+    ): Response<Void>
 
     @ApiOperation("maven jar 版本详情接口")
     @GetMapping(MavenArtifactInfo.MAVEN_EXT_DETAIL)
-    fun artifactDetail(@ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo): Response<Any?>
+    fun artifactDetail(
+        @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
+        @RequestParam packageKey: String,
+        @RequestParam version: String?
+    ): Response<Any?>
 }
