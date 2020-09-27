@@ -102,7 +102,6 @@ class UserPackageController(
     }
 
     @ApiOperation("搜索包")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @PostMapping("/package/search")
     fun searchPackage(
         @RequestBody queryModel: QueryModel
