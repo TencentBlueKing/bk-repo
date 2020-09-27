@@ -5,8 +5,8 @@
             <div class="ml20 common-package-title flex-column">
                 <span class="mb10 title" :title="pkg.name">{{ pkg.name }}</span>
                 <div class="flex-align-center">
-                    <div class="mr50">{{ `${$t('downloadCount')}: ${pkg.downloads}` }}</div>
-                    <div class="mr50">{{ `${$t('lastModifiedDate')}: ${new Date(pkg.lastModifiedDate).toLocaleString()}` }}</div>
+                    <div class="mr50">{{ `${$t('downloads')}: ${pkg.downloads}` }}</div>
+                    <div class="mr50">{{ `${$t('lastModifiedDate')}: ${formatDate(pkg.lastModifiedDate)}` }}</div>
                     <div>{{ `${$t('lastModifiedBy')}: ${pkg.lastModifiedBy}` }}</div>
                 </div>
             </div>
@@ -45,11 +45,11 @@
                                     {{ convertFileSize(props.row.size) }}
                                 </template>
                             </bk-table-column>
-                            <bk-table-column :label="$t('downloadCount')" prop="downloads"></bk-table-column>
+                            <bk-table-column :label="$t('downloads')" prop="downloads"></bk-table-column>
                             <bk-table-column :label="$t('lastModifiedBy')" prop="lastModifiedBy"></bk-table-column>
                             <bk-table-column :label="$t('lastModifiedDate')">
                                 <template slot-scope="props">
-                                    {{ new Date(props.row.lastModifiedDate).toLocaleString() }}
+                                    {{ formatDate(props.row.lastModifiedDate) }}
                                 </template>
                             </bk-table-column>
                             <bk-table-column :label="$t('operation')" width="150">
@@ -124,7 +124,7 @@
 </template>
 <script>
     // import CodeArea from '@/components/CodeArea'
-    import { convertFileSize } from '@/utils'
+    import { convertFileSize, formatDate } from '@/utils'
     import commonMixin from './commonMixin'
     import { mapActions } from 'vuex'
     export default {
@@ -133,7 +133,6 @@
         mixins: [commonMixin],
         data () {
             return {
-                convertFileSize,
                 isLoading: false,
                 infoLoading: false,
                 formDialog: {
@@ -176,6 +175,8 @@
             this.handlerPaginationChange()
         },
         methods: {
+            formatDate,
+            convertFileSize,
             ...mapActions([
                 'getPackageInfo',
                 'getVersionList',
@@ -261,7 +262,7 @@
             downloadPackageHandler (row) {
                 window.open(
                     `/web/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${row.name}`,
-                    '_blank'
+                    '_self'
                 )
             },
             deleteVersionHandler (row) {

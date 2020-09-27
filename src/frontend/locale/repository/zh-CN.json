@@ -75,7 +75,7 @@
     "noData": "暂无数据",
     "refresh": "刷新",
     "download": "下载",
-    "downloadCount": "下载数",
+    "downloads": "下载数",
     "rename": "重命名",
     "copy": "复制",
     "move": "移动",
@@ -103,5 +103,9 @@
     "tag": "标签",
     "user": "用户",
     "loadMore": "加载更多",
-    "createFolderLabel": "支持级联创建"
+    "createFolderLabel": "支持级联创建",
+    "username": "用户名",
+    "account": "账号",
+    "password": "密码",
+    "test": "测试"
 }
