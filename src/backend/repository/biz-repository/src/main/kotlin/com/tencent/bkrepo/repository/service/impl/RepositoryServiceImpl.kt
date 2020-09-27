@@ -35,7 +35,7 @@ import com.tencent.bkrepo.repository.service.ProjectService
 import com.tencent.bkrepo.repository.service.ProxyChannelService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
-import com.tencent.bkrepo.repository.util.Pages
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException

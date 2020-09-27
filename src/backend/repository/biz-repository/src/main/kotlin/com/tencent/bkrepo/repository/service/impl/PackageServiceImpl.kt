@@ -20,7 +20,7 @@ import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.PackageService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
-import com.tencent.bkrepo.repository.util.Pages
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
