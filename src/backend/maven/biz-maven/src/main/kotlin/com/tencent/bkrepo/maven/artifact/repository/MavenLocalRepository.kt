@@ -59,7 +59,7 @@ class MavenLocalRepository : LocalRepository() {
                         packageType = PackageType.MAVEN,
                         versionName = mavenGAVC.version,
                         size = context.getArtifactFile().getSize(),
-                        contentPath = getArtifactFullPath(),
+                        artifactPath = getArtifactFullPath(),
                         overwrite = true,
                         createdBy = context.userId
                     )

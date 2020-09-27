@@ -100,7 +100,7 @@ class PackageServiceImpl(
                     lastModifiedDate = LocalDateTime.now()
                     size = request.size
                     manifestPath = request.manifestPath
-                    contentPath = request.contentPath
+                    artifactPath = request.artifactPath
                     stageTag = request.stageTag.orEmpty()
                     metadata = MetadataUtils.fromMap(request.metadata)
                 }
@@ -118,7 +118,7 @@ class PackageServiceImpl(
                     ordinal = calculateOrdinal(versionName),
                     downloads = 0,
                     manifestPath = manifestPath,
-                    contentPath = contentPath,
+                    artifactPath = artifactPath,
                     stageTag = stageTag.orEmpty(),
                     metadata = MetadataUtils.fromMap(metadata)
                 )
@@ -154,10 +154,10 @@ class PackageServiceImpl(
     override fun downloadVersion(projectId: String, repoName: String, packageKey: String, versionName: String) {
         val tPackage = checkPackage(projectId, repoName, packageKey)
         val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
-        if (tPackageVersion.contentPath.isNullOrBlank()) {
+        if (tPackageVersion.artifactPath.isNullOrBlank()) {
             throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
         }
-        val artifactInfo = DefaultArtifactInfo(projectId, repoName, tPackageVersion.contentPath!!)
+        val artifactInfo = DefaultArtifactInfo(projectId, repoName, tPackageVersion.artifactPath!!)
         val context = ArtifactDownloadContext(artifact = artifactInfo)
         ArtifactContextHolder.getRepository().download(context)
     }
@@ -265,7 +265,7 @@ class PackageServiceImpl(
                     downloads = it.downloads,
                     stageTag = it.stageTag,
                     metadata = MetadataUtils.toMap(it.metadata),
-                    contentPath = it.contentPath
+                    contentPath = it.artifactPath
                 )
             }
         }
