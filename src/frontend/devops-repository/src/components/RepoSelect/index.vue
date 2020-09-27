@@ -5,7 +5,7 @@
             <span class="ml10">{{selectedItem.name}}</span>
             <i class="ml10 devops-icon icon-angle-right" :class="{ 'angle-down': showList }"></i>
         </div>
-        <div class="repo-select-main" :style="`max-height: ${ showList ? '360px' : '0' }`">
+        <div class="repo-select-main" :style="`height: ${ showList ? '370px' : '0' }`">
             <div class="repo-select-search">
                 <bk-input
                     class="docker-tag-search"
@@ -98,8 +98,9 @@
     }
     .repo-select-main {
         position: absolute;
+        margin-left: 15px;
         margin-top: 60px;
-        width: 300px;
+        width: 250px;
         overflow: hidden;
         border: solid $borderWeightColor;
         border-width: 0 1px;
@@ -107,11 +108,11 @@
         z-index: 1;
         transition: all .3s;
         .repo-select-search {
-            padding: 5px 10px;
+            padding: 10px;
             border-top: 1px solid $borderWeightColor;
         }
         .repo-select-list {
-            height: 272px;
+            height: calc(100% - 98px);
             border-top: 1px solid $borderWeightColor;
             overflow: auto;
             .repo-item {

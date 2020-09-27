@@ -124,7 +124,8 @@ label {
     display: inline-block;
     padding: 5px;
     border-radius: 5px;
-    font-size: 14px;
+    font-size: 12px;
+    white-space: nowrap;
     background-color: $primaryLightColor;
 }
 

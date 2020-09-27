@@ -4,8 +4,8 @@
     "name": "名称",
     "repeat": "重复",
     "repoName": "仓库名称",
-    "createTime": "创建时间",
-    "creator": "创建人",
+    "createdDate": "创建时间",
+    "createdBy": "创建人",
     "repoType": "仓库类型",
     "repoManage": "仓库管理",
     "description": "描述",
@@ -102,5 +102,6 @@
     "dependencies": "依赖",
     "tag": "标签",
     "user": "用户",
-    "loadMore": "加载更多"
+    "loadMore": "加载更多",
+    "createFolderLabel": "支持级联创建"
 }
