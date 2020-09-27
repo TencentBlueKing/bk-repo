@@ -4,7 +4,7 @@ proxy channel接口使用统一接口协议，公共部分请参照[通用接口
 
 ### 查询公有源列表
 
-- API: POST /repository/api/proxy-channel/list/public/{repoType}
+- API: GET /repository/api/proxy-channel/list/public/{repoType}
 
 - API 名称: list_public_proxy_channel
 
