@@ -17,6 +17,8 @@ data class PackageVersionInfo(
 
 @Api("基础信息")
 data class BasicInfo(
+    @ApiModelProperty("版本字段")
+    val version: String,
     @ApiModelProperty("完整路径")
     val fullPath: String,
     @ApiModelProperty("文件大小，单位byte")
@@ -32,7 +34,7 @@ data class BasicInfo(
     @ApiModelProperty("所属仓库名称")
     val repoName: String,
     @ApiModelProperty("下载次数")
-    val downloadCount: Int,
+    val downloadCount: Long,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建时间")

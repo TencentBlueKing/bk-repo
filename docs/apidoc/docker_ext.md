@@ -416,8 +416,9 @@
   "message": null,
   "data": {
     "basic": {
+      "domain":"bkrepo.com",
       "size": 2487,
-      "tag": "v1",
+      "version": "v1",
       "lastModifiedBy": "admin",
       "lastModifiedDate": "2020-09-10T14:49:37.904",
       "downloadCount": 0,

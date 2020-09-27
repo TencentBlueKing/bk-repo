@@ -65,6 +65,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             with(nodeDetail) {
                 val downloadCount = downloadStatisticsClient.query(projectId, repoName, name, version).data!!.count
                 val basicInfo = BasicInfo(
+                    version,
                     fullPath,
                     size,
                     sha256!!,

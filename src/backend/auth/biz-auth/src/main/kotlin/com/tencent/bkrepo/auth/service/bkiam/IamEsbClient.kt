@@ -11,21 +11,20 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import java.security.cert.CertificateException
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
-class IamEsbClient() {
+class IamEsbClient {
     @Value("\${esb.code:}")
     private val appCode: String = ""
     @Value("\${esb.secret:}")
     private val appSecret: String = ""
-    @Value("\${esb.iam.url]:}")
+    @Value("\${esb.iam.url:}")
     private val iamUrl: String = ""
-
-    private val okHttpClient = okhttp3.OkHttpClient.Builder()
-        .connectTimeout(5L, TimeUnit.SECONDS)
-        .readTimeout(30L, TimeUnit.SECONDS)
-        .writeTimeout(30L, TimeUnit.SECONDS)
-        .build()
 
     fun createRelationResource(iamCreateApiReq: IamCreateApiReq) {
         logger.info("createRelationResource, iamCreateApiReq: $iamCreateApiReq")
@@ -65,6 +64,37 @@ class IamEsbClient() {
     }
 
     private fun buildUrl(uri: String) = "${iamUrl.removeSuffix("/")}/${uri.removePrefix("/")}"
+
+    private val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
+        @Throws(CertificateException::class)
+        override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {
+        }
+
+        @Throws(CertificateException::class)
+        override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {
+        }
+
+        override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> {
+            return arrayOf()
+        }
+    })
+
+    private fun sslSocketFactory(): SSLSocketFactory {
+        try {
+            val sslContext = SSLContext.getInstance("SSL")
+            sslContext.init(null, trustAllCerts, java.security.SecureRandom())
+            return sslContext.socketFactory
+        } catch (e: Exception) {
+            throw RuntimeException(e.message)
+        }
+    }
+
+    private val okHttpClient = okhttp3.OkHttpClient.Builder()
+        .connectTimeout(5L, TimeUnit.SECONDS)
+        .readTimeout(30L, TimeUnit.SECONDS)
+        .writeTimeout(30L, TimeUnit.SECONDS)
+        .sslSocketFactory(sslSocketFactory(), trustAllCerts[0] as X509TrustManager)
+        .build()
 
     companion object {
         private val logger = LoggerFactory.getLogger(IamEsbClient::class.java)

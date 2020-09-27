@@ -2,7 +2,7 @@
     <ul class="repo-tree-list">
         <li class="repo-tree-item" :key="item.roadMap" v-for="item of treeList">
             <div v-if="deepCount" class="line-dashed" :style="{
-                'border-right': '1px dashed',
+                'border-width': '0 1px 0 0',
                 'margin-left': (20 * deepCount + 5) + 'px',
                 'height': '100%',
                 'margin-top': '-20px'
@@ -13,13 +13,13 @@
                 :style="{ 'padding-left': 20 * (deepCount + 1) + 'px' }"
                 @click.stop="itemClickHandler(item)">
                 <div class="line-dashed" :style="{
-                    'border-right': openList.includes(item.roadMap) ? '1px dashed' : '0 none',
+                    'border-width': openList.includes(item.roadMap) ? '0 1px 0 0' : '0',
                     'margin-left': (20 * deepCount + 25) + 'px',
                     'height': 'calc(100% - 45px)',
                     'margin-top': '25px'
                 }"></div>
                 <div v-if="deepCount" class="line-dashed" :style="{
-                    'border-top': '1px dashed',
+                    'border-width': '1px 0 0',
                     'margin-left': '-13px',
                     'width': '15px'
                 }"></div>
@@ -109,9 +109,12 @@ li:last-child>.line-dashed {
 }
 .repo-tree-item {
     position: relative;
-    color: $fontWeightColor;
+    color: $fontBoldColor;
+    font-size: 12px;
     .line-dashed {
         position: absolute;
+        border-color: $borderLightColor;
+        border-style: dashed;
         z-index: 1;
     }
     &:last-child > .line-dashed {
@@ -130,6 +133,9 @@ li:last-child>.line-dashed {
             border-right-color: transparent;
             border-radius: 50%;
             animation: loading 1s linear infinite;
+        }
+        .devops-icon {
+            color: $fontColor;
         }
         .node-text {
             max-width: 150px;

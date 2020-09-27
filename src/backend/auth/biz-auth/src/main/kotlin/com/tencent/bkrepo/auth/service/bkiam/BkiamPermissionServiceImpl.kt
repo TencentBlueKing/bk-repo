@@ -37,7 +37,7 @@ class BkiamPermissionServiceImpl constructor(
         val resourceId = getResourceId(request)
         bkiamService.createResource(
             userId = request.uid,
-            systemCode = SystemCode.BKREPO,
+            systemCode = SystemCode.BK_REPO,
             projectId = request.projectId!!,
             resourceType = request.resourceType,
             resourceId = resourceId,
@@ -48,7 +48,7 @@ class BkiamPermissionServiceImpl constructor(
     private fun checkBkiamPermission(request: CheckPermissionRequest): Boolean {
         return bkiamService.validateResourcePermission(
             userId = request.uid,
-            systemCode = SystemCode.BKREPO,
+            systemCode = SystemCode.BK_REPO,
             projectId = request.projectId!!,
             resourceType = request.resourceType,
             action = request.action,

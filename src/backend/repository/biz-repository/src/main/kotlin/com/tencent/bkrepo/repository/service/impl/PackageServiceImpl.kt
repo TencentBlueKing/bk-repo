@@ -162,6 +162,17 @@ class PackageServiceImpl(
         ArtifactContextHolder.getRepository().download(context)
     }
 
+    override fun addDownloadMetric(projectId: String, repoName: String, packageKey: String, versionName: String) {
+        val tPackage = checkPackage(projectId, repoName, packageKey)
+        val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
+        tPackageVersion.downloads += 1
+        tPackageVersion.lastModifiedDate = LocalDateTime.now()
+        packageVersionDao.save(tPackageVersion)
+        tPackage.downloads += 1
+        tPackage.lastModifiedDate = LocalDateTime.now()
+        packageDao.save(tPackage)
+    }
+
     override fun searchPackage(queryModel: QueryModel): Page<MutableMap<*, *>> {
         val context = packageSearchInterpreter.interpret(queryModel) as PackageQueryContext
         val query = context.mongoQuery

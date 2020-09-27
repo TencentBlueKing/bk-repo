@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.security.manager
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
@@ -70,6 +71,14 @@ class PermissionManager(
                 throw AccessDeniedException()
             }
         }
+    }
+
+    fun registerProject(userId: String, projectId: String) {
+        permissionResource.registerResource(RegisterResourceRequest(userId, ResourceType.PROJECT, projectId))
+    }
+
+    fun registerRepo(userId: String, projectId: String, repoName: String) {
+        permissionResource.registerResource(RegisterResourceRequest(userId, ResourceType.PROJECT, projectId, repoName))
     }
 
     private fun preCheck(): Boolean {
