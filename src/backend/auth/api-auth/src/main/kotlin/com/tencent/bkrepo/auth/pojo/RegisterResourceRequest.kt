@@ -5,11 +5,11 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("注册资源请求")
-abstract class RegisterResourceRequest(
+class RegisterResourceRequest(
     @ApiModelProperty("类型")
     val uid: String,
     override var resourceType: ResourceType,
     override var projectId: String? = null,
     override var repoName: String? = null,
     override var path: String? = null
-): ResourceBaseRequest(resourceType, projectId, repoName, path)
+) : ResourceBaseRequest(resourceType, projectId, repoName, path)

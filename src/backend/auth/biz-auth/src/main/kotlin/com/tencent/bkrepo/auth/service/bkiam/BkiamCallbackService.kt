@@ -9,10 +9,9 @@ import com.tencent.bk.sdk.iam.dto.callback.response.FetchInstanceInfoResponseDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.InstanceInfoDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.ListInstanceResponseDTO
 import com.tencent.bk.sdk.iam.service.TokenService
+import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.auth.exception.AuthFailedException
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
-import com.tencent.bkrepo.common.security.exception.BadCredentialsException
-import com.tencent.bkrepo.common.security.http.basic.BasicAuthCredentials
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
@@ -145,27 +144,29 @@ class BkiamCallbackService @Autowired constructor(
 
     private fun checkToken(token: String) {
         val credentials = parseCredentials(token)
-        if (credentials.username != callbackUser) {
-            throw BadCredentialsException("invalid iam user: ${credentials.username}")
+        val userName = credentials.first
+        val password = credentials.second
+        if (userName != callbackUser) {
+            throw AuthFailedException("invalid iam user: $userName")
         }
-        val tokenToCheck = credentials.password
+        val tokenToCheck = password
         if (bufferedToken.isNotBlank() && bufferedToken == tokenToCheck) {
             return
         }
         bufferedToken = tokenService.token
         if (bufferedToken != tokenToCheck) {
-            throw BadCredentialsException("[$tokenToCheck] is not a valid credentials")
+            throw AuthFailedException("[$tokenToCheck] is not a valid credentials")
         }
     }
 
-    private fun parseCredentials(token: String): BasicAuthCredentials {
+    private fun parseCredentials(token: String): Pair<String, String> {
         return try {
-            val encodedCredentials = token.removePrefix(BASIC_AUTH_PREFIX)
+            val encodedCredentials = token.removePrefix(BASIC_AUTH_HEADER_PREFIX)
             val decodedToken = String(Base64.getDecoder().decode(encodedCredentials))
             val parts = decodedToken.split(StringPool.COLON)
-            BasicAuthCredentials(parts[0], parts[1])
+            Pair(parts[0], parts[1])
         } catch (exception: IllegalArgumentException) {
-            throw BadCredentialsException("[$token] is not a valid token")
+            throw AuthFailedException("[$token] is not a valid token")
         }
     }
 
