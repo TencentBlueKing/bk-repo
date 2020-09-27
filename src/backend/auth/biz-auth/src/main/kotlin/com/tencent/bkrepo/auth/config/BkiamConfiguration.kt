@@ -23,16 +23,16 @@ import org.springframework.core.Ordered
 class BkiamConfiguration {
 
     @Value("\${auth.iam.systemId:}")
-    val iamSystemId = ""
+    private val iamSystemId = ""
 
     @Value("\${auth.iam.baseUrl:}")
-    val iamBaseUrl = ""
+    private val iamBaseUrl = ""
 
     @Value("\${auth.iam.appCode:}")
-    val appCode = ""
+    private val appCode = ""
 
     @Value("\${auth.iam.appSecret:}")
-    val appSecret = ""
+    private val appSecret = ""
 
     @Bean
     fun iamConfiguration() = IamConfiguration(iamSystemId, appCode, appSecret, iamBaseUrl)
