@@ -34,7 +34,7 @@ class BkiamServiceImpl @Autowired constructor(
     ): Boolean {
         logger.info("validateResourcePermission, userId: $userId, projectId: $projectId, systemCode: $systemCode, resourceType: $resourceType, action: $action, resourceId: $resourceId")
         val action = BkiamUtils.buildAction(resourceType, action)
-        if (systemCode == SystemCode.BKREPO && resourceType == ResourceType.PROJECT) {
+        if (systemCode == SystemCode.BK_REPO && resourceType == ResourceType.PROJECT) {
             return authHelper.isAllowed(userId, action)
         }
 
