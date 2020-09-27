@@ -45,6 +45,8 @@ import com.tencent.bkrepo.docker.util.ResponseUtil
 import com.tencent.bkrepo.docker.util.ResponseUtil.emptyBlobGetResponse
 import com.tencent.bkrepo.docker.util.ResponseUtil.emptyBlobHeadResponse
 import com.tencent.bkrepo.docker.util.ResponseUtil.isEmptyBlob
+import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.apache.commons.lang.StringUtils
@@ -68,7 +70,8 @@ import java.nio.charset.Charset
 @Service
 class DockerV2LocalRepoService @Autowired constructor(
     val artifactRepo: DockerArtifactRepo,
-    val packageRepo: DockerPackageRepo
+    val packageRepo: DockerPackageRepo,
+    val packageDownloadStatisticsClient: PackageDownloadStatisticsClient
 ) : DockerV2RepoService {
 
     @Value("\${docker.domain: ''}")
@@ -148,6 +151,16 @@ class DockerV2LocalRepoService @Autowired constructor(
     override fun getManifest(context: RequestContext, reference: String): DockerResponse {
         RepoUtil.loadContext(artifactRepo, context)
         logger.info("get manifest params [$context,$reference]")
+        with(context) {
+            val request = DownloadStatisticsAddRequest(
+                projectId,
+                repoName,
+                PackageKeys.ofDocker(artifactName),
+                artifactName,
+                reference
+            )
+            packageDownloadStatisticsClient.add(request)
+        }
         return try {
             val digest = DockerDigest(reference)
             manifestProcess.getManifestByDigest(context, digest, httpHeaders)
