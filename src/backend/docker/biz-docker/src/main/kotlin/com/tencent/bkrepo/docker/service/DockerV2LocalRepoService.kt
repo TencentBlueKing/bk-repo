@@ -17,7 +17,6 @@ import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
-import com.tencent.bkrepo.docker.constant.DOCKER_TAG
 import com.tencent.bkrepo.docker.constant.DOCKER_TMP_UPLOAD_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_UPLOAD_UUID
 import com.tencent.bkrepo.docker.constant.DOWNLOAD_COUNT
@@ -51,6 +50,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpHeaders.CONTENT_LENGTH
@@ -71,7 +71,11 @@ class DockerV2LocalRepoService @Autowired constructor(
     val packageRepo: DockerPackageRepo
 ) : DockerV2RepoService {
 
+    @Value("\${docker.domain: ''}")
+    private val domain: String = EMPTY
+
     var httpHeaders: HttpHeaders = HttpHeaders()
+
     val manifestProcess = ManifestProcess(artifactRepo)
 
     override fun ping(): DockerResponse {
@@ -194,7 +198,7 @@ class DockerV2LocalRepoService @Autowired constructor(
         RepoUtil.loadContext(artifactRepo, context)
         with(context) {
             artifactRepo.getRepoTagList(context, 0, 99999, null).forEach {
-                if (!artifactRepo.deleteByTag(projectId, repoName, artifactName, it.version)) {
+                if (!artifactRepo.deleteByTag(projectId, repoName, artifactName, it.tag)) {
                     return false
                 }
             }
@@ -426,7 +430,8 @@ class DockerV2LocalRepoService @Autowired constructor(
             val configBlob = JsonUtils.objectMapper.readValue(configBytes, DockerSchema2Config::class.java)
             val basic = mapOf(
                 DOCKER_NODE_SIZE to size,
-                DOCKER_TAG to tag,
+                "version" to tag,
+                "domain" to domain,
                 LAST_MODIFIED_BY to nodeDetail.lastModifiedBy,
                 LAST_MODIFIED_DATE to nodeDetail.lastModifiedDate,
                 DOWNLOAD_COUNT to downloadCount,

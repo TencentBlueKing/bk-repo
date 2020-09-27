@@ -5,8 +5,8 @@ import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("docker镜像tag信息")
 data class DockerTag(
-    @ApiModelProperty("version")
-    val version: String,
+    @ApiModelProperty("tag")
+    val tag: String,
     @ApiModelProperty("stageTag")
     val stageTag: String,
     @ApiModelProperty("大小")
