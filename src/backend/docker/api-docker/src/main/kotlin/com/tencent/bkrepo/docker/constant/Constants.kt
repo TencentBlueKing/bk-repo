@@ -6,7 +6,7 @@ const val BLOB_PATTERN = "/blobs"
 
 const val MANIFEST_PATTERN = "/manifests"
 
-const val USER_API_PREFIX = "/api"
+const val USER_API_PREFIX = "/ext"
 const val DOCKER_API_PREFIX = "/v2"
 const val DOCKER_API_SUFFIX = "/auth"
 
@@ -20,9 +20,9 @@ const val DOCKER_USER_MANIFEST_SUFFIX = "/manifest/{projectId}/{repoName}/**/{ta
 const val DOCKER_USER_LAYER_SUFFIX = "/layer/{projectId}/{repoName}/**/{id}"
 const val DOCKER_USER_REPO_SUFFIX = "/repo/{projectId}/{repoName}"
 const val DOCKER_USER_TAG_SUFFIX = "/tag/{projectId}/{repoName}/**"
-const val DOCKER_USER_DELETE_IMAGE_SUFFIX = "/repo/{projectId}/{repoName}/**"
-const val DOCKER_USER_REPO_TAG_SUFFIX = "/tag/{projectId}/{repoName}/**/{tag}"
-const val DOCKER_USER_REPO_TAG_DETAIL_SUFFIX = "/tagdetail/{projectId}/{repoName}/**/{tag}"
+const val DOCKER_USER_DELETE_IMAGE_SUFFIX = "/package/delete/{projectId}/{repoName}"
+const val DOCKER_USER_REPO_TAG_SUFFIX = "/version/delete/{projectId}/{repoName}"
+const val DOCKER_USER_REPO_TAG_DETAIL_SUFFIX = "/version/detail/{projectId}/{repoName}"
 const val DOCKER_TAGS_SUFFIX = "/{projectId}/{repoName}/{name}/tags/list"
 
 const val DOCKER_CATALOG_SUFFIX = "_catalog"
