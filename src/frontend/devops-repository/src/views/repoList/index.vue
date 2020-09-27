@@ -57,12 +57,12 @@
                         </div>
                     </template>
                 </bk-table-column>
-                <bk-table-column :label="$t('createTime')">
+                <bk-table-column :label="$t('createdDate')">
                     <template slot-scope="props">
                         {{ new Date(props.row.createdDate).toLocaleString() }}
                     </template>
                 </bk-table-column>
-                <bk-table-column :label="$t('creator')" prop="createdBy"></bk-table-column>
+                <bk-table-column :label="$t('createdBy')" prop="createdBy"></bk-table-column>
                 <bk-table-column :label="$t('operation')" width="100">
                     <template slot-scope="props">
                         <i class="devops-icon icon-cog mr20" @click="showRepoConfig(props.row)"></i>

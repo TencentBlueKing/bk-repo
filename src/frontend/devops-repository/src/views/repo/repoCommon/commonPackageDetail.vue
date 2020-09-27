@@ -59,7 +59,7 @@
                                         @click.stop="changeStageTagHandler(props.row)" text theme="primary">
                                         <i class="devops-icon icon-arrows-up"></i>
                                     </bk-button>
-                                    <bk-button class="mr20" @click.stop="downloadPackageHandler(props.row)" text theme="primary">
+                                    <bk-button v-if="repoType !== 'docker'" class="mr20" @click.stop="downloadPackageHandler(props.row)" text theme="primary">
                                         <i class="devops-icon icon-download"></i>
                                     </bk-button>
                                     <bk-button @click.stop="deleteVersionHandler(props.row)" text theme="primary">
