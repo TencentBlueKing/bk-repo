@@ -40,11 +40,11 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -203,6 +203,7 @@ class DockerArtifactRepo @Autowired constructor(
      * @return Boolean is the file upload success
      */
     fun copy(context: RequestContext, srcPath: String, destPath: String): Boolean {
+        logger.debug("user [$userId] start to copy file [$context,$srcPath,$destPath]")
         with(context) {
             val copyRequest = NodeCopyRequest(
                 srcProjectId = projectId,
