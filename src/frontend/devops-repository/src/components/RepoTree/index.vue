@@ -27,7 +27,11 @@
                 <i v-else class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
                     :class="openList.includes(item.roadMap) ? 'icon-down-shape' : 'icon-right-shape'"></i>
                 <icon class="mr5" size="18" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'"></icon>
-                <div class="node-text" :class="{ 'title-bold': importantSearch && item.name.includes(importantSearch) }">{{ item.name }}</div>
+                <div class="node-text"
+                    :class="{ 'title-bold': importantSearch && item.name.toLowerCase().includes(importantSearch.toLowerCase()) }"
+                    :title="item.name">
+                    {{ item.name }}
+                </div>
             </div>
             <CollapseTransition>
                 <template v-if="item.children && item.children.length">
@@ -135,7 +139,7 @@ li:last-child>.line-dashed {
         }
         .title-bold {
             font-weight: bolder;
-            background-color: yellow;
+            background-color: #fafb0b;
         }
         &.selected {
             background-color: $primaryLightColor;

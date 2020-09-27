@@ -43,7 +43,7 @@ request.interceptors.response.use(response => {
         return Promise.reject(errorMsg)
     }
 
-    return data
+    return response.data instanceof Blob ? response.data : data
 }, errorHandler)
 
 Vue.prototype.$ajax = request

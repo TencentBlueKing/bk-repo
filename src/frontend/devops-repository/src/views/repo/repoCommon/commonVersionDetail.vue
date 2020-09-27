@@ -1,0 +1,371 @@
+<template>
+    <bk-tab class="common-version-container" type="unborder-card" v-bkloading="{ isLoading }">
+        <bk-tab-panel name="versionBaseInfo" :label="$t('baseInfo')">
+            <div class="version-base-info">
+                <div class="base-info-left">
+                    <div class="base-info-guide">
+                        <header class="base-info-header">{{ $t('useTips') }}</header>
+                        <repo-guide class="pt20" :article="articleInstall"></repo-guide>
+                    </div>
+                    <div class="base-info-checksums">
+                        <header class="base-info-header">Checksums</header>
+                        <div class="mt20 flex-column version-checksums">
+                            <div v-if="detail.basic.sha256" class="mt20 flex-align-center">
+                                <span class="display-key">SHA256</span>
+                                <span class="display-value">{{ detail.basic.sha256 }}</span>
+                            </div>
+                            <div v-if="detail.basic.md5" class="mt20 flex-align-center">
+                                <span class="display-key">MD5</span>
+                                <span class="display-value">{{ detail.basic.md5 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="base-info">
+                    <header class="base-info-header">{{ $t('baseInfo') }}</header>
+                    <div class="mt20 flex-column">
+                        <div v-if="detail.basic.tag" class="mt20 flex-align-center">
+                            <span class="display-key">tag</span>
+                            <span class="display-value">{{ detail.basic.tag }}</span>
+                        </div>
+                        <div v-if="detail.basic.version" class="mt20 flex-align-center">
+                            <span class="display-key">{{ $t('version') }}</span>
+                            <span class="display-value">
+                                {{ detail.basic.version }}
+                                <template v-if="detail.basic.stageTag">
+                                    <span class="ml5 repo-tag" v-for="tag in detail.basic.stageTag" :key="tag">
+                                        {{ tag }}
+                                    </span>
+                                </template>
+                            </span>
+                        </div>
+                        <div v-if="detail.basic.os" class="mt20 flex-align-center">
+                            <span class="display-key">OS/ARCH</span>
+                            <span class="display-value">{{ detail.basic.os }}</span>
+                        </div>
+                        <div class="mt20 flex-align-center">
+                            <span class="display-key">{{ $t('size') }}</span>
+                            <span class="display-value">{{ convertFileSize(detail.basic.size) }}</span>
+                        </div>
+                        <div class="mt20 flex-align-center">
+                            <span class="display-key">{{ $t('path') }}</span>
+                            <span class="display-value">{{ detail.basic.path || detail.basic.fullPath }}</span>
+                        </div>
+                        <div class="mt20 flex-align-center">
+                            <span class="display-key">{{ $t('downloadCount') }}</span>
+                            <span class="display-value">{{ detail.basic.downloadCount }}</span>
+                        </div>
+                        <div class="mt20 flex-align-center">
+                            <span class="display-key">{{ $t('lastModifiedDate') }}</span>
+                            <span class="display-value">{{ new Date(detail.basic.lastModifiedDate).toLocaleString() }}</span>
+                        </div>
+                        <div class="mt20 flex-align-center">
+                            <span class="display-key">{{ $t('lastModifiedBy') }}</span>
+                            <span class="display-value">{{ detail.basic.lastModifiedBy }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </bk-tab-panel>
+        <bk-tab-panel v-if="detail.metadata" name="versionMetaData" :label="$t('metaData')">
+            <div class="mt20 flex-column">
+                <div class="pl10 pb10 flex-align-center version-metadata">
+                    <span class="display-key">{{ $t('key') }}</span>
+                    <span class="display-value">{{ $t('value') }}</span>
+                </div>
+                <div class="pl10 pb10 pt10 flex-align-center version-metadata" v-for="([key, value]) in Object.entries(detail.metadata)" :key="key">
+                    <span class="display-key">{{ key }}</span>
+                    <span class="display-value">{{ value }}</span>
+                </div>
+            </div>
+        </bk-tab-panel>
+        <bk-tab-panel v-if="detail.layers" name="versionLayers" label="Layers">
+            <div class="mt20 flex-column">
+                <div class="pl10 pb10 flex-align-center version-layers">
+                    <span class="display-key">ID</span>
+                    <span class="display-value">{{ $t('size') }}</span>
+                </div>
+                <div class="pl10 pb10 pt10 flex-align-center version-layers" v-for="layer in detail.layers" :key="layer.digest">
+                    <span class="display-key">{{ layer.digest }}</span>
+                    <span class="display-value">{{ convertFileSize(layer.size) }}</span>
+                </div>
+            </div>
+        </bk-tab-panel>
+        <bk-tab-panel v-if="detail.history" name="versionImageHistory" label="IMAGE HISTORY">
+            <div class="version-history">
+                <div class="version-history-left">
+                    <header class="version-history-header"></header>
+                    <div class="version-history-code hover-btn"
+                        v-for="(code, index) in detail.history"
+                        :key="code.created_by"
+                        :class="{ select: selectedHistory.created_by === code.created_by }"
+                        @click="selectedHistory = code">
+                        <span class="version-history-index">{{index + 1}}</span>
+                        {{code.created_by}}
+                    </div>
+                </div>
+                <div class="version-history-right">
+                    <header class="version-history-header">Command</header>
+                    <code-area class="mt20 version-history-code"
+                        :line-number="false"
+                        :code-list="[selectedHistory.created_by]">
+                    </code-area>
+                </div>
+            </div>
+        </bk-tab-panel>
+        <bk-tab-panel v-if="detail.dependencyInfo" name="versionDependencies" :label="$t('dependencies')">
+            <article class="version-dependencies">
+                <section v-for="type in ['dependencies', 'devDependencies', 'dependents']" :key="type">
+                    <header class="version-dependencies-header">{{ type }}</header>
+                    <div class="version-dependencies-main">
+                        <template v-if="detail.dependencyInfo[type].length">
+                            <div class="flex-align-center version-dependencies-item"
+                                v-for="{ name, version } in detail.dependencyInfo[type]"
+                                :key="name + Math.random()">
+                                <div class="version-dependencies-key">{{ name }}</div>
+                                <div v-if="type !== 'dependents'" class="version-dependencies-value">{{ version }}</div>
+                            </div>
+                            <div class="flex-align-center hover-btn version-dependencies-more"
+                                v-if="type === 'dependents' && dependentsPage"
+                                @click="loadMore">
+                                {{ $t('loadMore') }}
+                            </div>
+                        </template>
+                        <div v-else>{{$t('noData')}}</div>
+                    </div>
+                </section>
+            </article>
+        </bk-tab-panel>
+    </bk-tab>
+</template>
+<script>
+    import CodeArea from '@/components/CodeArea'
+    import { mapActions } from 'vuex'
+    import { convertFileSize } from '@/utils'
+    import repoGuide from './repoGuide'
+    import repoGuideMixin from '../repoGuideMixin'
+    import commonMixin from './commonMixin'
+    export default {
+        name: 'commonVersionDetail',
+        components: { CodeArea, repoGuide },
+        mixins: [repoGuideMixin, commonMixin],
+        data () {
+            return {
+                convertFileSize,
+                isLoading: false,
+                detail: {
+                    basic: {},
+                    history: [],
+                    metadata: {},
+                    layers: [],
+                    dependencyInfo: {
+                        dependencies: [],
+                        devDependencies: [],
+                        dependents: []
+                    }
+                },
+                // 当前已请求页数，0代表没有更多
+                dependentsPage: 1,
+                pagination: {
+                    count: 1,
+                    current: 1,
+                    limit: 10,
+                    'limit-list': [10, 20, 40]
+                },
+                selectedHistory: {}
+            }
+        },
+        created () {
+            this.initDetail()
+        },
+        methods: {
+            ...mapActions([
+                'getVersionDetail',
+                'getNpmDependents'
+            ]),
+            initDetail () {
+                this.getDetail()
+            },
+            getDetail () {
+                this.isLoading = true
+                this.getVersionDetail({
+                    projectId: this.projectId,
+                    repoType: this.repoType,
+                    repoName: this.repoName,
+                    packageKey: this.packageKey,
+                    version: this.version
+                }).then(res => {
+                    this.detail = res
+                    if (this.repoType === 'npm') {
+                        const dependents = res.dependencyInfo.dependents
+                        this.detail.dependencyInfo.dependents = dependents.records
+                        if (dependents.totalRecords < 20) {
+                            this.dependentsPage = 0
+                        }
+                    }
+                }).finally(() => {
+                    this.isLoading = false
+                })
+            },
+            loadMore () {
+                if (this.isLoading) return
+                this.isLoading = true
+                this.getNpmDependents({
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    packageKey: this.packageKey,
+                    current: this.dependentsPage
+                }).then(({ records }) => {
+                    this.detail.dependencyInfo.dependents.push(...records)
+                    if (records.length < 20) this.dependentsPage = 0
+                }).finally(() => {
+                    this.isLoading = false
+                })
+            }
+        }
+    }
+</script>
+<style lang="scss" scoped>
+@import '@/scss/conf';
+.common-version-container {
+    height: 100%;
+    /deep/ .bk-tab-section {
+        height: calc(100% - 40px);
+        .bk-tab-content {
+            height: 100%;
+        }
+    }
+    .version-base-info {
+        height: calc(100% + 20px);
+        margin-bottom: -20px;
+        display: flex;
+        .base-info-left {
+            flex: 3;
+            padding-top: 40px;
+            padding-right: 20px;
+            border-right: 1px solid $borderWeightColor;
+            .base-info-guide {
+                border-top: 1px solid $borderWeightColor;
+            }
+            .base-info-checksums {
+                margin-top: 20px;
+                border-top: 1px solid $borderWeightColor;
+            }
+        }
+        .base-info {
+            flex: 2;
+            margin-top: 40px;
+            margin-left: 20px;
+            border-top: 1px solid $borderWeightColor;
+        }
+        .base-info-header {
+            position: absolute;
+            padding-right: 20px;
+            margin-top: -10px;
+            color: $fontBoldColor;
+            background-color: white;
+            font-weight: bolder;
+        }
+    }
+    .version-checksums {
+        .display-value {
+            flex: 12;
+        }
+    }
+    .version-metadata {
+        border-bottom: 1px solid $borderWeightColor;
+        line-height: 2;
+        .display-key {
+            text-align: left;
+        }
+    }
+    .version-layers {
+        border-bottom: 1px solid $borderWeightColor;
+        line-height: 2;
+        .display-key {
+            text-align: left;
+            flex: 6;
+        }
+    }
+    .version-history {
+        height: 100%;
+        display: flex;
+        &-left {
+            height: 100%;
+            width: 30%;
+            padding-right: 40px;
+            margin-right: 40px;
+            border-right: 2px solid $borderWeightColor;
+            .version-history-code {
+                height: 42px;
+                line-height: 42px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                &:hover {
+                    background-color: $bgHoverColor;
+                }
+                &.select {
+                    background-color: #ebedf0;
+                }
+                .version-history-index {
+                    display: inline-block;
+                    width: 30px;
+                    margin-right: 5px;
+                    text-align: center;
+                    background-color: #f9f9f9;
+                }
+            }
+        }
+        &-right {
+            height: 100%;
+            width: 70%;
+            flex: 2;
+        }
+    }
+    .version-dependencies {
+        height: calc(100% + 20px);
+        margin-bottom: -20px;
+        overflow-y: auto;
+        &-header {
+            font-size: 16px;
+            font-weight: bold;
+            line-height: 2;
+        }
+        &-main {
+            display: grid;
+            grid-template: auto / 1fr 1fr;
+            margin: 5px 0 20px;
+        }
+        &-item {
+            border-bottom: 1px solid $borderWeightColor;
+            &:first-child, &:nth-child(2) {
+                border-top: 1px solid $borderWeightColor;
+            }
+        }
+        &-more {
+            line-height: 40px;
+            padding-left: 30px;
+        }
+        &-key {
+            flex: 1;
+            line-height: 40px;
+            padding-left: 30px;
+            background-color: $bgLightColor;
+        }
+        &-value {
+            flex: 1;
+            line-height: 40px;
+            padding-left: 60px;
+        }
+    }
+    .display-key {
+        flex: 1;
+        text-align: right;
+        margin-right: 40px;
+    }
+    .display-value {
+        flex: 3;
+    }
+}
+</style>

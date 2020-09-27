@@ -1,16 +1,14 @@
 import Vue from 'vue'
 
-import generic from './generic'
-import docker from './docker'
+import repoGeneric from './repoGeneric'
+import repoCommon from './repoCommon'
 import search from './search'
-import npm from './npm'
 
 const prefix = 'repository/api'
 
 export default {
-    ...generic,
-    ...docker,
-    ...npm,
+    ...repoGeneric,
+    ...repoCommon,
     ...search,
     /*
         创建仓库
@@ -26,35 +24,60 @@ export default {
         }
     */
     createRepo (_, { body }) {
-        return Vue.prototype.$ajax.post(`${prefix}/repo/create`, body)
+        return Vue.prototype.$ajax.post(
+            `${prefix}/repo/create`,
+            body
+        )
     },
     // 校验仓库名称
     checkRepoName (_, { projectId, name }) {
-        return Vue.prototype.$ajax.get(`${prefix}/repo/exist/${projectId}/${name}`)
+        return Vue.prototype.$ajax.get(
+            `${prefix}/repo/exist/${projectId}/${name}`
+        )
     },
     // 分页查询仓库列表
     getRepoList (_, { projectId, current, limit, name, type }) {
-        return Vue.prototype.$ajax.get(`${prefix}/repo/page/${projectId}/${current}/${limit}?name=${name}&type=${type}`)
+        return Vue.prototype.$ajax.get(
+            `${prefix}/repo/page/${projectId}/${current}/${limit}?name=${name}&type=${type}`
+        )
     },
     // 查询仓库列表
     getRepoListAll (_, { projectId, name, type }) {
         // return Vue.prototype.$ajax.get(`${prefix}/repo/list/${projectId}?name=${name}&type=${type}`)
-        return Vue.prototype.$ajax.get(`${prefix}/repo/list/${projectId}`)
+        return Vue.prototype.$ajax.get(
+            `${prefix}/repo/list/${projectId}`
+        )
     },
     // 查询仓库信息
     getRepoInfo (_, { projectId, name, type }) {
-        return Vue.prototype.$ajax.get(`${prefix}/repo/info/${projectId}/${name}/${type}`)
+        return Vue.prototype.$ajax.get(
+            `${prefix}/repo/info/${projectId}/${name}/${type}`
+        )
     },
     // 更新仓库信息
     updateRepoInfo (_, { projectId, name, body }) {
-        return Vue.prototype.$ajax.post(`${prefix}/repo/update/${projectId}/${name}`, body)
+        return Vue.prototype.$ajax.post(
+            `${prefix}/repo/update/${projectId}/${name}`,
+            body
+        )
     },
     // 删除仓库
     deleteRepoList (_, { projectId, name, forced = false }) {
-        return Vue.prototype.$ajax.delete(`${prefix}/repo/delete/${projectId}/${name}?forced=${forced}`)
+        return Vue.prototype.$ajax.delete(
+            `${prefix}/repo/delete/${projectId}/${name}?forced=${forced}`
+        )
     },
     // 查询公有源列表
     getPublicProxy (_, { type }) {
-        return Vue.prototype.$ajax.post(`${prefix}/proxy-channel/list/public/${type}`)
+        return Vue.prototype.$ajax.post(
+            `${prefix}/proxy-channel/list/public/${type}`
+        )
+    },
+
+    // 制品晋级
+    changeStageTag (_, { projectId, repoName, packageKey, version, tag }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/stage/upgrade/${projectId}/${repoName}?packageKey=${packageKey}&version=${version}&tag=${tag}`
+        )
     }
 }

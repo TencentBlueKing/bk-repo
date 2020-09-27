@@ -2,7 +2,7 @@
     <div class="code-area">
         <div v-for="(code, index) in codeList" :key="code + Math.random()" class="code-main">
             <span v-if="lineNumber" class="code-index">{{index + 1}}</span>
-            {{ code }}
+            <pre class="code-pre">{{ code }}</pre>
         </div>
         <i class="code-copy devops-icon icon-clipboard" @click="copyCode()"></i>
     </div>
@@ -62,6 +62,10 @@
         .code-index {
             position: absolute;
             margin-left: -30px;
+        }
+        .code-pre {
+            white-space: pre-wrap;
+            margin: 0;
         }
     }
     .code-copy {

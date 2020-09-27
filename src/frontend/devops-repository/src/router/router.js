@@ -26,9 +26,16 @@ const repoDetail = () => import(/* webpackChunkName: "repoDetail" */'@/views/rep
 
 const repoGeneric = () => import(/* webpackChunkName: "repoGeneric" */'@/views/repo/repoGeneric')
 
-const repoDocker = () => import(/* webpackChunkName: "repoDocker" */'@/views/repo/repoDocker')
+const repoCommon = () => import(/* webpackChunkName: "repoCommon" */'@/views/repo/repoCommon')
+const commonPackageList = () => import(/* webpackChunkName: "repoCommon" */'@/views/repo/repoCommon/commonPackageList')
+const commonPackageDetail = () => import(/* webpackChunkName: "repoCommon" */'@/views/repo/repoCommon/commonPackageDetail')
+const commonVersionDetail = () => import(/* webpackChunkName: "repoCommon" */'@/views/repo/repoCommon/commonVersionDetail')
 
-const repoNpm = () => import(/* webpackChunkName: "repoNpm" */'@/views/repo/repoNpm')
+// const repoDocker = () => import(/* webpackChunkName: "repoDocker" */'@/views/repo/repoDocker')
+
+// const repoNpm = () => import(/* webpackChunkName: "repoNpm" */'@/views/repo/repoNpm')
+
+// const repoMaven = () => import(/* webpackChunkName: "repoNpm" */'@/views/repo/repoMaven')
 
 const repoSearch = () => import(/* webpackChunkName: "repoSearch" */'@/views/repoSearch')
 
@@ -88,20 +95,62 @@ const routes = [
                 },
                 children: [
                     {
+                        path: ':repoType',
+                        name: 'repoCommon',
+                        component: repoCommon,
+                        beforeEnter: (to, from, next) => {
+                            if (to.params.repoType === 'generic') {
+                                next({
+                                    name: 'repoGeneric',
+                                    params: to.params,
+                                    query: to.query,
+                                    replace: true
+                                })
+                            } else {
+                                next()
+                            }
+                        },
+                        redirect: {
+                            name: 'commonList'
+                        },
+                        children: [
+                            {
+                                path: 'list',
+                                name: 'commonList',
+                                component: commonPackageList
+                            },
+                            {
+                                path: 'package',
+                                name: 'commonPackage',
+                                component: commonPackageDetail
+                            },
+                            {
+                                path: 'version',
+                                name: 'commonVersion',
+                                component: commonVersionDetail
+                            }
+                        ]
+                    },
+                    {
                         path: 'generic',
-                        name: 'generic',
+                        name: 'repoGeneric',
                         component: repoGeneric
-                    },
-                    {
-                        path: 'docker',
-                        name: 'docker',
-                        component: repoDocker
-                    },
-                    {
-                        path: 'npm',
-                        name: 'npm',
-                        component: repoNpm
                     }
+                    // {
+                    //     path: 'docker',
+                    //     name: 'docker',
+                    //     component: repoDocker
+                    // },
+                    // {
+                    //     path: 'npm',
+                    //     name: 'npm',
+                    //     component: repoNpm
+                    // },
+                    // {
+                    //     path: 'maven',
+                    //     name: 'maven',
+                    //     component: repoMaven
+                    // }
                 ]
             },
             {
