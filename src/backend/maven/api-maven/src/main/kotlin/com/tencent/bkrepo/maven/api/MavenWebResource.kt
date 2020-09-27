@@ -11,17 +11,24 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.GetMapping
 
 @Api("Maven 产品接口")
-@RequestMapping("/api")
+@RequestMapping("/ext")
 interface MavenWebResource {
     @ApiOperation("maven jar 包删除接口")
-    @DeleteMapping(MavenArtifactInfo.MAVEN_MAPPING_URI)
-    fun delete(
+    @DeleteMapping(MavenArtifactInfo.MAVEN_EXT_PACKAGE_DELETE)
+    fun deletePackage(
         @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
-        @RequestParam packageKey: String,
-        @RequestParam version: String
+        @RequestParam packageKey: String
+    ): Response<String>
+
+    @ApiOperation("maven jar 包删除接口")
+    @DeleteMapping(MavenArtifactInfo.MAVEN_EXT_VERSION_DELETE)
+    fun deleteVersion(
+            @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
+            @RequestParam packageKey: String,
+            @RequestParam version: String?
     ): Response<String>
 
     @ApiOperation("maven jar 版本详情接口")
-    @GetMapping(MavenArtifactInfo.MAVEN_ARTIFACT_DETAIL)
+    @GetMapping(MavenArtifactInfo.MAVEN_EXT_DETAIL)
     fun artifactDetail(@ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo): Response<Any?>
 }

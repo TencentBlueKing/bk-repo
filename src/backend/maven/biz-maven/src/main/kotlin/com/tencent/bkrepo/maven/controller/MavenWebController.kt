@@ -11,10 +11,15 @@ import org.springframework.web.bind.annotation.RestController
 class MavenWebController(
     private val mavenService: MavenService
 ) : MavenWebResource {
-    override fun delete(
+
+    override fun deletePackage(mavenArtifactInfo: MavenArtifactInfo, packageKey: String): Response<String> {
+        return ResponseBuilder.success(mavenService.delete(mavenArtifactInfo, packageKey, null))
+    }
+
+    override fun deleteVersion(
         mavenArtifactInfo: MavenArtifactInfo,
         packageKey: String,
-        version: String
+        version: String?
     ): Response<String> {
         return ResponseBuilder.success(mavenService.delete(mavenArtifactInfo, packageKey, version))
     }

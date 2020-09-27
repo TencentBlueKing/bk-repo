@@ -33,7 +33,7 @@ class MavenService {
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
-    fun delete(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String): String {
+    fun delete(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String?): String {
         val context = ArtifactRemoveContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)

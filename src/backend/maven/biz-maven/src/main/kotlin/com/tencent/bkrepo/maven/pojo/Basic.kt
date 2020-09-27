@@ -11,6 +11,6 @@ data class Basic(
     val downloadCount: Int,
     val sha256: String?,
     val md5: String?,
-    val stageTag: String?,
+    val stageTag: List<String>?,
     val description: String?
 )
