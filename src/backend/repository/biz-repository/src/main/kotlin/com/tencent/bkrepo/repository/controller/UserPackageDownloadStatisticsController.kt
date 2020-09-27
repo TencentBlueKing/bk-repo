@@ -10,7 +10,7 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
-import com.tencent.bkrepo.repository.service.DownloadStatisticsService
+import com.tencent.bkrepo.repository.service.PackageDownloadStatisticsService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -23,9 +23,9 @@ import java.time.LocalDate
 
 @Api("构建下载量统计用户接口")
 @RestController
-@RequestMapping("/api/download/statistics")
-class UserDownloadStatisticsController(
-    private val downloadStatisticsService: DownloadStatisticsService
+@RequestMapping("/api/package/download/statistics")
+class UserPackageDownloadStatisticsController(
+    private val packageDownloadStatisticsService: PackageDownloadStatisticsService
 ) {
 
     @ApiOperation("查询构建下载量")
@@ -34,17 +34,19 @@ class UserDownloadStatisticsController(
     fun query(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
-        @ApiParam("构建名称", required = true) artifact: String,
-        @ApiParam("构建版本", required = false) version: String? = null,
+        @ApiParam("包唯一Key", required = true)
+        @RequestParam packageKey: String,
+        @ApiParam("包版本", required = false)
+        @RequestParam version: String? = null,
         @ApiParam("开始日期", required = false)
-        @RequestParam startDate: LocalDate?,
+        @RequestParam startDay: LocalDate? = null,
         @ApiParam("结束日期", required = false)
-        @RequestParam endDate: LocalDate?
+        @RequestParam endDay: LocalDate? = null
     ): Response<DownloadStatisticsResponse> {
-        with(artifactInfo) {
-            val downloadStatisticsInfo =
-                downloadStatisticsService.query(projectId, repoName, artifact, version, startDate, endDate)
-            return ResponseBuilder.success(downloadStatisticsInfo)
+        with(artifactInfo){
+            return ResponseBuilder.success(
+                packageDownloadStatisticsService.query(projectId, repoName, packageKey, version, startDay, endDay)
+            )
         }
     }
 
@@ -54,13 +56,13 @@ class UserDownloadStatisticsController(
     fun queryForSpecial(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
-        @ApiParam("构建名称", required = true) artifact: String,
-        @ApiParam("构建版本", required = false) version: String? = null
+        @ApiParam("包唯一Key", required = true)
+        @RequestParam packageKey: String
     ): Response<DownloadStatisticsMetricResponse> {
-        with(artifactInfo) {
-            val downloadStatisticsInfo =
-                downloadStatisticsService.queryForSpecial(projectId, repoName, artifact, version)
-            return ResponseBuilder.success(downloadStatisticsInfo)
+        with(artifactInfo){
+            return ResponseBuilder.success(
+                packageDownloadStatisticsService.queryForSpecial(projectId, repoName, packageKey)
+            )
         }
     }
 }

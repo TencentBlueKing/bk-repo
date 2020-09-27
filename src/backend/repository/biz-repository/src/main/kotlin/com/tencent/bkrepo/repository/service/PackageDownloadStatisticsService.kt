@@ -5,50 +5,43 @@ import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import java.time.LocalDate
 
-/**
- * 下载统计服务接口
- */
-interface DownloadStatisticsService {
+interface PackageDownloadStatisticsService {
 
     fun add(statisticsAddRequest: DownloadStatisticsAddRequest)
 
     fun query(
         projectId: String,
         repoName: String,
-        artifact: String,
+        packageKey: String,
         version: String?,
-        startDate: LocalDate?,
-        endDate: LocalDate?
+        startDay: LocalDate?,
+        endDay: LocalDate?
     ): DownloadStatisticsResponse
 
     fun queryForSpecial(
         projectId: String,
         repoName: String,
-        artifact: String,
-        version: String?
+        packageKey: String
     ): DownloadStatisticsMetricResponse
 
     fun queryMonthDownloadCount(
         projectId: String,
         repoName: String,
-        artifact: String,
-        version: String?,
+        packageId: String,
         today: LocalDate
-    ): Int
+    ): Long
 
     fun queryWeekDownloadCount(
         projectId: String,
         repoName: String,
-        artifact: String,
-        version: String?,
+        packageId: String,
         today: LocalDate
-    ): Int
+    ): Long
 
     fun queryTodayDownloadCount(
         projectId: String,
         repoName: String,
-        artifact: String,
-        version: String?,
+        packageId: String,
         today: LocalDate
-    ): Int
+    ): Long
 }

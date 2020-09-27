@@ -9,19 +9,23 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateCont
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.migration.PackageMigrateDetail
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.async.NpmDependentHandler
 import com.tencent.bkrepo.npm.constants.APPLICATION_OCTET_STEAM
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
@@ -58,6 +62,7 @@ import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.OkHttpUtil
 import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -95,6 +100,21 @@ class NpmLocalRepository : LocalRepository() {
 
     @Autowired
     private lateinit var okHttpUtil: OkHttpUtil
+
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): DownloadStatisticsAddRequest? {
+        with(context){
+            val npmArtifactInfo = artifactInfo as NpmArtifactInfo
+            // val name = npmArtifactInfo.getArtifactName()
+            val pkgName = npmArtifactInfo.pkgName
+            val scope = npmArtifactInfo.scope
+            val scopePkg = if (StringUtils.isEmpty(scope)) pkgName else "$scope/$pkgName"
+            val version = npmArtifactInfo.getArtifactName().substringAfterLast("$scopePkg-").substringBefore(".tgz")
+            return DownloadStatisticsAddRequest(projectId, repoName, PackageKeys.ofNpm(scopePkg), scopePkg, version)
+        }
+    }
 
     override fun onUploadValidate(context: ArtifactUploadContext) {
         context.getArtifactFileMap().entries.forEach { (name, file) ->
