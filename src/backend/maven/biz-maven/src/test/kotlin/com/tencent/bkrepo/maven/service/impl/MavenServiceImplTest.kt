@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.maven.service.impl
 
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.readXmlString
 import com.tencent.bkrepo.maven.pojo.MavenMetadata
 import org.junit.jupiter.api.Test
@@ -20,5 +21,10 @@ class MavenServiceImplTest {
             "    </versioning>\n" +
             "  </metadata>"
         val mavenMetadata = str.readXmlString<MavenMetadata>()
+    }
+
+    @Test
+    fun matchPatternTest() {
+        Preconditions.matchPattern("bksdk-1.0.1.ja", "(.)+-(.)+\\.jar", "jar name invalid")
     }
 }
