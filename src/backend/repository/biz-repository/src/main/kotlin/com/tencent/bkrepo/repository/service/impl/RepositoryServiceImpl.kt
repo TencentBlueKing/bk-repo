@@ -24,6 +24,7 @@ import com.tencent.bkrepo.repository.listener.event.repo.RepoCreatedEvent
 import com.tencent.bkrepo.repository.listener.event.repo.RepoDeletedEvent
 import com.tencent.bkrepo.repository.listener.event.repo.RepoUpdatedEvent
 import com.tencent.bkrepo.repository.model.TRepository
+import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
@@ -41,6 +42,7 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -99,6 +101,22 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         val totalRecords = mongoTemplate.count(query, TRepository::class.java)
         val records = mongoTemplate.find(query.with(pageRequest), TRepository::class.java).map { convertToInfo(it)!! }
         return Pages.ofResponse(pageRequest, totalRecords, records)
+    }
+
+    override fun rangeQuery(request: RepoRangeQueryRequest): Page<RepositoryInfo?> {
+        val limit = request.limit
+        val skip = request.offset
+        val projectId = request.projectId
+
+        val criteria = if (request.repoNames.isEmpty()) {
+            Criteria.where(TRepository::projectId.name).`is`(projectId)
+        } else {
+            Criteria.where(TRepository::projectId.name).`is`(projectId)
+                .and(TRepository::name.name).inValues(request.repoNames)
+        }
+        val totalCount = mongoTemplate.count(Query(criteria), TRepository::class.java)
+        val records = mongoTemplate.find(Query(criteria).limit(limit).skip(skip), TRepository::class.java).map { convertToInfo(it) }
+        return Page(0, limit, totalCount, records)
     }
 
     override fun exist(projectId: String, name: String, type: String?): Boolean {

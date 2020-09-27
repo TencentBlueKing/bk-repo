@@ -5,6 +5,7 @@ import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.ListRepoPermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
+import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.service.PermissionService
@@ -78,5 +79,10 @@ class ServicePermissionResourceImpl @Autowired constructor(
 
     override fun removePermissionRole(id: String, rid: String): Response<Boolean> {
         return ResponseBuilder.success(permissionService.removeRolePermission(id, rid))
+    }
+
+    override fun registerResource(request: RegisterResourceRequest): Response<Boolean> {
+        permissionService.registerResource(request)
+        return ResponseBuilder.success()
     }
 }
