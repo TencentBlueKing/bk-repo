@@ -9,8 +9,8 @@
             <div class="package-card-data flex-align-center">
                 <div>{{ `${$t('latestVersion')}: ${cardData.latest}` }}</div>
                 <div>{{ `${$t('versionCount')}: ${cardData.versions}` }}</div>
-                <div>{{ `${$t('downloadCount')}: ${cardData.downloads}` }}</div>
-                <div>{{ `${$t('lastModifiedDate')}: ${new Date(cardData.lastModifiedDate).toLocaleString()}` }}</div>
+                <div>{{ `${$t('downloads')}: ${cardData.downloads}` }}</div>
+                <div>{{ `${$t('lastModifiedDate')}: ${formatDate(cardData.lastModifiedDate)}` }}</div>
                 <div>{{ `${$t('lastModifiedBy')}: ${cardData.lastModifiedBy}` }}</div>
             </div>
         </div>
@@ -18,6 +18,7 @@
     </div>
 </template>
 <script>
+    import { formatDate } from '@/utils'
     export default {
         name: 'packageCard',
         props: {
@@ -31,6 +32,7 @@
             }
         },
         methods: {
+            formatDate,
             deleteCard () {
                 this.$emit('delete-card')
             }
@@ -61,11 +63,17 @@
             font-size: 14px;
             font-weight: normal;
             div {
-                flex: 1;
-                padding-right: 60px;
+                padding-right: 40px;
+                width: 140px;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+                &:nth-child(1) {
+                    width: 200px;
+                }
+                &:nth-child(4) {
+                    width: 300px;
+                }
             }
         }
     }

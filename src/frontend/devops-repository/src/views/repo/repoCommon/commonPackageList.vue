@@ -61,7 +61,11 @@
             }
         },
         created () {
-            this.handlerPaginationChange()
+            this.getPackageListHandler().catch(() => {
+                this.$router.push({
+                    name: 'repoList'
+                })
+            })
         },
         methods: {
             ...mapActions([
@@ -75,7 +79,7 @@
             },
             getPackageListHandler () {
                 this.isLoading = true
-                this.getPackageList({
+                return this.getPackageList({
                     projectId: this.projectId,
                     repoName: this.repoName,
                     current: this.pagination.current,

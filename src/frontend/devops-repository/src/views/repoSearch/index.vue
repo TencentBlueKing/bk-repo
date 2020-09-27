@@ -51,8 +51,8 @@
                         <div class="result-card flex-align-center">
                             <div>{{ `${$t('latestVersion')}: ${result.latest}` }}</div>
                             <div>{{ `${$t('versionCount')}: ${result.versions}` }}</div>
-                            <div>{{ `${$t('downloadCount')}: ${result.downloads}` }}</div>
-                            <div>{{ `${$t('lastModifiedDate')}: ${new Date(result.lastModifiedDate).toLocaleString()}` }}</div>
+                            <div>{{ `${$t('downloads')}: ${result.downloads}` }}</div>
+                            <div>{{ `${$t('lastModifiedDate')}: ${formatDate(result.lastModifiedDate)}` }}</div>
                             <div>{{ `${$t('lastModifiedBy')}: ${result.lastModifiedBy}` }}</div>
                         </div>
                     </div>
@@ -77,6 +77,7 @@
 <script>
     import { mapActions } from 'vuex'
     import { repoEnum } from '@/store/publicEnum'
+    import { formatDate } from '@/utils'
     export default {
         name: 'repoSearch',
         data () {
@@ -104,6 +105,7 @@
             this.handlerPaginationChange()
         },
         methods: {
+            formatDate,
             ...mapActions([
                 'searchPackageList'
             ]),
@@ -242,11 +244,17 @@
                     font-size: 14px;
                     font-weight: normal;
                     div {
-                        flex: 1;
-                        padding-right: 60px;
+                        padding-right: 40px;
+                        width: 140px;
                         overflow: hidden;
                         text-overflow: ellipsis;
                         white-space: nowrap;
+                        &:nth-child(1) {
+                            width: 200px;
+                        }
+                        &:nth-child(4) {
+                            width: 300px;
+                        }
                     }
                 }
             }

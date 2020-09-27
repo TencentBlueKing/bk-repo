@@ -52,14 +52,14 @@
                 <bk-table-column :label="$t('repoName')">
                     <template slot-scope="props">
                         <div class="repo-name" @click="toRepoDetail(props.row)">
-                            <icon size="24" :name="props.row.type" />
+                            <icon size="24" :name="props.row.repoType" />
                             <span class="ml10">{{props.row.name}}</span>
                         </div>
                     </template>
                 </bk-table-column>
                 <bk-table-column :label="$t('createdDate')">
                     <template slot-scope="props">
-                        {{ new Date(props.row.createdDate).toLocaleString() }}
+                        {{ formatDate(props.row.createdDate) }}
                     </template>
                 </bk-table-column>
                 <bk-table-column :label="$t('createdBy')" prop="createdBy"></bk-table-column>
@@ -76,6 +76,7 @@
 <script>
     import { mapActions } from 'vuex'
     import { repoEnum } from '@/store/publicEnum'
+    import { formatDate } from '@/utils'
     export default {
         name: 'repoList',
         data () {
@@ -154,6 +155,7 @@
             this.handlerPaginationChange()
         },
         methods: {
+            formatDate,
             ...mapActions(['getRepoList', 'deleteRepoList']),
             async getListData () {
                 this.isLoading = true
@@ -164,7 +166,7 @@
                 }).finally(() => {
                     this.isLoading = false
                 })
-                this.repoList = records.map(v => ({ ...v, type: v.type.toLowerCase() }))
+                this.repoList = records.map(v => ({ ...v, repoType: v.type.toLowerCase() }))
                 this.pagination.count = totalRecords
             },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
@@ -189,12 +191,12 @@
                     }
                 })
             },
-            showRepoConfig ({ type, name }) {
+            showRepoConfig ({ repoType, name }) {
                 this.$router.push({
                     name: 'repoConfig',
                     params: {
                         ...this.$route.params,
-                        type
+                        repoType
                     },
                     query: {
                         name

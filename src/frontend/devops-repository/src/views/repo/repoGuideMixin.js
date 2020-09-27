@@ -63,7 +63,7 @@ export default {
                         {
                             subTitle: '使用如下命令去拉取包',
                             codeList: [
-                                `docker pull ${this.repoName}:${this.version}`
+                                `docker pull ${this.dockerDomain}/${this.projectId}/${this.repoName}:${this.version}`
                             ]
                         }
                     ]

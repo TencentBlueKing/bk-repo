@@ -26,7 +26,7 @@
                 <i v-if="item.loading" class="mr5 loading"></i>
                 <i v-else class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
                     :class="openList.includes(item.roadMap) ? 'icon-down-shape' : 'icon-right-shape'"></i>
-                <icon class="mr5" size="18" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'"></icon>
+                <icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'"></icon>
                 <div class="node-text"
                     :class="{ 'title-bold': importantSearch && item.name.toLowerCase().includes(importantSearch.toLowerCase()) }"
                     :title="item.name">
