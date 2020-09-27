@@ -117,8 +117,7 @@ class UserPackageController(
         @PathVariable repoName: String,
         @RequestParam packageKey: String,
         @RequestParam version: String
-    ): Response<Void> {
+    ) {
         packageService.downloadVersion(projectId, repoName, packageKey, version)
-        return ResponseBuilder.success()
     }
 }
