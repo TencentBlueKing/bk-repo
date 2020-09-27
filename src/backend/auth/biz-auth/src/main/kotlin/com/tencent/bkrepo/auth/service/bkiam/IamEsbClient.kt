@@ -18,7 +18,7 @@ class IamEsbClient() {
     private val appCode: String = ""
     @Value("\${esb.secret:}")
     private val appSecret: String = ""
-    @Value("\${esb.iamUrl:]}")
+    @Value("\${esb.iam.url]:}")
     private val iamUrl: String = ""
 
     private val okHttpClient = okhttp3.OkHttpClient.Builder()
@@ -64,7 +64,7 @@ class IamEsbClient() {
         return iamBaseReq
     }
 
-    private fun buildUrl(uri: String) = "${iamUrl!!.removeSuffix("/")}/${uri.removePrefix("/")}"
+    private fun buildUrl(uri: String) = "${iamUrl.removeSuffix("/")}/${uri.removePrefix("/")}"
 
     companion object {
         private val logger = LoggerFactory.getLogger(IamEsbClient::class.java)
