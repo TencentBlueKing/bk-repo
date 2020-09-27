@@ -19,6 +19,8 @@ const val AUTHORIZATION = "Authorization"
 
 const val AUTH_FAILED_RESPONSE = "{\"code\":401,\"message\":\"Authorization value [%s] is not a valid scheme.\",\"data\":null,\"traceId\":\"\"}"
 
+const val BASIC_AUTH_HEADER_PREFIX = "Basic "
+
 const val PLATFORM_AUTH_HEADER_PREFIX = "Platform "
 
 const val RANDOM_KEY_LENGTH = 30
