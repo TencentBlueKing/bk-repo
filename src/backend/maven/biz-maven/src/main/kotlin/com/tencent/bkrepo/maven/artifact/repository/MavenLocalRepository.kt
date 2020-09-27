@@ -12,7 +12,7 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.maven.MavenGAVCUtils.GAVC
+import com.tencent.bkrepo.maven.util.MavenGAVCUtils.GAVC
 import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenMetadata
@@ -96,16 +96,16 @@ class MavenLocalRepository : LocalRepository() {
         with(context.artifactInfo) {
             if (version.isNullOrBlank()) {
                 packageClient.deletePackage(
-                        projectId,
-                        repoName,
-                        packageKey
+                    projectId,
+                    repoName,
+                    packageKey
                 )
             } else {
                 packageClient.deleteVersion(
-                        projectId,
-                        repoName,
-                        packageKey,
-                        version
+                    projectId,
+                    repoName,
+                    packageKey,
+                    version
                 )
             }
             logger.info("Success to delete $packageKey:$version")
@@ -120,12 +120,12 @@ class MavenLocalRepository : LocalRepository() {
         val artifactPath = StringUtils.join(groupId.split("."), "/") + "/$artifactId"
         if (version.isNullOrBlank()) {
             nodeClient.delete(
-                    NodeDeleteRequest(
-                            context.projectId,
-                            context.repoName,
-                            artifactPath,
-                            ArtifactRemoveContext().userId
-                    )
+                NodeDeleteRequest(
+                    context.projectId,
+                    context.repoName,
+                    artifactPath,
+                    ArtifactRemoveContext().userId
+                )
             )
             return
         }
@@ -142,7 +142,7 @@ class MavenLocalRepository : LocalRepository() {
             val mavenMetadata = xmlStr.readXmlString<MavenMetadata>()
             mavenMetadata.versioning.versions.version.removeIf { it == version }
 
-            if (mavenMetadata.versioning.versions.version.size == 0 ) {
+            if (mavenMetadata.versioning.versions.version.size == 0) {
                 nodeClient.delete(
                     NodeDeleteRequest(
                         projectId,
@@ -177,11 +177,11 @@ class MavenLocalRepository : LocalRepository() {
                 }
 
                 logger.warn("${metadataArtifact.getSize()}")
-                updateMetadata("${artifactPath}/maven-metadata.xml", metadataArtifact)
+                updateMetadata("$artifactPath/maven-metadata.xml", metadataArtifact)
                 metadataArtifact.delete()
-                updateMetadata("${artifactPath}/maven-metadata.xml.md5", metadataArtifactMd5)
+                updateMetadata("$artifactPath/maven-metadata.xml.md5", metadataArtifactMd5)
                 metadataArtifactMd5.delete()
-                updateMetadata("${artifactPath}/maven-metadata.xml.sha1", metadataArtifactSha1)
+                updateMetadata("$artifactPath/maven-metadata.xml.sha1", metadataArtifactSha1)
                 metadataArtifactSha1.delete()
             }
         }
@@ -212,10 +212,9 @@ class MavenLocalRepository : LocalRepository() {
                 count,
                 jarNode.sha256,
                 jarNode.md5,
-                    stageTag ,
+                stageTag,
                 null
             )
-
             return MavenArtifactVersionData(mavenArtifactBasic, mavenArtifactMetadata)
         }
     }

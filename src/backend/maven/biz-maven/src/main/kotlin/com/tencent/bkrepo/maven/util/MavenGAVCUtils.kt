@@ -1,7 +1,8 @@
-package com.tencent.bkrepo.maven
+package com.tencent.bkrepo.maven.util
 
 import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import org.apache.commons.lang.StringUtils
+import javax.servlet.http.HttpServletRequest
 
 object MavenGAVCUtils {
     fun String.GAVC(): MavenGAVC {
@@ -17,5 +18,13 @@ object MavenGAVCUtils {
             version,
             null
         )
+    }
+
+    fun HttpServletRequest.getMavenGAVC(): MavenGAVC {
+        val packageKey = this.getParameter("packageKey")
+        val version = this.getParameter("version")
+        val artifactId = packageKey.split(":").last()
+        val groupId = packageKey.removePrefix("gav://").split(":")[0]
+        return MavenGAVC(null, groupId, artifactId, version, null)
     }
 }

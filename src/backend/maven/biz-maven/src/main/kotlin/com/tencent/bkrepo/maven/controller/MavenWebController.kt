@@ -12,19 +12,25 @@ class MavenWebController(
     private val mavenService: MavenService
 ) : MavenWebResource {
 
-    override fun deletePackage(mavenArtifactInfo: MavenArtifactInfo, packageKey: String): Response<String> {
-        return ResponseBuilder.success(mavenService.delete(mavenArtifactInfo, packageKey, null))
+    override fun deletePackage(mavenArtifactInfo: MavenArtifactInfo, packageKey: String): Response<Void> {
+        mavenService.delete(mavenArtifactInfo, packageKey, null)
+        return ResponseBuilder.success()
     }
 
     override fun deleteVersion(
         mavenArtifactInfo: MavenArtifactInfo,
         packageKey: String,
         version: String?
-    ): Response<String> {
-        return ResponseBuilder.success(mavenService.delete(mavenArtifactInfo, packageKey, version))
+    ): Response<Void> {
+        mavenService.delete(mavenArtifactInfo, packageKey, version)
+        return ResponseBuilder.success()
     }
 
-    override fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo): Response<Any?> {
-        return ResponseBuilder.success(mavenService.artifactDetail(mavenArtifactInfo))
+    override fun artifactDetail(
+        mavenArtifactInfo: MavenArtifactInfo,
+        packageKey: String,
+        version: String?
+    ): Response<Any?> {
+        return ResponseBuilder.success(mavenService.artifactDetail(mavenArtifactInfo, packageKey, version))
     }
 }
