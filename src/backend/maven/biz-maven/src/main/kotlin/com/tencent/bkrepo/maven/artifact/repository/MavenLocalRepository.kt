@@ -192,10 +192,15 @@ class MavenLocalRepository : LocalRepository() {
         val version = context.request.getParameter("version")
         val artifactId = packageKey.split(":").last()
         val groupId = packageKey.removePrefix("gav://").split(":")[0]
-        val artifactPath = StringUtils.join(groupId.split("."), "/") + "/$artifactId"
+        val trueVersion = packageClient.findVersionByName(
+                context.projectId,
+                context.repoName,
+                packageKey,
+                version
+        ).data
         with(context.artifactInfo) {
             val jarNode = nodeClient.detail(
-                projectId, repoName, "$artifactPath/$version/$artifactId-$version.jar"
+                projectId, repoName, trueVersion!!.contentPath!!
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
             val mavenArtifactMetadata = jarNode.metadata
