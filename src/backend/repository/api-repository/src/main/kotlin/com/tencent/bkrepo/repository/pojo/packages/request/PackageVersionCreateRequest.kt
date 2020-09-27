@@ -23,7 +23,7 @@ data class PackageVersionCreateRequest(
     @ApiModelProperty("版本描述文件路径")
     var manifestPath: String? = null,
     @ApiModelProperty("版本内容文件路径")
-    var contentPath: String? = null,
+    var artifactPath: String? = null,
     @ApiModelProperty("版本构件阶段")
     val stageTag: List<String>? = null,
     @ApiModelProperty("版本元数据")
