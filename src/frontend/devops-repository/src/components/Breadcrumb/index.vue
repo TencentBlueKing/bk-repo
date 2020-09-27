@@ -18,7 +18,7 @@
                 </template>
                 <template v-else>
                     <span class="breadcrumb-value">{{ item.name }}</span>
-                    <i v-if="item.list" class="ml10 devops-icon icon-angle-right"></i>
+                    <i v-if="item.list || index !== list.length - 1" class="ml10 devops-icon icon-angle-right"></i>
                 </template>
             </div>
         </div>
@@ -44,7 +44,7 @@
                 this.list.forEach(item => {
                     this.$set(item, 'showSelect', false)
                 })
-                if (selected.list && index === this.list.length - 1) {
+                if (selected.list && selected.list.length && index === this.list.length - 1) {
                     this.$set(selected, 'showSelect', true)
                     this.$nextTick(() => {
                         const parent = this.$refs.breadcrumbSelect[0].$el
@@ -54,7 +54,7 @@
                         parent.querySelector('.bk-select-name').click()
                     })
                 } else {
-                    selected.cilckHandler(selected)
+                    selected.cilckHandler && selected.cilckHandler(selected)
                 }
             }
         }

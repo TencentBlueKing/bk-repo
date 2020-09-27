@@ -1,8 +1,8 @@
 <template>
     <div class="repo-search-container">
         <header class="repo-search-header">
-            <icon size="24" :name="this.$route.query.type"></icon>
-            <span class="mr5 ml10 hover-btn" @click="goBack">{{this.$route.query.name}}</span>
+            <icon size="24" :name="$route.query.type"></icon>
+            <span class="mr5 ml10 hover-btn" @click="goBack">{{$route.query.name}}</span>
             <i class="devops-icon icon-angle-right"></i>
             <span class="ml5">{{$t('searchForPkg')}}</span>
         </header>
@@ -17,7 +17,7 @@
                 <bk-button :loading="isLoading" theme="primary" @click="searchHandler">{{$t('search')}}</bk-button>
             </div>
             <div class="repo-type-search">
-                <bk-radio-group v-model="repoType" class="repo-type-radio-group">
+                <bk-radio-group v-model="repoType" @change="searchHandler" class="repo-type-radio-group">
                     <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
                         <div class="flex-center repo-type-radio">
                             <icon size="60" :name="repo" />
@@ -38,10 +38,10 @@
                         v-for="result in resultList"
                         :key="result.repoName + result.fullPath">
                         <div class="mb10 flex-align-center">
-                            <icon size="24" :name="currentRepoType" />
+                            <icon size="24" :name="repoType" />
                             <span class="ml20 mr20 result-repo-name">{{result.repoName}}</span>
-                            <template v-if="result.stageTag">
-                                <span class="mr5 repo-tag" v-for="tag in result.stageTag.split(',')" :key="tag + result.repoName + result.fullPath">
+                            <template v-if="repoType !== 'generic'">
+                                <span class="mr5 repo-tag" v-for="tag in result.stageTag" :key="tag + result.repoName + result.fullPath">
                                     {{tag}}
                                 </span>
                             </template>
@@ -71,15 +71,15 @@
 </template>
 <script>
     import { mapActions } from 'vuex'
+    import { repoEnum } from '@/store/publicEnum'
     export default {
         name: 'repoSearch',
         data () {
             return {
+                repoEnum,
                 isLoading: false,
                 fileNameInput: this.$route.query.file,
                 repoType: this.$route.query.type,
-                currentRepoType: '',
-                repoEnum: ['generic', 'docker', 'maven', 'pypi', 'npm', 'helm', 'composer', 'rpm'],
                 pagination: {
                     current: 1,
                     limit: 10,
@@ -99,23 +99,17 @@
         },
         methods: {
             ...mapActions([
-                'genericSearch'
+                'searchPackageList'
             ]),
             searchHandler () {
                 this.isLoading = true
-                let request = Promise.resolve({ records: [], totalRecords: 0 })
-                this.currentRepoType = this.repoType
-                switch (this.repoType) {
-                    case 'generic':
-                        request = this.genericSearch({
-                            projectId: this.projectId,
-                            name: this.fileNameInput,
-                            current: this.pagination.current,
-                            limit: this.pagination.limit
-                        })
-                        break
-                }
-                request.then(({ records, totalRecords }) => {
+                this.searchPackageList({
+                    projectId: this.projectId,
+                    repoType: this.repoType,
+                    repoName: this.fileNameInput,
+                    current: this.pagination.current,
+                    limit: this.pagination.limit
+                }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.resultList = records
                 }).finally(() => {
@@ -124,9 +118,14 @@
             },
             toRepoDetail (file) {
                 this.$router.push({
-                    name: this.$route.query.type,
+                    name: 'repoCommon',
+                    params: {
+                        projectId: this.projectId,
+                        repoType: this.repoType
+                    },
                     query: {
-                        name: file.repoName
+                        name: file.repoName,
+                        packageKey: file.key
                     }
                 })
             },
@@ -138,7 +137,11 @@
             goBack () {
                 const { type, name } = this.$route.query
                 this.$router.push({
-                    name: type,
+                    name: 'repoCommon',
+                    params: {
+                        projectId: this.projectId,
+                        repoType: type
+                    },
                     query: {
                         name
                     }

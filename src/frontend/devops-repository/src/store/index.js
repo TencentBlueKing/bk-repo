@@ -20,7 +20,7 @@ export default new Vuex.Store({
     getters: {
     },
     mutations: {
-        INIT_GENERIC_TREE (state) {
+        INIT_TREE (state) {
             state.genericTree = [
                 {
                     name: '/',
@@ -31,7 +31,7 @@ export default new Vuex.Store({
                 }
             ]
         },
-        UPDATE_GENERIC_TREE (state, { roadMap, list }) {
+        UPDATE_TREE (state, { roadMap, list }) {
             let tree = state.genericTree
             roadMap.split(',').forEach(index => {
                 if (!tree[index].children) Vue.set(tree[index], 'children', [])

@@ -3,7 +3,7 @@
         <header class="create-repo-header">
             <span class="mr5 hover-btn" @click="toRepoList">{{$t('repoManage')}}</span>
             <i class="devops-icon icon-angle-right"></i>
-            <span class="ml5">{{$t('createRepo')}}</span>
+            <span class="ml5">{{$t('create') + $t('repository')}}</span>
         </header>
         <main class="create-repo-main">
             <div class="repo-base-info">
@@ -47,7 +47,7 @@
         name: 'createRepo',
         data () {
             return {
-                repoEnum: repoEnum.filter(v => v !== 'generic'),
+                repoEnum,
                 isLoading: false,
                 repoBaseInfo: {
                     type: '',

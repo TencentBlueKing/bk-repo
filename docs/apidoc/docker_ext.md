@@ -3,7 +3,7 @@
 -----
 ### 获取manifest文件
 
-- API: GET /docker/api/manifest/{projectId}/{repoName}/{name}/{tag}
+- API: GET /docker/ext/manifest/{projectId}/{repoName}/{name}/{tag}
 - API 名称: get_repo_manifest
 - 功能说明：
 	- 中文：获取repo对应的manifest文件
@@ -107,7 +107,7 @@
 
 ### 根据layerId下载layer文件
 
-- API: GET /docker/api/layer/{projectId}/{repoName}/{name}/{Id}
+- API: GET /docker/ext/layer/{projectId}/{repoName}/{name}/{Id}
 - API 名称: 
 - 功能说明：
 	- 中文：根据layerId获取layer文件
@@ -140,7 +140,7 @@
 
 ### 获取指定projectId和repoName下的所有镜像
 
-- API: GET /docker/api/repo/{projectId}/{repoName}?pageNumber=0&pageSize=10&name=docker
+- API: GET /docker/ext/repo/{projectId}/{repoName}?pageNumber=0&pageSize=10&name=docker
 - API 名称: get_image_by_project_repository
 - 功能说明：
 	- 中文：获取指定project和仓库下的所有docker镜像
@@ -212,7 +212,7 @@
 
 ### 获取repo的所有tag
 
-- API: GET /docker/api/tag/{projectId}/{repoName}/{name}?pageNumber=0&pageSize=10&tag=v1
+- API: GET /docker/ext/tag/{projectId}/{repoName}/{name}?pageNumber=0&pageSize=10&tag=v1
 - API 名称: get_repo_tag_list
 - 功能说明：
 	- 中文：获取repo对应的manifest文件
@@ -288,7 +288,7 @@
 
 ### 删除指定projectId和repoName下的的镜像
 
-- API: DELETE /docker/api/repo/{projectId}/{repoName}/{name}
+- API: DELETE /docker/ext/package/delete/{projectId}/{repoName}?packageKey={packageKey}
 - API 名称: delete_image_by_project_repository_name
 - 功能说明：
 	- 中文：删除指定project和仓库下name的镜像
@@ -308,7 +308,7 @@
 |---|---|---|---|---|---|
 |projectId|string|是|无|项目id|the project id|
 |repoName|string|是|无|仓库名称| name of repo|
-|name|string|是|无|镜像名称| name of image|
+|packageKey|string|是|无|镜像名称| name of image|
 
 
 
@@ -335,8 +335,8 @@
 
 ### 删除指定projectId和repoName下的的镜像的镜像tag
 
-- API: DELETE /docker/api/tag/{projectId}/{repoName}/{name}/{tag}
-- API 名称: delete_image_by_project_repository_name)tag
+- API: DELETE /docker/ext/version/delete/{projectId}/{repoName}?packageKey={packageKey}&version={version}
+- API 名称: delete_image_by_project_repository_name_tag
 - 功能说明：
 	- 中文：删除指定project和仓库下name的镜像
 	- English：delete image by project and repository and image name
@@ -355,7 +355,8 @@
 |---|---|---|---|---|---|
 |projectId|string|是|无|项目id|the project id|
 |repoName|string|是|无|仓库名称| name of repo|
-|name|string|是|无|镜像名称| name of image|
+|packageKey|string|是|无|镜像名称| name of image|
+|version|string|是|无|镜像名称| tag of image|
 
 
 
@@ -382,7 +383,7 @@
 
 ### 获取repo下指定tag的详情
 
-- API: GET /docker/api/tagdetail/{projectId}/{repoName}/{name}/{tag}
+- API: GET /docker/ext/version/detail/{projectId}/{repoName}?packageKey={packageKey}&version={version}
 - API 名称: get_repo_tag_detail
 - 功能说明：
 	- 中文：获取repo下tag对象的镜像相亲
@@ -402,8 +403,8 @@
 |---|---|---|---|---|---|
 |projectId|string|是|无|项目id|the project id|
 |repoName|string|是|无|仓库名称| name of repo|
-|name|string|是|无|docker 镜像名称| name of docker image|
-|tag|string|是|无|镜像tag| the tag of docker image|
+|packageKey|string|是|无|镜像名称| name of image|
+|version|string|是|无|镜像名称| tag of image|
 
 
 

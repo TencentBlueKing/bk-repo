@@ -80,7 +80,7 @@
         name: 'repoList',
         data () {
             return {
-                repoEnum,
+                repoEnum: ['generic', ...repoEnum],
                 isLoading: false,
                 repoList: [
                     {
@@ -145,6 +145,11 @@
                 return this.$route.params.projectId
             }
         },
+        watch: {
+            projectId () {
+                this.handlerPaginationChange()
+            }
+        },
         created () {
             this.handlerPaginationChange()
         },
@@ -174,9 +179,13 @@
             },
             toRepoDetail ({ type, name }) {
                 this.$router.push({
-                    name: type,
+                    name: type === 'generic' ? 'repoGeneric' : 'repoCommon',
+                    params: {
+                        projectId: this.projectId,
+                        repoType: type
+                    },
                     query: {
-                        name: name
+                        name
                     }
                 })
             },
@@ -188,7 +197,7 @@
                         type
                     },
                     query: {
-                        name: name
+                        name
                     }
                 })
             },

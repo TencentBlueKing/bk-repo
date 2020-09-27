@@ -43,7 +43,7 @@ export default {
                 }
             }
         ).then(({ records }) => {
-            commit('UPDATE_GENERIC_TREE', {
+            commit('UPDATE_TREE', {
                 roadMap,
                 list: records.map((v, index) => ({
                     ...v,
@@ -68,13 +68,14 @@ export default {
                     pageSize: limit,
                     includeFolder,
                     includeMetadata,
-                    deep
+                    deep,
+                    sort: true
                 }
             }
         )
     },
     // 仓库内自定义查询
-    getArtifactoryListByQuery (_, { projectId, repoName, name, stageTag, current = 1, limit = 15 }) {
+    getArtifactoryListByQuery (_, { projectId, repoName, name, current = 1, limit = 15 }) {
         return Vue.prototype.$ajax.post(
             `${prefix}/node/query`,
             {
@@ -108,13 +109,6 @@ export default {
                                 field: 'name',
                                 value: `\*${name}\*`,
                                 operation: 'MATCH'
-                            }
-                        ] : []),
-                        ...(stageTag ? [
-                            {
-                                field: 'stageTag',
-                                value: stageTag,
-                                operation: stageTag === '@prerelease' ? 'PREFIX' : 'SUFFIX'
                             }
                         ] : [])
                     ],
@@ -171,13 +165,6 @@ export default {
             xhr.send(body)
         })
     },
-    // 下载文件
-    downloadArtifactory (_, { projectId, repoName, fullPath = '' }) {
-        return Vue.prototype.$ajax.get(
-            `/generic/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
-            { responseType: 'blob' }
-        )
-    },
     // 删除文件
     deleteArtifactory (_, { projectId, repoName, fullPath = '' }) {
         return Vue.prototype.$ajax.delete(
@@ -189,12 +176,6 @@ export default {
         return Vue.prototype.$ajax.post(
             `${prefix}/share/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
             body
-        )
-    },
-    // 制品晋级
-    changeStageTag (_, { projectId, repoName, fullPath, tag }) {
-        return Vue.prototype.$ajax.post(
-            `${prefix}/stage/upgrade/${projectId}/${repoName}/${encodeURIComponent(fullPath)}?tag=${tag}`
         )
     },
     // 统计节点大小信息
