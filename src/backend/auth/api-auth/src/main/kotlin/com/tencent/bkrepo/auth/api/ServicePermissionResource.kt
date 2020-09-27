@@ -8,6 +8,7 @@ import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.ListRepoPermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
+import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -134,5 +135,12 @@ interface ServicePermissionResource {
         @PathVariable id: String,
         @ApiParam(value = "角色ID")
         @PathVariable rid: String
+    ): Response<Boolean>
+
+    @ApiOperation("注册资源")
+    @PostMapping("/register")
+    fun registerResource(
+        @ApiParam(value = "注册资源请求")
+        @RequestBody request: RegisterResourceRequest
     ): Response<Boolean>
 }

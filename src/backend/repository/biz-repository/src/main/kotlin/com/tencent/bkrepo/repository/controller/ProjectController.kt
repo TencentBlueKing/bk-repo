@@ -1,10 +1,12 @@
 package com.tencent.bkrepo.repository.controller
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.service.ProjectService
 import org.springframework.web.bind.annotation.RestController
 
@@ -22,6 +24,10 @@ class ProjectController(
 
     override fun list(): Response<List<ProjectInfo>> {
         return ResponseBuilder.success(projectService.list())
+    }
+
+    override fun rangeQuery(request: ProjectRangeQueryRequest): Response<Page<ProjectInfo?>> {
+        return ResponseBuilder.success(projectService.rangeQuery(request))
     }
 
     override fun create(request: ProjectCreateRequest): Response<ProjectInfo> {

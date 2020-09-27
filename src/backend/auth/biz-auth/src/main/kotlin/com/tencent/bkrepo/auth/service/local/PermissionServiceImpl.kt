@@ -6,6 +6,7 @@ import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.ListRepoPermissionRequest
 import com.tencent.bkrepo.auth.pojo.Permission
+import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
@@ -17,18 +18,14 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.stream.Collectors
 
-@Service
-@ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
-class PermissionServiceImpl @Autowired constructor(
+open class PermissionServiceImpl constructor(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
     private val permissionRepository: PermissionRepository,
@@ -156,6 +153,10 @@ class PermissionServiceImpl @Autowired constructor(
         return removePermission(id, rid, TPermission::roles.name)
     }
 
+    override fun registerResource(request: RegisterResourceRequest) {
+
+    }
+
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
         logger.info("check permission  request : [$request] ")
         val user = userRepository.findFirstByUserId(request.uid) ?: run {
@@ -215,18 +216,18 @@ class PermissionServiceImpl @Autowired constructor(
         }
         if (user.admin || !request.appId.isNullOrBlank()) {
             // 查询该项目下的所有仓库并过滤返回
-            val repoList =  repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
+            val repoList = repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
             return filterRepos(repoList, request.repoNames)
         }
         val roles = user.roles
 
         // check project admin
-        if (roles.isNotEmpty() && request.resourceType == ResourceType.PROJECT){
+        if (roles.isNotEmpty() && request.resourceType == ResourceType.PROJECT) {
             //val reposList = mutableListOf<String>()
-            roles.forEach { role->
+            roles.forEach { role ->
                 val tRole = roleRepository.findFirstByIdAndProjectIdAndType(role, request.projectId, RoleType.PROJECT)
                 if (tRole != null && tRole.admin) {
-                    val repoList =  repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
+                    val repoList = repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
                     return filterRepos(repoList, request.repoNames)
                 }
             }
@@ -239,7 +240,7 @@ class PermissionServiceImpl @Autowired constructor(
                 // check project admin first
                 val pRole = roleRepository.findFirstByIdAndProjectIdAndType(role, request.projectId, RoleType.PROJECT)
                 if (pRole != null && pRole.admin) {
-                    val repoList =  repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
+                    val repoList = repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
                     return filterRepos(repoList, request.repoNames)
                 }
                 // check repo admin then

@@ -19,9 +19,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
 
-@Service
-@ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
-class ClusterServiceImpl @Autowired constructor(
+class ClusterServiceImpl constructor(
     private val clusterRepository: ClusterRepository,
     private val mongoTemplate: MongoTemplate
 ) : ClusterService {
