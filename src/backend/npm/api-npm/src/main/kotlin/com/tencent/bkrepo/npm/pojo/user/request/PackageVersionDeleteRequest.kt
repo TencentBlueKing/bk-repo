@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.npm.pojo.user
+package com.tencent.bkrepo.npm.pojo.user.request
 
 import io.swagger.annotations.ApiModelProperty
 import io.swagger.annotations.ApiOperation
@@ -9,8 +9,6 @@ data class PackageVersionDeleteRequest (
     val projectId: String,
     @ApiModelProperty("仓库名称", required = true)
     val repoName: String,
-    @ApiModelProperty("scope名称", required = true)
-    val scope: String,
     @ApiModelProperty("包名称", required = true)
     val name: String,
     @ApiModelProperty("包的版本", required = true)

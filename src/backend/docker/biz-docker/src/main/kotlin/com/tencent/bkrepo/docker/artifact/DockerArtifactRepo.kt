@@ -40,11 +40,11 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -203,23 +203,29 @@ class DockerArtifactRepo @Autowired constructor(
      * @return Boolean is the file upload success
      */
     fun copy(context: RequestContext, srcPath: String, destPath: String): Boolean {
-        with(context) {
-            val copyRequest = NodeCopyRequest(
-                srcProjectId = projectId,
-                srcRepoName = repoName,
-                srcFullPath = srcPath,
-                destProjectId = projectId,
-                destRepoName = repoName,
-                destFullPath = destPath,
-                overwrite = true,
-                operator = userId
-            )
-            val result = nodeClient.copy(copyRequest)
-            if (result.isNotOk()) {
-                logger.error("user [$userId] request [$copyRequest] copy file fail")
-                throw DockerMoveFileFailedException("$srcPath->$destPath")
+        logger.debug("user [$userId] start to copy file [$context,$srcPath,$destPath]")
+        try {
+            with(context) {
+                val copyRequest = NodeCopyRequest(
+                    srcProjectId = projectId,
+                    srcRepoName = repoName,
+                    srcFullPath = srcPath,
+                    destProjectId = projectId,
+                    destRepoName = repoName,
+                    destFullPath = destPath,
+                    overwrite = true,
+                    operator = userId
+                )
+                val result = nodeClient.copy(copyRequest)
+                if (result.isNotOk()) {
+                    logger.error("user [$userId] request [$copyRequest] copy file fail")
+                    throw DockerMoveFileFailedException("$srcPath->$destPath")
+                }
+                return true
             }
-            return true
+        } catch (ignored: Exception) {
+            logger.error("user [$userId] request  copy file exception [$ignored]")
+            throw DockerMoveFileFailedException("$srcPath->$destPath")
         }
     }
 
@@ -451,7 +457,7 @@ class DockerArtifactRepo @Autowired constructor(
                 val lastModifiedDate = it[LAST_MODIFIED_DATE] as String
                 val size = it[DOCKER_NODE_SIZE] as Int
                 val downLoadCount = 0L
-                val stageTag = ""//it[STAGE_TAG] as String
+                val stageTag = "" // it[STAGE_TAG] as String
                 data.add(DockerTag(tag, stageTag, size, lastModifiedBy, lastModifiedDate, downLoadCount))
             }
             return data

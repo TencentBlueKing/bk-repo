@@ -10,7 +10,6 @@
                 </bk-input>
             </div>
             <repo-tree
-                v-if="genericTree.length"
                 class="repo-generic-tree"
                 ref="repoTree"
                 :list="genericTree"
@@ -20,13 +19,6 @@
                 @icon-click="iconClickHandler"
                 @item-click="itemClickHandler">
             </repo-tree>
-            <div v-else class="mt50 flex-center">
-                <bk-button v-if="repoName === 'custom'" @click.stop="addFolder()" theme="primary">
-                    <i class="mr5 devops-icon icon-folder-plus"></i>
-                    {{ $t('create') + $t('folder') }}
-                </bk-button>
-                <div v-else>{{ $t('noData') }}</div>
-            </div>
         </div>
         <div class="repo-generic-main" v-bkloading="{ isLoading }">
             <div class="repo-generic-table">
@@ -46,21 +38,21 @@
                         <template slot-scope="props">
                             <div class="flex-align-center">
                                 <icon size="24" :name="props.row.folder ? 'folder' : getIconName(props.row.name)" />
-                                <span class="ml10">{{props.row.name}}</span>
+                                <div class="ml10 fine-name" :title="props.row.name">{{props.row.name}}</div>
                             </div>
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('artiStatus')">
+                    <!-- <bk-table-column :label="$t('artiStatus')" width="220">
                         <template v-if="props.row.stageTag" slot-scope="props">
                             <span class="mr5 repo-tag" v-for="tag in props.row.stageTag.split(',')"
                                 :key="props.row.fullPath + tag">{{ tag }}</span>
                         </template>
-                    </bk-table-column>
-                    <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate">
+                    </bk-table-column> -->
+                    <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="200">
                         <template slot-scope="props">{{ new Date(props.row.lastModifiedDate).toLocaleString() }}</template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('lastModifiedBy')" prop="lastModifiedBy"></bk-table-column>
-                    <bk-table-column :label="$t('size')">
+                    <bk-table-column :label="$t('lastModifiedBy')" prop="lastModifiedBy" width="120"></bk-table-column>
+                    <bk-table-column :label="$t('size')" width="100">
                         <template slot-scope="props">
                             <bk-button text
                                 v-show="props.row.folder && !props.row.hasOwnProperty('folderSize')"
@@ -96,10 +88,10 @@
                             </bk-button>
                         </template>
                         <template v-if="!selectedRow.folder">
-                            <bk-button :disabled="(selectedRow.stageTag || '').includes('@release')" @click.stop="handlerTag()" text theme="primary">
+                            <!-- <bk-button :disabled="(selectedRow.stageTag || '').includes('@release')" @click.stop="handlerTag()" text theme="primary">
                                 <i class="mr5 devops-icon icon-arrows-up"></i>
                                 {{ $t('upgrade') }}
-                            </bk-button>
+                            </bk-button> -->
                             <bk-button @click.stop="handlerShare()" text theme="primary">
                                 <i class="mr5 devops-icon icon-none"></i>
                                 {{ $t('share') }}
@@ -142,8 +134,10 @@
                 <bk-tab-panel name="detailInfo" :label="$t('baseInfo')">
                     <div class="detail-info info-area" v-bkloading="{ isLoading: detailSlider.loading }">
                         <div class="flex-center" v-for="key in Object.keys(detailInfoMap)" :key="key">
-                            <span>{{ key }}:</span>
-                            <span>{{ detailSlider.data[detailInfoMap[key]] }}</span>
+                            <template v-if="key !== 'size' || !detailSlider.data.folder">
+                                <span>{{ detailInfoMap[key] }}:</span>
+                                <span class="break-all">{{ detailSlider.data[key] }}</span>
+                            </template>
                         </div>
                     </div>
                     <div class="detail-info checksums-area" v-if="!selectedRow.folder" v-bkloading="{ isLoading: detailSlider.loading }">
@@ -177,8 +171,8 @@
             header-position="left">
             <bk-form :label-width="120" :model="formDialog" :rules="rules" ref="formDialog">
                 <template v-if="formDialog.type === 'add'">
-                    <bk-form-item :label="$t('folder')" :required="true">
-                        <span>{{ selectedRow.fullPath + '/' + formDialog.path }}</span>
+                    <bk-form-item :label="$t('folder') + $t('path')" :required="true">
+                        <span class="break-all">{{ selectedRow.fullPath + '/' + formDialog.path }}</span>
                     </bk-form-item>
                     <bk-form-item property="path" error-display-type="normal">
                         <bk-input v-model="formDialog.path" :placeholder="$t('folderNamePlacehodler')"></bk-input>
@@ -186,7 +180,7 @@
                 </template>
                 <template v-if="formDialog.type === 'rename'">
                     <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
-                        <bk-input v-model="formDialog.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
+                        <bk-input v-model="formDialog.name" :placeholder="$t('folderNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
                 <template v-if="formDialog.type === 'share'">
@@ -201,14 +195,14 @@
                         <bk-input v-model="formDialog.time" :placeholder="$t('repoNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
-                <template v-if="formDialog.type === 'tag'">
+                <!-- <template v-if="formDialog.type === 'tag'">
                     <bk-form-item :label="$t('upgradeTo')" :required="true" property="tag" error-display-type="normal">
                         <bk-radio-group v-model="formDialog.tag">
                             <bk-radio :disabled="!!selectedRow.stageTag" value="@prerelease">@prerelease</bk-radio>
                             <bk-radio class="ml20" value="@release">@release</bk-radio>
                         </bk-radio-group>
                     </bk-form-item>
-                </template>
+                </template> -->
             </bk-form>
             <div slot="footer">
                 <bk-button ext-cls="mr5" :loading="formDialog.loading" theme="primary" @click.stop.prevent="submitFormDialog">{{$t('submit')}}</bk-button>
@@ -246,7 +240,7 @@
             :quick-close="false"
             :mask-close="false"
             :close-icon="false"
-            width="600"
+            width="620"
             header-position="left">
             <artifactory-upload
                 ref="artifactoryUpload"
@@ -263,7 +257,7 @@
     import RepoTree from '@/components/RepoTree'
     import ArtifactoryUpload from '@/components/ArtifactoryUpload'
     import { convertFileSize } from '@/utils'
-    import { fileType } from '@/store/publicEnum'
+    import { getIconName } from '@/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
     export default {
         name: 'repoGeneric',
@@ -271,6 +265,7 @@
         data () {
             return {
                 convertFileSize,
+                getIconName,
                 isLoading: false,
                 treeLoading: false,
                 importantSearch: '',
@@ -299,58 +294,50 @@
                     name: '',
                     title: '',
                     user: [],
-                    time: 1,
-                    tag: ''
+                    time: 1
                 },
                 // formDialog Rules
                 rules: {
                     path: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('repoName'),
+                            message: this.$t('pleaseInput') + this.$t('folder') + this.$t('path'),
                             trigger: 'blur'
                         },
                         {
                             regex: /^((\w|-|\.){1,50}\/)*((\w|-|\.){1,50})$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repoType'),
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('folder') + this.$t('path'),
                             trigger: 'blur'
                         }
                     ],
                     name: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('repoName'),
+                            message: this.$t('pleaseInput') + this.$t('fileName'),
                             trigger: 'blur'
                         },
                         {
                             regex: /^(\w|-|\.){1,50}$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repoType'),
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('fileName'),
                             trigger: 'blur'
                         }
                     ],
                     user: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('repoName'),
+                            message: this.$t('pleaseInput') + this.$t('user'),
                             trigger: 'blur'
                         }
                     ],
                     time: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('repoName'),
+                            message: this.$t('pleaseInput') + this.$t('validity'),
                             trigger: 'blur'
                         },
                         {
                             regex: /^[0-9]*$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repoType'),
-                            trigger: 'blur'
-                        }
-                    ],
-                    tag: [
-                        {
-                            required: true,
-                            message: this.$t('pleaseSelect') + this.$t('repoName'),
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('validity'),
                             trigger: 'blur'
                         }
                     ]
@@ -363,13 +350,13 @@
                 },
                 // detailInfoMap
                 detailInfoMap: {
-                    'Name': 'name',
-                    'Path': 'fullPath',
-                    'Size': 'size',
-                    'Created User': 'createdBy',
-                    'Created Date': 'createdDate',
-                    'Last Modified User': 'lastModifiedBy',
-                    'Last Modified Date': 'lastModifiedDate'
+                    'name': 'Name',
+                    'fullPath': 'Path',
+                    'size': 'Size',
+                    'createdBy': 'Created User',
+                    'createdDate': 'Created Date',
+                    'lastModifiedBy': 'Last Modified User',
+                    'lastModifiedDate': 'Last Modified Date'
                 },
                 // 移动，复制
                 treeDialog: {
@@ -414,7 +401,7 @@
             this.initPage()
         },
         methods: {
-            ...mapMutations(['INIT_GENERIC_TREE']),
+            ...mapMutations(['INIT_TREE']),
             ...mapActions([
                 'getNodeDetail',
                 'getFolderList',
@@ -422,18 +409,17 @@
                 'createFolder',
                 'getArtifactoryListByQuery',
                 'uploadArtifactory',
-                'downloadArtifactory',
                 'deleteArtifactory',
                 'renameNode',
                 'moveNode',
                 'copyNode',
-                'changeStageTag',
+                // 'changeStageTag',
                 'shareArtifactory',
                 'getFolderSize'
             ]),
             async initPage () {
                 this.importantSearch = ''
-                this.INIT_GENERIC_TREE()
+                this.INIT_TREE()
                 this.sideTreeOpenList = []
                 await this.itemClickHandler(this.genericTree[0])
             },
@@ -466,7 +452,7 @@
                     projectId: this.projectId,
                     repoName: this.repoName,
                     name: (query.name || []).join(''),
-                    stageTag: (query.stageTag || []).join(','),
+                    // stageTag: (query.stageTag || []).join(','),
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
@@ -562,6 +548,8 @@
                 })
                 this.detailSlider.data = {
                     ...data,
+                    name: data.name || this.repoName,
+                    size: convertFileSize(data.size),
                     createdDate: new Date(data.createdDate).toLocaleString(),
                     lastModifiedDate: new Date(data.lastModifiedDate).toLocaleString()
                 }
@@ -598,16 +586,17 @@
                     time: 1
                 }
             },
-            handlerTag () {
-                this.formDialog = {
-                    ...this.formDialog,
-                    show: true,
-                    loading: false,
-                    type: 'tag',
-                    title: `${this.$t('upgrade')} (${this.selectedRow.name})`,
-                    tag: ''
-                }
-            },
+            // 制品晋级
+            // handlerTag () {
+            //     this.formDialog = {
+            //         ...this.formDialog,
+            //         show: true,
+            //         loading: false,
+            //         type: 'tag',
+            //         title: `${this.$t('upgrade')} (${this.selectedRow.name})`,
+            //         tag: ''
+            //     }
+            // },
             async submitFormDialog () {
                 await this.$refs.formDialog.validate()
                 this.formDialog.loading = true
@@ -676,14 +665,14 @@
                     }
                 })
             },
-            submitTag () {
-                return this.changeStageTag({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    fullPath: this.selectedRow.fullPath,
-                    tag: this.formDialog.tag
-                })
-            },
+            // submitTag () {
+            //     return this.changeStageTag({
+            //         projectId: this.projectId,
+            //         repoName: this.repoName,
+            //         fullPath: this.selectedRow.fullPath,
+            //         tag: this.formDialog.tag
+            //     })
+            // },
             async deleteRes () {
                 this.$bkInfo({
                     title: `${this.$t('confirm') + this.$t('delete')}${this.selectedRow.folder ? this.$t('folder') : this.$t('file')} ${this.selectedRow.name} ？`,
@@ -800,32 +789,10 @@
                 })
             },
             handlerDownload () {
-                this.downloadArtifactory({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    fullPath: this.selectedRow.fullPath
-                }).then(file => {
-                    const eleLink = document.createElement('a')
-                    const url = window.URL.createObjectURL(file)
-                    eleLink.href = url
-                    eleLink.download = this.selectedRow.name
-                    document.body.appendChild(eleLink)
-                    eleLink.click()
-                    window.URL.revokeObjectURL(url)
-                    document.body.removeChild(eleLink)
-                })
-            },
-            getIconName (name) {
-                let type = name.split('.').pop()
-                type = {
-                    'gif': 'png',
-                    'svg': 'png',
-                    'jpg': 'png',
-                    'psd': 'png',
-                    'jpge': 'png',
-                    'json': 'txt'
-                }[type] || type
-                return fileType.includes(type) ? type : 'file'
+                window.open(
+                    `/web/generic/${this.projectId}/${this.repoName}/${this.selectedRow.fullPath}`,
+                    '_blank'
+                )
             },
             calculateFolderSize (row) {
                 this.$set(row, 'sizeLoading', true)
@@ -867,6 +834,12 @@
         .repo-generic-table {
             flex: 1;
             font-size: 0;
+            .fine-name {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                max-width: 400px;
+            }
         }
     }
     .repo-generic-actions {

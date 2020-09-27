@@ -14,8 +14,9 @@ class MavenArtifactInfo(
 
     companion object {
         const val MAVEN_MAPPING_URI = "/{projectId}/{repoName}/**"
-        const val MAVEN_LIST_URI = "/list/version/{projectId}/{repoName}/**"
-        const val MAVEN_ARTIFACT_DETAIL = "/detail/{projectId}/{repoName}/**"
+        const val MAVEN_EXT_DETAIL = "/version/detail/{projectId}/{repoName}"
+        const val MAVEN_EXT_PACKAGE_DELETE = "/package/delete/{projectId}/{repoName}"
+        const val MAVEN_EXT_VERSION_DELETE = "/version/delete/{projectId}/{repoName}"
     }
 
     private fun hasGroupId(): Boolean {

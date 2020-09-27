@@ -4,7 +4,7 @@
             <repo-select
                 @repo-change="repoChange"
                 @repo-click="repoChange"
-                :repo-name="$route.query.name"
+                :repo-name="repoName"
                 :has-click="Boolean(breadcrumb.length)"
                 :repo-list="repoList">
             </repo-select>
@@ -14,7 +14,7 @@
             </breadcrumb>
             <div class="repo-detail-tools flex-align-center">
                 <icon class="hover-btn" name="filter" size="16" @click.native="showRepoSearch = !showRepoSearch"></icon>
-                <div v-if="$route.name !== 'generic'" class="ml20 hover-btn flex-align-center" @click="handlerShowGuide">
+                <div v-if="repoType !== 'generic'" class="ml20 hover-btn flex-align-center" @click="handlerShowGuide">
                     <icon class="mr5" name="hand-guide" size="18"></icon>
                     {{$t('guide')}}
                 </div>
@@ -37,7 +37,7 @@
                 <bk-button class="ml20" outline theme="primary" @click="searchHandler">
                     {{$t('searchInRepo')}}
                 </bk-button>
-                <bk-button class="ml20" outline theme="primary" @click="fileSearch">
+                <bk-button v-if="repoType !== 'generic'" class="ml20" outline theme="primary" @click="fileSearch">
                     {{$t('searchForPkg')}}
                 </bk-button>
                 <bk-button class="align-right" outline theme="default" @click="resetQueryAndBack">
@@ -45,28 +45,28 @@
                     {{$t('returnBack')}}
                 </bk-button>
             </div>
-            <router-view :ref="$route.name" :style="`height: calc(100% - ${showRepoSearch ? '72px' : '20px'});transition: all .3s;`"></router-view>
+            <router-view :ref="repoType" :style="`height: calc(100% - ${showRepoSearch ? '72px' : '20px'});transition: all .3s;`"></router-view>
         </main>
-        <bk-sideslider :is-show.sync="showGuide" :quick-close="true" :width="800" :title="$route.query.name + $t('guide')">
-            <component :is="guideType" slot="content"></component>
+        <bk-sideslider :is-show.sync="showGuide" :quick-close="true" :width="800" :title="repoName + $t('guide')">
+            <repo-guide class="pt20 pb20 pl20 pr20" slot="content" :article="articleGuide"></repo-guide>
         </bk-sideslider>
     </div>
 </template>
 <script>
     import Breadcrumb from '@/components/Breadcrumb'
     import RepoSelect from '@/components/RepoSelect'
-    import dockerGuide from './repoDocker/dockerGuide'
-    import npmGuide from './repoNpm/npmGuide'
+    import repoGuide from './repoCommon/repoGuide'
     import filterList from './filter'
+    import repoGuideMixin from './repoGuideMixin'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'repoDetail',
         components: {
             Breadcrumb,
             RepoSelect,
-            'docker-guide': dockerGuide,
-            'npm-guide': npmGuide
+            repoGuide
         },
+        mixins: [repoGuideMixin],
         data () {
             return {
                 repoList: [],
@@ -80,11 +80,14 @@
             projectId () {
                 return this.$route.params.projectId
             },
-            guideType () {
-                return `${this.$route.name}-guide`
+            repoType () {
+                return this.$route.params.repoType
+            },
+            repoName () {
+                return this.$route.query.name
             },
             filterList () {
-                return filterList[this.$route.name]
+                return filterList[this.repoType]
             }
         },
         created () {
@@ -93,25 +96,37 @@
             }).then(res => {
                 this.repoList = res.map(v => ({ ...v, type: v.type.toLowerCase() }))
             })
-            this.setRepositoryHistory()
+            this.setRepositoryHistory({
+                projectId: this.projectId,
+                repoType: this.repoType,
+                name: this.repoName
+            })
         },
         beforeRouteUpdate (to, from, next) {
-            this.setRepositoryHistory()
+            this.setRepositoryHistory({
+                projectId: to.params.projectId,
+                repoType: to.params.repoType,
+                name: to.query.name
+            })
             next()
         },
         methods: {
             ...mapActions(['getRepoListAll']),
-            setRepositoryHistory () {
+            setRepositoryHistory (data) {
                 const repositoryHistory = JSON.parse(localStorage.getItem('repositoryHistory') || '{}')
-                repositoryHistory[this.projectId] = {
-                    type: this.$route.name,
-                    name: this.$route.query.name
+                repositoryHistory[data.projectId] = {
+                    type: data.repoType || 'generic',
+                    name: data.name
                 }
                 localStorage.setItem('repositoryHistory', JSON.stringify(repositoryHistory))
             },
             repoChange (repo) {
-                this.$router.replace({
-                    name: repo.type,
+                this.$router.push({
+                    name: repo.type === 'generic' ? 'repoGeneric' : 'repoCommon',
+                    params: {
+                        projectId: this.projectId,
+                        repoType: repo.type
+                    },
                     query: {
                         name: repo.name
                     }
@@ -132,23 +147,23 @@
             },
             searchHandler () {
                 const query = this.artiQuery.reduce((target, item) => {
-                    target[item.id] = item.values.map(v => v.id)
+                    target[item.id] = item.values.map(v => v.id).join('')
                     return target
                 }, {})
-                this.$refs[this.$route.name].searchHandler(query)
+                this.$refs[this.repoType].searchHandler(query)
             },
             resetQueryAndBack () {
                 this.artiQuery = []
                 this.showRepoSearch = false
-                this.$refs[this.$route.name].resetQueryAndBack()
+                this.$refs[this.repoType].resetQueryAndBack()
             },
             fileSearch () {
                 const file = (this.artiQuery.find(v => v.id === 'name') || { values: [{ id: '' }] }).values[0].id
                 this.$router.push({
                     name: 'repoSearch',
                     query: {
-                        type: this.$route.name,
-                        name: this.$route.query.name,
+                        type: this.repoType,
+                        name: this.repoName,
                         file
                     }
                 })

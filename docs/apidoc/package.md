@@ -150,7 +150,7 @@
 
 ### 删除包
 
-- API: GET /repository/api/package/delete/{projectId}/{repoName}?packageKey=gav://com.tencent:test
+- API: DELETE /repository/api/package/delete/{projectId}/{repoName}?packageKey=gav://com.tencent:test
 
 - API 名称: delete_package
 
@@ -262,7 +262,7 @@
 
 ### 删除版本
 
-- API: GET /repository/api/version/delete/{projectId}/{repoName}?packageKey=npm://test&version=0.0.1
+- API: DELETE /repository/api/version/delete/{projectId}/{repoName}?packageKey=npm://test&version=0.0.1
 
 - API 名称: delete_version
 
@@ -302,13 +302,53 @@
 
 ### 自定义搜索包
 
-- 待补充
+- API: POST /repository/api/package/search
 
+- API 名称: package search
 
+- 功能说明：
 
-### 自定义搜索版本
+  - 中文：节点自定义搜索。最外层的查询条件中必须包含projectId条件，可以传入repoType指定仓库类型或者repoName指定仓库查询。
+  - English：search package
 
-- 待补充
+- 请求体
+
+  参考[自定义搜索接口公共说明](./search.md)
+
+  ``` json
+  # 查询在项目test下, 仓库类型为MAVEN，包名为spring开头的包，并按照包名排序，查询结果包含name、key、latest、donwloads、versions字段
+  {
+    "select": ["name", "key", "latest", "downloads", "versions"],
+    "page": {
+      "pageNumber": 1,
+      "pageSize": 20
+    },
+    "sort": {
+      "properties": ["name"],
+      "direction": "ASC"
+    },
+    "rule": {
+      "rules": [
+        {
+          "field": "projectId",
+          "value": "test",
+          "operation": "EQ"
+        },
+        {
+          "field": "repoType",
+          "value": "MAVEN",
+          "operation": "EQ"
+        },
+        {
+          "field": "name",
+          "value": "spring",
+          "operation": "PREFIX"
+        }
+      ],
+      "relation": "AND"
+    }
+  }
+  ```
 
 
 

@@ -7,7 +7,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
@@ -34,22 +33,14 @@ class MavenService {
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
-    fun delete(mavenArtifactInfo: MavenArtifactInfo): String {
+    fun delete(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String?) {
         val context = ArtifactRemoveContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
-        return mavenArtifactInfo.getArtifactFullPath()
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    fun listVersion(mavenArtifactInfo: MavenArtifactInfo): List<Any> {
-        val context = ArtifactSearchContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        return repository.search(context)
-    }
-
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo): Any? {
+    fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String?): Any? {
         val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.query(context)

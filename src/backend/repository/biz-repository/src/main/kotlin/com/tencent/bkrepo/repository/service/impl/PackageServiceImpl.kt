@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.util.version.SemVer
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
@@ -19,8 +20,7 @@ import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.PackageService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
-import com.tencent.bkrepo.repository.util.Pages
-import com.tencent.bkrepo.repository.util.SemVerUtils
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
@@ -100,7 +100,7 @@ class PackageServiceImpl(
                     lastModifiedDate = LocalDateTime.now()
                     size = request.size
                     manifestPath = request.manifestPath
-                    contentPath = request.contentPath
+                    artifactPath = request.artifactPath
                     stageTag = request.stageTag.orEmpty()
                     metadata = MetadataUtils.fromMap(request.metadata)
                 }
@@ -115,10 +115,10 @@ class PackageServiceImpl(
                     packageId = tPackage.id!!,
                     name = versionName,
                     size = size,
-                    ordinal = SemVerUtils.ordinal(versionName),
+                    ordinal = calculateOrdinal(versionName),
                     downloads = 0,
                     manifestPath = manifestPath,
-                    contentPath = contentPath,
+                    artifactPath = artifactPath,
                     stageTag = stageTag.orEmpty(),
                     metadata = MetadataUtils.fromMap(metadata)
                 )
@@ -154,10 +154,10 @@ class PackageServiceImpl(
     override fun downloadVersion(projectId: String, repoName: String, packageKey: String, versionName: String) {
         val tPackage = checkPackage(projectId, repoName, packageKey)
         val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
-        if (tPackageVersion.contentPath.isNullOrBlank()) {
+        if (tPackageVersion.artifactPath.isNullOrBlank()) {
             throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
         }
-        val artifactInfo = DefaultArtifactInfo(projectId, repoName, tPackageVersion.contentPath!!)
+        val artifactInfo = DefaultArtifactInfo(projectId, repoName, tPackageVersion.artifactPath!!)
         val context = ArtifactDownloadContext(artifact = artifactInfo)
         ArtifactContextHolder.getRepository().download(context)
     }
@@ -217,9 +217,21 @@ class PackageServiceImpl(
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, versionName)
     }
 
+    /**
+     * 计算语义化版本顺序
+     */
+    private fun calculateOrdinal(versionName: String): Long {
+        return try {
+            SemVer.parse(versionName).ordinal()
+        } catch (exception: IllegalArgumentException) {
+            LOWEST_ORDINAL
+        }
+    }
+
     companion object {
 
         private val logger = LoggerFactory.getLogger(PackageServiceImpl::class.java)
+        private const val LOWEST_ORDINAL = 0L
 
         private fun convert(tPackage: TPackage?): PackageSummary? {
             return tPackage?.let {
@@ -253,7 +265,7 @@ class PackageServiceImpl(
                     downloads = it.downloads,
                     stageTag = it.stageTag,
                     metadata = MetadataUtils.toMap(it.metadata),
-                    contentPath = it.contentPath
+                    contentPath = it.artifactPath
                 )
             }
         }

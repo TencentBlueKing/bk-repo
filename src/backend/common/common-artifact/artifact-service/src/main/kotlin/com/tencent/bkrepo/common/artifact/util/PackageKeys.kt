@@ -47,4 +47,32 @@ object PackageKeys {
     fun ofNpm(name: String): String {
         return ofName(NPM, name)
     }
+
+    /**
+     * 解析npm格式的key
+     *
+     * 例子: npm://test  ->  test
+     */
+    fun resolveNpm(npmKey: String): String {
+        return resolveName(NPM, npmKey)
+    }
+
+    /**
+     * 解析docker格式的key
+     *
+     * 例子: docker://test  ->  test
+     */
+    fun resolveDocker(dockerKey: String): String {
+        return resolveName(DOCKER, dockerKey)
+    }
+
+    /**
+     * 解析name格式key
+     *
+     * 例子: {schema}://test  ->  test
+     */
+    fun resolveName(schema: String, nameKey: String): String {
+        val prefix = StringBuilder(schema).append(SEPARATOR).toString()
+        return nameKey.substringAfter(prefix)
+    }
 }

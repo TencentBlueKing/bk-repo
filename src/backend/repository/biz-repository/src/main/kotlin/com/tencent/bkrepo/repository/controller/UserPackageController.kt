@@ -102,7 +102,6 @@ class UserPackageController(
     }
 
     @ApiOperation("搜索包")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @PostMapping("/package/search")
     fun searchPackage(
         @RequestBody queryModel: QueryModel
@@ -112,7 +111,7 @@ class UserPackageController(
 
     @ApiOperation("下载版本")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    @DeleteMapping("/version/download/{projectId}/{repoName}")
+    @GetMapping("/version/download/{projectId}/{repoName}")
     fun downloadVersion(
         @PathVariable projectId: String,
         @PathVariable repoName: String,

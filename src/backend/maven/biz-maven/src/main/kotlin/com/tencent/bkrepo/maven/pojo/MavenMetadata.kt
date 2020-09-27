@@ -7,17 +7,17 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 data class MavenMetadata(
     val groupId: String,
     val artifactId: String,
-    val versioning: MavenVersioning
+    var versioning: MavenVersioning
 
 )
 
 class MavenVersioning(
     var release: String,
-    val versions: MavenVersions,
+    var versions: MavenVersions,
     var lastUpdated: String
 )
 
 class MavenVersions(
     @JacksonXmlElementWrapper(useWrapping = false)
-    val version: MutableList<String>
+    var version: MutableList<String>
 )

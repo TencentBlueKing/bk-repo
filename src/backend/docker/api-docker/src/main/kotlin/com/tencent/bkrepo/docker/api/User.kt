@@ -15,9 +15,7 @@ import com.tencent.bkrepo.docker.constant.DOCKER_USER_TAG_SUFFIX
 import com.tencent.bkrepo.docker.constant.PAGE_NUMBER
 import com.tencent.bkrepo.docker.constant.PAGE_SIZE
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
-import com.tencent.bkrepo.docker.pojo.DockerImage
 import com.tencent.bkrepo.docker.pojo.DockerImageResult
-import com.tencent.bkrepo.docker.pojo.DockerTag
 import com.tencent.bkrepo.docker.pojo.DockerTagResult
 import com.tencent.bkrepo.docker.response.DockerResponse
 import io.swagger.annotations.Api
@@ -128,7 +126,10 @@ interface User {
         projectId: String,
         @PathVariable
         @ApiParam(value = DOCKER_REPO_NAME, required = true)
-        repoName: String
+        repoName: String,
+        @RequestParam(required = true)
+        @ApiParam(value = "packageKey", required = true)
+        packageKey: String
     ): Response<Boolean>
 
     @ApiOperation("删除repo下的指定镜像")
@@ -143,9 +144,12 @@ interface User {
         @PathVariable
         @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
-        @PathVariable
-        @ApiParam(value = DOCKER_TAG, required = true)
-        tag: String
+        @RequestParam(required = true)
+        @ApiParam(value = "packageKey", required = true)
+        packageKey: String,
+        @RequestParam(required = true)
+        @ApiParam(value = "version", required = true)
+        version: String
     ): Response<Boolean>
 
     @ApiOperation("获取镜像tag下的详情")
@@ -160,8 +164,11 @@ interface User {
         @PathVariable
         @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
-        @PathVariable
-        @ApiParam(value = DOCKER_TAG, required = true)
-        tag: String
+        @RequestParam(required = true)
+        @ApiParam(value = "packageKey", required = true)
+        packageKey: String,
+        @RequestParam(required = true)
+        @ApiParam(value = "version", required = true)
+        version: String
     ): Response<Map<String, Any>?>
 }

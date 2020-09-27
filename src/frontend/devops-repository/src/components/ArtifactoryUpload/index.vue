@@ -5,10 +5,10 @@
                 <icon name="file" size="48"></icon>
                 <span>{{ file.size }}</span>
             </div>
-            <div class="ml20 mr40 upload-file-info">
-                <bk-form :label-width="100" :model="file" :rules="rules" ref="fileName">
+            <div class="ml20 mr20 upload-file-info">
+                <bk-form :label-width="80" :model="file" :rules="rules" ref="fileName">
                     <bk-form-item :label="$t('fileName')" :required="true" :property="'name'" error-display-type="normal">
-                        <bk-input :disabled="Boolean(progress)" v-model="file.name"></bk-input>
+                        <bk-input :placeholder="$t('folderNamePlacehodler')" :disabled="Boolean(progress)" v-model="file.name"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('overwrite')" :required="true" :property="'overwrite'">
                         <bk-radio-group v-model="file.overwrite">
