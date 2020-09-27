@@ -10,9 +10,11 @@ data class DownloadStatisticsMetricResponse(
     val projectId: String,
     @ApiModelProperty("所属仓库名称")
     val repoName: String,
-    @ApiModelProperty("构建名称")
-    val artifact: String,
-    @ApiModelProperty("构建版本")
+    @ApiModelProperty("包唯一Key")
+    val packageKey: String,
+    // @ApiModelProperty("包名称")
+    // val name: String,
+    @ApiModelProperty("包版本")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     val version: String?,
     @ApiModelProperty("时间段下载量")

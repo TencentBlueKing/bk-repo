@@ -7,8 +7,10 @@ import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetric
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
-import com.tencent.bkrepo.repository.service.DownloadStatisticsService
+import com.tencent.bkrepo.repository.service.PackageDownloadStatisticsService
+import com.tencent.bkrepo.repository.service.PackageService
 import com.tencent.bkrepo.repository.service.RepositoryService
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.aggregation.Aggregation
@@ -17,24 +19,23 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
-import java.time.temporal.TemporalAdjusters.lastDayOfMonth
 
-/**
- * 下载统计服务实现类
- */
 @Service
-class DownloadStatisticsServiceImpl(
-    private val repositoryService: RepositoryService
-) : AbstractService(), DownloadStatisticsService {
+class PackageDownloadStatisticsServiceImpl(
+    private val repositoryService: RepositoryService,
+    private val packageService: PackageService
+) : AbstractService(), PackageDownloadStatisticsService {
 
-    @Transactional(rollbackFor = [Throwable::class])
     override fun add(statisticsAddRequest: DownloadStatisticsAddRequest) {
-        with(statisticsAddRequest) {
-            val criteria = criteria(projectId, repoName, artifact, version)
+        with(statisticsAddRequest){
+            // 维护 package 和 version 数据
+            packageService.addDownloadMetric(projectId, repoName, packageKey, version)
+            // 维护 package_download_statistics 表
+            val criteria = criteria(projectId, repoName, packageKey, version)
+                .and(TDownloadStatistics::name.name).`is`(name)
                 .and(TDownloadStatistics::date.name).`is`(LocalDate.now())
             val query = Query(criteria)
             val update = Update().inc(TDownloadStatistics::count.name, 1)
@@ -45,7 +46,6 @@ class DownloadStatisticsServiceImpl(
                 logger.warn("DuplicateKeyException: " + exception.message.orEmpty())
                 mongoTemplate.upsert(query, update, TDownloadStatistics::class.java)
             }
-
             logger.info("Create artifact download statistics [$statisticsAddRequest] success.")
         }
     }
@@ -53,83 +53,68 @@ class DownloadStatisticsServiceImpl(
     override fun query(
         projectId: String,
         repoName: String,
-        artifact: String,
+        packageKey: String,
         version: String?,
-        startDate: LocalDate?,
-        endDate: LocalDate?
+        startDay: LocalDate?,
+        endDay: LocalDate?
     ): DownloadStatisticsResponse {
-        artifact.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "artifact")
+        logger.info("query package download metric request: [projectId: $projectId, repoName: $repoName, packageKey: $packageKey, version: $version, startDay: $startDay, endDay: $endDay].")
+        packageKey.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(
+            CommonMessageCode.PARAMETER_MISSING,
+            "packageKey"
+        )
         repositoryService.checkRepository(projectId, repoName)
-        val criteria = criteria(projectId, repoName, artifact, version)
-        if (startDate != null && endDate != null) {
-            criteria.and(TDownloadStatistics::date.name).lte(endDate).gte(startDate)
+
+        val criteria = criteria(projectId, repoName, packageKey, version)
+        if (startDay != null && endDay != null) {
+            criteria.and(TDownloadStatistics::date.name).lte(endDay).gte(startDay)
         } else {
-            startDate?.let { criteria.and(TDownloadStatistics::date.name).gte(it) }
-            endDate?.let { criteria.and(TDownloadStatistics::date.name).lte(it) }
+            startDay?.let { criteria.and(TDownloadStatistics::date.name).gte(it) }
+            endDay?.let { criteria.and(TDownloadStatistics::date.name).lte(it) }
         }
         val aggregation = Aggregation.newAggregation(
             Aggregation.match(criteria),
             Aggregation.group().sum(TDownloadStatistics::count.name).`as`(DownloadStatisticsResponse::count.name)
         )
         val aggregateResult = mongoTemplate.aggregate(aggregation, TDownloadStatistics::class.java, HashMap::class.java)
-        val count = if (aggregateResult.mappedResults.size > 0) {
-            aggregateResult.mappedResults[0][DownloadStatisticsResponse::count.name] as? Int ?: 0
-        } else 0
-        return DownloadStatisticsResponse(projectId, repoName, artifact, version, count)
+        val count = getAggregateCount(aggregateResult)
+        return DownloadStatisticsResponse(projectId, repoName, packageKey, version, count)
     }
 
     override fun queryForSpecial(
         projectId: String,
         repoName: String,
-        artifact: String,
-        version: String?
+        packageKey: String
     ): DownloadStatisticsMetricResponse {
-        artifact.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "artifact")
+        logger.info("query package download metric for special date period request: [projectId: $projectId, repoName: $repoName, packageKey: $packageKey].")
+        packageKey.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(
+            CommonMessageCode.PARAMETER_MISSING,
+            "packageKey"
+        )
         repositoryService.checkRepository(projectId, repoName)
         val today = LocalDate.now()
-        val monthCount = queryMonthDownloadCount(projectId, repoName, artifact, version, today)
-        if (monthCount == 0) {
-            val dayCount = listOf(
-                DownloadStatisticsMetric(
-                    "month",
-                    0
-                ),
-                DownloadStatisticsMetric("week", 0),
-                DownloadStatisticsMetric("today", 0)
-            )
-            return DownloadStatisticsMetricResponse(projectId, repoName, artifact, version, dayCount)
+        val monthCount = queryMonthDownloadCount(projectId, repoName, packageKey, today)
+        if (monthCount.toInt() == 0) {
+            val statisticsMetricsList = buildStatisticsMetrics(0, 0, 0)
+            return DownloadStatisticsMetricResponse(projectId, repoName, packageKey, null, statisticsMetricsList)
         }
-        val weekCount = queryWeekDownloadCount(projectId, repoName, artifact, version, today)
-        val todayCount = queryTodayDownloadCount(projectId, repoName, artifact, version, today)
-        val dayCount = listOf(
-            DownloadStatisticsMetric(
-                "month",
-                monthCount
-            ),
-            DownloadStatisticsMetric(
-                "week",
-                weekCount
-            ),
-            DownloadStatisticsMetric(
-                "today",
-                todayCount
-            )
-        )
-        return DownloadStatisticsMetricResponse(projectId, repoName, artifact, version, dayCount)
+        val weekCount = queryWeekDownloadCount(projectId, repoName, packageKey, today)
+        val todayCount = queryTodayDownloadCount(projectId, repoName, packageKey, today)
+        val statisticsMetricsList = buildStatisticsMetrics(monthCount, weekCount, todayCount)
+        return DownloadStatisticsMetricResponse(projectId, repoName, packageKey, null, statisticsMetricsList)
     }
 
     override fun queryMonthDownloadCount(
         projectId: String,
         repoName: String,
-        artifact: String,
-        version: String?,
+        packageId: String,
         today: LocalDate
-    ): Int {
+    ): Long {
         val firstDayOfThisMonth = today.with(TemporalAdjusters.firstDayOfMonth())
-        val lastDayOfThisMonth = today.with(lastDayOfMonth())
+        val lastDayOfThisMonth = today.with(TemporalAdjusters.lastDayOfMonth())
         val monthCriteria =
-            criteria(projectId, repoName, artifact, version).and(TDownloadStatistics::date.name)
-                .gte(firstDayOfThisMonth).lte(lastDayOfThisMonth)
+            criteria(projectId, repoName, packageId)
+                .and(TDownloadStatistics::date.name).gte(firstDayOfThisMonth).lte(lastDayOfThisMonth)
         val monthAggregation = Aggregation.newAggregation(
             Aggregation.match(monthCriteria),
             Aggregation.group().sum(TDownloadStatistics::count.name).`as`(DownloadStatisticsMetric::count.name)
@@ -142,16 +127,15 @@ class DownloadStatisticsServiceImpl(
     override fun queryWeekDownloadCount(
         projectId: String,
         repoName: String,
-        artifact: String,
-        version: String?,
+        packageId: String,
         today: LocalDate
-    ): Int {
+    ): Long {
         val firstDayOfWeek =
             today.with(TemporalAdjusters.ofDateAdjuster { localDate -> localDate.minusDays(localDate.dayOfWeek.value - DayOfWeek.MONDAY.value.toLong()) })
         val lastDayOfWeek =
             today.with(TemporalAdjusters.ofDateAdjuster { localDate -> localDate.plusDays(DayOfWeek.SUNDAY.value.toLong() - localDate.dayOfWeek.value) })
         val weekCriteria =
-            criteria(projectId, repoName, artifact, version).and(TDownloadStatistics::date.name)
+            criteria(projectId, repoName, packageId).and(TDownloadStatistics::date.name)
                 .gte(firstDayOfWeek).lte(lastDayOfWeek)
         val weekAggregation = Aggregation.newAggregation(
             Aggregation.match(weekCriteria),
@@ -165,12 +149,11 @@ class DownloadStatisticsServiceImpl(
     override fun queryTodayDownloadCount(
         projectId: String,
         repoName: String,
-        artifact: String,
-        version: String?,
+        packageId: String,
         today: LocalDate
-    ): Int {
+    ): Long {
         val todayCriteria =
-            criteria(projectId, repoName, artifact, version).and(TDownloadStatistics::date.name)
+            criteria(projectId, repoName, packageId).and(TDownloadStatistics::date.name)
                 .`is`(today)
         val todayAggregation = Aggregation.newAggregation(
             Aggregation.match(todayCriteria),
@@ -181,22 +164,44 @@ class DownloadStatisticsServiceImpl(
         return getAggregateCount(todayResult)
     }
 
-    private fun getAggregateCount(aggregateResult: AggregationResults<java.util.HashMap<*, *>>): Int {
-        return if (aggregateResult.mappedResults.size > 0) {
-            aggregateResult.mappedResults[0][DownloadStatisticsMetric::count.name] as? Int ?: 0
-        } else 0
-    }
-
-    private fun criteria(projectId: String, repoName: String, artifact: String, version: String?): Criteria {
+    private fun criteria(projectId: String, repoName: String, packageKey: String, version: String? = null): Criteria {
         return Criteria.where(TDownloadStatistics::projectId.name).`is`(projectId)
             .and(TDownloadStatistics::repoName.name).`is`(repoName)
-            .and(TDownloadStatistics::artifact.name).`is`(artifact)
+            .and(TDownloadStatistics::key.name).`is`(packageKey)
             .apply {
                 version?.let { and(TDownloadStatistics::version.name).`is`(it) }
             }
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DownloadStatisticsServiceImpl::class.java)
+
+        private val logger: Logger = LoggerFactory.getLogger(PackageDownloadStatisticsServiceImpl::class.java)
+
+        fun getAggregateCount(aggregateResult: AggregationResults<java.util.HashMap<*, *>>): Long {
+            return if (aggregateResult.mappedResults.size > 0) {
+                (aggregateResult.mappedResults[0][DownloadStatisticsMetric::count.name] as? Int)?.toLong() ?: 0
+            } else 0
+        }
+
+        fun buildStatisticsMetrics(
+            monthCount: Long,
+            weekCount: Long,
+            todayCount: Long
+        ): List<DownloadStatisticsMetric> {
+            return listOf(
+                DownloadStatisticsMetric(
+                    "month download statistics metric:",
+                    monthCount
+                ),
+                DownloadStatisticsMetric(
+                    "week download statistics metric:",
+                    weekCount
+                ),
+                DownloadStatisticsMetric(
+                    "today download statistics metric:",
+                    todayCount
+                )
+            )
+        }
     }
 }

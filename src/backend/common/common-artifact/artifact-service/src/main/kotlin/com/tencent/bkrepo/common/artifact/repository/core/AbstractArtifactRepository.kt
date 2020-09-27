@@ -17,7 +17,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
 import com.tencent.bkrepo.common.security.http.SecurityUtils
-import com.tencent.bkrepo.repository.api.DownloadStatisticsClient
+import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,7 +38,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     lateinit var publisher: ApplicationEventPublisher
 
     @Autowired
-    lateinit var downloadStatisticsClient: DownloadStatisticsClient
+    lateinit var packageDownloadStatisticsClient: PackageDownloadStatisticsClient
 
     @Resource
     private lateinit var taskAsyncExecutor: Executor
@@ -157,18 +157,20 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     open fun onDownloadSuccess(context: ArtifactDownloadContext, artifactResource: ArtifactResource) {
         artifactMetrics.downloadedCounter.increment()
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
-            taskAsyncExecutor.execute {
-                downloadStatisticsClient.add(
-                    DownloadStatisticsAddRequest(
-                        context.artifactInfo.projectId,
-                        context.artifactInfo.repoName,
-                        context.artifactInfo.getArtifactName(),
-                        context.artifactInfo.getArtifactVersion()
-                    )
-                )
+            buildDownloadRecord(context, artifactResource)?.let {
+                taskAsyncExecutor.execute { packageDownloadStatisticsClient.add(it) }
             }
         }
         logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success")
+    }
+
+    /**
+     * 构造下载记录
+     *
+     * 各依赖源自行判断是否需要增加下载记录，如果返回空则不记录
+     */
+    open fun buildDownloadRecord(context: ArtifactDownloadContext, artifactResource: ArtifactResource): DownloadStatisticsAddRequest? {
+        return null
     }
 
     /**

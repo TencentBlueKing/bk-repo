@@ -13,8 +13,8 @@ import kotlin.concurrent.thread
 
 @DisplayName("下载统计服务测试")
 @DataMongoTest
-class DownloadStatisticsServiceTest @Autowired constructor(
-    private val downloadStatisticsService: DownloadStatisticsService
+class PackageDownloadStatisticsServiceTest @Autowired constructor(
+    private val packageDownloadStatisticsService: PackageDownloadStatisticsService
 ) : ServiceBaseTest() {
 
     @MockBean
@@ -29,24 +29,25 @@ class DownloadStatisticsServiceTest @Autowired constructor(
         val request = DownloadStatisticsAddRequest(
             "test",
             "npm-local",
+            "npm://helloworld-npm-publish",
             "helloworld-npm-publish",
-            null
+            "1.0.0"
         )
         repeat(count) {
             val thread = thread {
                 cyclicBarrier.await()
-                downloadStatisticsService.add(request)
+                packageDownloadStatisticsService.add(request)
             }
             threadList.add(thread)
         }
         threadList.forEach { it.join() }
-        val result = downloadStatisticsService.query(
+        val result = packageDownloadStatisticsService.query(
             projectId = "test",
             repoName = "npm-local",
-            artifact = "helloworld-npm-publish",
+            packageKey = "npm://helloworld-npm-publish",
             version = null,
-            startDate = LocalDate.now(),
-            endDate = LocalDate.now()
+            startDay = LocalDate.now(),
+            endDay = LocalDate.now()
         )
         Assertions.assertEquals(count, result.count)
     }
@@ -54,14 +55,14 @@ class DownloadStatisticsServiceTest @Autowired constructor(
     @Test
     @DisplayName("查询下载量相关测试")
     fun testQueryForSpecial() {
-        downloadStatisticsService.queryForSpecial("test", "npm-local", "helloworld-npm-publish", null)
+        packageDownloadStatisticsService.queryForSpecial("test", "npm-local", "npm://helloworld-npm-publish")
     }
 
     @Test
     @DisplayName("查询下载量相关测试")
     fun testQuery() {
-        downloadStatisticsService.query(
-            "test", "npm-local", "helloworld-npm-publish", null, LocalDate.now().minusDays(1),
+        packageDownloadStatisticsService.query(
+            "test", "npm-local", "npm://helloworld-npm-publish", null, LocalDate.now().minusDays(1),
             LocalDate.now().plusDays(5)
         )
     }
