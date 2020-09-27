@@ -1,17 +1,20 @@
 <template>
     <div class="repo-search-container">
         <header class="repo-search-header">
-            <icon size="24" :name="$route.query.type"></icon>
-            <span class="mr5 ml10 hover-btn" @click="goBack">{{$route.query.name}}</span>
-            <i class="devops-icon icon-angle-right"></i>
-            <span class="ml5">{{$t('searchForPkg')}}</span>
+            <div class="flex-align-center">
+                <icon size="24" :name="$route.query.type"></icon>
+                <span class="mr5 ml10 hover-btn" @click="goBack">{{$route.query.name}}</span>
+                <i class="devops-icon icon-angle-right"></i>
+                <span class="ml5">{{$t('searchForPkg')}}</span>
+            </div>
+            <icon class="hover-btn" name="filter" size="16" @click.native="showRepoSearch = !showRepoSearch"></icon>
         </header>
-        <div class="repo-search-main flex-column">
+        <div class="repo-search-main flex-column" v-if="showRepoSearch">
             <div>
                 <bk-input
                     class="mr20 file-name-search"
-                    v-model="fileNameInput"
-                    :placeholder="$t('pleaseInput') + $t('file') + $t('name')"
+                    v-model="packageNameInput"
+                    :placeholder="$t('pleaseInput') + $t('packageName')"
                     clearable>
                 </bk-input>
                 <bk-button :loading="isLoading" theme="primary" @click="searchHandler">{{$t('search')}}</bk-button>
@@ -30,25 +33,27 @@
                 </bk-radio-group>
             </div>
         </div>
-        <main class="repo-search-result flex-column" v-bkloading="{ isLoading }">
+        <main class="repo-search-result flex-column" v-bkloading="{ isLoading }"
+            :style="{
+                height: `calc(100% - ${showRepoSearch ? 300 : 80}px)`
+            }">
             <template v-if="resultList.length">
                 <main class="mb10 result-list">
-                    <div class="hover-btn result-item"
+                    <div class="hover-btn flex-column result-item"
                         @click="toRepoDetail(result)"
                         v-for="result in resultList"
-                        :key="result.repoName + result.fullPath">
-                        <div class="mb10 flex-align-center">
-                            <icon size="24" :name="repoType" />
-                            <span class="ml20 mr20 result-repo-name">{{result.repoName}}</span>
-                            <template v-if="repoType !== 'generic'">
-                                <span class="mr5 repo-tag" v-for="tag in result.stageTag" :key="tag + result.repoName + result.fullPath">
-                                    {{tag}}
-                                </span>
-                            </template>
+                        :key="result.repoName + result.key">
+                        <div class="flex-align-center">
+                            <icon size="20" :name="repoType" />
+                            <span class="ml20 mr20 result-repo-name">{{result.name}}</span>
+                            <span> ({{result.repoName}})</span>
                         </div>
-                        <div class="flex-column-center">
-                            <span class="mr20">{{new Date(result.lastModifiedDate).toLocaleString()}}</span>
-                            <span class="result-path">{{result.fullPath}}</span>
+                        <div class="result-card flex-align-center">
+                            <div>{{ `${$t('latestVersion')}: ${result.latest}` }}</div>
+                            <div>{{ `${$t('versionCount')}: ${result.versions}` }}</div>
+                            <div>{{ `${$t('downloadCount')}: ${result.downloads}` }}</div>
+                            <div>{{ `${$t('lastModifiedDate')}: ${new Date(result.lastModifiedDate).toLocaleString()}` }}</div>
+                            <div>{{ `${$t('lastModifiedBy')}: ${result.lastModifiedBy}` }}</div>
                         </div>
                     </div>
                 </main>
@@ -77,8 +82,9 @@
         data () {
             return {
                 repoEnum,
+                showRepoSearch: true,
                 isLoading: false,
-                fileNameInput: this.$route.query.file,
+                packageNameInput: this.$route.query.file || '',
                 repoType: this.$route.query.type,
                 pagination: {
                     current: 1,
@@ -106,7 +112,7 @@
                 this.searchPackageList({
                     projectId: this.projectId,
                     repoType: this.repoType,
-                    repoName: this.fileNameInput,
+                    packageName: this.packageNameInput,
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
@@ -118,14 +124,14 @@
             },
             toRepoDetail (file) {
                 this.$router.push({
-                    name: 'repoCommon',
+                    name: 'commonPackage',
                     params: {
                         projectId: this.projectId,
                         repoType: this.repoType
                     },
                     query: {
                         name: file.repoName,
-                        packageKey: file.key
+                        package: file.key
                     }
                 })
             },
@@ -159,6 +165,7 @@
         padding: 0 20px;
         display: flex;
         align-items: center;
+        justify-content: space-between;
         font-size: 14px;
         background-color: white;
     }
@@ -172,8 +179,9 @@
         }
         .repo-type-search {
             margin-top: 15px;
+            margin-bottom: -20px;
             padding-top: 15px;
-            border-top: 2px solid $borderWeightColor;
+            border-top: 1px solid $borderWeightColor;
             .repo-type-radio-group {
                 /deep/ .bk-form-radio-button {
                     margin: 0 20px 20px 0;
@@ -207,28 +215,39 @@
         }
     }
     .repo-search-result {
-        height: calc(100% - 300px);
         margin-top: 20px;
         padding: 20px;
         background-color: white;
         .result-list {
             flex: 1;
             overflow: auto;
+            border-bottom: 1px solid $borderWeightColor;
             .result-item{
-                padding: 10px;
+                justify-content: space-around;
+                padding-left: 15px;
                 margin-bottom: 20px;
+                height: 60px;
+                border: 1px solid $borderWeightColor;
+                border-radius: 5px;
+                background-color: #fdfdfe;
+                cursor: pointer;
+                &:hover {
+                    border-color: $iconPrimaryColor;
+                }
                 .result-repo-name {
                     font-size: 16px;
+                    font-weight: bold;
                 }
-                .result-path {
-                    display: inline-block;
-                    max-width: 250px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                }
-                &:hover {
-                    background-color: #f0f1f5;
+                .result-card {
+                    font-size: 14px;
+                    font-weight: normal;
+                    div {
+                        flex: 1;
+                        padding-right: 60px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
                 }
             }
         }

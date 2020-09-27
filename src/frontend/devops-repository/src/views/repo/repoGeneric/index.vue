@@ -42,12 +42,6 @@
                             </div>
                         </template>
                     </bk-table-column>
-                    <!-- <bk-table-column :label="$t('artiStatus')" width="220">
-                        <template v-if="props.row.stageTag" slot-scope="props">
-                            <span class="mr5 repo-tag" v-for="tag in props.row.stageTag.split(',')"
-                                :key="props.row.fullPath + tag">{{ tag }}</span>
-                        </template>
-                    </bk-table-column> -->
                     <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="200">
                         <template slot-scope="props">{{ new Date(props.row.lastModifiedDate).toLocaleString() }}</template>
                     </bk-table-column>
@@ -88,10 +82,6 @@
                             </bk-button>
                         </template>
                         <template v-if="!selectedRow.folder">
-                            <!-- <bk-button :disabled="(selectedRow.stageTag || '').includes('@release')" @click.stop="handlerTag()" text theme="primary">
-                                <i class="mr5 devops-icon icon-arrows-up"></i>
-                                {{ $t('upgrade') }}
-                            </bk-button> -->
                             <bk-button @click.stop="handlerShare()" text theme="primary">
                                 <i class="mr5 devops-icon icon-none"></i>
                                 {{ $t('share') }}
@@ -134,16 +124,16 @@
                 <bk-tab-panel name="detailInfo" :label="$t('baseInfo')">
                     <div class="detail-info info-area" v-bkloading="{ isLoading: detailSlider.loading }">
                         <div class="flex-center" v-for="key in Object.keys(detailInfoMap)" :key="key">
-                            <template v-if="key !== 'size' || !detailSlider.data.folder">
-                                <span>{{ detailInfoMap[key] }}:</span>
-                                <span class="break-all">{{ detailSlider.data[key] }}</span>
+                            <template v-if="detailSlider.data[key] && (key !== 'size' || !detailSlider.data.folder)">
+                                <span>{{ detailInfoMap[key] }}</span>
+                                <span class="pl40 break-all">{{ detailSlider.data[key] }}</span>
                             </template>
                         </div>
                     </div>
                     <div class="detail-info checksums-area" v-if="!selectedRow.folder" v-bkloading="{ isLoading: detailSlider.loading }">
                         <div class="flex-center" v-for="key of ['sha256', 'md5']" :key="key">
-                            <span>{{ key.toUpperCase() }}:</span>
-                            <span>{{ detailSlider.data[key] }}</span>
+                            <span>{{ key.toUpperCase() }}</span>
+                            <span class="pl40 break-all">{{ detailSlider.data[key] }}</span>
                         </div>
                     </div>
                 </bk-tab-panel>
@@ -171,10 +161,10 @@
             header-position="left">
             <bk-form :label-width="120" :model="formDialog" :rules="rules" ref="formDialog">
                 <template v-if="formDialog.type === 'add'">
-                    <bk-form-item :label="$t('folder') + $t('path')" :required="true">
+                    <bk-form-item :label="$t('folder') + $t('path')">
                         <span class="break-all">{{ selectedRow.fullPath + '/' + formDialog.path }}</span>
                     </bk-form-item>
-                    <bk-form-item property="path" error-display-type="normal">
+                    <bk-form-item :label="$t('createFolderLabel')" :required="true" property="path" error-display-type="normal">
                         <bk-input v-model="formDialog.path" :placeholder="$t('folderNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
@@ -195,14 +185,6 @@
                         <bk-input v-model="formDialog.time" :placeholder="$t('repoNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
-                <!-- <template v-if="formDialog.type === 'tag'">
-                    <bk-form-item :label="$t('upgradeTo')" :required="true" property="tag" error-display-type="normal">
-                        <bk-radio-group v-model="formDialog.tag">
-                            <bk-radio :disabled="!!selectedRow.stageTag" value="@prerelease">@prerelease</bk-radio>
-                            <bk-radio class="ml20" value="@release">@release</bk-radio>
-                        </bk-radio-group>
-                    </bk-form-item>
-                </template> -->
             </bk-form>
             <div slot="footer">
                 <bk-button ext-cls="mr5" :loading="formDialog.loading" theme="primary" @click.stop.prevent="submitFormDialog">{{$t('submit')}}</bk-button>
@@ -348,16 +330,6 @@
                     loading: false,
                     data: {}
                 },
-                // detailInfoMap
-                detailInfoMap: {
-                    'name': 'Name',
-                    'fullPath': 'Path',
-                    'size': 'Size',
-                    'createdBy': 'Created User',
-                    'createdDate': 'Created Date',
-                    'lastModifiedBy': 'Last Modified User',
-                    'lastModifiedDate': 'Last Modified Date'
-                },
                 // 移动，复制
                 treeDialog: {
                     show: false,
@@ -383,6 +355,16 @@
             },
             repoName () {
                 return this.$route.query.name
+            },
+            detailInfoMap () {
+                return {
+                    'fullPath': this.$t('path'),
+                    'size': this.$t('size'),
+                    'createdBy': this.$t('createdBy'),
+                    'createdDate': this.$t('createdDate'),
+                    'lastModifiedBy': this.$t('lastModifiedBy'),
+                    'lastModifiedDate': this.$t('lastModifiedDate')
+                }
             }
         },
         watch: {
@@ -395,13 +377,18 @@
                 this.selectedRow.element && this.selectedRow.element.classList.remove('selected-row')
                 this.selectedRow = this.selectedTreeNode
                 this.handlerPaginationChange()
+                this.setBreadcrumb()
             }
         },
         created () {
             this.initPage()
+            this.setBreadcrumb()
+        },
+        beforeDestroy () {
+            this.SET_BREADCRUMB([])
         },
         methods: {
-            ...mapMutations(['INIT_TREE']),
+            ...mapMutations(['INIT_TREE', 'SET_BREADCRUMB']),
             ...mapActions([
                 'getNodeDetail',
                 'getFolderList',
@@ -586,17 +573,6 @@
                     time: 1
                 }
             },
-            // 制品晋级
-            // handlerTag () {
-            //     this.formDialog = {
-            //         ...this.formDialog,
-            //         show: true,
-            //         loading: false,
-            //         type: 'tag',
-            //         title: `${this.$t('upgrade')} (${this.selectedRow.name})`,
-            //         tag: ''
-            //     }
-            // },
             async submitFormDialog () {
                 await this.$refs.formDialog.validate()
                 this.formDialog.loading = true
@@ -665,14 +641,6 @@
                     }
                 })
             },
-            // submitTag () {
-            //     return this.changeStageTag({
-            //         projectId: this.projectId,
-            //         repoName: this.repoName,
-            //         fullPath: this.selectedRow.fullPath,
-            //         tag: this.formDialog.tag
-            //     })
-            // },
             async deleteRes () {
                 this.$bkInfo({
                     title: `${this.$t('confirm') + this.$t('delete')}${this.selectedRow.folder ? this.$t('folder') : this.$t('file')} ${this.selectedRow.name} ？`,
@@ -805,6 +773,23 @@
                 }).finally(() => {
                     this.$set(row, 'sizeLoading', false)
                 })
+            },
+            setBreadcrumb () {
+                const breadcrumb = []
+                let node = this.genericTree[0].children
+                const road = this.selectedTreeNode.roadMap.split(',')
+                road.shift()
+                road.forEach(index => {
+                    breadcrumb.push({
+                        name: node[index].name,
+                        value: node[index],
+                        cilckHandler: item => {
+                            this.selectedTreeNode = item.value
+                        }
+                    })
+                    node = node[index].children
+                })
+                this.SET_BREADCRUMB(breadcrumb)
             }
         }
     }
@@ -838,12 +823,12 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                max-width: 400px;
+                max-width: 250px;
             }
         }
     }
     .repo-generic-actions {
-        width: 300px;
+        width: 200px;
         .detail-btn {
             margin: 40px 20px 20px;
             width: calc(100% - 40px);
@@ -862,8 +847,8 @@
         margin-top: 40px;
         border: 1px solid $borderWeightColor;
         span {
-            padding: 10px;
-            flex: 3;
+            padding: 10px 0;
+            flex: 4;
             &:first-child {
                 flex: 1;
                 display: flex;

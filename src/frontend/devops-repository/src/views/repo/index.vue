@@ -5,7 +5,7 @@
                 @repo-change="repoChange"
                 @repo-click="repoChange"
                 :repo-name="repoName"
-                :has-click="Boolean(breadcrumb.length)"
+                :has-click="repoType !== 'generic' && Boolean(breadcrumb.length)"
                 :repo-list="repoList">
             </repo-select>
             <breadcrumb

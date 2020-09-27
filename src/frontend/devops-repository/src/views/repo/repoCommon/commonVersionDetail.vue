@@ -24,44 +24,11 @@
                 <div class="base-info">
                     <header class="base-info-header">{{ $t('baseInfo') }}</header>
                     <div class="mt20 flex-column">
-                        <div v-if="detail.basic.tag" class="mt20 flex-align-center">
-                            <span class="display-key">tag</span>
-                            <span class="display-value">{{ detail.basic.tag }}</span>
-                        </div>
-                        <div v-if="detail.basic.version" class="mt20 flex-align-center">
-                            <span class="display-key">{{ $t('version') }}</span>
-                            <span class="display-value">
-                                {{ detail.basic.version }}
-                                <template v-if="detail.basic.stageTag">
-                                    <span class="ml5 repo-tag" v-for="tag in detail.basic.stageTag" :key="tag">
-                                        {{ tag }}
-                                    </span>
-                                </template>
-                            </span>
-                        </div>
-                        <div v-if="detail.basic.os" class="mt20 flex-align-center">
-                            <span class="display-key">OS/ARCH</span>
-                            <span class="display-value">{{ detail.basic.os }}</span>
-                        </div>
-                        <div class="mt20 flex-align-center">
-                            <span class="display-key">{{ $t('size') }}</span>
-                            <span class="display-value">{{ convertFileSize(detail.basic.size) }}</span>
-                        </div>
-                        <div class="mt20 flex-align-center">
-                            <span class="display-key">{{ $t('path') }}</span>
-                            <span class="display-value">{{ detail.basic.path || detail.basic.fullPath }}</span>
-                        </div>
-                        <div class="mt20 flex-align-center">
-                            <span class="display-key">{{ $t('downloadCount') }}</span>
-                            <span class="display-value">{{ detail.basic.downloadCount }}</span>
-                        </div>
-                        <div class="mt20 flex-align-center">
-                            <span class="display-key">{{ $t('lastModifiedDate') }}</span>
-                            <span class="display-value">{{ new Date(detail.basic.lastModifiedDate).toLocaleString() }}</span>
-                        </div>
-                        <div class="mt20 flex-align-center">
-                            <span class="display-key">{{ $t('lastModifiedBy') }}</span>
-                            <span class="display-value">{{ detail.basic.lastModifiedBy }}</span>
+                        <div v-for="key in Object.keys(detailInfoMap)" :key="key">
+                            <div class="mt20 flex-align-center" v-if="detail.basic[key]">
+                                <span class="display-key">{{ detailInfoMap[key] }}</span>
+                                <span class="display-value">{{ detail.basic[key] }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -173,6 +140,21 @@
                     'limit-list': [10, 20, 40]
                 },
                 selectedHistory: {}
+            }
+        },
+        computed: {
+            detailInfoMap () {
+                return {
+                    'tag': 'Tag',
+                    'version': this.$t('version'),
+                    'os': 'OS/ARCH',
+                    'fullPath': this.$t('path'),
+                    'size': this.$t('size'),
+                    'createdBy': this.$t('createdBy'),
+                    'createdDate': this.$t('createdDate'),
+                    'lastModifiedBy': this.$t('lastModifiedBy'),
+                    'lastModifiedDate': this.$t('lastModifiedDate')
+                }
             }
         },
         created () {
