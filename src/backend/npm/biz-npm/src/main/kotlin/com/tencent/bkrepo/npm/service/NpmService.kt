@@ -18,6 +18,7 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.async.NpmDependentHandler
+import com.tencent.bkrepo.npm.async.PackageHandler
 import com.tencent.bkrepo.npm.constants.APPLICATION_OCTET_STEAM
 import com.tencent.bkrepo.npm.constants.ATTACHMENTS
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
@@ -61,6 +62,7 @@ import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.GsonUtils
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -75,7 +77,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class NpmService @Autowired constructor(
     private val npmDependentHandler: NpmDependentHandler,
-    private val metadataClient: MetadataClient
+    private val metadataClient: MetadataClient,
+    private val packageHandler: PackageHandler
 ) {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -92,6 +95,7 @@ class NpmService @Autowired constructor(
             // 上传构件
             ArtifactContextHolder.getRepository().upload(context)
             npmDependentHandler.updatePkgDepts(userId, artifactInfo, jsonObj, NpmOperationAction.PUBLISH)
+            packageHandler.createVersion(userId, artifactInfo, jsonObj)
             NpmSuccessResponse.createEntitySuccess()
         } else {
             unPublishOperation(artifactInfo, jsonObj)
@@ -198,7 +202,7 @@ class NpmService @Autowired constructor(
     }
 
     /**
-     * 获取文件模块相关信息，最后将文件信息移除（data量容易过大）
+     * 获取文件模块相关信息
      */
     private fun getAttachmentsInfo(jsonObj: JsonObject, context: ArtifactUploadContext): JsonObject {
         val distTags = getDistTags(jsonObj)!!
@@ -208,7 +212,7 @@ class NpmService @Autowired constructor(
         val mutableMap = jsonObj.getAsJsonObject(ATTACHMENTS).getAsJsonObject(attachKey)
         context.putAttribute(NPM_PKG_TGZ_FILE_FULL_PATH, String.format(NPM_PKG_TGZ_FULL_PATH, name, name, distTags.second))
         context.putAttribute(APPLICATION_OCTET_STEAM, mutableMap.get(CONTENT_TYPE).asString)
-        jsonObj.remove(ATTACHMENTS)
+        // jsonObj.remove(ATTACHMENTS)
         return mutableMap
     }
 
@@ -272,15 +276,13 @@ class NpmService @Autowired constructor(
         val pkgInfo = searchPackageInfo(artifactInfo)
             ?: throw NpmArtifactNotFoundException("document not found")
         val name = pkgInfo[NAME].asString
-        pkgInfo.getAsJsonObject(VERSIONS).keySet().forEach { version ->
-            fullPathList.add(String.format(NPM_PKG_VERSION_METADATA_FULL_PATH, name, name, version))
-            fullPathList.add(String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version))
-        }
-        fullPathList.add(String.format(NPM_PKG_METADATA_FULL_PATH, name))
+        fullPathList.add(".npm/$name")
+        fullPathList.add(name)
         val context = ArtifactRemoveContext()
         context.putAttribute(NPM_FILE_FULL_PATH, fullPathList)
         ArtifactContextHolder.getRepository().remove(context)
         npmDependentHandler.updatePkgDepts(userId, artifactInfo, pkgInfo, NpmOperationAction.UNPUBLISH)
+        packageHandler.deletePackage(userId, name, artifactInfo)
         return NpmDeleteResponse(true, name, REV_VALUE)
     }
 
@@ -301,17 +303,18 @@ class NpmService @Autowired constructor(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    fun unPublishPkgWithVersion(artifactInfo: NpmArtifactInfo): NpmDeleteResponse {
+    fun unPublishPkgWithVersion(userId: String, artifactInfo: NpmArtifactInfo, name: String, version: String): NpmDeleteResponse {
         val fullPathList = mutableListOf<String>()
-        val artifactUri = artifactInfo.artifactUri.substringAfterLast("/-/").substringBeforeLast("/-rev")
-        val pkgName = artifactUri.substringBeforeLast('-')
-        fullPathList.add("/$pkgName/-/$artifactUri")
-        fullPathList.add("/.npm/$pkgName/${artifactUri.replace(".tgz", ".json")}")
+        val tgzFileName = String.format("%s-%s.tgz", name, version)
+        fullPathList.add(NpmUtils.getTgzPath(name, version))
+        fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, version))
         val context = ArtifactRemoveContext()
         context.putAttribute(NPM_FILE_FULL_PATH, fullPathList)
         ArtifactContextHolder.getRepository().remove(context)
-        logger.info("delete package $artifactUri success")
-        return NpmDeleteResponse(true, artifactUri, REV_VALUE)
+        logger.info("user: [$userId] delete package $tgzFileName success")
+        // 删除包管理中对应的version
+        packageHandler.deleteVersion(userId, name, version, artifactInfo)
+        return NpmDeleteResponse(true, tgzFileName, REV_VALUE)
     }
 
     /**
