@@ -49,9 +49,9 @@ export default {
         )
     },
     // 查询仓库信息
-    getRepoInfo (_, { projectId, name, type }) {
+    getRepoInfo (_, { projectId, repoName, repoType }) {
         return Vue.prototype.$ajax.get(
-            `${prefix}/repo/info/${projectId}/${name}/${type}`
+            `${prefix}/repo/info/${projectId}/${repoName}/${repoType}`
         )
     },
     // 更新仓库信息
@@ -68,9 +68,9 @@ export default {
         )
     },
     // 查询公有源列表
-    getPublicProxy (_, { type }) {
-        return Vue.prototype.$ajax.post(
-            `${prefix}/proxy-channel/list/public/${type}`
+    getPublicProxy (_, { repoType }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/proxy-channel/list/public/${repoType}`
         )
     },
 

@@ -25,7 +25,7 @@
                     <header class="base-info-header">{{ $t('baseInfo') }}</header>
                     <div class="mt20 flex-column">
                         <div v-for="key in Object.keys(detailInfoMap)" :key="key">
-                            <div class="mt20 flex-align-center" v-if="detail.basic[key]">
+                            <div class="mt20 flex-align-center" v-if="detail.basic.hasOwnProperty(key)">
                                 <span class="display-key">{{ detailInfoMap[key] }}</span>
                                 <span class="display-value">{{ detail.basic[key] }}</span>
                             </div>
@@ -150,11 +150,16 @@
                     'os': 'OS/ARCH',
                     'fullPath': this.$t('path'),
                     'size': this.$t('size'),
+                    'downloadCount': this.$t('downloads'),
+                    'downloads': this.$t('downloads'),
                     'createdBy': this.$t('createdBy'),
                     'createdDate': this.$t('createdDate'),
                     'lastModifiedBy': this.$t('lastModifiedBy'),
                     'lastModifiedDate': this.$t('lastModifiedDate')
                 }
+            },
+            dockerDomain () {
+                return this.detail.basic.dockerDomain
             }
         },
         created () {
@@ -184,6 +189,9 @@
                         if (dependents.totalRecords < 20) {
                             this.dependentsPage = 0
                         }
+                    }
+                    if (this.repoType === 'docker') {
+                        this.selectedHistory = res.history[0] || {}
                     }
                 }).finally(() => {
                     this.isLoading = false

@@ -43,7 +43,7 @@
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="200">
-                        <template slot-scope="props">{{ new Date(props.row.lastModifiedDate).toLocaleString() }}</template>
+                        <template slot-scope="props">{{ formatDate(props.row.lastModifiedDate) }}</template>
                     </bk-table-column>
                     <bk-table-column :label="$t('lastModifiedBy')" prop="lastModifiedBy" width="120"></bk-table-column>
                     <bk-table-column :label="$t('size')" width="100">
@@ -113,45 +113,7 @@
             </aside>
         </div>
 
-        <bk-sideslider
-            class="artifactory-side-slider"
-            :is-show.sync="detailSlider.show"
-            :title="detailSlider.data.name"
-            @click.native.stop="() => {}"
-            :quick-close="true"
-            :width="800">
-            <bk-tab class="mt10 ml20 mr20" slot="content" type="unborder-card">
-                <bk-tab-panel name="detailInfo" :label="$t('baseInfo')">
-                    <div class="detail-info info-area" v-bkloading="{ isLoading: detailSlider.loading }">
-                        <div class="flex-center" v-for="key in Object.keys(detailInfoMap)" :key="key">
-                            <template v-if="detailSlider.data[key] && (key !== 'size' || !detailSlider.data.folder)">
-                                <span>{{ detailInfoMap[key] }}</span>
-                                <span class="pl40 break-all">{{ detailSlider.data[key] }}</span>
-                            </template>
-                        </div>
-                    </div>
-                    <div class="detail-info checksums-area" v-if="!selectedRow.folder" v-bkloading="{ isLoading: detailSlider.loading }">
-                        <div class="flex-center" v-for="key of ['sha256', 'md5']" :key="key">
-                            <span>{{ key.toUpperCase() }}</span>
-                            <span class="pl40 break-all">{{ detailSlider.data[key] }}</span>
-                        </div>
-                    </div>
-                </bk-tab-panel>
-                <bk-tab-panel v-if="!selectedRow.folder" name="metaDate" :label="$t('metaData')">
-                    <bk-table
-                        :data="Object.entries(detailSlider.data.metadata || {})"
-                        stripe
-                        :outer-border="false"
-                        :row-border="false"
-                        size="small"
-                    >
-                        <bk-table-column :label="$t('key')" prop="0"></bk-table-column>
-                        <bk-table-column :label="$t('value')" prop="1"></bk-table-column>
-                    </bk-table>
-                </bk-tab-panel>
-            </bk-tab>
-        </bk-sideslider>
-        
+        <genericDetail :detail-slider="detailSlider"></genericDetail>
         <bk-dialog
             v-model="formDialog.show"
             :title="formDialog.title"
@@ -230,7 +192,7 @@
             </artifactory-upload>
             <div slot="footer">
                 <bk-button :loading="uploadDialog.loading" theme="primary" @click="submitUpload">{{ $t('upload') }}</bk-button>
-                <bk-button @click="uploadDialog.show = false">{{ $t('cancel') }}</bk-button>
+                <bk-button @click="cancelUpload">{{ $t('cancel') }}</bk-button>
             </div>
         </bk-dialog>
     </div>
@@ -238,16 +200,15 @@
 <script>
     import RepoTree from '@/components/repoTree'
     import ArtifactoryUpload from '@/components/ArtifactoryUpload'
-    import { convertFileSize } from '@/utils'
+    import genericDetail from './genericDetail'
+    import { convertFileSize, formatDate } from '@/utils'
     import { getIconName } from '@/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
     export default {
         name: 'repoGeneric',
-        components: { RepoTree, ArtifactoryUpload },
+        components: { RepoTree, ArtifactoryUpload, genericDetail },
         data () {
             return {
-                convertFileSize,
-                getIconName,
                 isLoading: false,
                 treeLoading: false,
                 importantSearch: '',
@@ -328,6 +289,7 @@
                 detailSlider: {
                     show: false,
                     loading: false,
+                    folder: false,
                     data: {}
                 },
                 // 移动，复制
@@ -345,7 +307,8 @@
                     loading: false,
                     title: ''
                 },
-                query: null
+                query: null,
+                uploadXHR: null
             }
         },
         computed: {
@@ -355,16 +318,6 @@
             },
             repoName () {
                 return this.$route.query.name
-            },
-            detailInfoMap () {
-                return {
-                    'fullPath': this.$t('path'),
-                    'size': this.$t('size'),
-                    'createdBy': this.$t('createdBy'),
-                    'createdDate': this.$t('createdDate'),
-                    'lastModifiedBy': this.$t('lastModifiedBy'),
-                    'lastModifiedDate': this.$t('lastModifiedDate')
-                }
             }
         },
         watch: {
@@ -388,6 +341,9 @@
             this.SET_BREADCRUMB([])
         },
         methods: {
+            convertFileSize,
+            getIconName,
+            formatDate,
             ...mapMutations(['INIT_TREE', 'SET_BREADCRUMB']),
             ...mapActions([
                 'getNodeDetail',
@@ -526,6 +482,7 @@
                 this.detailSlider = {
                     show: true,
                     loading: true,
+                    folder: this.selectedRow.folder,
                     data: {}
                 }
                 const data = await this.getNodeDetail({
@@ -537,8 +494,8 @@
                     ...data,
                     name: data.name || this.repoName,
                     size: convertFileSize(data.size),
-                    createdDate: new Date(data.createdDate).toLocaleString(),
-                    lastModifiedDate: new Date(data.lastModifiedDate).toLocaleString()
+                    createdDate: formatDate(data.createdDate),
+                    lastModifiedDate: formatDate(data.lastModifiedDate)
                 }
                 this.detailSlider.loading = false
             },
@@ -725,21 +682,23 @@
             async submitUpload () {
                 const { file, progressHandler } = await this.$refs.artifactoryUpload.getFiles()
                 this.uploadDialog.loading = true
-                this.uploadArtifactory(
-                    {
-                        projectId: this.projectId,
-                        repoName: this.repoName,
-                        fullPath: `${this.selectedTreeNode.fullPath}/${file.name}`,
-                        body: file.blob,
-                        progressHandler,
-                        headers: {
-                            'Content-Type': 'application/octet-stream',
-                            'X-BKREPO-OVERWRITE': file.overwrite,
-                            'X-BKREPO-EXPIRES': file.expires
-                        }
+                this.uploadXHR && this.uploadXHR.abort()
+                this.uploadXHR = new XMLHttpRequest()
+                this.uploadArtifactory({
+                    xhr: this.uploadXHR,
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    fullPath: `${this.selectedTreeNode.fullPath}/${file.name}`,
+                    body: file.blob,
+                    progressHandler,
+                    headers: {
+                        'Content-Type': 'application/octet-stream',
+                        'X-BKREPO-OVERWRITE': file.overwrite,
+                        'X-BKREPO-EXPIRES': file.expires
                     }
-                ).then(() => {
+                }).then(() => {
                     this.uploadDialog.show = false
+                    this.uploadXHR = null
                     this.$bkMessage({
                         theme: 'success',
                         message: `${this.$t('upload')} ${file.name} ${this.$t('success')}`
@@ -748,6 +707,11 @@
                 }).finally(() => {
                     this.uploadDialog.loading = false
                 })
+            },
+            cancelUpload () {
+                this.uploadDialog.show = false
+                this.uploadXHR && this.uploadXHR.abort()
+                this.uploadXHR = null
             },
             upoadFailed (file) {
                 this.uploadDialog.loading = false
@@ -759,7 +723,7 @@
             handlerDownload () {
                 window.open(
                     `/web/generic/${this.projectId}/${this.repoName}/${this.selectedRow.fullPath}`,
-                    '_blank'
+                    '_self'
                 )
             },
             calculateFolderSize (row) {
@@ -819,6 +783,9 @@
         .repo-generic-table {
             flex: 1;
             font-size: 0;
+            /deep/ tbody {
+                cursor: pointer;
+            }
             .fine-name {
                 overflow: hidden;
                 text-overflow: ellipsis;

@@ -13,9 +13,9 @@
                 :list="breadcrumb">
             </breadcrumb>
             <div class="repo-detail-tools flex-align-center">
-                <icon class="hover-btn" name="filter" size="16" @click.native="showRepoSearch = !showRepoSearch"></icon>
-                <div v-if="repoType !== 'generic'" class="ml20 hover-btn flex-align-center" @click="handlerShowGuide">
-                    <icon class="mr5" name="hand-guide" size="18"></icon>
+                <icon class="hover-btn" name="filter" size="14" @click.native="showRepoSearch = !showRepoSearch"></icon>
+                <div v-if="repoType !== 'generic'" class="ml10 hover-btn flex-align-center" @click="handlerShowGuide">
+                    <icon class="mr5" name="hand-guide" size="16"></icon>
                     {{$t('guide')}}
                 </div>
             </div>
@@ -177,15 +177,15 @@
     height: 100%;
     .repo-detail-header {
         position: relative;
-        height: 60px;
+        height: 50px;
         padding: 0 20px;
-        font-size: 14px;
         background-color: white;
         z-index: 10; // bk-search-select层级为9
         .repo-detail-breadcrumb {
             flex: 1;
         }
         .repo-detail-tools {
+            font-size: 12px;
             color: $fontWeightColor;
         }
     }

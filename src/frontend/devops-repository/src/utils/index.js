@@ -41,7 +41,7 @@ export function throttleMessage (fn, delay = 1000) {
             fn(messageBody)
             return
         }
-        if (['property', 'defined'].find(ignore => messageBody.message.indexOf(ignore) !== -1)) {
+        if (['property', 'defined'].find(ignore => !messageBody.message || messageBody.message.indexOf(ignore) !== -1)) {
             throw new Error(messageBody.message)
         }
         const now = +new Date()
@@ -49,4 +49,22 @@ export function throttleMessage (fn, delay = 1000) {
         fn(messageBody)
         lastTime = now
     }
+}
+
+function prezero (num) {
+    num = Number(num)
+    if (num < 10) {
+        return '0' + num
+    }
+    return num
+}
+
+export function formatDate (ms) {
+    const time = new Date(ms)
+    return `${time.getFullYear()}-${
+        prezero(time.getMonth() + 1)}-${
+        prezero(time.getDate())} ${
+        prezero(time.getHours())}:${
+        prezero(time.getMinutes())}:${
+        prezero(time.getSeconds())}`
 }

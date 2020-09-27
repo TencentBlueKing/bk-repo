@@ -22,7 +22,7 @@
                         <bk-form :label-width="100">
                             <bk-form-item :label="$t('repoName')">
                                 <div class="flex-align-center">
-                                    <icon size="24" :name="repoBaseInfo.type || repoType" />
+                                    <icon size="24" :name="repoBaseInfo.repoType || repoType" />
                                     <span class="ml10">{{repoBaseInfo.name || repoName}}</span>
                                 </div>
                             </bk-form-item>
@@ -42,7 +42,7 @@
                         </bk-form>
                     </div>
                 </bk-tab-panel>
-                <!-- <bk-tab-panel name="proxyConfig" :label="$t('proxyConfig')" v-if="repoType !== 'generic'">
+                <bk-tab-panel name="proxyConfig" :label="$t('proxyConfig')" v-if="showProxyConfigTab">
                     <span class="proxy-config-tips">{{$t('proxyConfigTips')}}</span>
                     <div class="proxy-item">
                         <div class="proxy-index"></div>
@@ -50,17 +50,17 @@
                         <div class="proxy-address">{{$t('address')}}</div>
                         <div class="proxy-operation">{{$t('operation')}}</div>
                     </div>
-                    <draggable v-model="proxyList" :move="checkMove" :options="{ animation: 200 }">
-                        <div class="proxy-item" v-for="proxy in proxyList" :key="proxy.origin">
+                    <draggable v-model="proxyList" :options="{ animation: 200 }">
+                        <div class="proxy-item" v-for="proxy in proxyList" :key="proxy.name">
                             <div class="proxy-index flex-align-center">
                                 <i class="devops-icon icon-more"></i>
                                 <i class="devops-icon icon-more" style="margin-left:-5px"></i>
                             </div>
-                            <div class="proxy-origin">{{proxy.origin}}</div>
-                            <div class="proxy-address">{{proxy.address}}</div>
+                            <div class="proxy-origin">{{proxy.name}}</div>
+                            <div class="proxy-address">{{proxy.url}}</div>
                             <div class="flex-align-center proxy-operation">
-                                <i class="mr10 devops-icon icon-edit hover-btn" @click.stop.prevent="editProxy(proxy)"></i>
-                                <i class="devops-icon icon-delete hover-btn" @click.stop.prevent="deleteProxy(proxy)"></i>
+                                <i v-if="!proxy.public" class="devops-icon icon-edit hover-btn" @click.stop.prevent="editProxy(proxy)"></i>
+                                <i class="ml10 devops-icon icon-delete hover-btn" @click.stop.prevent="deleteProxy(proxy)"></i>
                             </div>
                         </div>
                     </draggable>
@@ -69,7 +69,7 @@
                         <span>{{$t('addProxy')}}</span>
                     </div>
                     <bk-button class="mt20 ml20" :loading="editProxyData.loading" theme="primary" @click.stop.prevent="saveProxy">{{$t('save')}}</bk-button>
-                </bk-tab-panel> -->
+                </bk-tab-panel>
             </bk-tab>
         </main>
         <bk-dialog
@@ -80,35 +80,45 @@
             :close-icon="false"
         >
             <bk-tab class="repo-config-tab"
-                :active="editProxyData.proxyType"
+                :active.sync="editProxyData.proxyType"
                 @tab-change="proxyTabChange"
                 type="unborder-card">
-                <bk-tab-panel v-for="tab in ['public', 'private']"
-                    :key="tab" :name="tab" :label="$t(`${tab}Proxy`)">
-                    <bk-form :label-width="100" :model="editProxyData" :rules="rules" :ref="tab">
-                        <bk-form-item :label="$t('address')" :required="true" property="address" error-display-type="normal">
-                            <bk-select v-if="tab === 'public'" v-model="editProxyData.address">
+                <bk-tab-panel v-if="editProxyData.type === 'add'" name="publicProxy" :label="$t('publicProxy')">
+                    <bk-form ref="publicProxy" :label-width="100" :model="editProxyData" :rules="rules">
+                        <bk-form-item :label="$t('name')" :required="true" property="channelId" error-display-type="normal">
+                            <bk-select v-model="editProxyData.channelId">
                                 <bk-option
-                                    v-for="option in addressList"
-                                    :key="option"
-                                    :id="option"
-                                    :name="option">
+                                    v-for="option in publicProxy"
+                                    :key="option.channelId"
+                                    :id="option.channelId"
+                                    :name="option.name">
                                 </bk-option>
                             </bk-select>
-                            <bk-input v-else-if="tab === 'private'" v-model="editProxyData.address"></bk-input>
                         </bk-form-item>
-                        <bk-form-item :label="$t('origin')" :required="true" property="origin" error-display-type="normal">
-                            <bk-input v-model="editProxyData.origin"></bk-input>
+                        <bk-form-item :label="$t('address')">
+                            <span>{{ selectedPublicProxy.url || '' }}</span>
                         </bk-form-item>
-                        <bk-form-item v-if="tab === 'private'" :label="$t('ticket')">
-                            <bk-select v-model="editProxyData.ticket">
-                                <bk-option
-                                    v-for="option in [1, 2, 3]"
-                                    :key="option"
-                                    :id="option"
-                                    :name="option">
-                                </bk-option>
-                            </bk-select>
+                    </bk-form>
+                </bk-tab-panel>
+                <bk-tab-panel name="privateProxy" :label="$t('privateProxy')">
+                    <bk-form ref="privateProxy" :label-width="100" :model="editProxyData" :rules="rules">
+                        <bk-form-item :label="$t('privateProxy') + $t('name')" :required="true" property="name" error-display-type="normal">
+                            <bk-input v-model="editProxyData.name"></bk-input>
+                        </bk-form-item>
+                        <bk-form-item :label="$t('privateProxy') + $t('address')" :required="true" property="url" error-display-type="normal">
+                            <bk-input v-model="editProxyData.url"></bk-input>
+                        </bk-form-item>
+                        <bk-form-item :label="$t('ticket')" property="ticket">
+                            <bk-checkbox v-model="editProxyData.ticket"></bk-checkbox>
+                        </bk-form-item>
+                        <bk-form-item v-if="editProxyData.ticket" :label="$t('account')" :required="true" property="username" error-display-type="normal">
+                            <bk-input v-model="editProxyData.username"></bk-input>
+                        </bk-form-item>
+                        <bk-form-item v-if="editProxyData.ticket" :label="$t('password')" :required="true" property="password" error-display-type="normal">
+                            <bk-input v-model="editProxyData.password"></bk-input>
+                        </bk-form-item>
+                        <bk-form-item>
+                            <bk-button text theme="primary" @click="testPrivateProxy">{{$t('test') + $t('privateProxy')}}</bk-button>
                         </bk-form-item>
                     </bk-form>
                 </bk-tab-panel>
@@ -121,83 +131,69 @@
     </div>
 </template>
 <script>
-    // import draggable from 'vuedraggable'
+    import draggable from 'vuedraggable'
     import { mapActions } from 'vuex'
     export default {
         name: 'repoConfig',
-        // components: { draggable },
+        components: { draggable },
         data () {
             return {
                 isLoading: false,
                 repoBaseInfo: {
                     loading: false,
-                    name: this.$route.query.name,
-                    type: this.$route.params.type,
+                    repoName: '',
+                    repoType: '',
                     description: ''
                 },
-                publicProxy: [
-                    {
-                        'id': '5f48b52fdf23460c0e2251e9',
-                        'public': true,
-                        'name': 'maven-center',
-                        'url': 'http://http://center.maven.com',
-                        'repoType': 'MAVEN'
-                    }
-                ],
-                proxyList: [
-                    {
-                        id: 1,
-                        origin: 'cnpm',
-                        address: 'https://registry.npm.taobao.org/',
-                        proxyType: 'public'
-                    },
-                    {
-                        id: 2,
-                        origin: 'npmjs',
-                        address: 'https://registry.npmjs.org/',
-                        proxyType: 'public'
-                    },
-                    {
-                        id: 3,
-                        origin: 'yarn',
-                        address: 'https://registry.yarnpkg.com',
-                        proxyType: 'public'
-                    },
-                    {
-                        id: 4,
-                        origin: 'tencent',
-                        address: 'https://registry.tencent.com',
-                        proxyType: 'private'
-                    },
-                    {
-                        id: 5,
-                        origin: 'canway',
-                        address: 'https://registry.canway.com',
-                        proxyType: 'private'
-                    }
-                ],
-                addressList: ['https://registry.npm.taobao.org/', 'https://registry.yarnpkg.com'],
+                // 公共源
+                publicProxy: [],
+                // 当前仓库的代理源
+                proxyList: [],
                 showProxyDialog: false,
                 editProxyData: {
                     loading: false,
-                    type: '',
-                    origin: '',
-                    address: '',
-                    proxyType: '',
-                    ticket: ''
+                    proxyType: 'publicProxy', // 公有 or 私有
+                    type: '', // 添加 or 编辑
+                    channelId: '',
+                    name: '',
+                    url: '',
+                    ticket: false,
+                    username: '',
+                    password: ''
                 },
                 rules: {
-                    address: [
+                    channelId: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('address'),
+                            message: this.$t('pleaseSelect') + this.$t('publicProxy'),
                             trigger: 'blur'
                         }
                     ],
-                    origin: [
+                    name: [
                         {
                             required: true,
-                            message: this.$t('pleaseInput') + this.$t('origin'),
+                            message: this.$t('pleaseInput') + this.$t('privateProxy') + this.$t('name'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    url: [
+                        {
+                            required: true,
+                            message: this.$t('pleaseInput') + this.$t('privateProxy') + this.$t('address'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    username: [
+                        {
+                            required: true,
+                            message: this.$t('pleaseInput') + this.$t('account'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    password: [
+                        {
+                            required: true,
+                            message: this.$t('pleaseInput') + this.$t('password'),
                             trigger: 'blur'
                         }
                     ]
@@ -212,18 +208,26 @@
                 return this.$route.query.name
             },
             repoType () {
-                return this.$route.params.type
+                return this.$route.params.repoType
+            },
+            showProxyConfigTab () {
+                return !['generic', 'docker'].includes(this.repoType)
+            },
+            selectedPublicProxy () {
+                return this.publicProxy.find(v => v.channelId === this.editProxyData.channelId) || {}
             },
             repoAddress () {
-                return location.origin + `/${this.repoBaseInfo.type}/${this.projectId}/${this.repoBaseInfo.name}/`
+                return location.origin + `/${this.repoBaseInfo.repoType}/${this.projectId}/${this.repoBaseInfo.name}/`
             }
         },
         created () {
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
-            // this.getPublicProxy({ type: this.repoType.toUpperCase() }).then(res => {
-            //     this.publicProxy = res
-            // })
+            this.getPublicProxy({
+                repoType: this.repoType.toUpperCase()
+            }).then(res => {
+                this.publicProxy = res
+            })
         },
         methods: {
             ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getPublicProxy']),
@@ -234,7 +238,11 @@
             },
             toRepoDetail () {
                 this.$router.push({
-                    name: this.repoType,
+                    name: 'commonList',
+                    params: {
+                        projectId: this.projectId,
+                        repoType: this.repoType
+                    },
                     query: {
                         name: this.repoName
                     }
@@ -244,13 +252,14 @@
                 this.isLoading = true
                 this.getRepoInfo({
                     projectId: this.projectId,
-                    name: this.repoName,
-                    type: this.repoType.toUpperCase()
+                    repoName: this.repoName,
+                    repoType: this.repoType.toUpperCase()
                 }).then(res => {
                     this.repoBaseInfo = {
                         ...res,
-                        type: res.type.toLowerCase()
+                        repoType: res.type.toLowerCase()
                     }
+                    this.proxyList = res.configuration.proxy.channelList
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -273,56 +282,99 @@
                     this.repoBaseInfo.loading = false
                 })
             },
-            proxyTabChange (name) {
-                this.editProxyData.proxyType = name
-                this.editProxyData.address = ''
-                this.$refs[this.editProxyData.proxyType][0].clearError()
+            proxyTabChange (name = 'publicProxy') {
+                this.editProxyData = {
+                    ...this.editProxyData,
+                    proxyType: name,
+                    channelId: '',
+                    name: '',
+                    url: '',
+                    ticket: false,
+                    username: '',
+                    password: ''
+                }
+                this.$refs.publicProxy && this.$refs.publicProxy.clearError()
+                this.$refs.privateProxy && this.$refs.privateProxy.clearError()
             },
             addProxy () {
                 this.showProxyDialog = true
+                this.proxyTabChange()
                 this.editProxyData = {
-                    type: 'add',
-                    proxyType: 'public',
-                    origin: '',
-                    address: '',
-                    ticket: ''
+                    ...this.editProxyData,
+                    type: 'add'
                 }
-                this.$refs.public[0].clearError()
             },
             editProxy (row) {
                 this.showProxyDialog = true
+                this.proxyTabChange('privateProxy')
                 this.editProxyData = {
+                    ...this.editProxyData,
+                    ...row,
                     type: 'edit',
-                    ...row
+                    ticket: Boolean(row.username)
                 }
             },
             deleteProxy (row) {
-                this.proxyList.splice(this.proxyList.findIndex(v => v.id === row.id), 1)
+                this.proxyList.splice(this.proxyList.findIndex(v => v.name === row.name), 1)
             },
             async confirmProxyData () {
-                await this.$refs[this.editProxyData.proxyType][0].validate()
-                if (!this.editProxyData.id) {
+                // 添加公有源
+                if (this.editProxyData.type === 'add' && this.editProxyData.proxyType === 'publicProxy') {
+                    await this.$refs.publicProxy.validate()
+                    this.proxyList.push(this.publicProxy.find(v => v.channelId === this.editProxyData.channelId))
+                // 添加私有源
+                } else if (this.editProxyData.type === 'add' && this.editProxyData.proxyType === 'privateProxy') {
+                    await this.$refs.privateProxy.validate()
                     this.proxyList.push({
-                        id: Math.random(),
-                        origin: this.editProxyData.origin,
-                        address: this.editProxyData.address,
-                        proxyType: this.editProxyData.proxyType,
-                        ticket: this.editProxyData.ticket
+                        public: false,
+                        name: this.editProxyData.name,
+                        url: this.editProxyData.url,
+                        ...(this.editProxyData.ticket ? {
+                            username: this.editProxyData.username,
+                            password: this.editProxyData.password
+                        } : {})
                     })
-                } else {
-                    this.proxyList.splice(this.proxyList.findIndex(v => v.id === this.editProxyData.id), 1, {
-                        id: this.editProxyData.id,
-                        origin: this.editProxyData.origin,
-                        address: this.editProxyData.address,
-                        proxyType: this.editProxyData.proxyType,
-                        ticket: this.editProxyData.ticket
+                // 编辑私有源
+                } else if (this.editProxyData.type === 'edit' && this.editProxyData.proxyType === 'privateProxy') {
+                    await this.$refs.privateProxy.validate()
+                    this.proxyList.splice(this.proxyList.findIndex(v => v.name === this.editProxyData.name), 1, {
+                        public: false,
+                        name: this.editProxyData.name,
+                        url: this.editProxyData.url,
+                        ...(this.editProxyData.ticket ? {
+                            username: this.editProxyData.username,
+                            password: this.editProxyData.password
+                        } : {})
                     })
                 }
                 this.cancelProxy()
             },
             cancelProxy () {
                 this.showProxyDialog = false
-                this.$refs[this.editProxyData.proxyType][0].clearError()
+                this.proxyTabChange()
+            },
+            testPrivateProxy () {},
+            saveProxy () {
+                this.editProxyData.loading = true
+                this.updateRepoInfo({
+                    projectId: this.projectId,
+                    name: this.repoName,
+                    body: {
+                        configuration: {
+                            proxy: {
+                                channelList: this.proxyList
+                            }
+                        }
+                    }
+                }).then(res => {
+                    this.getRepoInfoHandler()
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: this.$t('save') + this.$t('success')
+                    })
+                }).finally(() => {
+                    this.editProxyData.loading = false
+                })
             }
         }
     }
@@ -378,7 +430,7 @@
                 .proxy-operation {
                     flex:1;
                     .icon-delete {
-                        font-size: 14px;
+                        font-size: 16px;
                     }
                 }
             }

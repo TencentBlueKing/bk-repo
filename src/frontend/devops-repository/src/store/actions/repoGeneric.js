@@ -144,9 +144,8 @@ export default {
         )
     },
     // 上传文件
-    uploadArtifactory (_, { projectId, repoName, body, progressHandler, fullPath = '', headers = {} }) {
+    uploadArtifactory (_, { xhr, projectId, repoName, body, progressHandler, fullPath = '', headers = {} }) {
         return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest()
             xhr.onreadystatechange = () => {
                 if (xhr.readyState === 4) {
                     if (xhr.status === 200) {

@@ -73,7 +73,7 @@ const routes = [
                 }
             },
             {
-                path: 'repoConfig/:type',
+                path: 'repoConfig/:repoType',
                 name: 'repoConfig',
                 component: repoConfig,
                 meta: {
