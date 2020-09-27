@@ -194,7 +194,7 @@ class DockerV2LocalRepoService @Autowired constructor(
         RepoUtil.loadContext(artifactRepo, context)
         with(context) {
             artifactRepo.getRepoTagList(context, 0, 99999, null).forEach {
-                if (!artifactRepo.deleteByTag(projectId, repoName, artifactName, it.tag)) {
+                if (!artifactRepo.deleteByTag(projectId, repoName, artifactName, it.version)) {
                     return false
                 }
             }
