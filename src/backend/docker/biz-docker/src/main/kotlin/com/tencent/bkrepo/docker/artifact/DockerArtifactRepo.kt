@@ -204,23 +204,28 @@ class DockerArtifactRepo @Autowired constructor(
      */
     fun copy(context: RequestContext, srcPath: String, destPath: String): Boolean {
         logger.debug("user [$userId] start to copy file [$context,$srcPath,$destPath]")
-        with(context) {
-            val copyRequest = NodeCopyRequest(
-                srcProjectId = projectId,
-                srcRepoName = repoName,
-                srcFullPath = srcPath,
-                destProjectId = projectId,
-                destRepoName = repoName,
-                destFullPath = destPath,
-                overwrite = true,
-                operator = userId
-            )
-            val result = nodeClient.copy(copyRequest)
-            if (result.isNotOk()) {
-                logger.error("user [$userId] request [$copyRequest] copy file fail")
-                throw DockerMoveFileFailedException("$srcPath->$destPath")
+        try {
+            with(context) {
+                val copyRequest = NodeCopyRequest(
+                    srcProjectId = projectId,
+                    srcRepoName = repoName,
+                    srcFullPath = srcPath,
+                    destProjectId = projectId,
+                    destRepoName = repoName,
+                    destFullPath = destPath,
+                    overwrite = true,
+                    operator = userId
+                )
+                val result = nodeClient.copy(copyRequest)
+                if (result.isNotOk()) {
+                    logger.error("user [$userId] request [$copyRequest] copy file fail")
+                    throw DockerMoveFileFailedException("$srcPath->$destPath")
+                }
+                return true
             }
-            return true
+        } catch (ignored: Exception) {
+            logger.error("user [$userId] request  copy file exception [$ignored]")
+            throw DockerMoveFileFailedException("$srcPath->$destPath")
         }
     }
 
