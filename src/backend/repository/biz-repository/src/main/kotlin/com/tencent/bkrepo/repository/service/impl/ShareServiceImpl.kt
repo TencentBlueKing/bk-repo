@@ -4,9 +4,10 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.repository.model.TShareRecord
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
@@ -88,8 +89,8 @@ class ShareServiceImpl(
 
     private fun checkNode(projectId: String, repoName: String, fullPath: String) {
         val node = nodeService.detail(projectId, repoName, fullPath)
-        if (node == null || node.folder) {
-            throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+        if (node == null ||node.folder) {
+            throw ArtifactNotFoundException("Artifact[${fullPath}] not found")
         }
     }
 
