@@ -416,6 +416,7 @@
   "message": null,
   "data": {
     "basic": {
+      "domain":"bkrepo.com",
       "size": 2487,
       "version": "v1",
       "lastModifiedBy": "admin",
