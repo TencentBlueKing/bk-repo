@@ -128,7 +128,10 @@ interface User {
         projectId: String,
         @PathVariable
         @ApiParam(value = DOCKER_REPO_NAME, required = true)
-        repoName: String
+        repoName: String,
+        @RequestParam(required = true)
+        @ApiParam(value = "packageKey", required = true)
+        packageKey: String
     ): Response<Boolean>
 
     @ApiOperation("删除repo下的指定镜像")
@@ -143,9 +146,12 @@ interface User {
         @PathVariable
         @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
-        @PathVariable
-        @ApiParam(value = DOCKER_TAG, required = true)
-        tag: String
+        @RequestParam(required = true)
+        @ApiParam(value = "packageKey", required = true)
+        packageKey: String,
+        @RequestParam(required = true)
+        @ApiParam(value = "version", required = true)
+        version: String
     ): Response<Boolean>
 
     @ApiOperation("获取镜像tag下的详情")
@@ -160,8 +166,11 @@ interface User {
         @PathVariable
         @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
-        @PathVariable
-        @ApiParam(value = DOCKER_TAG, required = true)
-        tag: String
+        @RequestParam(required = true)
+        @ApiParam(value = "packageKey", required = true)
+        packageKey: String,
+        @RequestParam(required = true)
+        @ApiParam(value = "version", required = true)
+        version: String
     ): Response<Map<String, Any>?>
 }

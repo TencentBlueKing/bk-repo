@@ -58,6 +58,15 @@ object PackageKeys {
     }
 
     /**
+     * 解析docker格式的key
+     *
+     * 例子: docker://test  ->  test
+     */
+    fun resolveDocker(dockerKey: String): String {
+        return resolveName(DOCKER, dockerKey)
+    }
+
+    /**
      * 解析name格式key
      *
      * 例子: {schema}://test  ->  test

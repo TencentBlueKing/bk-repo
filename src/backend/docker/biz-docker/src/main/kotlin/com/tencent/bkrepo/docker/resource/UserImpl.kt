@@ -2,6 +2,7 @@ package com.tencent.bkrepo.docker.resource
 
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -93,10 +94,11 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         request: HttpServletRequest,
         userId: String?,
         projectId: String,
-        repoName: String
+        repoName: String,
+        packageKey: String
     ): Response<Boolean> {
         val uId = UserUtil.getContextUserId(userId)
-        val artifactName = PathUtil.repoArtifactName(request, projectId, repoName)
+        val artifactName = PackageKeys.resolveDocker(packageKey)
         val context = RequestContext(uId, projectId, repoName, artifactName)
         val result = dockerRepo.deleteManifest(context)
         return ResponseBuilder.success(result)
@@ -107,12 +109,13 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         userId: String?,
         projectId: String,
         repoName: String,
-        tag: String
+        packageKey: String,
+        version: String
     ): Response<Boolean> {
         val uId = UserUtil.getContextUserId(userId)
-        val artifactName = PathUtil.repoTagArtifactName(request, projectId, repoName, tag)
+        val artifactName = PackageKeys.resolveDocker(packageKey)
         val context = RequestContext(uId, projectId, repoName, artifactName)
-        val result = dockerRepo.deleteTag(context, tag)
+        val result = dockerRepo.deleteTag(context, version)
         return ResponseBuilder.success(result)
     }
 
@@ -121,12 +124,13 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         userId: String?,
         projectId: String,
         repoName: String,
-        tag: String
+        packageKey: String,
+        version: String
     ): Response<Map<String, Any>?> {
         val uId = UserUtil.getContextUserId(userId)
-        val artifactName = PathUtil.repoTagDetailArtifactName(request, projectId, repoName, tag)
+        val artifactName = PackageKeys.resolveDocker(packageKey)
         val context = RequestContext(uId, projectId, repoName, artifactName)
-        val result = dockerRepo.getRepoTagDetail(context, tag)
+        val result = dockerRepo.getRepoTagDetail(context, version)
         return ResponseBuilder.success(result)
     }
 }
