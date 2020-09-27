@@ -200,7 +200,7 @@ class PackageServiceTest @Autowired constructor(
             versionName = version,
             size = 1024,
             manifestPath = "/com/tencent/bkrepo/test/$version",
-            contentPath = "/com/tencent/bkrepo/test/$version",
+            artifactPath = "/com/tencent/bkrepo/test/$version",
             stageTag = listOf(ArtifactStageEnum.RELEASE.toString() ),
             metadata = mapOf("key" to "value"),
             overwrite = overwrite,

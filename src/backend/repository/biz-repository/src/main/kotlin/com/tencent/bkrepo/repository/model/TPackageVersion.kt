@@ -27,7 +27,7 @@ data class TPackageVersion(
     var ordinal: Long,
     var downloads: Long,
     var manifestPath: String? = null,
-    var contentPath: String? = null,
+    var artifactPath: String? = null,
     var stageTag: List<String>,
     var metadata: List<TMetadata>? = null
 ) {
