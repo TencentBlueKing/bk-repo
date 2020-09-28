@@ -12,10 +12,10 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.maven.util.MavenGAVCUtils.GAVC
 import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenMetadata
+import com.tencent.bkrepo.maven.pojo.MavenPom
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -48,21 +48,22 @@ class MavenLocalRepository : LocalRepository() {
 
     override fun onUpload(context: ArtifactUploadContext) {
         with(context.artifactInfo) {
-            if (getArtifactFullPath().matches(Regex("(.)+-(.)+\\.jar"))) {
-                val mavenGAVC = getArtifactFullPath().GAVC()
+            //改为解析pom文件数据
+            if (getArtifactFullPath().matches(Regex("(.)+-(.)+\\.pom"))){
+                val mavenPom = context.getArtifactFile().getInputStream().readXmlString<MavenPom>()
                 packageClient.createVersion(
-                    PackageVersionCreateRequest(
-                        projectId,
-                        repoName,
-                        packageName = mavenGAVC.artifactId,
-                        packageKey = PackageKeys.ofGav(mavenGAVC.groupId, mavenGAVC.artifactId),
-                        packageType = PackageType.MAVEN,
-                        versionName = mavenGAVC.version,
-                        size = context.getArtifactFile().getSize(),
-                        artifactPath = getArtifactFullPath(),
-                        overwrite = true,
-                        createdBy = context.userId
-                    )
+                        PackageVersionCreateRequest(
+                                projectId,
+                                repoName,
+                                packageName = mavenPom.artifactId,
+                                packageKey = PackageKeys.ofGav(mavenPom.groupId, mavenPom.artifactId),
+                                packageType = PackageType.MAVEN,
+                                versionName = mavenPom.version,
+                                size = context.getArtifactFile().getSize(),
+                                artifactPath = getArtifactFullPath(),
+                                overwrite = true,
+                                createdBy = context.userId
+                        )
                 )
             }
         }
@@ -204,7 +205,7 @@ class MavenLocalRepository : LocalRepository() {
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
             val mavenArtifactMetadata = jarNode.metadata
-            val countData = downloadStatisticsClient.query(
+            val countData = packageDownloadStatisticsClient.query(
                 projectId, repoName, jarNode.fullPath,
                 null, null, null
             ).data
