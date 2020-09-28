@@ -28,7 +28,7 @@ data class BasicInfo(
     @ApiModelProperty("文件md5")
     val md5: String,
     @ApiModelProperty("晋级状态标签")
-    val stageTag: String?,
+    val stageTag: List<String>,
     @ApiModelProperty("所属项目id")
     val projectId: String,
     @ApiModelProperty("所属仓库名称")

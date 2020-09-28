@@ -2,6 +2,7 @@ package com.tencent.bkrepo.npm.service
 
 import com.tencent.bkrepo.npm.exception.NpmRepoNotFoundException
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -10,10 +11,13 @@ import org.springframework.beans.factory.annotation.Autowired
 abstract class AbstractNpmService {
 
     @Autowired
-    protected lateinit var nodeClient: NodeClient
+    lateinit var nodeClient: NodeClient
 
     @Autowired
-    protected lateinit var repositoryClient: RepositoryClient
+    lateinit var repositoryClient: RepositoryClient
+
+    @Autowired
+    lateinit var packageClient: PackageClient
 
     /**
      * 查询仓库是否存在
