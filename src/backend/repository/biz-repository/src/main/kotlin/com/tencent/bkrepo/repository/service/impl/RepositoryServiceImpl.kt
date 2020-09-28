@@ -13,9 +13,11 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -35,7 +37,6 @@ import com.tencent.bkrepo.repository.service.ProjectService
 import com.tencent.bkrepo.repository.service.ProxyChannelService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -157,13 +158,11 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
                 lastModifiedDate = LocalDateTime.now()
             )
             return try {
+                if (repoConfiguration is CompositeConfiguration) {
+                    updateCompositeConfiguration(repoConfiguration, null, repository, operator)
+                }
                 repoRepository.insert(repository)
                     .also { createRepoManager(it.projectId, it.name, it.createdBy) }
-                    .also {
-                        if (repoConfiguration is CompositeConfiguration) {
-                            updateCompositeConfiguration(repoConfiguration, null, it, operator)
-                        }
-                    }
                     .also { publishEvent(RepoCreatedEvent(repoCreateRequest)) }
                     .also { logger.info("Create repository [$repoCreateRequest] success.") }
                     .let { convertToDetail(repository, storageCredential)!! }
@@ -184,12 +183,11 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
             repository.description = description ?: repository.description
             repository.lastModifiedBy = operator
             repository.lastModifiedDate = LocalDateTime.now()
-            configuration?.let { repository.configuration = it.toJsonString() }
-            repoRepository.save(repository)
-            (configuration as? CompositeConfiguration)?.let {
-                val oldCompositeConfiguration = oldConfiguration as CompositeConfiguration
-                updateCompositeConfiguration(it, oldCompositeConfiguration, repository, operator)
+            configuration?.let {
+                updateRepoConfiguration(it, oldConfiguration, repository, operator)
+                repository.configuration = it.toJsonString()
             }
+            repoRepository.save(repository)
         }
         publishEvent(RepoUpdatedEvent(repoUpdateRequest))
         logger.info("Update repository[$repoUpdateRequest] success.")
@@ -267,7 +265,28 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     }
 
     /**
+     * 更新仓库配置
+     */
+    private fun updateRepoConfiguration(
+        new: RepositoryConfiguration,
+        old: RepositoryConfiguration,
+        repository: TRepository,
+        operator: String
+    ) {
+        val newType = new::class.simpleName
+        val oldType = old::class.simpleName
+        if (newType != oldType) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "configuration type")
+        }
+        if (new is CompositeConfiguration && old is CompositeConfiguration) {
+            updateCompositeConfiguration(new, old, repository, operator)
+        }
+    }
+
+    /**
      * 更新Composite类型仓库配置
+     *
+     * 创建private代理仓库
      */
     private fun updateCompositeConfiguration(
         new: CompositeConfiguration,
@@ -275,6 +294,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         repository: TRepository,
         operator: String
     ) {
+        // 校验
         new.proxy.channelList.forEach {
             if (it.public) {
                 Preconditions.checkArgument(proxyChannelService.checkExistById(it.channelId!!, repository.type), "channelId")
@@ -285,26 +305,26 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         }
         val newPrivateProxyRepos = new.proxy.channelList.filter { !it.public }
         val existPrivateProxyRepos = old?.proxy?.channelList?.filter { !it.public }.orEmpty()
+        val toCreateList = mutableListOf<ProxyChannelSetting>()
+        val toDeleteList = mutableListOf<ProxyChannelSetting>()
+
+        // TODO(同名检测)
         // 确保用户未修改name和url，以及添加同名channel
         newPrivateProxyRepos.forEach { newChannel ->
             var toCreate = true
             existPrivateProxyRepos.forEach { oldChannel ->
                 if (newChannel.name == oldChannel.name && newChannel.url != oldChannel.url) {
-                    throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
+                    throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, newChannel.name.orEmpty())
                 } else if (newChannel.name == oldChannel.name && newChannel.url == oldChannel.url) {
+                    // 同名 同url，跳过，不重复创建
                     toCreate = false
                 }
             }
             if (toCreate) {
-                val proxyRepoName = PRIVATE_PROXY_REPO_NAME.format(repository.name, newChannel.name)
-                if (exist(repository.projectId, proxyRepoName, null)) {
-                    logger.error("Repository[$proxyRepoName] exist in project[${repository.projectId}], skip create proxy repo.")
-                    return@forEach
-                }
-                createProxyRepo(repository, proxyRepoName, operator)
+                toCreateList.add(newChannel)
             }
         }
-        // 删除旧的代理库
+        // 查找要删除的代理库
         existPrivateProxyRepos.forEach { oldChannel ->
             var toDelete = true
             newPrivateProxyRepos.forEach { newChannel ->
@@ -313,8 +333,22 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
                 }
             }
             if (toDelete) {
-                deleteProxyRepo(repository.projectId, repository.name, oldChannel.name!!)
+                toDeleteList.add(oldChannel)
             }
+        }
+
+        // 创建新的代理库
+        toCreateList.forEach {
+            val proxyRepoName = PRIVATE_PROXY_REPO_NAME.format(repository.name, it.name)
+            if (exist(repository.projectId, proxyRepoName, null)) {
+                logger.error("Repository[$proxyRepoName] exist in project[${repository.projectId}], skip create proxy repo.")
+            }
+            createProxyRepo(repository, proxyRepoName, operator)
+        }
+
+        // 删除旧的代理库
+        toDeleteList.forEach {
+            deleteProxyRepo(repository.projectId, repository.name, it.name!!)
         }
     }
 

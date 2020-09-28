@@ -1,9 +1,14 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.constant.PRIVATE_PROXY_REPO_NAME
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
+import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
@@ -17,6 +22,8 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import okhttp3.internal.http2.ErrorCode
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -188,18 +195,161 @@ class RepositoryServiceTest @Autowired constructor(
     @DisplayName("测试更新仓库信息")
     fun `test update repository info`() {
         repositoryService.create(createRequest())
-        repositoryService.update(
-            RepoUpdateRequest(
-                projectId = UT_PROJECT_ID,
-                name = UT_REPO_NAME,
-                public = false,
-                description = "updated description",
-                operator = UT_USER
-            )
+        val updateRequest = RepoUpdateRequest(
+            projectId = UT_PROJECT_ID,
+            name = UT_REPO_NAME,
+            public = false,
+            description = "updated description",
+            operator = UT_USER
         )
+        repositoryService.update(updateRequest)
         val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME)!!
         assertEquals(false, repository.public)
         assertEquals("updated description", repository.description)
+    }
+
+    @Test
+    @DisplayName("测试使用不同类型的仓库更新配置")
+    fun `should throw exception when update with different configuration type`() {
+        repositoryService.create(createRequest())
+        val updateRequest = RepoUpdateRequest(
+            projectId = UT_PROJECT_ID,
+            name = UT_REPO_NAME,
+            public = false,
+            description = "updated description",
+            configuration = RemoteConfiguration(),
+            operator = UT_USER
+        )
+        assertThrows<ErrorCodeException> { repositoryService.update(updateRequest) }
+    }
+
+    @Test
+    @DisplayName("测试更新composite类型仓库配置")
+    fun `test update composite repo configuration`() {
+        val publicChannel = ProxyChannelSetting(public = true, channelId = "")
+        val privateChannel1 = ProxyChannelSetting(public = false, name = "private1", url = "url1")
+        val privateChannel2 = ProxyChannelSetting(public = false, name = "private2", url = "url2")
+        val privateChannel3 = ProxyChannelSetting(public = false, name = "private3", url = "url3")
+        val privateChannel4 = ProxyChannelSetting(public = false, name = "private1", url = "url4")
+
+        val privateProxyRepoName1 = PRIVATE_PROXY_REPO_NAME.format(UT_REPO_NAME, "private1")
+        val privateProxyRepoName2 = PRIVATE_PROXY_REPO_NAME.format(UT_REPO_NAME, "private2")
+        val privateProxyRepoName3 = PRIVATE_PROXY_REPO_NAME.format(UT_REPO_NAME, "private3")
+        val privateProxyRepoName4 = PRIVATE_PROXY_REPO_NAME.format(UT_REPO_NAME, "private1")
+
+        // 测试使用不存在的public channel, 抛异常
+        var proxyConfiguration = ProxyConfiguration(channelList = listOf(publicChannel))
+        var configuration = CompositeConfiguration(proxy = proxyConfiguration)
+        var createRequest = RepoCreateRequest(
+            projectId = UT_PROJECT_ID,
+            name = UT_REPO_NAME,
+            type = RepositoryType.GENERIC,
+            category = RepositoryCategory.COMPOSITE,
+            public = true,
+            description = "simple description",
+            configuration = configuration,
+            operator = UT_USER
+        )
+        assertThrows<ErrorCodeException> { repositoryService.create(createRequest) }
+
+        // 正常创建 1 2
+        proxyConfiguration = ProxyConfiguration(channelList = listOf(privateChannel1, privateChannel2))
+        configuration = CompositeConfiguration(proxy = proxyConfiguration)
+        createRequest = RepoCreateRequest(
+            projectId = UT_PROJECT_ID,
+            name = UT_REPO_NAME,
+            type = RepositoryType.GENERIC,
+            category = RepositoryCategory.COMPOSITE,
+            public = true,
+            description = "simple description",
+            configuration = configuration,
+            operator = UT_USER
+        )
+        repositoryService.create(createRequest)
+        var repoDetail = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, "GENERIC")
+        var compositeConfiguration = (repoDetail!!.configuration as CompositeConfiguration)
+        assertEquals(2, compositeConfiguration.proxy.channelList.size)
+        assertEquals("private1", compositeConfiguration.proxy.channelList[0].name)
+        assertEquals("url1", compositeConfiguration.proxy.channelList[0].url)
+        assertEquals(false, compositeConfiguration.proxy.channelList[0].public)
+        assertEquals("private2", compositeConfiguration.proxy.channelList[1].name)
+        assertEquals("url2", compositeConfiguration.proxy.channelList[1].url)
+        // 检查私有代理仓库是否创建
+        var privateProxyRepo1 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName1, "GENERIC")
+        assertNotNull(privateProxyRepo1)
+        var privateProxyRepo2 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName2, "GENERIC")
+        assertNotNull(privateProxyRepo2)
+
+        // 更新 1 3
+        proxyConfiguration = ProxyConfiguration(channelList = listOf(privateChannel1, privateChannel3))
+        configuration = CompositeConfiguration(proxy = proxyConfiguration)
+        var updateRequest = RepoUpdateRequest(
+            projectId = UT_PROJECT_ID,
+            name = UT_REPO_NAME,
+            public = false,
+            configuration = configuration,
+            operator = UT_USER
+        )
+
+        repositoryService.update(updateRequest)
+        // 检查配置
+        repoDetail = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, "GENERIC")
+        assertNotNull(repoDetail)
+        assertEquals(false, repoDetail!!.public)
+        assertEquals("simple description", repoDetail.description)
+        compositeConfiguration = (repoDetail.configuration as CompositeConfiguration)
+        assertEquals(2, compositeConfiguration.proxy.channelList.size)
+        assertEquals("private1", compositeConfiguration.proxy.channelList[0].name)
+        assertEquals("url1", compositeConfiguration.proxy.channelList[0].url)
+        assertEquals("private3", compositeConfiguration.proxy.channelList[1].name)
+        assertEquals("url3", compositeConfiguration.proxy.channelList[1].url)
+        // 检查 2删除，3创建
+        privateProxyRepo1 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName1, "GENERIC")
+        assertNotNull(privateProxyRepo1)
+        privateProxyRepo2 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName2, "GENERIC")
+        assertNull(privateProxyRepo2)
+        var privateProxyRepo3 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName3, "GENERIC")
+        assertNotNull(privateProxyRepo3)
+
+        // 更新 1 4，1 4同名，报错
+        proxyConfiguration = ProxyConfiguration(channelList = listOf(privateChannel1, privateChannel4))
+        configuration = CompositeConfiguration(proxy = proxyConfiguration)
+        updateRequest = RepoUpdateRequest(
+            projectId = UT_PROJECT_ID,
+            name = UT_REPO_NAME,
+            public = false,
+            configuration = configuration,
+            operator = UT_USER
+        )
+        assertThrows<ErrorCodeException> { repositoryService.update(updateRequest) }
+
+        // 更新 1 1，结果只存在1
+        proxyConfiguration = ProxyConfiguration(channelList = listOf(privateChannel1, privateChannel1))
+        configuration = CompositeConfiguration(proxy = proxyConfiguration)
+        updateRequest = RepoUpdateRequest(
+            projectId = UT_PROJECT_ID,
+            name = UT_REPO_NAME,
+            public = false,
+            configuration = configuration,
+            operator = UT_USER
+        )
+        repositoryService.update(updateRequest)
+        // 检查配置
+        repoDetail = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, "GENERIC")
+        compositeConfiguration = (repoDetail!!.configuration as CompositeConfiguration)
+        println(compositeConfiguration.proxy.channelList)
+        assertEquals(1, compositeConfiguration.proxy.channelList.size)
+        assertEquals("private1", compositeConfiguration.proxy.channelList[0].name)
+        assertEquals("url1", compositeConfiguration.proxy.channelList[0].url)
+
+        privateProxyRepo1 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName1, "GENERIC")
+        assertNotNull(privateProxyRepo1)
+        privateProxyRepo2 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName2, "GENERIC")
+        assertNull(privateProxyRepo2)
+        privateProxyRepo3 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName3, "GENERIC")
+        assertNull(privateProxyRepo3)
+        val privateProxyRepo4 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName4, "GENERIC")
+        assertNull(privateProxyRepo4)
     }
 
     @Test
