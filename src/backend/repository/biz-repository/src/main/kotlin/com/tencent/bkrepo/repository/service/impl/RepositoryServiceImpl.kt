@@ -305,38 +305,29 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         }
         val newPrivateProxyRepos = new.proxy.channelList.filter { !it.public }
         val existPrivateProxyRepos = old?.proxy?.channelList?.filter { !it.public }.orEmpty()
+
+        val newPrivateProxyRepoMap = newPrivateProxyRepos.map { it.name!! to it}.toMap()
+        val existPrivateProxyRepoMap = existPrivateProxyRepos.map { it.name!! to it}.toMap()
+        Preconditions.checkArgument(newPrivateProxyRepoMap.size == newPrivateProxyRepos.size, "channelList")
+
         val toCreateList = mutableListOf<ProxyChannelSetting>()
         val toDeleteList = mutableListOf<ProxyChannelSetting>()
 
-        // TODO(同名检测)
-        // 确保用户未修改name和url，以及添加同名channel
-        newPrivateProxyRepos.forEach { newChannel ->
-            var toCreate = true
-            existPrivateProxyRepos.forEach { oldChannel ->
-                if (newChannel.name == oldChannel.name && newChannel.url != oldChannel.url) {
-                    throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, newChannel.name.orEmpty())
-                } else if (newChannel.name == oldChannel.name && newChannel.url == oldChannel.url) {
-                    // 同名 同url，跳过，不重复创建
-                    toCreate = false
+        // 查找要添加的代理库
+        newPrivateProxyRepoMap.forEach { (name, channel) ->
+            existPrivateProxyRepoMap[name]?.let {
+                // 确保用户未修改name和url，以及添加同名channel
+                if (channel.url != it.url) {
+                    throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, channel.name.orEmpty())
                 }
-            }
-            if (toCreate) {
-                toCreateList.add(newChannel)
-            }
+            } ?: run { toCreateList.add(channel) }
         }
         // 查找要删除的代理库
-        existPrivateProxyRepos.forEach { oldChannel ->
-            var toDelete = true
-            newPrivateProxyRepos.forEach { newChannel ->
-                if (newChannel.name == oldChannel.name && newChannel.url == oldChannel.url) {
-                    toDelete = false
-                }
-            }
-            if (toDelete) {
-                toDeleteList.add(oldChannel)
+        existPrivateProxyRepoMap.forEach { (name, channel) ->
+            if(!newPrivateProxyRepoMap.containsKey(name)) {
+                toDeleteList.add(channel)
             }
         }
-
         // 创建新的代理库
         toCreateList.forEach {
             val proxyRepoName = PRIVATE_PROXY_REPO_NAME.format(repository.name, it.name)
@@ -345,7 +336,6 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
             }
             createProxyRepo(repository, proxyRepoName, operator)
         }
-
         // 删除旧的代理库
         toDeleteList.forEach {
             deleteProxyRepo(repository.projectId, repository.name, it.name!!)

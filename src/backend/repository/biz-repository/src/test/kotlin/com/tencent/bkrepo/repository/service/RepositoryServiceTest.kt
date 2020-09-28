@@ -311,7 +311,7 @@ class RepositoryServiceTest @Autowired constructor(
         var privateProxyRepo3 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName3, "GENERIC")
         assertNotNull(privateProxyRepo3)
 
-        // 更新 1 4，1 4同名，报错
+        // 更新 1 4，1 4同名不同url，报错
         proxyConfiguration = ProxyConfiguration(channelList = listOf(privateChannel1, privateChannel4))
         configuration = CompositeConfiguration(proxy = proxyConfiguration)
         updateRequest = RepoUpdateRequest(
@@ -323,7 +323,7 @@ class RepositoryServiceTest @Autowired constructor(
         )
         assertThrows<ErrorCodeException> { repositoryService.update(updateRequest) }
 
-        // 更新 1 1，结果只存在1
+        // 更新 1 1，报错
         proxyConfiguration = ProxyConfiguration(channelList = listOf(privateChannel1, privateChannel1))
         configuration = CompositeConfiguration(proxy = proxyConfiguration)
         updateRequest = RepoUpdateRequest(
@@ -333,23 +333,7 @@ class RepositoryServiceTest @Autowired constructor(
             configuration = configuration,
             operator = UT_USER
         )
-        repositoryService.update(updateRequest)
-        // 检查配置
-        repoDetail = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, "GENERIC")
-        compositeConfiguration = (repoDetail!!.configuration as CompositeConfiguration)
-        println(compositeConfiguration.proxy.channelList)
-        assertEquals(1, compositeConfiguration.proxy.channelList.size)
-        assertEquals("private1", compositeConfiguration.proxy.channelList[0].name)
-        assertEquals("url1", compositeConfiguration.proxy.channelList[0].url)
-
-        privateProxyRepo1 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName1, "GENERIC")
-        assertNotNull(privateProxyRepo1)
-        privateProxyRepo2 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName2, "GENERIC")
-        assertNull(privateProxyRepo2)
-        privateProxyRepo3 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName3, "GENERIC")
-        assertNull(privateProxyRepo3)
-        val privateProxyRepo4 = repositoryService.getRepoDetail(UT_PROJECT_ID, privateProxyRepoName4, "GENERIC")
-        assertNull(privateProxyRepo4)
+        assertThrows<ErrorCodeException> { repositoryService.update(updateRequest) }
     }
 
     @Test
