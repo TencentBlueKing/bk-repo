@@ -22,6 +22,7 @@ import com.tencent.bkrepo.docker.constant.DOCKER_UPLOAD_UUID
 import com.tencent.bkrepo.docker.constant.DOWNLOAD_COUNT
 import com.tencent.bkrepo.docker.constant.LAST_MODIFIED_BY
 import com.tencent.bkrepo.docker.constant.LAST_MODIFIED_DATE
+import com.tencent.bkrepo.docker.constant.STAGE_TAG
 import com.tencent.bkrepo.docker.context.DownloadContext
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.context.UploadContext
@@ -428,7 +429,7 @@ class DockerV2LocalRepoService @Autowired constructor(
                 LAST_MODIFIED_BY to nodeDetail.lastModifiedBy,
                 LAST_MODIFIED_DATE to nodeDetail.lastModifiedDate,
                 DOWNLOAD_COUNT to versionDetail.downloads,
-                "STAGE_TAG" to versionDetail.stageTag,
+                STAGE_TAG to versionDetail.stageTag,
                 "sha256" to DockerDigest(manifest.config.digest).hex,
                 "os" to configBlob.os
             )
