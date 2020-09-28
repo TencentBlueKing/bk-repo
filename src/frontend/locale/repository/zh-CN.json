@@ -107,5 +107,6 @@
     "username": "用户名",
     "account": "账号",
     "password": "密码",
-    "test": "测试"
+    "test": "测试",
+    "abort": "中断"
 }
