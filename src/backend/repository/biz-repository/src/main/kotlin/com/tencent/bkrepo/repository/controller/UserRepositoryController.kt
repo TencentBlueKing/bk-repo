@@ -146,7 +146,7 @@ class UserRepositoryController(
         @PathVariable repoName: String,
         @RequestBody request: UserRepoUpdateRequest
     ): Response<Void> {
-        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.DELETE, projectId)
+        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.WRITE, projectId)
         val repoUpdateRequest = RepoUpdateRequest(
             projectId = projectId,
             name = repoName,
