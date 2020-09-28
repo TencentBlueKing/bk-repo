@@ -24,6 +24,7 @@
     "addProxy": "添加代理源",
     "editProxy": "编辑代理源",
     "sameProxyExist": "存在同名代理源",
+    "fileExist": "同名文件已存在",
     "origin": "来源",
     "address": "地址",
     "operation": "操作",
