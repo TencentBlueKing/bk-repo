@@ -8,7 +8,7 @@ data class Basic(
     val fullPath: String,
     val lastModifiedBy: String,
     val lastModifiedDate: String,
-    val downloadCount: Int,
+    val downloadCount: Long,
     val sha256: String?,
     val md5: String?,
     val stageTag: List<String>?,
