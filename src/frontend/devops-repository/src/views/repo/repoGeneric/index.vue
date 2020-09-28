@@ -24,15 +24,12 @@
             <div class="repo-generic-table">
                 <bk-table
                     :data="artifactoryList"
-                    height="100%"
+                    height="calc(100% - 42px)"
                     :outer-border="false"
                     :row-border="false"
                     size="small"
-                    :pagination="pagination"
                     @row-click="selectRow"
                     @row-dblclick="openFolder"
-                    @page-change="current => handlerPaginationChange({ current })"
-                    @page-limit-change="limit => handlerPaginationChange({ limit })"
                 >
                     <bk-table-column :label="$t('fileName')">
                         <template slot-scope="props">
@@ -58,6 +55,16 @@
                         </template>
                     </bk-table-column>
                 </bk-table>
+                <bk-pagination
+                    size="small"
+                    align="right"
+                    @change="current => handlerPaginationChange({ current })"
+                    @limit-change="limit => handlerPaginationChange({ limit })"
+                    :current.sync="pagination.current"
+                    :limit="pagination.limit"
+                    :count="pagination.count"
+                    :limit-list="pagination.limitList">
+                </bk-pagination>
             </div>
             <aside v-show="!query || selectedRow.fullPath" class="repo-generic-actions">
                 <bk-button class="detail-btn" theme="primary" @click.stop="showDetail()">{{ $t('showDetail') }}</bk-button>
@@ -178,35 +185,19 @@
             </div>
         </bk-dialog>
 
-        <bk-dialog
-            v-model="uploadDialog.show"
-            :title="uploadDialog.title"
-            :quick-close="false"
-            :mask-close="false"
-            :close-icon="false"
-            width="620"
-            header-position="left">
-            <artifactory-upload
-                ref="artifactoryUpload"
-                @upload-failed="upoadFailed">
-            </artifactory-upload>
-            <div slot="footer">
-                <bk-button :loading="uploadDialog.loading" theme="primary" @click="submitUpload">{{ $t('upload') }}</bk-button>
-                <bk-button @click="cancelUpload">{{ $t('cancel') }}</bk-button>
-            </div>
-        </bk-dialog>
+        <generic-upload v-bind="uploadDialog" @cancel="cancelUpload"></generic-upload>
     </div>
 </template>
 <script>
-    import RepoTree from '@/components/RepoTree'
-    import ArtifactoryUpload from '@/components/ArtifactoryUpload'
+    import RepoTree from '@/components/repoTree'
     import genericDetail from './genericDetail'
+    import genericUpload from './genericUpload'
     import { convertFileSize, formatDate } from '@/utils'
     import { getIconName } from '@/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
     export default {
         name: 'repoGeneric',
-        components: { RepoTree, ArtifactoryUpload, genericDetail },
+        components: { RepoTree, genericDetail, genericUpload },
         data () {
             return {
                 isLoading: false,
@@ -304,8 +295,8 @@
                 // 上传制品
                 uploadDialog: {
                     show: false,
-                    loading: false,
-                    title: ''
+                    title: '',
+                    fullPath: ''
                 },
                 query: null,
                 uploadXHR: null
@@ -674,51 +665,13 @@
             handlerUpload () {
                 this.uploadDialog = {
                     show: true,
-                    loading: false,
-                    title: `${this.$t('upload')} (${this.selectedTreeNode.fullPath || '/'})`
+                    title: `${this.$t('upload')} (${this.selectedTreeNode.fullPath || '/'})`,
+                    fullPath: this.selectedTreeNode.fullPath
                 }
-                this.$refs.artifactoryUpload.reset()
-            },
-            async submitUpload () {
-                const { file, progressHandler } = await this.$refs.artifactoryUpload.getFiles()
-                this.uploadDialog.loading = true
-                this.uploadXHR && this.uploadXHR.abort()
-                this.uploadXHR = new XMLHttpRequest()
-                this.uploadArtifactory({
-                    xhr: this.uploadXHR,
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    fullPath: `${this.selectedTreeNode.fullPath}/${file.name}`,
-                    body: file.blob,
-                    progressHandler,
-                    headers: {
-                        'Content-Type': 'application/octet-stream',
-                        'X-BKREPO-OVERWRITE': file.overwrite,
-                        'X-BKREPO-EXPIRES': file.expires
-                    }
-                }).then(() => {
-                    this.uploadDialog.show = false
-                    this.uploadXHR = null
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: `${this.$t('upload')} ${file.name} ${this.$t('success')}`
-                    })
-                    this.getArtifactories()
-                }).finally(() => {
-                    this.uploadDialog.loading = false
-                })
             },
             cancelUpload () {
                 this.uploadDialog.show = false
-                this.uploadXHR && this.uploadXHR.abort()
-                this.uploadXHR = null
-            },
-            upoadFailed (file) {
-                this.uploadDialog.loading = false
-                this.$bkMessage({
-                    theme: 'error',
-                    message: `${this.$t('upload')} ${file.name} ${this.$t('fail')}`
-                })
+                this.getArtifactories()
             },
             handlerDownload () {
                 window.open(
@@ -786,6 +739,10 @@
             /deep/ tbody {
                 cursor: pointer;
             }
+            .bk-table {
+                margin-bottom: 10px;
+                border-bottom: 1px solid $borderWeightColor;
+            }
             .fine-name {
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -807,36 +764,6 @@
                 height: 32px;
                 line-height: 32px;
             }
-        }
-    }
-    .detail-info {
-        padding: 15px;
-        margin-top: 40px;
-        border: 1px solid $borderWeightColor;
-        span {
-            padding: 10px 0;
-            flex: 4;
-            &:first-child {
-                flex: 1;
-                display: flex;
-                justify-content: flex-end;
-            }
-        }
-        &.info-area:before {
-            content: 'Info';
-            position: absolute;
-            padding: 0 10px;
-            font-weight: 700;
-            margin-top: -25px;
-            background-color: white
-        }
-        &.checksums-area:before {
-            content: 'Checksums';
-            position: absolute;
-            padding: 0 10px;
-            font-weight: 700;
-            margin-top: -25px;
-            background-color: white
         }
     }
 }

@@ -179,12 +179,12 @@
                     name: 'createRepo'
                 })
             },
-            toRepoDetail ({ type, name }) {
+            toRepoDetail ({ repoType, name }) {
                 this.$router.push({
-                    name: type === 'generic' ? 'repoGeneric' : 'repoCommon',
+                    name: repoType === 'generic' ? 'repoGeneric' : 'repoCommon',
                     params: {
                         projectId: this.projectId,
-                        repoType: type
+                        repoType
                     },
                     query: {
                         name

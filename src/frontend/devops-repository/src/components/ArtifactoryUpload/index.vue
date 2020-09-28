@@ -82,8 +82,7 @@
                             trigger: 'blur'
                         }
                     ]
-                },
-                timeout: null
+                }
             }
         },
         methods: {
@@ -122,17 +121,12 @@
                     type: file.type
                 }
             },
+            uploadFailed () {
+                this.progressTheme = 'danger'
+            },
             progressHandler ($event) {
+                console.log('upload', $event.loaded + '/' + $event.total)
                 this.progress = $event.loaded / $event.total
-                clearTimeout(this.timeout)
-                if (this.progress === 1) {
-                    this.progressTheme = 'success'
-                } else {
-                    this.timeout = setTimeout(() => {
-                        this.progressTheme = 'danger'
-                        this.$emit('upload-failed', this.file)
-                    }, 30000)
-                }
             }
         }
     }

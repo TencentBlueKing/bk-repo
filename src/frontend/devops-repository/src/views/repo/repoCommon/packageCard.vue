@@ -42,8 +42,8 @@
 <style lang="scss" scoped>
 @import '@/scss/conf';
 .package-card-container {
-    height: 60px;
-    padding-left: 15px;
+    height: 70px;
+    padding: 5px 20px;
     border: 1px solid $borderWeightColor;
     border-radius: 5px;
     background-color: #fdfdfe;
@@ -74,11 +74,14 @@
                 &:nth-child(4) {
                     width: 300px;
                 }
+                &:nth-child(5) {
+                    width: auto;
+                }
             }
         }
     }
     .package-card-delete {
-        flex-basis: 50px;
+        flex-basis: 30px;
         font-size: 16px;
     }
 }

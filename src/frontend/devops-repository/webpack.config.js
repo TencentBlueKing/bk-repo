@@ -44,7 +44,7 @@ module.exports = (env, argv) => {
     config.plugins = [
         ...config.plugins,
         new HtmlWebpackPlugin({
-            filename: isProd ? `${dist}/ui#index.html` : `${dist}/index.html`,
+            filename: isProd ? `${dist}/frontend#ui#index.html` : `${dist}/index.html`,
             template: 'index.html',
             inject: true,
             VENDOR_LIBS: `/ui/main.dll.js?v=${Math.random()}`,

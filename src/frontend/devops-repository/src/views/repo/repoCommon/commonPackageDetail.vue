@@ -3,7 +3,9 @@
         <div class="common-package-base-info flex-align-center" v-bkloading="{ isLoading: infoLoading }">
             <icon size="80" name="default-docker" />
             <div class="ml20 common-package-title flex-column">
-                <span class="mb10 title" :title="pkg.name">{{ pkg.name }}</span>
+                <span class="mb10 title" :title="pkg.name">{{ pkg.name }}
+                    <span class="ml10 subtitle" v-if="pkg.type === 'MAVEN'"> (Group ID: {{ pkg.key.replace(/^.*\/\/(.+):.*$/, '$1') }})</span>
+                </span>
                 <div class="flex-align-center">
                     <div class="mr50">{{ `${$t('downloads')}: ${pkg.downloads}` }}</div>
                     <div class="mr50">{{ `${$t('lastModifiedDate')}: ${formatDate(pkg.lastModifiedDate)}` }}</div>
@@ -304,7 +306,11 @@
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 font-size: 20px;
-                color: $fontBoldColor
+                color: $fontBoldColor;
+                .subtitle {
+                    font-weight: normal;
+                    font-size: 14px;
+                }
             }
         }
     }
