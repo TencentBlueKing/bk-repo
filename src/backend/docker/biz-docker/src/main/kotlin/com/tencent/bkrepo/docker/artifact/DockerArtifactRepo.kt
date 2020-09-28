@@ -400,15 +400,15 @@ class DockerArtifactRepo @Autowired constructor(
         }
         var data = mutableListOf<DockerImage>()
         var repoList = mutableListOf<String>()
-        var downloadCountList = mutableMapOf<String, Long>()
         result.records.forEach {
             val path = it[DOCKER_NODE_PATH] as String
-            val name = path.removeSuffix(SLASH).replaceAfterLast(SLASH, EMPTY).removeSuffix(SLASH).removePrefix(SLASH)
+            val imageName =
+                path.removeSuffix(SLASH).replaceAfterLast(SLASH, EMPTY).removeSuffix(SLASH).removePrefix(SLASH)
             val lastModifiedBy = it[LAST_MODIFIED_BY] as String
             val lastModifiedDate = it[LAST_MODIFIED_DATE] as String
             var downLoadCount = 0L
-            data.add(DockerImage(name, lastModifiedBy, lastModifiedDate, downLoadCount, "", ""))
-            repoList.add(name)
+            data.add(DockerImage(imageName, lastModifiedBy, lastModifiedDate, downLoadCount, EMPTY, EMPTY))
+            repoList.add(imageName)
         }
         var repoInfo = mutableListOf<DockerImage>()
         repoList.distinct().forEach { its ->
@@ -422,13 +422,13 @@ class DockerArtifactRepo @Autowired constructor(
                     lastModifiedDate = it.lastModifiedDate
                 }
             }
-            repoInfo.add(DockerImage(its, lastModifiedBy, lastModifiedDate, downloadCount, "", ""))
+            repoInfo.add(DockerImage(its, lastModifiedBy, lastModifiedDate, downloadCount, EMPTY, EMPTY))
         }
         return repoInfo
     }
 
     // get repo tag list
-    fun getRepoTagList(context: RequestContext, pageNumber: Int, pageSize: Int, tag: String?): List<DockerTag> {
+    fun getRepoTagList(context: RequestContext, pageNumber: Int, pageSize: Int, version: String?): List<DockerTag> {
         with(context) {
             var queryModel = NodeQueryBuilder().select(
                 DOCKER_NODE_FULL_PATH,
@@ -439,10 +439,10 @@ class DockerArtifactRepo @Autowired constructor(
                 LAST_MODIFIED_DATE,
                 STAGE_TAG
             ).sortByAsc(DOCKER_NODE_FULL_PATH).page(pageNumber, pageSize).projectId(projectId).repoName(repoName)
-            queryModel = if (tag == null) {
+            queryModel = if (version == null) {
                 queryModel.name(DOCKER_MANIFEST).path("/$artifactName/", OperationType.PREFIX)
             } else {
-                queryModel.name(DOCKER_MANIFEST).path("/$artifactName/*$tag*", OperationType.MATCH)
+                queryModel.name(DOCKER_MANIFEST).path("/$artifactName/*$version*", OperationType.MATCH)
             }
 
             val result = nodeClient.query(queryModel.build()).data ?: run {
@@ -457,8 +457,7 @@ class DockerArtifactRepo @Autowired constructor(
                 val lastModifiedDate = it[LAST_MODIFIED_DATE] as String
                 val size = it[DOCKER_NODE_SIZE] as Int
                 val downLoadCount = 0L
-                val stageTag = "" // it[STAGE_TAG] as String
-                data.add(DockerTag(tag, stageTag, size, lastModifiedBy, lastModifiedDate, downLoadCount))
+                data.add(DockerTag(tag, EMPTY, size, lastModifiedBy, lastModifiedDate, downLoadCount))
             }
             return data
         }
@@ -509,10 +508,12 @@ class DockerArtifactRepo @Autowired constructor(
     }
 
     // to delete docker image tag
-    fun deleteByTag(projectId: String, repoName: String, name: String, tag: String): Boolean {
-        val fullPath = "/$name/$tag/$DOCKER_MANIFEST"
-        val deleteNodeRequest = NodeDeleteRequest(projectId, repoName, fullPath, userId)
-        return nodeClient.delete(deleteNodeRequest).isOk()
+    fun deleteByTag(context: RequestContext, tag: String): Boolean {
+        with(context) {
+            val fullPath = "/$artifactName/$tag/$DOCKER_MANIFEST"
+            val deleteNodeRequest = NodeDeleteRequest(projectId, repoName, fullPath, userId)
+            return nodeClient.delete(deleteNodeRequest).isOk()
+        }
     }
 
     companion object {

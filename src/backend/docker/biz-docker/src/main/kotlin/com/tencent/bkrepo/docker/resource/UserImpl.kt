@@ -62,12 +62,6 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         val context = RequestContext(uId, projectId, repoName, EMPTY)
         val result = dockerRepo.getRepoList(context, pageNumber, pageSize, name)
         val totalCount = result.size
-        // val start = (pageNumber - 1) * pageSize
-        // var end = pageNumber * pageSize
-        // if (end > totalCount) {
-        //     end = totalCount
-        // }
-        // val data = result.subList(start, end)
         val repoInfo = DockerImageResult(totalCount, result)
         return ResponseBuilder.success(repoInfo)
     }
