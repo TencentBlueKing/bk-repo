@@ -5,19 +5,24 @@ import com.tencent.bkrepo.common.api.util.toXmlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha1
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenMetadata
 import com.tencent.bkrepo.maven.pojo.MavenPom
+import com.tencent.bkrepo.maven.util.MavenGAVCUtils.GAVC
+import com.tencent.bkrepo.maven.util.StringUtils.formatSeparator
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
@@ -124,6 +129,7 @@ class MavenLocalRepository : LocalRepository() {
      * 删除jar包时 对包一级目录下maven-metadata.xml 更新
      */
     fun updateMetadataXml(context: ArtifactRemoveContext, groupId: String, artifactId: String, version: String?) {
+        val packageKey = context.request.getParameter("packageKey")
         val artifactPath = StringUtils.join(groupId.split("."), "/") + "/$artifactId"
         if (version.isNullOrBlank()) {
             nodeClient.delete(
@@ -148,7 +154,7 @@ class MavenLocalRepository : LocalRepository() {
             val xmlStr = String(artifactInputStream.readBytes()).removePrefix("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
             val mavenMetadata = xmlStr.readXmlString<MavenMetadata>()
             mavenMetadata.versioning.versions.version.removeIf { it == version }
-
+            // 当删除当前版本后不存在任一版本则删除整个包。
             if (mavenMetadata.versioning.versions.version.size == 0) {
                 nodeClient.delete(
                     NodeDeleteRequest(
@@ -157,6 +163,11 @@ class MavenLocalRepository : LocalRepository() {
                         artifactPath,
                         ArtifactRemoveContext().userId
                     )
+                )
+                packageClient.deletePackage(
+                    projectId,
+                    repoName,
+                    packageKey
                 )
                 return
             } else {
@@ -211,11 +222,10 @@ class MavenLocalRepository : LocalRepository() {
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
             val mavenArtifactMetadata = jarNode.metadata
-            val countData = packageDownloadStatisticsClient.query(
-                projectId, repoName, jarNode.fullPath,
-                null, null, null
-            ).data
-            val count = countData?.count ?: 0
+            val countData = packageClient.findVersionByName(
+                projectId, repoName, packageKey, version
+            ).data?: return null
+            val count = countData.downloads
             val mavenArtifactBasic = Basic(
                 groupId,
                 artifactId,
@@ -228,6 +238,22 @@ class MavenLocalRepository : LocalRepository() {
                 null
             )
             return MavenArtifactVersionData(mavenArtifactBasic, mavenArtifactMetadata)
+        }
+    }
+
+    // maven 客户端下载统计
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): DownloadStatisticsAddRequest? {
+        with(context) {
+            val fullPath = context.artifactInfo.getArtifactFullPath()
+            val mavenGAVC = fullPath.GAVC()
+            val version = mavenGAVC.version
+            val artifactId = mavenGAVC.artifactId
+            val groupId = mavenGAVC.groupId.formatSeparator("/", ".")
+            val packageKey = PackageKeys.ofGav(groupId, artifactId)
+            return DownloadStatisticsAddRequest(projectId, repoName, packageKey, artifactId, version)
         }
     }
 
