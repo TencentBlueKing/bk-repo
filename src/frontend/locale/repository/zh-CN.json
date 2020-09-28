@@ -23,6 +23,7 @@
     "proxyConfigTips": "拉取本仓库不存在的包时，将尝试从配置的代理地址去拉取。优先级：从上到下。",
     "addProxy": "添加代理源",
     "editProxy": "编辑代理源",
+    "sameProxyExist": "存在同名代理源",
     "origin": "来源",
     "address": "地址",
     "operation": "操作",
@@ -107,5 +108,6 @@
     "username": "用户名",
     "account": "账号",
     "password": "密码",
-    "test": "测试"
+    "test": "测试",
+    "abort": "中断"
 }

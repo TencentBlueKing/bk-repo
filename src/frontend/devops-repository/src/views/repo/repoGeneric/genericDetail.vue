@@ -57,3 +57,36 @@
         }
     }
 </script>
+<style lang="scss" scoped>
+@import '@/scss/conf';
+.detail-info {
+    padding: 15px;
+    margin-top: 40px;
+    border: 1px solid $borderWeightColor;
+    span {
+        padding: 10px 0;
+        flex: 4;
+        &:first-child {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+        }
+    }
+    &.info-area:before {
+        content: 'Info';
+        position: absolute;
+        padding: 0 10px;
+        font-weight: 700;
+        margin-top: -25px;
+        background-color: white
+    }
+    &.checksums-area:before {
+        content: 'Checksums';
+        position: absolute;
+        padding: 0 10px;
+        font-weight: 700;
+        margin-top: -25px;
+        background-color: white
+    }
+}
+</style>

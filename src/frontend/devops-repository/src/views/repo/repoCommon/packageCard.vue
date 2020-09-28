@@ -7,7 +7,7 @@
                 <span class="ml10 package-card-data" v-if="cardData.type === 'MAVEN'"> (Group ID: {{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }})</span>
             </div>
             <div class="package-card-data flex-align-center">
-                <div>{{ `${$t('latestVersion')}: ${cardData.latest}` }}</div>
+                <div :title="cardData.latest">{{ `${$t('latestVersion')}: ${cardData.latest}` }}</div>
                 <div>{{ `${$t('versionCount')}: ${cardData.versions}` }}</div>
                 <div>{{ `${$t('downloads')}: ${cardData.downloads}` }}</div>
                 <div>{{ `${$t('lastModifiedDate')}: ${formatDate(cardData.lastModifiedDate)}` }}</div>
@@ -42,8 +42,8 @@
 <style lang="scss" scoped>
 @import '@/scss/conf';
 .package-card-container {
-    height: 60px;
-    padding-left: 15px;
+    height: 70px;
+    padding: 5px 20px;
     border: 1px solid $borderWeightColor;
     border-radius: 5px;
     background-color: #fdfdfe;
@@ -68,17 +68,17 @@
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                &:nth-child(1) {
-                    width: 200px;
-                }
-                &:nth-child(4) {
+                &:nth-child(3n + 1) {
                     width: 300px;
+                }
+                &:nth-child(5) {
+                    width: auto;
                 }
             }
         }
     }
     .package-card-delete {
-        flex-basis: 50px;
+        flex-basis: 30px;
         font-size: 16px;
     }
 }

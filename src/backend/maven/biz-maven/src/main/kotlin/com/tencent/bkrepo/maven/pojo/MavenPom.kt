@@ -5,10 +5,11 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 
 @JacksonXmlRootElement(localName = "project")
 data class MavenPom(
-        @JacksonXmlProperty(isAttribute = true, namespace = "xsi")
-        val schemaLocation: String?,
-        val modelVersion: String?,
-        val groupId: String,
-        val artifactId: String,
-        val version: String
+    @JacksonXmlProperty(isAttribute = true, namespace = "xsi")
+    val schemaLocation: String?,
+    val modelVersion: String?,
+    val groupId: String,
+    val artifactId: String,
+    val version: String,
+    val packaging: String?
 )

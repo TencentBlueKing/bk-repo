@@ -37,8 +37,7 @@ class UserNpmController(
         @ApiParam(value = "包版本", required = true)
         @RequestParam version: String
     ): Response<PackageVersionInfo> {
-        val name = PackageKeys.resolveNpm(packageKey)
-        return ResponseBuilder.success(npmWebService.detailVersion(artifactInfo, name, version))
+        return ResponseBuilder.success(npmWebService.detailVersion(artifactInfo, packageKey, version))
     }
 
     @ApiOperation("删除仓库下的包")

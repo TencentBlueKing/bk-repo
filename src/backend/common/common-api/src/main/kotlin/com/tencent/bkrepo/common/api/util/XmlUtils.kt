@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.api.util
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
@@ -16,6 +17,7 @@ object XmlUtils {
         registerKotlinModule()
         enable(ToXmlGenerator.Feature.WRITE_XML_DECLARATION)
         enable(SerializationFeature.INDENT_OUTPUT)
+        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
     }
 }
 

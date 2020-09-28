@@ -45,11 +45,14 @@
                         :key="result.repoName + result.key">
                         <div class="flex-align-center">
                             <icon size="20" :name="repoType" />
-                            <span class="ml20 mr20 result-repo-name">{{result.name}}</span>
-                            <span> ({{result.repoName}})</span>
+                            <span class="ml10 result-repo-name">{{result.name}}</span>
+                            <span class="ml10 package-card-data" v-if="result.type === 'MAVEN'">
+                                [Group ID: {{ result.key.replace(/^.*\/\/(.+):.*$/, '$1') }}]
+                            </span>
+                            <span class="ml10">({{result.repoName}})</span>
                         </div>
                         <div class="result-card flex-align-center">
-                            <div>{{ `${$t('latestVersion')}: ${result.latest}` }}</div>
+                            <div :title="result.latest">{{ `${$t('latestVersion')}: ${result.latest}` }}</div>
                             <div>{{ `${$t('versionCount')}: ${result.versions}` }}</div>
                             <div>{{ `${$t('downloads')}: ${result.downloads}` }}</div>
                             <div>{{ `${$t('lastModifiedDate')}: ${formatDate(result.lastModifiedDate)}` }}</div>
@@ -226,9 +229,9 @@
             border-bottom: 1px solid $borderWeightColor;
             .result-item{
                 justify-content: space-around;
-                padding-left: 15px;
+                padding: 5px 20px;
                 margin-bottom: 20px;
-                height: 60px;
+                height: 70px;
                 border: 1px solid $borderWeightColor;
                 border-radius: 5px;
                 background-color: #fdfdfe;
@@ -249,11 +252,11 @@
                         overflow: hidden;
                         text-overflow: ellipsis;
                         white-space: nowrap;
-                        &:nth-child(1) {
-                            width: 200px;
-                        }
-                        &:nth-child(4) {
+                        &:nth-child(3n + 1) {
                             width: 300px;
+                        }
+                        &:nth-child(5) {
+                            width: auto;
                         }
                     }
                 }

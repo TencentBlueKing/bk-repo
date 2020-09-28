@@ -10,7 +10,7 @@ interface NpmWebService {
     /**
      * 查询版本信息
      */
-    fun detailVersion(artifactInfo: NpmArtifactInfo, name: String, version: String): PackageVersionInfo
+    fun detailVersion(artifactInfo: NpmArtifactInfo, packageKey: String, version: String): PackageVersionInfo
 
     /**
      * 删除包

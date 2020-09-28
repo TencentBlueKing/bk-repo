@@ -1,6 +1,6 @@
 <template>
     <bk-tab class="common-version-container" type="unborder-card" v-bkloading="{ isLoading }">
-        <bk-tab-panel name="versionBaseInfo" :label="$t('baseInfo')">
+        <bk-tab-panel v-if="detail.basic" name="versionBaseInfo" :label="$t('baseInfo')">
             <div class="version-base-info">
                 <div class="base-info-left">
                     <div class="base-info-guide">
@@ -27,7 +27,16 @@
                         <div v-for="key in Object.keys(detailInfoMap)" :key="key">
                             <div class="mt20 flex-align-center" v-if="detail.basic.hasOwnProperty(key)">
                                 <span class="display-key">{{ detailInfoMap[key] }}</span>
-                                <span class="display-value">{{ detail.basic[key] }}</span>
+                                <span class="display-value">
+                                    {{ detail.basic[key] }}
+                                    <template v-if="key === 'version'">
+                                        <span class="mr5 repo-tag"
+                                            v-for="tag in detail.basic.stageTag"
+                                            :key="tag">
+                                            {{ tag }}
+                                        </span>
+                                    </template>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -61,7 +70,6 @@
         <bk-tab-panel v-if="detail.history" name="versionImageHistory" label="IMAGE HISTORY">
             <div class="version-history">
                 <div class="version-history-left">
-                    <header class="version-history-header"></header>
                     <div class="version-history-code hover-btn"
                         v-for="(code, index) in detail.history"
                         :key="code.created_by"
@@ -145,7 +153,6 @@
         computed: {
             detailInfoMap () {
                 return {
-                    'tag': 'Tag',
                     'version': this.$t('version'),
                     'os': 'OS/ARCH',
                     'fullPath': this.$t('path'),
@@ -286,6 +293,7 @@
             padding-right: 40px;
             margin-right: 40px;
             border-right: 2px solid $borderWeightColor;
+            overflow-y: auto;
             .version-history-code {
                 height: 42px;
                 line-height: 42px;
@@ -309,6 +317,7 @@
         }
         &-right {
             height: 100%;
+            overflow-y: auto;
             width: 70%;
             flex: 2;
         }

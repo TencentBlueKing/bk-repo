@@ -161,6 +161,7 @@ export default {
             xhr.setRequestHeader('Content-Type', headers['Content-Type'])
             xhr.setRequestHeader('X-BKREPO-OVERWRITE', headers['X-BKREPO-OVERWRITE'])
             xhr.setRequestHeader('X-BKREPO-EXPIRES', headers['X-BKREPO-EXPIRES'])
+            xhr.addEventListener('error', e => reject(e.target.response))
             xhr.send(body)
         })
     },
