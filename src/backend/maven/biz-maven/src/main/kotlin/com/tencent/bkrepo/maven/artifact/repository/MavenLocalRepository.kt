@@ -48,22 +48,28 @@ class MavenLocalRepository : LocalRepository() {
 
     override fun onUpload(context: ArtifactUploadContext) {
         with(context.artifactInfo) {
-            //改为解析pom文件数据
-            if (getArtifactFullPath().matches(Regex("(.)+-(.)+\\.pom"))){
+            // 改为解析pom文件数据
+            if (getArtifactFullPath().matches(Regex("(.)+-(.)+\\.pom"))) {
                 val mavenPom = context.getArtifactFile().getInputStream().readXmlString<MavenPom>()
+                // 打包方式为pom时，下载地址为pom文件地址，否则改为jar包地址。
+                val artifactFullPath = if (StringUtils.isNotBlank(mavenPom.version) && mavenPom.packaging == "pom") {
+                    getArtifactFullPath()
+                } else {
+                    StringBuilder(getArtifactFullPath().removeSuffix("pom")).append("jar").toString()
+                }
                 packageClient.createVersion(
-                        PackageVersionCreateRequest(
-                                projectId,
-                                repoName,
-                                packageName = mavenPom.artifactId,
-                                packageKey = PackageKeys.ofGav(mavenPom.groupId, mavenPom.artifactId),
-                                packageType = PackageType.MAVEN,
-                                versionName = mavenPom.version,
-                                size = context.getArtifactFile().getSize(),
-                                artifactPath = getArtifactFullPath(),
-                                overwrite = true,
-                                createdBy = context.userId
-                        )
+                    PackageVersionCreateRequest(
+                        projectId,
+                        repoName,
+                        packageName = mavenPom.artifactId,
+                        packageKey = PackageKeys.ofGav(mavenPom.groupId, mavenPom.artifactId),
+                        packageType = PackageType.MAVEN,
+                        versionName = mavenPom.version,
+                        size = context.getArtifactFile().getSize(),
+                        artifactPath = artifactFullPath,
+                        overwrite = true,
+                        createdBy = context.userId
+                    )
                 )
             }
         }
@@ -194,14 +200,14 @@ class MavenLocalRepository : LocalRepository() {
         val artifactId = packageKey.split(":").last()
         val groupId = packageKey.removePrefix("gav://").split(":")[0]
         val trueVersion = packageClient.findVersionByName(
-                context.projectId,
-                context.repoName,
-                packageKey,
-                version
-        ).data
+            context.projectId,
+            context.repoName,
+            packageKey,
+            version
+        ).data ?: return null
         with(context.artifactInfo) {
             val jarNode = nodeClient.detail(
-                projectId, repoName, trueVersion!!.contentPath!!
+                projectId, repoName, trueVersion.contentPath!!
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
             val mavenArtifactMetadata = jarNode.metadata
