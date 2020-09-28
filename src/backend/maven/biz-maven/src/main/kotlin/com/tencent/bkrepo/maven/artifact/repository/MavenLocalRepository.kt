@@ -222,11 +222,10 @@ class MavenLocalRepository : LocalRepository() {
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
             val mavenArtifactMetadata = jarNode.metadata
-            val countData = packageDownloadStatisticsClient.query(
-                projectId, repoName, jarNode.fullPath,
-                null, null, null
-            ).data
-            val count = countData?.count ?: 0
+            val countData = packageClient.findVersionByName(
+                projectId, repoName, packageKey, version
+            ).data?: return null
+            val count = countData.downloads
             val mavenArtifactBasic = Basic(
                 groupId,
                 artifactId,
