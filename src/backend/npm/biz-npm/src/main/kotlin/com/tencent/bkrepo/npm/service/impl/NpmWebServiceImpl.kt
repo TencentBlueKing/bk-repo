@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.DEPENDENCIES
@@ -31,9 +32,11 @@ import com.tencent.bkrepo.npm.service.AbstractNpmService
 import com.tencent.bkrepo.npm.service.ModuleDepsService
 import com.tencent.bkrepo.npm.service.NpmService
 import com.tencent.bkrepo.npm.service.NpmWebService
-import com.tencent.bkrepo.repository.api.DownloadStatisticsClient
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetric
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -45,43 +48,29 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
     private lateinit var moduleDepsService: ModuleDepsService
 
     @Autowired
-    private lateinit var downloadStatisticsClient: DownloadStatisticsClient
-
-    @Autowired
     private lateinit var npmService: NpmService
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
-    override fun detailVersion(artifactInfo: NpmArtifactInfo, name: String, version: String): PackageVersionInfo {
+    override fun detailVersion(artifactInfo: NpmArtifactInfo, packageKey: String, version: String): PackageVersionInfo {
+        val name = PackageKeys.resolveNpm(packageKey)
         val versionsInfo = searchPkgInfo(name).getAsJsonObject(VERSIONS)
         if (!versionsInfo.keySet().contains(version)) throw NpmArtifactNotFoundException("version [$version] don't found in package [$name].")
         val tarball = versionsInfo.getAsJsonObject(version).getAsJsonObject(DIST)[TARBALL].asString
         val nodeFullPath = tarball.substring(tarball.indexOf(name) - 1, tarball.length)
         with(artifactInfo) {
+            checkRepositoryExist(projectId, repoName)
             val nodeDetail = nodeClient.detail(projectId, repoName, REPO_TYPE, nodeFullPath).data ?: run {
                 logger.warn("node [$nodeFullPath] don't found.")
                 throw NpmArtifactNotFoundException("node [$nodeFullPath] don't found.")
             }
-            with(nodeDetail) {
-                val downloadCount = downloadStatisticsClient.query(projectId, repoName, name, version).data!!.count
-                val basicInfo = BasicInfo(
-                    version,
-                    fullPath,
-                    size,
-                    sha256!!,
-                    md5!!,
-                    stageTag,
-                    projectId,
-                    repoName,
-                    downloadCount,
-                    createdBy,
-                    createdDate,
-                    lastModifiedBy,
-                    lastModifiedDate
-                )
-                val versionDependenciesInfo = queryVersionDependenciesInfo(artifactInfo, versionsInfo.getAsJsonObject(version), name)
-                return PackageVersionInfo(basicInfo, emptyMap(), versionDependenciesInfo)
+            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: run {
+                logger.warn("packageKey [$packageKey] don't found.")
+                throw NpmArtifactNotFoundException("packageKey [$packageKey] don't found.")
             }
+            val basicInfo = buildBasicInfo(nodeDetail, packageVersion)
+            val versionDependenciesInfo = queryVersionDependenciesInfo(artifactInfo, versionsInfo.getAsJsonObject(version), name)
+            return PackageVersionInfo(basicInfo, emptyMap(), versionDependenciesInfo)
         }
     }
 
@@ -101,6 +90,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
     override fun deletePackage(deleteRequest: PackageDeleteRequest) {
         logger.info("npm delete package request: [$deleteRequest]")
         with(deleteRequest) {
+            checkRepositoryExist(projectId, repoName)
             val scope = if (name.contains('/')) name.substringBefore('/') else ""
             val pkgName = name.substringAfter('/')
             val artifactInfo = NpmArtifactInfo(projectId, repoName, "", scope, pkgName, "")
@@ -113,6 +103,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
     override fun deleteVersion(deleteRequest: PackageVersionDeleteRequest) {
         logger.info("npm delete package version request: [$deleteRequest]")
         with(deleteRequest) {
+            checkRepositoryExist(projectId, repoName)
             val scope = if (name.contains('/')) name.substringBefore('/') else ""
             val pkgName = name.substringAfter('/')
             val artifactInfo = NpmArtifactInfo(projectId, repoName, "", scope, pkgName, "")
@@ -160,6 +151,29 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
     }
 
     companion object {
+
+        val logger: Logger = LoggerFactory.getLogger(NpmWebServiceImpl::class.java)
+
+        fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo{
+            with(nodeDetail) {
+                return BasicInfo(
+                    packageVersion.name,
+                    fullPath,
+                    size,
+                    sha256!!,
+                    md5!!,
+                    packageVersion.stageTag,
+                    projectId,
+                    repoName,
+                    packageVersion.downloads,
+                    createdBy,
+                    createdDate,
+                    lastModifiedBy,
+                    lastModifiedDate
+                )
+            }
+        }
+
         fun convert(downloadStatisticsMetric: DownloadStatisticsMetric): DownloadCount {
             with(downloadStatisticsMetric) {
                 return DownloadCount(description, count)
