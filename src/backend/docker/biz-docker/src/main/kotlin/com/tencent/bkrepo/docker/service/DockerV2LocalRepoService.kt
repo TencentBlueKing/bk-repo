@@ -45,8 +45,6 @@ import com.tencent.bkrepo.docker.util.ResponseUtil
 import com.tencent.bkrepo.docker.util.ResponseUtil.emptyBlobGetResponse
 import com.tencent.bkrepo.docker.util.ResponseUtil.emptyBlobHeadResponse
 import com.tencent.bkrepo.docker.util.ResponseUtil.isEmptyBlob
-import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.apache.commons.lang.StringUtils
@@ -70,8 +68,7 @@ import java.nio.charset.Charset
 @Service
 class DockerV2LocalRepoService @Autowired constructor(
     val artifactRepo: DockerArtifactRepo,
-    val packageRepo: DockerPackageRepo,
-    val packageDownloadStatisticsClient: PackageDownloadStatisticsClient
+    val packageRepo: DockerPackageRepo
 ) : DockerV2RepoService {
 
     @Value("\${docker.domain: ''}")
@@ -151,16 +148,7 @@ class DockerV2LocalRepoService @Autowired constructor(
     override fun getManifest(context: RequestContext, reference: String): DockerResponse {
         RepoUtil.loadContext(artifactRepo, context)
         logger.info("get manifest params [$context,$reference]")
-        with(context) {
-            val request = DownloadStatisticsAddRequest(
-                projectId,
-                repoName,
-                PackageKeys.ofDocker(artifactName),
-                artifactName,
-                reference
-            )
-            packageDownloadStatisticsClient.add(request)
-        }
+        packageRepo.addDownloadStatic(context, reference)
         return try {
             val digest = DockerDigest(reference)
             manifestProcess.getManifestByDigest(context, digest, httpHeaders)
@@ -200,22 +188,18 @@ class DockerV2LocalRepoService @Autowired constructor(
 
     override fun deleteTag(context: RequestContext, tag: String): Boolean {
         RepoUtil.loadContext(artifactRepo, context)
-        with(context) {
-            val result = artifactRepo.deleteByTag(projectId, repoName, artifactName, tag)
-            if (!result) return false
-            return packageRepo.deletePackageVersion(projectId, repoName, PackageKeys.ofDocker(artifactName), tag)
-        }
+        val result = artifactRepo.deleteByTag(context, tag)
+        if (!result) return false
+        return packageRepo.deletePackageVersion(context, tag)
     }
 
     fun deleteManifest(context: RequestContext): Boolean {
         RepoUtil.loadContext(artifactRepo, context)
-        with(context) {
-            artifactRepo.getRepoTagList(context, 0, 99999, null).forEach {
-                if (!artifactRepo.deleteByTag(projectId, repoName, artifactName, it.tag)) {
-                    return false
-                }
+        artifactRepo.getRepoTagList(context, 0, 99999, null).forEach {
+            if (!artifactRepo.deleteByTag(context, it.tag)) {
+                return false
             }
-            return packageRepo.deletePackage(projectId, repoName, PackageKeys.ofDocker(artifactName))
+            return packageRepo.deletePackage(context)
         }
         return true
     }
@@ -429,25 +413,22 @@ class DockerV2LocalRepoService @Autowired constructor(
     override fun getRepoTagDetail(context: RequestContext, tag: String): Map<String, Any>? {
         val fullPath = "/${context.artifactName}/$tag/$DOCKER_MANIFEST"
         val nodeDetail = artifactRepo.getNodeDetail(context, fullPath) ?: return null
-        val downloadCount = 0L
+        val versionDetail = packageRepo.getPackageVersion(context, tag) ?: return null
         val manifestBytes = getManifestData(context, tag) ?: return null
         try {
             val manifest = JsonUtils.objectMapper.readValue(manifestBytes, DockerSchema2::class.java)
-            var size = manifest.config.size
             val layers = manifest.layers
 
-            layers.forEach {
-                size += it.size
-            }
             val configBytes = manifestProcess.getSchema2ConfigContent(context, manifestBytes, tag)
             val configBlob = JsonUtils.objectMapper.readValue(configBytes, DockerSchema2Config::class.java)
             val basic = mapOf(
-                DOCKER_NODE_SIZE to size,
+                DOCKER_NODE_SIZE to versionDetail.size,
                 "version" to tag,
                 "dockerDomain" to domain,
                 LAST_MODIFIED_BY to nodeDetail.lastModifiedBy,
                 LAST_MODIFIED_DATE to nodeDetail.lastModifiedDate,
-                DOWNLOAD_COUNT to downloadCount,
+                DOWNLOAD_COUNT to versionDetail.downloads,
+                "STAGE_TAG" to versionDetail.stageTag,
                 "sha256" to DockerDigest(manifest.config.digest).hex,
                 "os" to configBlob.os
             )
@@ -487,7 +468,7 @@ class DockerV2LocalRepoService @Autowired constructor(
             if (!artifactRepo.exists(projectId, repoName, manifestPath)) {
                 logger.warn("repo not exist [$context]")
                 return DockerV2Errors.manifestUnknown(manifestPath)
-            } else if (artifactRepo.deleteByTag(context.projectId, context.repoName, context.artifactName, tag)) {
+            } else if (artifactRepo.deleteByTag(context, tag)) {
                 return ResponseEntity.status(HttpStatus.ACCEPTED).apply {
                     header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
                 }.build()
