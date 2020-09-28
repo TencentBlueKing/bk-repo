@@ -5,5 +5,6 @@ data class RpmVersion(
     val arch: String,
     val epoch: String,
     val ver: String,
-    val rel: String
+    val rel: String,
+    val path: String?
 )

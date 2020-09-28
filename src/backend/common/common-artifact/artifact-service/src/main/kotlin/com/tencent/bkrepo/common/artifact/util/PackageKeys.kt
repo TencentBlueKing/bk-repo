@@ -9,6 +9,7 @@ object PackageKeys {
 
     private const val DOCKER = "docker"
     private const val NPM = "npm"
+    private const val RPM = "rpm"
     private const val SEPARATOR = "://"
 
     /**
@@ -46,6 +47,18 @@ object PackageKeys {
      */
     fun ofNpm(name: String): String {
         return ofName(NPM, name)
+    }
+
+    /**
+     * 生成rpm格式key
+     *
+     * 例子: npm://test
+     */
+    fun ofRpm(path: String, name: String): String {
+        return StringBuilder(RPM).append(SEPARATOR).append(path)
+                .append(StringPool.COLON)
+                .append(name)
+                .toString()
     }
 
     /**
