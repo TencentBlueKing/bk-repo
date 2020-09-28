@@ -51,7 +51,7 @@
                         <div class="proxy-operation">{{$t('operation')}}</div>
                     </div>
                     <draggable v-model="proxyList" :options="{ animation: 200 }">
-                        <div class="proxy-item" v-for="proxy in proxyList" :key="proxy.name">
+                        <div class="proxy-item" v-for="proxy in proxyList" :key="proxy.name + Math.random()">
                             <div class="proxy-index flex-align-center">
                                 <i class="devops-icon icon-more"></i>
                                 <i class="devops-icon icon-more" style="margin-left:-5px"></i>
@@ -117,9 +117,9 @@
                         <bk-form-item v-if="editProxyData.ticket" :label="$t('password')" :required="true" property="password" error-display-type="normal">
                             <bk-input v-model="editProxyData.password"></bk-input>
                         </bk-form-item>
-                        <bk-form-item>
+                        <!-- <bk-form-item>
                             <bk-button text theme="primary" @click="testPrivateProxy">{{$t('test') + $t('privateProxy')}}</bk-button>
-                        </bk-form-item>
+                        </bk-form-item> -->
                     </bk-form>
                 </bk-tab-panel>
             </bk-tab>
@@ -311,7 +311,7 @@
                     ...this.editProxyData,
                     ...row,
                     type: 'edit',
-                    ticket: Boolean(row.username)
+                    ticket: Boolean(row.username.length)
                 }
             },
             deleteProxy (row) {
@@ -355,12 +355,21 @@
             },
             testPrivateProxy () {},
             saveProxy () {
+                const names = this.proxyList.map(v => v.name)
+                if (names.length !== new Set(names).size) {
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: this.$t('sameProxyExist')
+                    })
+                    return
+                }
                 this.editProxyData.loading = true
                 this.updateRepoInfo({
                     projectId: this.projectId,
                     name: this.repoName,
                     body: {
                         configuration: {
+                            ...this.repoBaseInfo.configuration,
                             proxy: {
                                 channelList: this.proxyList
                             }

@@ -52,7 +52,7 @@
                             <span class="ml10">({{result.repoName}})</span>
                         </div>
                         <div class="result-card flex-align-center">
-                            <div>{{ `${$t('latestVersion')}: ${result.latest}` }}</div>
+                            <div :title="result.latest">{{ `${$t('latestVersion')}: ${result.latest}` }}</div>
                             <div>{{ `${$t('versionCount')}: ${result.versions}` }}</div>
                             <div>{{ `${$t('downloads')}: ${result.downloads}` }}</div>
                             <div>{{ `${$t('lastModifiedDate')}: ${formatDate(result.lastModifiedDate)}` }}</div>
@@ -252,10 +252,7 @@
                         overflow: hidden;
                         text-overflow: ellipsis;
                         white-space: nowrap;
-                        &:nth-child(1) {
-                            width: 200px;
-                        }
-                        &:nth-child(4) {
+                        &:nth-child(3n + 1) {
                             width: 300px;
                         }
                         &:nth-child(5) {
