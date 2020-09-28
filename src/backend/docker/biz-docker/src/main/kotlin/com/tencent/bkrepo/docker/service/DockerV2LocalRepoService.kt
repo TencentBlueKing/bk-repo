@@ -444,7 +444,7 @@ class DockerV2LocalRepoService @Autowired constructor(
             val basic = mapOf(
                 DOCKER_NODE_SIZE to size,
                 "version" to tag,
-                "domain" to domain,
+                "dockerDomain" to domain,
                 LAST_MODIFIED_BY to nodeDetail.lastModifiedBy,
                 LAST_MODIFIED_DATE to nodeDetail.lastModifiedDate,
                 DOWNLOAD_COUNT to downloadCount,
