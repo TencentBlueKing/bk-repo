@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.npm.dao.repository.ModuleDepsRepository
 import com.tencent.bkrepo.npm.model.TModuleDeps
 import com.tencent.bkrepo.npm.pojo.module.des.ModuleDepsInfo
@@ -11,7 +12,6 @@ import com.tencent.bkrepo.npm.pojo.module.des.service.DepsCreateRequest
 import com.tencent.bkrepo.npm.pojo.module.des.service.DepsDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -178,16 +178,14 @@ class ModuleDepsService {
     }
 
     fun page(projectId: String, repoName: String, pageNumber: Int, pageSize: Int, name: String): Page<ModuleDepsInfo> {
-        pageNumber.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageNumber")
-        pageSize.takeIf { it > 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "pageSize")
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val criteria =
             Criteria.where(TModuleDeps::projectId.name).`is`(projectId).and(TModuleDeps::repoName.name).`is`(repoName)
                 .and(TModuleDeps::name.name).`is`(name)
         val query = Query.query(criteria).with(Sort.by(TModuleDeps::createdDate.name))
-        val pageRequest = PageRequest.of(pageNumber - 1 ,pageSize)
         val listData = mongoTemplate.find(query.with(pageRequest), TModuleDeps::class.java).map { convert(it)!! }
         val count = mongoTemplate.count(query, TModuleDeps::class.java)
-        return Page(pageNumber, pageSize, count, listData)
+        return Pages.ofResponse(pageRequest, count, listData)
     }
 
     companion object {
