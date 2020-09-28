@@ -41,10 +41,10 @@
         },
         methods: {
             ...mapActions([
-                'uploadArtifactory'
+                'uploadArtifactory',
+                'checkFileExist'
             ]),
-            async submitUpload () {
-                const { file, progressHandler } = await this.$refs.artifactoryUpload.getFiles()
+            uploadFile (file, progressHandler) {
                 this.loading = true
                 this.uploadXHR && this.uploadXHR.abort()
                 this.uploadXHR = new XMLHttpRequest()
@@ -75,6 +75,25 @@
                 }).finally(() => {
                     this.loading = false
                 })
+            },
+            async submitUpload () {
+                const { file, progressHandler } = await this.$refs.artifactoryUpload.getFiles()
+                if (!file.overwrite) {
+                    await this.checkFileExist({
+                        projectId: this.$route.params.projectId,
+                        repoName: this.$route.query.name,
+                        fullPath: `${this.fullPath}/${file.name}`
+                    }).then(() => {
+                        this.uploadFile(file, progressHandler)
+                    }).catch(() => {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: this.$t('fileExist')
+                        })
+                    })
+                } else {
+                    this.uploadFile(file, progressHandler)
+                }
             },
             abortUpload () {
                 this.loading = false
