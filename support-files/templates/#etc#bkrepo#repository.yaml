@@ -1,17 +1,2 @@
 server:
   port: __BK_REPO_REPOSITORY_PORT__
-
-repository:
-  deletedNodeReserveDays: 15
-  defaultStorageCredentialsKey: secondary
-
-spring:
-  cloud:
-    stream:
-      default-binder: noop
-      binders:
-        noop:
-          type: noop
-      bindings:
-        event-output:
-          destination: event-topic

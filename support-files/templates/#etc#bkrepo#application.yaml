@@ -9,10 +9,6 @@ spring:
       transaction:
         enabled: false
 
-ribbon:
-  gray:
-    enabled: true
-
 logging:
   config: classpath:logback-config.xml
   path: __BK_REPO_LOG_PATH__
@@ -21,24 +17,7 @@ storage:
   type: filesystem
   filesystem:
     path: __BK_REPO_FILE_PATH__
-  monitor:
-    enabled: false
-  fileSizeThreshold: 5MB
-
-
-# deprecated: http auth
-auth:
-  enabled: true
-  jwt:
-    secretKey: bkrepo@secret
 
 security:
-  # deprecated: service auth
-  enabled: false
   auth:
     enabled: true
-    jwt:
-      secretKey: bkrepo@secret
-  service:
-    enabled: false
-    secretKey: bkrepo@secret
