@@ -3,7 +3,6 @@ package com.tencent.bkrepo.npm.async
 import com.google.gson.JsonObject
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.constants.ATTACHMENTS
 import com.tencent.bkrepo.npm.constants.DESCRIPTION
 import com.tencent.bkrepo.npm.constants.DISTTAGS
 import com.tencent.bkrepo.npm.constants.LATEST
@@ -33,12 +32,12 @@ class PackageHandler {
      * 创建包版本
      */
     @Async
-    fun createVersion(userId: String, artifactInfo: NpmArtifactInfo, npmMetaDataJsonObject: JsonObject) {
+    fun createVersion(userId: String, artifactInfo: NpmArtifactInfo, npmMetaDataJsonObject: JsonObject, attributes: Map<String,Any>) {
         npmMetaDataJsonObject.apply {
             val name = this[NAME].asString
             val description = this[DESCRIPTION]?.asString
             val version = getLatestVersion(this.getAsJsonObject(DISTTAGS))
-            val size = getFileSize(name, version, this.getAsJsonObject(ATTACHMENTS))
+            val size = attributes[LENGTH] as Long
             val manifestPath = getManifestPath(name, version)
             val contentPath = getContentPath(name, version)
             val metadata = buildMetaData(this.getAsJsonObject(VERSIONS).getAsJsonObject(version))
@@ -93,12 +92,11 @@ class PackageHandler {
     }
 
     fun getLatestVersion(distTags: JsonObject): String {
+        val iterator = distTags.entrySet().iterator()
+        if (iterator.hasNext()){
+            return iterator.next().value.asString
+        }
         return distTags[LATEST].asString
-    }
-
-    fun getFileSize(name: String, version: String, attachments: JsonObject): Long {
-        val key = String.format("%s-%s.tgz", name, version)
-        return attachments.getAsJsonObject(key)[LENGTH].asLong
     }
 
     fun getManifestPath(name: String, version: String): String {

@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.npm.service
 
+import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
@@ -31,6 +32,7 @@ import com.tencent.bkrepo.npm.constants.ERROR_MAP
 import com.tencent.bkrepo.npm.constants.FILE_DASH
 import com.tencent.bkrepo.npm.constants.FILE_SUFFIX
 import com.tencent.bkrepo.npm.constants.LATEST
+import com.tencent.bkrepo.npm.constants.LENGTH
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -95,7 +97,7 @@ class NpmService @Autowired constructor(
             // 上传构件
             ArtifactContextHolder.getRepository().upload(context)
             npmDependentHandler.updatePkgDepts(userId, artifactInfo, jsonObj, NpmOperationAction.PUBLISH)
-            packageHandler.createVersion(userId, artifactInfo, jsonObj)
+            packageHandler.createVersion(userId, artifactInfo, jsonObj, context.getAttributes())
             NpmSuccessResponse.createEntitySuccess()
         } else {
             unPublishOperation(artifactInfo, jsonObj)
@@ -212,6 +214,8 @@ class NpmService @Autowired constructor(
         val mutableMap = jsonObj.getAsJsonObject(ATTACHMENTS).getAsJsonObject(attachKey)
         context.putAttribute(NPM_PKG_TGZ_FILE_FULL_PATH, String.format(NPM_PKG_TGZ_FULL_PATH, name, name, distTags.second))
         context.putAttribute(APPLICATION_OCTET_STEAM, mutableMap.get(CONTENT_TYPE).asString)
+        context.putAttribute(LENGTH, mutableMap[LENGTH].asLong)
+        jsonObj.add(ATTACHMENTS, JsonNull.INSTANCE)
         // jsonObj.remove(ATTACHMENTS)
         return mutableMap
     }
