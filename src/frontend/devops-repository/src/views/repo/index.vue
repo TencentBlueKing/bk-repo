@@ -23,8 +23,8 @@
         <main class="repo-detail-main">
             <div class="repo-detail-search flex-align-center"
                 :style="showRepoSearch ? 'margin-top: 20px' : ''">
-                <bk-search-select
-                    class="repo-search-select"
+                <bk-input class="repo-search-select" v-model="packageNameInput" clearable :placeholder="$t('pleaseInput') + $t('packageName')"></bk-input>
+                <!-- <bk-search-select
                     :values="artiQuery"
                     :data="filterList"
                     clearable
@@ -33,7 +33,7 @@
                     @change="queryChangeHandler"
                     :show-condition="false"
                     :show-popover-tag-change="true">
-                </bk-search-select>
+                </bk-search-select> -->
                 <bk-button class="ml20" outline theme="primary" @click="searchHandler">
                     {{$t('searchInRepo')}}
                 </bk-button>
@@ -56,7 +56,7 @@
     import Breadcrumb from '@/components/Breadcrumb'
     import RepoSelect from '@/components/RepoSelect'
     import repoGuide from './repoCommon/repoGuide'
-    import filterList from './filter'
+    // import filterList from './filter'
     import repoGuideMixin from './repoGuideMixin'
     import { mapState, mapActions } from 'vuex'
     export default {
@@ -72,7 +72,8 @@
                 repoList: [],
                 showRepoSearch: false,
                 showGuide: false,
-                artiQuery: []
+                packageNameInput: ''
+                // artiQuery: []
             }
         },
         computed: {
@@ -85,10 +86,10 @@
             },
             repoName () {
                 return this.$route.query.name
-            },
-            filterList () {
-                return filterList[this.repoType]
             }
+            // filterList () {
+            //     return filterList[this.repoType]
+            // }
         },
         created () {
             this.getRepoListAll({
@@ -135,36 +136,38 @@
             handlerShowGuide () {
                 this.showGuide = true
             },
-            queryChangeHandler (query) {
-                const keys = this.filterList.map(v => v.id)
-                this.artiQuery = Object.values(
-                    query.reduce((target, item) => {
-                        if (keys.includes(item.id)) {
-                            target[item.id] = item
-                        }
-                        return target
-                    }, {}))
-            },
+            // queryChangeHandler (query) {
+            //     const keys = this.filterList.map(v => v.id)
+            //     this.artiQuery = Object.values(
+            //         query.reduce((target, item) => {
+            //             if (keys.includes(item.id)) {
+            //                 target[item.id] = item
+            //             }
+            //             return target
+            //         }, {}))
+            // },
             searchHandler () {
-                const query = this.artiQuery.reduce((target, item) => {
-                    target[item.id] = item.values.map(v => v.id).join('')
-                    return target
-                }, {})
-                this.$refs[this.repoType].searchHandler(query)
+                // const query = this.artiQuery.reduce((target, item) => {
+                //     target[item.id] = item.values.map(v => v.id).join('')
+                //     return target
+                // }, {})
+                this.$refs[this.repoType].searchHandler({
+                    name: this.packageNameInput
+                })
             },
             resetQueryAndBack () {
-                this.artiQuery = []
+                // this.artiQuery = []
                 this.showRepoSearch = false
                 this.$refs[this.repoType].resetQueryAndBack()
             },
             fileSearch () {
-                const file = (this.artiQuery.find(v => v.id === 'name') || { values: [{ id: '' }] }).values[0].id
+                // const file = (this.artiQuery.find(v => v.id === 'name') || { values: [{ id: '' }] }).values[0].id
                 this.$router.push({
                     name: 'repoSearch',
                     query: {
                         type: this.repoType,
                         name: this.repoName,
-                        file
+                        packageName: this.packageNameInput
                     }
                 })
             }
@@ -190,7 +193,7 @@
         }
     }
     .repo-detail-main {
-        height: calc(100% - 80px);
+        height: calc(100% - 70px);
         margin-top: 20px;
         padding: 0 20px 20px;
         background-color: white;
@@ -199,7 +202,7 @@
             margin: -32px 0 20px;
             transition: all .3s;
             .repo-search-select {
-                min-width: 350px;
+                max-width: 350px;
             }
             .align-right {
                 margin-left: auto;

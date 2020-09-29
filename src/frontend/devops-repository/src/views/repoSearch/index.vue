@@ -17,10 +17,10 @@
                     :placeholder="$t('pleaseInput') + $t('packageName')"
                     clearable>
                 </bk-input>
-                <bk-button :loading="isLoading" theme="primary" @click="searchHandler">{{$t('search')}}</bk-button>
+                <bk-button :loading="isLoading" theme="primary" @click="searckPackageHandler">{{$t('search')}}</bk-button>
             </div>
             <div class="repo-type-search">
-                <bk-radio-group v-model="repoType" @change="searchHandler" class="repo-type-radio-group">
+                <bk-radio-group v-model="repoType" @change="searckPackageHandler" class="repo-type-radio-group">
                     <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
                         <div class="flex-center repo-type-radio">
                             <icon size="60" :name="repo" />
@@ -88,7 +88,7 @@
                 repoEnum,
                 showRepoSearch: true,
                 isLoading: false,
-                packageNameInput: this.$route.query.file || '',
+                packageNameInput: this.$route.query.packageName || '',
                 repoType: this.$route.query.type,
                 pagination: {
                     current: 1,
@@ -112,7 +112,7 @@
             ...mapActions([
                 'searchPackageList'
             ]),
-            searchHandler () {
+            searckPackageHandler () {
                 this.isLoading = true
                 this.searchPackageList({
                     projectId: this.projectId,
@@ -127,7 +127,7 @@
                     this.isLoading = false
                 })
             },
-            toRepoDetail (file) {
+            toRepoDetail (pkg) {
                 this.$router.push({
                     name: 'commonPackage',
                     params: {
@@ -135,15 +135,15 @@
                         repoType: this.repoType
                     },
                     query: {
-                        name: file.repoName,
-                        package: file.key
+                        name: pkg.repoName,
+                        package: pkg.key
                     }
                 })
             },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
-                this.searchHandler()
+                this.searckPackageHandler()
             },
             goBack () {
                 const { type, name } = this.$route.query
