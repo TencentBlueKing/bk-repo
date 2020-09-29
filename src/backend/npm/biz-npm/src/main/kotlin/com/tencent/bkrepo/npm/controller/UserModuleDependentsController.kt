@@ -24,7 +24,7 @@ class UserModuleDependentsController(
     private val moduleDepsService: ModuleDepsService
 ) {
     @ApiOperation("分页查询某个资源节点被依赖的所有资源名称")
-    @GetMapping("/dependent/page/{projectId}/{repoName}/")
+    @GetMapping("/dependent/page/{projectId}/{repoName}")
     fun page(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
