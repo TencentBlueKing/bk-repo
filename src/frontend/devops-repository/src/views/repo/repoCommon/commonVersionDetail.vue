@@ -28,7 +28,7 @@
                             <div class="mt20 flex-align-center" v-if="detail.basic.hasOwnProperty(key)">
                                 <span class="display-key">{{ detailInfoMap[key] }}</span>
                                 <span class="display-value">
-                                    {{ key === 'size' ? convertFileSize(detail.basic[key]) : detail.basic[key] }}
+                                    {{ detail.basic[key] }}
                                     <template v-if="key === 'version'">
                                         <span class="mr5 repo-tag"
                                             v-for="tag in detail.basic.stageTag"
@@ -91,7 +91,7 @@
         </bk-tab-panel>
         <bk-tab-panel v-if="detail.dependencyInfo" name="versionDependencies" :label="$t('dependencies')">
             <article class="version-dependencies">
-                <section v-for="type in ['dependencies', 'devDependencies', 'dependents']" :key="type">
+                <section v-for="type in ['dependencies', 'devDependencies']" :key="type">
                     <header class="version-dependencies-header">{{ type }}</header>
                     <div class="version-dependencies-main">
                         <template v-if="detail.dependencyInfo[type].length">
@@ -99,10 +99,28 @@
                                 v-for="{ name, version } in detail.dependencyInfo[type]"
                                 :key="name + Math.random()">
                                 <div class="version-dependencies-key">{{ name }}</div>
-                                <div v-if="type !== 'dependents'" class="version-dependencies-value">{{ version }}</div>
+                                <div class="version-dependencies-value">{{ version }}</div>
                             </div>
                             <div class="flex-align-center hover-btn version-dependencies-more"
                                 v-if="type === 'dependents' && dependentsPage"
+                                @click="loadMore">
+                                {{ $t('loadMore') }}
+                            </div>
+                        </template>
+                        <div v-else>{{$t('noData')}}</div>
+                    </div>
+                </section>
+                <section>
+                    <header class="version-dependencies-header">dependents</header>
+                    <div class="version-dependencies-main version-dependencies-dependents">
+                        <template v-if="detail.dependencyInfo.dependents.length">
+                            <div class="flex-align-center version-dependencies-item"
+                                v-for="({ name }, index) in detail.dependencyInfo.dependents"
+                                :key="name + Math.random()">
+                                <div :class="`version-dependencies-${index % 2 ? 'value' : 'key'}`">{{ name }}</div>
+                            </div>
+                            <div class="flex-align-center hover-btn version-dependencies-more"
+                                v-if="dependentsPage"
                                 @click="loadMore">
                                 {{ $t('loadMore') }}
                             </div>
@@ -117,7 +135,7 @@
 <script>
     import CodeArea from '@/components/CodeArea'
     import { mapActions } from 'vuex'
-    import { convertFileSize } from '@/utils'
+    import { convertFileSize, formatDate } from '@/utils'
     import repoGuide from './repoGuide'
     import repoGuideMixin from '../repoGuideMixin'
     import commonMixin from './commonMixin'
@@ -127,7 +145,6 @@
         mixins: [repoGuideMixin, commonMixin],
         data () {
             return {
-                convertFileSize,
                 isLoading: false,
                 detail: {
                     basic: {},
@@ -190,7 +207,15 @@
                     packageKey: this.packageKey,
                     version: this.version
                 }).then(res => {
-                    this.detail = res
+                    this.detail = {
+                        ...res,
+                        basic: {
+                            ...res.basic,
+                            size: convertFileSize(res.basic.size),
+                            createdDate: formatDate(res.basic.createdDate),
+                            lastModifiedDate: formatDate(res.basic.lastModifiedDate)
+                        }
+                    }
                     if (this.repoType === 'npm') {
                         const dependents = res.dependencyInfo.dependents
                         this.detail.dependencyInfo.dependents = dependents.records
@@ -342,6 +367,9 @@
             grid-template: auto / 1fr 1fr;
             margin: 5px 0 20px;
         }
+        &-dependents {
+            grid-template: auto / 1fr 1fr 1fr 1fr;
+        }
         &-item {
             border-bottom: 1px solid $borderWeightColor;
             &:first-child, &:nth-child(2) {
@@ -352,16 +380,13 @@
             line-height: 40px;
             padding-left: 30px;
         }
-        &-key {
+        &-key, &-value {
             flex: 1;
             line-height: 40px;
             padding-left: 30px;
-            background-color: $bgLightColor;
         }
-        &-value {
-            flex: 1;
-            line-height: 40px;
-            padding-left: 60px;
+        &-key {
+            background-color: $bgLightColor;
         }
     }
     .display-key {
