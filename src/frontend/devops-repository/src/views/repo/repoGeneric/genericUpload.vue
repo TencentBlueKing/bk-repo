@@ -79,6 +79,7 @@
             async submitUpload () {
                 const { file, progressHandler } = await this.$refs.artifactoryUpload.getFiles()
                 if (!file.overwrite) {
+                    this.loading = true
                     await this.checkFileExist({
                         projectId: this.$route.params.projectId,
                         repoName: this.$route.query.name,
@@ -90,6 +91,7 @@
                             theme: 'error',
                             message: this.$t('fileExist')
                         })
+                        this.loading = false
                     })
                 } else {
                     this.uploadFile(file, progressHandler)

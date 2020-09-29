@@ -64,6 +64,7 @@
             margin-left: -30px;
         }
         .code-pre {
+            font-family: Helvetica Neue,Arial,PingFang SC,Hiragino Sans GB,Microsoft Yahei,WenQuanYi Micro Hei,sans-serif;
             white-space: pre-wrap;
             margin: 0;
         }
