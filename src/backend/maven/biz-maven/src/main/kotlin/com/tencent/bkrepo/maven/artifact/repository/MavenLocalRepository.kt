@@ -222,10 +222,10 @@ class MavenLocalRepository : LocalRepository() {
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
             val mavenArtifactMetadata = jarNode.metadata
-            val countData = packageClient.findVersionByName(
+            val packageVersion = packageClient.findVersionByName(
                 projectId, repoName, packageKey, version
-            ).data?: return null
-            val count = countData.downloads
+            ).data
+            val count = packageVersion?.downloads ?: 0
             val mavenArtifactBasic = Basic(
                 groupId,
                 artifactId,
@@ -248,12 +248,16 @@ class MavenLocalRepository : LocalRepository() {
     ): DownloadStatisticsAddRequest? {
         with(context) {
             val fullPath = context.artifactInfo.getArtifactFullPath()
-            val mavenGAVC = fullPath.GAVC()
-            val version = mavenGAVC.version
-            val artifactId = mavenGAVC.artifactId
-            val groupId = mavenGAVC.groupId.formatSeparator("/", ".")
-            val packageKey = PackageKeys.ofGav(groupId, artifactId)
-            return DownloadStatisticsAddRequest(projectId, repoName, packageKey, artifactId, version)
+            return if (fullPath.endsWith(".pom")) {
+                val mavenGAVC = fullPath.GAVC()
+                val version = mavenGAVC.version
+                val artifactId = mavenGAVC.artifactId
+                val groupId = mavenGAVC.groupId.formatSeparator("/", ".")
+                val packageKey = PackageKeys.ofGav(groupId, artifactId)
+                DownloadStatisticsAddRequest(projectId, repoName, packageKey, artifactId, version)
+            } else {
+                null
+            }
         }
     }
 
