@@ -191,6 +191,7 @@
             this.initDetail()
         },
         methods: {
+            convertFileSize,
             ...mapActions([
                 'getVersionDetail',
                 'getNpmDependents'
