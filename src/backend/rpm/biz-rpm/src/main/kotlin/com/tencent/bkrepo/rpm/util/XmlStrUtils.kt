@@ -124,7 +124,7 @@ object XmlStrUtils {
                 "name=\"$name\">\n" +
                     "    <version epoch=\"$epoch\" ver=\"$ver\" rel=\"$rel\"/>"
             }
-            //同名文件在系统中无法保存，primary索引使用<href>定位
+            // 同名文件在系统中无法保存，primary索引使用<href>定位
             "primary" -> { "<location href=\"$location\"/>" }
             else -> {
                 logger.error("$filename 中解析出$indexType 是不受支持的索引类型")

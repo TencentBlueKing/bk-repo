@@ -9,7 +9,11 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.*
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -37,7 +41,13 @@ import com.tencent.bkrepo.rpm.artifact.SurplusNodeCleaner
 import com.tencent.bkrepo.rpm.exception.RpmArtifactFormatNotSupportedException
 import com.tencent.bkrepo.rpm.exception.RpmArtifactMetadataResolveException
 import com.tencent.bkrepo.rpm.exception.RpmVersionNotFoundException
-import com.tencent.bkrepo.rpm.pojo.*
+import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
+import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
+import com.tencent.bkrepo.rpm.pojo.RpmVersion
+import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
+import com.tencent.bkrepo.rpm.pojo.ArtifactFormat
+import com.tencent.bkrepo.rpm.pojo.RpmArtifactVersionData
+import com.tencent.bkrepo.rpm.pojo.Basic
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH_SHA256
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.NONE
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH
@@ -73,7 +83,6 @@ import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoIndex
-import org.apache.commons.lang.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
 
@@ -87,10 +96,6 @@ class RpmLocalRepository(
 
     @Autowired
     lateinit var stageClient: StageClient
-
-    override fun onUploadSuccess(context: ArtifactUploadContext) {
-        super.onUploadSuccess(context)
-    }
 
     fun rpmNodeCreateRequest(
         context: ArtifactUploadContext,
@@ -626,11 +631,12 @@ class RpmLocalRepository(
             val nodeCreateRequest = if (mark) {
                 when (artifactFormat) {
                     RPM -> {
-                        //保存rpm构件索引
+                        // 保存rpm构件索引
                         val rpmVersion = indexer(context, repeat, rpmRepoConf)
                         val rpmPackagePojo = context.artifactInfo.getArtifactFullPath().toRpmPackagePojo()
-                        //保存包版本
-                        packageClient.createVersion(PackageVersionCreateRequest(
+                        // 保存包版本
+                        packageClient.createVersion(
+                            PackageVersionCreateRequest(
                                 context.projectId,
                                 context.repoName,
                                 rpmPackagePojo.name,
@@ -643,11 +649,12 @@ class RpmLocalRepository(
                                 context.artifactInfo.getArtifactFullPath(),
                                 overwrite = true,
                                 createdBy = context.userId
-                        ))
+                            )
+                        )
                         rpmNodeCreateRequest(context, rpmVersion.toMetadata())
                     }
                     XML -> {
-                        //保存分组文件
+                        // 保存分组文件
                         storeGroupFile(context)
                         rpmNodeCreateRequest(context, mutableMapOf())
                     }
@@ -656,23 +663,24 @@ class RpmLocalRepository(
 
             storageManager.storeArtifactFile(nodeCreateRequest, context.getArtifactFile(), context.storageCredentials)
             with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/${getArtifactFullPath()}") }
-
         }
         successUpload(context, mark, rpmRepoConf.repodataDepth)
     }
 
-    //rpm 客户端下载统计
+    // rpm 客户端下载统计
     override fun buildDownloadRecord(
-            context: ArtifactDownloadContext,
-            artifactResource: ArtifactResource
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
     ): DownloadStatisticsAddRequest? {
         with(context) {
             val fullPath = context.artifactInfo.getArtifactFullPath()
             return if (fullPath.endsWith(".rpm")) {
                 val rpmPackagePojo = fullPath.toRpmPackagePojo()
                 val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
-                return DownloadStatisticsAddRequest(projectId, repoName,
-                        packageKey, rpmPackagePojo.name, rpmPackagePojo.version)
+                return DownloadStatisticsAddRequest(
+                    projectId, repoName,
+                    packageKey, rpmPackagePojo.name, rpmPackagePojo.version
+                )
             } else {
                 null
             }
@@ -686,7 +694,7 @@ class RpmLocalRepository(
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
             val node = nodeClient.detail(projectId, repoName, getArtifactFullPath())
-                    .data?:throw RpmVersionNotFoundException("未找到该构件或已经被删除")
+                .data ?: throw RpmVersionNotFoundException("未找到该构件或已经被删除")
 
             if (node.folder) {
                 throw UnsupportedMethodException("Delete folder is forbidden")
@@ -773,32 +781,32 @@ class RpmLocalRepository(
         val name = packageKey.split(":").last()
         val path = packageKey.removePrefix("rpm://").split(":")[0]
         val trueVersion = packageClient.findVersionByName(
-                context.projectId,
-                context.repoName,
-                packageKey,
-                version
+            context.projectId,
+            context.repoName,
+            packageKey,
+            version
         ).data ?: return null
-        val artifactPath = trueVersion.contentPath?:return null
+        val artifactPath = trueVersion.contentPath ?: return null
         with(context.artifactInfo) {
             val jarNode = nodeClient.detail(
-                    projectId, repoName, artifactPath
+                projectId, repoName, artifactPath
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
             val rpmArtifactMetadata = jarNode.metadata
             val packageVersion = packageClient.findVersionByName(
-                    projectId, repoName, packageKey, version
+                projectId, repoName, packageKey, version
             ).data
             val count = packageVersion?.downloads ?: 0
             val mavenArtifactBasic = Basic(
-                    path,
-                    name,
-                    version,
-                    jarNode.size, jarNode.fullPath, jarNode.lastModifiedBy, jarNode.lastModifiedDate,
-                    count,
-                    jarNode.sha256,
-                    jarNode.md5,
-                    stageTag,
-                    null
+                path,
+                name,
+                version,
+                jarNode.size, jarNode.fullPath, jarNode.lastModifiedBy, jarNode.lastModifiedDate,
+                count,
+                jarNode.sha256,
+                jarNode.md5,
+                stageTag,
+                null
             )
             return RpmArtifactVersionData(mavenArtifactBasic, rpmArtifactMetadata)
         }

@@ -5,8 +5,6 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.rpm.util.StrUtils.formatSeparator
 import org.apache.commons.lang.StringUtils
-import org.springframework.web.HttpRequestHandler
-import javax.xml.ws.spi.http.HttpContext
 
 class RpmArtifactInfo(
     projectId: String,
@@ -19,7 +17,7 @@ class RpmArtifactInfo(
         const val RPM_DEBUG_FLUSH = "/flush/{projectId}/{repoName}/**"
         const val RPM_DEBUG_ALL_FLUSH = "/flushAll/{projectId}/{repoName}/"
 
-        //RPM 产品接口
+        // RPM 产品接口
         const val MAVEN_EXT_DETAIL = "/version/detail/{projectId}/{repoName}"
         const val MAVEN_EXT_PACKAGE_DELETE = "/package/delete/{projectId}/{repoName}"
         const val MAVEN_EXT_VERSION_DELETE = "/version/delete/{projectId}/{repoName}"

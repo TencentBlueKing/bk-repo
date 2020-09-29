@@ -17,24 +17,23 @@ interface RpmWebResource {
     @ApiOperation("rpm 包删除接口")
     @DeleteMapping(RpmArtifactInfo.MAVEN_EXT_PACKAGE_DELETE)
     fun deletePackage(
-            @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
-            @RequestParam packageKey: String
+        @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
+        @RequestParam packageKey: String
     ): Response<Void>
 
     @ApiOperation("rpm 包版本删除接口")
     @DeleteMapping(RpmArtifactInfo.MAVEN_EXT_VERSION_DELETE)
     fun deleteVersion(
-            @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
-            @RequestParam packageKey: String,
-            @RequestParam version: String?
+        @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
+        @RequestParam packageKey: String,
+        @RequestParam version: String?
     ): Response<Void>
 
     @ApiOperation("rpm 版本详情接口")
     @GetMapping(RpmArtifactInfo.MAVEN_EXT_DETAIL)
     fun artifactDetail(
-            @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
-            @RequestParam packageKey: String,
-            @RequestParam version: String?
+        @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
+        @RequestParam packageKey: String,
+        @RequestParam version: String?
     ): Response<Any?>
-
 }

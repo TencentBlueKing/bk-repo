@@ -25,5 +25,4 @@ class RpmWebService {
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.query(context)
     }
-
 }
