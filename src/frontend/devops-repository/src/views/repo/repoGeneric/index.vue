@@ -189,7 +189,7 @@
     </div>
 </template>
 <script>
-    import RepoTree from '@/components/repoTree'
+    import RepoTree from '@/components/RepoTree'
     import genericDetail from './genericDetail'
     import genericUpload from './genericUpload'
     import { convertFileSize, formatDate } from '@/utils'

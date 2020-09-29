@@ -143,6 +143,22 @@ export default {
             body
         )
     },
+    checkFileExist (_, { projectId, repoName, fullPath = '' }) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest()
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        reject(xhr.response)
+                    } else {
+                        resolve(xhr.response)
+                    }
+                }
+            }
+            xhr.open('HEAD', `/web/generic/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`, true)
+            xhr.send()
+        })
+    },
     // 上传文件
     uploadArtifactory (_, { xhr, projectId, repoName, body, progressHandler, fullPath = '', headers = {} }) {
         return new Promise((resolve, reject) => {
@@ -156,7 +172,7 @@ export default {
                 }
             }
             xhr.upload.addEventListener('progress', progressHandler)
-            xhr.open('PUT', `/generic/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`, true)
+            xhr.open('PUT', `/web/generic/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`, true)
             xhr.responseType = 'json'
             xhr.setRequestHeader('Content-Type', headers['Content-Type'])
             xhr.setRequestHeader('X-BKREPO-OVERWRITE', headers['X-BKREPO-OVERWRITE'])
