@@ -15,7 +15,7 @@ class RpmResourceWebController(
     private val rpmWebService: RpmWebService
 ) : RpmWebResource {
     override fun deletePackage(rpmArtifactInfo: RpmArtifactInfo, packageKey: String): Response<Void> {
-        rpmWebService.delete(rpmArtifactInfo, packageKey, null)
+        rpmWebService.deletePackage(rpmArtifactInfo, packageKey)
         return ResponseBuilder.success()
     }
 

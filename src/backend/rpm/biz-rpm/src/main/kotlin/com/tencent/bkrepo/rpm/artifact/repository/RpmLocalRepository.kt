@@ -688,10 +688,12 @@ class RpmLocalRepository(
     }
 
     /**
-     * 构件在文件系统中的真实路径作为删除条件
+     * 将构件在文件系统中的真实路径作为删除条件
      */
     @Transactional(rollbackFor = [Throwable::class])
     override fun remove(context: ArtifactRemoveContext) {
+        val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
+        val version = HttpContextHolder.getRequest().getParameter("version")
         with(context.artifactInfo) {
             val node = nodeClient.detail(projectId, repoName, getArtifactFullPath())
                 .data ?: throw RpmVersionNotFoundException("未找到该构件或已经被删除")
@@ -737,6 +739,9 @@ class RpmLocalRepository(
             }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactUri, context.userId)
             nodeClient.delete(nodeDeleteRequest)
+            packageClient.deleteVersion(
+                projectId, repoName, packageKey, version
+            )
             logger.info("Success to delete node $nodeDeleteRequest")
             flushRepoMdXML(context, null)
         }

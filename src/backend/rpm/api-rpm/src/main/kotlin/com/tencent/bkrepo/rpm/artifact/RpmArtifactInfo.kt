@@ -24,15 +24,20 @@ class RpmArtifactInfo(
     }
 
     override fun getArtifactFullPath(): String {
-        val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
-        val version = HttpContextHolder.getRequest().getParameter("version")
-        return if (StringUtils.isBlank(packageKey)) {
-            super.getArtifactFullPath()
+        val action = HttpContextHolder.getRequest().method
+        return if (action.equals("delete", ignoreCase = true)) {
+            val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
+            val version = HttpContextHolder.getRequest().getParameter("version")
+            if (StringUtils.isBlank(packageKey)) {
+                super.getArtifactFullPath()
+            } else {
+                val rpmInfoList = PackageKeys.resolveRpm(packageKey).split(":")
+                val path = rpmInfoList.first().formatSeparator(".", "/")
+                val name = rpmInfoList.last()
+                "/$path/$name-$version.rpm"
+            }
         } else {
-            val rpmInfoList = PackageKeys.resolveRpm(packageKey).split(":")
-            val path = rpmInfoList.first().formatSeparator(".", "/")
-            val name = rpmInfoList.last()
-            "/$path/$name-$version.rpm"
+            super.getArtifactFullPath()
         }
     }
 }

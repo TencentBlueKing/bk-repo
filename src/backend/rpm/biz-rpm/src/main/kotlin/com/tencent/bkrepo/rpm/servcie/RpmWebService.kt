@@ -13,6 +13,11 @@ import org.springframework.stereotype.Service
 class RpmWebService {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
+    fun deletePackage(rpmArtifactInfo: RpmArtifactInfo, packageKey: String) {
+        // 先查出所有版本，deleteIndex时一次性删除所有版本。
+    }
+
+    @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun delete(rpmArtifactInfo: RpmArtifactInfo, packageKey: String, version: String?) {
         val context = ArtifactRemoveContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
