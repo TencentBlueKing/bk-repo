@@ -35,7 +35,7 @@
         },
         methods: {
             handleClickOutSide (e) {
-                if (e.target.className.includes('bk-option')) return
+                if (e.target && e.target.className && e.target.className.includes('bk-option')) return
                 this.list.forEach(item => {
                     this.$set(item, 'showSelect', false)
                 })

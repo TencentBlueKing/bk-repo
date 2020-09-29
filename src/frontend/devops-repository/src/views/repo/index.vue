@@ -23,7 +23,7 @@
         <main class="repo-detail-main">
             <div class="repo-detail-search flex-align-center"
                 :style="showRepoSearch ? 'margin-top: 20px' : ''">
-                <bk-input class="repo-search-select" v-model="packageName" clearable :placeholder="$t('pleaseInput') + $t('packageName')"></bk-input>
+                <bk-input class="repo-search-select" v-model="packageNameInput" clearable :placeholder="$t('pleaseInput') + $t('packageName')"></bk-input>
                 <!-- <bk-search-select
                     :values="artiQuery"
                     :data="filterList"
@@ -72,7 +72,7 @@
                 repoList: [],
                 showRepoSearch: false,
                 showGuide: false,
-                packageName: ''
+                packageNameInput: ''
                 // artiQuery: []
             }
         },
@@ -152,7 +152,7 @@
                 //     return target
                 // }, {})
                 this.$refs[this.repoType].searchHandler({
-                    name: this.packageName
+                    name: this.packageNameInput
                 })
             },
             resetQueryAndBack () {
@@ -167,7 +167,7 @@
                     query: {
                         type: this.repoType,
                         name: this.repoName,
-                        packageName: this.packageName
+                        packageName: this.packageNameInput
                     }
                 })
             }
