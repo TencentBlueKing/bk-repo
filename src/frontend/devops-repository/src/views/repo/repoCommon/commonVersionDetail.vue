@@ -28,7 +28,7 @@
                             <div class="mt20 flex-align-center" v-if="detail.basic.hasOwnProperty(key)">
                                 <span class="display-key">{{ detailInfoMap[key] }}</span>
                                 <span class="display-value">
-                                    {{ detail.basic[key] }}
+                                    {{ key === 'size' ? convertFileSize(detail.basic[key]) : detail.basic[key] }}
                                     <template v-if="key === 'version'">
                                         <span class="mr5 repo-tag"
                                             v-for="tag in detail.basic.stageTag"
