@@ -131,7 +131,7 @@ class UserRepositoryController(
         @ApiParam(value = "是否强制删除", required = false)
         @RequestParam forced: Boolean = false
     ): Response<Void> {
-        permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.DELETE, projectId)
+        permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.DELETE, projectId, repoName)
         repositoryService.delete(RepoDeleteRequest(projectId, repoName, forced, userId))
         return ResponseBuilder.success()
     }
@@ -146,7 +146,7 @@ class UserRepositoryController(
         @PathVariable repoName: String,
         @RequestBody request: UserRepoUpdateRequest
     ): Response<Void> {
-        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.WRITE, projectId)
+        permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
         val repoUpdateRequest = RepoUpdateRequest(
             projectId = projectId,
             name = repoName,
