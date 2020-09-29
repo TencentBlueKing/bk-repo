@@ -249,13 +249,25 @@ export default {
                 {
                     main: [
                         {
-                            subTitle: '在设置仓库地址之后就可以使用如下命令去拉取包',
+                            subTitle: 'Apache Maven',
                             codeList: [
                                 `<dependency>`,
                                 `   <groupId>${this.detail.basic.groupId}</groupId>`,
                                 `   <artifactId>${this.detail.basic.artifactId}</artifactId>`,
                                 `   <version>${this.version}</version>`,
                                 `</dependency>`
+                            ]
+                        },
+                        {
+                            subTitle: 'Gradle Groovy DSL',
+                            codeList: [
+                                `implementation '${this.detail.basic.groupId}:${this.detail.basic.artifactId}:${this.version}'`
+                            ]
+                        },
+                        {
+                            subTitle: 'Gradle Kotlin DSL',
+                            codeList: [
+                                `implementation("${this.detail.basic.groupId}:${this.detail.basic.artifactId}:${this.version}")`
                             ]
                         }
                     ]
