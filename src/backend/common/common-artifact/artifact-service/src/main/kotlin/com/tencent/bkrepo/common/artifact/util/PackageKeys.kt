@@ -52,7 +52,7 @@ object PackageKeys {
     /**
      * 生成rpm格式key
      *
-     * 例子: npm://test
+     * 例子: rpm://test
      */
     fun ofRpm(path: String, name: String): String {
         return StringBuilder(RPM).append(SEPARATOR).append(path)
@@ -77,6 +77,15 @@ object PackageKeys {
      */
     fun resolveDocker(dockerKey: String): String {
         return resolveName(DOCKER, dockerKey)
+    }
+
+    /**
+     * 解析rpm格式的key
+     *
+     * 例子: rpm://test  ->  test
+     */
+    fun resolveRpm(rpmKey: String): String {
+        return resolveName(RPM, rpmKey)
     }
 
     /**

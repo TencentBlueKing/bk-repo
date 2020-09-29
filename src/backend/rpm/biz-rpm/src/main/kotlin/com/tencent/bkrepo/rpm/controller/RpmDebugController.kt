@@ -2,6 +2,7 @@ package com.tencent.bkrepo.rpm.controller
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
 import com.tencent.bkrepo.rpm.servcie.RpmDebugService
 import com.tencent.bkrepo.rpm.servcie.RpmService
@@ -29,7 +30,7 @@ class RpmDebugController(
     }
 
     @DeleteMapping(RpmArtifactInfo.RPM)
-    fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo): Response<Void> {
-        return rpmDebugService.delete(rpmArtifactInfo)
+    fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
+        rpmDebugService.delete(rpmArtifactInfo)
     }
 }

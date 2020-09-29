@@ -29,10 +29,9 @@ class RpmDebugService {
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo): Response<Void> {
+    fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
         val context = ArtifactRemoveContext()
         val repository = ArtifactContextHolder.getRepository()
         repository.remove(context)
-        return ResponseBuilder.success()
     }
 }
