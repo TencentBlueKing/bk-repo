@@ -13,7 +13,7 @@
                 </div>
             </div>
         </div>
-        <div class="mt30 common-package-tab">
+        <div class="common-package-tab">
             <bk-tab class="common-package-tab-main" type="unborder-card">
                 <bk-tab-panel name="commonVersion" :label="$t('version')" v-bkloading="{ isLoading }">
                     <div class="common-package-version">

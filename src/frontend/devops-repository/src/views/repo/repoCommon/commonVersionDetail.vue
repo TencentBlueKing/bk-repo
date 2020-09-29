@@ -44,15 +44,16 @@
             </div>
         </bk-tab-panel>
         <bk-tab-panel v-if="detail.metadata" name="versionMetaData" :label="$t('metaData')">
-            <div class="mt20 flex-column">
-                <div class="pl10 pb10 flex-align-center version-metadata">
+            <div class="flex-column version-metadata">
+                <div class="pl20 pb10 flex-align-center metadata-thead">
                     <span class="display-key">{{ $t('key') }}</span>
                     <span class="display-value">{{ $t('value') }}</span>
                 </div>
-                <div class="pl10 pb10 pt10 flex-align-center version-metadata" v-for="([key, value]) in Object.entries(detail.metadata)" :key="key">
+                <div class="pl20 pb10 pt10 flex-align-center metadata-tr" v-for="([key, value]) in Object.entries(detail.metadata)" :key="key">
                     <span class="display-key">{{ key }}</span>
                     <span class="display-value">{{ value }}</span>
                 </div>
+                <div class="ml20 mt10" v-if="!Object.keys(detail.metadata).length">{{$t('noData')}}</div>
             </div>
         </bk-tab-panel>
         <bk-tab-panel v-if="detail.layers" name="versionLayers" label="Layers">
@@ -211,9 +212,10 @@
                     projectId: this.projectId,
                     repoName: this.repoName,
                     packageKey: this.packageKey,
-                    current: this.dependentsPage
+                    current: this.dependentsPage + 1
                 }).then(({ records }) => {
                     this.detail.dependencyInfo.dependents.push(...records)
+                    this.dependentsPage++
                     if (records.length < 20) this.dependentsPage = 0
                 }).finally(() => {
                     this.isLoading = false
@@ -238,7 +240,7 @@
         display: flex;
         .base-info-left {
             flex: 3;
-            padding-top: 40px;
+            padding-top: 20px;
             padding-right: 20px;
             border-right: 1px solid $borderWeightColor;
             .base-info-guide {
@@ -251,7 +253,7 @@
         }
         .base-info {
             flex: 2;
-            margin-top: 40px;
+            margin-top: 20px;
             margin-left: 20px;
             border-top: 1px solid $borderWeightColor;
         }
@@ -270,8 +272,12 @@
         }
     }
     .version-metadata {
-        border-bottom: 1px solid $borderWeightColor;
-        line-height: 2;
+        height: 100%;
+        overflow: auto;
+        .metadata-thead, .metadata-tr {
+            border-bottom: 1px solid $borderWeightColor;
+            line-height: 2;
+        }
         .display-key {
             text-align: left;
         }

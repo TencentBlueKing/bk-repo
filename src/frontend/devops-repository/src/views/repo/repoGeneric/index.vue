@@ -385,7 +385,7 @@
                 this.getArtifactoryListByQuery({
                     projectId: this.projectId,
                     repoName: this.repoName,
-                    name: (query.name || []).join(''),
+                    name: query.name,
                     // stageTag: (query.stageTag || []).join(','),
                     current: this.pagination.current,
                     limit: this.pagination.limit
