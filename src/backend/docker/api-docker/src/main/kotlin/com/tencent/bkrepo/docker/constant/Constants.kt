@@ -83,6 +83,10 @@ const val DOCKER_FS_LAYER = "fsLayers"
 const val DOCKER_BLOB_SUM = "blobSum"
 
 const val DOCKER_SCHEMA_VERSION = "schemaVersion"
+const val DOCKER_VERSION = "version"
+const val DOCKER_VERSION_DOMAIN = "dockerDomain"
+const val DOCKER_DIGEST_SHA256 = "sha256"
+const val DOCKER_OS = "os"
 
 const val DOCKER_FOREIGN_KEY = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"
 

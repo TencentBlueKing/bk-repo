@@ -96,6 +96,6 @@ class DockerManifestDigesterTest {
         Assertions.assertEquals(digest1!!.alg, "sha256")
         val digest2 = DockerManifestDigester.calcDigest(manifest2ConfigFile.toByteArray())
         Assertions.assertEquals(digest2!!.alg, "sha256")
-        Assertions.assertEquals(digest2!!.hex, "e2b047b17a138636a6ba9abd71c6e2e99ff38a5110177d2a34557eff61e0b040")
+        Assertions.assertEquals(digest2.hex, "e2b047b17a138636a6ba9abd71c6e2e99ff38a5110177d2a34557eff61e0b040")
     }
 }

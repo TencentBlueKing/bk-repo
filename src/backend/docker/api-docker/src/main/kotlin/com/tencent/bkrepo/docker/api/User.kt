@@ -16,6 +16,7 @@ import com.tencent.bkrepo.docker.constant.PAGE_NUMBER
 import com.tencent.bkrepo.docker.constant.PAGE_SIZE
 import com.tencent.bkrepo.docker.constant.USER_API_PREFIX
 import com.tencent.bkrepo.docker.pojo.DockerImageResult
+import com.tencent.bkrepo.docker.pojo.DockerTagDetail
 import com.tencent.bkrepo.docker.pojo.DockerTagResult
 import com.tencent.bkrepo.docker.response.DockerResponse
 import io.swagger.annotations.Api
@@ -170,5 +171,5 @@ interface User {
         @RequestParam(required = true)
         @ApiParam(value = "version", required = true)
         version: String
-    ): Response<Map<String, Any>?>
+    ): Response<DockerTagDetail?>
 }

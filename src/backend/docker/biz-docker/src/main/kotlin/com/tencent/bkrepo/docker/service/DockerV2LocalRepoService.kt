@@ -10,6 +10,7 @@ import com.tencent.bkrepo.docker.artifact.DockerPackageRepo
 import com.tencent.bkrepo.docker.constant.BLOB_PATTERN
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_CONTENT_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST_SHA256
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_LENGTH_EMPTY
 import com.tencent.bkrepo.docker.constant.DOCKER_LINK
@@ -17,8 +18,11 @@ import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_FULL_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_SIZE
+import com.tencent.bkrepo.docker.constant.DOCKER_OS
 import com.tencent.bkrepo.docker.constant.DOCKER_TMP_UPLOAD_PATH
 import com.tencent.bkrepo.docker.constant.DOCKER_UPLOAD_UUID
+import com.tencent.bkrepo.docker.constant.DOCKER_VERSION
+import com.tencent.bkrepo.docker.constant.DOCKER_VERSION_DOMAIN
 import com.tencent.bkrepo.docker.constant.DOWNLOAD_COUNT
 import com.tencent.bkrepo.docker.constant.LAST_MODIFIED_BY
 import com.tencent.bkrepo.docker.constant.LAST_MODIFIED_DATE
@@ -37,6 +41,7 @@ import com.tencent.bkrepo.docker.model.DockerSchema2
 import com.tencent.bkrepo.docker.model.DockerSchema2Config
 import com.tencent.bkrepo.docker.pojo.DockerImage
 import com.tencent.bkrepo.docker.pojo.DockerTag
+import com.tencent.bkrepo.docker.pojo.DockerTagDetail
 import com.tencent.bkrepo.docker.response.CatalogResponse
 import com.tencent.bkrepo.docker.response.DockerResponse
 import com.tencent.bkrepo.docker.response.TagsResponse
@@ -411,7 +416,7 @@ class DockerV2LocalRepoService @Autowired constructor(
     }
 
     // to get schema2 manifest
-    override fun getRepoTagDetail(context: RequestContext, tag: String): Map<String, Any>? {
+    override fun getRepoTagDetail(context: RequestContext, tag: String): DockerTagDetail? {
         val fullPath = "/${context.artifactName}/$tag/$DOCKER_MANIFEST"
         val nodeDetail = artifactRepo.getNodeDetail(context, fullPath) ?: return null
         val versionDetail = packageRepo.getPackageVersion(context, tag) ?: return null
@@ -424,21 +429,22 @@ class DockerV2LocalRepoService @Autowired constructor(
             val configBlob = JsonUtils.objectMapper.readValue(configBytes, DockerSchema2Config::class.java)
             val basic = mapOf(
                 DOCKER_NODE_SIZE to versionDetail.size,
-                "version" to tag,
-                "dockerDomain" to domain,
+                DOCKER_VERSION to tag,
+                DOCKER_VERSION_DOMAIN to domain,
                 LAST_MODIFIED_BY to nodeDetail.lastModifiedBy,
                 LAST_MODIFIED_DATE to nodeDetail.lastModifiedDate,
                 DOWNLOAD_COUNT to versionDetail.downloads,
                 STAGE_TAG to versionDetail.stageTag,
-                "sha256" to DockerDigest(manifest.config.digest).hex,
-                "os" to configBlob.os
+                DOCKER_DIGEST_SHA256 to DockerDigest(manifest.config.digest).hex,
+                DOCKER_OS to configBlob.os
             )
-            return mapOf(
-                "basic" to basic,
-                "history" to configBlob.history,
-                "metadata" to nodeDetail.metadata,
-                "layers" to layers
-            )
+            return DockerTagDetail(basic, configBlob.history, nodeDetail.metadata, layers)
+            // return mapOf(
+            //     "basic" to basic,
+            //     "history" to configBlob.history,
+            //     "metadata" to nodeDetail.metadata,
+            //     "layers" to layers
+            // )
         } catch (ignored: Exception) {
             return null
         }
