@@ -105,7 +105,7 @@ object XmlStrUtils {
 
     /**
      * 删除包对应的索引
-     * @return 更新后xml
+     * [File] 更新后xml
      */
     fun deletePackage(
         indexType: String,
@@ -124,6 +124,7 @@ object XmlStrUtils {
                 "name=\"$name\">\n" +
                     "    <version epoch=\"$epoch\" ver=\"$ver\" rel=\"$rel\"/>"
             }
+            // 同名文件在系统中无法保存，primary索引使用<href>定位
             "primary" -> { "<location href=\"$location\"/>" }
             else -> {
                 logger.error("$filename 中解析出$indexType 是不受支持的索引类型")

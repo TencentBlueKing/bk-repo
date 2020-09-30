@@ -9,17 +9,26 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.api.StageClient
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.rpm.REPODATA
 import com.tencent.bkrepo.rpm.OTHERS
@@ -28,16 +37,17 @@ import com.tencent.bkrepo.rpm.XMLGZ
 import com.tencent.bkrepo.rpm.FILELISTS
 import com.tencent.bkrepo.rpm.INDEXER
 import com.tencent.bkrepo.rpm.NO_INDEXER
-import com.tencent.bkrepo.rpm.GZ
 import com.tencent.bkrepo.rpm.artifact.SurplusNodeCleaner
 import com.tencent.bkrepo.rpm.exception.RpmArtifactFormatNotSupportedException
 import com.tencent.bkrepo.rpm.exception.RpmArtifactMetadataResolveException
-import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
+import com.tencent.bkrepo.rpm.exception.RpmVersionNotFoundException
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
+import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
 import com.tencent.bkrepo.rpm.pojo.RpmVersion
 import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
-import com.tencent.bkrepo.rpm.pojo.RpmDeleteResponse
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat
+import com.tencent.bkrepo.rpm.pojo.RpmArtifactVersionData
+import com.tencent.bkrepo.rpm.pojo.Basic
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH_SHA256
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.NONE
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH
@@ -68,16 +78,24 @@ import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.RPM
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
 import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.getRpmBooleanHeader
+import com.tencent.bkrepo.rpm.util.RpmStringUtils.toRpmPackagePojo
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoIndex
+import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
 
 @Component
 class RpmLocalRepository(
     val surplusNodeCleaner: SurplusNodeCleaner
 ) : LocalRepository() {
+
+    @Autowired
+    lateinit var packageClient: PackageClient
+
+    @Autowired
+    lateinit var stageClient: StageClient
 
     fun rpmNodeCreateRequest(
         context: ArtifactUploadContext,
@@ -298,8 +316,7 @@ class RpmLocalRepository(
                 ) ?: return
                 XmlStrUtils.deletePackage(indexType, inputStream.unGzipInputStream(), rpmVersion, location)
             } else {
-                deleteFailed(context, "未找到$indexType.xml.gz 索引文件")
-                return
+                throw RpmVersionNotFoundException("未找到$indexType.xml.gz 索引文件")
             }
             // 删除多余索引节点
             GlobalScope.launch {
@@ -348,10 +365,8 @@ class RpmLocalRepository(
                 xmlGZArtifact,
                 metadata
             )
-            storageService.store(xmlPrimaryNode.sha256!!, xmlGZArtifact, context.storageCredentials)
+            storageManager.storeArtifactFile(xmlPrimaryNode, xmlGZArtifact, context.storageCredentials)
             with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            nodeClient.create(xmlPrimaryNode)
-            logger.info("Success to insert $xmlPrimaryNode")
         } finally {
             xmlGZFile.delete()
             xmlInputStream.closeQuietly()
@@ -397,10 +412,8 @@ class RpmLocalRepository(
                     xmlGZArtifact,
                     metadata
                 )
-                storageService.store(xmlPrimaryNode.sha256!!, xmlGZArtifact, context.storageCredentials)
+                storageManager.storeArtifactFile(xmlPrimaryNode, xmlGZArtifact, context.storageCredentials)
                 with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-                nodeClient.create(xmlPrimaryNode)
-                logger.info("Success to insert $xmlPrimaryNode")
             } finally {
                 xmlGZFile.delete()
             }
@@ -409,10 +422,9 @@ class RpmLocalRepository(
 
     /**
      * 检查上传的构件是否已在仓库中，判断条件：uri && sha256
-     * 降低并发对索引文件的影响
-     * ArtifactRepeat.FULLPATH_SHA256 存在完全相同构件，不操作索引
-     * ArtifactRepeat.FULLPATH 请求路径相同，但内容不同，更新索引
-     * ArtifactRepeat.NONE 无重复构件
+     * [ArtifactRepeat.FULLPATH_SHA256] 存在完全相同构件，不操作索引
+     * [ArtifactRepeat.FULLPATH] 请求路径相同，但内容不同，更新索引
+     * [ArtifactRepeat.NONE] 无重复构件
      */
     private fun checkRepeatArtifact(context: ArtifactUploadContext): ArtifactRepeat {
         val artifactUri = context.artifactInfo.getArtifactFullPath()
@@ -444,18 +456,6 @@ class RpmLocalRepository(
             val rpmUploadResponse = RpmUploadResponse(
                 projectId, repoName, getArtifactFullPath(),
                 context.getArtifactFile().getFileSha256(), context.getArtifactFile().getFileMd5(), description
-            )
-            response.writer.print(rpmUploadResponse.toJsonString())
-        }
-    }
-
-    private fun deleteFailed(context: ArtifactRemoveContext, description: String) {
-        val response = HttpContextHolder.getResponse()
-        response.contentType = "application/json; charset=UTF-8"
-        with(context.artifactInfo) {
-            val rpmUploadResponse = RpmDeleteResponse(
-                projectId, repoName, getArtifactFullPath(),
-                description
             )
             response.writer.print(rpmUploadResponse.toJsonString())
         }
@@ -496,10 +496,8 @@ class RpmLocalRepository(
             xmlSha1ArtifactFile,
             metadata
         )
-        storageService.store(xmlNode.sha256!!, xmlSha1ArtifactFile, context.storageCredentials)
+        storageManager.storeArtifactFile(xmlNode, xmlSha1ArtifactFile, context.storageCredentials)
         with(xmlNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-        nodeClient.create(xmlNode)
-        logger.info("Success to insert $xmlNode")
         xmlSha1ArtifactFile.delete()
 
         // 保存xml.gz
@@ -517,14 +515,12 @@ class RpmLocalRepository(
             val groupGZNode = xmlIndexNodeCreate(
                 context.userId,
                 context.repositoryDetail,
-                getGroupNodeFullPath("${context.artifactInfo.getArtifactFullPath()}$DOT$GZ", xmlGZFileSha1),
+                getGroupNodeFullPath("${context.artifactInfo.getArtifactFullPath()}.gz", xmlGZFileSha1),
                 groupGZArtifactFile,
                 metadataGZ
             )
-            storageService.store(groupGZNode.sha256!!, groupGZArtifactFile, context.storageCredentials)
+            storageManager.storeArtifactFile(groupGZNode, groupGZArtifactFile, context.storageCredentials)
             with(groupGZNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            nodeClient.create(groupGZNode)
-            logger.info("Success to insert $groupGZNode")
             groupGZArtifactFile.delete()
         } finally {
             groupGZFile.delete()
@@ -635,54 +631,95 @@ class RpmLocalRepository(
             val nodeCreateRequest = if (mark) {
                 when (artifactFormat) {
                     RPM -> {
+                        // 保存rpm构件索引
                         val rpmVersion = indexer(context, repeat, rpmRepoConf)
+                        val rpmPackagePojo = context.artifactInfo.getArtifactFullPath().toRpmPackagePojo()
+                        // 保存包版本
+                        packageClient.createVersion(
+                            PackageVersionCreateRequest(
+                                context.projectId,
+                                context.repoName,
+                                rpmPackagePojo.name,
+                                PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name),
+                                PackageType.RPM,
+                                null,
+                                rpmPackagePojo.version,
+                                context.getArtifactFile().getSize(),
+                                null,
+                                context.artifactInfo.getArtifactFullPath(),
+                                overwrite = true,
+                                createdBy = context.userId
+                            )
+                        )
                         rpmNodeCreateRequest(context, rpmVersion.toMetadata())
                     }
                     XML -> {
+                        // 保存分组文件
                         storeGroupFile(context)
                         rpmNodeCreateRequest(context, mutableMapOf())
                     }
                 }
             } else { rpmNodeCreateRequest(context, mutableMapOf()) }
 
-            storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
+            storageManager.storeArtifactFile(nodeCreateRequest, context.getArtifactFile(), context.storageCredentials)
             with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/${getArtifactFullPath()}") }
-            nodeClient.create(nodeCreateRequest)
-            logger.info("Success to insert $nodeCreateRequest")
         }
         successUpload(context, mark, rpmRepoConf.repodataDepth)
     }
 
+    // rpm 客户端下载统计
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): DownloadStatisticsAddRequest? {
+        with(context) {
+            val fullPath = context.artifactInfo.getArtifactFullPath()
+            return if (fullPath.endsWith(".rpm")) {
+                val rpmPackagePojo = fullPath.toRpmPackagePojo()
+                val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
+                return DownloadStatisticsAddRequest(
+                    projectId, repoName,
+                    packageKey, rpmPackagePojo.name, rpmPackagePojo.version
+                )
+            } else {
+                null
+            }
+        }
+    }
+
+    /**
+     * 将构件在文件系统中的真实路径作为删除条件
+     */
     @Transactional(rollbackFor = [Throwable::class])
     override fun remove(context: ArtifactRemoveContext) {
+        val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
+        val version = HttpContextHolder.getRequest().getParameter("version")
         with(context.artifactInfo) {
-            val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data
-            if (node == null) {
-                deleteFailed(context, "未找到该构件或已经被删除")
-                return
-            }
+            val node = nodeClient.detail(projectId, repoName, getArtifactFullPath())
+                .data ?: throw RpmVersionNotFoundException("未找到该构件或已经被删除")
+
             if (node.folder) {
                 throw UnsupportedMethodException("Delete folder is forbidden")
             }
             val nodeMetadata = node.metadata
             val rpmVersion = RpmVersion(
-                nodeMetadata["name"] ?: throw RpmArtifactMetadataResolveException(
+                nodeMetadata["name"] as String? ?: throw RpmArtifactMetadataResolveException(
                     "${getArtifactFullPath()}: not found " +
                         "metadata.name value"
                 ),
-                nodeMetadata["arch"] ?: throw RpmArtifactMetadataResolveException(
+                nodeMetadata["arch"] as String? ?: throw RpmArtifactMetadataResolveException(
                     "${getArtifactFullPath()}: not found " +
                         "metadata.arch value"
                 ),
-                nodeMetadata["epoch"] ?: throw RpmArtifactMetadataResolveException(
+                nodeMetadata["epoch"] as String? ?: throw RpmArtifactMetadataResolveException(
                     "${getArtifactFullPath()}: not found " +
                         "metadata.epoch value"
                 ),
-                nodeMetadata["ver"] ?: throw RpmArtifactMetadataResolveException(
+                nodeMetadata["ver"] as String? ?: throw RpmArtifactMetadataResolveException(
                     "${getArtifactFullPath()}: not found " +
                         "metadata.ver value"
                 ),
-                nodeMetadata["rel"] ?: throw RpmArtifactMetadataResolveException(
+                nodeMetadata["rel"] as String? ?: throw RpmArtifactMetadataResolveException(
                     "${getArtifactFullPath()}: not found " +
                         "metadata.rel value"
                 )
@@ -702,6 +739,9 @@ class RpmLocalRepository(
             }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactUri, context.userId)
             nodeClient.delete(nodeDeleteRequest)
+            packageClient.deleteVersion(
+                projectId, repoName, packageKey, version
+            )
             logger.info("Success to delete node $nodeDeleteRequest")
             flushRepoMdXML(context, null)
         }
@@ -737,6 +777,43 @@ class RpmLocalRepository(
                     listAllRepoDataFolder(context, node.fullPath, repodataDepth.dec(), repoDataSet)
                 }
             }
+        }
+    }
+
+    override fun query(context: ArtifactQueryContext): Any? {
+        val packageKey = context.request.getParameter("packageKey")
+        val version = context.request.getParameter("version")
+        val name = packageKey.split(":").last()
+        val path = packageKey.removePrefix("rpm://").split(":")[0]
+        val trueVersion = packageClient.findVersionByName(
+            context.projectId,
+            context.repoName,
+            packageKey,
+            version
+        ).data ?: return null
+        val artifactPath = trueVersion.contentPath ?: return null
+        with(context.artifactInfo) {
+            val jarNode = nodeClient.detail(
+                projectId, repoName, artifactPath
+            ).data ?: return null
+            val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
+            val rpmArtifactMetadata = jarNode.metadata
+            val packageVersion = packageClient.findVersionByName(
+                projectId, repoName, packageKey, version
+            ).data
+            val count = packageVersion?.downloads ?: 0
+            val mavenArtifactBasic = Basic(
+                path,
+                name,
+                version,
+                jarNode.size, jarNode.fullPath, jarNode.lastModifiedBy, jarNode.lastModifiedDate,
+                count,
+                jarNode.sha256,
+                jarNode.md5,
+                stageTag,
+                null
+            )
+            return RpmArtifactVersionData(mavenArtifactBasic, rpmArtifactMetadata)
         }
     }
 
