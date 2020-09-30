@@ -386,6 +386,6 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
      */
     private fun getManifestByName(context: RequestContext, fileName: String): DockerArtifact? {
         val fullPath = "/${context.artifactName}/$fileName"
-        return repo.getArtifact(context.projectId, context.repoName, fullPath) ?: null
+        return repo.getArtifact(context.projectId, context.repoName, fullPath)
     }
 }

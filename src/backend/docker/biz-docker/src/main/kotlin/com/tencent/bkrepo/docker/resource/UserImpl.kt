@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.docker.api.User
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.pojo.DockerImageResult
+import com.tencent.bkrepo.docker.pojo.DockerTagDetail
 import com.tencent.bkrepo.docker.pojo.DockerTagResult
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.PathUtil
@@ -120,7 +121,7 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         repoName: String,
         packageKey: String,
         version: String
-    ): Response<Map<String, Any>?> {
+    ): Response<DockerTagDetail?> {
         val uId = UserUtil.getContextUserId(userId)
         val artifactName = PackageKeys.resolveDocker(packageKey)
         val context = RequestContext(uId, projectId, repoName, artifactName)

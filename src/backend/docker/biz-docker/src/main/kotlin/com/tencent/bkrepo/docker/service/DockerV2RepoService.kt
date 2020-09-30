@@ -5,6 +5,7 @@ import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.model.DockerDigest
 import com.tencent.bkrepo.docker.pojo.DockerImage
 import com.tencent.bkrepo.docker.pojo.DockerTag
+import com.tencent.bkrepo.docker.pojo.DockerTagDetail
 import com.tencent.bkrepo.docker.response.DockerResponse
 
 /**
@@ -49,5 +50,5 @@ interface DockerV2RepoService {
 
     fun deleteTag(context: RequestContext, tag: String): Boolean
 
-    fun getRepoTagDetail(context: RequestContext, tag: String): Map<String, Any>?
+    fun getRepoTagDetail(context: RequestContext, tag: String): DockerTagDetail?
 }

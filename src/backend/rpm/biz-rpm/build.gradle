@@ -1,6 +1,6 @@
 dependencies {
     api project(':rpm:api-rpm')
-    api project(":common:common-artifact:artifact-service")
+
     api project(":common:common-job")
     implementation "org.redline-rpm:redline:1.2.2"
     implementation "org.codehaus.groovy:groovy-xml:3.0.4"
