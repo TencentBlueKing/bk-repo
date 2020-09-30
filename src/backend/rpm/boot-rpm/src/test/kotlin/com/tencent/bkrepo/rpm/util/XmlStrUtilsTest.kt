@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.rpm.util
 
+import com.tencent.bkrepo.rpm.util.StrUtils.formatSeparator
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
-import java.lang.StringBuilder
 
 @SpringBootTest
 class XmlStrUtilsTest {
@@ -17,5 +17,11 @@ class XmlStrUtilsTest {
         val repodataUri = XmlStrUtils.splitUriByDepth(uri, depth)
         Assertions.assertEquals("7/os/x86_64/", repodataUri.repodataPath)
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri.artifactRelativePath)
+    }
+
+    @Test
+    fun formatSeparatorTest() {
+        val key = "os.7.x86_64"
+        Assertions.assertEquals("os/7/x86_64", key.formatSeparator(".", "/"))
     }
 }

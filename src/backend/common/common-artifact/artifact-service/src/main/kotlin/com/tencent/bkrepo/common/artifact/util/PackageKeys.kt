@@ -9,6 +9,7 @@ object PackageKeys {
 
     private const val DOCKER = "docker"
     private const val NPM = "npm"
+    private const val RPM = "rpm"
     private const val SEPARATOR = "://"
 
     /**
@@ -49,6 +50,18 @@ object PackageKeys {
     }
 
     /**
+     * 生成rpm格式key
+     *
+     * 例子: rpm://test
+     */
+    fun ofRpm(path: String, name: String): String {
+        return StringBuilder(RPM).append(SEPARATOR).append(path)
+                .append(StringPool.COLON)
+                .append(name)
+                .toString()
+    }
+
+    /**
      * 解析npm格式的key
      *
      * 例子: npm://test  ->  test
@@ -64,6 +77,15 @@ object PackageKeys {
      */
     fun resolveDocker(dockerKey: String): String {
         return resolveName(DOCKER, dockerKey)
+    }
+
+    /**
+     * 解析rpm格式的key
+     *
+     * 例子: rpm://test  ->  test
+     */
+    fun resolveRpm(rpmKey: String): String {
+        return resolveName(RPM, rpmKey)
     }
 
     /**
