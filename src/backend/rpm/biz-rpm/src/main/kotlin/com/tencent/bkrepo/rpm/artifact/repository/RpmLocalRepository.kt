@@ -68,6 +68,7 @@ import java.nio.channels.Channels
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.RPM
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
+import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.calculatePackages
 import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.getRpmBooleanHeader
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
@@ -79,6 +80,12 @@ import java.io.File
 class RpmLocalRepository(
     val surplusNodeCleaner: SurplusNodeCleaner
 ) : LocalRepository() {
+
+    // 最大同时处理构件个数
+    private var countLimit = 50
+
+    // 最大线程等待
+    private var timeLimit = 60 * 1000
 
     fun rpmNodeCreateRequest(
         context: ArtifactUploadContext,
@@ -227,7 +234,7 @@ class RpmLocalRepository(
         indexType: String
     ) {
         val target = "$DASH$indexType$DOT$XMLGZ"
-
+        val calculatePackage = HeaderUtils.calculatePackages()
         with(context.artifactInfo) {
             // repodata下'-**.xml.gz'最新节点。
             val nodeList = nodeClient.list(
@@ -250,7 +257,7 @@ class RpmLocalRepository(
                 ) ?: return
                 // 更新primary.xml
                 val xmlFile = if (repeat == NONE) {
-                    XmlStrUtils.insertPackage(indexType, inputStream.unGzipInputStream(), rpmXmlMetadata)
+                    XmlStrUtils.insertPackage(indexType, inputStream.unGzipInputStream(), rpmXmlMetadata, calculatePackage)
                 } else {
                     XmlStrUtils.updatePackage(indexType, inputStream.unGzipInputStream(), rpmXmlMetadata, artifactUri)
                 }
@@ -564,8 +571,7 @@ class RpmLocalRepository(
                 ).data ?: return
                 ).records
                 .sortedByDescending {
-                    it
-                        .lastModifiedDate
+                    it.lastModifiedDate
                 }
         }
 
