@@ -221,8 +221,6 @@ object XmlStrUtils {
         }
         if (mark) ++num else --num
 
-        val index = this.rpmIndex("  <package")
-
         val updatedStr = when (indexType) {
             "primary" ->
                 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
@@ -236,6 +234,8 @@ object XmlStrUtils {
                     "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"$num\">\n"
             else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
         }
+
+        val index = this.rpmIndex("  <package").takeIf { it >= 0 }?:updatedStr.length
 
         val tempFile = File.createTempFile(indexType, "xml")
         val bufferedOutputStream = BufferedOutputStream(FileOutputStream(tempFile))
