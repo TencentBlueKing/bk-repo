@@ -4,6 +4,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -25,7 +26,6 @@ import com.tencent.bkrepo.helm.pojo.HelmSuccessResponse
 import com.tencent.bkrepo.helm.pojo.IndexEntity
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.YamlUtils
-import com.tencent.bkrepo.repository.util.PathUtils.SEPARATOR
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -43,35 +43,56 @@ class ChartManipulationService {
     fun uploadProv(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap): HelmSuccessResponse {
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        context.contextAttributes = getContextAttrMap(artifactFileMap = artifactFileMap)
+        // context.contextAttributes = getContextAttrMap(artifactFileMap = artifactFileMap)
+        setContextAttributes(context, artifactFileMap)
         if (!artifactFileMap.keys.contains(PROV)) throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
         repository.upload(context)
         return HelmSuccessResponse.pushSuccess()
     }
 
-    fun getContextAttrMap(
+    fun setContextAttributes(
+        context: ArtifactContext,
         artifactFileMap: ArtifactFileMap,
         chartFileInfo: Map<String, Any>? = null
-    ): MutableMap<String, Any> {
-        val attributesMap = mutableMapOf<String, Any>()
+    ){
         artifactFileMap.entries.forEach { (name, _) ->
             if (CHART != name && PROV != name) {
                 throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
             }
             if (CHART == name) {
-                attributesMap[name + FULL_PATH] = getChartFileFullPath(chartFileInfo)
+                context.putAttribute(name + FULL_PATH, getChartFileFullPath(chartFileInfo))
+                // attributesMap[name + FULL_PATH] = getChartFileFullPath(chartFileInfo)
             }
             if (PROV == name) {
-                attributesMap[name + FULL_PATH] = getProvFileFullPath(artifactFileMap)
+                context.putAttribute(name + FULL_PATH, getProvFileFullPath(artifactFileMap))
+                // attributesMap[name + FULL_PATH] = getProvFileFullPath(artifactFileMap)
             }
         }
-        return attributesMap
     }
+
+    // fun getContextAttrMap(
+    //     artifactFileMap: ArtifactFileMap,
+    //     chartFileInfo: Map<String, Any>? = null
+    // ): MutableMap<String, Any> {
+    //     val attributesMap = mutableMapOf<String, Any>()
+    //     artifactFileMap.entries.forEach { (name, _) ->
+    //         if (CHART != name && PROV != name) {
+    //             throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
+    //         }
+    //         if (CHART == name) {
+    //             attributesMap[name + FULL_PATH] = getChartFileFullPath(chartFileInfo)
+    //         }
+    //         if (PROV == name) {
+    //             attributesMap[name + FULL_PATH] = getProvFileFullPath(artifactFileMap)
+    //         }
+    //     }
+    //     return attributesMap
+    // }
 
     fun getChartFileFullPath(chartFile: Map<String, Any>?): String {
         val chartName = chartFile?.get(NAME) as String
         val chartVersion = chartFile[VERSION] as String
-        return String.format("$SEPARATOR%s-%s.%s", chartName, chartVersion, CHART_PACKAGE_FILE_EXTENSION)
+        return String.format("/%s-%s.%s", chartName, chartVersion, CHART_PACKAGE_FILE_EXTENSION)
     }
 
     private fun getProvFileFullPath(artifactFileMap: ArtifactFileMap): String {
@@ -87,7 +108,7 @@ class ChartManipulationService {
     }
 
     private fun provenanceFilenameFromNameVersion(name: String, version: String): String {
-        return String.format("$SEPARATOR%s-%s.%s", name, version, PROVENANCE_FILE_EXTENSION)
+        return String.format("/%s-%s.%s", name, version, PROVENANCE_FILE_EXTENSION)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -96,7 +117,8 @@ class ChartManipulationService {
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         val chartFileInfo = getChartFile(artifactFileMap)
-        context.contextAttributes = getContextAttrMap(artifactFileMap, chartFileInfo)
+        //context.contextAttributes = getContextAttrMap(artifactFileMap, chartFileInfo)
+        setContextAttributes(context, artifactFileMap, chartFileInfo)
         repository.upload(context)
         return HelmSuccessResponse.pushSuccess()
     }
@@ -111,7 +133,7 @@ class ChartManipulationService {
     private fun uploadIndexYaml(indexEntity: IndexEntity) {
         val artifactFile = ArtifactFileFactory.build(YamlUtils.transEntityToStream(indexEntity))
         val uploadContext = ArtifactUploadContext(artifactFile)
-        uploadContext.contextAttributes[OCTET_STREAM + FULL_PATH] = "$SEPARATOR$INDEX_CACHE_YAML"
+        uploadContext.putAttribute(OCTET_STREAM + FULL_PATH, "/$INDEX_CACHE_YAML")
         val uploadRepository = ArtifactContextHolder.getRepository(uploadContext.repositoryDetail.category)
         uploadRepository.upload(uploadContext)
     }
@@ -124,7 +146,8 @@ class ChartManipulationService {
         val context = ArtifactRemoveContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         val fullPath = String.format("/%s-%s.%s", chartInfo.first, chartInfo.second, CHART_PACKAGE_FILE_EXTENSION)
-        context.contextAttributes[FULL_PATH] = fullPath
+        //context.contextAttributes[FULL_PATH] = fullPath
+        context.putAttribute(FULL_PATH, fullPath)
         repository.remove(context)
         logger.info("remove artifact [$fullPath] success!")
         freshIndexYamlForRemove(chartInfo)
@@ -132,7 +155,7 @@ class ChartManipulationService {
     }
 
     fun getChartInfo(artifactInfo: HelmArtifactInfo): Pair<String, String> {
-        val artifactUri = artifactInfo.artifactUri.trimStart('/')
+        val artifactUri = artifactInfo.getArtifactFullPath().trimStart('/')
         val name = artifactUri.substringBeforeLast('/')
         val version = artifactUri.substringAfterLast('/')
         return Pair(name, version)

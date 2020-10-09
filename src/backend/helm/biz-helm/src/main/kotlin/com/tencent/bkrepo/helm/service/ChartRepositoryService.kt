@@ -4,11 +4,13 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -37,14 +39,11 @@ import com.tencent.bkrepo.helm.constants.URLS
 import com.tencent.bkrepo.helm.constants.V1
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
-import com.tencent.bkrepo.helm.lock.MongoLock
 import com.tencent.bkrepo.helm.pojo.IndexEntity
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmZipResponseWriter
 import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.util.PathUtils
-import com.tencent.bkrepo.repository.util.PathUtils.SEPARATOR
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -53,7 +52,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.UUID
 
 @Service
 class ChartRepositoryService {
@@ -64,8 +62,8 @@ class ChartRepositoryService {
     @Autowired
     private lateinit var nodeClient: NodeClient
 
-    @Autowired
-    private lateinit var mongoLock: MongoLock
+    // @Autowired
+    // private lateinit var mongoLock: MongoLock
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
@@ -120,7 +118,7 @@ class ChartRepositoryService {
         artifactInfo: HelmArtifactInfo,
         exist: Boolean = true,
         lastModifyTime: LocalDateTime? = null
-    ): List<Map<String, Any>> {
+    ): List<Map<String, Any?>> {
         val projectRule = Rule.QueryRule(PROJECT_ID, artifactInfo.projectId)
         val repoNameRule = Rule.QueryRule(REPO_NAME, artifactInfo.repoName)
         val fullPathRule = Rule.QueryRule(NODE_FULL_PATH, TGZ_SUFFIX, OperationType.SUFFIX)
@@ -154,25 +152,25 @@ class ChartRepositoryService {
 
     @Suppress("UNCHECKED_CAST")
     fun generateIndexFile(
-        result: List<Map<String, Any>>,
+        result: List<Map<String, Any?>>,
         indexEntity: IndexEntity,
         artifactInfo: HelmArtifactInfo
     ) {
-        val context = ArtifactSearchContext()
+        val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         result.forEach { it ->
             Thread.sleep(SLEEP_MILLIS)
-            context.contextAttributes[FULL_PATH] = it[NODE_FULL_PATH] as String
+            context.putAttribute(FULL_PATH, it[NODE_FULL_PATH] as String)
             var chartName: String? = null
             var chartVersion: String? = null
             try {
-                val artifactInputStream = repository.search(context) as ArtifactInputStream
+                val artifactInputStream = repository.query(context) as ArtifactInputStream
                 val content = artifactInputStream.use { it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION) }
                 val chartInfoMap = YamlUtils.convertStringToEntity<MutableMap<String, Any>>(content)
                 chartName = chartInfoMap[NAME] as String
                 chartVersion = chartInfoMap[VERSION] as String
                 chartInfoMap[URLS] = listOf(
-                    domain.trimEnd('/') + PathUtils.formatFullPath(
+                    domain.trimEnd('/') + PathUtils.normalizeFullPath(
                         "${artifactInfo.projectId}/${artifactInfo.repoName}/charts/$chartName-$chartVersion.tgz"
                     )
                 )
@@ -191,7 +189,7 @@ class ChartRepositoryService {
     private fun uploadIndexYaml(indexEntity: IndexEntity) {
         val artifactFile = ArtifactFileFactory.build(YamlUtils.transEntityToStream(indexEntity))
         val context = ArtifactUploadContext(artifactFile)
-        context.contextAttributes[OCTET_STREAM + FULL_PATH] = "$SEPARATOR$INDEX_CACHE_YAML"
+        context.putAttribute(OCTET_STREAM + FULL_PATH, "/$INDEX_CACHE_YAML")
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
@@ -229,10 +227,10 @@ class ChartRepositoryService {
     }
 
     fun getOriginalIndexYaml(): IndexEntity {
-        val context = ArtifactSearchContext()
+        val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        context.contextAttributes[FULL_PATH] = "$SEPARATOR$INDEX_CACHE_YAML"
-        val indexMap = (repository.search(context) as ArtifactInputStream).run {
+        context.putAttribute(FULL_PATH, "/$INDEX_CACHE_YAML")
+        val indexMap = (repository.query(context) as ArtifactInputStream).run {
             YamlUtils.convertFileToEntity<Map<String, Any>>(this)
         }
         return objectMapper.convertValue(indexMap, IndexEntity::class.java).also {
@@ -248,7 +246,7 @@ class ChartRepositoryService {
     fun downloadIndexYaml() {
         val context = ArtifactDownloadContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        context.contextAttributes[FULL_PATH] = "$SEPARATOR$INDEX_CACHE_YAML"
+        context.putAttribute(FULL_PATH, "/$INDEX_CACHE_YAML")
         repository.download(context)
     }
 
@@ -270,7 +268,7 @@ class ChartRepositoryService {
     fun installTgz(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactDownloadContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        context.contextAttributes[FULL_PATH] = artifactInfo.artifactUri
+        context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
         repository.download(context)
     }
 
@@ -284,12 +282,12 @@ class ChartRepositoryService {
                 "no chart found in repository [${artifactInfo.projectId}/${artifactInfo.repoName}]"
             )
         }
-        val context = ArtifactSearchContext()
+        val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         nodeList.forEach {
-            context.contextAttributes[FULL_PATH] = it[NODE_FULL_PATH] as String
-            val artifactInputStream = repository.search(context) as ArtifactInputStream
-            artifactResourceList.add(ArtifactResource(artifactInputStream, it[NODE_NAME] as String, null))
+            context.putAttribute(FULL_PATH, it[NODE_FULL_PATH] as String)
+            val artifactInputStream = repository.query(context) as ArtifactInputStream
+            artifactResourceList.add(ArtifactResource(artifactInputStream, it[NODE_NAME] as String, null, ArtifactChannel.LOCAL))
         }
         HelmZipResponseWriter.write(artifactResourceList)
     }
@@ -300,7 +298,7 @@ class ChartRepositoryService {
         const val SLEEP_MILLIS = 20L
 
         val logger: Logger = LoggerFactory.getLogger(ChartRepositoryService::class.java)
-        val LOCK_VALUE = UUID.randomUUID().toString()
+        // val LOCK_VALUE = UUID.randomUUID().toString()
 
         fun convertDateTime(timeStr: String): String {
             val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
