@@ -22,65 +22,66 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.rpm.REPODATA
-import com.tencent.bkrepo.rpm.OTHERS
-import com.tencent.bkrepo.rpm.PRIMARY
-import com.tencent.bkrepo.rpm.XMLGZ
 import com.tencent.bkrepo.rpm.FILELISTS
+import com.tencent.bkrepo.rpm.GZ
 import com.tencent.bkrepo.rpm.INDEXER
 import com.tencent.bkrepo.rpm.NO_INDEXER
-import com.tencent.bkrepo.rpm.GZ
+import com.tencent.bkrepo.rpm.OTHERS
+import com.tencent.bkrepo.rpm.PRIMARY
+import com.tencent.bkrepo.rpm.REPODATA
+import com.tencent.bkrepo.rpm.XMLGZ
 import com.tencent.bkrepo.rpm.artifact.SurplusNodeCleaner
 import com.tencent.bkrepo.rpm.exception.RpmArtifactFormatNotSupportedException
 import com.tencent.bkrepo.rpm.exception.RpmArtifactMetadataResolveException
-import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
-import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
-import com.tencent.bkrepo.rpm.pojo.RpmVersion
-import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
-import com.tencent.bkrepo.rpm.pojo.RpmDeleteResponse
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat
+import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.RPM
+import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
+import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
+import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH_SHA256
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.NONE
-import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH
-import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
+import com.tencent.bkrepo.rpm.pojo.RpmDeleteResponse
+import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
+import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
+import com.tencent.bkrepo.rpm.pojo.RpmVersion
 import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
+import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
+import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
+import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.getRpmBooleanHeader
+import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
 import com.tencent.bkrepo.rpm.util.XmlStrUtils
-import com.tencent.bkrepo.rpm.util.rpm.RpmMetadataUtils
+import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
 import com.tencent.bkrepo.rpm.util.rpm.RpmFormatUtils
+import com.tencent.bkrepo.rpm.util.rpm.RpmMetadataUtils
 import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChecksum
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadataChangeLog
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadataFileList
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageFileList
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageChangeLog
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChecksum
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageFileList
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoData
+import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
+import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoIndex
 import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.util.StopWatch
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.io.FileInputStream
 import java.nio.channels.Channels
-import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.RPM
-import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
-import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
-import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.getRpmBooleanHeader
-import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
-import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
-import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
-import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoIndex
-import java.io.File
 
 @Component
 class RpmLocalRepository(
     val surplusNodeCleaner: SurplusNodeCleaner
 ) : LocalRepository() {
 
-    fun rpmNodeCreateRequest(
+    private fun rpmNodeCreateRequest(
         context: ArtifactUploadContext,
         metadata: MutableMap<String, String>?
     ): NodeCreateRequest {
@@ -91,7 +92,7 @@ class RpmLocalRepository(
         )
     }
 
-    fun xmlIndexNodeCreate(
+    private fun xmlIndexNodeCreate(
         userId: String,
         repositoryInfo: RepositoryInfo,
         fullPath: String,
@@ -114,7 +115,7 @@ class RpmLocalRepository(
         )
     }
 
-    fun xmlNodeCreate(
+    private fun xmlNodeCreate(
         userId: String,
         repositoryInfo: RepositoryInfo,
         fullPath: String,
@@ -161,22 +162,29 @@ class RpmLocalRepository(
      * 生成构件索引
      */
     private fun indexer(context: ArtifactUploadContext, repeat: ArtifactRepeat, rpmRepoConf: RpmRepoConf): RpmVersion {
-
+        val stopWatch = StopWatch()
         val repodataDepth = rpmRepoConf.repodataDepth
         val repodataUri = XmlStrUtils.splitUriByDepth(context.artifactInfo.artifactUri, repodataDepth)
         val repodataPath = repodataUri.repodataPath
 
         val artifactFile = context.getArtifactFile()
+        stopWatch.start("getRpmFormat")
         val rpmFormat = RpmFormatUtils.getRpmFormat(Channels.newChannel(artifactFile.getInputStream()))
+        stopWatch.stop()
 
+        stopWatch.start("sha1")
         val sha1Digest = artifactFile.getInputStream().sha1()
+        stopWatch.stop()
         val artifactRelativePath = repodataUri.artifactRelativePath
+        stopWatch.start("interpret")
         val rpmMetadata = RpmMetadataUtils().interpret(
             rpmFormat,
             artifactFile.getSize(),
             sha1Digest,
             artifactRelativePath
         )
+        stopWatch.stop()
+        stopWatch.start("fileList")
         if (rpmRepoConf.enabledFileLists) {
             val rpmMetadataFileList = RpmMetadataFileList(
                 listOf(
@@ -193,6 +201,8 @@ class RpmLocalRepository(
             // 更新filelists.xml
             rpmMetadata.packages[0].format.files.clear()
         }
+        stopWatch.stop()
+        stopWatch.start("others")
         val rpmMetadataChangeLog = RpmMetadataChangeLog(
             listOf(
                 RpmPackageChangeLog(
@@ -207,9 +217,15 @@ class RpmLocalRepository(
         // 更新others.xml
         updateIndexXml(context, rpmMetadataChangeLog, repeat, repodataPath, OTHERS)
         rpmMetadata.packages[0].format.changeLogs.clear()
+        stopWatch.stop()
         // 更新primary.xml
+        stopWatch.start("primary")
         updateIndexXml(context, rpmMetadata, repeat, repodataPath, PRIMARY)
+        stopWatch.stop()
+        stopWatch.start("md")
         flushRepoMdXML(context, null)
+        stopWatch.stop()
+        if (logger.isDebugEnabled) logger.debug("indexTimeStatic: $stopWatch")
         return RpmVersion(
             rpmMetadata.packages[0].name,
             rpmMetadata.packages[0].arch,
@@ -644,7 +660,9 @@ class RpmLocalRepository(
                         rpmNodeCreateRequest(context, mutableMapOf())
                     }
                 }
-            } else { rpmNodeCreateRequest(context, mutableMapOf()) }
+            } else {
+                rpmNodeCreateRequest(context, mutableMapOf())
+            }
 
             storageService.store(nodeCreateRequest.sha256!!, context.getArtifactFile(), context.storageCredentials)
             with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/$artifactUri") }
