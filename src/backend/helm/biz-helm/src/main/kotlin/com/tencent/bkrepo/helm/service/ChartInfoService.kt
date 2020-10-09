@@ -3,8 +3,8 @@ package com.tencent.bkrepo.helm.service
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -54,12 +54,13 @@ class ChartInfoService {
             return indexEntity.entries
         }
         chartRepositoryService.freshIndexFile(artifactInfo)
-        val context = ArtifactSearchContext()
+        val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        context.contextAttributes[FULL_PATH] = INDEX_CACHE_YAML
-        val inputStream = repository.search(context) as ArtifactInputStream
+        // context.contextAttributes[FULL_PATH] = INDEX_CACHE_YAML
+        context.putAttribute(FULL_PATH, INDEX_CACHE_YAML)
+        val inputStream = repository.query(context) as ArtifactInputStream
         return inputStream.use {
-            searchJson(it, artifactInfo.artifactUri)
+            searchJson(it, artifactInfo.getArtifactFullPath())
         }
     }
 
@@ -103,7 +104,7 @@ class ChartInfoService {
         val status: Int = with(artifactInfo) {
             val projectId = Rule.QueryRule(PROJECT_ID, projectId)
             val repoName = Rule.QueryRule(REPO_NAME, repoName)
-            val urlList = artifactUri.removePrefix("/").split("/").filter { it.isNotBlank() }
+            val urlList = this.getArtifactFullPath().removePrefix("/").split("/").filter { it.isNotBlank() }
             val rule: Rule? = when (urlList.size) {
                 // query with name
                 1 -> {
@@ -127,7 +128,7 @@ class ChartInfoService {
                     select = mutableListOf(PROJECT_ID, REPO_NAME, NODE_FULL_PATH, NODE_METADATA),
                     rule = rule
                 )
-                val nodeList: List<Map<String, Any>>? = nodeClient.query(queryModel).data?.records
+                val nodeList: List<Map<String, Any?>>? = nodeClient.query(queryModel).data?.records
                 if (nodeList.isNullOrEmpty()) HttpStatus.SC_NOT_FOUND else HttpStatus.SC_OK
             } else {
                 HttpStatus.SC_NOT_FOUND
