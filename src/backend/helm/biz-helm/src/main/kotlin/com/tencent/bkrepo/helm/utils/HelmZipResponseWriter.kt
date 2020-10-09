@@ -2,10 +2,10 @@ package com.tencent.bkrepo.helm.utils
 
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
 import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.util.PathUtils
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpHeaders
 import java.io.BufferedOutputStream
@@ -25,7 +25,7 @@ object HelmZipResponseWriter {
 
         response.bufferSize = BUFFER_SIZE
         response.characterEncoding = StandardCharsets.UTF_8.name()
-        response.contentType = MimeMappings.DEFAULT.get(PathUtils.getExtension(NAME).orEmpty())
+        response.contentType = MimeMappings.DEFAULT.get(PathUtils.resolveExtension(NAME).orEmpty())
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, CONTENT_DISPOSITION_TEMPLATE.format(NAME, NAME))
         response.setHeader(HttpHeaders.CACHE_CONTROL, NO_CACHE)
 
