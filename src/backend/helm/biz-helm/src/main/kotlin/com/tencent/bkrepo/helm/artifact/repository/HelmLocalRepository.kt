@@ -1,22 +1,19 @@
 package com.tencent.bkrepo.helm.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.helm.constants.FULL_PATH
-import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -24,20 +21,20 @@ import org.springframework.stereotype.Component
 @Component
 class HelmLocalRepository : LocalRepository() {
 
-    override fun determineArtifactName(context: ArtifactContext): String {
-        val fileName = context.artifactInfo.artifactUri.trimStart('/')
-        return if (StringUtils.isBlank(fileName)) INDEX_YAML else fileName
-    }
+    // override fun determineArtifactName(context: ArtifactContext): String {
+    //     val fileName = context.artifactInfo.getArtifactFullPath().trimStart('/')
+    //     return if (StringUtils.isBlank(fileName)) INDEX_YAML else fileName
+    // }
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         // 判断是否是强制上传
         val isForce = context.request.getParameter("force")?.let { true } ?: false
-        context.contextAttributes["force"] = isForce
+        context.putAttribute("force", isForce)
         val repositoryDetail = context.repositoryDetail
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
-        context.artifactFileMap.entries.forEach { (name, _) ->
-            val fullPath = context.contextAttributes[name + "_full_path"] as String
+        context.getArtifactFileMap().entries.forEach { (name, _) ->
+            val fullPath = context.getStringAttribute(name + "_full_path")!!
             val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
             if (isExist && !isOverwrite(fullPath, isForce)) {
                 throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
@@ -46,26 +43,19 @@ class HelmLocalRepository : LocalRepository() {
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
-        context.artifactFileMap.entries.forEach { (name, _) ->
+        context.getArtifactFileMap().entries.forEach { (name, _) ->
             val nodeCreateRequest = getNodeCreateRequest(name, context)
-            storageService.store(
-                nodeCreateRequest.sha256!!,
-                context.getArtifactFile(name) ?: context.getArtifactFile(),
-                context.storageCredentials
-            )
-            nodeClient.create(nodeCreateRequest)
+            storageManager.storeArtifactFile(nodeCreateRequest, context.getArtifactFile(name), context.storageCredentials)
         }
     }
 
     private fun getNodeCreateRequest(name: String, context: ArtifactUploadContext): NodeCreateRequest {
         val repositoryDetail = context.repositoryDetail
-        val artifactFile = context.getArtifactFile(name) ?: context.getArtifactFile()
-        val fileSha256Map = context.contextAttributes[ATTRIBUTE_SHA256MAP] as Map<*, *>
-        val fileMd5Map = context.contextAttributes[ATTRIBUTE_MD5MAP] as Map<*, *>
-        val sha256 = fileSha256Map[name] as String
-        val md5 = fileMd5Map[name] as String
-        val fullPath = context.contextAttributes[name + "_full_path"] as String
-        val isForce = context.contextAttributes["force"] as Boolean
+        val artifactFile = context.getArtifactFile(name)
+        val sha256 = context.getArtifactSha256(name)
+        val md5 = context.getArtifactMd5(name)
+        val fullPath = context.getStringAttribute(name + FULL_PATH)!!
+        val isForce = context.getBooleanAttribute("force")!!
         return NodeCreateRequest(
             projectId = repositoryDetail.projectId,
             repoName = repositoryDetail.name,
@@ -94,20 +84,31 @@ class HelmLocalRepository : LocalRepository() {
         return isForce || !(fullPath.trim().endsWith(".tgz", true) || fullPath.trim().endsWith(".prov", true))
     }
 
-    override fun determineArtifactUri(context: ArtifactDownloadContext): String {
-        return context.contextAttributes[FULL_PATH] as String
+    // override fun determineArtifactUri(context: ArtifactDownloadContext): String {
+    //     return context.getStringAttribute(FULL_PATH)!!
+    // }
+
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        val fullPath = context.getStringAttribute(FULL_PATH)!!
+        with(context) {
+            val node =  nodeClient.detail(projectId, repoName, fullPath).data
+            if (node == null || node.folder) return null
+            val range = resolveRange(context, node.size)
+            val inputStream = storageService.load(node.sha256!!, range, storageCredentials) ?: return null
+            return ArtifactResource(inputStream, artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL, useDisposition)
+        }
     }
 
-    override fun search(context: ArtifactSearchContext): ArtifactInputStream {
-        val fullPath = context.contextAttributes[FULL_PATH] as String
-        return this.onSearch(context) ?: throw HelmFileNotFoundException("Artifact[$fullPath] does not exist")
+    override fun query(context: ArtifactQueryContext): ArtifactInputStream? {
+        val fullPath = context.getStringAttribute(FULL_PATH)!!
+        return this.onQuery(context) ?: throw HelmFileNotFoundException("Artifact[$fullPath] does not exist")
     }
 
-    private fun onSearch(context: ArtifactSearchContext): ArtifactInputStream? {
+    private fun onQuery(context: ArtifactQueryContext): ArtifactInputStream? {
         val repositoryDetail = context.repositoryDetail
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
-        val fullPath = context.contextAttributes[FULL_PATH] as String
+        val fullPath = context.getStringAttribute(FULL_PATH)!!
         val node = nodeClient.detail(projectId, repoName, fullPath).data
         if (node == null || node.folder) return null
         return storageService.load(
@@ -119,7 +120,7 @@ class HelmLocalRepository : LocalRepository() {
         val repositoryDetail = context.repositoryDetail
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
-        val fullPath = context.contextAttributes[FULL_PATH] as String
+        val fullPath = context.getStringAttribute(FULL_PATH)!!
         val userId = context.userId
         val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
         if (!isExist) {

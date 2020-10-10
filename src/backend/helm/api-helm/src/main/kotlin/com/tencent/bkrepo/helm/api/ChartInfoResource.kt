@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 
 @Api("chart search info API")
 interface ChartInfoResource {
-    @GetMapping(CHARTS_LIST, produces = [MediaType.APPLICATION_JSON_UTF8_VALUE])
+    @GetMapping(CHARTS_LIST, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun allChartsList(
         @ArtifactPathVariable
         artifactInfo: HelmArtifactInfo,
