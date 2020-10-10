@@ -1,0 +1,5 @@
+server:
+  port: __BK_REPO_HELM_PORT__
+helm:
+  registry:
+    domain:  __BK_REPO_HELM_ADDR__
