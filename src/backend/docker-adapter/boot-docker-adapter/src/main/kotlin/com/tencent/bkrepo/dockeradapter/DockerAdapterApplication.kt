@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.rpm
+package com.tencent.bkrepo.dockeradapter
 
 import com.tencent.bkrepo.common.service.MicroService
 import org.springframework.boot.runApplication

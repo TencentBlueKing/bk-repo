@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.dockeradapter.pojo
 
-data class CreateRepoRequest(
+data class ImageAccount(
     var userId: String,
     var password: String
 )

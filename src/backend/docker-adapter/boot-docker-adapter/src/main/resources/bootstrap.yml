@@ -13,3 +13,9 @@ spring:
         format: YAML
         data-key: data
         profileSeparator: '::'
+
+server:
+  port: 8089
+
+adapter:
+  realm: bkrepo

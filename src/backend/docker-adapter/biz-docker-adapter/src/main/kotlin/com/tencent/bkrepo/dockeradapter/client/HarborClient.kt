@@ -1,11 +1,13 @@
 package com.tencent.bkrepo.dockeradapter.client;
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.tencent.devops.harbor.configuration.SystemConfig
-import com.tencent.devops.harbor.pojo.harbor.HarborProject
-import com.tencent.devops.harbor.pojo.harbor.HarborRepo
-import com.tencent.devops.harbor.pojo.harbor.HarborTag
-import com.tencent.devops.harbor.utils.JsonUtils
+import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
+import com.tencent.bkrepo.dockeradapter.config.HarborProperties
+import com.tencent.bkrepo.dockeradapter.config.SystemConfig
+import com.tencent.bkrepo.dockeradapter.pojo.harbor.HarborProject
+import com.tencent.bkrepo.dockeradapter.pojo.harbor.HarborRepo
+import com.tencent.bkrepo.dockeradapter.pojo.harbor.HarborTag
+import com.tencent.bkrepo.dockeradapter.util.HttpUtils
 import okhttp3.Credentials
 import okhttp3.MediaType
 import okhttp3.Request
@@ -16,25 +18,30 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import java.net.URLEncoder
+import java.security.SecureRandom
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
 
 @Component
 class HarborClient @Autowired constructor(
-    private val systemConfig: SystemConfig) {
+    private val systemConfig: SystemConfig,
+    private val harborProperties: HarborProperties
+) {
     companion object {
         private val logger = LoggerFactory.getLogger(HarborClient::class.java)
     }
 
     fun getProjectByName(projectName: String): HarborProject? {
-        val url = "${systemConfig.registryUrl}/api/projects?name=$projectName&page_size=100"
+        logger.info("getProjectByName, projectName: $projectName")
+        val url = "${harborProperties.url}/api/projects?name=$projectName&page_size=100"
         logger.info("request url: $url")
-
         val request = Request.Builder().url(url).header("Authorization", makeCredential()).get().build()
         val response = doRequest(request)
         if (response == "null") {
             return null
         }
-        val projects = JsonUtils.objectMapper.readValue<List<HarborProject>>(response)
+        val projects = objectMapper.readValue<List<HarborProject>>(response)
         logger.info("projects: $projects")
         if (projects.isNotEmpty()) {
             projects.forEach {
@@ -49,13 +56,12 @@ class HarborClient @Autowired constructor(
     }
 
     fun createProject(projectName: String) {
-        val url = "${systemConfig.registryUrl}/api/projects"
+        logger.info("createProject, projectName: $projectName")
+        val url = "${harborProperties.url}/api/projects"
         logger.info("request url: $url")
 
-        val reqData = mapOf(
-            "project_name" to projectName,
-            "public" to 0)
-        val requestBody = JsonUtils.objectMapper.writeValueAsString(reqData)
+        val reqData = mapOf("project_name" to projectName, "public" to 0)
+        val requestBody = objectMapper.writeValueAsString(reqData)
         logger.info("request body: $requestBody")
 
         val reqBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), requestBody)
@@ -64,7 +70,8 @@ class HarborClient @Autowired constructor(
     }
 
     fun createUser(userName: String, password: String) {
-        val url = "${systemConfig.registryUrl}/api/users"
+        logger.info("createUser, userName: $userName, password: ***")
+        val url = "${harborProperties.url}/api/users"
         logger.info("request url: $url")
 
         val reqData = mapOf(
@@ -73,22 +80,22 @@ class HarborClient @Autowired constructor(
             "password" to password,
             "role_id" to 2,
             "realname" to userName)
-        val requestBody = JsonUtils.objectMapper.writeValueAsString(reqData)
+        val requestBody = objectMapper.writeValueAsString(reqData)
         logger.info("request body: $requestBody")
 
-        val reqBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), JsonUtils.objectMapper.writeValueAsString(reqData))
+        val reqBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), objectMapper.writeValueAsString(reqData))
         val request = Request.Builder().url(url).header("Authorization", makeCredential()).post(reqBody).build()
         doRequest(request)
     }
 
     fun addProjectMember(userName: String, projectId: Int) {
-        val url = "${systemConfig.registryUrl}/api/projects/$projectId/members"
+        val url = "${harborProperties.url}/api/projects/$projectId/members"
         logger.info("request url: $url")
 
         val reqData = mapOf(
             "role_id" to 2,
             "member_user" to mapOf("username" to userName))
-        val requestBody = JsonUtils.objectMapper.writeValueAsString(reqData)
+        val requestBody = objectMapper.writeValueAsString(reqData)
         logger.info("request body: $requestBody")
 
         val reqBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), requestBody)
@@ -103,25 +110,25 @@ class HarborClient @Autowired constructor(
             "page" to page.toString(),
             "page_size" to pageSize.toString()
         )
-        val url = "${systemConfig.registryUrl}/api/repositories?${getQueryStr(queryParamsMap)}"
+        val url = "${harborProperties.url}/api/repositories?${HttpUtils.getQueryStr(queryParamsMap)}"
         logger.info("request url: $url")
 
         val request = Request.Builder().url(url).header("Authorization", makeCredential()).get().build()
         val response = doRequest(request)
-        return JsonUtils.objectMapper.readValue(response)
+        return objectMapper.readValue(response)
     }
 
     fun listTag(repoName: String): List<HarborTag> {
-        val url = "${systemConfig.registryUrl}/api/repositories/${URLEncoder.encode(repoName, "utf8")}/tags"
+        val url = "${harborProperties.url}/api/repositories/${URLEncoder.encode(repoName, "utf8")}/tags"
         logger.info("request url: $url")
 
         val request = Request.Builder().url(url).header("Authorization", makeCredential()).get().build()
         val response = doRequest(request)
-        return JsonUtils.objectMapper.readValue(response)
+        return objectMapper.readValue(response)
     }
 
     fun getTag(repoName: String, tag: String): HarborTag? {
-        val url = "${systemConfig.registryUrl}/api/repositories/${URLEncoder.encode(repoName, "utf8")}/tags/$tag"
+        val url = "${harborProperties.url}/api/repositories/${URLEncoder.encode(repoName, "utf8")}/tags/$tag"
         logger.info("request url: $url")
 
         val request = Request.Builder().url(url).header("Authorization", makeCredential()).get().build()
@@ -129,19 +136,7 @@ class HarborClient @Autowired constructor(
         return if (httpResult.status == HttpStatus.NOT_FOUND.ordinal) {
             null
         } else {
-            JsonUtils.objectMapper.readValue(httpResult.body)
-        }
-    }
-
-    private fun getQueryStr(paramsMap: Map<String, String>): String {
-        return if (paramsMap.isEmpty()) {
-            ""
-        } else {
-            val paramList = mutableListOf<String>()
-            for ((k, v) in paramsMap) {
-                paramList.add("$k=${URLEncoder.encode(v, "utf8")}")
-            }
-            paramList.joinToString("&")
+            objectMapper.readValue(httpResult.body)
         }
     }
 
@@ -149,9 +144,9 @@ class HarborClient @Autowired constructor(
     private fun doRequest(request: Request): String {
         val okHttpClient = okhttp3.OkHttpClient.Builder()
             .connectTimeout(5L, TimeUnit.SECONDS)
-            .readTimeout(60L, TimeUnit.SECONDS)
-            .writeTimeout(60L, TimeUnit.SECONDS)
-            .sslSocketFactory(CertUtils.createSSLSocketFactory())
+            .readTimeout(30L, TimeUnit.SECONDS)
+            .writeTimeout(30L, TimeUnit.SECONDS)
+            .sslSocketFactory(createSSLSocketFactory())
             .hostnameVerifier(TrustAllHostnameVerifier())
             .build()
         try {
@@ -170,8 +165,19 @@ class HarborClient @Autowired constructor(
         }
     }
 
-    private fun makeCredential(): String =
-        Credentials.basic(systemConfig.registryUsername!!, systemConfig.registryPassword!!)
+    private fun createSSLSocketFactory(): SSLSocketFactory {
+        var ssLSocketFactory: SSLSocketFactory? = null
+        try {
+            val sc = SSLContext.getInstance("TLS")
+            sc.init(null, arrayOf(TrustAllManager()), SecureRandom())
+            ssLSocketFactory = sc.socketFactory
+        } catch (e: Exception) {
+            // never happen
+        }
+        return ssLSocketFactory!!
+    }
+
+    private fun makeCredential(): String = Credentials.basic(harborProperties.username, harborProperties.password)
 
     @SuppressWarnings
     private fun doRequest2(request: Request): HttpResult {
@@ -179,7 +185,7 @@ class HarborClient @Autowired constructor(
             .connectTimeout(5L, TimeUnit.SECONDS)
             .readTimeout(60L, TimeUnit.SECONDS)
             .writeTimeout(60L, TimeUnit.SECONDS)
-            .sslSocketFactory(CertUtils.createSSLSocketFactory())
+            .sslSocketFactory(createSSLSocketFactory())
             .hostnameVerifier(TrustAllHostnameVerifier())
             .build()
         try {

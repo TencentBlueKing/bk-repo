@@ -3,17 +3,13 @@ package com.tencent.bkrepo.dockeradapter.pojo
 data class DockerRepo(
     var repo: String? = null,
     var type: String? = null,
-    var repoType: String? = "",
     var imageName: String? = null,
+    var imagePath: String? = null,
     var createdBy: String? = null,
     var created: String? = null,
     var modified: String? = null,
     var modifiedBy: String? = null,
-    var imagePath: String? = null,
     var desc: String? = "",
-    var tags: List<DockerTag>? = null,
-    var tagCount: Int? = null,
-    var tagStart: Int? = null,
-    var tagLimit: Int? = null,
-    var downloadCount: Int? = null
+    var tagCount: Long? = null,
+    var downloadCount: Long? = null
 )
