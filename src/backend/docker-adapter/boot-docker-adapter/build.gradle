@@ -1,0 +1,3 @@
+dependencies {
+    implementation project(":docker-adapter:biz-docker-adapter")
+}

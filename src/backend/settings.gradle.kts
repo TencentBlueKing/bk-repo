@@ -99,3 +99,8 @@ include(":rpm")
 include(":rpm:api-rpm")
 include(":rpm:biz-rpm")
 include(":rpm:boot-rpm")
+
+include("docker-adapter")
+include("docker-adapter:biz-docker-adapter")
+include("docker-adapter:boot-docker-adapter")
+

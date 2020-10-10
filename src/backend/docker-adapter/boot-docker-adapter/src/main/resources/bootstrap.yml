@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: dockeradapter
+  cloud:
+    consul:
+      discovery:
+        heartbeat:
+          enabled: true
+        query-passing: true
+        prefer-ip-address: true
+      config:
+        prefix: bkrepo-config
+        format: YAML
+        data-key: data
+        profileSeparator: '::'
+
+server:
+  port: 8089
+
+adapter:
+  realm: bkrepo
