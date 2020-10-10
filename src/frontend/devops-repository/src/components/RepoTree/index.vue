@@ -28,9 +28,8 @@
                     :class="openList.includes(item.roadMap) ? 'icon-down-shape' : 'icon-right-shape'"></i>
                 <icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'"></icon>
                 <div class="node-text"
-                    :class="{ 'title-bold': importantSearch && item.name.toLowerCase().includes(importantSearch.toLowerCase()) }"
-                    :title="item.name">
-                    {{ item.name }}
+                    :title="item.name" v-html="importantTransform(item.name)">
+                    <!-- {{ item.name }} -->
                 </div>
             </div>
             <CollapseTransition>
@@ -83,6 +82,9 @@
         computed: {
             treeList () {
                 return this.list.filter(v => v.folder)
+            },
+            reg () {
+                return new RegExp(this.importantSearch, 'ig')
             }
         },
         methods: {
@@ -97,6 +99,13 @@
              */
             itemClickHandler (item) {
                 this.$emit('item-click', item)
+            },
+            importantTransform (name) {
+                const normalText = name.split(this.reg)
+                const importantText = name.match(this.reg)
+                return normalText.reduce((a, b, index) => {
+                    return a + `<em>${importantText[index - 1]}</em>` + b
+                })
             }
         }
     }
@@ -105,7 +114,7 @@
 <style lang="scss">
 @import '@/scss/conf';
 li:last-child>.line-dashed {
-    height: 40px!important;
+    height: 30px!important;
 }
 .repo-tree-item {
     position: relative;
@@ -118,11 +127,11 @@ li:last-child>.line-dashed {
         z-index: 1;
     }
     &:last-child > .line-dashed {
-        height: 40px!important;
+        height: 30px!important;
     }
     .repo-tree-title {
         position: relative;
-        height: 40px;
+        height: 30px;
         display: flex;
         align-items: center;
         .loading {
@@ -142,10 +151,13 @@ li:last-child>.line-dashed {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-        }
-        .title-bold {
-            font-weight: bolder;
-            background-color: #fafb0b;
+            em {
+                font-style: normal;
+                color:#e4393c;
+                &:hover {
+                    color: $primaryColor;
+                }
+            }
         }
         &.selected {
             background-color: $primaryLightColor;
