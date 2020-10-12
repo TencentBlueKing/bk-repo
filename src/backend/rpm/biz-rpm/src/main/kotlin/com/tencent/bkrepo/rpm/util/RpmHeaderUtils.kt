@@ -10,4 +10,8 @@ object RpmHeaderUtils {
     fun HeaderUtils.getRpmBooleanHeader(name: String): Boolean {
         return getHeader(name)?.toBoolean() ?: true
     }
+
+    fun HeaderUtils.calculatePackages(): Boolean {
+        return getBooleanHeader("X-BKREPO-RPM-PACKAGES")
+    }
 }

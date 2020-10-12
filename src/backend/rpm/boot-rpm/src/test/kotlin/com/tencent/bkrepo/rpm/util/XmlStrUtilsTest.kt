@@ -4,7 +4,7 @@ import com.tencent.bkrepo.rpm.util.XmlStrUtils.packagesModify
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
-import java.lang.StringBuilder
+import java.io.File
 
 @SpringBootTest
 class XmlStrUtilsTest {
@@ -21,25 +21,9 @@ class XmlStrUtilsTest {
     }
 
     @Test
-    fun packagesPlusTest() {
-        val xml01 = "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
-            ".edu/metadata/rpm\" packages=\"9\">"
-        val stringBuilder01 = StringBuilder(xml01)
-        val result01 = stringBuilder01.packagesModify(true)
-
-        val xml02 = "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
-            ".edu/metadata/rpm\" packages=\"1\">"
-        val stringBuilder02 = StringBuilder(xml02)
-        val result02 = stringBuilder02.packagesModify(true)
-        Assertions.assertEquals(
-            "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux" +
-                ".duke.edu/metadata/rpm\" packages=\"10\">",
-            result01
-        )
-        Assertions.assertEquals(
-            "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux" +
-                ".duke.edu/metadata/rpm\" packages=\"2\">",
-            result02
-        )
+    fun packagesModifyTest() {
+        val file = File("/Users/weaving/Downloads/0aab2adc94b2eef328f6d4f7ee1d686c816d124d-primary.xml")
+        val resultFile = file.packagesModify("primary", true)
+        println(resultFile.absolutePath)
     }
 }
