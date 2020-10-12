@@ -26,14 +26,14 @@ class HarborImageServiceImpl(
 ) : ImageService {
     override fun queryPublicImage(request: QueryPublicImageRequest): Page<DockerRepo> {
         with(request) {
-            return queryProjectImage(QueryProjectImageRequest(searchKey, PUBLIC_PROJECT_ID, DEFAULT_DOCKER_REPO_NAME, page, pageSize))
+            return queryProjectImage(QueryProjectImageRequest(searchKey, PUBLIC_PROJECT_ID, DEFAULT_DOCKER_REPO_NAME, pageNumber, pageSize))
         }
     }
 
     override fun queryProjectImage(request: QueryProjectImageRequest): Page<DockerRepo> {
         logger.info("queryProjectImage, request: $request")
         val projectId = request.projectId
-        val page = request.page
+        val pageNumber = request.pageNumber
         val pageSize = request.pageSize
         val searchKey = request.searchKey ?: ""
         var harborProject = harborClient.getProjectByName(projectId)
@@ -41,7 +41,7 @@ class HarborImageServiceImpl(
             harborClient.createProject(projectId)
             harborProject = harborClient.getProjectByName(projectId)
         }
-        val harborRepos = harborClient.listImage(harborProject!!.projectId, searchKey, page, pageSize)
+        val harborRepos = harborClient.listImage(harborProject!!.projectId, searchKey, pageNumber, pageSize)
         val repoType = if (projectId == "public") {
             "public"
         } else {
@@ -65,8 +65,8 @@ class HarborImageServiceImpl(
             }
         }
 
-        if (harborRepos.size < pageSize && page == 1) {
-            return Page(page, pageSize, harborRepos.size.toLong(), images)
+        if (harborRepos.size < pageSize && pageNumber == 1) {
+            return Page(pageNumber, pageSize, harborRepos.size.toLong(), images)
         }
 
         //迂回获取查询总repo数
@@ -83,7 +83,7 @@ class HarborImageServiceImpl(
             }
         }
 
-        return Page(page, pageSize, tmpTotal.toLong(), images)
+        return Page(pageNumber, pageSize, tmpTotal.toLong(), images)
     }
 
     override fun queryImageTag(request: QueryImageTagRequest): Page<DockerTag> {
@@ -104,7 +104,7 @@ class HarborImageServiceImpl(
                 //artifactorys 无
             )
         }
-        return Page(request.page, request.pageSize, tags.size.toLong(), tags)
+        return Page(request.pageNumber, request.pageSize, tags.size.toLong(), tags)
     }
 
     private fun getPrintSize(size: Long): String {

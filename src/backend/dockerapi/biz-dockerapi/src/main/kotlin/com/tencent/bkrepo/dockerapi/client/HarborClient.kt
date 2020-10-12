@@ -103,11 +103,11 @@ class HarborClient @Autowired constructor(
         doRequest(request)
     }
 
-    fun listImage(projectId: Int, searchKey: String, page: Int, pageSize: Int): List<HarborRepo> {
+    fun listImage(projectId: Int, searchKey: String, pageNumber: Int, pageSize: Int): List<HarborRepo> {
         val queryParamsMap = mapOf(
             "project_id" to projectId.toString(),
             "q" to searchKey,
-            "page" to page.toString(),
+            "page" to pageNumber.toString(),
             "page_size" to pageSize.toString()
         )
         val url = "${harborProperties.url}/api/repositories?${HttpUtils.getQueryStr(queryParamsMap)}"

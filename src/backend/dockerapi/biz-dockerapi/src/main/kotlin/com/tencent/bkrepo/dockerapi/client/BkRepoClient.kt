@@ -91,7 +91,7 @@ class BkRepoClient(
         val projectId = request.projectId
         val repoName = request.repoName ?: DEFAULT_DOCKER_REPO_NAME
         val requestParams = mapOf(
-            "pageNumber" to request.page.toString(),
+            "pageNumber" to request.pageNumber.toString(),
             "pageSize" to request.pageSize.toString(),
             "packageName" to (request.searchKey ?: "")
         )
@@ -128,7 +128,7 @@ class BkRepoClient(
         val repoName = request.repoName ?: DEFAULT_DOCKER_REPO_NAME
         val imageRepo = request.imageRepo
         val requestParams = mapOf(
-            "pageNumber" to request.page.toString(),
+            "pageNumber" to request.pageNumber.toString(),
             "pageSize" to request.pageSize.toString(),
             "packageKey" to "docker://${request.imageRepo}",
             "version" to ""
