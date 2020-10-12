@@ -1,6 +1,6 @@
 spring:
   application:
-    name: dockeradapter
+    name: docker-adapter
   cloud:
     consul:
       discovery:
@@ -17,5 +17,5 @@ spring:
 server:
   port: 8089
 
-adapter:
+docker-adapter:
   realm: bkrepo
