@@ -7,15 +7,15 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 @EnableConfigurationProperties(HarborProperties::class, BkRepoProperties::class)
 class SystemConfig {
-    @Value("\${adapter.bkssmServer:}")
+    @Value("\${docker-adapter.bkssmServer:}")
     var bkssmServer: String? = null
 
-    @Value("\${adapter.apigwServer:}")
+    @Value("\${docker-adapter.apigwServer:}")
     var apigwServer: String? = null
 
-    @Value("\${adapter.appCode:}")
+    @Value("\${docker-adapter.appCode:}")
     var appCode: String? = null
 
-    @Value("\${adapter.appSecret:}")
+    @Value("\${docker-adapter.appSecret:}")
     var appSecret: String? = null
 }

@@ -2,6 +2,7 @@ package com.tencent.bkrepo.dockeradapter.service.bkrepo
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.dockeradapter.client.BkRepoClient
+import com.tencent.bkrepo.dockeradapter.constant.DEFAULT_DOCKER_REPO_NAME
 import com.tencent.bkrepo.dockeradapter.constant.PUBLIC_PROJECT_ID
 import com.tencent.bkrepo.dockeradapter.pojo.DockerRepo
 import com.tencent.bkrepo.dockeradapter.pojo.DockerTag
@@ -19,7 +20,7 @@ class BkRepoImageServiceImpl(
 ) : ImageService {
     override fun queryPublicImage(request: QueryPublicImageRequest): Page<DockerRepo> {
         with(request) {
-            return queryProjectImage(QueryProjectImageRequest(searchKey, PUBLIC_PROJECT_ID, PUBLIC_PROJECT_ID, page, page))
+            return queryProjectImage(QueryProjectImageRequest(searchKey, PUBLIC_PROJECT_ID, DEFAULT_DOCKER_REPO_NAME, page, page))
         }
     }
 
