@@ -2,11 +2,11 @@ export const repoEnum = [
     // 'generic',
     'docker',
     'maven',
-    // 'pypi',
-    'npm'
-    // 'helm',
-    // 'composer',
-    // 'rpm'
+    'pypi',
+    'npm',
+    'helm',
+    'composer',
+    'rpm'
 ]
 
 export const repoTypeEnum = {

@@ -128,7 +128,7 @@
             :quick-close="false"
             width="600"
             header-position="left">
-            <bk-form :label-width="120" :model="formDialog" :rules="rules" ref="formDialog">
+            <bk-form class="repo-generic-form" :label-width="120" :model="formDialog" :rules="rules" ref="formDialog">
                 <template v-if="formDialog.type === 'add'">
                     <bk-form-item :label="$t('folder') + $t('path')">
                         <span class="break-all">{{ selectedRow.fullPath + '/' + formDialog.path }}</span>
@@ -137,15 +137,17 @@
                         <bk-input v-model="formDialog.path" :placeholder="$t('folderNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
-                <template v-if="formDialog.type === 'rename'">
+                <template v-else-if="formDialog.type === 'rename'">
                     <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
                         <bk-input v-model="formDialog.name" :placeholder="$t('folderNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
-                <template v-if="formDialog.type === 'share'">
+                <template v-else-if="formDialog.type === 'share'">
                     <bk-form-item :label="$t('share') + $t('object')" :required="true" property="user" error-display-type="normal">
                         <bk-tag-input
                             v-model="formDialog.user"
+                            :list="userList"
+                            trigger="focus"
                             allow-create
                             has-delete-icon>
                         </bk-tag-input>
@@ -156,8 +158,8 @@
                 </template>
             </bk-form>
             <div slot="footer">
-                <bk-button ext-cls="mr5" :loading="formDialog.loading" theme="primary" @click.stop.prevent="submitFormDialog">{{$t('submit')}}</bk-button>
-                <bk-button ext-cls="mr5" theme="default" @click.stop="cancelFormDialog">{{$t('cancel')}}</bk-button>
+                <bk-button ext-cls="mr5" :loading="formDialog.loading" theme="primary" @click="submitFormDialog">{{$t('submit')}}</bk-button>
+                <bk-button ext-cls="mr5" theme="default" @click="cancelFormDialog">{{$t('cancel')}}</bk-button>
             </div>
         </bk-dialog>
 
@@ -230,6 +232,7 @@
                     user: [],
                     time: 1
                 },
+                userList: [],
                 // formDialog Rules
                 rules: {
                     path: [
@@ -328,6 +331,9 @@
             this.initPage()
             this.setBreadcrumb()
         },
+        mounted () {
+            this.getUserList()
+        },
         beforeDestroy () {
             this.SET_BREADCRUMB([])
         },
@@ -351,6 +357,14 @@
                 'shareArtifactory',
                 'getFolderSize'
             ]),
+            getUserList () {
+                if (this.$userList) this.userList = Object.values(this.$userList)
+                else {
+                    setTimeout(() => {
+                        this.getUserList()
+                    }, 1000)
+                }
+            },
             async initPage () {
                 this.importantSearch = ''
                 this.INIT_TREE()
@@ -560,8 +574,8 @@
                 this.cancelFormDialog()
             },
             cancelFormDialog () {
-                this.$refs.formDialog.clearError()
                 this.formDialog.show = false
+                this.$refs.formDialog.clearError()
             },
             submitAddFolder () {
                 return this.createFolder({
@@ -674,10 +688,18 @@
                 this.getArtifactories()
             },
             handlerDownload () {
-                window.open(
-                    `/web/generic/${this.projectId}/${this.repoName}/${this.selectedRow.fullPath}`,
-                    '_self'
-                )
+                const url = `/generic/${this.projectId}/${this.repoName}/${this.selectedRow.fullPath}`
+                this.$ajax.head(url).then(() => {
+                    window.open(
+                        '/web' + url,
+                        '_self'
+                    )
+                }).catch(() => {
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: this.$t('fileNotExist')
+                    })
+                })
             },
             calculateFolderSize (row) {
                 this.$set(row, 'sizeLoading', true)
@@ -767,6 +789,7 @@
         }
     }
 }
+
 /deep/ .bk-table-row.selected-row {
     background-color: $primaryLightColor;
 }

@@ -262,10 +262,18 @@
                 this.formDialog.show = false
             },
             downloadPackageHandler (row) {
-                window.open(
-                    `/web/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${row.name}`,
-                    '_self'
-                )
+                const url = `/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${row.name}`
+                this.$ajax.head(url).then(() => {
+                    window.open(
+                        '/web' + url,
+                        '_self'
+                    )
+                }).catch(() => {
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: this.$t('fileNotExist')
+                    })
+                })
             },
             deleteVersionHandler (row) {
                 this.$bkInfo({
