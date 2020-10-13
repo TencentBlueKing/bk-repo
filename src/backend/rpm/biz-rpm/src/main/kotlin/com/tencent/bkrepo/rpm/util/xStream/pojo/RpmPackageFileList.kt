@@ -13,5 +13,5 @@ data class RpmPackageFileList(
     override val name: String,
     override val version: RpmVersion,
     @XStreamImplicit(itemFieldName = "file")
-    val files: LinkedList<RpmFile>
+    val files: List<RpmFile>
 ) : RpmXmlPackage(pkgid, name, version)

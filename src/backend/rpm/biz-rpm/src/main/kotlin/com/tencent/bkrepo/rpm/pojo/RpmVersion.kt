@@ -6,4 +6,8 @@ data class RpmVersion(
     val epoch: String,
     val ver: String,
     val rel: String
-)
+){
+    override fun toString(): String {
+        return "$name-$ver-$rel.$arch.rpm"
+    }
+}
