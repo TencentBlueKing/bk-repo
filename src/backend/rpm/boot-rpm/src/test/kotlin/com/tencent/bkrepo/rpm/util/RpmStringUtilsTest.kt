@@ -18,5 +18,4 @@ class RpmStringUtilsTest {
         val rpmVersion3 = str3.toRpmVersion()
         Assertions.assertEquals(str3, rpmVersion3.toString())
     }
-
 }

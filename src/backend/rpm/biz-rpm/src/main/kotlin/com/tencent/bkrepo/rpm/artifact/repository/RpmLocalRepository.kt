@@ -195,11 +195,11 @@ class RpmLocalRepository(
             // 单独存储每个包的filelists.xml
             storeFileListsXml(context, rpmMetadataFileList, repodataPath, repeat)
         }
-        //过滤files中的文件
+        // 过滤files中的文件
         rpmMetadata.packages[0].format.files = rpmMetadata.packages[0].format.files.filter {
             (it.filePath.contains("bin/") && (it.filePath.endsWith(".sh"))) ||
-                    (it.filePath.startsWith("/etc/") && it.filePath.contains("conf")) ||
-                    it.filePath == "/usr/lib/sendmail"
+                (it.filePath.startsWith("/etc/") && it.filePath.contains("conf")) ||
+                it.filePath == "/usr/lib/sendmail"
         }
         val rpmMetadataChangeLog = RpmMetadataChangeLog(
             listOf(
@@ -221,10 +221,10 @@ class RpmLocalRepository(
     }
 
     private fun storeFileListsXml(
-            context: ArtifactUploadContext,
-            rpmXmlMetadata: RpmXmlMetadata,
-            repodataPath: String,
-            repeat: ArtifactRepeat
+        context: ArtifactUploadContext,
+        rpmXmlMetadata: RpmXmlMetadata,
+        repodataPath: String,
+        repeat: ArtifactRepeat
     ) {
         with(context.artifactInfo) {
             val rpmXml = rpmXmlMetadata.rpmMetadataToPackageXml(FILELISTS)
@@ -233,14 +233,14 @@ class RpmLocalRepository(
             val tempFileName = StringBuilder(fileName.removeSuffix("rpm")).append("xml")
             val rpmXmlFile = ArtifactFileFactory.build(ByteArrayInputStream(rpmXml.toByteArray()))
             val metadata = mutableMapOf(
-                    "repeat" to repeat.name
+                "repeat" to repeat.name
             )
             val xmlXmlFileNode = xmlIndexNodeCreate(
-                    context.userId,
-                    context.repositoryInfo,
-                    "/$repodataPath/$REPODATA/temp/$tempFileName",
-                    rpmXmlFile,
-                    metadata
+                context.userId,
+                context.repositoryInfo,
+                "/$repodataPath/$REPODATA/temp/$tempFileName",
+                rpmXmlFile,
+                metadata
             )
             storageService.store(xmlXmlFileNode.sha256!!, rpmXmlFile, context.storageCredentials)
             with(xmlXmlFileNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
@@ -248,7 +248,6 @@ class RpmLocalRepository(
             logger.info("Success to insert $xmlXmlFileNode")
         }
     }
-
 
     private fun updateIndexXml(
         context: ArtifactUploadContext,

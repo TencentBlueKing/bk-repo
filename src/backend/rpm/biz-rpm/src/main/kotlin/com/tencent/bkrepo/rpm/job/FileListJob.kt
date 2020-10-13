@@ -29,7 +29,7 @@ import java.io.File
 import java.io.FileInputStream
 
 @Component
-class FileListJob{
+class FileListJob {
     @Autowired
     private lateinit var repositoryClient: RepositoryClient
 
@@ -60,10 +60,12 @@ class FileListJob{
         }
     }
 
-    fun findRepoDataByRepo(repositoryInfo: RepositoryInfo,
-                           path: String,
-                           repodataDepth: Int,
-                           repoDataSet: MutableSet<String>) {
+    fun findRepoDataByRepo(
+        repositoryInfo: RepositoryInfo,
+        path: String,
+        repodataDepth: Int,
+        repoDataSet: MutableSet<String>
+    ) {
         with(repositoryInfo) {
             val nodeList = nodeClient.list(projectId, name, path).data ?: return
             if (repodataDepth == 0) {
@@ -79,16 +81,16 @@ class FileListJob{
     }
 
     private fun updateFileListsXml(
-            repo: RepositoryInfo,
-            repodataPath: String
+        repo: RepositoryInfo,
+        repodataPath: String
     ) {
         val target = "-filelists.xml.gz"
         with(repo) {
             // repodata下'-**.xml.gz'最新节点。
             val nodeList = nodeClient.list(
-                    projectId, name,
-                    repodataPath,
-                    includeFolder = false, deep = false
+                projectId, name,
+                repodataPath,
+                includeFolder = false, deep = false
             ).data
             val targetNodelist = nodeList?.filter {
                 it.name.endsWith(target)
@@ -99,38 +101,42 @@ class FileListJob{
             if (!targetNodelist.isNullOrEmpty()) {
                 val latestNode = targetNodelist[0]
                 val oldFileLists = storageService.load(
-                        latestNode.sha256!!,
-                        Range.full(latestNode.size),
-                        null
+                    latestNode.sha256!!,
+                    Range.full(latestNode.size),
+                    null
                 ) ?: return
                 // 更新filelists.xml
-                //从临时目录中遍历索引
+                // 从临时目录中遍历索引
                 val page = nodeClient.page(
-                        projectId,name,0, 500,
-                        "$repodataPath/temp/",
-                        includeFolder = false,
-                        includeMetadata = true
+                    projectId, name, 0, 500,
+                    "$repodataPath/temp/",
+                    includeFolder = false,
+                    includeMetadata = true
                 ).data ?: return
 
-                //不删除
+                // 不删除
                 var newFileLists: File = oldFileLists.unGzipInputStream()
 
                 val tempFileListsNode = page.records
                 val calculatedList = mutableListOf<NodeInfo>()
                 for (tempFile in tempFileListsNode) {
                     val inputStream = storageService.load(
-                            tempFile.sha256!!,
-                            Range.full(tempFile.size),
-                            null
+                        tempFile.sha256!!,
+                        Range.full(tempFile.size),
+                        null
                     ) ?: return
                     newFileLists = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
-                        XmlStrUtils.updateFileLists("filelists", newFileLists,
-                                tempFile.name,
-                                inputStream)
+                        XmlStrUtils.updateFileLists(
+                            "filelists", newFileLists,
+                            tempFile.name,
+                            inputStream
+                        )
                     } else {
-                        XmlStrUtils.insertFileLists("filelists", newFileLists,
-                                inputStream,
-                                false)
+                        XmlStrUtils.insertFileLists(
+                            "filelists", newFileLists,
+                            inputStream,
+                            false
+                        )
                     }
                     calculatedList.add(tempFile)
                     storeFileListNode(repo, newFileLists, repodataPath)
@@ -149,13 +155,13 @@ class FileListJob{
     }
 
     private fun storeFileListXmlNode(
-            repo: RepositoryInfo,
-            repodataPath: String
+        repo: RepositoryInfo,
+        repodataPath: String
     ) {
         val target = "-filelists.xml.gz"
         val xmlStr = "<?xml version=\"1.0\"?>\n" +
-                "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"0\">\n" +
-                "</metadata>"
+            "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"0\">\n" +
+            "</metadata>"
         val indexType = "filelists"
         ByteArrayInputStream((xmlStr.toByteArray())).use { xmlInputStream ->
             // 保存节点同时保存节点信息到元数据方便repomd更新。
@@ -170,25 +176,25 @@ class FileListJob{
                 val xmlGZArtifact = ArtifactFileFactory.build(FileInputStream(xmlGZFile))
                 val fullPath = "$repodataPath/$xmlGZFileSha1$target"
                 val metadata = mutableMapOf(
-                        "indexType" to indexType,
-                        "checksum" to xmlGZFileSha1,
-                        "size" to (xmlGZArtifact.getSize().toString()),
-                        "timestamp" to System.currentTimeMillis().toString(),
-                        "openChecksum" to xmlFileSha1,
-                        "openSize" to (xmlFileSize.toString())
+                    "indexType" to indexType,
+                    "checksum" to xmlGZFileSha1,
+                    "size" to (xmlGZArtifact.getSize().toString()),
+                    "timestamp" to System.currentTimeMillis().toString(),
+                    "openChecksum" to xmlFileSha1,
+                    "openSize" to (xmlFileSize.toString())
                 )
 
                 val xmlPrimaryNode = NodeCreateRequest(
-                        repo.projectId,
-                        repo.name,
-                        fullPath,
-                        false,
-                        0L,
-                        true,
-                        xmlGZArtifact.getSize(),
-                        xmlGZArtifact.getFileSha256(),
-                        xmlGZArtifact.getFileMd5(),
-                        metadata
+                    repo.projectId,
+                    repo.name,
+                    fullPath,
+                    false,
+                    0L,
+                    true,
+                    xmlGZArtifact.getSize(),
+                    xmlGZArtifact.getFileSha256(),
+                    xmlGZArtifact.getFileMd5(),
+                    metadata
                 )
                 storageService.store(xmlPrimaryNode.sha256!!, xmlGZArtifact, null)
                 with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
@@ -201,9 +207,9 @@ class FileListJob{
     }
 
     private fun storeFileListNode(
-            repo: RepositoryInfo,
-            xmlFile: File,
-            repodataPath: String
+        repo: RepositoryInfo,
+        xmlFile: File,
+        repodataPath: String
     ) {
         val indexType = "filelists"
         val target = "-filelists.xml.gz"
@@ -219,25 +225,25 @@ class FileListJob{
             val xmlGZArtifact = ArtifactFileFactory.build(FileInputStream(xmlGZFile))
             val fullPath = "$repodataPath/$xmlGZFileSha1$target"
             val metadata = mutableMapOf(
-                    "indexType" to indexType,
-                    "checksum" to xmlGZFileSha1,
-                    "size" to (xmlGZArtifact.getSize().toString()),
-                    "timestamp" to System.currentTimeMillis().toString(),
-                    "openChecksum" to xmlFileSha1,
-                    "openSize" to (xmlFileSize.toString())
+                "indexType" to indexType,
+                "checksum" to xmlGZFileSha1,
+                "size" to (xmlGZArtifact.getSize().toString()),
+                "timestamp" to System.currentTimeMillis().toString(),
+                "openChecksum" to xmlFileSha1,
+                "openSize" to (xmlFileSize.toString())
             )
 
             val xmlPrimaryNode = NodeCreateRequest(
-                    repo.projectId,
-                    repo.name,
-                    fullPath,
-                    false,
-                    0L,
-                    true,
-                    xmlGZArtifact.getSize(),
-                    xmlGZArtifact.getFileSha256(),
-                    xmlGZArtifact.getFileMd5(),
-                    metadata
+                repo.projectId,
+                repo.name,
+                fullPath,
+                false,
+                0L,
+                true,
+                xmlGZArtifact.getSize(),
+                xmlGZArtifact.getFileSha256(),
+                xmlGZArtifact.getFileMd5(),
+                metadata
             )
             storageService.store(xmlPrimaryNode.sha256!!, xmlGZArtifact, null)
             with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
@@ -249,8 +255,7 @@ class FileListJob{
         }
     }
 
-    companion object{
+    companion object {
         private val logger: Logger = LoggerFactory.getLogger(FileListJob::class.java)
     }
-
 }

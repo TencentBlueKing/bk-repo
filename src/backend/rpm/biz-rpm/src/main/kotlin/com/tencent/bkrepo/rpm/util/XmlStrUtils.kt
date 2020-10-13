@@ -65,10 +65,10 @@ object XmlStrUtils {
     }
 
     fun insertFileLists(
-            indexType: String,
-            file: File,
-            inputStream: InputStream,
-            calculatePackage: Boolean
+        indexType: String,
+        file: File,
+        inputStream: InputStream,
+        calculatePackage: Boolean
     ): File {
         val fileLists = String(inputStream.readBytes())
         val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
@@ -77,16 +77,18 @@ object XmlStrUtils {
     }
 
     fun updateFileLists(
-            indexType: String,
-            file: File,
-            tempFileName: String,
-            inputStream: InputStream
+        indexType: String,
+        file: File,
+        tempFileName: String,
+        inputStream: InputStream
     ): File {
 
         val rpmVersion = tempFileName.toRpmVersion()
 
-        val locationStr = with(rpmVersion){"name=\"$name\">\n" +
-                "    <version epoch=\"$epoch\" ver=\"$ver\" rel=\"$rel\"/>"}
+        val locationStr = with(rpmVersion) {
+            "name=\"$name\">\n" +
+                "    <version epoch=\"$epoch\" ver=\"$ver\" rel=\"$rel\"/>"
+        }
 
         val prefix = PACKAGE_OTHER_START_MARK
 
@@ -96,8 +98,6 @@ object XmlStrUtils {
 
         return tempFile.deleteContent(xmlIndex).insertContent(packageXml)
     }
-
-
 
     /**
      * 针对重复节点则替换相应数据

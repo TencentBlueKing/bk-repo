@@ -88,11 +88,11 @@ interface RepositoryClient {
     @ApiOperation("分页查询指定类型仓库")
     @GetMapping("/page/repoType/{page}/{size}/{repoType}")
     fun pageByType(
-            @ApiParam(value = "当前页", required = true, example = "0")
-            @PathVariable page: Int,
-            @ApiParam(value = "分页大小", required = true, example = "20")
-            @PathVariable size: Int,
-            @ApiParam(value = "仓库类型", required = true)
-            @PathVariable repoType: String
+        @ApiParam(value = "当前页", required = true, example = "0")
+        @PathVariable page: Int,
+        @ApiParam(value = "分页大小", required = true, example = "20")
+        @PathVariable size: Int,
+        @ApiParam(value = "仓库类型", required = true)
+        @PathVariable repoType: String
     ): Response<Page<RepositoryInfo>>
 }
