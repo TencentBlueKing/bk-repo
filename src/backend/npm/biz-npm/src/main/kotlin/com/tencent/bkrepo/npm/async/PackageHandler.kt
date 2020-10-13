@@ -1,3 +1,24 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ */
+
 package com.tencent.bkrepo.npm.async
 
 import com.google.gson.JsonObject
@@ -32,7 +53,7 @@ class PackageHandler {
      * 创建包版本
      */
     @Async
-    fun createVersion(userId: String, artifactInfo: NpmArtifactInfo, npmMetaDataJsonObject: JsonObject, attributes: Map<String,Any>) {
+    fun createVersion(userId: String, artifactInfo: NpmArtifactInfo, npmMetaDataJsonObject: JsonObject, attributes: Map<String, Any>) {
         npmMetaDataJsonObject.apply {
             val name = this[NAME].asString
             val description = this[DESCRIPTION]?.asString
@@ -71,7 +92,7 @@ class PackageHandler {
     @Async
     fun deletePackage(userId: String, name: String, artifactInfo: NpmArtifactInfo) {
         val packageKey = PackageKeys.ofNpm(name)
-        with(artifactInfo){
+        with(artifactInfo) {
             packageClient.deletePackage(projectId, repoName, packageKey).apply {
                 logger.info("user: [$userId] delete package [$name] in repo [$projectId/$repoName] success!")
             }
@@ -84,7 +105,7 @@ class PackageHandler {
     @Async
     fun deleteVersion(userId: String, name: String, version: String, artifactInfo: NpmArtifactInfo) {
         val packageKey = PackageKeys.ofNpm(name)
-        with(artifactInfo){
+        with(artifactInfo) {
             packageClient.deleteVersion(projectId, repoName, packageKey, version).apply {
                 logger.info("user: [$userId] delete package [$name] with version [$version] in repo [$projectId/$repoName] success!")
             }
@@ -93,7 +114,7 @@ class PackageHandler {
 
     fun getLatestVersion(distTags: JsonObject): String {
         val iterator = distTags.entrySet().iterator()
-        if (iterator.hasNext()){
+        if (iterator.hasNext()) {
             return iterator.next().value.asString
         }
         return distTags[LATEST].asString
@@ -112,7 +133,7 @@ class PackageHandler {
         return BeanUtils.beanToMap(metaData)
     }
 
-    companion object{
+    companion object {
         val logger: Logger = LoggerFactory.getLogger(PackageHandler::class.java)
     }
 }

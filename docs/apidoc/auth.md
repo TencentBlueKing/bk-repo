@@ -662,7 +662,7 @@
 
 ``` json
 {
-    "clusterAddr":"https://auth.test.bkrepo.oa.com/",
+    "clusterAddr":"${domain}",
     "cert":"-----BEGIN CERTIFICATE-----
 MIID7TCCAtWgAwIBAgIJAIrUulvdIEJ/MA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD
 VQQGEwJjbjELMAkGA1UECAwCZ2QxCzAJBgNVBAcMAnN6MRAwDgYDVQQKDAd0ZW5j
@@ -754,7 +754,7 @@ Sw==
   "data": [
     {
       "clusterId": "test_cluster",
-      "clusterAddr": "https://auth.test.bkrepo.oa.com/",
+      "clusterAddr": "${domain}",
       "cert": "-----BEGIN CERTIFICATE-----\nMIID7TCCAtWgAwIBAgIJAIrUulvdIEJ/MA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD\nVQQGEwJjbjELMAkGA1UECAwCZ2QxCzAJBgNVBAcMAnN6MRAwDgYDVQQKDAd0ZW5j\nZW50MQswCQYDVQQLDAJiazEgMB4GA1UEAwwXYXV0aC50ZXN0LmJrcmVwby5vYS5j\nb20xIjAgBgkqhkiG9w0BCQEWE293ZW5seHVAdGVuY2VudC5jb20wHhcNMjAwMzAz\nMDkxNTU5WhcNMjAwNDAyMDkxNTU5WjCBjDELMAkGA1UEBhMCY24xCzAJBgNVBAgM\nAmdkMQswCQYDVQQHDAJzejEQMA4GA1UECgwHdGVuY2VudDELMAkGA1UECwwCYmsx\nIDAeBgNVBAMMF2F1dGgudGVzdC5ia3JlcG8ub2EuY29tMSIwIAYJKoZIhvcNAQkB\nFhNvd2VubHh1QHRlbmNlbnQuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB\nCgKCAQEAxmd2xtB44LxTE2eKl5qskmTf4/Rm9l9c1jJeVoBqaLl5XzlwRl5K3xBt\nPCYkSdegNveTcnG8NGAsLPVwHLYwbf6WHZY3TOtovZG9KFXmNdnKBR9KgQq/NmCe\nTwkT7HBrF7l5BtTziwd1+4NKB+DWcI1rwSTRkd66Kzj7SDrZP6pFz9Oq9G2lBuIx\n2Dsqpo0V4CI1EPZV83LCbw7MP5ip7+edilvyyWuVhHFV2Q9Bd266flcrdSZ06n1/\nBVbvILQQ3Aif8+OYOQR3pvrwQOpuwEIitxOkNaABg8AotgO+QviDhqi0mrxclGpl\ns9E3SDBWHAMrOhqAoX29GNYzOchbCwIDAQABo1AwTjAdBgNVHQ4EFgQU1vfUyGB9\nh2VTopptm+nqquwk+4IwHwYDVR0jBBgwFoAU1vfUyGB9h2VTopptm+nqquwk+4Iw\nDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAmdxJD2Pyq6kelkkqT9kb\nS31KzN6xU8Xtvn5GMNavlN6pje15skG986EL+J8KhyyitONitPxW0Pb3b22rqfp8\n6G0dFlx1njF7tVKeFZfqnLTol5yp2h0LQmdQKgniePFD7SQmv2HUoqgCMH5iYXR2\ntCShdiWFaOod2jwfEgXBxSnAtn2o+pGKc8eNs35a8JlV8q8XHbgeeXkWGz7w5yUw\nIvikEd2luq0dCZYNhal06sNIrvKvDA/XMCrMnbe9YEbkm0qqxRchSfqVcvashQFW\nl3+iyoEIMpDGXQIZMoSWDYnSGql1pGGROFAbv6SukZuGMO8tqnlKWE8fSyb0hDz3\nSw==\n-----END CERTIFICATE-----",
       "credentialStatus": true
     }
@@ -828,7 +828,7 @@ Sw==
 
 ``` json
 {
-    "clusterAddr":"https://auth.test.bkrepo.**.com/",
+    "clusterAddr":"${domain}",
     "cert":"-----BEGIN CERTIFICATE-----
 MIID7TCCAtWgAwIBAgIJAIrUulvdIEJ/MA0GCSqGSIb3DQEBCwUAMIGMMQswCQYD
 VQQGEwJjbjELMAkGA1UECAwCZ2QxCzAJBgNVBAcMAnN6MRAwDgYDVQQKDAd0ZW5j

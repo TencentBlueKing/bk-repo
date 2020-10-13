@@ -1,3 +1,24 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ */
+
 package com.tencent.bkrepo.dockerapi.service.harbor
 
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -55,13 +76,13 @@ class HarborImageServiceImpl(
                 tagCount = it.tagsCount.toLong()
                 created = DateTime(it.createTime).toString("yyyy-MM-dd HH:mm:ss")
                 modified = DateTime(it.updateTime).toString("yyyy-MM-dd HH:mm:ss")
-                imageName = it.name //?
-                imagePath = it.name //?
-                //tagStart?
-                //tagLimit?
+                imageName = it.name // ?
+                imagePath = it.name // ?
+                // tagStart?
+                // tagLimit?
                 downloadCount = it.pullCount.toLong()
-                //createdBy 无
-                //modifiedBy 无
+                // createdBy 无
+                // modifiedBy 无
             }
         }
 
@@ -69,7 +90,7 @@ class HarborImageServiceImpl(
             return Page(pageNumber, pageSize, harborRepos.size.toLong(), images)
         }
 
-        //迂回获取查询总repo数
+        // 迂回获取查询总repo数
         var tmpPage = 1
         var tmpTotal = 0
         while (true) {
@@ -96,12 +117,12 @@ class HarborImageServiceImpl(
                 tag = it.name,
                 repo = imageRepo,
                 image = "${harborProperties.imagePrefix}/$imageRepo:${it.name}",
-                //createBy 无
+                // createBy 无
                 created = createdStr,
                 size = HumanReadable.size(it.size),
                 modified = createdStr
-                //modifiedBy  无
-                //artifactorys 无
+                // modifiedBy  无
+                // artifactorys 无
             )
         }
         return Page(request.pageNumber, request.pageSize, tags.size.toLong(), tags)
