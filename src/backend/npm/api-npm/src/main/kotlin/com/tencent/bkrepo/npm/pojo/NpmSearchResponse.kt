@@ -41,7 +41,7 @@ data class NpmSearchInfoMap(
 data class NpmSearchInfo(
     var name: String? = null,
     var description: String? = null,
-    var maintainers: List<Map<String,Any>> = emptyList(),
+    var maintainers: List<Map<String, Any>> = emptyList(),
     var version: String? = null,
     var date: String? = null,
     var keywords: List<String> = emptyList(),

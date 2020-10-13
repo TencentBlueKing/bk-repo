@@ -36,4 +36,3 @@ data class CheckPermissionRequest(
     val role: String? = null,
     val appId: String? = null
 ) : ResourceBaseRequest(resourceType, projectId, repoName, path)
-

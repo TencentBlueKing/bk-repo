@@ -44,5 +44,4 @@ class SemVerTest {
         println(SemVer.parse("1.2.1").ordinal(4))
         println(SemVer.parse("1.2.1-SNAPSHOT").ordinal(4))
     }
-
 }

@@ -56,4 +56,3 @@ class TrustAllManager : X509TrustManager {
         return arrayOf()
     }
 }
-

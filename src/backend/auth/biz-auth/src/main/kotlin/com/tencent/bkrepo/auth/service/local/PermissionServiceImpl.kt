@@ -38,7 +38,6 @@ import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -175,7 +174,6 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun registerResource(request: RegisterResourceRequest) {
-
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
@@ -244,7 +242,7 @@ open class PermissionServiceImpl constructor(
 
         // check project admin
         if (roles.isNotEmpty() && request.resourceType == ResourceType.PROJECT) {
-            //val reposList = mutableListOf<String>()
+            // val reposList = mutableListOf<String>()
             roles.forEach { role ->
                 val tRole = roleRepository.findFirstByIdAndProjectIdAndType(role, request.projectId, RoleType.PROJECT)
                 if (tRole != null && tRole.admin) {

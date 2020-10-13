@@ -45,8 +45,8 @@ class RepoEventListener @Autowired constructor(
         event.apply { sendMessage(RepoCreatedMessage(request)) }
             .also { logEvent(it) }
             .takeIf { event.request.operator != SYSTEM_USER }?.run {
-                permissionManager.registerRepo(event.request.operator, event.request.projectId, event.request.name)
-            }
+            permissionManager.registerRepo(event.request.operator, event.request.projectId, event.request.name)
+        }
     }
 
     @Async

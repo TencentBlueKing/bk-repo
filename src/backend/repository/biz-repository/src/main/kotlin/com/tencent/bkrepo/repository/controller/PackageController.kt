@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class PackageController(
     private val packageService: PackageService
-): PackageClient {
+) : PackageClient {
 
     override fun findPackageByKey(projectId: String, repoName: String, packageKey: String): Response<PackageSummary?> {
         val packageSummary = packageService.findPackageByKey(projectId, repoName, packageKey)

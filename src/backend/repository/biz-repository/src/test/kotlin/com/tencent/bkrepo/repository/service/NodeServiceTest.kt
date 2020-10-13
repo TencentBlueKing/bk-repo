@@ -186,7 +186,6 @@ class NodeServiceTest @Autowired constructor(
         assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/aa/bb/. ."))
     }
 
-
     @Test
     @DisplayName("测试元数据查询")
     fun testIncludeMetadata() {

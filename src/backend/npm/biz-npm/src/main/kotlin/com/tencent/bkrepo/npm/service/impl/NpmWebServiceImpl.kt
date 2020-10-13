@@ -87,7 +87,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         val name = PackageKeys.resolveNpm(packageKey)
         val versionsInfo = searchPkgInfo(name).getAsJsonObject(VERSIONS)
         if (!versionsInfo.keySet()
-                .contains(version)
+            .contains(version)
         ) throw NpmArtifactNotFoundException("version [$version] don't found in package [$name].")
         val tarball = versionsInfo.getAsJsonObject(version).getAsJsonObject(DIST)[TARBALL].asString
         val nodeFullPath = tarball.substring(tarball.indexOf(name) - 1, tarball.length)
@@ -151,7 +151,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             val versionEntries = packageInfo.getAsJsonObject(VERSIONS).entrySet()
             val iterator = versionEntries.iterator()
             // 如果删除最后一个版本直接删除整个包
-            if (versionEntries.size == 1 && iterator.hasNext() && iterator.next().key == version){
+            if (versionEntries.size == 1 && iterator.hasNext() && iterator.next().key == version) {
                 val deletePackageRequest = PackageDeleteRequest(projectId, repoName, name, operator)
                 deletePackage(deletePackageRequest)
                 return
@@ -180,13 +180,12 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                     ?: run {
                         logger.error("delete version by web operator to find new latest version failed with package [$name]")
                         throw NpmArtifactNotFoundException("delete version by web operator to find new latest version failed with package [$name]")
-                }
+                    }
                 packageInfo.getAsJsonObject(VERSIONS).remove(version)
                 packageInfo.getAsJsonObject(TIME).remove(version)
                 packageInfo.getAsJsonObject(DISTTAGS).addProperty(LATEST, newLatest)
             }
             reUploadPackageJsonFile(packageInfo)
-
         }
     }
 

@@ -113,16 +113,20 @@ class NpmRemoteRepository : RemoteRepository() {
     fun installPkgVersionFile(context: ArtifactDownloadContext) {
         val tgzFullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
         val pkgInfo = parseArtifactInfo(tgzFullPath)
-        context.putAttribute(NPM_FILE_FULL_PATH,
-            String.format(NPM_PKG_METADATA_FULL_PATH, pkgInfo.first))
+        context.putAttribute(
+            NPM_FILE_FULL_PATH,
+            String.format(NPM_PKG_METADATA_FULL_PATH, pkgInfo.first)
+        )
         try {
             val artifactResource = getCacheArtifactResource(context) ?: return
             val jsonFile = transFileToJson(artifactResource.inputStream, context)
             val versionFile = jsonFile.getAsJsonObject(VERSIONS).getAsJsonObject(pkgInfo.second)
             val artifact = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
             val name = jsonFile[NAME].asString
-            context.putAttribute(NPM_FILE_FULL_PATH,
-                String.format(NPM_PKG_VERSION_METADATA_FULL_PATH, name, name, pkgInfo.second))
+            context.putAttribute(
+                NPM_FILE_FULL_PATH,
+                String.format(NPM_PKG_VERSION_METADATA_FULL_PATH, name, name, pkgInfo.second)
+            )
             cacheArtifactFile(context, artifact)
         } catch (ex: TypeCastException) {
             logger.warn("cache artifact [${pkgInfo.first}-${pkgInfo.second}.json] failed, {}", ex.message)

@@ -110,8 +110,8 @@ class ShareServiceImpl(
 
     private fun checkNode(projectId: String, repoName: String, fullPath: String) {
         val node = nodeService.detail(projectId, repoName, fullPath)
-        if (node == null ||node.folder) {
-            throw ArtifactNotFoundException("Artifact[${fullPath}] not found")
+        if (node == null || node.folder) {
+            throw ArtifactNotFoundException("Artifact[$fullPath] not found")
         }
     }
 

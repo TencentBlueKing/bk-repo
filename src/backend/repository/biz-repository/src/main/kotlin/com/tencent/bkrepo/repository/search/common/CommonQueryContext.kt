@@ -35,7 +35,7 @@ open class CommonQueryContext(
     override var queryModel: QueryModel,
     override val mongoQuery: Query,
     override val interpreter: MongoQueryInterpreter
-): QueryContext(queryModel, mongoQuery, interpreter) {
+) : QueryContext(queryModel, mongoQuery, interpreter) {
 
     private var projectId: String? = null
     var repoList: List<RepositoryInfo>? = null

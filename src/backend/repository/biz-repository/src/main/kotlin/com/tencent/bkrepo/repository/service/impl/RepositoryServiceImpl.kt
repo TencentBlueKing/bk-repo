@@ -327,8 +327,8 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         val newPrivateProxyRepos = new.proxy.channelList.filter { !it.public }
         val existPrivateProxyRepos = old?.proxy?.channelList?.filter { !it.public }.orEmpty()
 
-        val newPrivateProxyRepoMap = newPrivateProxyRepos.map { it.name!! to it}.toMap()
-        val existPrivateProxyRepoMap = existPrivateProxyRepos.map { it.name!! to it}.toMap()
+        val newPrivateProxyRepoMap = newPrivateProxyRepos.map { it.name!! to it }.toMap()
+        val existPrivateProxyRepoMap = existPrivateProxyRepos.map { it.name!! to it }.toMap()
         Preconditions.checkArgument(newPrivateProxyRepoMap.size == newPrivateProxyRepos.size, "channelList")
 
         val toCreateList = mutableListOf<ProxyChannelSetting>()
@@ -345,7 +345,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         }
         // 查找要删除的代理库
         existPrivateProxyRepoMap.forEach { (name, channel) ->
-            if(!newPrivateProxyRepoMap.containsKey(name)) {
+            if (!newPrivateProxyRepoMap.containsKey(name)) {
                 toDeleteList.add(channel)
             }
         }

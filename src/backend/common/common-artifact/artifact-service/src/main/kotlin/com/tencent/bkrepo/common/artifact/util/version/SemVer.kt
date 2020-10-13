@@ -39,7 +39,6 @@ data class SemVer(
         buildMetadata?.let { require(it.matches(Regex("""[\dA-z\-]+(?:\.[\dA-z\-]+)*"""))) { "Pre-release version is not valid" } }
     }
 
-
     /**
      * Build the version name string.
      * @return version name string in Semantic Versioning 2.0.0 specification.
@@ -70,7 +69,6 @@ data class SemVer(
         ordinal += if (patch > max) max else patch * 10.0.pow(maxDigitsPerComponent * 2)
         ordinal += if (preRelease == null) 10.0.pow(maxDigitsPerComponent * 1) - 1 else 0.0
         return ordinal.toLong()
-
     }
 
     companion object {

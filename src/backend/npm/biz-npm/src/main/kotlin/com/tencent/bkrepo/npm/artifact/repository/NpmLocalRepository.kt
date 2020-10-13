@@ -126,7 +126,7 @@ class NpmLocalRepository : LocalRepository() {
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
     ): DownloadStatisticsAddRequest? {
-        with(context){
+        with(context) {
             val npmArtifactInfo = artifactInfo as NpmArtifactInfo
             // val name = npmArtifactInfo.getArtifactName()
             val pkgName = npmArtifactInfo.pkgName
@@ -159,7 +159,7 @@ class NpmLocalRepository : LocalRepository() {
     override fun onUpload(context: ArtifactUploadContext) {
         context.getArtifactFileMap().entries.forEach { (name, _) ->
             val nodeCreateRequest = buildNodeCreateRequest(name, context)
-            storageManager.storeArtifactFile(nodeCreateRequest,context.getArtifactFile(name),context.storageCredentials)
+            storageManager.storeArtifactFile(nodeCreateRequest, context.getArtifactFile(name), context.storageCredentials)
         }
     }
 
@@ -229,7 +229,7 @@ class NpmLocalRepository : LocalRepository() {
             // 根据配置和请求头来进行判断返回的URL
             val oldTarball = fileJson.getAsJsonObject(DIST)[TARBALL].asString
             fileJson.getAsJsonObject(DIST).addProperty(
-                TARBALL,NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, context.artifactInfo)
+                TARBALL, NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, context.artifactInfo)
             )
         } else {
             val versions = fileJson.getAsJsonObject(VERSIONS)
@@ -304,7 +304,7 @@ class NpmLocalRepository : LocalRepository() {
                     NpmSearchInfo(
                         metadata[NAME] as? String,
                         metadata[DESCRIPTION] as? String,
-                        GsonUtils.parseJsonArrayToList<Map<String,Any>>(metadata[MAINTAINERS] as? String),
+                        GsonUtils.parseJsonArrayToList<Map<String, Any>>(metadata[MAINTAINERS] as? String),
                         metadata[VERSION] as? String,
                         it[LAST_MODIFIED_DATE] as String,
                         GsonUtils.parseJsonArrayToList<String>(metadata[KEYWORDS] as? String),
@@ -399,21 +399,21 @@ class NpmLocalRepository : LocalRepository() {
         val remoteLatest = remoteDistTags[LATEST].asString
         // 将拉取的包的dist_tags迁移过来
         val it = remoteDistTags.entrySet().iterator()
-            while (it.hasNext()){
-                val next = it.next()
-                if (failVersionSet.contains(next.value.asString)){
-                    it.remove()
-                    remoteTimeJsons.remove(next.value.asString)
+        while (it.hasNext()) {
+            val next = it.next()
+            if (failVersionSet.contains(next.value.asString)) {
+                it.remove()
+                remoteTimeJsons.remove(next.value.asString)
             }
         }
 
-        if (!remoteTimeJsons.has(remoteLatest)){
+        if (!remoteTimeJsons.has(remoteLatest)) {
             remoteTimeJsons.remove(MODIFIED)
             val dateList = remoteTimeJsons.entrySet().stream().map { LocalDateTime.parse(it.value.asString, DateTimeFormatter.ISO_DATE_TIME) }.collect(Collectors.toList())
             val maxTime = Collections.max(dateList)
             val latestTime = maxTime.format(DateTimeFormatter.ofPattern(TimeUtil.FORMAT))
             remoteTimeJsons.entrySet().forEach {
-                if (it.value.asString == latestTime){
+                if (it.value.asString == latestTime) {
                     remoteDistTags.addProperty(LATEST, it.key)
                 }
             }
@@ -421,7 +421,7 @@ class NpmLocalRepository : LocalRepository() {
         }
         return if (remoteVersionsSet.isNotEmpty()) {
             remoteJson
-        }else{
+        } else {
             logger.warn("package [$pkgName] with all versions migration failed!")
             null
         }
@@ -432,7 +432,7 @@ class NpmLocalRepository : LocalRepository() {
         remotePackageJson: JsonObject
     ): MigrateDetail {
         val name = remotePackageJson[NAME].asString
-        //val migrationFailDataDetailInfo = MigrationFailDataDetailInfo(name, mutableSetOf())
+        // val migrationFailDataDetailInfo = MigrationFailDataDetailInfo(name, mutableSetOf())
         val packageList: MutableList<PackageMigrateDetail> = mutableListOf()
         val migrateDetail = MigrateDetail(context.projectId, context.repoName, packageList, description = "migration for package [$name]")
 
@@ -450,7 +450,7 @@ class NpmLocalRepository : LocalRepository() {
                     storeTgzArtifact(context, tarball, name)
                 }.apply {
                     logger.info(
-                        "migrate npm package [$name] for version [$version] success, elapse $this ms.  process rate: [${++count}/${totalSize}]"
+                        "migrate npm package [$name] for version [$version] success, elapse $this ms.  process rate: [${++count}/$totalSize]"
                     )
                 }
             } catch (ignored: Exception) {
@@ -458,7 +458,7 @@ class NpmLocalRepository : LocalRepository() {
                 // delete version json file
                 deleteVersionFile(context, name, version)
                 //
-                //migrationFailDataDetailInfo.versionSet.add(VersionFailDetail(version, ignored.message))
+                // migrationFailDataDetailInfo.versionSet.add(VersionFailDetail(version, ignored.message))
             }
         }
         // val failVersionSet = migrationFailDataDetailInfo.versionSet.stream().map { it.version }.collect(Collectors.toSet())
@@ -478,13 +478,15 @@ class NpmLocalRepository : LocalRepository() {
         getCacheNodeInfo(context)?.let {
             cacheArtifact = getCacheArtifact(context)
         }
-        val newPackageJson = (if (cacheArtifact != null) {
-            val cachePackageJson = GsonUtils.transferInputStreamToJson(cacheArtifact!!)
-            // 对比合并package.json，去除掉迁移失败的版本
-            addPackageVersion(cachePackageJson, remotePackageJson, failVersionSet)
-        } else {
-            comparePackageJson(remotePackageJson, failVersionSet)
-        }) ?: return
+        val newPackageJson = (
+            if (cacheArtifact != null) {
+                val cachePackageJson = GsonUtils.transferInputStreamToJson(cacheArtifact!!)
+                // 对比合并package.json，去除掉迁移失败的版本
+                addPackageVersion(cachePackageJson, remotePackageJson, failVersionSet)
+            } else {
+                comparePackageJson(remotePackageJson, failVersionSet)
+            }
+            ) ?: return
         // store package json file
         val newArtifactFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(newPackageJson))
         putArtifact(context, newArtifactFile)

@@ -30,7 +30,7 @@ class NodeQueryContext(
     override var queryModel: QueryModel,
     override val mongoQuery: Query,
     override val interpreter: MongoQueryInterpreter
-): CommonQueryContext(queryModel, mongoQuery, interpreter) {
+) : CommonQueryContext(queryModel, mongoQuery, interpreter) {
     var selectMetadata: Boolean = false
     var selectStageTag: Boolean = false
 }

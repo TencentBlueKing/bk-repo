@@ -207,7 +207,7 @@ class NodeEventHandler : AbstractEventHandler() {
                         logger.warn("found no repo detail [$projectId, $repoName]")
                         return@forEach
                     }
-                    try{
+                    try {
                         logger.info("start to handle move event [$projectId,$repoName,$fullPath]")
                         val result = waitForPreorderNode(context, remoteProjectId, remoteRepoName, fullPath)
                         if (!result) throw WaitPreorderNodeFailedException("move time out")
@@ -216,17 +216,15 @@ class NodeEventHandler : AbstractEventHandler() {
                             srcRepoName = remoteRepoName
                         ).apply { replicationService.replicaNodeMoveRequest(context, this) }
                         return@forEach
-                    }catch (ignored: Exception) {
+                    } catch (ignored: Exception) {
                         retryCount -= 1
                         if (retryCount == 0) {
                             logger.error("move node failed [$projectId,$repoName,$fullPath,${ignored.message}]")
                             // log to db
                         }
                     }
-
                 }
             }
-
         }
     }
 

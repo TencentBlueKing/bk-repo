@@ -51,7 +51,7 @@ class PackageDownloadStatisticsServiceImpl(
 ) : AbstractService(), PackageDownloadStatisticsService {
 
     override fun add(statisticsAddRequest: DownloadStatisticsAddRequest) {
-        with(statisticsAddRequest){
+        with(statisticsAddRequest) {
             // 维护 package 和 version 数据
             packageService.addDownloadMetric(projectId, repoName, packageKey, version)
             // 维护 package_download_statistics 表

@@ -21,7 +21,6 @@
 
 package com.tencent.bkrepo.repository.pojo.project
 
-import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.UNIX_SEPARATOR
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import java.time.LocalDateTime

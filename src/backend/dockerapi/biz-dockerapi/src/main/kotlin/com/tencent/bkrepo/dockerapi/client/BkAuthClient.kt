@@ -111,7 +111,6 @@ class BkAuthClient(
             throw RuntimeException("check project permission failed")
         }
         return projectResponse.data!!.projectView.allowed
-
     }
 
     companion object {

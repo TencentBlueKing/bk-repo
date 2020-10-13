@@ -53,5 +53,4 @@ open class ModelValidateInterceptor : QueryModelInterceptor {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "relation")
         }
     }
-
 }

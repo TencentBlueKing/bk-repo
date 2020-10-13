@@ -19,7 +19,7 @@
  *
  */
 
-package com.tencent.bkrepo.dockerapi.client;
+package com.tencent.bkrepo.dockerapi.client
 
 import com.fasterxml.jackson.annotation.JsonProperty
 

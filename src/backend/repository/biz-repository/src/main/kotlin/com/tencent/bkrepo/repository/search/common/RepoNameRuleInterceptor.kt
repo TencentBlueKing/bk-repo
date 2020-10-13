@@ -53,7 +53,7 @@ class RepoNameRuleInterceptor : QueryRuleInterceptor {
         with(rule as Rule.QueryRule) {
             val userId = SecurityUtils.getUserId()
             val projectId = (context as CommonQueryContext).findProjectId()
-            val queryRule = when(operation) {
+            val queryRule = when (operation) {
                 OperationType.EQ -> handleRepoNameEq(userId, projectId, value.toString())
                 OperationType.IN -> handleRepoNameIn(userId, projectId, value as List<*>, context)
                 else -> throw IllegalArgumentException("RepoName only support EQ and IN operation type.")
@@ -76,7 +76,7 @@ class RepoNameRuleInterceptor : QueryRuleInterceptor {
         projectId: String,
         value: List<*>,
         context: CommonQueryContext
-    ): Rule.QueryRule  {
+    ): Rule.QueryRule {
         val repoNameList = if (context.repoList != null) {
             context.repoList!!.filter { hasRepoPermission(userId, projectId, it.name, it.public) }.map { it.name }
         } else {

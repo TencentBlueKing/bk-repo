@@ -71,5 +71,4 @@ sealed class Rule {
 
     @ApiModel("固定查询规则")
     data class FixedRule(val wrapperRule: QueryRule) : Rule()
-
 }

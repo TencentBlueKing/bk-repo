@@ -25,7 +25,7 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("包的版本信息")
-data class NpmPackageVersionInfo (
+data class NpmPackageVersionInfo(
     @ApiModelProperty("资源名称")
     val name: String,
     @ApiModelProperty("文件大小，单位byte")

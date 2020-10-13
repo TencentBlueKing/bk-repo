@@ -262,7 +262,7 @@ class NpmService @Autowired constructor(
             val fullPath = String.format(NPM_PKG_METADATA_FULL_PATH, scopePkg)
             val context = ArtifactQueryContext()
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
-            //val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+            // val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             val npmMetaData = ArtifactContextHolder.getRepository().query(context) as? JsonObject
                 ?: throw NpmArtifactNotFoundException("document not found!")
             val latestPackageVersion = npmMetaData.getAsJsonObject(DISTTAGS)[LATEST].asString
@@ -358,9 +358,11 @@ class NpmService @Autowired constructor(
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun getDistTagsInfo(artifactInfo: NpmArtifactInfo): Map<String, String> {
         val context = ArtifactQueryContext()
-        context.putAttribute(NPM_FILE_FULL_PATH,
-            String.format(NPM_PKG_METADATA_FULL_PATH, artifactInfo.artifactUri.trimStart('/').removeSuffix("/dist-tags")))
-        //val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+        context.putAttribute(
+            NPM_FILE_FULL_PATH,
+            String.format(NPM_PKG_METADATA_FULL_PATH, artifactInfo.artifactUri.trimStart('/').removeSuffix("/dist-tags"))
+        )
+        // val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         val pkgInfo = ArtifactContextHolder.getRepository().query(context) as? JsonObject
         return pkgInfo?.let {
             GsonUtils.gsonToMaps<String>(it.get(DISTTAGS))

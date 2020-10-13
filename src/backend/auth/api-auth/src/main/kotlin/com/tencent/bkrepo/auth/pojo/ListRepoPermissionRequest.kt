@@ -27,7 +27,7 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("查询用户在项目下对仓库的权限")
-data class ListRepoPermissionRequest (
+data class ListRepoPermissionRequest(
     @ApiModelProperty("用户ID")
     val uid: String,
     @ApiModelProperty("资源类型")

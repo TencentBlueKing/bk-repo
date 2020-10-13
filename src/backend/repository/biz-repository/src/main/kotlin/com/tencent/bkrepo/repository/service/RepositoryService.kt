@@ -110,6 +110,4 @@ interface RepositoryService {
      * 检查仓库是否存在，不存在则抛异常
      */
     fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository
-
-
 }

@@ -116,11 +116,13 @@ class BkiamServiceImpl @Autowired constructor(
         logger.info("createResource, userId: $userId, projectId: $projectId, systemCode: $systemCode, resourceType: $resourceType, resourceId: $resourceId, resourceName: $resourceName")
         val ancestors = mutableListOf<AncestorsApiReq>()
         if (resourceType != ResourceType.PROJECT) {
-            ancestors.add(AncestorsApiReq(
-                system = iamConfiguration.systemId,
-                id = projectId,
-                type = ResourceType.PROJECT.id()
-            ))
+            ancestors.add(
+                AncestorsApiReq(
+                    system = iamConfiguration.systemId,
+                    id = projectId,
+                    type = ResourceType.PROJECT.id()
+                )
+            )
         }
         val iamApiReq = IamCreateApiReq(
             creator = userId,

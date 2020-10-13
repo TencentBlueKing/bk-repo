@@ -64,7 +64,7 @@ class UserPackageDownloadStatisticsController(
         @ApiParam("结束日期", required = false)
         @RequestParam endDay: LocalDate? = null
     ): Response<DownloadStatisticsResponse> {
-        with(artifactInfo){
+        with(artifactInfo) {
             return ResponseBuilder.success(
                 packageDownloadStatisticsService.query(projectId, repoName, packageKey, version, startDay, endDay)
             )
@@ -80,7 +80,7 @@ class UserPackageDownloadStatisticsController(
         @ApiParam("包唯一Key", required = true)
         @RequestParam packageKey: String
     ): Response<DownloadStatisticsMetricResponse> {
-        with(artifactInfo){
+        with(artifactInfo) {
             return ResponseBuilder.success(
                 packageDownloadStatisticsService.queryForSpecial(projectId, repoName, packageKey)
             )

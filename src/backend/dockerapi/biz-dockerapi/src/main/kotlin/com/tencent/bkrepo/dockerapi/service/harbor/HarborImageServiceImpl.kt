@@ -76,13 +76,13 @@ class HarborImageServiceImpl(
                 tagCount = it.tagsCount.toLong()
                 created = DateTime(it.createTime).toString("yyyy-MM-dd HH:mm:ss")
                 modified = DateTime(it.updateTime).toString("yyyy-MM-dd HH:mm:ss")
-                imageName = it.name //?
-                imagePath = it.name //?
-                //tagStart?
-                //tagLimit?
+                imageName = it.name // ?
+                imagePath = it.name // ?
+                // tagStart?
+                // tagLimit?
                 downloadCount = it.pullCount.toLong()
-                //createdBy 无
-                //modifiedBy 无
+                // createdBy 无
+                // modifiedBy 无
             }
         }
 
@@ -90,7 +90,7 @@ class HarborImageServiceImpl(
             return Page(pageNumber, pageSize, harborRepos.size.toLong(), images)
         }
 
-        //迂回获取查询总repo数
+        // 迂回获取查询总repo数
         var tmpPage = 1
         var tmpTotal = 0
         while (true) {
@@ -117,12 +117,12 @@ class HarborImageServiceImpl(
                 tag = it.name,
                 repo = imageRepo,
                 image = "${harborProperties.imagePrefix}/$imageRepo:${it.name}",
-                //createBy 无
+                // createBy 无
                 created = createdStr,
                 size = HumanReadable.size(it.size),
                 modified = createdStr
-                //modifiedBy  无
-                //artifactorys 无
+                // modifiedBy  无
+                // artifactorys 无
             )
         }
         return Page(request.pageNumber, request.pageSize, tags.size.toLong(), tags)

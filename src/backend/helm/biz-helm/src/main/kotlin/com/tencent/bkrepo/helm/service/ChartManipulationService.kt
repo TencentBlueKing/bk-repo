@@ -75,7 +75,7 @@ class ChartManipulationService {
         context: ArtifactContext,
         artifactFileMap: ArtifactFileMap,
         chartFileInfo: Map<String, Any>? = null
-    ){
+    ) {
         artifactFileMap.entries.forEach { (name, _) ->
             if (CHART != name && PROV != name) {
                 throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
@@ -138,7 +138,7 @@ class ChartManipulationService {
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         val chartFileInfo = getChartFile(artifactFileMap)
-        //context.contextAttributes = getContextAttrMap(artifactFileMap, chartFileInfo)
+        // context.contextAttributes = getContextAttrMap(artifactFileMap, chartFileInfo)
         setContextAttributes(context, artifactFileMap, chartFileInfo)
         repository.upload(context)
         return HelmSuccessResponse.pushSuccess()
@@ -167,7 +167,7 @@ class ChartManipulationService {
         val context = ArtifactRemoveContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         val fullPath = String.format("/%s-%s.%s", chartInfo.first, chartInfo.second, CHART_PACKAGE_FILE_EXTENSION)
-        //context.contextAttributes[FULL_PATH] = fullPath
+        // context.contextAttributes[FULL_PATH] = fullPath
         context.putAttribute(FULL_PATH, fullPath)
         repository.remove(context)
         logger.info("remove artifact [$fullPath] success!")

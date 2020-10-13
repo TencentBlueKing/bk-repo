@@ -60,7 +60,6 @@ class NpmVirtualRepository : VirtualRepository() {
         return list.subList(0, searchRequest.size)
     }
 
-
     companion object {
         private val logger = LoggerFactory.getLogger(NpmVirtualRepository::class.java)
     }

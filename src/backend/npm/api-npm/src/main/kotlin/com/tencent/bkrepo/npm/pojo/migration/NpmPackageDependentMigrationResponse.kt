@@ -23,7 +23,7 @@ package com.tencent.bkrepo.npm.pojo.migration
 
 import io.swagger.annotations.ApiModelProperty
 
-data class NpmPackageDependentMigrationResponse (
+data class NpmPackageDependentMigrationResponse(
     @ApiModelProperty("描述")
     val description: String,
     @ApiModelProperty("总的包数量")

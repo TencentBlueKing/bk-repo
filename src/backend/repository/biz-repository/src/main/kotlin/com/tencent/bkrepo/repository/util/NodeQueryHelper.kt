@@ -84,10 +84,12 @@ object NodeQueryHelper {
             .apply {
                 // 排序
                 if (sort) {
-                    with(Sort.by(
-                        Sort.Order(Sort.Direction.DESC, TNode::folder.name),
-                        Sort.Order(Sort.Direction.ASC, TNode::fullPath.name)
-                    ))
+                    with(
+                        Sort.by(
+                            Sort.Order(Sort.Direction.DESC, TNode::folder.name),
+                            Sort.Order(Sort.Direction.ASC, TNode::fullPath.name)
+                        )
+                    )
                 }
             }.apply {
                 // 查询元数据

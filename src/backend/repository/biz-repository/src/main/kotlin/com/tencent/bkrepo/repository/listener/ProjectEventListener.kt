@@ -41,7 +41,7 @@ class ProjectEventListener @Autowired constructor(
         event.apply { sendMessage(ProjectCreatedMessage(request)) }
             .also { logEvent(it) }
             .takeIf { event.request.operator != SYSTEM_USER }?.run {
-                permissionManager.registerProject(event.request.operator, event.request.name)
-            }
+            permissionManager.registerProject(event.request.operator, event.request.name)
+        }
     }
 }

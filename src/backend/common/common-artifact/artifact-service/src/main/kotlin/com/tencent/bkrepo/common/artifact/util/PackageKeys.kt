@@ -77,9 +77,9 @@ object PackageKeys {
      */
     fun ofRpm(path: String, name: String): String {
         return StringBuilder(RPM).append(SEPARATOR).append(path)
-                .append(StringPool.COLON)
-                .append(name)
-                .toString()
+            .append(StringPool.COLON)
+            .append(name)
+            .toString()
     }
 
     /**

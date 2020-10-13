@@ -25,7 +25,7 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("包的最新版本的信息")
-data class NpmPackageLatestVersionInfo (
+data class NpmPackageLatestVersionInfo(
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建时间")

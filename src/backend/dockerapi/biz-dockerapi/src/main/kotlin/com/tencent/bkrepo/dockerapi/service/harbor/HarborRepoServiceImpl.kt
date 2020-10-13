@@ -31,7 +31,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import java.util.Random
 
-
 @Service
 @ConditionalOnProperty(prefix = "dockerapi", name = ["realm"], havingValue = "harbor")
 class HarborRepoServiceImpl(

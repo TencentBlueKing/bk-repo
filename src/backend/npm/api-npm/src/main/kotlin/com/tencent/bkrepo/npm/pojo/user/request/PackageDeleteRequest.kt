@@ -25,7 +25,7 @@ import io.swagger.annotations.ApiModelProperty
 import io.swagger.annotations.ApiOperation
 
 @ApiOperation("删除包请求")
-data class PackageDeleteRequest (
+data class PackageDeleteRequest(
     @ApiModelProperty("所属项目", required = true)
     val projectId: String,
     @ApiModelProperty("仓库名称", required = true)

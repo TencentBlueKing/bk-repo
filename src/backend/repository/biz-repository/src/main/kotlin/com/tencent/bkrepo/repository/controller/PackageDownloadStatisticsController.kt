@@ -34,7 +34,7 @@ import java.time.LocalDate
 @RestController
 class PackageDownloadStatisticsController(
     private val packageDownloadStatisticsService: PackageDownloadStatisticsService
-): PackageDownloadStatisticsClient {
+) : PackageDownloadStatisticsClient {
 
     override fun add(statisticsAddRequest: DownloadStatisticsAddRequest): Response<Void> {
         packageDownloadStatisticsService.add(statisticsAddRequest)

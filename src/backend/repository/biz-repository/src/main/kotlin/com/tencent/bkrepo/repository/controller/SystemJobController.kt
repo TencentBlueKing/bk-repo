@@ -82,5 +82,4 @@ class SystemJobController(
         rootNodeCleanupJob.cleanup()
         return ResponseBuilder.success()
     }
-
 }

@@ -133,7 +133,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
 
     override fun countFileNode(projectId: String, repoName: String, path: String): Long {
         val normalizedPath = normalizePath(path)
-        val query = nodeListQuery(projectId, repoName, normalizedPath,
+        val query = nodeListQuery(
+            projectId, repoName, normalizedPath,
             includeFolder = false,
             includeMetadata = false,
             deep = true,
@@ -184,7 +185,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
     }
 
     override fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
-        return nodeDao.exists(projectId, repoName,  normalizeFullPath(fullPath))
+        return nodeDao.exists(projectId, repoName, normalizeFullPath(fullPath))
     }
 
     override fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String> {
@@ -327,7 +328,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
         if (node.folder) {
             mkdirs(projectId, repoName, newFullPath, operator)
             val newParentPath = toPath(newFullPath)
-            val query = nodeListQuery(projectId, repoName, node.fullPath,
+            val query = nodeListQuery(
+                projectId, repoName, node.fullPath,
                 includeFolder = true,
                 includeMetadata = false,
                 deep = false,
@@ -348,7 +350,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
      * 递归创建目录
      */
     private fun mkdirs(projectId: String, repoName: String, path: String, createdBy: String) {
-        //格式化
+        // 格式化
         val fullPath = toFullPath(path)
         if (!nodeDao.exists(projectId, repoName, fullPath)) {
             val parentPath = resolveParent(fullPath)
@@ -399,10 +401,9 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 destRepository.credentialsKey?.let { storageCredentialService.findByKey(it) }
             } else srcCredentials
 
-
             // 只允许local或者composite类型仓库操作
-            val canSrcRepoMove = srcRepository.category.let { it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE}
-            val canDestRepoMove = destRepository.category.let { it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE}
+            val canSrcRepoMove = srcRepository.category.let { it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE }
+            val canDestRepoMove = destRepository.category.let { it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE }
             if (!canSrcRepoMove || !canDestRepoMove) {
                 throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
             }

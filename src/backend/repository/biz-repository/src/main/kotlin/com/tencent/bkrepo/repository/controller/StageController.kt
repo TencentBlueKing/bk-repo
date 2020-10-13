@@ -39,5 +39,4 @@ class StageController(
         val tagList = stageService.query(projectId, repoName, packageKey, version)
         return ResponseBuilder.success(tagList)
     }
-
 }

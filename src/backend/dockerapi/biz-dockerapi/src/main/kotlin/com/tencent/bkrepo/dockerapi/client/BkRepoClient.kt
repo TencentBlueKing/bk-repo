@@ -19,7 +19,7 @@
  *
  */
 
-package com.tencent.bkrepo.dockerapi.client;
+package com.tencent.bkrepo.dockerapi.client
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.AUTHORIZATION
@@ -127,20 +127,23 @@ class BkRepoClient(
             "public" -> "public"
             else -> "private"
         }
-        return Page(data.pageNumber, data.pageSize, data.totalRecords, data.records.map {
-            DockerRepo(
-                repo = it.name,
-                type = type,
-                createdBy = it.createdBy,
-                created = ISO_DATE_TIME.format(it.createdDate),
-                modifiedBy = it.lastModifiedBy,
-                modified = ISO_DATE_TIME.format(it.lastModifiedDate),
-                imageName = it.name,
-                imagePath = "$projectId/$repoName/${it.name}",
-                tagCount = it.versions,
-                downloadCount = it.downloads
-            )
-        })
+        return Page(
+            data.pageNumber, data.pageSize, data.totalRecords,
+            data.records.map {
+                DockerRepo(
+                    repo = it.name,
+                    type = type,
+                    createdBy = it.createdBy,
+                    created = ISO_DATE_TIME.format(it.createdDate),
+                    modifiedBy = it.lastModifiedBy,
+                    modified = ISO_DATE_TIME.format(it.lastModifiedDate),
+                    imageName = it.name,
+                    imagePath = "$projectId/$repoName/${it.name}",
+                    tagCount = it.versions,
+                    downloadCount = it.downloads
+                )
+            }
+        )
     }
 
     fun queryImageTag(request: QueryImageTagRequest): Page<DockerTag> {
@@ -161,19 +164,22 @@ class BkRepoClient(
             .get().build()
         val apiResponse = HttpUtils.doRequest(httpRequest, 2)
         val data = objectMapper.readValue<Response<Page<PackageVersion>>>(apiResponse.content).data!!
-        return Page(data.pageNumber, data.pageSize, data.totalRecords, data.records.map {
-            DockerTag(
-                tag = it.name,
-                repo = imageRepo,
-                image = "${bkRepoProperties.domain}/$projectId/$repoName/$imageRepo:${it.name}",
-                createdBy = it.createdBy,
-                created = ISO_DATE_TIME.format(it.createdDate),
-                size = HumanReadable.size(it.size),
-                modified = ISO_DATE_TIME.format(it.lastModifiedDate),
-                modifiedBy = it.lastModifiedBy
-                //artifactorys 无
-            )
-        })
+        return Page(
+            data.pageNumber, data.pageSize, data.totalRecords,
+            data.records.map {
+                DockerTag(
+                    tag = it.name,
+                    repo = imageRepo,
+                    image = "${bkRepoProperties.domain}/$projectId/$repoName/$imageRepo:${it.name}",
+                    createdBy = it.createdBy,
+                    created = ISO_DATE_TIME.format(it.createdDate),
+                    size = HumanReadable.size(it.size),
+                    modified = ISO_DATE_TIME.format(it.lastModifiedDate),
+                    modifiedBy = it.lastModifiedBy
+                    // artifactorys 无
+                )
+            }
+        )
     }
 
     companion object {
@@ -182,5 +188,3 @@ class BkRepoClient(
         private const val ADMIN = "admin"
     }
 }
-
-

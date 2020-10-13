@@ -22,7 +22,6 @@
 package com.tencent.bkrepo.composer.artifact.repository
 
 import com.google.gson.JsonParser
-import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder

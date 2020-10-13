@@ -53,7 +53,7 @@ class PackageHandler {
      * 创建包版本
      */
     @Async
-    fun createVersion(userId: String, artifactInfo: NpmArtifactInfo, npmMetaDataJsonObject: JsonObject, attributes: Map<String,Any>) {
+    fun createVersion(userId: String, artifactInfo: NpmArtifactInfo, npmMetaDataJsonObject: JsonObject, attributes: Map<String, Any>) {
         npmMetaDataJsonObject.apply {
             val name = this[NAME].asString
             val description = this[DESCRIPTION]?.asString
@@ -92,7 +92,7 @@ class PackageHandler {
     @Async
     fun deletePackage(userId: String, name: String, artifactInfo: NpmArtifactInfo) {
         val packageKey = PackageKeys.ofNpm(name)
-        with(artifactInfo){
+        with(artifactInfo) {
             packageClient.deletePackage(projectId, repoName, packageKey).apply {
                 logger.info("user: [$userId] delete package [$name] in repo [$projectId/$repoName] success!")
             }
@@ -105,7 +105,7 @@ class PackageHandler {
     @Async
     fun deleteVersion(userId: String, name: String, version: String, artifactInfo: NpmArtifactInfo) {
         val packageKey = PackageKeys.ofNpm(name)
-        with(artifactInfo){
+        with(artifactInfo) {
             packageClient.deleteVersion(projectId, repoName, packageKey, version).apply {
                 logger.info("user: [$userId] delete package [$name] with version [$version] in repo [$projectId/$repoName] success!")
             }
@@ -114,7 +114,7 @@ class PackageHandler {
 
     fun getLatestVersion(distTags: JsonObject): String {
         val iterator = distTags.entrySet().iterator()
-        if (iterator.hasNext()){
+        if (iterator.hasNext()) {
             return iterator.next().value.asString
         }
         return distTags[LATEST].asString
@@ -133,7 +133,7 @@ class PackageHandler {
         return BeanUtils.beanToMap(metaData)
     }
 
-    companion object{
+    companion object {
         val logger: Logger = LoggerFactory.getLogger(PackageHandler::class.java)
     }
 }

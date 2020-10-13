@@ -55,5 +55,4 @@ class PackageSearchInterpreter : MongoQueryInterpreter() {
     override fun initContext(queryModel: QueryModel, mongoQuery: Query): QueryContext {
         return PackageQueryContext(queryModel, mongoQuery, this)
     }
-
 }

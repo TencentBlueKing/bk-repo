@@ -60,7 +60,7 @@ class StageServiceImpl(
                 packageVersionDao.save(packageVersion)
                 logger.info("Upgrade stage[$packageKey] from $oldStage to $newStage success")
             } catch (exception: IllegalArgumentException) {
-                throw ErrorCodeException(ArtifactMessageCode.STAGE_UPGRADE_ERROR,  exception.message.orEmpty())
+                throw ErrorCodeException(ArtifactMessageCode.STAGE_UPGRADE_ERROR, exception.message.orEmpty())
             }
         }
     }

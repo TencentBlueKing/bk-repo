@@ -89,6 +89,5 @@ enum class ArtifactStageEnum(
             }
             return values().find { stage -> stage.tag == tag } ?: throw IllegalArgumentException("Unknown tag")
         }
-
     }
 }

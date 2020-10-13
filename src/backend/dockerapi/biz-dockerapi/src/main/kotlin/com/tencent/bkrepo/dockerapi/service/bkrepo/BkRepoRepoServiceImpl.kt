@@ -29,7 +29,6 @@ import com.tencent.bkrepo.dockerapi.service.RepoService
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 
-
 @Service
 @ConditionalOnProperty(prefix = "dockerapi", name = ["realm"], havingValue = "bkrepo")
 class BkRepoRepoServiceImpl(

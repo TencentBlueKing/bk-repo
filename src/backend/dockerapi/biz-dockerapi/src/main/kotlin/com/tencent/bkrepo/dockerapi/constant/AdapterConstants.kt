@@ -21,7 +21,6 @@
 
 package com.tencent.bkrepo.dockerapi.constant
 
-
 /**
  * 公共项目名称
  */

@@ -19,7 +19,7 @@
  *
  */
 
-package com.tencent.bkrepo.dockerapi.client;
+package com.tencent.bkrepo.dockerapi.client
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
@@ -100,7 +100,8 @@ class HarborClient @Autowired constructor(
             "email" to "$userName@ee.com",
             "password" to password,
             "role_id" to 2,
-            "realname" to userName)
+            "realname" to userName
+        )
         val requestBody = objectMapper.writeValueAsString(reqData)
         logger.info("request body: $requestBody")
 
@@ -115,7 +116,8 @@ class HarborClient @Autowired constructor(
 
         val reqData = mapOf(
             "role_id" to 2,
-            "member_user" to mapOf("username" to userName))
+            "member_user" to mapOf("username" to userName)
+        )
         val requestBody = objectMapper.writeValueAsString(reqData)
         logger.info("request body: $requestBody")
 
@@ -179,7 +181,6 @@ class HarborClient @Autowired constructor(
                 }
                 return responseContent
             }
-
         } catch (e: Exception) {
             logger.error("http request error", e)
             throw RuntimeException("http request error")

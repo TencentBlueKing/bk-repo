@@ -103,7 +103,6 @@ class PackageServiceTest @Autowired constructor(
         Assertions.assertEquals(0, tPackage.downloads)
     }
 
-
     @Test
     @DisplayName("测试分页查询包")
     fun `test list package page`() {
@@ -192,7 +191,7 @@ class PackageServiceTest @Autowired constructor(
     fun `should throw exception when delete non exist package`() {
         val request = buildCreateRequest()
         packageService.createPackageVersion(request)
-        assertThrows<ErrorCodeException> {  packageService.deletePackage(UT_PROJECT_ID, UT_REPO_NAME, "non-exist") }
+        assertThrows<ErrorCodeException> { packageService.deletePackage(UT_PROJECT_ID, UT_REPO_NAME, "non-exist") }
     }
 
     @Test
@@ -200,7 +199,7 @@ class PackageServiceTest @Autowired constructor(
     fun `should throw exception when delete non exist version`() {
         val request = buildCreateRequest()
         packageService.createPackageVersion(request)
-        assertThrows<ErrorCodeException> {  packageService.deleteVersion(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "non-exist") }
+        assertThrows<ErrorCodeException> { packageService.deleteVersion(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "non-exist") }
     }
 
     private fun buildCreateRequest(
@@ -222,7 +221,7 @@ class PackageServiceTest @Autowired constructor(
             size = 1024,
             manifestPath = "/com/tencent/bkrepo/test/$version",
             artifactPath = "/com/tencent/bkrepo/test/$version",
-            stageTag = listOf(ArtifactStageEnum.RELEASE.toString() ),
+            stageTag = listOf(ArtifactStageEnum.RELEASE.toString()),
             metadata = mapOf("key" to "value"),
             overwrite = overwrite,
             createdBy = UT_USER
