@@ -21,12 +21,11 @@
 
 package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.SERVICE_NAME
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.Token
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -42,10 +41,11 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_USER"], description = "服务-用户接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceUserResource")
-@RequestMapping(AUTH_USER_PREFIX, AUTH_API_USER_PREFIX, AUTH_SERVICE_USER_PREFIX)
+@RequestMapping(AUTH_USER_PREFIX)
 interface ServiceUserResource {
 
     @ApiOperation("创建项目用户")
@@ -130,16 +130,18 @@ interface ServiceUserResource {
     fun createToken(
         @ApiParam(value = "用户id")
         @PathVariable uid: String
-    ): Response<User?>
+    ): Response<Token?>
 
     @ApiOperation("新加用户token")
-    @PostMapping("/token/{uid}/{token}")
+    @PostMapping("/token/{uid}/{name}")
     fun addUserToken(
         @ApiParam(value = "用户id")
-        @PathVariable uid: String,
-        @ApiParam(value = "token")
-        @PathVariable token: String
-    ): Response<User?>
+        @PathVariable("uid") uid: String,
+        @ApiParam(value = "name")
+        @PathVariable("name") name: String,
+        @ApiParam(value = "expiredAt", required = false)
+        @RequestParam expiredAt: String?
+    ): Response<Token?>
 
     @ApiOperation("删除用户token")
     @DeleteMapping("/token/{uid}/{token}")

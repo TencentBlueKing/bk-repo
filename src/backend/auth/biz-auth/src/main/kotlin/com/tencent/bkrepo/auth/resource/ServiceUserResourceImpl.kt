@@ -27,6 +27,7 @@ import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
 import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.Token
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
@@ -96,13 +97,13 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    override fun createToken(uid: String): Response<User?> {
+    override fun createToken(uid: String): Response<Token?> {
         val result = userService.createToken(uid)
         return ResponseBuilder.success(result)
     }
 
-    override fun addUserToken(uid: String, token: String): Response<User?> {
-        val result = userService.addUserToken(uid, token)
+    override fun addUserToken(uid: String, name: String, expiredAt: String?): Response<Token?> {
+        val result = userService.addUserToken(uid, name, expiredAt)
         return ResponseBuilder.success(result)
     }
 

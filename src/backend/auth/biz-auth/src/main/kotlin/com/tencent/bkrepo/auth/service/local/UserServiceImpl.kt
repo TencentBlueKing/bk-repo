@@ -42,6 +42,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class UserServiceImpl constructor(
     private val userRepository: UserRepository,
@@ -192,21 +193,27 @@ class UserServiceImpl constructor(
         return false
     }
 
-    override fun createToken(userId: String): User? {
+    override fun createToken(userId: String): Token? {
         logger.info("create token userId : [$userId]")
         val token = IDUtil.genRandomId()
-        return addUserToken(userId, token)
+        return addUserToken(userId, token, null)
     }
 
-    override fun addUserToken(userId: String, token: String): User? {
-        logger.info("add user token userId : [$userId] ,token : [$token]")
+    override fun addUserToken(userId: String, name: String, expiredAt: String?): Token? {
+        logger.info("add user token userId : [$userId] ,token : [$name]")
         checkUserExist(userId)
         val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
         val update = Update()
-        val userToken = Token(id = token, createdAt = LocalDateTime.now(), expiredAt = LocalDateTime.now().plusYears(2))
+        val id = IDUtil.genRandomId()
+        val now = LocalDateTime.now()
+        val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        val expiredTime = LocalDateTime.parse(expiredAt, dateTimeFormatter)
+        // val createdAtShow = now.format(dateTimeFormatter)
+        // val expiredAtShow = expiredTime.format(dateTimeFormatter)
+        val userToken = Token(name = name, id = id, createdAt = LocalDateTime.now(), expiredAt = expiredTime)
         update.addToSet(TUser::tokens.name, userToken)
         mongoTemplate.upsert(query, update, TUser::class.java)
-        return getUserById(userId)
+        return userToken
     }
 
     override fun removeToken(userId: String, token: String): User? {
