@@ -23,6 +23,7 @@ package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.Token
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 
@@ -48,9 +49,9 @@ interface UserService {
 
     fun removeUserFromRoleBatch(idList: List<String>, roleId: String): Boolean
 
-    fun createToken(userId: String): User?
+    fun createToken(userId: String): Token?
 
-    fun addUserToken(userId: String, token: String): User?
+    fun addUserToken(userId: String, token: String, expiredAt: String?): Token?
 
     fun removeToken(userId: String, token: String): User?
 

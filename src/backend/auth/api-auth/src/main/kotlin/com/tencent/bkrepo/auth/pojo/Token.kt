@@ -27,10 +27,12 @@ import java.time.LocalDateTime
 
 @ApiModel("token信息")
 data class Token(
+    @ApiModelProperty("tokenName")
+    val name: String?,
     @ApiModelProperty("tokenID")
     val id: String,
     @ApiModelProperty("创建时间")
     val createdAt: LocalDateTime,
     @ApiModelProperty("过期时间")
-    val expiredAt: LocalDateTime
+    val expiredAt: LocalDateTime?
 )
