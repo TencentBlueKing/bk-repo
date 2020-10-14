@@ -70,7 +70,7 @@ object XmlStrUtils {
         inputStream: InputStream,
         calculatePackage: Boolean
     ): File {
-        val fileLists = String(inputStream.readBytes())
+        val fileLists = String(inputStream.use{it.readBytes()})
         val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
         tempFile.insertContent(fileLists)
         return tempFile.packagesModify(indexType, true, calculatePackage)
@@ -93,7 +93,7 @@ object XmlStrUtils {
 
         val prefix = PACKAGE_OTHER_START_MARK
 
-        val packageXml = String(inputStream.readBytes())
+        val packageXml = String(inputStream.use{it.readBytes()})
         val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
         val xmlIndex = tempFile.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
 

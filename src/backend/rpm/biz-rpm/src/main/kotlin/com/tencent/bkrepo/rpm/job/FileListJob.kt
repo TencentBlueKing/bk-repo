@@ -43,7 +43,7 @@ class FileListJob {
     @Autowired
     private lateinit var surplusNodeCleaner: SurplusNodeCleaner
 
-    @Scheduled(cron = "0 0/15 * * * ?")
+    @Scheduled(cron = "0 0/1 * * * ?")
     @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT30M")
     fun insertFileList() {
         val repoList = repositoryClient.pageByType(0, 100, "RPM").data?.records
@@ -118,30 +118,36 @@ class FileListJob {
                 try {
                     val tempFileListsNode = page.records
                     val calculatedList = mutableListOf<NodeInfo>()
+                    //循环写入
                     for (tempFile in tempFileListsNode) {
                         val inputStream = storageService.load(
                             tempFile.sha256!!,
                             Range.full(tempFile.size),
                             null
                         ) ?: return
-                        newFileLists = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
-                            XmlStrUtils.updateFileLists(
-                                "filelists", newFileLists,
-                                tempFile.fullPath,
-                                inputStream,
-                                tempFile.metadata!!
-                            )
-                        } else {
-                            XmlStrUtils.insertFileLists(
-                                "filelists", newFileLists,
-                                inputStream,
-                                false
-                            )
+                        try{
+                            newFileLists = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
+                                XmlStrUtils.updateFileLists(
+                                        "filelists", newFileLists,
+                                        tempFile.fullPath,
+                                        inputStream,
+                                        tempFile.metadata!!
+                                )
+                            } else {
+                                XmlStrUtils.insertFileLists(
+                                        "filelists", newFileLists,
+                                        inputStream,
+                                        false
+                                )
+                            }
+                        } finally {
+                            inputStream.closeQuietly()
                         }
+
                         calculatedList.add(tempFile)
-                        storeFileListNode(repo, newFileLists, repodataPath)
-                        surplusNodeCleaner.deleteTempXml(calculatedList)
                     }
+                    storeFileListNode(repo, newFileLists, repodataPath)
+                    surplusNodeCleaner.deleteTempXml(calculatedList)
                 } finally {
                     newFileLists.delete()
                 }
@@ -175,7 +181,6 @@ class FileListJob {
             try {
                 val xmlGZFileSha1 = FileInputStream(xmlGZFile).sha1()
 
-                // 先保存primary-xml.gz文件
                 val xmlGZArtifact = ArtifactFileFactory.build(FileInputStream(xmlGZFile))
                 val fullPath = "$repodataPath/$xmlGZFileSha1$target"
                 val metadata = mutableMapOf(
