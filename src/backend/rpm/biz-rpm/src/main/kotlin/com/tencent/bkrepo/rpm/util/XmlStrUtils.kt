@@ -10,7 +10,7 @@ import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.deleteContent
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.indexPackage
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.insertContent
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.rpmIndex
-import com.tencent.bkrepo.rpm.util.RpmStringUtils.toRpmVersion
+import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
@@ -70,7 +70,7 @@ object XmlStrUtils {
         inputStream: InputStream,
         calculatePackage: Boolean
     ): File {
-        val fileLists = String(inputStream.readBytes())
+        val fileLists = String(inputStream.use{it.readBytes()})
         val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
         tempFile.insertContent(fileLists)
         return tempFile.packagesModify(indexType, true, calculatePackage)
@@ -79,11 +79,12 @@ object XmlStrUtils {
     fun updateFileLists(
         indexType: String,
         file: File,
-        tempFileName: String,
-        inputStream: InputStream
+        tempFileFullPath: String,
+        inputStream: InputStream,
+        metadata: Map<String, String>
     ): File {
 
-        val rpmVersion = tempFileName.toRpmVersion()
+        val rpmVersion = metadata.toRpmVersion(tempFileFullPath)
 
         val locationStr = with(rpmVersion) {
             "name=\"$name\">\n" +
@@ -92,7 +93,7 @@ object XmlStrUtils {
 
         val prefix = PACKAGE_OTHER_START_MARK
 
-        val packageXml = String(inputStream.readBytes())
+        val packageXml = String(inputStream.use{it.readBytes()})
         val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
         val xmlIndex = tempFile.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
 
