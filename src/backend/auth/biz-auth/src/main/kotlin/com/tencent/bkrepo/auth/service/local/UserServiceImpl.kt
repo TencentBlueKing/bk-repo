@@ -205,8 +205,11 @@ class UserServiceImpl constructor(
         val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
         val update = Update()
         val id = IDUtil.genRandomId()
-        val dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-        val expiredTime = LocalDateTime.parse(expiredAt, DateTimeFormatter.ofPattern(dateFormat))
+        val now = LocalDateTime.now()
+        val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        val expiredTime = LocalDateTime.parse(expiredAt, dateTimeFormatter)
+        // val createdAtShow = now.format(dateTimeFormatter)
+        // val expiredAtShow = expiredTime.format(dateTimeFormatter)
         val userToken = Token(name = name, id = id, createdAt = LocalDateTime.now(), expiredAt = expiredTime)
         update.addToSet(TUser::tokens.name, userToken)
         mongoTemplate.upsert(query, update, TUser::class.java)

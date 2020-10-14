@@ -102,9 +102,8 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
-    override fun addUserToken(uid: String, token: String, expiredAt: String?): Response<Token?> {
-        println("aaaaaaaaaaaaaa")
-        val result = userService.addUserToken(uid, token, expiredAt)
+    override fun addUserToken(uid: String, name: String, expiredAt: String?): Response<Token?> {
+        val result = userService.addUserToken(uid, name, expiredAt)
         return ResponseBuilder.success(result)
     }
 

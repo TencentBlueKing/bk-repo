@@ -133,15 +133,14 @@ interface ServiceUserResource {
     ): Response<Token?>
 
     @ApiOperation("新加用户token")
-    @PutMapping("/addtoken2/{uid}/{name}")
+    @PostMapping("/token/{uid}/{name}")
     fun addUserToken(
         @ApiParam(value = "用户id")
-        @PathVariable uid: String,
+        @PathVariable("uid") uid: String,
         @ApiParam(value = "name")
-        @PathVariable name: String,
-        @RequestParam(required = false)
-        @ApiParam(value = "expiredAt", required = true)
-        expiredAt: String?
+        @PathVariable("name") name: String,
+        @ApiParam(value = "expiredAt", required = false)
+        @RequestParam expiredAt: String?
     ): Response<Token?>
 
     @ApiOperation("删除用户token")
