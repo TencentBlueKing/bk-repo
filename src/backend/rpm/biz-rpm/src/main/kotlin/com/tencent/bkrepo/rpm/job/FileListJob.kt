@@ -86,7 +86,7 @@ class FileListJob {
     ) {
         val target = "-filelists.xml.gz"
         with(repo) {
-            // repodata下'-**.xml.gz'最新节点。
+            // repodata下'-filelists.xml.gz'最新节点。
             val nodeList = nodeClient.list(
                 projectId, name,
                 repodataPath,
@@ -105,7 +105,6 @@ class FileListJob {
                     Range.full(latestNode.size),
                     null
                 ) ?: return
-                // 更新filelists.xml
                 // 从临时目录中遍历索引
                 val page = nodeClient.page(
                     projectId, name, 0, 500,
@@ -114,33 +113,35 @@ class FileListJob {
                     includeMetadata = true
                 ).data ?: return
 
-                // 不删除
                 var newFileLists: File = oldFileLists.unGzipInputStream()
-
-                val tempFileListsNode = page.records
-                val calculatedList = mutableListOf<NodeInfo>()
-                for (tempFile in tempFileListsNode) {
-                    val inputStream = storageService.load(
-                        tempFile.sha256!!,
-                        Range.full(tempFile.size),
-                        null
-                    ) ?: return
-                    newFileLists = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
-                        XmlStrUtils.updateFileLists(
-                            "filelists", newFileLists,
-                            tempFile.name,
-                            inputStream
-                        )
-                    } else {
-                        XmlStrUtils.insertFileLists(
-                            "filelists", newFileLists,
-                            inputStream,
-                            false
-                        )
+                try {
+                    val tempFileListsNode = page.records
+                    val calculatedList = mutableListOf<NodeInfo>()
+                    for (tempFile in tempFileListsNode) {
+                        val inputStream = storageService.load(
+                                tempFile.sha256!!,
+                                Range.full(tempFile.size),
+                                null
+                        ) ?: return
+                        newFileLists = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
+                            XmlStrUtils.updateFileLists(
+                                    "filelists", newFileLists,
+                                    tempFile.name,
+                                    inputStream
+                            )
+                        } else {
+                            XmlStrUtils.insertFileLists(
+                                    "filelists", newFileLists,
+                                    inputStream,
+                                    false
+                            )
+                        }
+                        calculatedList.add(tempFile)
+                        storeFileListNode(repo, newFileLists, repodataPath)
+                        surplusNodeCleaner.deleteTempXml(calculatedList)
                     }
-                    calculatedList.add(tempFile)
-                    storeFileListNode(repo, newFileLists, repodataPath)
-                    surplusNodeCleaner.deleteTempXml(calculatedList)
+                } finally {
+                    newFileLists.delete()
                 }
             } else {
                 // first upload
