@@ -10,6 +10,7 @@ import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.deleteContent
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.indexPackage
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.insertContent
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.rpmIndex
+import com.tencent.bkrepo.rpm.util.RpmStringUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
@@ -18,6 +19,7 @@ import java.io.InputStreamReader
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
+import java.io.InputStream
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.io.BufferedOutputStream
@@ -53,12 +55,48 @@ object XmlStrUtils {
     fun insertPackage(
         indexType: String,
         file: File,
-        rpmXmlMetadata: RpmXmlMetadata
+        rpmXmlMetadata: RpmXmlMetadata,
+        calculatePackage: Boolean
     ): File {
         val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
         val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
         tempFile.insertContent(packageXml)
-        return tempFile.packagesModify(indexType, true)
+        return tempFile.packagesModify(indexType, true, calculatePackage)
+    }
+
+    fun insertFileLists(
+        indexType: String,
+        file: File,
+        inputStream: InputStream,
+        calculatePackage: Boolean
+    ): File {
+        val fileLists = String(inputStream.readBytes())
+        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
+        tempFile.insertContent(fileLists)
+        return tempFile.packagesModify(indexType, true, calculatePackage)
+    }
+
+    fun updateFileLists(
+        indexType: String,
+        file: File,
+        tempFileName: String,
+        inputStream: InputStream
+    ): File {
+
+        val rpmVersion = tempFileName.toRpmVersion()
+
+        val locationStr = with(rpmVersion) {
+            "name=\"$name\">\n" +
+                "    <version epoch=\"$epoch\" ver=\"$ver\" rel=\"$rel\"/>"
+        }
+
+        val prefix = PACKAGE_OTHER_START_MARK
+
+        val packageXml = String(inputStream.readBytes())
+        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
+        val xmlIndex = tempFile.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
+
+        return tempFile.deleteContent(xmlIndex).insertContent(packageXml)
     }
 
     /**
@@ -142,14 +180,14 @@ object XmlStrUtils {
         val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
         val xmlIndex = tempFile.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
         val resultFile = tempFile.deleteContent(xmlIndex)
-        return resultFile.packagesModify(indexType, false)
+        return resultFile.packagesModify(indexType, mark = false, calculatePackage = false)
     }
 
     /**
      * 将RpmMetadata 序列化为xml，然后去除metadata根节点。
      * 不直接序列化Package的目的是为了保留缩进格式。
      */
-    private fun RpmXmlMetadata.rpmMetadataToPackageXml(indexType: String): String {
+    fun RpmXmlMetadata.rpmMetadataToPackageXml(indexType: String): String {
         val ver = this.packages.first().version.ver
         val rel = this.packages.first().version.rel
         val name = this.packages.first().name
@@ -199,30 +237,43 @@ object XmlStrUtils {
      * 更新索引文件中 package 数量
      * [mark] true:package加1，false: package减1
      */
-    fun File.packagesModify(indexType: String, mark: Boolean): File {
+    fun File.packagesModify(indexType: String, mark: Boolean, calculatePackage: Boolean): File {
         val bufferReader = BufferedReader(InputStreamReader(FileInputStream(this)))
         val regex = when (indexType) {
             "primary" ->
                 "^<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
-                    ".edu/metadata/rpm\" packages=\"(\\d)+\">$"
-            "filelists" -> "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"(\\d)+\">"
-            "others" -> "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"(\\d)+\">"
+                    ".edu/metadata/rpm\" packages=\"(\\d+)\">$"
+            "filelists" -> "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"(\\d+)\">"
+            "others" -> "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"(\\d+)\">"
+            else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
+        }
+
+        // 遍历包数量
+        val markStr = when (indexType) {
+            "primary" -> "<package type=\"rpm\">"
+            "filelists", "others" -> "<package pkgid="
             else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
         }
 
         var line: String
         var num = 0
-        loop@ while (bufferReader.readLine().also { line = it } != null) {
-            val matcher = Pattern.compile(regex).matcher(line)
-            if (matcher.find()) {
-                num = matcher.group(1).toInt()
-                break@loop
+        if (calculatePackage) {
+            loop@while (bufferReader.readLine().also { line = it } != null) {
+                if (line.contains(markStr)) {
+                    ++num
+                }
+                if (line == "</metadata>") break@loop
             }
+        } else {
+            loop@ while (bufferReader.readLine().also { line = it } != null) {
+                val matcher = Pattern.compile(regex).matcher(line)
+                if (matcher.find()) {
+                    num = matcher.group(1).toInt()
+                    break@loop
+                }
+            }
+            if (mark) ++num else --num
         }
-        if (mark) ++num else --num
-
-        val index = this.rpmIndex("  <package")
-
         val updatedStr = when (indexType) {
             "primary" ->
                 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
@@ -236,6 +287,8 @@ object XmlStrUtils {
                     "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"$num\">\n"
             else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
         }
+
+        val index = this.rpmIndex("  <package").takeIf { it >= 0 } ?: updatedStr.length
 
         val tempFile = File.createTempFile(indexType, "xml")
         val bufferedOutputStream = BufferedOutputStream(FileOutputStream(tempFile))

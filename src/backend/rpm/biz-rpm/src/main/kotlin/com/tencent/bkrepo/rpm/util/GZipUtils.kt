@@ -42,7 +42,7 @@ object GZipUtils {
         val bufferedOutputStream = BufferedOutputStream(FileOutputStream(file))
         val buffer = ByteArray(5 * 1024 * 1024)
         var mark: Int
-        try{
+        try {
             while (gZIPInputStream.read(buffer).also { mark = it } > 0) {
                 bufferedOutputStream.write(buffer, 0, mark)
                 bufferedOutputStream.flush()
