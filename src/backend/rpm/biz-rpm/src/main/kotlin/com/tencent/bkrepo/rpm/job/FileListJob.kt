@@ -30,6 +30,7 @@ import java.io.FileInputStream
 
 @Component
 class FileListJob {
+
     @Autowired
     private lateinit var repositoryClient: RepositoryClient
 
@@ -42,8 +43,8 @@ class FileListJob {
     @Autowired
     private lateinit var surplusNodeCleaner: SurplusNodeCleaner
 
-    @Scheduled(cron = "0 0 0/1 * * ?")
-    @SchedulerLock(name = "FileListJob", lockAtLeastFor = "PT30M")
+    @Scheduled(cron = "0 0/1 * * * ?")
+    @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT30M")
     fun insertFileList() {
         val repoList = repositoryClient.pageByType(0, 100, "RPM").data?.records
 
@@ -119,21 +120,22 @@ class FileListJob {
                     val calculatedList = mutableListOf<NodeInfo>()
                     for (tempFile in tempFileListsNode) {
                         val inputStream = storageService.load(
-                                tempFile.sha256!!,
-                                Range.full(tempFile.size),
-                                null
+                            tempFile.sha256!!,
+                            Range.full(tempFile.size),
+                            null
                         ) ?: return
                         newFileLists = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
                             XmlStrUtils.updateFileLists(
-                                    "filelists", newFileLists,
-                                    tempFile.name,
-                                    inputStream
+                                "filelists", newFileLists,
+                                tempFile.fullPath,
+                                inputStream,
+                                tempFile.metadata!!
                             )
                         } else {
                             XmlStrUtils.insertFileLists(
-                                    "filelists", newFileLists,
-                                    inputStream,
-                                    false
+                                "filelists", newFileLists,
+                                inputStream,
+                                false
                             )
                         }
                         calculatedList.add(tempFile)

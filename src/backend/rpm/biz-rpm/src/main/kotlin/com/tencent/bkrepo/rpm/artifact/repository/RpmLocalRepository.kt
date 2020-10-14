@@ -32,7 +32,6 @@ import com.tencent.bkrepo.rpm.NO_INDEXER
 import com.tencent.bkrepo.rpm.GZ
 import com.tencent.bkrepo.rpm.artifact.SurplusNodeCleaner
 import com.tencent.bkrepo.rpm.exception.RpmArtifactFormatNotSupportedException
-import com.tencent.bkrepo.rpm.exception.RpmArtifactMetadataResolveException
 import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
 import com.tencent.bkrepo.rpm.pojo.RpmVersion
@@ -70,8 +69,8 @@ import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
 import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.calculatePackages
 import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.getRpmBooleanHeader
-import com.tencent.bkrepo.rpm.util.RpmStringUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
+import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.rpmMetadataToPackageXml
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
@@ -164,7 +163,7 @@ class RpmLocalRepository(
      * 生成构件索引
      * 只生成primary和other索引。
      */
-    private fun indexer(context: ArtifactUploadContext, repeat: ArtifactRepeat, rpmRepoConf: RpmRepoConf) {
+    private fun indexer(context: ArtifactUploadContext, repeat: ArtifactRepeat, rpmRepoConf: RpmRepoConf): RpmVersion {
         val repodataDepth = rpmRepoConf.repodataDepth
         val repodataUri = XmlStrUtils.splitUriByDepth(context.artifactInfo.artifactUri, repodataDepth)
         val repodataPath = repodataUri.repodataPath
@@ -180,6 +179,13 @@ class RpmLocalRepository(
             sha1Digest,
             artifactRelativePath
         )
+        val rpmVersion = RpmVersion(
+            rpmMetadata.packages[0].name,
+            rpmMetadata.packages[0].arch,
+            rpmMetadata.packages[0].version.epoch.toString(),
+            rpmMetadata.packages[0].version.ver,
+            rpmMetadata.packages[0].version.rel
+        )
         if (rpmRepoConf.enabledFileLists) {
             val rpmMetadataFileList = RpmMetadataFileList(
                 listOf(
@@ -193,7 +199,7 @@ class RpmLocalRepository(
                 1L
             )
             // 单独存储每个包的filelists.xml
-            storeFileListsXml(context, rpmMetadataFileList, repodataPath, repeat)
+            storeFileListsXml(context, rpmMetadataFileList, repodataPath, repeat, rpmVersion.toMetadata())
         }
         // 过滤files中的文件
         rpmMetadata.packages[0].format.files = rpmMetadata.packages[0].format.files.filter {
@@ -217,14 +223,15 @@ class RpmLocalRepository(
         rpmMetadata.packages[0].format.changeLogs.clear()
         // 更新primary.xml
         updateIndexXml(context, rpmMetadata, repeat, repodataPath, PRIMARY)
-        flushRepoMdXML(context, null)
+        return rpmVersion
     }
 
     private fun storeFileListsXml(
         context: ArtifactUploadContext,
         rpmXmlMetadata: RpmXmlMetadata,
         repodataPath: String,
-        repeat: ArtifactRepeat
+        repeat: ArtifactRepeat,
+        metadata: MutableMap<String, String>
     ) {
         with(context.artifactInfo) {
             val rpmXml = rpmXmlMetadata.rpmMetadataToPackageXml(FILELISTS)
@@ -232,9 +239,7 @@ class RpmLocalRepository(
             val fileName = artifactUri.split("/").last()
             val tempFileName = StringBuilder(fileName.removeSuffix("rpm")).append("xml")
             val rpmXmlFile = ArtifactFileFactory.build(ByteArrayInputStream(rpmXml.toByteArray()))
-            val metadata = mutableMapOf(
-                "repeat" to repeat.name
-            )
+            metadata["repeat"] = repeat.name
             val xmlXmlFileNode = xmlIndexNodeCreate(
                 context.userId,
                 context.repositoryInfo,
@@ -664,8 +669,7 @@ class RpmLocalRepository(
             val nodeCreateRequest = if (mark) {
                 when (artifactFormat) {
                     RPM -> {
-                        indexer(context, repeat, rpmRepoConf)
-                        val rpmVersion = context.artifactInfo.artifactUri.toRpmVersion()
+                        val rpmVersion = indexer(context, repeat, rpmRepoConf)
                         rpmNodeCreateRequest(context, rpmVersion.toMetadata())
                     }
                     XML -> {
@@ -679,6 +683,7 @@ class RpmLocalRepository(
             with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/$artifactUri") }
             nodeClient.create(nodeCreateRequest)
             logger.info("Success to insert $nodeCreateRequest")
+            flushRepoMdXML(context, null)
         }
         successUpload(context, mark, rpmRepoConf.repodataDepth)
     }
@@ -695,28 +700,7 @@ class RpmLocalRepository(
                 throw UnsupportedMethodException("Delete folder is forbidden")
             }
             val nodeMetadata = node.metadata
-            val rpmVersion = RpmVersion(
-                nodeMetadata["name"] ?: throw RpmArtifactMetadataResolveException(
-                    "$artifactUri: not found " +
-                        "metadata.name value"
-                ),
-                nodeMetadata["arch"] ?: throw RpmArtifactMetadataResolveException(
-                    "$artifactUri: not found " +
-                        "metadata.arch value"
-                ),
-                nodeMetadata["epoch"] ?: throw RpmArtifactMetadataResolveException(
-                    "$artifactUri: not found " +
-                        "metadata.epoch value"
-                ),
-                nodeMetadata["ver"] ?: throw RpmArtifactMetadataResolveException(
-                    "$artifactUri: not found " +
-                        "metadata.ver value"
-                ),
-                nodeMetadata["rel"] ?: throw RpmArtifactMetadataResolveException(
-                    "$artifactUri: not found " +
-                        "metadata.rel value"
-                )
-            )
+            val rpmVersion = nodeMetadata.toRpmVersion(artifactUri)
             val artifactUri = context.artifactInfo.artifactUri
             // 定位对应请求的索引目录
             val rpmRepoConf = getRpmRepoConf(context)
