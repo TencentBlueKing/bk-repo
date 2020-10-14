@@ -24,6 +24,13 @@ class SurplusNodeCleaner(
         }
     }
 
+    fun deleteTempXml(list: List<NodeInfo>) {
+        for (node in list) {
+            nodeClient.delete(NodeDeleteRequest(node.projectId, node.repoName, node.fullPath, node.createdBy))
+            logger.info("Success to delete ${node.projectId}/${node.repoName}/${node.fullPath}")
+        }
+    }
+
     companion object {
         val logger: Logger = LoggerFactory.getLogger(SurplusNodeCleaner::class.java)
     }

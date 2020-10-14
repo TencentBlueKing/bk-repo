@@ -10,6 +10,7 @@ import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.deleteContent
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.indexPackage
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.insertContent
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.rpmIndex
+import com.tencent.bkrepo.rpm.util.RpmStringUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
@@ -18,6 +19,7 @@ import java.io.InputStreamReader
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
+import java.io.InputStream
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.io.BufferedOutputStream
@@ -60,6 +62,41 @@ object XmlStrUtils {
         val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
         tempFile.insertContent(packageXml)
         return tempFile.packagesModify(indexType, true, calculatePackage)
+    }
+
+    fun insertFileLists(
+        indexType: String,
+        file: File,
+        inputStream: InputStream,
+        calculatePackage: Boolean
+    ): File {
+        val fileLists = String(inputStream.readBytes())
+        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
+        tempFile.insertContent(fileLists)
+        return tempFile.packagesModify(indexType, true, calculatePackage)
+    }
+
+    fun updateFileLists(
+        indexType: String,
+        file: File,
+        tempFileName: String,
+        inputStream: InputStream
+    ): File {
+
+        val rpmVersion = tempFileName.toRpmVersion()
+
+        val locationStr = with(rpmVersion) {
+            "name=\"$name\">\n" +
+                "    <version epoch=\"$epoch\" ver=\"$ver\" rel=\"$rel\"/>"
+        }
+
+        val prefix = PACKAGE_OTHER_START_MARK
+
+        val packageXml = String(inputStream.readBytes())
+        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
+        val xmlIndex = tempFile.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
+
+        return tempFile.deleteContent(xmlIndex).insertContent(packageXml)
     }
 
     /**
@@ -150,7 +187,7 @@ object XmlStrUtils {
      * 将RpmMetadata 序列化为xml，然后去除metadata根节点。
      * 不直接序列化Package的目的是为了保留缩进格式。
      */
-    private fun RpmXmlMetadata.rpmMetadataToPackageXml(indexType: String): String {
+    fun RpmXmlMetadata.rpmMetadataToPackageXml(indexType: String): String {
         val ver = this.packages.first().version.ver
         val rel = this.packages.first().version.rel
         val name = this.packages.first().name

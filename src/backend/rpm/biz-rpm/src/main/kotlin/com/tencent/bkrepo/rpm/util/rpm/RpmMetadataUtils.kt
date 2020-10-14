@@ -232,13 +232,14 @@ class RpmMetadataUtils {
             val filePath = dirPaths[baseNameDirIndex] + baseName
             val dir = dirPaths.contains("$filePath/")
             val file = if (dir) RpmFile("dir", filePath) else RpmFile(null, filePath)
-            (file.filePath).let {
-                if (it.contains("bin/") ||
-                    it.startsWith("/etc/") ||
-                    it == "/usr/lib/sendmail"
-                )
-                    files.add(file)
-            }
+//            (file.filePath).let {
+//                if (it.contains("bin/") ||
+//                    it.startsWith("/etc/") ||
+//                    it == "/usr/lib/sendmail"
+//                )
+//                    files.add(file)
+//            }
+            files.add(file)
         }
         return files
     }

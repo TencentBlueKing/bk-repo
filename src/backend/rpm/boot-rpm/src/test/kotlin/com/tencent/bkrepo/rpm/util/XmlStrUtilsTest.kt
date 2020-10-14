@@ -23,7 +23,7 @@ class XmlStrUtilsTest {
     @Test
     fun packagesModifyTest() {
         val file = File("/Users/weaving/Downloads/0aab2adc94b2eef328f6d4f7ee1d686c816d124d-primary.xml")
-        val resultFile = file.packagesModify("primary", true)
+        val resultFile = file.packagesModify("primary", true, true)
         println(resultFile.absolutePath)
     }
 }
