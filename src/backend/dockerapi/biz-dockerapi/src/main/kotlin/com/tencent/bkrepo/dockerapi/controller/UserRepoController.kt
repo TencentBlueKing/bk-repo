@@ -31,7 +31,6 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Api("仓库接口")
@@ -49,9 +48,9 @@ class UserRepoController(
     }
 
     @ApiOperation("创建账号")
-    @PostMapping("/account/create")
+    @PostMapping("/account/create/{projectId}")
     fun createAccount(
-        @RequestParam projectId: String
+        @PathVariable projectId: String
     ): Response<ImageAccount> {
         return ResponseBuilder.success(repoService.createAccount(projectId))
     }

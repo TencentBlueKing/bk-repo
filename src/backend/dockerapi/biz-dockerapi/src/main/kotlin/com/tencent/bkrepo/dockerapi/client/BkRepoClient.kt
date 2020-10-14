@@ -22,6 +22,7 @@
 package com.tencent.bkrepo.dockerapi.client
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.AUTHORIZATION
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -35,6 +36,7 @@ import com.tencent.bkrepo.dockerapi.pojo.DockerTag
 import com.tencent.bkrepo.dockerapi.pojo.ImageAccount
 import com.tencent.bkrepo.dockerapi.pojo.QueryImageTagRequest
 import com.tencent.bkrepo.dockerapi.pojo.QueryProjectImageRequest
+import com.tencent.bkrepo.dockerapi.util.AccountUtils
 import com.tencent.bkrepo.dockerapi.util.HttpUtils
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -46,11 +48,36 @@ import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.format.DateTimeFormatter.ISO_DATE_TIME
+import java.util.Random
 
 @Component
 class BkRepoClient(
     private val bkRepoProperties: BkRepoProperties
 ) {
+    fun createProjectUser(projectId: String): ImageAccount {
+        logger.info("createProjectUser, projectId: $projectId")
+        val username = System.currentTimeMillis().toString() + Random().nextInt(1000).toString()
+        val password = AccountUtils.generateRandomPassword(8)
+        val url = "${bkRepoProperties.url}/auth/api/user/create/project"
+        val reqData = CreateUserToProjectRequest(
+            projectId = projectId,
+            userId = username,
+            name = username,
+            pwd = password
+        )
+        val httpRequest = Request.Builder().url(url)
+            .addHeader(AUTHORIZATION, bkRepoProperties.authorization)
+            .addHeader(AUTH_HEADER_UID, ADMIN)
+            .post(
+                RequestBody.create(
+                    MediaType.parse("application/json; charset=utf-8"),
+                    objectMapper.writeValueAsString(reqData)
+                )
+            ).build()
+        HttpUtils.doRequest(httpRequest, 1)
+        return ImageAccount(username, password)
+    }
+
     fun projectExist(projectId: String): Boolean {
         logger.info("checkProjectExist, projectId: $projectId")
         val url = "${bkRepoProperties.url}/repository/api/project/exist/$projectId"
@@ -101,10 +128,6 @@ class BkRepoClient(
                 )
             ).build()
         HttpUtils.doRequest(httpRequest, 1)
-    }
-
-    fun createProjectUser(projectId: String): ImageAccount {
-        throw RuntimeException("unimplemented")
     }
 
     fun queryProjectImage(request: QueryProjectImageRequest): Page<DockerRepo> {
