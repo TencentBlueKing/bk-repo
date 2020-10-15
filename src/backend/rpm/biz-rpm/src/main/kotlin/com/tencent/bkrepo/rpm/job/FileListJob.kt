@@ -54,9 +54,11 @@ class FileListJob {
     @Autowired
     private lateinit var surplusNodeCleaner: SurplusNodeCleaner
 
-    @Scheduled(cron = "0 0/1 * * * ?")
+    @Scheduled(cron = "0 0/30 * * ?")
     @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT30M")
     fun insertFileList() {
+        logger.info("rpmInsertFileList start")
+        val startMillis = System.currentTimeMillis()
         val repoList = repositoryClient.pageByType(0, 100, "RPM").data?.records
 
         repoList?.let {
@@ -70,6 +72,7 @@ class FileListJob {
                 }
             }
         }
+        logger.info("rpmInsertFileList done, cost time: ${System.currentTimeMillis() - startMillis} ms")
     }
 
     fun findRepoDataByRepo(
@@ -119,7 +122,7 @@ class FileListJob {
                 ) ?: return
                 // 从临时目录中遍历索引
                 val page = nodeClient.page(
-                    projectId, name, 0, 500,
+                    projectId, name, 0, 50,
                     "$repodataPath/temp/",
                     includeFolder = false,
                     includeMetadata = true
