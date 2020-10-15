@@ -54,7 +54,7 @@ class FileListJob {
     @Autowired
     private lateinit var surplusNodeCleaner: SurplusNodeCleaner
 
-    @Scheduled(cron = "0 0/30 * * ?")
+    @Scheduled(cron = "0 0/40 * * ?")
     @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT30M")
     fun insertFileList() {
         logger.info("rpmInsertFileList start")
