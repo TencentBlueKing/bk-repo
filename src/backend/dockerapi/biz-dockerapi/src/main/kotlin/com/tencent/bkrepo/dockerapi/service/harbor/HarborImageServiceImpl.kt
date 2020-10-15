@@ -69,21 +69,16 @@ class HarborImageServiceImpl(
             "private"
         }
         val images = harborRepos.map {
-            DockerRepo().apply {
-                repo = it.name
-                type = repoType
-                createdBy = "system"
-                tagCount = it.tagsCount.toLong()
-                created = DateTime(it.createTime).toString("yyyy-MM-dd HH:mm:ss")
-                modified = DateTime(it.updateTime).toString("yyyy-MM-dd HH:mm:ss")
-                imageName = it.name // ?
-                imagePath = it.name // ?
-                // tagStart?
-                // tagLimit?
+            DockerRepo(
+                type = repoType,
+                createdBy = "system",
+                created = DateTime(it.createTime).toString("yyyy-MM-dd HH:mm:ss"),
+                modified = DateTime(it.updateTime).toString("yyyy-MM-dd HH:mm:ss"),
+                imageName = it.name,
+                imagePath = it.name,
+                tagCount = it.tagsCount.toLong(),
                 downloadCount = it.pullCount.toLong()
-                // createdBy 无
-                // modifiedBy 无
-            }
+            )
         }
 
         if (harborRepos.size < pageSize && pageNumber == 1) {

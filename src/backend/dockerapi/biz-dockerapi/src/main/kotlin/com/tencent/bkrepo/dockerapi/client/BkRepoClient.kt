@@ -154,7 +154,6 @@ class BkRepoClient(
             data.pageNumber, data.pageSize, data.totalRecords,
             data.records.map {
                 DockerRepo(
-                    repo = it.name,
                     type = type,
                     createdBy = it.createdBy,
                     created = ISO_DATE_TIME.format(it.createdDate),

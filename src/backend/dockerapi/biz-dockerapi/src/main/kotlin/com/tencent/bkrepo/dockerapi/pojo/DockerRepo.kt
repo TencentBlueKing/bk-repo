@@ -22,7 +22,6 @@
 package com.tencent.bkrepo.dockerapi.pojo
 
 data class DockerRepo(
-    var repo: String? = null,
     var type: String? = null,
     var imageName: String? = null,
     var imagePath: String? = null,
