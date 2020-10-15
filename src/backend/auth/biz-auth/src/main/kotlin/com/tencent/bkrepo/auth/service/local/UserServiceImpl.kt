@@ -28,6 +28,7 @@ import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.Token
+import com.tencent.bkrepo.auth.pojo.TokenResult
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.repository.RoleRepository
@@ -43,6 +44,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 class UserServiceImpl constructor(
     private val userRepository: UserRepository,
@@ -200,32 +202,64 @@ class UserServiceImpl constructor(
     }
 
     override fun addUserToken(userId: String, name: String, expiredAt: String?): Token? {
-        logger.info("add user token userId : [$userId] ,token : [$name]")
-        checkUserExist(userId)
-        val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
-        val update = Update()
-        val id = IDUtil.genRandomId()
-        val now = LocalDateTime.now()
-        val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-        val expiredTime = LocalDateTime.parse(expiredAt, dateTimeFormatter)
-        // val createdAtShow = now.format(dateTimeFormatter)
-        // val expiredAtShow = expiredTime.format(dateTimeFormatter)
-        val userToken = Token(name = name, id = id, createdAt = LocalDateTime.now(), expiredAt = expiredTime)
-        update.addToSet(TUser::tokens.name, userToken)
-        mongoTemplate.upsert(query, update, TUser::class.java)
-        return userToken
+        try {
+            logger.info("add user token userId : [$userId] ,token : [$name]")
+            checkUserExist(userId)
+            val existUserInfo = getUserById(userId)
+            val existTokens = existUserInfo!!.tokens
+            existTokens.forEach {
+                if (it.name == name) {
+                    logger.warn("user token exist [$name]")
+                    throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_EXIST)
+                }
+            }
+            val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
+            val update = Update()
+            val id = IDUtil.genRandomId()
+            val now = LocalDateTime.now()
+            var expiredTime: LocalDateTime? = null
+            expiredAt?.let {
+                val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS'Z'")
+                expiredTime = LocalDateTime.parse(expiredAt, dateTimeFormatter)
+            }
+            val userToken = Token(name = name, id = id, createdAt = now, expiredAt = expiredTime)
+            update.addToSet(TUser::tokens.name, userToken)
+            mongoTemplate.upsert(query, update, TUser::class.java)
+            val userInfo = getUserById(userId)
+            val tokens = userInfo!!.tokens
+            tokens.forEach {
+                if (it.name == name) {
+                    return it
+                }
+            }
+            return null
+        } catch (ignored: DateTimeParseException) {
+            logger.warn("add user token false [$ignored]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_ERROR)
+        }
     }
 
-    override fun removeToken(userId: String, token: String): User? {
-        logger.info("remove token userId : [$userId] ,token : [$token]")
+    override fun listUserToken(userId: String): List<TokenResult> {
+        checkUserExist(userId)
+        val userInfo = getUserById(userId)
+        val tokens = userInfo!!.tokens
+        val result = mutableListOf<TokenResult>()
+        tokens.forEach {
+            result.add(TokenResult(it.name, it.createdAt, it.expiredAt))
+        }
+        return result
+    }
+
+    override fun removeToken(userId: String, name: String): Boolean {
+        logger.info("remove token userId : [$userId] ,token : [$name]")
         checkUserExist(userId)
         val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
         val s = BasicDBObject()
-        s["id"] = token
+        s["name"] = name
         val update = Update()
         update.pull(TUser::tokens.name, s)
         mongoTemplate.updateFirst(query, update, TUser::class.java)
-        return getUserById(userId)
+        return true
     }
 
     override fun getUserById(userId: String): User? {
