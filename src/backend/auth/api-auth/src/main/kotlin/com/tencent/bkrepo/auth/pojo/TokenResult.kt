@@ -19,44 +19,18 @@
  *
  */
 
-package com.tencent.bkrepo.auth.service
+package com.tencent.bkrepo.auth.pojo
 
-import com.tencent.bkrepo.auth.pojo.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
-import com.tencent.bkrepo.auth.pojo.Token
-import com.tencent.bkrepo.auth.pojo.TokenResult
-import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
-import com.tencent.bkrepo.auth.pojo.User
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-interface UserService {
-
-    fun getUserById(userId: String): User?
-
-    fun createUser(request: CreateUserRequest): Boolean
-
-    fun createUserToProject(request: CreateUserToProjectRequest): Boolean
-
-    fun listUser(rids: List<String>): List<User>
-
-    fun deleteById(userId: String): Boolean
-
-    fun updateUserById(userId: String, request: UpdateUserRequest): Boolean
-
-    fun addUserToRole(userId: String, roleId: String): User?
-
-    fun addUserToRoleBatch(idList: List<String>, roleId: String): Boolean
-
-    fun removeUserFromRole(userId: String, roleId: String): User?
-
-    fun removeUserFromRoleBatch(idList: List<String>, roleId: String): Boolean
-
-    fun createToken(userId: String): Token?
-
-    fun addUserToken(userId: String, name: String, expiredAt: String?): Token?
-
-    fun listUserToken(userId: String): List<TokenResult>
-
-    fun removeToken(userId: String, name: String): Boolean
-
-    fun findUserByUserToken(userId: String, pwd: String): User?
-}
+@ApiModel("token信息")
+data class TokenResult(
+    @ApiModelProperty("tokenName")
+    val name: String?,
+    @ApiModelProperty("创建时间")
+    val createdAt: LocalDateTime,
+    @ApiModelProperty("过期时间")
+    val expiredAt: LocalDateTime?
+)

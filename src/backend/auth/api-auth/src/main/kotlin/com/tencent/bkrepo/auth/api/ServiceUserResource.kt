@@ -26,6 +26,7 @@ import com.tencent.bkrepo.auth.constant.SERVICE_NAME
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.Token
+import com.tencent.bkrepo.auth.pojo.TokenResult
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -143,14 +144,21 @@ interface ServiceUserResource {
         @RequestParam expiredAt: String?
     ): Response<Token?>
 
+    @ApiOperation("查询用户token列表")
+    @GetMapping("/list/token/{uid}")
+    fun listUserToken(
+        @ApiParam(value = "用户id")
+        @PathVariable("uid") uid: String
+    ): Response<List<TokenResult>>
+
     @ApiOperation("删除用户token")
-    @DeleteMapping("/token/{uid}/{token}")
+    @DeleteMapping("/token/{uid}/{name}")
     fun deleteToken(
         @ApiParam(value = "用户id")
         @PathVariable uid: String,
         @ApiParam(value = "用户token")
-        @PathVariable token: String
-    ): Response<User?>
+        @PathVariable name: String
+    ): Response<Boolean>
 
     @ApiOperation("校验用户token")
     @GetMapping("/token/{uid}/{token}")

@@ -28,6 +28,7 @@ import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.Token
+import com.tencent.bkrepo.auth.pojo.TokenResult
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
@@ -107,8 +108,13 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
-    override fun deleteToken(uid: String, token: String): Response<User?> {
-        val result = userService.removeToken(uid, token)
+    override fun listUserToken(uid: String): Response<List<TokenResult>> {
+        val result = userService.listUserToken(uid)
+        return ResponseBuilder.success(result)
+    }
+
+    override fun deleteToken(uid: String, name: String): Response<Boolean> {
+        val result = userService.removeToken(uid, name)
         return ResponseBuilder.success(result)
     }
 
