@@ -47,8 +47,9 @@
             </div>
             <router-view :ref="repoType" :style="`height: calc(100% - ${showRepoSearch ? '72px' : '20px'});transition: all .3s;`"></router-view>
         </main>
-        <bk-sideslider :is-show.sync="showGuide" :quick-close="true" :width="800" :title="repoName + $t('guide')">
-            <repo-guide class="pt20 pb20 pl20 pr20" slot="content" :article="articleGuide"></repo-guide>
+        <bk-sideslider :is-show.sync="showGuide" :quick-close="true" :width="800">
+            <div slot="header" class="flex-align-center"><icon class="mr5" :name="repoType" size="32"></icon>{{ repoName + $t('guide') }}</div>
+            <repo-guide class="pt20 pb20 pl10 pr10" slot="content" :article="articleGuide"></repo-guide>
         </bk-sideslider>
     </div>
 </template>

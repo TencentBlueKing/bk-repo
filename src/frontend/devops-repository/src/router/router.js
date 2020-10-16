@@ -23,6 +23,7 @@ const repoList = () => import(/* webpackChunkName: "repoList" */'@/views/repoLis
 const createRepo = () => import(/* webpackChunkName: "createRepo" */'@/views/repoList/createRepo')
 const repoConfig = () => import(/* webpackChunkName: "repoConfig" */'@/views/repoConfig')
 const repoDetail = () => import(/* webpackChunkName: "repoDetail" */'@/views/repo')
+const repoToken = () => import(/* webpackChunkName: "repoToken" */'@/views/repoToken')
 
 const repoGeneric = () => import(/* webpackChunkName: "repoGeneric" */'@/views/repo/repoGeneric')
 
@@ -160,6 +161,17 @@ const routes = [
                 meta: {
                     title: '文件搜索',
                     header: '文件搜索',
+                    icon: 'repo',
+                    to: 'repoList'
+                }
+            },
+            {
+                path: 'repoToken',
+                name: 'repoToken',
+                component: repoToken,
+                meta: {
+                    title: '访问令牌',
+                    header: '访问令牌',
                     icon: 'repo',
                     to: 'repoList'
                 }
