@@ -128,7 +128,7 @@ class FileListJob {
                     Range.full(latestNode.size),
                     null
                 ) ?: return
-
+                logger.info("加载最新的filelists节点：${latestNode.fullPath}, 压缩后大小：${latestNode.size}")
                 var newFileLists: File = oldFileLists.use{ it.unGzipInputStream()}
                 try {
                     val tempFileListsNode = page.records.sortedBy { it.lastModifiedDate }
@@ -142,6 +142,7 @@ class FileListJob {
                         ) ?: return
                         try {
                             newFileLists = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
+                                logger.info("action:update ${tempFile.fullPath}, size:${tempFile.size}")
                                 XmlStrUtils.updateFileLists(
                                     "filelists", newFileLists,
                                     tempFile.fullPath,
@@ -149,6 +150,7 @@ class FileListJob {
                                     tempFile.metadata!!
                                 )
                             } else if ((tempFile.metadata?.get("repeat")) == "DELETE") {
+                                logger.info("action:delete ${tempFile.fullPath}, size:${tempFile.size}")
                                 try {
                                     XmlStrUtils.deletePackage(
                                         "filelists",
@@ -161,12 +163,14 @@ class FileListJob {
                                     newFileLists
                                 }
                             } else {
+                                logger.info("action:insert ${tempFile.fullPath}, size:${tempFile.size}")
                                 XmlStrUtils.insertFileLists(
                                     "filelists", newFileLists,
                                     inputStream,
                                     false
                                 )
                             }
+                            logger.info("临时filelists 文件：${newFileLists.absolutePath}，size:${newFileLists.length()}")
                             calculatedList.add(tempFile)
                         } finally {
                             inputStream.closeQuietly()
