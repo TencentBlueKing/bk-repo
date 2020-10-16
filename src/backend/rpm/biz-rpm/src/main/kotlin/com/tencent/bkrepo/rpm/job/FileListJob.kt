@@ -54,7 +54,7 @@ class FileListJob {
     @Autowired
     private lateinit var surplusNodeCleaner: SurplusNodeCleaner
 
-    @Scheduled(cron = "0 0/40 * * ?")
+    @Scheduled(cron = "0 0/10 * * * ?")
     @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT30M")
     fun insertFileList() {
         logger.info("rpmInsertFileList start")
@@ -122,7 +122,7 @@ class FileListJob {
                 ) ?: return
                 // 从临时目录中遍历索引
                 val page = nodeClient.page(
-                    projectId, name, 0, 50,
+                    projectId, name, 0, 250,
                     "$repodataPath/temp/",
                     includeFolder = false,
                     includeMetadata = true
