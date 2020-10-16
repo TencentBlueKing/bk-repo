@@ -71,7 +71,7 @@ class FileListJob {
                 findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
                 for (repoDataPath in targetSet) {
                     logger.info("updateRpmFileLists(${repo.projectId}|${repo.name}|$repoDataPath) start")
-                    updateFileListsXml(repo, repoDataPath)
+                    insertFileListsXml(repo, repoDataPath)
                     logger.info("updateRpmFileLists(${repo.projectId}|${repo.name}|$repoDataPath) done")
                 }
                 logger.info("updateRpmFileLists(${repo.projectId}|${repo.name}) done")
@@ -100,7 +100,7 @@ class FileListJob {
         }
     }
 
-    private fun updateFileListsXml(
+    private fun insertFileListsXml(
         repo: RepositoryInfo,
         repodataPath: String
     ) {
@@ -145,12 +145,12 @@ class FileListJob {
                             tempFile.sha256!!,
                             Range.full(tempFile.size),
                             null
-                        ) ?: return
+                        ) ?: continue
                         try {
                             newFileLists = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
                                 logger.debug("update ${tempFile.fullPath}")
                                 XmlStrUtils.updateFileLists(
-                                    "filelists", newFileLists,
+                                    newFileLists,
                                     tempFile.fullPath,
                                     inputStream,
                                     tempFile.metadata!!
@@ -198,7 +198,7 @@ class FileListJob {
             } else {
                 // first upload
                 storeFileListXmlNode(repo, repodataPath)
-                updateFileListsXml(repo, repodataPath)
+                insertFileListsXml(repo, repodataPath)
             }
             flushRepoMdXML(projectId, name, repodataPath)
             // 删除多余索引节点
