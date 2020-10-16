@@ -56,8 +56,8 @@ class FileListJob {
     @Autowired
     private lateinit var surplusNodeCleaner: SurplusNodeCleaner
 
-    @Scheduled(cron = "0 0/10 * * * ?")
-    @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT30M")
+    @Scheduled(cron = "0 0/5 * * * ?")
+    @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT60M")
     fun insertFileList() {
         logger.info("rpmInsertFileList start")
         val startMillis = System.currentTimeMillis()
@@ -72,7 +72,7 @@ class FileListJob {
                 findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
                 for (repoDataPath in targetSet) {
                     logger.info("updateRpmFileLists(${repo.projectId}|${repo.name}|$repoDataPath) start")
-                    updateFileListsXml(repo, repoDataPath)
+                    insertFileListsXml(repo, repoDataPath)
                     logger.info("updateRpmFileLists(${repo.projectId}|${repo.name}|$repoDataPath) done")
                 }
                 logger.info("updateRpmFileLists(${repo.projectId}|${repo.name}) done")
@@ -101,7 +101,7 @@ class FileListJob {
         }
     }
 
-    private fun updateFileListsXml(
+    private fun insertFileListsXml(
         repo: RepositoryInfo,
         repodataPath: String
     ) {
@@ -149,40 +149,36 @@ class FileListJob {
                             tempFile.sha256!!,
                             Range.full(tempFile.size),
                             null
-                        ) ?: return
+                        ) ?: continue
                         try {
-                            newFileListsFile = when {
-                                (tempFile.metadata?.get("repeat")) == "FULLPATH" -> {
-                                    logger.debug("update ${tempFile.fullPath}")
-                                    XmlStrUtils.updateFileLists(
-                                        "filelists", newFileListsFile,
-                                        tempFile.fullPath,
-                                        inputStream,
-                                        tempFile.metadata!!
+                            newFileListsFile = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
+                                logger.debug("update ${tempFile.fullPath}")
+                                XmlStrUtils.updateFileLists(
+                                    newFileListsFile,
+                                    tempFile.fullPath,
+                                    inputStream,
+                                    tempFile.metadata!!
+                                )
+                            } else if ((tempFile.metadata?.get("repeat")) == "DELETE") {
+                                logger.debug("delete ${tempFile.fullPath}")
+                                try {
+                                    XmlStrUtils.deletePackage(
+                                        "filelists",
+                                        newFileListsFile,
+                                        tempFile.metadata!!.toRpmVersion(tempFile.fullPath),
+                                        tempFile.fullPath
                                     )
+                                } catch (rpmVersionNotFound: RpmVersionNotFoundException) {
+                                    logger.info("${tempFile.fullPath} 的filelists 未被更新")
+                                    newFileListsFile
                                 }
-                                (tempFile.metadata?.get("repeat")) == "DELETE" -> {
-                                    logger.debug("delete ${tempFile.fullPath}")
-                                    try {
-                                        XmlStrUtils.deletePackage(
-                                            "filelists",
-                                            newFileListsFile,
-                                            tempFile.metadata!!.toRpmVersion(tempFile.fullPath),
-                                            tempFile.fullPath
-                                        )
-                                    } catch (rpmVersionNotFound: RpmVersionNotFoundException) {
-                                        logger.info("${tempFile.fullPath} 的filelists 未被更新")
-                                        newFileListsFile
-                                    }
-                                }
-                                else -> {
-                                    logger.debug("insert ${tempFile.fullPath}")
-                                    XmlStrUtils.insertFileLists(
-                                        "filelists", newFileListsFile,
-                                        inputStream,
-                                        false
-                                    )
-                                }
+                            } else {
+                                logger.debug("insert ${tempFile.fullPath}")
+                                XmlStrUtils.insertFileLists(
+                                    "filelists", newFileListsFile,
+                                    inputStream,
+                                    false
+                                )
                             }
                             calculatedList.add(tempFile)
                         } finally {
@@ -206,7 +202,7 @@ class FileListJob {
             } else {
                 // first upload
                 storeFileListXmlNode(repo, repodataPath)
-                updateFileListsXml(repo, repodataPath)
+                insertFileListsXml(repo, repodataPath)
             }
             flushRepoMdXML(projectId, name, repodataPath)
             // 删除多余索引节点

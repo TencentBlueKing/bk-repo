@@ -14,13 +14,11 @@ import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import org.slf4j.LoggerFactory
-import org.springframework.util.StopWatch
 import java.io.BufferedOutputStream
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.RandomAccessFile
@@ -60,17 +58,8 @@ object XmlStrUtils {
         calculatePackage: Boolean
     ): File {
         val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
-        val stopWatch = StopWatch()
-        stopWatch.start("insertContent")
         file.insertContent(packageXml)
-        stopWatch.stop()
-        stopWatch.start("updatePackageCount")
-        val resultFile = file.packagesModify(indexType, true, calculatePackage)
-        stopWatch.stop()
-        if (logger.isDebugEnabled) {
-            logger.debug("insertRpmPackageStat: $stopWatch")
-        }
-        return resultFile
+        return file.packagesModify(indexType, true, calculatePackage)
     }
 
     fun insertFileLists(
@@ -80,21 +69,11 @@ object XmlStrUtils {
         calculatePackage: Boolean
     ): File {
         val fileLists = String(inputStream.use { it.readBytes() })
-        val stopWatch = StopWatch()
-        stopWatch.start("insertContent")
         file.insertContent(fileLists)
-        stopWatch.stop()
-        stopWatch.start("updatePackageCount")
-        val file = file.packagesModify(indexType, true, calculatePackage)
-        stopWatch.stop()
-        if (logger.isDebugEnabled) {
-            logger.debug("insertRpmFileListIndexStat: $stopWatch")
-        }
-        return file
+        return file.packagesModify(indexType, true, calculatePackage)
     }
 
     fun updateFileLists(
-        indexType: String,
         file: File,
         tempFileFullPath: String,
         inputStream: InputStream,
@@ -107,20 +86,8 @@ object XmlStrUtils {
         }
         val prefix = PACKAGE_OTHER_START_MARK
         val packageXml = String(inputStream.use { it.readBytes() })
-        val stopWatch = StopWatch()
-        stopWatch.start("findIndex")
         val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
-        stopWatch.stop()
-        stopWatch.start("deleteContent")
-        val fileAfterDelete = file.deleteContent(xmlIndex)
-        stopWatch.stop()
-        stopWatch.start("insertContent")
-        val fileAfterInsert = fileAfterDelete.insertContent(packageXml)
-        stopWatch.stop()
-        if (logger.isDebugEnabled) {
-            logger.debug("updateRpmFileListIndexStat: $stopWatch")
-        }
-        return fileAfterInsert
+        return file.deleteContent(xmlIndex).insertContent(packageXml)
     }
 
     /**
@@ -287,7 +254,6 @@ object XmlStrUtils {
             else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
         }
 
-        // 遍历包数量
         val markStr = when (indexType) {
             "primary" -> "<package type=\"rpm\">"
             "filelists", "others" -> "<package pkgid="
@@ -296,61 +262,67 @@ object XmlStrUtils {
 
         var line: String
         var num = 0
-        BufferedReader(InputStreamReader(FileInputStream(this))).use { bufferReader ->
-            if (calculatePackage) {
-                loop@ while (bufferReader.readLine().also { line = it } != null) {
-                    if (line.contains(markStr)) {
-                        ++num
-                    }
-                    if (line == "</metadata>") break@loop
-                }
-            } else {
-                loop@ while (bufferReader.readLine().also { line = it } != null) {
-                    val matcher = Pattern.compile(regex).matcher(line)
-                    if (matcher.find()) {
-                        num = matcher.group(1).toInt()
-                        break@loop
-                    }
-                }
-                if (mark) ++num else --num
-            }
-        }
-
-        val updatedStr = when (indexType) {
-            "primary" ->
-                "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                    "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
-                    ".edu/metadata/rpm\" packages=\"$num\">\n"
-            "filelists" ->
-                "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                    "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"$num\">\n"
-            "others" ->
-                "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                    "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"$num\">\n"
-            else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
-        }
-        val index = this.rpmIndex("  <package").takeIf { it >= 0 } ?: updatedStr.length
-        val tempFile = File.createTempFile(indexType, "xml")
+        var resultFile: File
         try {
-            BufferedOutputStream(FileOutputStream(tempFile)).use { bos ->
-                bos.write(updatedStr.toByteArray())
-                val buffer = ByteArray(1 * 1024 * 1024)
-                var markSeek: Int
-                RandomAccessFile(this, "rw").use { randomAccessFile ->
-                    randomAccessFile.seek(index.toLong())
-                    while (randomAccessFile.read(buffer).also { markSeek = it } > 0) {
-                        bos.write(buffer, 0, markSeek)
+            BufferedReader(InputStreamReader(FileInputStream(this))).use { bufferReader ->
+                if (calculatePackage) {
+                    // 遍历包数量
+                    loop@ while (bufferReader.readLine().also { line = it } != null) {
+                        if (line.contains(markStr)) {
+                            ++num
+                        }
+                        if (line == "</metadata>") break@loop
                     }
-                    bos.flush()
+                } else {
+                    loop@ while (bufferReader.readLine().also { line = it } != null) {
+                        val matcher = Pattern.compile(regex).matcher(line)
+                        if (matcher.find()) {
+                            num = matcher.group(1).toInt()
+                            break@loop
+                        }
+                    }
+                    if (mark) ++num else --num
                 }
             }
-        } catch (ioe: IOException) {
-            logger.info("tempFile:${this.name} 创建失败！")
-            tempFile.delete()
-            throw ioe
+
+            val updatedStr = when (indexType) {
+                "primary" ->
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+                        "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
+                        ".edu/metadata/rpm\" packages=\"$num\">\n"
+                "filelists" ->
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+                        "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"$num\">\n"
+                "others" ->
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+                        "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"$num\">\n"
+                else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
+            }
+            val index = this.rpmIndex("  <package").takeIf { it >= 0 } ?: updatedStr.length
+
+            resultFile = File.createTempFile(indexType, "xml")
+            try {
+                BufferedOutputStream(FileOutputStream(resultFile)).use { outputStream ->
+                    outputStream.write(updatedStr.toByteArray())
+                    val buffer = ByteArray(1 * 1024 * 1024)
+                    var markSeek: Int
+                    RandomAccessFile(this, "rw").use { randomAccessFile ->
+                        randomAccessFile.seek(index.toLong())
+                        while (randomAccessFile.read(buffer).also { markSeek = it } > 0) {
+                            outputStream.write(buffer, 0, markSeek)
+                        }
+                        outputStream.flush()
+                    }
+                }
+                return resultFile
+            } catch (e: Exception) {
+                logger.info("resultFile:${resultFile.name} 创建失败！")
+                resultFile.delete()
+                throw e
+            }
         } finally {
             this.delete()
         }
-        return tempFile
+        return resultFile
     }
 }
