@@ -14,6 +14,7 @@ import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import org.slf4j.LoggerFactory
+import org.springframework.util.StopWatch
 import java.io.BufferedOutputStream
 import java.io.BufferedReader
 import java.io.File
@@ -58,8 +59,17 @@ object XmlStrUtils {
         calculatePackage: Boolean
     ): File {
         val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
+        val stopWatch = StopWatch()
+        stopWatch.start("insertContent")
         file.insertContent(packageXml)
-        return file.packagesModify(indexType, true, calculatePackage)
+        stopWatch.stop()
+        stopWatch.start("updatePackageCount")
+        val resultFile = file.packagesModify(indexType, true, calculatePackage)
+        stopWatch.stop()
+        if (logger.isDebugEnabled) {
+            logger.debug("insertRpmPackageStat: $stopWatch")
+        }
+        return resultFile
     }
 
     fun insertFileLists(
@@ -69,8 +79,17 @@ object XmlStrUtils {
         calculatePackage: Boolean
     ): File {
         val fileLists = String(inputStream.use { it.readBytes() })
+        val stopWatch = StopWatch()
+        stopWatch.start("insertContent")
         file.insertContent(fileLists)
-        return file.packagesModify(indexType, true, calculatePackage)
+        stopWatch.stop()
+        stopWatch.start("updatePackageCount")
+        val resultFile = file.packagesModify(indexType, true, calculatePackage)
+        stopWatch.stop()
+        if (logger.isDebugEnabled) {
+            logger.debug("insertRpmFileListIndexStat: $stopWatch")
+        }
+        return resultFile
     }
 
     fun updateFileLists(
@@ -86,8 +105,20 @@ object XmlStrUtils {
         }
         val prefix = PACKAGE_OTHER_START_MARK
         val packageXml = String(inputStream.use { it.readBytes() })
+        val stopWatch = StopWatch()
+        stopWatch.start("findIndex")
         val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
-        return file.deleteContent(xmlIndex).insertContent(packageXml)
+        stopWatch.stop()
+        stopWatch.start("deleteContent")
+        val fileAfterDelete = file.deleteContent(xmlIndex)
+        stopWatch.stop()
+        stopWatch.start("insertContent")
+        val resultFile = fileAfterDelete.insertContent(packageXml)
+        stopWatch.stop()
+        if (logger.isDebugEnabled) {
+            logger.debug("updateRpmFileListIndexStat: $stopWatch")
+        }
+        return resultFile
     }
 
     /**
@@ -130,11 +161,21 @@ object XmlStrUtils {
                 throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
             }
         }
-
         val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
+        val stopWatch = StopWatch()
+        stopWatch.start("findIndex")
         val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
-
-        return file.deleteContent(xmlIndex).insertContent(packageXml)
+        stopWatch.stop()
+        stopWatch.start("deleteContent")
+        val fileAfterDelete = file.deleteContent(xmlIndex)
+        stopWatch.stop()
+        stopWatch.start("insertContent")
+        val resultFile = fileAfterDelete.insertContent(packageXml)
+        stopWatch.stop()
+        if (logger.isDebugEnabled) {
+            logger.debug("updateRpmFileListIndexStat: $stopWatch")
+        }
+        return resultFile
     }
 
     /**
@@ -179,9 +220,20 @@ object XmlStrUtils {
                 throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
             }
         }
+        val stopWatch = StopWatch()
+        stopWatch.start("findIndex")
         val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
-        val resultFile = file.deleteContent(xmlIndex)
-        return resultFile.packagesModify(indexType, mark = false, calculatePackage = false)
+        stopWatch.stop()
+        stopWatch.start("deleteContent")
+        val fileAfterDelete = file.deleteContent(xmlIndex)
+        stopWatch.stop()
+        stopWatch.start("updatePackageCount")
+        val resultFile = fileAfterDelete.packagesModify(indexType, mark = false, calculatePackage = false)
+        stopWatch.stop()
+        if (logger.isDebugEnabled) {
+            logger.debug("updateRpmFileListIndexStat: $stopWatch")
+        }
+        return resultFile
     }
 
     /**
@@ -254,6 +306,7 @@ object XmlStrUtils {
             else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
         }
 
+        // 遍历包数量
         val markStr = when (indexType) {
             "primary" -> "<package type=\"rpm\">"
             "filelists", "others" -> "<package pkgid="
