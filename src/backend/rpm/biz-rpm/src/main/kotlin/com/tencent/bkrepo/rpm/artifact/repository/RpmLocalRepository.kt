@@ -257,7 +257,6 @@ class RpmLocalRepository(
         metadata: MutableMap<String, String>
     ) {
         with(context.artifactInfo) {
-
             val fileName = artifactUri.split("/").last()
             val tempFileName = StringBuilder(fileName.removeSuffix("rpm")).append("xml")
             val rpmXmlFile = ArtifactFileFactory.build(ByteArrayInputStream(rpmXmlMetadataStr.toByteArray()))
