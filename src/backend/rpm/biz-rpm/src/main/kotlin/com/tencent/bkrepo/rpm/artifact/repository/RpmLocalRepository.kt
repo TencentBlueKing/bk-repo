@@ -305,9 +305,12 @@ class RpmLocalRepository(
                     context.storageCredentials
                 ) ?: return
 
-                val xmlFile = inputStream.use { if (repeat == NONE) {
-                        XmlStrUtils.insertPackage(indexType, it.unGzipInputStream(), rpmXmlMetadata,
-                                calculatePackage)
+                val xmlFile = inputStream.use {
+                    if (repeat == NONE) {
+                        XmlStrUtils.insertPackage(
+                            indexType, it.unGzipInputStream(), rpmXmlMetadata,
+                            calculatePackage
+                        )
                     } else {
                         XmlStrUtils.updatePackage(indexType, it.unGzipInputStream(), rpmXmlMetadata, artifactUri)
                     }
