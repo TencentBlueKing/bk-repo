@@ -208,7 +208,11 @@ class RpmLocalRepository(
                 1L
             )
             // 单独存储每个包的filelists.xml
-            storeFileListsXml(context, rpmMetadataFileList, repodataPath, repeat, rpmVersion.toMetadata())
+
+            storeFileListsXml(
+                context, rpmMetadataFileList.rpmMetadataToPackageXml(FILELISTS), repodataPath, repeat,
+                rpmVersion.toMetadata()
+            )
         }
         stopWatchDetail.stop()
         // 过滤files中的文件
@@ -246,18 +250,17 @@ class RpmLocalRepository(
     }
 
     private fun storeFileListsXml(
-        context: ArtifactUploadContext,
-        rpmXmlMetadata: RpmXmlMetadata,
+        context: ArtifactTransferContext,
+        rpmXmlMetadataStr: String,
         repodataPath: String,
         repeat: ArtifactRepeat,
         metadata: MutableMap<String, String>
     ) {
         with(context.artifactInfo) {
-            val rpmXml = rpmXmlMetadata.rpmMetadataToPackageXml(FILELISTS)
 
             val fileName = artifactUri.split("/").last()
             val tempFileName = StringBuilder(fileName.removeSuffix("rpm")).append("xml")
-            val rpmXmlFile = ArtifactFileFactory.build(ByteArrayInputStream(rpmXml.toByteArray()))
+            val rpmXmlFile = ArtifactFileFactory.build(ByteArrayInputStream(rpmXmlMetadataStr.toByteArray()))
             metadata["repeat"] = repeat.name
             val xmlXmlFileNode = xmlIndexNodeCreate(
                 context.userId,
@@ -733,7 +736,7 @@ class RpmLocalRepository(
             deleteIndexXml(context, rpmVersion, repodataPath, PRIMARY)
             deleteIndexXml(context, rpmVersion, repodataPath, OTHERS)
             if (rpmRepoConf.enabledFileLists) {
-                deleteIndexXml(context, rpmVersion, repodataPath, FILELISTS)
+                storeFileListsXml(context, "delete", repodataPath, ArtifactRepeat.DELETE, nodeMetadata.toMutableMap())
             }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactUri, context.userId)
             nodeClient.delete(nodeDeleteRequest)

@@ -59,9 +59,8 @@ object XmlStrUtils {
         calculatePackage: Boolean
     ): File {
         val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
-        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
-        tempFile.insertContent(packageXml)
-        return tempFile.packagesModify(indexType, true, calculatePackage)
+        file.insertContent(packageXml)
+        return file.packagesModify(indexType, true, calculatePackage)
     }
 
     fun insertFileLists(
@@ -70,10 +69,9 @@ object XmlStrUtils {
         inputStream: InputStream,
         calculatePackage: Boolean
     ): File {
-        val fileLists = String(inputStream.use{it.readBytes()})
-        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
-        tempFile.insertContent(fileLists)
-        return tempFile.packagesModify(indexType, true, calculatePackage)
+        val fileLists = String(inputStream.use { it.readBytes() })
+        file.insertContent(fileLists)
+        return file.packagesModify(indexType, true, calculatePackage)
     }
 
     fun updateFileLists(
@@ -93,11 +91,10 @@ object XmlStrUtils {
 
         val prefix = PACKAGE_OTHER_START_MARK
 
-        val packageXml = String(inputStream.use{it.readBytes()})
-        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
-        val xmlIndex = tempFile.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
+        val packageXml = String(inputStream.use { it.readBytes() })
+        val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
 
-        return tempFile.deleteContent(xmlIndex).insertContent(packageXml)
+        return file.deleteContent(xmlIndex).insertContent(packageXml)
     }
 
     /**
@@ -136,10 +133,9 @@ object XmlStrUtils {
         }
 
         val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
-        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
-        val xmlIndex = tempFile.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
+        val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
 
-        return tempFile.deleteContent(xmlIndex).insertContent(packageXml)
+        return file.deleteContent(xmlIndex).insertContent(packageXml)
     }
 
     /**
@@ -178,9 +174,8 @@ object XmlStrUtils {
                 throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
             }
         }
-        val tempFile = FileInputStreamUtils.saveTempXmlFile(indexType, file)
-        val xmlIndex = tempFile.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
-        val resultFile = tempFile.deleteContent(xmlIndex)
+        val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
+        val resultFile = file.deleteContent(xmlIndex)
         return resultFile.packagesModify(indexType, mark = false, calculatePackage = false)
     }
 

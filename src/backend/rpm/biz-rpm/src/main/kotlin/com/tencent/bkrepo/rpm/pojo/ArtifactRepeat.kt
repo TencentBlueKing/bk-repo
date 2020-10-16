@@ -6,5 +6,7 @@ enum class ArtifactRepeat {
     // artifact_uri 相同
     FULLPATH,
     // artifact_uri && sha256 相同
-    FULLPATH_SHA256
+    FULLPATH_SHA256,
+
+    DELETE
 }
