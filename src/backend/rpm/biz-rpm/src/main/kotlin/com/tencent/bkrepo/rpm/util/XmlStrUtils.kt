@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
-import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
 import com.tencent.bkrepo.rpm.exception.RpmIndexTypeResolveException
 import com.tencent.bkrepo.rpm.pojo.RepodataUri
@@ -15,15 +14,16 @@ import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import org.slf4j.LoggerFactory
-import java.io.InputStreamReader
+import org.springframework.util.StopWatch
+import java.io.BufferedOutputStream
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
-import java.io.InputStream
 import java.io.FileOutputStream
-import java.io.RandomAccessFile
-import java.io.BufferedOutputStream
 import java.io.IOException
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.RandomAccessFile
 import java.util.regex.Pattern
 
 object XmlStrUtils {
@@ -60,8 +60,17 @@ object XmlStrUtils {
         calculatePackage: Boolean
     ): File {
         val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
+        val stopWatch = StopWatch()
+        stopWatch.start("insertContent")
         file.insertContent(packageXml)
-        return file.packagesModify(indexType, true, calculatePackage)
+        stopWatch.stop()
+        stopWatch.start("updatePackageCount")
+        val resultFile = file.packagesModify(indexType, true, calculatePackage)
+        stopWatch.stop()
+        if (logger.isDebugEnabled) {
+            logger.debug("insertRpmPackageStat: $stopWatch")
+        }
+        return resultFile
     }
 
     fun insertFileLists(
@@ -71,8 +80,17 @@ object XmlStrUtils {
         calculatePackage: Boolean
     ): File {
         val fileLists = String(inputStream.use { it.readBytes() })
+        val stopWatch = StopWatch()
+        stopWatch.start("insertContent")
         file.insertContent(fileLists)
-        return file.packagesModify(indexType, true, calculatePackage)
+        stopWatch.stop()
+        stopWatch.start("updatePackageCount")
+        val file = file.packagesModify(indexType, true, calculatePackage)
+        stopWatch.stop()
+        if (logger.isDebugEnabled) {
+            logger.debug("insertRpmFileListIndexStat: $stopWatch")
+        }
+        return file
     }
 
     fun updateFileLists(
@@ -82,20 +100,27 @@ object XmlStrUtils {
         inputStream: InputStream,
         metadata: Map<String, String>
     ): File {
-
         val rpmVersion = metadata.toRpmVersion(tempFileFullPath)
-
         val locationStr = with(rpmVersion) {
             "name=\"$name\">\n" +
                 "    <version epoch=\"$epoch\" ver=\"$ver\" rel=\"$rel\"/>"
         }
-
         val prefix = PACKAGE_OTHER_START_MARK
-
         val packageXml = String(inputStream.use { it.readBytes() })
+        val stopWatch = StopWatch()
+        stopWatch.start("findIndex")
         val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
-
-        return file.deleteContent(xmlIndex).insertContent(packageXml)
+        stopWatch.stop()
+        stopWatch.start("deleteContent")
+        val fileAfterDelete = file.deleteContent(xmlIndex)
+        stopWatch.stop()
+        stopWatch.start("insertContent")
+        val fileAfterInsert = fileAfterDelete.insertContent(packageXml)
+        stopWatch.stop()
+        if (logger.isDebugEnabled) {
+            logger.debug("updateRpmFileListIndexStat: $stopWatch")
+        }
+        return fileAfterInsert
     }
 
     /**
@@ -116,7 +141,9 @@ object XmlStrUtils {
                 "name=\"$name\">\n" +
                     "    <version epoch=\"$epoch\" ver=\"$ver\" rel=\"$rel\"/>"
             }
-            "primary" -> { "<location href=\"${(rpmXmlMetadata as RpmMetadata).packages.first().location.href}\"/>" }
+            "primary" -> {
+                "<location href=\"${(rpmXmlMetadata as RpmMetadata).packages.first().location.href}\"/>"
+            }
             else -> {
                 logger.error("$artifactUri 中解析出$indexType 是不受支持的索引类型")
                 throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
@@ -125,8 +152,12 @@ object XmlStrUtils {
 
         // 定位查找点
         val prefix: String = when (indexType) {
-            "others", "filelists" -> { PACKAGE_OTHER_START_MARK }
-            "primary" -> { PACKAGE_START_MARK }
+            "others", "filelists" -> {
+                PACKAGE_OTHER_START_MARK
+            }
+            "primary" -> {
+                PACKAGE_START_MARK
+            }
             else -> {
                 logger.error("$artifactUri 中解析出$indexType 是不受支持的索引类型")
                 throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
@@ -160,7 +191,9 @@ object XmlStrUtils {
                 "name=\"$name\">\n" +
                     "    <version epoch=\"$epoch\" ver=\"$ver\" rel=\"$rel\"/>"
             }
-            "primary" -> { "<location href=\"$location\"/>" }
+            "primary" -> {
+                "<location href=\"$location\"/>"
+            }
             else -> {
                 logger.error("$filename 中解析出$indexType 是不受支持的索引类型")
                 throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
@@ -168,8 +201,12 @@ object XmlStrUtils {
         }
         // 定位查找点
         val prefix: String = when (indexType) {
-            "others", "filelists" -> { PACKAGE_OTHER_START_MARK }
-            "primary" -> { PACKAGE_START_MARK }
+            "others", "filelists" -> {
+                PACKAGE_OTHER_START_MARK
+            }
+            "primary" -> {
+                PACKAGE_START_MARK
+            }
             else -> {
                 logger.error("$filename 中解析出$indexType 是不受支持的索引类型")
                 throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
@@ -190,9 +227,15 @@ object XmlStrUtils {
         val name = this.packages.first().name
         val filename = "$name$DASH$ver$rel"
         val prefix = when (indexType) {
-            "others" -> { OTHERS_METADATA_PREFIX }
-            "primary" -> { PRIMARY_METADATA_PREFIX }
-            "filelists" -> { FILELISTS_METADATA_PREFIX }
+            "others" -> {
+                OTHERS_METADATA_PREFIX
+            }
+            "primary" -> {
+                PRIMARY_METADATA_PREFIX
+            }
+            "filelists" -> {
+                FILELISTS_METADATA_PREFIX
+            }
             else -> {
                 logger.error("$filename 中解析出$indexType 是不受支持的索引类型")
                 throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
@@ -253,10 +296,9 @@ object XmlStrUtils {
 
         var line: String
         var num = 0
-        val bufferReader = BufferedReader(InputStreamReader(FileInputStream(this)))
-        try {
+        BufferedReader(InputStreamReader(FileInputStream(this))).use { bufferReader ->
             if (calculatePackage) {
-                loop@while (bufferReader.readLine().also { line = it } != null) {
+                loop@ while (bufferReader.readLine().also { line = it } != null) {
                     if (line.contains(markStr)) {
                         ++num
                     }
@@ -272,46 +314,43 @@ object XmlStrUtils {
                 }
                 if (mark) ++num else --num
             }
-            val updatedStr = when (indexType) {
-                "primary" ->
-                    "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                        "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
-                        ".edu/metadata/rpm\" packages=\"$num\">\n"
-                "filelists" ->
-                    "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                        "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"$num\">\n"
-                "others" ->
-                    "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                        "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"$num\">\n"
-                else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
-            }
-
-            val index = this.rpmIndex("  <package").takeIf { it >= 0 } ?: updatedStr.length
-
-            val tempFile = File.createTempFile(indexType, "xml")
-            try {
-                BufferedOutputStream(FileOutputStream(tempFile)).use {
-                    it.write(updatedStr.toByteArray())
-                    val buffer = ByteArray(1 * 1024 * 1024)
-                    var markSeek: Int
-                    RandomAccessFile(this, "rw").use { randomAccessFile ->
-                        randomAccessFile.seek(index.toLong())
-                        while (randomAccessFile.read(buffer).also { markSeek = it } > 0) {
-                            it.write(buffer, 0, markSeek)
-                            it.flush()
-                        }
-                    }
-                }
-            } catch (ioe: IOException) {
-                logger.info("tempFile:${this.name} 创建失败！")
-                tempFile.delete()
-                throw ioe
-            } finally {
-                this.delete()
-            }
-            return tempFile
-        } finally {
-            bufferReader.closeQuietly()
         }
+
+        val updatedStr = when (indexType) {
+            "primary" ->
+                "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+                    "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
+                    ".edu/metadata/rpm\" packages=\"$num\">\n"
+            "filelists" ->
+                "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+                    "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"$num\">\n"
+            "others" ->
+                "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+                    "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"$num\">\n"
+            else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
+        }
+        val index = this.rpmIndex("  <package").takeIf { it >= 0 } ?: updatedStr.length
+        val tempFile = File.createTempFile(indexType, "xml")
+        try {
+            BufferedOutputStream(FileOutputStream(tempFile)).use { bos ->
+                bos.write(updatedStr.toByteArray())
+                val buffer = ByteArray(1 * 1024 * 1024)
+                var markSeek: Int
+                RandomAccessFile(this, "rw").use { randomAccessFile ->
+                    randomAccessFile.seek(index.toLong())
+                    while (randomAccessFile.read(buffer).also { markSeek = it } > 0) {
+                        bos.write(buffer, 0, markSeek)
+                    }
+                    bos.flush()
+                }
+            }
+        } catch (ioe: IOException) {
+            logger.info("tempFile:${this.name} 创建失败！")
+            tempFile.delete()
+            throw ioe
+        } finally {
+            this.delete()
+        }
+        return tempFile
     }
 }

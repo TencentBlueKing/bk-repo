@@ -83,6 +83,20 @@ class RpmLocalRepository(
     val surplusNodeCleaner: SurplusNodeCleaner
 ) : LocalRepository() {
 
+    override fun onUploadBefore(context: ArtifactUploadContext) {
+        super.onUploadBefore(context)
+
+        val overwrite = HeaderUtils.getRpmBooleanHeader("X-BKREPO-OVERWRITE")
+        if (!overwrite) {
+            with(context.artifactInfo) {
+                val node = nodeClient.detail(projectId, repoName, artifactUri).data
+                if (node != null) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, artifactUri)
+                }
+            }
+        }
+    }
+
     fun rpmNodeCreateRequest(
         context: ArtifactUploadContext,
         metadata: MutableMap<String, String>?
@@ -680,15 +694,6 @@ class RpmLocalRepository(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
-        val overwrite = HeaderUtils.getRpmBooleanHeader("X-BKREPO-OVERWRITE")
-        if (!overwrite) {
-            with(context.artifactInfo) {
-                val node = nodeClient.detail(projectId, repoName, artifactUri).data
-                if (node != null) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, artifactUri)
-                }
-            }
-        }
         val artifactFormat = getArtifactFormat(context)
         val rpmRepoConf = getRpmRepoConf(context)
         val mark: Boolean = checkRequestUri(context, rpmRepoConf.repodataDepth)
