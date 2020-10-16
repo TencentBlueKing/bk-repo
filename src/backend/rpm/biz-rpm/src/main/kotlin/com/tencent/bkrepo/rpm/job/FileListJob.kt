@@ -54,8 +54,8 @@ class FileListJob {
     @Autowired
     private lateinit var surplusNodeCleaner: SurplusNodeCleaner
 
-    @Scheduled(cron = "0 0/40 * * ?")
-    @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT30M")
+    @Scheduled(cron = "0 0/20 * * * ?")
+    @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT15M")
     fun insertFileList() {
         logger.info("rpmInsertFileList start")
         val startMillis = System.currentTimeMillis()
@@ -115,20 +115,21 @@ class FileListJob {
 
             if (!targetNodelist.isNullOrEmpty()) {
                 val latestNode = targetNodelist[0]
+                // 从临时目录中遍历索引
+                val page = nodeClient.page(
+                        projectId, name, 0, 50,
+                        "$repodataPath/temp/",
+                        includeFolder = false,
+                        includeMetadata = true
+                ).data ?: return
+
                 val oldFileLists = storageService.load(
                     latestNode.sha256!!,
                     Range.full(latestNode.size),
                     null
                 ) ?: return
-                // 从临时目录中遍历索引
-                val page = nodeClient.page(
-                    projectId, name, 0, 50,
-                    "$repodataPath/temp/",
-                    includeFolder = false,
-                    includeMetadata = true
-                ).data ?: return
-
-                var newFileLists: File = oldFileLists.unGzipInputStream()
+                logger.info("加载最新的filelists节点：${latestNode.fullPath}, 压缩后大小：${latestNode.size}")
+                var newFileLists: File = oldFileLists.use{ it.unGzipInputStream()}
                 try {
                     val tempFileListsNode = page.records.sortedBy { it.lastModifiedDate }
                     val calculatedList = mutableListOf<NodeInfo>()
@@ -141,6 +142,7 @@ class FileListJob {
                         ) ?: return
                         try {
                             newFileLists = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
+                                logger.info("action:update ${tempFile.fullPath}, size:${tempFile.size}")
                                 XmlStrUtils.updateFileLists(
                                     "filelists", newFileLists,
                                     tempFile.fullPath,
@@ -148,6 +150,7 @@ class FileListJob {
                                     tempFile.metadata!!
                                 )
                             } else if ((tempFile.metadata?.get("repeat")) == "DELETE") {
+                                logger.info("action:delete ${tempFile.fullPath}, size:${tempFile.size}")
                                 try {
                                     XmlStrUtils.deletePackage(
                                         "filelists",
@@ -160,15 +163,18 @@ class FileListJob {
                                     newFileLists
                                 }
                             } else {
+                                logger.info("action:insert ${tempFile.fullPath}, size:${tempFile.size}")
                                 XmlStrUtils.insertFileLists(
                                     "filelists", newFileLists,
                                     inputStream,
                                     false
                                 )
                             }
+                            logger.info("临时filelists 文件：${newFileLists.absolutePath}，size:${newFileLists.length()}")
                             calculatedList.add(tempFile)
                         } finally {
                             inputStream.closeQuietly()
+                            oldFileLists.closeQuietly()
                         }
                     }
                     storeFileListNode(repo, newFileLists, repodataPath)
@@ -283,6 +289,7 @@ class FileListJob {
             with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
             nodeClient.create(xmlPrimaryNode)
             logger.info("Success to insert $xmlPrimaryNode")
+            xmlGZArtifact.delete()
         } finally {
             xmlGZFile.delete()
             xmlInputStream.closeQuietly()
