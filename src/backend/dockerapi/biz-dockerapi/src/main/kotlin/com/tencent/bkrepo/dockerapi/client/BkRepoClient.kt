@@ -190,15 +190,15 @@ class BkRepoClient(
             data.pageNumber, data.pageSize, data.totalRecords,
             data.records.map {
                 DockerTag(
+                    imageName = it.name,
+                    imagePath = "$projectId/$repoName/$imageRepo",
                     tag = it.name,
-                    repo = imageRepo,
                     image = "${bkRepoProperties.domain}/$projectId/$repoName/$imageRepo:${it.name}",
                     createdBy = it.createdBy,
                     created = ISO_DATE_TIME.format(it.createdDate),
                     size = HumanReadable.size(it.size),
                     modified = ISO_DATE_TIME.format(it.lastModifiedDate),
                     modifiedBy = it.lastModifiedBy
-                    // artifactorys 无
                 )
             }
         )

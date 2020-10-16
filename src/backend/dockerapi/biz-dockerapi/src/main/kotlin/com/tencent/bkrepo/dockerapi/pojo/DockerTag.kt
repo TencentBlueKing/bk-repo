@@ -22,14 +22,14 @@
 package com.tencent.bkrepo.dockerapi.pojo
 
 data class DockerTag(
+    var imageName: String? = null,
+    var imagePath: String? = null,
     var tag: String? = null,
-    var repo: String? = null,
     var image: String? = null,
     var createdBy: String? = null,
     var created: String? = null,
     var modified: String? = null,
     var modifiedBy: String? = null,
     var desc: String? = "",
-    var size: String? = null,
-    var artifactorys: List<String>? = null
+    var size: String? = null
 )

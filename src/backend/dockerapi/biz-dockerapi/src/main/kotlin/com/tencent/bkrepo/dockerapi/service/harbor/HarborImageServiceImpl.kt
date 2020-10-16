@@ -110,14 +110,14 @@ class HarborImageServiceImpl(
             val createdStr = DateTime(it.created).toString("yyyy-MM-dd HH:mm:ss")
             DockerTag(
                 tag = it.name,
-                repo = imageRepo,
+                imageName = imageRepo,
+                imagePath = imageRepo,
                 image = "${harborProperties.imagePrefix}/$imageRepo:${it.name}",
-                // createBy 无
+                createdBy = "system",
                 created = createdStr,
                 size = HumanReadable.size(it.size),
                 modified = createdStr
                 // modifiedBy  无
-                // artifactorys 无
             )
         }
         return Page(request.pageNumber, request.pageSize, tags.size.toLong(), tags)
