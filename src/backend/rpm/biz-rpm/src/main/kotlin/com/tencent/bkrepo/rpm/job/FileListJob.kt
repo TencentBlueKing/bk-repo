@@ -117,10 +117,10 @@ class FileListJob {
                 val latestNode = targetNodelist[0]
                 // 从临时目录中遍历索引
                 val page = nodeClient.page(
-                        projectId, name, 0, 50,
-                        "$repodataPath/temp/",
-                        includeFolder = false,
-                        includeMetadata = true
+                    projectId, name, 0, 50,
+                    "$repodataPath/temp/",
+                    includeFolder = false,
+                    includeMetadata = true
                 ).data ?: return
 
                 val oldFileLists = storageService.load(
@@ -129,7 +129,7 @@ class FileListJob {
                     null
                 ) ?: return
                 logger.info("加载最新的filelists节点：${latestNode.fullPath}, 压缩后大小：${latestNode.size}")
-                var newFileLists: File = oldFileLists.use{ it.unGzipInputStream()}
+                var newFileLists: File = oldFileLists.use { it.unGzipInputStream() }
                 try {
                     val tempFileListsNode = page.records.sortedBy { it.lastModifiedDate }
                     val calculatedList = mutableListOf<NodeInfo>()

@@ -23,6 +23,7 @@ import java.io.InputStream
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.io.BufferedOutputStream
+import java.io.IOException
 import java.util.regex.Pattern
 
 object XmlStrUtils {
@@ -234,7 +235,6 @@ object XmlStrUtils {
      * [mark] true:package加1，false: package减1
      */
     fun File.packagesModify(indexType: String, mark: Boolean, calculatePackage: Boolean): File {
-        val bufferReader = BufferedReader(InputStreamReader(FileInputStream(this)))
         val regex = when (indexType) {
             "primary" ->
                 "^<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
@@ -253,57 +253,65 @@ object XmlStrUtils {
 
         var line: String
         var num = 0
-        if (calculatePackage) {
-            loop@while (bufferReader.readLine().also { line = it } != null) {
-                if (line.contains(markStr)) {
-                    ++num
-                }
-                if (line == "</metadata>") break@loop
-            }
-        } else {
-            loop@ while (bufferReader.readLine().also { line = it } != null) {
-                val matcher = Pattern.compile(regex).matcher(line)
-                if (matcher.find()) {
-                    num = matcher.group(1).toInt()
-                    break@loop
-                }
-            }
-            if (mark) ++num else --num
-        }
-        val updatedStr = when (indexType) {
-            "primary" ->
-                "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                    "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
-                    ".edu/metadata/rpm\" packages=\"$num\">\n"
-            "filelists" ->
-                "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                    "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"$num\">\n"
-            "others" ->
-                "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                    "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"$num\">\n"
-            else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
-        }
-
-        val index = this.rpmIndex("  <package").takeIf { it >= 0 } ?: updatedStr.length
-
-        val tempFile = File.createTempFile(indexType, "xml")
-        val bufferedOutputStream = BufferedOutputStream(FileOutputStream(tempFile))
+        val bufferReader = BufferedReader(InputStreamReader(FileInputStream(this)))
         try {
-            bufferedOutputStream.write(updatedStr.toByteArray())
-
-            val buffer = ByteArray(1 * 1024 * 1024)
-            var markSeek: Int
-            RandomAccessFile(this, "rw").use { randomAccessFile ->
-                randomAccessFile.seek(index.toLong())
-                while (randomAccessFile.read(buffer).also { markSeek = it } > 0) {
-                    bufferedOutputStream.write(buffer, 0, markSeek)
-                    bufferedOutputStream.flush()
+            if (calculatePackage) {
+                loop@while (bufferReader.readLine().also { line = it } != null) {
+                    if (line.contains(markStr)) {
+                        ++num
+                    }
+                    if (line == "</metadata>") break@loop
                 }
+            } else {
+                loop@ while (bufferReader.readLine().also { line = it } != null) {
+                    val matcher = Pattern.compile(regex).matcher(line)
+                    if (matcher.find()) {
+                        num = matcher.group(1).toInt()
+                        break@loop
+                    }
+                }
+                if (mark) ++num else --num
             }
+            val updatedStr = when (indexType) {
+                "primary" ->
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+                        "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
+                        ".edu/metadata/rpm\" packages=\"$num\">\n"
+                "filelists" ->
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+                        "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"$num\">\n"
+                "others" ->
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+                        "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"$num\">\n"
+                else -> throw RpmIndexTypeResolveException("$indexType 是不受支持的索引类型")
+            }
+
+            val index = this.rpmIndex("  <package").takeIf { it >= 0 } ?: updatedStr.length
+
+            val tempFile = File.createTempFile(indexType, "xml")
+            try {
+                BufferedOutputStream(FileOutputStream(tempFile)).use {
+                    it.write(updatedStr.toByteArray())
+                    val buffer = ByteArray(1 * 1024 * 1024)
+                    var markSeek: Int
+                    RandomAccessFile(this, "rw").use { randomAccessFile ->
+                        randomAccessFile.seek(index.toLong())
+                        while (randomAccessFile.read(buffer).also { markSeek = it } > 0) {
+                            it.write(buffer, 0, markSeek)
+                            it.flush()
+                        }
+                    }
+                }
+            } catch (ioe: IOException) {
+                logger.info("tempFile:${this.name} 创建失败！")
+                tempFile.delete()
+                throw ioe
+            } finally {
+                this.delete()
+            }
+            return tempFile
         } finally {
-            bufferedOutputStream.closeQuietly()
-            this.delete()
+            bufferReader.closeQuietly()
         }
-        return tempFile
     }
 }
