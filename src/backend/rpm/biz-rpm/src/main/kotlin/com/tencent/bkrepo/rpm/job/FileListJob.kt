@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import org.springframework.util.StopWatch
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -63,13 +64,17 @@ class FileListJob {
 
         repoList?.let {
             for (repo in repoList) {
+                logger.info("updateRpmFileLists(${repo.projectId}|${repo.name}) start")
                 val rpmConfiguration = repo.configuration as RpmLocalConfiguration
                 val repodataDepth = rpmConfiguration.repodataDepth ?: 0
                 val targetSet = mutableSetOf<String>()
                 findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
                 for (repoDataPath in targetSet) {
+                    logger.info("updateRpmFileLists(${repo.projectId}|${repo.name}|$repoDataPath) start")
                     updateFileListsXml(repo, repoDataPath)
+                    logger.info("updateRpmFileLists(${repo.projectId}|${repo.name}|$repoDataPath) done")
                 }
+                logger.info("updateRpmFileLists(${repo.projectId}|${repo.name}) done")
             }
         }
         logger.info("rpmInsertFileList done, cost time: ${System.currentTimeMillis() - startMillis} ms")
@@ -122,17 +127,19 @@ class FileListJob {
                 ) ?: return
                 // 从临时目录中遍历索引
                 val page = nodeClient.page(
-                    projectId, name, 0, 250,
+                    projectId, name, 0, BATCH_SIZE,
                     "$repodataPath/temp/",
                     includeFolder = false,
                     includeMetadata = true
                 ).data ?: return
-
+                logger.info("${page.records.size} temp file to process")
+                val stopWatch = StopWatch()
                 var newFileLists: File = oldFileLists.unGzipInputStream()
                 try {
                     val tempFileListsNode = page.records.sortedBy { it.lastModifiedDate }
                     val calculatedList = mutableListOf<NodeInfo>()
                     // 循环写入
+                    stopWatch.start("updateFiles")
                     for (tempFile in tempFileListsNode) {
                         val inputStream = storageService.load(
                             tempFile.sha256!!,
@@ -141,6 +148,7 @@ class FileListJob {
                         ) ?: return
                         try {
                             newFileLists = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
+                                logger.debug("update ${tempFile.fullPath}")
                                 XmlStrUtils.updateFileLists(
                                     "filelists", newFileLists,
                                     tempFile.fullPath,
@@ -148,6 +156,7 @@ class FileListJob {
                                     tempFile.metadata!!
                                 )
                             } else if ((tempFile.metadata?.get("repeat")) == "DELETE") {
+                                logger.debug("delete ${tempFile.fullPath}")
                                 try {
                                     XmlStrUtils.deletePackage(
                                         "filelists",
@@ -160,6 +169,7 @@ class FileListJob {
                                     newFileLists
                                 }
                             } else {
+                                logger.debug("insert ${tempFile.fullPath}")
                                 XmlStrUtils.insertFileLists(
                                     "filelists", newFileLists,
                                     inputStream,
@@ -171,8 +181,16 @@ class FileListJob {
                             inputStream.closeQuietly()
                         }
                     }
+                    stopWatch.stop()
+                    stopWatch.start("storeFile")
                     storeFileListNode(repo, newFileLists, repodataPath)
+                    stopWatch.stop()
+                    stopWatch.start("deleteTempXml")
                     surplusNodeCleaner.deleteTempXml(calculatedList)
+                    stopWatch.stop()
+                    if (logger.isDebugEnabled) {
+                        logger.debug("updateFileLists stat: $stopWatch")
+                    }
                 } finally {
                     newFileLists.delete()
                 }
@@ -359,5 +377,6 @@ class FileListJob {
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(FileListJob::class.java)
+        private const val BATCH_SIZE = 250
     }
 }
