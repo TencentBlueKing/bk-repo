@@ -50,6 +50,7 @@ object GZipUtils {
         } finally {
             gZIPInputStream.closeQuietly()
             bufferedOutputStream.closeQuietly()
+            this.closeQuietly()
         }
         return file
     }

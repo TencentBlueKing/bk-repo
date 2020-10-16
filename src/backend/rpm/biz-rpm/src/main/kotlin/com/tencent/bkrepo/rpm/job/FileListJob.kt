@@ -120,11 +120,6 @@ class FileListJob {
 
             if (!targetNodelist.isNullOrEmpty()) {
                 val latestNode = targetNodelist[0]
-                val oldFileLists = storageService.load(
-                    latestNode.sha256!!,
-                    Range.full(latestNode.size),
-                    null
-                ) ?: return
                 // 从临时目录中遍历索引
                 val page = nodeClient.page(
                     projectId, name, 0, BATCH_SIZE,
@@ -132,9 +127,14 @@ class FileListJob {
                     includeFolder = false,
                     includeMetadata = true
                 ).data ?: return
+                val oldFileLists = storageService.load(
+                    latestNode.sha256!!,
+                    Range.full(latestNode.size),
+                    null
+                ) ?: return
                 logger.info("${page.records.size} temp file to process")
                 val stopWatch = StopWatch()
-                var newFileLists: File = oldFileLists.unGzipInputStream()
+                var newFileLists: File = oldFileLists.use { it.unGzipInputStream() }
                 try {
                     val tempFileListsNode = page.records.sortedBy { it.lastModifiedDate }
                     val calculatedList = mutableListOf<NodeInfo>()
@@ -179,6 +179,7 @@ class FileListJob {
                             calculatedList.add(tempFile)
                         } finally {
                             inputStream.closeQuietly()
+                            oldFileLists.closeQuietly()
                         }
                     }
                     stopWatch.stop()
@@ -301,6 +302,7 @@ class FileListJob {
             with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
             nodeClient.create(xmlPrimaryNode)
             logger.info("Success to insert $xmlPrimaryNode")
+            xmlGZArtifact.delete()
         } finally {
             xmlGZFile.delete()
             xmlInputStream.closeQuietly()

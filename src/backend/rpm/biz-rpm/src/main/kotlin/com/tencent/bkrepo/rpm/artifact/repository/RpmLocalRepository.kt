@@ -304,11 +304,13 @@ class RpmLocalRepository(
                     Range.full(latestPrimaryNode.size),
                     context.storageCredentials
                 ) ?: return
-                // 更新primary.xml
-                val xmlFile = if (repeat == NONE) {
-                    XmlStrUtils.insertPackage(indexType, inputStream.unGzipInputStream(), rpmXmlMetadata, calculatePackage)
-                } else {
-                    XmlStrUtils.updatePackage(indexType, inputStream.unGzipInputStream(), rpmXmlMetadata, artifactUri)
+
+                val xmlFile = inputStream.use { if (repeat == NONE) {
+                        XmlStrUtils.insertPackage(indexType, it.unGzipInputStream(), rpmXmlMetadata,
+                                calculatePackage)
+                    } else {
+                        XmlStrUtils.updatePackage(indexType, it.unGzipInputStream(), rpmXmlMetadata, artifactUri)
+                    }
                 }
                 try {
                     storeXmlFileNode(indexType, xmlFile, repodataPath, context, target)
@@ -353,7 +355,7 @@ class RpmLocalRepository(
                     Range.full(latestPrimaryNode.size),
                     context.storageCredentials
                 ) ?: return
-                XmlStrUtils.deletePackage(indexType, inputStream.unGzipInputStream(), rpmVersion, location)
+                inputStream.use { XmlStrUtils.deletePackage(indexType, it.unGzipInputStream(), rpmVersion, location) }
             } else {
                 deleteFailed(context, "未找到$indexType.xml.gz 索引文件")
                 return
@@ -408,6 +410,7 @@ class RpmLocalRepository(
             with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
             nodeClient.create(xmlPrimaryNode)
             logger.info("Success to insert $xmlPrimaryNode")
+            xmlGZArtifact.delete()
         } finally {
             xmlGZFile.delete()
             xmlInputStream.closeQuietly()
@@ -457,6 +460,7 @@ class RpmLocalRepository(
                 with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
                 nodeClient.create(xmlPrimaryNode)
                 logger.info("Success to insert $xmlPrimaryNode")
+                xmlGZArtifact.delete()
             } finally {
                 xmlGZFile.delete()
             }
