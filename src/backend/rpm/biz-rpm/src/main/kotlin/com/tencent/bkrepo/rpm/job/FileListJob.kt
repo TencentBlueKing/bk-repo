@@ -56,7 +56,7 @@ class FileListJob {
     @Autowired
     private lateinit var surplusNodeCleaner: SurplusNodeCleaner
 
-    @Scheduled(cron = "0 0/5 * * * ?")
+    @Scheduled(cron = "0 0/2 * * * ?")
     @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT60M")
     fun insertFileList() {
         logger.info("rpmInsertFileList start")
@@ -128,7 +128,12 @@ class FileListJob {
                     includeFolder = false,
                     includeMetadata = true
                 ).data ?: return
-                val oldFileLists = storageService.load(
+                if(page.records.isEmpty()){
+                    logger.info("no temp file to process")
+                    return
+                }
+                logger.info("${page.records.size} temp file to process")
+                val oldFileListsFile = storageService.load(
                     latestNode.sha256!!,
                     Range.full(latestNode.size),
                     null
@@ -136,7 +141,7 @@ class FileListJob {
                 logger.info("${page.records.size} temp file to process")
                 val stopWatch = StopWatch()
                 stopWatch.start("unzipOriginFileListsFile")
-                var newFileListsFile: File = oldFileLists.use { it.unGzipInputStream() }
+                var newFileListsFile: File = oldFileListsFile.use { it.unGzipInputStream() }
                 stopWatch.stop()
                 logger.info("originFileSize: ${HumanReadable.size(latestNode.size)}|${HumanReadable.size(newFileListsFile.length())}")
                 try {
@@ -183,7 +188,7 @@ class FileListJob {
                             calculatedList.add(tempFile)
                         } finally {
                             inputStream.closeQuietly()
-                            oldFileLists.closeQuietly()
+                            oldFileListsFile.closeQuietly()
                         }
                     }
                     stopWatch.stop()
@@ -383,6 +388,6 @@ class FileListJob {
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(FileListJob::class.java)
-        private const val BATCH_SIZE = 250
+        private const val BATCH_SIZE = 100
     }
 }
