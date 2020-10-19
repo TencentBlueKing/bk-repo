@@ -27,10 +27,10 @@ import com.tencent.bkrepo.auth.constant.AUTH_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.SERVICE_NAME
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.Token
 import com.tencent.bkrepo.auth.pojo.TokenResult
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
-import com.tencent.bkrepo.auth.pojo.UserToken
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -133,7 +133,7 @@ interface ServiceUserResource {
     fun createToken(
         @ApiParam(value = "用户id")
         @PathVariable uid: String
-    ): Response<UserToken?>
+    ): Response<Token?>
 
     @ApiOperation("新加用户token")
     @PostMapping("/token/{uid}/{name}")
@@ -144,7 +144,7 @@ interface ServiceUserResource {
         @PathVariable("name") name: String,
         @ApiParam(value = "expiredAt", required = false)
         @RequestParam expiredAt: String?
-    ): Response<UserToken?>
+    ): Response<Token?>
 
     @ApiOperation("查询用户token列表")
     @GetMapping("/list/token/{uid}")

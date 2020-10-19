@@ -34,5 +34,5 @@ data class Token(
     @ApiModelProperty("创建时间")
     val createdAt: LocalDateTime,
     @ApiModelProperty("过期时间")
-    val expiredAt: LocalDateTime
+    val expiredAt: LocalDateTime?
 )
