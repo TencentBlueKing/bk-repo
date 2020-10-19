@@ -219,7 +219,7 @@ class UserServiceImpl constructor(
             val now = LocalDateTime.now()
             var expiredTime: LocalDateTime? = null
             expiredAt?.let {
-                val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS'Z'")
+                val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
                 expiredTime = LocalDateTime.parse(expiredAt, dateTimeFormatter)
             }
             val userToken = Token(name = name, id = id, createdAt = now, expiredAt = expiredTime)
@@ -234,7 +234,7 @@ class UserServiceImpl constructor(
             }
             return null
         } catch (ignored: DateTimeParseException) {
-            logger.warn("add user token false [$ignored]")
+            logger.error("add user token false [$ignored]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_ERROR)
         }
     }
