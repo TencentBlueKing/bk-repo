@@ -27,10 +27,10 @@ import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
-import com.tencent.bkrepo.auth.pojo.Token
 import com.tencent.bkrepo.auth.pojo.TokenResult
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.pojo.UserToken
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
@@ -195,13 +195,13 @@ class UserServiceImpl constructor(
         return false
     }
 
-    override fun createToken(userId: String): Token? {
+    override fun createToken(userId: String): UserToken? {
         logger.info("create token userId : [$userId]")
         val token = IDUtil.genRandomId()
         return addUserToken(userId, token, null)
     }
 
-    override fun addUserToken(userId: String, name: String, expiredAt: String?): Token? {
+    override fun addUserToken(userId: String, name: String, expiredAt: String?): UserToken? {
         try {
             logger.info("add user token userId : [$userId] ,token : [$name]")
             checkUserExist(userId)
@@ -222,14 +222,14 @@ class UserServiceImpl constructor(
                 val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
                 expiredTime = LocalDateTime.parse(expiredAt, dateTimeFormatter)
             }
-            val userToken = Token(name = name, id = id, createdAt = now, expiredAt = expiredTime)
+            val userToken = UserToken(name = name, id = id, createdAt = now, expiredAt = expiredTime)
             update.addToSet(TUser::tokens.name, userToken)
             mongoTemplate.upsert(query, update, TUser::class.java)
             val userInfo = getUserById(userId)
             val tokens = userInfo!!.tokens
             tokens.forEach {
                 if (it.name == name) {
-                    return it
+                    return UserToken(name = it.name, id = it.id, createdAt = now, expiredAt = it.expiredAt)
                 }
             }
             return null
