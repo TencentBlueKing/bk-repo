@@ -31,8 +31,7 @@ module.exports = {
         sourceType: 'module'
     },
     env: {
-        browser: true,
-        jquery: true
+        browser: true
     },
     extends: [
         'plugin:vue/recommended',

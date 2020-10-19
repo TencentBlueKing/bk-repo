@@ -17,10 +17,13 @@ export default {
             return this.$route.query.package || ''
         },
         packageName () {
-            return this.packageKey.replace(/^.*:\/\/(?:.*:)*([^:]+)$/, '$1')
+            return this.packageKey.replace(/^.*:\/\/(?:.*:)*([^:]+)$/, '$1') || '<PACKAGE_NAME>'
         },
         version () {
-            return this.$route.query.version
+            return this.$route.query.version || '<PACKAGE_VERSION>'
+        },
+        repoUrl () {
+            return `${location.origin}/${this.projectId}/${this.repoName}`
         },
         dockerGuide () {
             return [
@@ -29,7 +32,7 @@ export default {
                     main: [
                         {
                             subTitle: '配置个人凭证',
-                            codeList: [`docker login -u <账号> ${location.origin}`]
+                            codeList: [`docker login -u ${this.userInfo.username} ${location.origin}`]
                         }
                     ]
                 },
@@ -38,11 +41,11 @@ export default {
                     main: [
                         {
                             subTitle: '1、给本地的镜像打标签',
-                            codeList: [`docker tag <LOCAL_IMAGE_TAG> ${location.origin}/${this.projectId}/${this.repoName}/<PACKAGE>`]
+                            codeList: [`docker tag <LOCAL_IMAGE_TAG> ${this.repoUrl}/${this.packageName}`]
                         },
                         {
                             subTitle: '2、推送您的docker 镜像',
-                            codeList: [`docker push ${location.origin}/${this.projectId}/${this.repoName}/<PACKAGE>`]
+                            codeList: [`docker push ${this.repoUrl}/${this.packageName}`]
                         }
                     ]
                 },
@@ -50,7 +53,7 @@ export default {
                     title: '下载',
                     main: [
                         {
-                            codeList: [`docker pull ${location.origin}/${this.projectId}/${this.repoName}/<PACKAGE>`]
+                            codeList: [`docker pull ${this.repoUrl}/${this.packageName}`]
                         }
                     ]
                 }
@@ -78,17 +81,17 @@ export default {
                         {
                             subTitle: '1、在项目根目录下（与package.json同级），添加文件.npmrc，拷贝如下信息',
                             codeList: [
-                                `registry=${location.origin}/${this.projectId}/${this.repoName}/`,
+                                `registry=${this.repoUrl}/`,
                                 `always-auth=true`,
-                                `//${location.origin}/${this.projectId}/${this.repoName}/:username=${this.userInfo.username}`,
-                                `//${location.origin}/${this.projectId}/${this.repoName}/:password=<password>`,
-                                `//${location.origin}/${this.projectId}/${this.repoName}/:email=<email>`
+                                `//${this.repoUrl}/:username=${this.userInfo.username}`,
+                                `//${this.repoUrl}/:password=<PERSONAL_ACCESS_TOKEN>`,
+                                `//${this.repoUrl}/:email=<EMAIL>`
                             ]
                         },
                         {
                             subTitle: '2、设置 npm registry为当前制品库仓库，进入命令行根据用户凭证登录',
                             codeList: [
-                                `npm registry ${location.origin}/${this.projectId}/${this.repoName}/`,
+                                `npm registry ${this.repoUrl}/`,
                                 `npm login`
                             ]
                         }
@@ -107,11 +110,11 @@ export default {
                     main: [
                         {
                             subTitle: '1、在设置仓库地址之后就可以使用如下命令去拉取包',
-                            codeList: [`npm install <PACKAGE_NAME>`]
+                            codeList: [`npm install ${this.packageName}`]
                         },
                         {
                             subTitle: '2、也可以通过指定registry的方式去拉取包，如下命令',
-                            codeList: [`npm install <PACKAGE_NAME> --registry ${location.origin}/${this.projectId}/${this.repoName}/`]
+                            codeList: [`npm install ${this.packageName} --registry ${this.repoUrl}/`]
                         }
                     ]
                 }
@@ -130,7 +133,7 @@ export default {
                         {
                             subTitle: '2、也可以通过指定registry的方式去拉取包，如下命令',
                             codeList: [
-                                `npm install ${this.packageName}@${this.version} --registry ${location.origin}/${this.projectId}/${this.repoName}/`
+                                `npm install ${this.packageName}@${this.version} --registry ${this.repoUrl}/`
                             ]
                         }
                     ]
@@ -148,7 +151,7 @@ export default {
                                 `<mirror>`,
                                 `   <id>${this.projectId}-${this.repoName}</id>`,
                                 `   <name>${this.repoName}</name>`,
-                                `   <url>${location.origin}/${this.projectId}/${this.repoName}/</url>`,
+                                `   <url>${this.repoUrl}/</url>`,
                                 `   <mirrorOf>central</mirrorOf>`,
                                 `</mirror>`
                             ]
@@ -158,7 +161,7 @@ export default {
                             codeList: [
                                 `<repository>`,
                                 `   <id>${this.projectId}-${this.repoName}</id>`,
-                                `   <url>${location.origin}/${this.projectId}/${this.repoName}/</url>`,
+                                `   <url>${this.repoUrl}/</url>`,
                                 `</repository>`
                             ]
                         }
@@ -174,7 +177,7 @@ export default {
                                 `   <server>`,
                                 `       <id>${this.projectId}-${this.repoName}</id>`,
                                 `       <username>${this.userInfo.username}</username>`,
-                                `       <password>{password}</password>`,
+                                `       <password><PERSONAL_ACCESS_TOKEN></password>`,
                                 `   </server>`,
                                 `</servers>`
                             ]
@@ -192,7 +195,7 @@ export default {
                                 `       <!--id值与配置的server id 一致-->`,
                                 `       <id>${this.projectId}-${this.repoName}</id>`,
                                 `       <name>${this.repoName}</name>`,
-                                `       <url>${location.origin}/${this.projectId}/${this.repoName}/</url>`,
+                                `       <url>${this.repoUrl}/</url>`,
                                 `   </repository>`,
                                 `</distributionManagement>`
                             ]
@@ -221,7 +224,7 @@ export default {
                                 `           <repository>`,
                                 `               <id>${this.projectId}-${this.repoName}</id>`,
                                 `               <name>${this.repoName}</name>`,
-                                `               <url>${location.origin}/${this.projectId}/${this.repoName}/</url>`,
+                                `               <url>${this.repoUrl}/</url>`,
                                 `               <releases>`,
                                 `                   <enabled>true</enabled>`,
                                 `               </releases>`,
@@ -268,6 +271,280 @@ export default {
                             subTitle: 'Gradle Kotlin DSL',
                             codeList: [
                                 `implementation("${this.detail.basic.groupId}:${this.detail.basic.artifactId}:${this.version}")`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        helmGuide () {
+            return [
+                {
+                    title: '推送',
+                    main: [
+                        {
+                            subTitle: '推送打包后的Chart',
+                            codeList: [
+                                `curl -X POST -T <mychart.tgz> -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> "${this.repoUrl}"`
+                            ]
+                        },
+                        {
+                            subTitle: '推送Chart Provenance',
+                            codeList: [
+                                `curl -X POST -T <mychart.tgz.prov> -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> "${this.repoUrl}?prov=1"`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: '下载',
+                    main: [
+                        {
+                            subTitle: '1、配置',
+                            codeList: [
+                                `helm repo add --username ${this.userInfo.username} ${this.repoName} "${this.repoUrl}"`
+                            ]
+                        },
+                        {
+                            subTitle: '2、更新本地repo信息',
+                            codeList: [
+                                `helm repo update`
+                            ]
+                        },
+                        {
+                            subTitle: '3、拉取',
+                            codeList: [
+                                `helm fetch ${this.repoName}/${this.packageName}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        helmInstall () {
+            return [
+                {
+                    main: [
+                        {
+                            subTitle: '1、手动配置',
+                            codeList: [
+                                `helm repo add --username ${this.userInfo.username} ${this.repoName} "${this.repoUrl}"`
+                            ]
+                        },
+                        {
+                            subTitle: '2、更新本地的repo信息',
+                            codeList: [
+                                `helm repo update`
+                            ]
+                        },
+                        {
+                            subTitle: '3、拉取',
+                            codeList: [
+                                `helm fetch ${this.repoName}/${this.packageName}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        rpmGuide () {
+            return [
+                {
+                    title: '设置凭证',
+                    main: [
+                        {
+                            subTitle: '配置文件目录：/etc/yum.repos.d/'
+                        },
+                        {
+                            subTitle: '全局默认配置文件：CentOS-Base.repo'
+                        },
+                        {
+                            subTitle: '或者自定义：{name}.repo',
+                            codeList: [
+                                `[bkrepo]`,
+                                `name=bkrepo //仓库名`,
+                                `baseurl=http://admin:password@${this.repoUrl}/$releasever/os/$basearch //仓库地址，如果有开启认证，需要在请求前添加 用户名：密码`,
+                                `keepcache=0 //是否开启缓存，测试阶段推荐开启，否则上传后，yum install 时会优先去本地缓存找`,
+                                `enabled=1 //地址授信，如果非 https 环境必须设为1`,
+                                `gpgcheck=0 //设为0，目前还不支持gpg签名`,
+                                `metadata_expire=1m //本地元数据过期时间 ，测试阶段数据量不大的话，时间越短测试越方便`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: '推送',
+                    main: [
+                        {
+                            codeList: [
+                                `curl -u admin:password -XPUT ${this.repoUrl} -T {文件路径}`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: '下载',
+                    main: [
+                        {
+                            codeList: [
+                                `yum install -y ${this.packageName}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        rpmInstall () {
+            return [
+                {
+                    main: [
+                        {
+                            subTitle: '使用如下命令去拉取包',
+                            codeList: [
+                                `yum install -y ${this.packageName}:${this.version}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        pypiGuide () {
+            return [
+                {
+                    title: '设置凭证',
+                    main: [
+                        {
+                            subTitle: '在您的 $HOME/.pip/pip.conf 文件添加以下配置',
+                            codeList: [
+                                `[global]`,
+                                `index-url = ${this.repoUrl}`,
+                                `username = ${this.userInfo.username}`,
+                                `password = <PERSONAL_ACCESS_TOKEN>`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: '上传',
+                    main: [
+                        {
+                            subTitle: '使用twine作为上传工具',
+                            codeList: [
+                                `python3 -m twine upload --repository-url ${this.repoUrl} [-u user] [-p password] dist/`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: '下载',
+                    main: [
+                        {
+                            codeList: [
+                                `pip3 install -i ${this.repoUrl} ${this.packageName}==${this.version}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        pypiInstall () {
+            return [
+                {
+                    main: [
+                        {
+                            subTitle: '1、在设置仓库地址之后就可以使用如下命令去拉取包',
+                            codeList: [
+                                `pypi install ${this.packageName}@${this.version}`
+                            ]
+                        },
+                        {
+                            subTitle: '2、也可以通过指定registry的方式去拉取包，如下命令',
+                            codeList: [
+                                `pypi install ${this.packageName}@${this.version} --registry ${this.repoUrl}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        composerGuide () {
+            return [
+                {
+                    title: '配置仓库地址',
+                    main: [
+                        {
+                            subTitle: '1、全局配置'
+                        },
+                        {
+                            subTitle: '首先把默认的源给禁用掉',
+                            codeList: [
+                                `composer config -g secure-http false`
+                            ]
+                        },
+                        {
+                            subTitle: '再修改镜像源',
+                            codeList: [
+                                `composer config -g repo.packagist composer ${this.repoUrl}`
+                            ]
+                        },
+                        {
+                            subTitle: '修改成功后可以先查看一下配置',
+                            codeList: [
+                                `composer config -g -l`
+                            ]
+                        },
+                        {
+                            subTitle: '2、局部换源（仅对当前项目有效）'
+                        },
+                        {
+                            subTitle: '在当前项目下的composer.json中添加',
+                            codeList: [
+                                `{`,
+                                `   "repositories": [`,
+                                `        {`,
+                                `           "type": "composer",`,
+                                `           "url": "${this.repoUrl}" //第一个源`,
+                                `        },`,
+                                `        {`,
+                                `           "type": "composer",`,
+                                `           "url": "${this.repoUrl}" //第二个源`,
+                                `        },`,
+                                `   ]`,
+                                `}`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: '推送',
+                    main: [
+                        {
+                            codeList: [
+                                `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> "${this.repoUrl}" -T filePath`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: '下载',
+                    main: [
+                        {
+                            codeList: [
+                                `composer require ${this.packageName}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        composerInstall () {
+            return [
+                {
+                    main: [
+                        {
+                            subTitle: '使用如下命令去拉取包',
+                            codeList: [
+                                `composer require ${this.packageName}@${this.version}`
                             ]
                         }
                     ]
