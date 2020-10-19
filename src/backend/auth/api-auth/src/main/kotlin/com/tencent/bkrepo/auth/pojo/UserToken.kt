@@ -26,7 +26,7 @@ import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
 
 @ApiModel("token信息")
-data class Token(
+data class UserToken(
     @ApiModelProperty("tokenName")
     val name: String?,
     @ApiModelProperty("tokenID")
@@ -34,5 +34,5 @@ data class Token(
     @ApiModelProperty("创建时间")
     val createdAt: LocalDateTime,
     @ApiModelProperty("过期时间")
-    val expiredAt: LocalDateTime
+    val expiredAt: LocalDateTime?
 )
