@@ -5,7 +5,12 @@
                 <div class="base-info-left">
                     <div class="base-info-guide">
                         <header class="base-info-header">{{ $t('useTips') }}</header>
-                        <repo-guide class="pt20" :article="articleInstall"></repo-guide>
+                        <div class="section-main">
+                            <div class="sub-section flex-column" v-for="block in articleInstall[0].main" :key="block.subTitle">
+                                <span class="mb10">{{ block.subTitle }}</span>
+                                <code-area v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
+                            </div>
+                        </div>
                     </div>
                     <div class="base-info-checksums">
                         <header class="base-info-header">Checksums</header>
@@ -136,12 +141,11 @@
     import CodeArea from '@/components/CodeArea'
     import { mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@/utils'
-    import repoGuide from './repoGuide'
     import repoGuideMixin from '../repoGuideMixin'
     import commonMixin from './commonMixin'
     export default {
         name: 'commonVersionDetail',
-        components: { CodeArea, repoGuide },
+        components: { CodeArea },
         mixins: [repoGuideMixin, commonMixin],
         data () {
             return {
@@ -271,6 +275,17 @@
             border-right: 1px solid $borderWeightColor;
             .base-info-guide {
                 border-top: 1px solid $borderWeightColor;
+                .section-main {
+                    margin-top: 20px;
+                    padding: 20px;
+                    border: 2px dashed $borderWeightColor;
+                    border-radius: 5px;
+                    .sub-section {
+                        & + .sub-section {
+                            margin-top: 20px;
+                        }
+                    }
+                }
             }
             .base-info-checksums {
                 margin-top: 20px;

@@ -65,8 +65,8 @@
                 <bk-table-column :label="$t('createdBy')" prop="createdBy"></bk-table-column>
                 <bk-table-column :label="$t('operation')" width="100">
                     <template slot-scope="props">
-                        <i class="devops-icon icon-cog mr20" @click="showRepoConfig(props.row)"></i>
-                        <i v-if="props.row.type !== 'generic'" class="devops-icon icon-delete" @click="deleteRepo(props.row)"></i>
+                        <i class="hover-btn devops-icon icon-cog mr10" @click="showRepoConfig(props.row)"></i>
+                        <i v-if="props.row.type !== 'generic'" class="hover-btn devops-icon icon-delete" @click="deleteRepo(props.row)"></i>
                     </template>
                 </bk-table-column>
             </bk-table>
@@ -259,11 +259,7 @@
     }
 }
 .devops-icon {
-    font-size: 14px;
-    cursor: pointer;
-    &:hover {
-        color: $primaryColor;
-    }
+    font-size: 16px;
 }
 .repo-name {
     height: 44px;
