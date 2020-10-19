@@ -190,7 +190,7 @@ class BkRepoClient(
             data.pageNumber, data.pageSize, data.totalRecords,
             data.records.map {
                 DockerTag(
-                    imageName = it.name,
+                    imageName = imageRepo,
                     imagePath = "$projectId/$repoName/$imageRepo",
                     tag = it.name,
                     image = "${bkRepoProperties.domain}/$projectId/$repoName/$imageRepo:${it.name}",
