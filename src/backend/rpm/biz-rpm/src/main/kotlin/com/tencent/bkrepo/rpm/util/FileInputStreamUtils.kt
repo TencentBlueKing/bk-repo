@@ -1,16 +1,16 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
-import com.tencent.bkrepo.rpm.exception.RpmVersionNotFoundException
 import com.tencent.bkrepo.rpm.pojo.Index
 import com.tencent.bkrepo.rpm.pojo.XmlIndex
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import java.io.RandomAccessFile
 
 object FileInputStreamUtils {
-
+    private val logger = LoggerFactory.getLogger(FileInputStreamUtils::class.java)
     private const val bufferSize: Long = 5 * 1024 * 1024L
 
     @Throws(IOException::class)
@@ -90,11 +90,11 @@ object FileInputStreamUtils {
     /**
      * xml
      */
-    fun File.indexPackage(
+    fun File.findPackageIndex(
         prefixStr: String,
         locationStr: String,
         suffixStr: String
-    ): XmlIndex {
+    ): XmlIndex? {
         var prefixIndex: Long = -1L
         var locationIndex: Long = -1L
         var suffixIndex: Long = -1L
@@ -136,14 +136,12 @@ object FileInputStreamUtils {
             }
         }
 
-        if (prefixIndex <= 0L || locationIndex <= 0L || suffixIndex <= 0L) {
-            throw RpmVersionNotFoundException("prefixIndex: $prefixIndex; locationIndex: $locationIndex;suffixIndex: $suffixIndex")
+        return if (prefixIndex <= 0L || locationIndex <= 0L || suffixIndex <= 0L) {
+            logger.warn("findPackageIndex failed, locationStr: $locationStr, prefixIndex: $prefixIndex; locationIndex: $locationIndex;suffixIndex: $suffixIndex")
+            null
+        } else {
+            XmlIndex(prefixIndex, locationIndex, suffixIndex)
         }
-        return XmlIndex(
-            prefixIndex,
-            locationIndex,
-            suffixIndex
-        )
     }
 
     private fun String.searchContent(

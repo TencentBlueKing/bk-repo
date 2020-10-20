@@ -6,7 +6,7 @@ import com.tencent.bkrepo.rpm.exception.RpmIndexTypeResolveException
 import com.tencent.bkrepo.rpm.pojo.RepodataUri
 import com.tencent.bkrepo.rpm.pojo.RpmVersion
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.deleteContent
-import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.indexPackage
+import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.findPackageIndex
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.insertContent
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.rpmIndex
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
@@ -106,15 +106,18 @@ object XmlStrUtils {
         val prefix = PACKAGE_OTHER_START_MARK
         val packageXml = String(inputStream.use { it.readBytes() })
         val stopWatch = StopWatch()
-        stopWatch.start("findIndex")
-        val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
+        stopWatch.start("findPackageIndex")
+        val xmlIndex = file.findPackageIndex(prefix, locationStr, PACKAGE_END_MARK)
         stopWatch.stop()
-        stopWatch.start("deleteContent")
-        val fileAfterDelete = file.deleteContent(xmlIndex)
-        stopWatch.stop()
-        stopWatch.start("insertContent")
-        val resultFile = fileAfterDelete.insertContent(packageXml)
-        stopWatch.stop()
+        var resultFile = file
+        if (xmlIndex != null) {
+            stopWatch.start("deleteContent")
+            val fileAfterDelete = file.deleteContent(xmlIndex)
+            stopWatch.stop()
+            stopWatch.start("insertContent")
+            resultFile = fileAfterDelete.insertContent(packageXml)
+            stopWatch.stop()
+        }
         if (logger.isDebugEnabled) {
             logger.debug("updateRpmFileListIndexStat: $stopWatch")
         }
@@ -163,15 +166,18 @@ object XmlStrUtils {
         }
         val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
         val stopWatch = StopWatch()
-        stopWatch.start("findIndex")
-        val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
+        stopWatch.start("findPackageIndex")
+        val xmlIndex = file.findPackageIndex(prefix, locationStr, PACKAGE_END_MARK)
         stopWatch.stop()
-        stopWatch.start("deleteContent")
-        val fileAfterDelete = file.deleteContent(xmlIndex)
-        stopWatch.stop()
-        stopWatch.start("insertContent")
-        val resultFile = fileAfterDelete.insertContent(packageXml)
-        stopWatch.stop()
+        var resultFile = file
+        if (xmlIndex != null) {
+            stopWatch.start("deleteContent")
+            val fileAfterDelete = file.deleteContent(xmlIndex)
+            stopWatch.stop()
+            stopWatch.start("insertContent")
+            resultFile = fileAfterDelete.insertContent(packageXml)
+            stopWatch.stop()
+        }
         if (logger.isDebugEnabled) {
             logger.debug("updateRpmFileListIndexStat: $stopWatch")
         }
@@ -222,14 +228,17 @@ object XmlStrUtils {
         }
         val stopWatch = StopWatch()
         stopWatch.start("findIndex")
-        val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
+        val xmlIndex = file.findPackageIndex(prefix, locationStr, PACKAGE_END_MARK)
         stopWatch.stop()
-        stopWatch.start("deleteContent")
-        val fileAfterDelete = file.deleteContent(xmlIndex)
-        stopWatch.stop()
-        stopWatch.start("updatePackageCount")
-        val resultFile = fileAfterDelete.packagesModify(indexType, mark = false, calculatePackage = false)
-        stopWatch.stop()
+        var resultFile = file
+        if (xmlIndex != null) {
+            stopWatch.start("deleteContent")
+            val fileAfterDelete = file.deleteContent(xmlIndex)
+            stopWatch.stop()
+            stopWatch.start("updatePackageCount")
+            resultFile = fileAfterDelete.packagesModify(indexType, mark = false, calculatePackage = false)
+            stopWatch.stop()
+        }
         if (logger.isDebugEnabled) {
             logger.debug("updateRpmFileListIndexStat: $stopWatch")
         }
