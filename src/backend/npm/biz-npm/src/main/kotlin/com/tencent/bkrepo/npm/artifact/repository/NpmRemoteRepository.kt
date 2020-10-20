@@ -35,11 +35,11 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.REPO_TYPE
+import com.tencent.bkrepo.npm.exception.NpmBadRequestException
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import io.undertow.util.BadRequestException
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.Logger
@@ -91,7 +91,7 @@ class NpmRemoteRepository(
         with(context) {
             val message = "Unable to upload npm package into a remote repository [$projectId/$repoName]"
             logger.warn(message)
-            throw BadRequestException(message)
+            throw NpmBadRequestException(message)
         }
     }
 
@@ -159,7 +159,7 @@ class NpmRemoteRepository(
         with(context) {
             val message = "Unable to migrate npm package info a remote repository [$projectId/$repoName]"
             logger.warn(message)
-            throw BadRequestException(message)
+            throw NpmBadRequestException(message)
         }
     }
 

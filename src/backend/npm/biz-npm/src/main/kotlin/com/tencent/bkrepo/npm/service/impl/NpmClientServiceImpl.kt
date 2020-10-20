@@ -46,6 +46,7 @@ import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.exception.NpmArtifactExistException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
+import com.tencent.bkrepo.npm.exception.NpmBadRequestException
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
@@ -63,7 +64,6 @@ import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import io.undertow.util.BadRequestException
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
@@ -108,12 +108,12 @@ class NpmClientServiceImpl(
                         objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(npmPackageMetaData)
                     )
                     // 异常声明为npm模块的异常
-                    throw BadRequestException(message)
+                    throw NpmBadRequestException(message)
                 }
             }
         } catch (exception: IOException) {
             logger.error("Exception while reading package metadata: ${exception.message}")
-            throw BadRequestException(exception)
+            throw exception
         }
     }
 
@@ -281,7 +281,7 @@ class NpmClientServiceImpl(
         } catch (exception: IOException) {
             val message = "Unable to get npm metadata for package $name and version latest"
             logger.error(message)
-            throw BadRequestException(message)
+            throw NpmBadRequestException(message)
         }
     }
 
@@ -303,7 +303,7 @@ class NpmClientServiceImpl(
         } catch (exception: IOException) {
             val message = "Unable to get npm metadata for package $name and version $version"
             logger.error(message)
-            throw BadRequestException(message)
+            throw NpmBadRequestException(message)
         }
     }
 
@@ -316,7 +316,7 @@ class NpmClientServiceImpl(
         attachments ?: run {
             val message = "Missing attachments with tarball data, aborting upload for '${npmPackageMetaData.name}'"
             logger.warn(message)
-            throw BadRequestException(message)
+            throw NpmBadRequestException(message)
         }
         try {
             val size = attachments.getMap().values.iterator().next().length!!.toLong()
