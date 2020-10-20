@@ -24,7 +24,7 @@
         </template>
         <template v-else>
             <bk-form :label-width="100" :model="tokenFormData" :rules="rules" ref="tokenForm">
-                <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
+                <bk-form-item :label="$t('name')" :required="true" property="name">
                     <bk-input v-model="tokenFormData.name"></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('expiress')" property="expiredAt">
@@ -74,13 +74,15 @@
             async confirm () {
                 await this.$refs.tokenForm.validate()
                 this.loading = true
-                const { id } = await this.addToken({
+                this.addToken({
                     username: this.$userInfo.username,
                     name: this.tokenFormData.name,
                     expiredAt: this.tokenFormData.expiredAt instanceof Date ? this.tokenFormData.expiredAt.toISOString() : ''
+                }).then(({ id }) => {
+                    this.token = id
+                }).finally(() => {
+                    this.loading = false
                 })
-                this.loading = false
-                this.token = id
             },
             cancel () {
                 this.show = false

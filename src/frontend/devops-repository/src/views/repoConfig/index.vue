@@ -85,7 +85,7 @@
                 type="unborder-card">
                 <bk-tab-panel v-if="editProxyData.type === 'add'" name="publicProxy" :label="$t('publicProxy')">
                     <bk-form ref="publicProxy" :label-width="100" :model="editProxyData" :rules="rules">
-                        <bk-form-item :label="$t('name')" :required="true" property="channelId" error-display-type="normal">
+                        <bk-form-item :label="$t('name')" :required="true" property="channelId">
                             <bk-select v-model="editProxyData.channelId">
                                 <bk-option
                                     v-for="option in publicProxy"
@@ -102,19 +102,19 @@
                 </bk-tab-panel>
                 <bk-tab-panel name="privateProxy" :label="$t('privateProxy')">
                     <bk-form ref="privateProxy" :label-width="100" :model="editProxyData" :rules="rules">
-                        <bk-form-item :label="$t('privateProxy') + $t('name')" :required="true" property="name" error-display-type="normal">
+                        <bk-form-item :label="$t('privateProxy') + $t('name')" :required="true" property="name">
                             <bk-input v-model="editProxyData.name"></bk-input>
                         </bk-form-item>
-                        <bk-form-item :label="$t('privateProxy') + $t('address')" :required="true" property="url" error-display-type="normal">
+                        <bk-form-item :label="$t('privateProxy') + $t('address')" :required="true" property="url">
                             <bk-input v-model="editProxyData.url"></bk-input>
                         </bk-form-item>
                         <bk-form-item :label="$t('ticket')" property="ticket">
                             <bk-checkbox v-model="editProxyData.ticket"></bk-checkbox>
                         </bk-form-item>
-                        <bk-form-item v-if="editProxyData.ticket" :label="$t('account')" :required="true" property="username" error-display-type="normal">
+                        <bk-form-item v-if="editProxyData.ticket" :label="$t('account')" :required="true" property="username">
                             <bk-input v-model="editProxyData.username"></bk-input>
                         </bk-form-item>
-                        <bk-form-item v-if="editProxyData.ticket" :label="$t('password')" :required="true" property="password" error-display-type="normal">
+                        <bk-form-item v-if="editProxyData.ticket" :label="$t('password')" :required="true" property="password">
                             <bk-input v-model="editProxyData.password"></bk-input>
                         </bk-form-item>
                         <!-- <bk-form-item>

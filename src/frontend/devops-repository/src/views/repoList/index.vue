@@ -83,52 +83,7 @@
             return {
                 repoEnum: ['generic', ...repoEnum],
                 isLoading: false,
-                repoList: [
-                    {
-                        name: 'custom',
-                        type: 'generic',
-                        category: 'LOCAL',
-                        public: false,
-                        description: '',
-                        createdBy: 'system',
-                        createdDate: '2020-03-16T12:13:03.371',
-                        lastModifiedBy: 'system',
-                        lastModifiedDate: '2020-03-16T12:13:03.371'
-                    },
-                    {
-                        name: 'pipeline',
-                        type: 'generic',
-                        category: 'LOCAL',
-                        public: false,
-                        description: '',
-                        createdBy: 'system',
-                        createdDate: '2020-03-16T12:13:03.371',
-                        lastModifiedBy: 'system',
-                        lastModifiedDate: '2020-03-16T12:13:03.371'
-                    },
-                    {
-                        name: 'report',
-                        type: 'generic',
-                        category: 'LOCAL',
-                        public: false,
-                        description: '',
-                        createdBy: 'system',
-                        createdDate: '2020-03-16T12:13:03.371',
-                        lastModifiedBy: 'system',
-                        lastModifiedDate: '2020-03-16T12:13:03.371'
-                    },
-                    {
-                        name: 'docker',
-                        type: 'docker',
-                        category: 'COMPOSITE',
-                        public: false,
-                        description: '',
-                        createdBy: 'system',
-                        createdDate: '2020-03-16T12:13:03.371',
-                        lastModifiedBy: 'system',
-                        lastModifiedDate: '2020-03-16T12:13:03.371'
-                    }
-                ],
+                repoList: [],
                 query: {
                     name: '',
                     type: ''
