@@ -1,0 +1,136 @@
+# consul
+consul:
+  global:
+    name: consul
+    domain: bkrepo
+    datacenter: dc
+  server:
+    replicas: 1
+    bootstrapExpect: 1
+    storage: 10Gi
+    storageClass: pv-consul
+  client:
+    enabled: false
+  meshGateway:
+    enabled: false
+
+# ingress-nginx
+ingress-nginx:
+  controller:
+    image:
+      #      repository: xbazhen/ingress-nginx-controller
+      #      tag: v0.34.1
+      #      digest: sha256:80359bdf124d49264fabf136d2aecadac729b54f16618162194356d3c78ce2fe
+      pullPolicy: IfNotPresent
+    hostNetwork: true
+    hostPort:
+      enabled: true
+    kind: DaemonSet
+    nodeSelector: {
+      isIngress: "true"
+    }
+    service:
+      type: NodePort
+      nodePorts:
+        http: 32081
+        https: 32444
+    admissionWebhooks:
+      enabled: false
+
+# common
+volume:
+  nfs:
+    enabled: true
+    path: /data/nfs/
+    server: 10.0.1.3
+  hostPath:
+    path: /data/local/
+  storage: 10Gi
+
+image:
+  hub: docker.io
+  tag: 0.0.1
+  pullPolicy: IfNotPresent
+
+# bkrepo
+bkrepo:
+  replicaCount: 1
+  init:
+    mongodb: false
+    consul: true
+
+env:
+  # JVM
+  BK_REPO_JVM_XMS: 768m
+  BK_REPO_JVM_XMX: 768m
+  # env
+  BK_REPO_ENV: dev
+  # gateway
+  BK_HTTP_SCHEMA: http
+  BK_REPO_FQDN: bkrepo.bk.tencent.com
+  BK_REPO_HOST: bkrepo.bk.tencent.com
+  BK_REPO_HTTP_PORT: 80
+  BK_REPO_HTTPS_PORT: 443
+  BK_REPO_AUTHORIZATION: "Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="
+  BK_REPO_APIGW_URL:
+  BK_REPO_APP_CODE:
+  BK_REPO_APP_TOKEN:
+  BK_REPO_HOME: /data/bkrepo
+  BK_REPO_LOGS_DIR: /data/logs
+  BK_CI_FQDN:
+  BK_REPO_PAAS_FQDN:
+  BK_REPO_PAAS_LOGIN_URL:
+  # ITLOGIN 配置
+  BK_REPO_GATEWAY_CORS_ALLOW_LIST:
+  BK_REPO_GATEWAY_ITLOGIN_HOST: it.login.com
+  BK_REPO_GATEWAY_ITLOGIN_IP: 127.0.0.1
+  BK_REPO_GATEWAY_ITLOGIN_PORT: 80
+  BK_CI_GATEWAY_DNS_ADDR: 127.0.0.1:8600
+  # consul 相关配置
+  BK_REPO_CONSUL_DNS_PORT: 8600
+  BK_REPO_CONSUL_DOMAIN: bkrepo
+  BK_REPO_CONSUL_PORT: 8500
+  BK_REPO_CONSUL_TAG: bkce
+  BK_REPO_CONSUL_SERVER: consul-server
+  # application
+  BK_REPO_FILE_PATH: /data/storage
+  BK_REPO_LOG_PATH: /data/logs
+  BK_REPO_MONGODB_ADDR: 127.0.0.1:27017
+  BK_REPO_MONGODB_DB_NAME: bkrepo
+  BK_REPO_MONGODB_USER: root
+  BK_REPO_MONGODB_PASSWORD:
+  # auth
+  BK_REPO_AUTH_PORT: 25902
+  BK_REPO_AUTH_REALM: bkiam
+  BK_IAM_PRIVATE_URL: http://iam.service.consul:8080
+  BK_PAAS_PRIVATE_URL: http://paas.service.consul
+  BK_REPO_IAM_CALLBACK_USER:
+  BK_REPO_IAM_ENV: prod
+  BK_REPO_IAM_HOST: iam.service.consul
+  BK_REPO_IAM_HTTP_PORT: 80
+  BK_REPO_IAM_IP0: iam.service.consul
+  BK_REPO_IAM_TOKEN_URL: /bkiam/api/v1/auth/access-tokens
+  # docker
+  BK_REPO_DOCKER_PORT: 25802
+  BK_REPO_DOCKER_ADDR:
+  BK_REPO_DOCKER_FQDN: docker.bkrepo.com
+  BK_REPO_DOCKER_HOST: bkrepo-docker.service.consul
+  BK_REPO_DOCKER_HTTP_PORT: 80
+  BK_REPO_DOCKER_HTTPS_PORT: 443
+  BK_REPO_DOCKER_CERT_KEY:
+  BK_REPO_DOCKER_CERT_PEM:
+  # docker adapter
+  BK_REPO_URL: http://bkrepo.kb.tencent.com
+  BK_SSM_PRIVATE_URL: http://ssm.service.consul
+  BK_REPO_HARBOR_URL:
+  BK_REPO_HARBOR_USERNAME:
+  BK_REPO_HARBOR_PASSWORD:
+  BK_REPO_HARBOR_IMAGE_PREFIX:
+  # repository
+  BK_REPO_REPOSITORY_PORT: 25901
+  # generic
+  BK_REPO_GENERIC_PORT: 25801
+  # helm
+  BK_REPO_HELM_PORT: 25806
+  # npm
+  BK_REPO_NPM_PORT: 25804

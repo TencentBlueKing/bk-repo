@@ -1,0 +1,9 @@
+dependencies:
+- name: consul
+  repository: https://helm.releases.hashicorp.com
+  version: 0.20.1
+- name: ingress-nginx
+  repository: https://kubernetes.github.io/ingress-nginx/
+  version: 3.7.1
+digest: sha256:d035cda8489c66e47d32d5e80d0bf6fae6cb1c96709e245ce35c7f0f563ddd83
+generated: "2020-10-16T10:45:31.663404+08:00"

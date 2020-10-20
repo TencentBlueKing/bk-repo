@@ -1,0 +1,11 @@
+dependencies:
+  - name: consul
+    version: 0.20.1
+    repository: https://helm.releases.hashicorp.com
+    tags:
+      - bkrepo-consul
+  - name: ingress-nginx
+    version: 3.7.1
+    repository: https://kubernetes.github.io/ingress-nginx/
+    tags:
+      - bkrepo-ingress

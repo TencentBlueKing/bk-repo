@@ -1,0 +1,5 @@
+[mongodb-org]
+name=MongoDB Repository
+baseurl=http://mirrors.cloud.tencent.com/mongodb/yum/el$releasever/
+gpgcheck=0
+enabled=1

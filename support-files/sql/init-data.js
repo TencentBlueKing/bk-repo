@@ -1,0 +1,2 @@
+db.user.insert({"userId":"admin","name":"admin","pwd":"5f4dcc3b5aa765d61d8327deb882cf99","admin":true,"locked":false,"tokens":[],"roles":[],"asstUsers":[],"group":false})
+db.account.insert({"appId":"bkdevops","locked":false,"credentials":[{"accessKey":"18b61c9c-901b-4ea3-89c3-1f74be944b66","secretKey":"Us8ZGDXPqk86cwMukYABQqCZLAkM3K","createdAt":new Date(),"status":"ENABLE"}]})

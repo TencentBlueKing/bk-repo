@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bkrepo-gateway
+  labels:
+    app: bkrepo-gateway
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: bkrepo-gateway
+  template:
+    metadata:
+      labels:
+        app: bkrepo-gateway
+    spec:
+      containers:
+        - image: {{ .Values.image.hub }}/bkrepo/gateway:{{ .Values.image.tag }}
+          name: bkrepo-gateway
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          workingDir: /usr/local/openresty/nginx/
+          command: ['/bin/sh','-c','/data/bkrepo/startup.sh']
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name : {{ $key }}
+              value : "{{ $value }}"
+            {{- end}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bkrepo-gateway
+spec:
+  selector:
+    app: bkrepo-gateway
+  ports:
+    - protocol: TCP
+      port: 80

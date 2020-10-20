@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: bkrepo-auth
+  name: bkrepo-auth
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: bkrepo-auth
+  template:
+    metadata:
+      labels:
+        app: bkrepo-auth
+    spec:
+      containers:
+        - name: bkrepo-auth
+          image: {{ .Values.image.hub }}/bkrepo/auth:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          workingDir: /data/bkrepo/
+          command: ['/bin/sh','-c','/data/bkrepo/startup.sh']
+          volumeMounts:
+            - mountPath: "/data/storage"
+              name: pv-storage
+      volumes:
+        - name: pv-storage
+          persistentVolumeClaim:
+            claimName: pvc-storage
