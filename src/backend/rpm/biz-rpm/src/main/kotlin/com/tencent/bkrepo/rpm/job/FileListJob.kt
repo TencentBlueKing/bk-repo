@@ -346,7 +346,7 @@ class FileListJob {
                         size = (index.metadata?.get("size") as String).toLong(),
                         timestamp = index.metadata?.get("timestamp") as String,
                         openChecksum = RpmChecksum(index.metadata?.get("openChecksum") as String),
-                        openSize = (index.metadata?.get("openSize") as String).toInt()
+                        openSize = (index.metadata?.get("openSize") as String).toLong()
                     )
                 } else {
                     RepoGroup(
