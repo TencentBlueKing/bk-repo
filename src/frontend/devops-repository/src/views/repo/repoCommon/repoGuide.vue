@@ -1,7 +1,7 @@
 <template>
     <bk-collapse class="repo-guide-container">
         <bk-collapse-item name="token">
-            <h2 class="section-header">{{ $t('token') }}</h2>
+            <header class="section-header">{{ $t('token') }}</header>
             <div slot="content" class="section-main">
                 <div class="sub-section flex-column">
                     <span class="mb10">
@@ -16,7 +16,7 @@
             <create-token-dialog ref="createToken"></create-token-dialog>
         </bk-collapse-item>
         <bk-collapse-item v-for="(section, index) in article" :key="`section${index}`" :name="`section${index}`">
-            <h2 v-if="section.title" class="section-header">{{ section.title }}</h2>
+            <header v-if="section.title" class="section-header">{{ section.title }}</header>
             <div slot="content" class="section-main">
                 <div class="sub-section flex-column" v-for="block in section.main" :key="block.subTitle">
                     <span class="mb10">{{ block.subTitle }}</span>
@@ -50,13 +50,19 @@
 .repo-guide-container {
     /deep/ .bk-collapse-item {
         margin-bottom: 20px;
+        .bk-collapse-item-detail {
+            color: inherit;
+        }
     }
     section + section {
         margin-top: 20px;
     }
     .section-header {
         padding-left: 10px;
-        background-color: $bgLightColor;
+        color: $fontBoldColor;
+        background-color: #f2f2f2;
+        font-size: 18px;
+        font-weight: normal;
     }
     .section-main {
         margin-top: 10px;
