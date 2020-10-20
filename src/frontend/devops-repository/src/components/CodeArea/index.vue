@@ -52,7 +52,7 @@
 .code-area {
     position: relative;
     line-height: 2;
-    background-color: #191929;
+    background-color: #555e66;
     color: white;
     padding: 10px 40px;
     min-height: 48px;
@@ -74,7 +74,7 @@
         top: 10px;
         right: 10px;
         font-size: 24px;
-        color: #191929;
+        color: #555e66;
         cursor: pointer;
     }
     &:hover .code-copy {
