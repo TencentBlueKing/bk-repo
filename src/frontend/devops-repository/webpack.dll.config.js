@@ -27,7 +27,6 @@ module.exports = (env = {}, argv) => {
             'vuex',
             'vue-router',
             'axios',
-            'vee-validate',
             'moment'
         ],
         output: {
