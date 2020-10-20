@@ -221,6 +221,8 @@ class UserServiceImpl constructor(
             expiredAt?.let {
                 val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
                 expiredTime = LocalDateTime.parse(expiredAt, dateTimeFormatter)
+                // conv time
+                expiredTime = expiredTime!!.plusHours(8)
             }
             val userToken = Token(name = name, id = id, createdAt = now, expiredAt = expiredTime)
             update.addToSet(TUser::tokens.name, userToken)
