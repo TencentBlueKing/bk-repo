@@ -5,11 +5,6 @@ import store from './store'
 import '@/utils/request'
 
 import Icon from '@/components/Icon'
-import VeeValidate from 'vee-validate'
-import validationENMessages from 'vee-validate/dist/locale/en'
-import validationCNMessages from 'vee-validate/dist/locale/zh_CN'
-import ExtendsCustomRules from './utils/customRules'
-import validDictionary from './utils/validDictionary'
 import createLocale from '../../locale'
 import '@icon-cool/bk-icon-devops/src/index'
 import { throttleMessage } from './utils'
@@ -28,18 +23,6 @@ Vue.component('Icon', Icon)
 
 Vue.use(focus)
 Vue.use(bkMagic)
-
-Vue.use(VeeValidate, {
-    i18nRootKey: 'validations', // customize the root path for validation messages.
-    i18n,
-    fieldsBagName: 'veeFields',
-    dictionary: {
-        'en-US': validationENMessages,
-        'zh-CN': validationCNMessages
-    }
-})
-VeeValidate.Validator.localize(validDictionary)
-ExtendsCustomRules(VeeValidate.Validator.extend)
 
 Vue.prototype.$setLocale = setLocale
 Vue.prototype.$bkMessage = throttleMessage(Vue.prototype.$bkMessage, 3500)
