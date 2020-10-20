@@ -1,5 +1,5 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
  * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
@@ -19,17 +19,12 @@
  *
  */
 
-package com.tencent.bkrepo.npm.pojo
+package com.tencent.bkrepo.npm
 
-import com.google.gson.JsonArray
+import com.tencent.bkrepo.npm.properties.NpmProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Configuration
 
-data class NpmMetaData(
-    val license: String,
-    val description: String,
-    val keywords: JsonArray,
-    val name: String,
-    val version: String,
-    val maintainers: JsonArray,
-
-    val deprecated: String?
-)
+@Configuration
+@EnableConfigurationProperties(NpmProperties::class)
+class NpmAutoConfiguration

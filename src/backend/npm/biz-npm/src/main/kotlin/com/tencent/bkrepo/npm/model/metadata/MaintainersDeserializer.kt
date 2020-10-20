@@ -1,5 +1,5 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
  * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
@@ -19,44 +19,25 @@
  *
  */
 
-package com.tencent.bkrepo.npm.utils
+package com.tencent.bkrepo.npm.model.metadata
 
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
-import com.google.common.collect.Maps
-import org.springframework.cglib.beans.BeanMap
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import com.tencent.bkrepo.common.api.util.JsonUtils
 
-object BeanUtils {
-    /**
-     * 将对象转换为map
-     *
-     * @param bean
-     * @return
-     */
-    fun <T> beanToMap(bean: T?): Map<String, String> {
-        val map = Maps.newHashMap<String, String>()
-        if (bean != null) {
-            val beanMap = BeanMap.create(bean)
-            for (key in beanMap.keys) {
-                var value = beanMap[key] ?: continue
-                if (value is JsonNode) {
-                    value = value.asText()
-                }
-                map[key.toString()] = value as? String
-            }
+class MaintainersDeserializer() : JsonDeserializer<JsonNode>() {
+    override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): JsonNode {
+        val node = JsonUtils.objectMapper.readValue(parser, JsonNode::class.java)
+        return if (node !is ArrayNode) {
+            val maintainers = ArrayNode(JsonNodeFactory.instance)
+            maintainers.add(node)
+            maintainers
+        } else {
+            node
         }
-        return map
-    }
-
-    /**
-     * 将map转换为javabean对象
-     *
-     * @param map
-     * @param bean
-     * @return
-     */
-    fun <T> mapToBean(map: Map<String, Any>, bean: T): T {
-        val beanMap = BeanMap.create(bean)
-        beanMap.putAll(map)
-        return bean
     }
 }

@@ -21,17 +21,14 @@
 
 package com.tencent.bkrepo.npm.async
 
-import com.google.gson.JsonObject
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.npm.constants.DEPENDENCIES
-import com.tencent.bkrepo.npm.constants.DISTTAGS
-import com.tencent.bkrepo.npm.constants.LATEST
-import com.tencent.bkrepo.npm.constants.NAME
-import com.tencent.bkrepo.npm.constants.VERSIONS
+import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
+import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.module.des.service.DepsCreateRequest
 import com.tencent.bkrepo.npm.pojo.module.des.service.DepsDeleteRequest
 import com.tencent.bkrepo.npm.service.ModuleDepsService
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Async
@@ -44,19 +41,19 @@ class NpmDependentHandler {
     private lateinit var moduleDepsService: ModuleDepsService
 
     @Async
-    fun updatePkgDepts(userId: String, artifactInfo: ArtifactInfo, jsonObj: JsonObject, action: NpmOperationAction) {
-        val distTags = getDistTags(jsonObj)
-        val versionJsonData = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(distTags.second)
+    fun updatePackageDependents(userId: String, artifactInfo: ArtifactInfo, npmPackageMetaData: NpmPackageMetaData, action: NpmOperationAction) {
+        val latestVersion = NpmUtils.getLatestVersionFormDistTags(npmPackageMetaData.distTags)
+        val versionMetaData = npmPackageMetaData.versions.map[latestVersion]!!
 
         when (action) {
             NpmOperationAction.PUBLISH -> {
-                doDependentWithPublish(userId, artifactInfo, versionJsonData)
+                doDependentWithPublish(userId, artifactInfo, versionMetaData)
             }
             NpmOperationAction.UNPUBLISH -> {
-                doDependentWithUnPublish(userId, artifactInfo, versionJsonData)
+                doDependentWithUnPublish(userId, artifactInfo, versionMetaData)
             }
             NpmOperationAction.MIGRATION -> {
-                doDependentWithPublish(userId, artifactInfo, versionJsonData)
+                doDependentWithPublish(userId, artifactInfo, versionMetaData)
             }
             else -> {
                 logger.warn("don't find operation action [${action.name}].")
@@ -64,10 +61,11 @@ class NpmDependentHandler {
         }
     }
 
-    private fun doDependentWithPublish(userId: String, artifactInfo: ArtifactInfo, versionJsonData: JsonObject) {
-        val name = versionJsonData[NAME].asString
-        if (versionJsonData.has(DEPENDENCIES)) {
-            val dependenciesSet = versionJsonData.getAsJsonObject(DEPENDENCIES).keySet()
+    private fun doDependentWithPublish(userId: String, artifactInfo: ArtifactInfo, versionMetaData: NpmVersionMetadata) {
+        val name = versionMetaData.name!!
+
+        versionMetaData.dependencies?.let { it ->
+            val dependenciesSet = it.keys
             val createList = mutableListOf<DepsCreateRequest>()
             if (dependenciesSet.isNotEmpty()) {
                 dependenciesSet.forEach {
@@ -90,8 +88,8 @@ class NpmDependentHandler {
         }
     }
 
-    private fun doDependentWithUnPublish(userId: String, artifactInfo: ArtifactInfo, versionJsonData: JsonObject) {
-        val name = versionJsonData[NAME].asString
+    private fun doDependentWithUnPublish(userId: String, artifactInfo: ArtifactInfo, versionMetaData: NpmVersionMetadata) {
+        val name = versionMetaData.name!!
         moduleDepsService.deleteAllByName(
             DepsDeleteRequest(
                 projectId = artifactInfo.projectId,
@@ -101,51 +99,6 @@ class NpmDependentHandler {
             )
         )
         logger.info("unPublish dependent for [$name] success.")
-    }
-
-    private fun doDependentWithMigration(userId: String, artifactInfo: ArtifactInfo, jsonData: JsonObject) {
-        val name = jsonData[NAME].asString
-        val versionsJsonData = jsonData.getAsJsonObject(VERSIONS)
-        val createList = mutableListOf<DepsCreateRequest>()
-        val deptsSet = mutableSetOf<String>()
-        versionsJsonData.keySet().forEach { version ->
-            val versionJsonData = versionsJsonData.getAsJsonObject(version)
-            if (versionJsonData.has(DEPENDENCIES)) {
-                val dependenciesSet = versionJsonData.getAsJsonObject(DEPENDENCIES).keySet()
-                if (dependenciesSet.isNotEmpty()) {
-                    deptsSet.addAll(dependenciesSet)
-                }
-            }
-        }
-        deptsSet.forEach {
-            createList.add(
-                DepsCreateRequest(
-                    projectId = artifactInfo.projectId,
-                    repoName = artifactInfo.repoName,
-                    name = it,
-                    deps = name,
-                    overwrite = true,
-                    operator = userId
-                )
-            )
-        }
-        if (createList.isNotEmpty()) {
-            moduleDepsService.batchCreate(createList)
-        }
-        logger.info("migration dependent for package: [$name], size: [${createList.size}] success.")
-    }
-
-    private fun getDistTags(jsonObj: JsonObject): Pair<String, String> {
-        val distTags = jsonObj.getAsJsonObject(DISTTAGS)
-        return if (distTags.has(LATEST)) {
-            Pair(LATEST, distTags[LATEST].asString)
-        } else {
-            var pair = Pair("", "")
-            distTags.entrySet().forEach {
-                pair = Pair(it.key, it.value.asString)
-            }
-            pair
-        }
     }
 
     companion object {

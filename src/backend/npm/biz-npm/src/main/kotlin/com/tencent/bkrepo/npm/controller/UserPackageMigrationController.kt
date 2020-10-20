@@ -1,5 +1,5 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
  * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
@@ -19,40 +19,53 @@
  *
  */
 
-package com.tencent.bkrepo.npm.resource
+package com.tencent.bkrepo.npm.controller
 
-import com.tencent.bkrepo.npm.api.DataMigrationResource
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.pojo.migration.NpmDataMigrationResponse
 import com.tencent.bkrepo.npm.service.DataMigrationService
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+@Api("npm 用户接口")
+@RequestMapping("/ext")
 @RestController
-class DataMigrationResourceImpl : DataMigrationResource {
+class UserPackageMigrationController {
 
     @Autowired
     private lateinit var dataMigrationService: DataMigrationService
 
-    override fun dataMigrationByFile(
-        artifactInfo: NpmArtifactInfo,
-        useErrorData: Boolean
-    ): NpmDataMigrationResponse {
+    @ApiOperation("data migration by file")
+    @GetMapping("/{projectId}/{repoName}/dataMigrationByFile")
+    fun dataMigrationByFile(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @RequestParam(defaultValue = "false") useErrorData: Boolean
+    ): MigrateDetail {
         return dataMigrationService.dataMigrationByFile(artifactInfo, useErrorData)
     }
 
-    override fun dataMigrationByUrl(
-        artifactInfo: NpmArtifactInfo,
-        useErrorData: Boolean
-    ): NpmDataMigrationResponse {
+    @ApiOperation("data migration by url")
+    @GetMapping("/{projectId}/{repoName}/dataMigrationByUrl")
+    fun dataMigrationByUrl(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @RequestParam(defaultValue = "false") useErrorData: Boolean
+    ): MigrateDetail {
         return dataMigrationService.dataMigrationByUrl(artifactInfo, useErrorData)
     }
 
-    override fun dataMigrationByPkgName(
-        artifactInfo: NpmArtifactInfo,
-        useErrorData: Boolean,
-        pkgName: String
-    ): NpmDataMigrationResponse {
+    @ApiOperation("data migration by PkgName")
+    @GetMapping("/{projectId}/{repoName}/dataMigrationByPkgName")
+    fun dataMigrationByPkgName(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @RequestParam(defaultValue = "false") useErrorData: Boolean,
+        @RequestParam pkgName: String
+    ): MigrateDetail {
         return dataMigrationService.dataMigrationByPkgName(artifactInfo, useErrorData, pkgName)
     }
 }
