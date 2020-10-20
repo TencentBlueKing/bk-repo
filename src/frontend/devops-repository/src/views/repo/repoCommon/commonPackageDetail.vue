@@ -110,7 +110,7 @@
             width="600"
             header-position="left">
             <bk-form :label-width="120" :model="formDialog" :rules="rules" ref="formDialog">
-                <bk-form-item :label="$t('upgradeTo')" :required="true" property="tag" error-display-type="normal">
+                <bk-form-item :label="$t('upgradeTo')" :required="true" property="tag">
                     <bk-radio-group v-model="formDialog.tag">
                         <bk-radio :disabled="!!formDialog.default.length" value="@prerelease">@prerelease</bk-radio>
                         <bk-radio class="ml20" value="@release">@release</bk-radio>

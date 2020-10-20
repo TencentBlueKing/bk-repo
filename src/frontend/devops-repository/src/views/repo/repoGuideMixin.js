@@ -32,7 +32,7 @@ export default {
                     main: [
                         {
                             subTitle: '配置个人凭证',
-                            codeList: [`docker login -u ${this.userInfo.username} ${location.origin}`]
+                            codeList: [`docker login -u ${this.userInfo.username} -p <PERSONAL_ACCESS_TOKEN> ${location.origin}`]
                         }
                     ]
                 },

@@ -8,7 +8,7 @@
         <main class="create-repo-main">
             <div class="repo-base-info">
                 <bk-form :label-width="200" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
-                    <bk-form-item :label="$t('repoType')" :required="true" property="type" error-display-type="normal">
+                    <bk-form-item :label="$t('repoType')" :required="true" property="type">
                         <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group">
                             <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
                                 <div class="flex-center repo-type-radio">
@@ -21,7 +21,7 @@
                             </bk-radio-button>
                         </bk-radio-group>
                     </bk-form-item>
-                    <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
+                    <bk-form-item :label="$t('repoName')" :required="true" property="name">
                         <bk-input v-model="repoBaseInfo.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('description')">
