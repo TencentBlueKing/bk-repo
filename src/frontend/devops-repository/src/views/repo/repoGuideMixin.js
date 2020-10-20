@@ -41,11 +41,11 @@ export default {
                     main: [
                         {
                             subTitle: '1、给本地的镜像打标签',
-                            codeList: [`docker tag <LOCAL_IMAGE_TAG> ${this.repoUrl}/${this.packageName}`]
+                            codeList: [`docker tag <LOCAL_IMAGE_TAG> ${location.host}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         },
                         {
                             subTitle: '2、推送您的docker 镜像',
-                            codeList: [`docker push ${this.repoUrl}/${this.packageName}`]
+                            codeList: [`docker push ${location.host}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         }
                     ]
                 },
@@ -53,7 +53,7 @@ export default {
                     title: '下载',
                     main: [
                         {
-                            codeList: [`docker pull ${this.repoUrl}/${this.packageName}`]
+                            codeList: [`docker pull ${location.host}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         }
                     ]
                 }
