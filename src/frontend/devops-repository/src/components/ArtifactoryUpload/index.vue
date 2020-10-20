@@ -7,7 +7,7 @@
             </div>
             <div class="ml20 mr20 upload-file-info">
                 <bk-form :label-width="80" :model="file" :rules="rules" ref="fileName">
-                    <bk-form-item :label="$t('fileName')" :required="true" :property="'name'" error-display-type="normal">
+                    <bk-form-item :label="$t('fileName')" :required="true" :property="'name'">
                         <bk-input :disabled="Boolean(progress)" v-model="file.name"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('overwrite')" :required="true" :property="'overwrite'">
@@ -16,9 +16,9 @@
                             <bk-radio :disabled="Boolean(progress)" class="ml20" :value="false">{{ $t('notAllow') }}</bk-radio>
                         </bk-radio-group>
                     </bk-form-item>
-                    <bk-form-item :label="$t('expiress')" :required="true" :property="'expires'" error-display-type="normal">
+                    <!-- <bk-form-item :label="$t('expiress')" :required="true" :property="'expires'">
                         <bk-input :disabled="Boolean(progress)" :placeholder="$t('uploadExpiresPlaceholder')" v-model="file.expires"></bk-input>
-                    </bk-form-item>
+                    </bk-form-item> -->
                 </bk-form>
                 <bk-progress v-if="progress"
                     :show-text="false"
