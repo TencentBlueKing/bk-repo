@@ -149,7 +149,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     override fun create(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
         with(repoCreateRequest) {
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
-            Preconditions.checkArgument(description?.length ?: 0 < REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
+            Preconditions.checkArgument(description?.length ?: 0 <= REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
             // 确保项目一定存在
             projectService.checkProject(projectId)
             // 确保同名仓库不存在
