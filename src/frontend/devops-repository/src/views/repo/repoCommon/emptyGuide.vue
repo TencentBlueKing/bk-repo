@@ -4,7 +4,7 @@
             <div class="empty-guide-title">快速设置</div>
             <div class="empty-guide-subtitle">
                 您还没有任何制品，参考下方使用指引来推送您的第一个制品或者
-                <router-link class="router-link" :to="{ name: 'createRepo' }">
+                <router-link class="router-link" :to="repoConfig">
                     配置代理
                 </router-link>
                 以代理其他仓库的包。
@@ -44,6 +44,16 @@
             article: {
                 type: Array,
                 default: []
+            }
+        },
+        computed: {
+            repoConfig () {
+                return {
+                    name: 'repoConfig',
+                    query: {
+                        name: this.$route.query.name
+                    }
+                }
             }
         },
         methods: {
