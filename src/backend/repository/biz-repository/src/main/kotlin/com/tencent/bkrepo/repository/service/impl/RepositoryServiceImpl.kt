@@ -260,7 +260,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         criteria.and(TRepository::display.name).ne(false)
         repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name.name).regex("^$this") }
         repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type.name).`is`(this.toUpperCase()) }
-        return Query(criteria).with(Sort.by(TRepository::name.name))
+        return Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
     }
 
     /**
