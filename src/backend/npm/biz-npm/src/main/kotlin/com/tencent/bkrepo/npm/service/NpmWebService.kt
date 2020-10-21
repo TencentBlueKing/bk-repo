@@ -36,10 +36,10 @@ interface NpmWebService {
     /**
      * 删除包
      */
-    fun deletePackage(deleteRequest: PackageDeleteRequest)
+    fun deletePackage(artifactInfo: NpmArtifactInfo, deleteRequest: PackageDeleteRequest)
 
     /**
      * 删除包版本
      */
-    fun deleteVersion(deleteRequest: PackageVersionDeleteRequest)
+    fun deleteVersion(artifactInfo: NpmArtifactInfo, deleteRequest: PackageVersionDeleteRequest)
 }

@@ -21,8 +21,8 @@
 
 package com.tencent.bkrepo.npm.utils
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.google.common.collect.Maps
-import com.google.gson.JsonArray
 import org.springframework.cglib.beans.BeanMap
 
 object BeanUtils {
@@ -38,11 +38,10 @@ object BeanUtils {
             val beanMap = BeanMap.create(bean)
             for (key in beanMap.keys) {
                 var value = beanMap[key] ?: continue
-                // if(StringUtils.isEmpty(value as String)) continue
-                if (value is JsonArray) {
-                    value = GsonUtils.gson.toJson(value)
+                if (value is JsonNode) {
+                    value = value.asText()
                 }
-                map[key.toString()] = value as String
+                map[key.toString()] = value as? String
             }
         }
         return map

@@ -75,7 +75,7 @@ class UserNpmController(
             val deleteRequest = PackageDeleteRequest(
                 projectId, repoName, pkgName, userId
             )
-            npmWebService.deletePackage(deleteRequest)
+            npmWebService.deletePackage(this, deleteRequest)
             return ResponseBuilder.success()
         }
     }
@@ -96,7 +96,7 @@ class UserNpmController(
             val deleteRequest = PackageVersionDeleteRequest(
                 projectId, repoName, pkgName, version, userId
             )
-            npmWebService.deleteVersion(deleteRequest)
+            npmWebService.deleteVersion(this, deleteRequest)
             return ResponseBuilder.success()
         }
     }

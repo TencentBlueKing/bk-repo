@@ -86,7 +86,7 @@
 @import '@/scss/conf';
 .repo-select-container {
     position: relative;
-    height: 100%;
+    height: 50px;
     display: flex;
     .repo-select-title {
         .icon-angle-right {
@@ -99,7 +99,7 @@
     .repo-select-main {
         position: absolute;
         margin-left: 15px;
-        margin-top: 60px;
+        margin-top: 50px;
         width: 250px;
         overflow: hidden;
         border: solid $borderWeightColor;
@@ -107,6 +107,7 @@
         background-color: white;
         z-index: 1;
         transition: all .3s;
+        box-shadow: 6px 6px 5px $boxShadowColor;
         .repo-select-search {
             padding: 10px;
             border-top: 1px solid $borderWeightColor;
