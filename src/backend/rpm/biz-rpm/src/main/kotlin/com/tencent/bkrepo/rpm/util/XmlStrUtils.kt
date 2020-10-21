@@ -109,13 +109,23 @@ object XmlStrUtils {
         stopWatch.start("findPackageIndex")
         val xmlIndex = file.findPackageIndex(prefix, locationStr, PACKAGE_END_MARK)
         stopWatch.stop()
+
         var resultFile = file
-        if (xmlIndex != null) {
+        if (xmlIndex == null) {
+            logger.warn("updateFileLists, findPackageIndex failed, skip delete index")
+        } else {
             stopWatch.start("deleteContent")
-            val fileAfterDelete = file.deleteContent(xmlIndex)
+            resultFile = file.deleteContent(xmlIndex)
             stopWatch.stop()
-            stopWatch.start("insertContent")
-            resultFile = fileAfterDelete.insertContent(packageXml)
+        }
+
+        stopWatch.start("insertContent")
+        resultFile.insertContent(packageXml)
+        stopWatch.stop()
+
+        if (xmlIndex == null) {
+            stopWatch.start("updatePackageCount")
+            resultFile = resultFile.packagesModify("filelists", mark = false, calculatePackage = false)
             stopWatch.stop()
         }
         if (logger.isDebugEnabled) {
@@ -169,17 +179,27 @@ object XmlStrUtils {
         stopWatch.start("findPackageIndex")
         val xmlIndex = file.findPackageIndex(prefix, locationStr, PACKAGE_END_MARK)
         stopWatch.stop()
+
         var resultFile = file
-        if (xmlIndex != null) {
+        if (xmlIndex == null) {
+            logger.warn("updateFileLists, findPackageIndex failed, skip delete index")
+        } else {
             stopWatch.start("deleteContent")
-            val fileAfterDelete = file.deleteContent(xmlIndex)
+            resultFile = file.deleteContent(xmlIndex)
             stopWatch.stop()
-            stopWatch.start("insertContent")
-            resultFile = fileAfterDelete.insertContent(packageXml)
+        }
+
+        stopWatch.start("insertContent")
+        resultFile = resultFile.insertContent(packageXml)
+        stopWatch.stop()
+
+        if (xmlIndex == null) {
+            stopWatch.start("updatePackageCount")
+            resultFile = resultFile.packagesModify(indexType, mark = false, calculatePackage = false)
             stopWatch.stop()
         }
         if (logger.isDebugEnabled) {
-            logger.debug("updateRpmFileListIndexStat: $stopWatch")
+            logger.debug("updateRpmPackageIndexStat: $stopWatch")
         }
         return resultFile
     }
@@ -230,8 +250,11 @@ object XmlStrUtils {
         stopWatch.start("findIndex")
         val xmlIndex = file.findPackageIndex(prefix, locationStr, PACKAGE_END_MARK)
         stopWatch.stop()
+
         var resultFile = file
-        if (xmlIndex != null) {
+        if (xmlIndex == null) {
+            logger.warn("deletePackage, findPackageIndex failed, skip delete index")
+        } else {
             stopWatch.start("deleteContent")
             val fileAfterDelete = file.deleteContent(xmlIndex)
             stopWatch.stop()

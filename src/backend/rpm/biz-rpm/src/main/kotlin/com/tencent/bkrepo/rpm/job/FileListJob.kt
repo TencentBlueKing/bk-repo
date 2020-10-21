@@ -138,7 +138,6 @@ class FileListJob {
                     Range.full(latestNode.size),
                     null
                 ) ?: return
-                logger.info("${page.records.size} temp file to process")
                 val stopWatch = StopWatch()
                 stopWatch.start("unzipOriginFileListsFile")
                 var newFileListsFile: File = oldFileListsFile.use { it.unGzipInputStream() }
