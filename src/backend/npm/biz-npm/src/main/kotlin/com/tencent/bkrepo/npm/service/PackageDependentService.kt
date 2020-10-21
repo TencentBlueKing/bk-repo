@@ -29,7 +29,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.artifact.repository.NpmLocalRepository
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PKG_NAME
@@ -179,7 +178,7 @@ class PackageDependentService {
         context.putAttribute(NPM_FILE_FULL_PATH, String.format(NPM_PKG_METADATA_FULL_PATH, pkgName))
         context.putAttribute(PKG_NAME, pkgName)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        (repository as NpmLocalRepository).dependentMigrate(context)
+        // (repository as NpmLocalRepository).dependentMigrate(context)
     }
 
     fun checkResponse(response: Response): Boolean {

@@ -216,9 +216,9 @@
                         ...res,
                         basic: {
                             ...res.basic,
-                            size: convertFileSize(res.basic.size),
-                            createdDate: formatDate(res.basic.createdDate),
-                            lastModifiedDate: formatDate(res.basic.lastModifiedDate)
+                            size: res.basic.size && convertFileSize(res.basic.size),
+                            createdDate: res.basic.createdDate && formatDate(res.basic.createdDate),
+                            lastModifiedDate: res.basic.lastModifiedDate && formatDate(res.basic.lastModifiedDate)
                         }
                     }
                     if (this.repoType === 'npm') {

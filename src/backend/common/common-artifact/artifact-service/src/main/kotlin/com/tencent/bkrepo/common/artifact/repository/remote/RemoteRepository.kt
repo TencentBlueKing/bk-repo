@@ -28,6 +28,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfig
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCredentialsConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.core.StorageManager
@@ -97,6 +98,17 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         } else emptyList()
     }
 
+    override fun query(context: ArtifactQueryContext): Any? {
+        val remoteConfiguration = context.getRemoteConfiguration()
+        val httpClient = createHttpClient(remoteConfiguration)
+        val downloadUri = createRemoteDownloadUrl(context)
+        val request = Request.Builder().url(downloadUri).build()
+        val response = httpClient.newCall(request).execute()
+        return if (checkResponse(response)) {
+            onQueryResponse(context, response)
+        } else null
+    }
+
     /**
      * 尝试读取缓存的远程构件
      */
@@ -161,6 +173,13 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     open fun onSearchResponse(context: ArtifactSearchContext, response: Response): List<Any> {
         return emptyList()
+    }
+
+    /**
+     * 远程下载响应回调
+     */
+    open fun onQueryResponse(context: ArtifactQueryContext, response: Response): Any? {
+        return null
     }
 
     /**

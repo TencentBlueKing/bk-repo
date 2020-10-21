@@ -45,5 +45,5 @@ data class NpmSearchInfo(
     var version: String? = null,
     var date: String? = null,
     var keywords: List<String> = emptyList(),
-    var author: Map<String, Any>? = emptyMap()
+    var author: Map<String, Any> = emptyMap()
 )
