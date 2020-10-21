@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.rpm.job
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.repository.RpmLocalConfiguration
@@ -13,21 +12,13 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.rpm.REPODATA
 import com.tencent.bkrepo.rpm.artifact.SurplusNodeCleaner
 import com.tencent.bkrepo.rpm.exception.RpmVersionNotFoundException
+import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
 import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
-import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.XmlStrUtils
-import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChecksum
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
-import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoData
-import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
-import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoIndex
-import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -56,6 +47,9 @@ class FileListJob {
     @Autowired
     private lateinit var surplusNodeCleaner: SurplusNodeCleaner
 
+    @Autowired
+    private lateinit var jobService: JobService
+
     @Scheduled(cron = "0 0/2 * * * ?")
     @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT60M")
     fun insertFileList() {
@@ -69,7 +63,7 @@ class FileListJob {
                 val rpmConfiguration = repo.configuration as RpmLocalConfiguration
                 val repodataDepth = rpmConfiguration.repodataDepth ?: 0
                 val targetSet = mutableSetOf<String>()
-                findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
+                jobService.findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
                 for (repoDataPath in targetSet) {
                     logger.info("updateRpmFileLists(${repo.projectId}|${repo.name}|$repoDataPath) start")
                     insertFileListsXml(repo, repoDataPath)
@@ -79,26 +73,6 @@ class FileListJob {
             }
         }
         logger.info("rpmInsertFileList done, cost time: ${System.currentTimeMillis() - startMillis} ms")
-    }
-
-    fun findRepoDataByRepo(
-        repositoryInfo: RepositoryInfo,
-        path: String,
-        repodataDepth: Int,
-        repoDataSet: MutableSet<String>
-    ) {
-        with(repositoryInfo) {
-            val nodeList = nodeClient.list(projectId, name, path).data ?: return
-            if (repodataDepth == 0) {
-                for (node in nodeList.filter { it.folder }.filter { it.name == REPODATA }) {
-                    repoDataSet.add(node.fullPath)
-                }
-            } else {
-                for (node in nodeList.filter { it.folder }) {
-                    findRepoDataByRepo(repositoryInfo, node.fullPath, repodataDepth.dec(), repoDataSet)
-                }
-            }
-        }
     }
 
     private fun insertFileListsXml(
@@ -128,7 +102,7 @@ class FileListJob {
                     includeFolder = false,
                     includeMetadata = true
                 ).data ?: return
-                if(page.records.isEmpty()){
+                if (page.records.isEmpty()) {
                     logger.info("no temp file to process")
                     return
                 }
@@ -167,7 +141,7 @@ class FileListJob {
                                 logger.debug("delete ${tempFile.fullPath}")
                                 try {
                                     XmlStrUtils.deletePackage(
-                                        "filelists",
+                                        IndexType.FILELISTS,
                                         newFileListsFile,
                                         tempFile.metadata!!.toRpmVersion(tempFile.fullPath),
                                         tempFile.fullPath
@@ -179,7 +153,7 @@ class FileListJob {
                             } else {
                                 logger.debug("insert ${tempFile.fullPath}")
                                 XmlStrUtils.insertFileLists(
-                                    "filelists", newFileListsFile,
+                                    IndexType.FILELISTS, newFileListsFile,
                                     inputStream,
                                     false
                                 )
@@ -192,7 +166,7 @@ class FileListJob {
                     }
                     stopWatch.stop()
                     stopWatch.start("storeFile")
-                    storeFileListNode(repo, newFileListsFile, repodataPath)
+                    jobService.storeXmlGZNode(repo, newFileListsFile, repodataPath, IndexType.FILELISTS)
                     stopWatch.stop()
                     stopWatch.start("deleteTempXml")
                     surplusNodeCleaner.deleteTempXml(calculatedList)
@@ -208,7 +182,7 @@ class FileListJob {
                 storeFileListXmlNode(repo, repodataPath)
                 insertFileListsXml(repo, repodataPath)
             }
-            flushRepoMdXML(projectId, name, repodataPath)
+            jobService.flushRepoMdXML(projectId, name, repodataPath)
             // 删除多余索引节点
             GlobalScope.launch {
                 targetNodelist?.let { surplusNodeCleaner.deleteSurplusNode(it) }
@@ -245,7 +219,7 @@ class FileListJob {
                     "openSize" to (xmlFileSize.toString())
                 )
 
-                val xmlPrimaryNode = NodeCreateRequest(
+                val xmlGZNode = NodeCreateRequest(
                     repo.projectId,
                     repo.name,
                     fullPath,
@@ -257,131 +231,10 @@ class FileListJob {
                     xmlGZArtifact.getFileMd5(),
                     metadata
                 )
-                storageService.store(xmlPrimaryNode.sha256!!, xmlGZArtifact, null)
-                with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-                nodeClient.create(xmlPrimaryNode)
-                logger.info("Success to insert $xmlPrimaryNode")
+                jobService.store(xmlGZNode, xmlGZArtifact)
             } finally {
                 xmlGZFile.delete()
             }
-        }
-    }
-
-    private fun storeFileListNode(
-        repo: RepositoryInfo,
-        xmlFile: File,
-        repodataPath: String
-    ) {
-        val indexType = "filelists"
-        val target = "-filelists.xml.gz"
-        // 保存节点同时保存节点信息到元数据方便repomd更新。
-        val xmlInputStream = FileInputStream(xmlFile)
-        val xmlFileSize = xmlFile.length()
-
-        val xmlGZFile = xmlInputStream.gZip(indexType)
-        val xmlFileSha1 = xmlInputStream.sha1()
-        try {
-            val xmlGZFileSha1 = FileInputStream(xmlGZFile).sha1()
-
-            val xmlGZArtifact = ArtifactFileFactory.build(FileInputStream(xmlGZFile))
-            val fullPath = "$repodataPath/$xmlGZFileSha1$target"
-            val metadata = mutableMapOf(
-                "indexType" to indexType,
-                "checksum" to xmlGZFileSha1,
-                "size" to (xmlGZArtifact.getSize().toString()),
-                "timestamp" to System.currentTimeMillis().toString(),
-                "openChecksum" to xmlFileSha1,
-                "openSize" to (xmlFileSize.toString())
-            )
-
-            val xmlPrimaryNode = NodeCreateRequest(
-                repo.projectId,
-                repo.name,
-                fullPath,
-                false,
-                0L,
-                true,
-                xmlGZArtifact.getSize(),
-                xmlGZArtifact.getFileSha256(),
-                xmlGZArtifact.getFileMd5(),
-                metadata
-            )
-            storageService.store(xmlPrimaryNode.sha256!!, xmlGZArtifact, null)
-            with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            nodeClient.create(xmlPrimaryNode)
-            logger.info("Success to insert $xmlPrimaryNode")
-            xmlGZArtifact.delete()
-        } finally {
-            xmlGZFile.delete()
-            xmlInputStream.closeQuietly()
-        }
-    }
-
-    private fun flushRepoMdXML(project: String, repoName: String, repoDataPath: String) {
-        val repositoryInfo = repositoryClient.detail(project, repoName).data ?: return
-        val rpmRepoConf = repositoryInfo.configuration as RpmLocalConfiguration
-        val enabledFileLists = rpmRepoConf.enabledFileLists ?: true
-        val groupXmlSet = rpmRepoConf.groupXmlSet ?: mutableSetOf()
-        val limit = groupXmlSet.size * 3 + 9
-
-        // 查询该请求路径对应的索引目录下所有文件
-        val nodePage = nodeClient.page(
-            project, repoName, 0, limit,
-            repoDataPath,
-            includeMetadata = true
-        ).data ?: return
-        val nodeList = nodePage.records.sortedByDescending { it.lastModifiedDate }
-
-        val targetIndexList = nodeList.filterRpmCustom(groupXmlSet, enabledFileLists)
-
-        val repoDataList = mutableListOf<RepoIndex>()
-        for (index in targetIndexList) {
-            repoDataList.add(
-                if ((index.name).contains(Regex("-filelists.xml.gz|-others|-primary"))) {
-                    RepoData(
-                        type = index.metadata?.get("indexType") as String,
-                        location = RpmLocation("$REPODATA${StringPool.SLASH}${index.name}"),
-                        checksum = RpmChecksum(index.metadata?.get("checksum") as String),
-                        size = (index.metadata?.get("size") as String).toLong(),
-                        timestamp = index.metadata?.get("timestamp") as String,
-                        openChecksum = RpmChecksum(index.metadata?.get("openChecksum") as String),
-                        openSize = (index.metadata?.get("openSize") as String).toLong()
-                    )
-                } else {
-                    RepoGroup(
-                        type = index.metadata?.get("indexType") as String,
-                        location = RpmLocation("$REPODATA${StringPool.SLASH}${index.name}"),
-                        checksum = RpmChecksum(index.metadata?.get("checksum") as String),
-                        size = (index.metadata?.get("size") as String).toLong(),
-                        timestamp = index.metadata?.get("timestamp") as String
-                    )
-                }
-            )
-        }
-
-        val repomd = Repomd(
-            repoDataList
-        )
-        val xmlRepodataString = repomd.objectToXml()
-        ByteArrayInputStream((xmlRepodataString.toByteArray())).use { xmlRepodataInputStream ->
-            val xmlRepodataArtifact = ArtifactFileFactory.build(xmlRepodataInputStream)
-            // 保存repodata 节点
-            val xmlRepomdNode = NodeCreateRequest(
-                project,
-                repoName,
-                "$repoDataPath/repomd.xml",
-                false,
-                0L,
-                true,
-                xmlRepodataArtifact.getSize(),
-                xmlRepodataArtifact.getFileSha256(),
-                xmlRepodataArtifact.getFileMd5()
-            )
-            storageService.store(xmlRepomdNode.sha256!!, xmlRepodataArtifact, null)
-            with(xmlRepomdNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            nodeClient.create(xmlRepomdNode)
-            logger.info("Success to insert $xmlRepomdNode")
-            xmlRepodataArtifact.delete()
         }
     }
 

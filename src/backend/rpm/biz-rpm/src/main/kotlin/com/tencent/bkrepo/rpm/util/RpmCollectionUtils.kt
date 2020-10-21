@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
 
 object RpmCollectionUtils {
 
@@ -47,5 +48,13 @@ object RpmCollectionUtils {
             }
         }
         return resultList
+    }
+
+    fun RpmMetadata.rpmFileListsFilter() {
+        this.packages[0].format.files = this.packages[0].format.files.filter {
+            (it.filePath.contains("bin/") && (it.filePath.endsWith(".sh"))) ||
+                (it.filePath.startsWith("/etc/") && it.filePath.contains("conf")) ||
+                it.filePath == "/usr/lib/sendmail"
+        }
     }
 }

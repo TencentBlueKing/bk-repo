@@ -34,7 +34,7 @@ object GZipUtils {
     }
 
     /**
-     * 解压
+     * 解压gz文件，并关闭文件流
      */
     fun InputStream.unGzipInputStream(): File {
         val gZIPInputStream = GZIPInputStream(this)

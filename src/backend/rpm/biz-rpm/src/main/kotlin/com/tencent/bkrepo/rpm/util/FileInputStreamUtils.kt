@@ -90,7 +90,7 @@ object FileInputStreamUtils {
     /**
      * xml
      */
-    fun File.findPackageIndex(
+    fun File.indexPackage(
         prefixStr: String,
         locationStr: String,
         suffixStr: String

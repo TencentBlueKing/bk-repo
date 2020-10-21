@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.repository.RpmLocalConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -22,32 +23,35 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.rpm.FILELISTS
 import com.tencent.bkrepo.rpm.GZ
 import com.tencent.bkrepo.rpm.INDEXER
 import com.tencent.bkrepo.rpm.NO_INDEXER
-import com.tencent.bkrepo.rpm.OTHERS
-import com.tencent.bkrepo.rpm.PRIMARY
 import com.tencent.bkrepo.rpm.REPODATA
 import com.tencent.bkrepo.rpm.XMLGZ
+import com.tencent.bkrepo.rpm.artifact.StorageManager
 import com.tencent.bkrepo.rpm.artifact.SurplusNodeCleaner
 import com.tencent.bkrepo.rpm.exception.RpmArtifactFormatNotSupportedException
+import com.tencent.bkrepo.rpm.exception.RpmArtifactMetadataResolveException
+import com.tencent.bkrepo.rpm.pojo.IndexType
+import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
+import com.tencent.bkrepo.rpm.pojo.RpmVersion
+import com.tencent.bkrepo.rpm.pojo.RpmDeleteResponse
+import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.RPM
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH
-import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH_SHA256
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.NONE
-import com.tencent.bkrepo.rpm.pojo.RpmDeleteResponse
-import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
-import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
-import com.tencent.bkrepo.rpm.pojo.RpmVersion
+import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH_SHA256
+import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.DELETE
 import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
 import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
+import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.rpmFileListsFilter
 import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.calculatePackages
 import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.getRpmBooleanHeader
+import com.tencent.bkrepo.rpm.util.RpmVersionUtils
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.XmlStrUtils
@@ -80,12 +84,12 @@ import java.nio.channels.Channels
 
 @Component
 class RpmLocalRepository(
-    val surplusNodeCleaner: SurplusNodeCleaner
+    val surplusNodeCleaner: SurplusNodeCleaner,
+    val storageManager: StorageManager
 ) : LocalRepository() {
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
-
         val overwrite = HeaderUtils.getRpmBooleanHeader("X-BKREPO-OVERWRITE")
         if (!overwrite) {
             with(context.artifactInfo) {
@@ -108,12 +112,29 @@ class RpmLocalRepository(
         )
     }
 
+    fun initMark(context: ArtifactSearchContext) {
+        with(context.artifactInfo) {
+            val nodeList = nodeClient.list(
+                projectId, repoName, artifactUri,
+                includeFolder = false, deep = true
+            ).data?.filter {
+                !it.path.contains("repodata") && it.name.endsWith(".rpm")
+            }
+            nodeList?.let {
+                for (node in nodeList) {
+                    val rpmLocation = node.fullPath.removePrefix("$artifactUri/")
+                    initIndexMark(context, artifactUri, mutableMapOf(), IndexType.PRIMARY, rpmLocation)
+                }
+            }
+        }
+    }
+
     fun xmlIndexNodeCreate(
         userId: String,
         repositoryInfo: RepositoryInfo,
         fullPath: String,
         xmlGZArtifact: ArtifactFile,
-        metadata: MutableMap<String, String>
+        metadata: MutableMap<String, String>?
     ): NodeCreateRequest {
         val sha256 = xmlGZArtifact.getFileSha256()
         val md5 = xmlGZArtifact.getFileMd5()
@@ -128,27 +149,6 @@ class RpmLocalRepository(
             md5 = md5,
             operator = userId,
             metadata = metadata
-        )
-    }
-
-    fun xmlNodeCreate(
-        userId: String,
-        repositoryInfo: RepositoryInfo,
-        fullPath: String,
-        xmlGZArtifact: ArtifactFile
-    ): NodeCreateRequest {
-        val sha256 = xmlGZArtifact.getFileSha256()
-        val md5 = xmlGZArtifact.getFileMd5()
-        return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
-            folder = false,
-            overwrite = true,
-            fullPath = fullPath,
-            size = xmlGZArtifact.getSize(),
-            sha256 = sha256,
-            md5 = md5,
-            operator = userId
         )
     }
 
@@ -222,19 +222,14 @@ class RpmLocalRepository(
                 1L
             )
             // 单独存储每个包的filelists.xml
-
             storeFileListsXml(
-                context, rpmMetadataFileList.rpmMetadataToPackageXml(FILELISTS), repodataPath, repeat,
+                context, rpmMetadataFileList.rpmMetadataToPackageXml(IndexType.FILELISTS), repodataPath, repeat,
                 rpmVersion.toMetadata()
             )
         }
         stopWatchDetail.stop()
         // 过滤files中的文件
-        rpmMetadata.packages[0].format.files = rpmMetadata.packages[0].format.files.filter {
-            (it.filePath.contains("bin/") && (it.filePath.endsWith(".sh"))) ||
-                (it.filePath.startsWith("/etc/") && it.filePath.contains("conf")) ||
-                it.filePath == "/usr/lib/sendmail"
-        }
+        rpmMetadata.rpmFileListsFilter()
         val rpmMetadataChangeLog = RpmMetadataChangeLog(
             listOf(
                 RpmPackageChangeLog(
@@ -246,14 +241,17 @@ class RpmLocalRepository(
             ),
             1L
         )
+        val artifactSha256 = context.getArtifactFile().getFileSha256()
         // 更新others.xml
         stopWatchDetail.start("others")
-        updateIndexXml(context, rpmMetadataChangeLog, repeat, repodataPath, OTHERS)
+        storeIndexMark(context, repodataPath, repeat, rpmVersion.toMetadata(), IndexType.OTHERS, artifactSha256)
+        updateIndexXml(context, rpmMetadataChangeLog, repeat, repodataPath, IndexType.OTHERS)
         rpmMetadata.packages[0].format.changeLogs.clear()
         stopWatchDetail.stop()
         // 更新primary.xml
         stopWatchDetail.start("primary")
-        updateIndexXml(context, rpmMetadata, repeat, repodataPath, PRIMARY)
+        storeIndexMark(context, repodataPath, repeat, rpmVersion.toMetadata(), IndexType.PRIMARY, artifactSha256)
+        updateIndexXml(context, rpmMetadata, repeat, repodataPath, IndexType.PRIMARY)
         stopWatchDetail.stop()
         stopWatchAll.stop()
         if (logger.isDebugEnabled) {
@@ -263,6 +261,66 @@ class RpmLocalRepository(
         return rpmVersion
     }
 
+    /**
+     * 保存索引的时候新增一个标志文件。
+     */
+    private fun initIndexMark(
+        context: ArtifactTransferContext,
+        repodataPath: String,
+        metadata: MutableMap<String, String>,
+        indexType: IndexType,
+        rpmLocation: String
+    ) {
+        val markFile = ArtifactFileFactory.build(ByteArrayInputStream("mark".toByteArray()))
+        metadata["repeat"] = NONE.name
+        val xmlFileNode = xmlIndexNodeCreate(
+            context.userId,
+            context.repositoryInfo,
+            "/$repodataPath/$REPODATA/${indexType.value}/$rpmLocation",
+            markFile,
+            metadata
+        )
+        storageService.store(xmlFileNode.sha256!!, markFile, context.storageCredentials)
+        with(xmlFileNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
+        markFile.delete()
+        nodeClient.create(xmlFileNode)
+        logger.info("Success to insert $xmlFileNode")
+    }
+
+    /**
+     * 保存索引的时候新增一个标志文件。
+     */
+    private fun storeIndexMark(
+        context: ArtifactTransferContext,
+        repodataPath: String,
+        repeat: ArtifactRepeat,
+        metadata: MutableMap<String, String>,
+        indexType: IndexType,
+        sha256: String?
+    ) {
+        with(context.artifactInfo) {
+            val rpmLocation = artifactUri.removePrefix("/$repodataPath")
+            val markFile = ArtifactFileFactory.build(ByteArrayInputStream("mark".toByteArray()))
+            metadata["repeat"] = repeat.name
+            sha256?.let { metadata["sha256"] = it }
+            val xmlFileNode = xmlIndexNodeCreate(
+                context.userId,
+                context.repositoryInfo,
+                "/$repodataPath/$REPODATA/${indexType.value}/$rpmLocation",
+                markFile,
+                metadata
+            )
+            storageService.store(xmlFileNode.sha256!!, markFile, context.storageCredentials)
+            with(xmlFileNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
+            markFile.delete()
+            nodeClient.create(xmlFileNode)
+            logger.info("Success to insert $xmlFileNode")
+        }
+    }
+
+    /**
+     *
+     */
     private fun storeFileListsXml(
         context: ArtifactTransferContext,
         rpmXmlMetadataStr: String,
@@ -275,34 +333,34 @@ class RpmLocalRepository(
             val tempFileName = StringBuilder(fileName.removeSuffix("rpm")).append("xml")
             val rpmXmlFile = ArtifactFileFactory.build(ByteArrayInputStream(rpmXmlMetadataStr.toByteArray()))
             metadata["repeat"] = repeat.name
-            val xmlXmlFileNode = xmlIndexNodeCreate(
+            val xmlFileNode = xmlIndexNodeCreate(
                 context.userId,
                 context.repositoryInfo,
                 "/$repodataPath/$REPODATA/temp/$tempFileName",
                 rpmXmlFile,
                 metadata
             )
-            storageService.store(xmlXmlFileNode.sha256!!, rpmXmlFile, context.storageCredentials)
-            with(xmlXmlFileNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            nodeClient.create(xmlXmlFileNode)
-            logger.info("Success to insert $xmlXmlFileNode")
+            storageManager.store(context, xmlFileNode, rpmXmlFile)
         }
     }
 
+    /**
+     * 更新primary, other 类型的索引
+     */
     private fun updateIndexXml(
         context: ArtifactUploadContext,
         rpmXmlMetadata: RpmXmlMetadata,
         repeat: ArtifactRepeat,
         repodataPath: String,
-        indexType: String
+        indexType: IndexType
     ) {
-        val target = "$DASH$indexType$DOT$XMLGZ"
+        val target = "$DASH${indexType.value}$DOT$XMLGZ"
         val calculatePackage = HeaderUtils.calculatePackages()
         with(context.artifactInfo) {
             // repodata下'-**.xml.gz'最新节点。
             val nodeList = nodeClient.list(
                 projectId, repoName,
-                "$SLASH${repodataPath}$REPODATA",
+                "$SLASH$repodataPath$REPODATA",
                 includeFolder = false, deep = false
             ).data
             val targetNodelist = nodeList?.filter {
@@ -326,7 +384,7 @@ class RpmLocalRepository(
                             calculatePackage
                         )
                     } else {
-                        XmlStrUtils.updatePackage(indexType, it.unGzipInputStream(), rpmXmlMetadata, artifactUri)
+                        XmlStrUtils.updatePackage(indexType, it.unGzipInputStream(), rpmXmlMetadata)
                     }
                 }
                 try {
@@ -349,7 +407,7 @@ class RpmLocalRepository(
         context: ArtifactRemoveContext,
         rpmVersion: RpmVersion,
         repodataPath: String,
-        indexType: String
+        indexType: IndexType
     ) {
         val target = "$DASH$indexType$DOT$XMLGZ"
         with(context.artifactInfo) {
@@ -390,7 +448,7 @@ class RpmLocalRepository(
     }
 
     private fun storeXmlFileNode(
-        indexType: String,
+        indexType: IndexType,
         xmlFile: File,
         repodataPath: String,
         context: ArtifactTransferContext,
@@ -401,7 +459,7 @@ class RpmLocalRepository(
         val xmlInputStream = FileInputStream(xmlFile)
         val xmlFileSize = xmlFile.length()
 
-        val xmlGZFile = xmlInputStream.gZip(indexType)
+        val xmlGZFile = xmlInputStream.gZip(indexType.value)
         val xmlFileSha1 = xmlInputStream.sha1()
         try {
             val xmlGZFileSha1 = FileInputStream(xmlGZFile).sha1()
@@ -409,25 +467,21 @@ class RpmLocalRepository(
             val xmlGZArtifact = ArtifactFileFactory.build(FileInputStream(xmlGZFile))
             val fullPath = "$SLASH${repodataPath}$REPODATA$SLASH$xmlGZFileSha1$target"
             val metadata = mutableMapOf(
-                "indexType" to indexType,
+                "indexType" to indexType.value,
                 "checksum" to xmlGZFileSha1,
                 "size" to (xmlGZArtifact.getSize().toString()),
                 "timestamp" to System.currentTimeMillis().toString(),
                 "openChecksum" to xmlFileSha1,
                 "openSize" to (xmlFileSize.toString())
             )
-            val xmlPrimaryNode = xmlIndexNodeCreate(
+            val xmlGZNode = xmlIndexNodeCreate(
                 context.userId,
                 context.repositoryInfo,
                 fullPath,
                 xmlGZArtifact,
                 metadata
             )
-            storageService.store(xmlPrimaryNode.sha256!!, xmlGZArtifact, context.storageCredentials)
-            with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            nodeClient.create(xmlPrimaryNode)
-            logger.info("Success to insert $xmlPrimaryNode")
-            xmlGZArtifact.delete()
+            storageManager.store(context, xmlGZNode, xmlGZArtifact)
         } finally {
             xmlGZFile.delete()
             xmlInputStream.closeQuietly()
@@ -440,7 +494,7 @@ class RpmLocalRepository(
      * @param repodataPath 契合本次请求的repodata_depth 目录路径
      */
     private fun storeXmlNode(
-        indexType: String,
+        indexType: IndexType,
         xmlStr: String,
         repodataPath: String,
         context: ArtifactTransferContext,
@@ -450,7 +504,7 @@ class RpmLocalRepository(
             // 保存节点同时保存节点信息到元数据方便repomd更新。
             val xmlFileSize = xmlStr.toByteArray().size
 
-            val xmlGZFile = xmlStr.toByteArray().gZip(indexType)
+            val xmlGZFile = xmlStr.toByteArray().gZip(indexType.value)
             val xmlFileSha1 = xmlInputStream.sha1()
             try {
                 val xmlGZFileSha1 = FileInputStream(xmlGZFile).sha1()
@@ -459,25 +513,21 @@ class RpmLocalRepository(
                 val xmlGZArtifact = ArtifactFileFactory.build(FileInputStream(xmlGZFile))
                 val fullPath = "$SLASH${repodataPath}$REPODATA$SLASH$xmlGZFileSha1$target"
                 val metadata = mutableMapOf(
-                    "indexType" to indexType,
+                    "indexType" to indexType.value,
                     "checksum" to xmlGZFileSha1,
                     "size" to (xmlGZArtifact.getSize().toString()),
                     "timestamp" to System.currentTimeMillis().toString(),
                     "openChecksum" to xmlFileSha1,
                     "openSize" to (xmlFileSize.toString())
                 )
-                val xmlPrimaryNode = xmlIndexNodeCreate(
+                val xmlGZNode = xmlIndexNodeCreate(
                     context.userId,
                     context.repositoryInfo,
                     fullPath,
                     xmlGZArtifact,
                     metadata
                 )
-                storageService.store(xmlPrimaryNode.sha256!!, xmlGZArtifact, context.storageCredentials)
-                with(xmlPrimaryNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-                nodeClient.create(xmlPrimaryNode)
-                logger.info("Success to insert $xmlPrimaryNode")
-                xmlGZArtifact.delete()
+                storageManager.store(context, xmlGZNode, xmlGZArtifact)
             } finally {
                 xmlGZFile.delete()
             }
@@ -573,11 +623,7 @@ class RpmLocalRepository(
             xmlSha1ArtifactFile,
             metadata
         )
-        storageService.store(xmlNode.sha256!!, xmlSha1ArtifactFile, context.storageCredentials)
-        with(xmlNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-        nodeClient.create(xmlNode)
-        logger.info("Success to insert $xmlNode")
-        xmlSha1ArtifactFile.delete()
+        storageManager.store(context, xmlNode, xmlSha1ArtifactFile)
 
         // 保存xml.gz
         val groupGZFile = xmlByteArray.gZip("random")
@@ -598,17 +644,12 @@ class RpmLocalRepository(
                 groupGZArtifactFile,
                 metadataGZ
             )
-            storageService.store(groupGZNode.sha256!!, groupGZArtifactFile, context.storageCredentials)
-            with(groupGZNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            nodeClient.create(groupGZNode)
-            logger.info("Success to insert $groupGZNode")
-            groupGZArtifactFile.delete()
+            storageManager.store(context, groupGZNode, groupGZArtifactFile)
         } finally {
             groupGZFile.delete()
         }
 
-        // todo
-        // 删除多余节点
+        // todo 删除多余节点
         flushRepoMdXML(context, null)
     }
 
@@ -678,17 +719,14 @@ class RpmLocalRepository(
         ByteArrayInputStream((xmlRepodataString.toByteArray())).use { xmlRepodataInputStream ->
             val xmlRepodataArtifact = ArtifactFileFactory.build(xmlRepodataInputStream)
             // 保存repodata 节点
-            val xmlRepomdNode = xmlNodeCreate(
+            val xmlRepomdNode = xmlIndexNodeCreate(
                 context.userId,
                 context.repositoryInfo,
                 "$SLASH${indexPath}${SLASH}repomd.xml",
-                xmlRepodataArtifact
+                xmlRepodataArtifact,
+                null
             )
-            storageService.store(xmlRepomdNode.sha256!!, xmlRepodataArtifact, context.storageCredentials)
-            with(xmlRepomdNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            nodeClient.create(xmlRepomdNode)
-            logger.info("Success to insert $xmlRepomdNode")
-            xmlRepodataArtifact.delete()
+            storageManager.store(context, xmlRepomdNode, xmlRepodataArtifact)
         }
     }
 
@@ -703,7 +741,9 @@ class RpmLocalRepository(
                 when (artifactFormat) {
                     RPM -> {
                         val rpmVersion = indexer(context, repeat, rpmRepoConf)
-                        rpmNodeCreateRequest(context, rpmVersion.toMetadata())
+                        val metadata = rpmVersion.toMetadata()
+                        metadata["action"] = repeat.name
+                        rpmNodeCreateRequest(context, metadata)
                     }
                     XML -> {
                         storeGroupFile(context)
@@ -735,7 +775,13 @@ class RpmLocalRepository(
                 throw UnsupportedMethodException("Delete folder is forbidden")
             }
             val nodeMetadata = node.metadata
-            val rpmVersion = nodeMetadata.toRpmVersion(artifactUri)
+            val artifactSha256 = node.sha256
+            val rpmVersion = try {
+                nodeMetadata.toRpmVersion(artifactUri)
+            } catch (rpmArtifactMetadataResolveException: RpmArtifactMetadataResolveException) {
+                logger.warn("$this not found metadata")
+                RpmVersionUtils.resolverRpmVersion(artifactUri.split("/").last())
+            }
             val artifactUri = context.artifactInfo.artifactUri
             // 定位对应请求的索引目录
             val rpmRepoConf = getRpmRepoConf(context)
@@ -744,10 +790,12 @@ class RpmLocalRepository(
             val repodataPath = repodataUri.repodataPath
 
             // 更新 primary, others
-            deleteIndexXml(context, rpmVersion, repodataPath, PRIMARY)
-            deleteIndexXml(context, rpmVersion, repodataPath, OTHERS)
+            storeIndexMark(context, repodataPath, DELETE, rpmVersion.toMetadata(), IndexType.PRIMARY, artifactSha256)
+            deleteIndexXml(context, rpmVersion, repodataPath, IndexType.PRIMARY)
+            storeIndexMark(context, repodataPath, DELETE, rpmVersion.toMetadata(), IndexType.OTHERS, artifactSha256)
+            deleteIndexXml(context, rpmVersion, repodataPath, IndexType.OTHERS)
             if (rpmRepoConf.enabledFileLists) {
-                storeFileListsXml(context, "delete", repodataPath, ArtifactRepeat.DELETE, nodeMetadata.toMutableMap())
+                storeFileListsXml(context, "delete", repodataPath, DELETE, rpmVersion.toMetadata())
             }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactUri, context.userId)
             nodeClient.delete(nodeDeleteRequest)
