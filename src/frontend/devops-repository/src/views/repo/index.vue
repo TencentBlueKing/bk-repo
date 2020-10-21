@@ -13,7 +13,7 @@
                 :list="breadcrumb">
             </breadcrumb>
             <div class="repo-detail-tools flex-align-center">
-                <icon class="hover-btn" name="filter" size="14" @click.native="showRepoSearch = !showRepoSearch"></icon>
+                <icon v-if="showFilterIcon" class="hover-btn" name="filter" size="14" @click.native="showRepoSearch = !showRepoSearch"></icon>
                 <div v-if="repoType !== 'generic'" class="ml10 hover-btn flex-align-center" @click="handlerShowGuide">
                     <icon class="mr5" name="hand-guide" size="16"></icon>
                     {{$t('guide')}}
@@ -23,7 +23,14 @@
         <main class="repo-detail-main">
             <div class="repo-detail-search flex-align-center"
                 :style="showRepoSearch ? 'margin-top: 20px' : ''">
-                <bk-input class="repo-search-select" v-model="packageNameInput" clearable :placeholder="$t('pleaseInput') + $t('packageName')"></bk-input>
+                <bk-input
+                    class="repo-search-select"
+                    v-model="packageNameInput"
+                    clearable
+                    @enter="searchHandler"
+                    @clear="searchHandler"
+                    :placeholder="$t('pleaseInput') + $t('packageName')">
+                </bk-input>
                 <!-- <bk-search-select
                     :values="artiQuery"
                     :data="filterList"
@@ -34,9 +41,7 @@
                     :show-condition="false"
                     :show-popover-tag-change="true">
                 </bk-search-select> -->
-                <bk-button class="ml20" outline theme="primary" @click="searchHandler">
-                    {{$t('searchInRepo')}}
-                </bk-button>
+                <i class="repo-detail-search-btn devops-icon icon-search" @click="searchHandler"></i>
                 <bk-button v-if="repoType !== 'generic'" class="ml20" outline theme="primary" @click="fileSearch">
                     {{$t('searchForPkg')}}
                 </bk-button>
@@ -87,10 +92,18 @@
             },
             repoName () {
                 return this.$route.query.name
+            },
+            showFilterIcon () {
+                return this.$route.name === 'commonList' || this.$route.name === 'repoGeneric'
             }
             // filterList () {
             //     return filterList[this.repoType]
             // }
+        },
+        watch: {
+            repoName () {
+                this.showRepoSearch = false
+            }
         },
         created () {
             this.getRepoListAll({
@@ -200,6 +213,7 @@
         background-color: white;
         overflow: hidden;
         .repo-detail-search {
+            position: relative;
             margin: -32px 0 20px;
             transition: all .3s;
             .repo-search-select {
@@ -207,6 +221,19 @@
             }
             .align-right {
                 margin-left: auto;
+            }
+            .repo-detail-search-btn {
+                position: relative;
+                z-index: 1;
+                padding: 9px;
+                color: white;
+                margin-left: -2px;
+                border-radius: 0 2px 2px 0;
+                background-color: #3a84ff;
+                cursor: pointer;
+                &:hover {
+                    background-color: #699df4;
+                }
             }
         }
     }

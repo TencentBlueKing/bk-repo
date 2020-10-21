@@ -6,6 +6,7 @@
     "repoName": "仓库名称",
     "createdDate": "创建时间",
     "createdBy": "创建人",
+    "type": "类型",
     "repoType": "仓库类型",
     "repoManage": "仓库管理",
     "description": "描述",
@@ -120,5 +121,6 @@
     "tokenCopyTip": "请确保您现在复制上述令牌。我们不存储它，您将无法再次看到它",
     "neverExpires": "永久有效",
     "expired": "已过期",
-    "deleteTokenTitle": "确认删除Token {0} ?"
+    "deleteTokenTitle": "确认删除Token {0} ?",
+    "versionPlacehodler": "支持前缀搜索版本"
 }

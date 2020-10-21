@@ -46,7 +46,8 @@
                     <span class="proxy-config-tips">{{$t('proxyConfigTips')}}</span>
                     <div class="proxy-item">
                         <div class="proxy-index"></div>
-                        <div class="proxy-origin">{{$t('origin')}}</div>
+                        <div class="proxy-origin">{{$t('name')}}</div>
+                        <div class="proxy-type">{{$t('type')}}</div>
                         <div class="proxy-address">{{$t('address')}}</div>
                         <div class="proxy-operation">{{$t('operation')}}</div>
                     </div>
@@ -57,6 +58,7 @@
                                 <i class="devops-icon icon-more" style="margin-left:-5px"></i>
                             </div>
                             <div class="proxy-origin">{{proxy.name}}</div>
+                            <div class="proxy-type">{{proxy.public ? $t('publicProxy') : $t('privateProxy')}}</div>
                             <div class="proxy-address">{{proxy.url}}</div>
                             <div class="flex-align-center proxy-operation">
                                 <i v-if="!proxy.public" class="devops-icon icon-edit hover-btn" @click.stop.prevent="editProxy(proxy)"></i>
@@ -115,7 +117,7 @@
                             <bk-input v-model="editProxyData.username"></bk-input>
                         </bk-form-item>
                         <bk-form-item v-if="editProxyData.ticket" :label="$t('password')" :required="true" property="password">
-                            <bk-input v-model="editProxyData.password"></bk-input>
+                            <bk-input type="password" v-model="editProxyData.password"></bk-input>
                         </bk-form-item>
                         <!-- <bk-form-item>
                             <bk-button text theme="primary" @click="testPrivateProxy">{{$t('test') + $t('privateProxy')}}</bk-button>
@@ -431,7 +433,10 @@
                     flex-basis: 50px;
                 }
                 .proxy-origin {
-                    flex:3;
+                    flex:2;
+                }
+                .proxy-type {
+                    flex: 1;
                 }
                 .proxy-address {
                     flex: 6;

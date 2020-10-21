@@ -21,10 +21,12 @@
                             <bk-input
                                 class="common-version-search"
                                 v-model="versionInput"
-                                :placeholder="$t('enterSearch')"
+                                clearable
+                                :placeholder="$t('versionPlacehodler')"
                                 @enter="handlerPaginationChange"
-                                clearable>
+                                @clear="handlerPaginationChange">
                             </bk-input>
+                            <i class="common-version-search-btn devops-icon icon-search" @click="handlerPaginationChange"></i>
                         </div>
                         <bk-table
                             class="common-version-table"
@@ -35,7 +37,7 @@
                             size="small"
                             @row-click="toCommonVersionDetail"
                         >
-                            <bk-table-column :label="$t('name')" prop="name"></bk-table-column>
+                            <bk-table-column :label="$t('version')" prop="name"></bk-table-column>
                             <bk-table-column :label="$t('artiStatus')">
                                 <template v-if="props.row.stageTag" slot-scope="props">
                                     <span class="mr5 repo-tag" v-for="tag in props.row.stageTag"
@@ -337,6 +339,19 @@
                 margin-bottom: -40px;
                 .common-version-search {
                     width: 250px;
+                }
+                .common-version-search-btn {
+                    position: relative;
+                    z-index: 1;
+                    padding: 9px;
+                    color: white;
+                    margin-left: -2px;
+                    border-radius: 0 2px 2px 0;
+                    background-color: #3a84ff;
+                    cursor: pointer;
+                    &:hover {
+                        background-color: #699df4;
+                    }
                 }
                 .common-version-table {
                     .devops-icon {
