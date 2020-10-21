@@ -26,20 +26,8 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 class NpmArtifactInfo(
     projectId: String,
     repoName: String,
-    val artifactUri: String,
-    val scope: String,
-    val pkgName: String,
-    val version: String
+    artifactUri: String
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
-
-    constructor(projectId: String, repoName: String, artifactUri: String) : this(
-        projectId,
-        repoName,
-        artifactUri,
-        "",
-        "",
-        ""
-    )
 
     companion object {
         // publish package
@@ -73,9 +61,5 @@ class NpmArtifactInfo(
         const val NPM_ADD_USER_MAPPING_URI = "/{projectId}/{repoName}/-/user/org.couchdb.user:*"
         const val NPM_USER_LOGOUT_MAPPING_URI = "/{projectId}/{repoName}/-/user/token/*"
         const val NPM_WHOAMI_MAPPING_URI = "/{projectId}/{repoName}/-/whoami"
-    }
-
-    fun isValid(): Boolean {
-        return pkgName.isNotBlank()
     }
 }

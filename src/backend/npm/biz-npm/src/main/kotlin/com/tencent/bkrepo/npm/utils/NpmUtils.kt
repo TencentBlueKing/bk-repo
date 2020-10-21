@@ -22,14 +22,18 @@
 package com.tencent.bkrepo.npm.utils
 
 import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
+import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 
 object NpmUtils {
+
     fun getPackageMetadataPath(packageName: String): String {
         return NPM_PKG_METADATA_FULL_PATH.format(packageName)
     }
@@ -42,8 +46,46 @@ object NpmUtils {
         return NPM_PKG_TGZ_FULL_PATH.format(name, name, version)
     }
 
-    fun analyseVersionFromPackageName(name: String): String {
-        return name.substringBeforeLast(".tgz").substringAfter('-')
+    fun analyseVersionFromPackageName(filename: String, name: String): String {
+        return filename.substringBeforeLast(".tgz").substringAfter("$name-")
+    }
+
+    /**
+     * 查看[tarball]里面是否使用 - 分隔符来进行分隔
+     */
+    fun isDashSeparateInTarball(name: String, version: String, tarball: String): Boolean {
+        val tgzPath = String.format("/%s-%s.tgz", name, version)
+        val separate = tarball.substringBeforeLast(tgzPath).substringAfterLast('/')
+        return separate == StringPool.DASH
+    }
+
+    /**
+     * 格式化[tarball]使用 - 来进行分隔
+     * http://xxx/helloworld/download/hellworld-1.0.0.tgz  -> http://xxx/helloworld/-/hellworld-1.0.0.tgz
+     */
+    fun formatTarballWithDash(name: String, version: String, tarball: String): String {
+        val tgzPath = String.format("/%s-%s.tgz", name, version)
+        val separate = tarball.substringBeforeLast(tgzPath).substringAfterLast('/')
+        return tarball.replace("$name/$separate/$name", "$name/-/$name")
+    }
+
+    fun getLatestVersionFormDistTags(distTags: NpmPackageMetaData.DistTags): String {
+        val iterator = distTags.getMap().iterator()
+        if (iterator.hasNext()) {
+            return iterator.next().value
+        }
+        return distTags.getMap()[LATEST]!!
+    }
+
+    fun parseNameAndVersionFromFullPath(artifactFullPath: String): Pair<String, String> {
+        val splitList = artifactFullPath.split('/').filter { it.isNotBlank() }.map { it.trim() }.toList()
+        val name = if (splitList.size == 3) {
+            splitList.first()
+        } else {
+            "${splitList.first()}/${splitList[1]}"
+        }
+        val version = analyseVersionFromPackageName(artifactFullPath, name)
+        return Pair(name, version)
     }
 
     fun buildPackageTgzTarball(
