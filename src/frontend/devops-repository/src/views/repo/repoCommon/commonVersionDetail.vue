@@ -151,15 +151,15 @@
             return {
                 isLoading: false,
                 detail: {
-                    basic: {},
-                    history: [],
-                    metadata: {},
-                    layers: [],
-                    dependencyInfo: {
-                        dependencies: [],
-                        devDependencies: [],
-                        dependents: []
-                    }
+                    // basic: {},
+                    // history: [],
+                    // metadata: {},
+                    // layers: [],
+                    // dependencyInfo: {
+                    //     dependencies: [],
+                    //     devDependencies: [],
+                    //     dependents: []
+                    // }
                 },
                 // 当前已请求页数，0代表没有更多
                 dependentsPage: 1,
@@ -188,7 +188,7 @@
                 }
             },
             dockerDomain () {
-                return this.detail.basic.dockerDomain
+                return this.detail.basic && this.detail.basic.dockerDomain
             }
         },
         created () {
