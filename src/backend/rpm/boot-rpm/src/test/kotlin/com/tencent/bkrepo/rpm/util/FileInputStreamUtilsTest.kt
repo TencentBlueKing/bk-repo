@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.rpm.util
 
-import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.indexPackage
+import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.findPackageIndex
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.rpmIndex
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -28,13 +28,15 @@ class FileInputStreamUtilsTest {
         val locationStr = "name=\"bkrepo-test\">\n" +
             "    <version epoch=\"0\" ver=\"1\" rel=\"1\"/>"
         val suffixStr = "</package>"
-        val xmlIndex = file.indexPackage(
+        val xmlIndex = file.findPackageIndex(
             prefixStr,
             locationStr,
             suffixStr
         )
-        println(xmlIndex.prefixIndex)
-        println(xmlIndex.locationIndex)
-        println(xmlIndex.suffixIndex)
+        if (xmlIndex != null) {
+            println(xmlIndex.prefixIndex)
+            println(xmlIndex.locationIndex)
+            println(xmlIndex.suffixIndex)
+        }
     }
 }

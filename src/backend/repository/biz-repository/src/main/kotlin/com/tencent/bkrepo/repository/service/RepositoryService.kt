@@ -16,6 +16,7 @@ interface RepositoryService {
     fun queryRepository(projectId: String, name: String, type: String? = null): TRepository?
     fun list(projectId: String): List<RepositoryInfo>
     fun page(projectId: String, page: Int, size: Int): Page<RepositoryInfo>
+    fun pageByType(repoType: String, page: Int, size: Int): Page<RepositoryInfo>
     fun exist(projectId: String, name: String, type: String? = null): Boolean
 
     /**

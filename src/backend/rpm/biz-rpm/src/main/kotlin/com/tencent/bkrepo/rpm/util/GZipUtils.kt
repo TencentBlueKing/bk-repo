@@ -1,10 +1,11 @@
 package com.tencent.bkrepo.rpm.util
 
+import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import java.io.File
 import java.io.FileOutputStream
+import java.io.BufferedOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.io.ByteArrayInputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
@@ -35,7 +36,22 @@ object GZipUtils {
     /**
      * 解压
      */
-    fun InputStream.unGzipInputStream(): InputStream {
-        return ByteArrayInputStream(GZIPInputStream(this).readBytes())
+    fun InputStream.unGzipInputStream(): File {
+        val gZIPInputStream = GZIPInputStream(this)
+        val file = File.createTempFile("rpm", ".xmlStream")
+        val bufferedOutputStream = BufferedOutputStream(FileOutputStream(file))
+        val buffer = ByteArray(5 * 1024 * 1024)
+        var mark: Int
+        try {
+            while (gZIPInputStream.read(buffer).also { mark = it } > 0) {
+                bufferedOutputStream.write(buffer, 0, mark)
+                bufferedOutputStream.flush()
+            }
+        } finally {
+            gZIPInputStream.closeQuietly()
+            bufferedOutputStream.closeQuietly()
+            this.closeQuietly()
+        }
+        return file
     }
 }

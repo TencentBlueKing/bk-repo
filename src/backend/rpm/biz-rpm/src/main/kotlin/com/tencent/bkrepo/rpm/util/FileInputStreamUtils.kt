@@ -1,61 +1,40 @@
 package com.tencent.bkrepo.rpm.util
 
-import com.tencent.bkrepo.rpm.exception.RpmVersionNotFoundException
+import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.rpm.pojo.Index
 import com.tencent.bkrepo.rpm.pojo.XmlIndex
-import java.io.IOException
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.FileInputStream
-import java.io.InputStream
-import java.io.BufferedOutputStream
-import java.io.BufferedInputStream
-import java.io.FileOutputStream
+import java.io.IOException
 import java.io.RandomAccessFile
 
 object FileInputStreamUtils {
-
+    private val logger = LoggerFactory.getLogger(FileInputStreamUtils::class.java)
     private const val bufferSize: Long = 5 * 1024 * 1024L
 
     @Throws(IOException::class)
     fun File.rpmIndex(str: String): Int {
-        val fileInputStream = FileInputStream(this)
-        val bufferSize = str.toByteArray().size + 1
-        val buffer = ByteArray(bufferSize)
-        var mark: Int
-        // 保存上一次读取的内容
-        var tempStr = ""
-        var index = 0
-        while (fileInputStream.read(buffer).also { mark = it } > 0) {
-            val content = String(buffer, 0, mark)
-            val insideIndex = (tempStr + content).indexOf(str)
-            if (insideIndex >= 0) {
-                index = index + insideIndex - bufferSize
-                return index
-            } else {
-                tempStr = content
-                index += buffer.size
+        FileInputStream(this).use { inputStream ->
+            val bufferSize = str.toByteArray().size + 1
+            val buffer = ByteArray(bufferSize)
+            var mark: Int
+            // 保存上一次读取的内容
+            var tempStr = ""
+            var index = 0
+            while (inputStream.read(buffer).also { mark = it } > 0) {
+                val content = String(buffer, 0, mark)
+                val insideIndex = (tempStr + content).indexOf(str)
+                if (insideIndex >= 0) {
+                    index = index + insideIndex - bufferSize
+                    return index
+                } else {
+                    tempStr = content
+                    index += buffer.size
+                }
             }
+            return -1
         }
-        return -1
-    }
-
-    @Throws(IOException::class)
-    fun saveTempXmlFile(indexType: String, inputStream: InputStream): File {
-        val bufferedInputStream = BufferedInputStream(inputStream)
-        val tempFile = File.createTempFile(indexType, "xml")
-        val bufferedOutputStream = BufferedOutputStream(FileOutputStream(tempFile))
-        val buffer = ByteArray(10 * 1024 * 1024)
-        var mark: Int
-        try {
-            while (bufferedInputStream.read(buffer).also { mark = it } > 0) {
-                bufferedOutputStream.write(buffer, 0, mark)
-                bufferedOutputStream.flush()
-            }
-        } finally {
-            bufferedInputStream.close()
-            bufferedOutputStream.close()
-        }
-        return tempFile
     }
 
     /**
@@ -76,14 +55,13 @@ object FileInputStreamUtils {
     fun File.deleteContent(xmlIndex: XmlIndex): File {
         val prefixTempFile = File.createTempFile("prefix", "xml")
         val accessRandomPrefixTempFile = RandomAccessFile(prefixTempFile, "rw")
-
         val randomAccessFile = RandomAccessFile(this, "rw")
         try {
             // 保存前一部分
             val prefixMark = xmlIndex.prefixIndex
             var prefixCount = 0L
             val preBuffer = ByteArray(bufferSize.toInt())
-            loop@while (randomAccessFile.read(preBuffer) > 0) {
+            loop@ while (randomAccessFile.read(preBuffer) > 0) {
                 val tempCount = prefixCount + preBuffer.size
                 if (tempCount > prefixMark) {
                     accessRandomPrefixTempFile.write(preBuffer, 0, (prefixMark - prefixCount).toInt())
@@ -102,8 +80,8 @@ object FileInputStreamUtils {
                 accessRandomPrefixTempFile.write(sufBuffer, 0, mark)
             }
         } finally {
-            accessRandomPrefixTempFile.close()
-            randomAccessFile.close()
+            accessRandomPrefixTempFile.closeQuietly()
+            randomAccessFile.closeQuietly()
             this.delete()
         }
         return prefixTempFile
@@ -112,58 +90,58 @@ object FileInputStreamUtils {
     /**
      * xml
      */
-    fun File.indexPackage(
+    fun File.findPackageIndex(
         prefixStr: String,
         locationStr: String,
         suffixStr: String
-    ): XmlIndex {
+    ): XmlIndex? {
         var prefixIndex: Long = -1L
         var locationIndex: Long = -1L
         var suffixIndex: Long = -1L
-
-        val bufferSize = locationStr.toByteArray().size + 1
-
-        val fileInputStream = FileInputStream(this)
-        val buffer = ByteArray(bufferSize)
-        var mark: Int
-        var index: Long = 0
-        // 保存上一次读取的内容
-        var tempStr = ""
-        loop@while (fileInputStream.read(buffer).also { mark = it } > 0) {
-            val content = String(buffer, 0, mark)
-            if (locationIndex < 0) {
-                val prefix = (tempStr + content).searchContent(index, prefixIndex, prefixStr, buffer.size)
-                val location = (tempStr + content).searchContent(index, locationIndex, locationStr, buffer.size)
-                if (location.isFound) {
-                    locationIndex = location.index
+        FileInputStream(this).use { inputStream ->
+            val buffer = ByteArray(locationStr.toByteArray().size + 1)
+            var mark: Int
+            var index: Long = 0
+            // 保存上一次读取的内容
+            var tempStr = ""
+            loop@ while (inputStream.read(buffer).also { mark = it } > 0) {
+                val content = String(buffer, 0, mark)
+                if (locationIndex < 0) {
+                    val prefix = (tempStr + content).searchContent(index, prefixIndex, prefixStr, buffer.size)
+                    val location = (tempStr + content).searchContent(index, locationIndex, locationStr, buffer.size)
+                    if (location.isFound) {
+                        locationIndex = location.index
+                        val suffix = (tempStr + content).searchContent(index, suffixIndex, suffixStr, buffer.size)
+                        if (suffix.index > locationIndex) {
+                            suffixIndex = suffix.index
+                            break@loop
+                        }
+                    }
+                    if (!location.isFound && prefix.isFound) {
+                        prefixIndex = prefix.index
+                    }
+                    if (location.isFound && prefix.isFound && prefix.index < location.index) {
+                        prefixIndex = prefix.index
+                    }
+                }
+                if (locationIndex > 0) {
                     val suffix = (tempStr + content).searchContent(index, suffixIndex, suffixStr, buffer.size)
                     if (suffix.index > locationIndex) {
                         suffixIndex = suffix.index
                         break@loop
                     }
                 }
-                if (!location.isFound && prefix.isFound) {
-                    prefixIndex = prefix.index
-                }
+                index += buffer.size
+                tempStr = content
             }
-            if (locationIndex > 0) {
-                val suffix = (tempStr + content).searchContent(index, suffixIndex, suffixStr, buffer.size)
-                if (suffix.index > locationIndex) {
-                    suffixIndex = suffix.index
-                    break@loop
-                }
-            }
-            index += buffer.size
-            tempStr = content
         }
-        if (prefixIndex <= 0L || locationIndex <= 0L || suffixIndex <= 0L) {
-            throw RpmVersionNotFoundException("prefixIndex: $prefixIndex; locationIndex: $locationIndex;suffixIndex: $suffixIndex")
+
+        return if (prefixIndex <= 0L || locationIndex <= 0L || suffixIndex <= 0L) {
+            logger.warn("findPackageIndex failed, locationStr: $locationStr, prefixIndex: $prefixIndex; locationIndex: $locationIndex;suffixIndex: $suffixIndex")
+            null
+        } else {
+            XmlIndex(prefixIndex, locationIndex, suffixIndex)
         }
-        return XmlIndex(
-            prefixIndex,
-            locationIndex,
-            suffixIndex
-        )
     }
 
     private fun String.searchContent(
