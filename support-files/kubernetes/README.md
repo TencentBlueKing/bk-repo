@@ -8,16 +8,16 @@ BK-Repo k8s构建工具
 ├── README.md                  
 ├── base-charts                 # 基础环境 helm charts目录
 ├── base-image                  # 基础环境 镜像构建目录
-│   ├── linux             # linux的一些工具
-│   ├── dockerfile        # 基础镜像Dockerfile
-│   ├── jdk               # jdk目录
-│   └── build.sh          # 镜像构建脚本
+│         ├── linux             # linux的一些工具
+│         ├── dockerfile        # 基础镜像Dockerfile
+│         ├── jdk               # jdk/jre目录, 用于构件jdk基础镜像
+│         └── build.sh          # 镜像构建脚本
 ├── bkrepo-charts               # bkrepo业务helm charts目录
 ├── bkrepo-image                # bkrepo业务镜像构建目录
-│   ├── backend           # bkrepo 微服务 Dockerfile
-│   ├── gateway           # bkrepo 网关 Dockerfile
-│   ├── init              # bkrepo 初始化job Dockerfile
-│   └── build.sh          # bkrepo 业务镜像构建脚本
+│         ├── backend           # bkrepo 微服务 Dockerfile
+│         ├── gateway           # bkrepo 网关 Dockerfile
+│         ├── init              # bkrepo 初始化job Dockerfile
+│         └── build.sh          # bkrepo 业务镜像构建脚本
 └── build.env                   # 构建环境变量
 ```
 
@@ -26,11 +26,9 @@ BK-Repo k8s构建工具
 2. 准备mongodb服务器
 3. 准备nfs服务器
     - 共享 /data/nfs目录 
-    - mkdir /data/nfs/bkrepo/consul  # consul数据目录
     - mkdir /data/nfs/bkrepo/storage # 数据存储目录
 4. 所有宿主机需要安装: nfs-common , nfs-utils
 5. jdk/jre拷贝到base-image/jdk目录
-6. consul拷贝到base-image/linux目录
 
 ## 打包基础镜像
 ```shell script
@@ -64,8 +62,8 @@ helm install -n bkrepo . --namespace=bkrepo
 helm install bkrepo . --namespace=bkrepo
 ```
 
-## 构件charts包
-```
+## 构建helm charts包
+```shell script
 # 基础环境charts包
 cd base-charts
 helm package .
