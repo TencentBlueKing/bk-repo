@@ -3,11 +3,14 @@
         <div class="empty-guide-header">
             <div class="empty-guide-title">快速设置</div>
             <div class="empty-guide-subtitle">
-                您还没有任何制品，参考下方使用指引来推送您的第一个制品或者
-                <router-link class="router-link" :to="repoConfig">
-                    配置代理
-                </router-link>
-                以代理其他仓库的包。
+                您还没有任何制品，参考下方使用指引来推送您的第一个制品
+                <template v-if="showRepoConfigRoute">
+                    或者
+                    <router-link class="router-link" :to="repoConfig">
+                        配置代理
+                    </router-link>
+                    以代理其他仓库的包
+                </template>
             </div>
         </div>
         <div class="empty-guide-main">
@@ -47,6 +50,10 @@
             }
         },
         computed: {
+            showRepoConfigRoute () {
+                const repoType = this.$route.params.repoType
+                return !['docker', 'helm'].includes(repoType)
+            },
             repoConfig () {
                 return {
                     name: 'repoConfig',

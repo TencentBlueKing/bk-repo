@@ -6,6 +6,7 @@
 
 <script>
     import Vue from 'vue'
+    import { mapMutations } from 'vuex'
     export default {
         name: 'App',
         watch: {
@@ -37,6 +38,8 @@
                 window.globalVue.$on('order::syncLocale', locale => {
                     this.$setLocale(locale)
                 })
+                this.getUserList()
+                this.getUserInfo()
             }
             const callback = e => {
                 this.$bkMessage({
@@ -48,12 +51,29 @@
             Vue.config.errorHandler = callback
         },
         methods: {
+            ...mapMutations(['SET_USER_INFO', 'SET_USER_LIST']),
             goHome (projectId) {
                 const params = projectId ? { projectId } : {}
                 this.$router.replace({
                     name: 'repoList',
                     params
                 })
+            },
+            getUserList () {
+                if (this.$userList) this.SET_USER_LIST(this.$userList)
+                else {
+                    setTimeout(() => {
+                        this.getUserList()
+                    }, 1000)
+                }
+            },
+            getUserInfo () {
+                if (this.$userInfo) this.SET_USER_INFO(this.$userInfo)
+                else {
+                    setTimeout(() => {
+                        this.getUserInfo()
+                    }, 1000)
+                }
             }
         }
     }

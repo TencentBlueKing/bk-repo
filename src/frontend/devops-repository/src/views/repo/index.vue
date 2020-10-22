@@ -103,6 +103,9 @@
         watch: {
             repoName () {
                 this.showRepoSearch = false
+            },
+            '$route.name' () {
+                this.showRepoSearch = false
             }
         },
         created () {

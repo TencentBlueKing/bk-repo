@@ -58,7 +58,7 @@
                     <span class="display-key">{{ key }}</span>
                     <span class="display-value">{{ value }}</span>
                 </div>
-                <div class="ml20 mt10" v-if="!Object.keys(detail.metadata).length">{{$t('noData')}}</div>
+                <empty-data v-if="!Object.keys(detail.metadata).length"></empty-data>
             </div>
         </bk-tab-panel>
         <bk-tab-panel v-if="detail.layers" name="versionLayers" label="Layers">
@@ -138,28 +138,20 @@
     </bk-tab>
 </template>
 <script>
+    import emptyData from '@/components/emptyData'
     import CodeArea from '@/components/CodeArea'
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@/utils'
     import repoGuideMixin from '../repoGuideMixin'
     import commonMixin from './commonMixin'
     export default {
         name: 'commonVersionDetail',
-        components: { CodeArea },
+        components: { CodeArea, emptyData },
         mixins: [repoGuideMixin, commonMixin],
         data () {
             return {
                 isLoading: false,
                 detail: {
-                    // basic: {},
-                    // history: [],
-                    // metadata: {},
-                    // layers: [],
-                    // dependencyInfo: {
-                    //     dependencies: [],
-                    //     devDependencies: [],
-                    //     dependents: []
-                    // }
                 },
                 // 当前已请求页数，0代表没有更多
                 dependentsPage: 1,
@@ -173,6 +165,7 @@
             }
         },
         computed: {
+            ...mapState(['userList']),
             detailInfoMap () {
                 return {
                     'version': this.$t('version'),
@@ -212,13 +205,16 @@
                     packageKey: this.packageKey,
                     version: this.version
                 }).then(res => {
+                    const basic = res.basic
                     this.detail = {
                         ...res,
                         basic: {
-                            ...res.basic,
-                            size: res.basic.size && convertFileSize(res.basic.size),
-                            createdDate: res.basic.createdDate && formatDate(res.basic.createdDate),
-                            lastModifiedDate: res.basic.lastModifiedDate && formatDate(res.basic.lastModifiedDate)
+                            ...basic,
+                            size: basic.size && convertFileSize(basic.size),
+                            createdBy: this.userList[basic.createdBy] ? this.userList[basic.createdBy].name : basic.createdBy,
+                            createdDate: basic.createdDate && formatDate(basic.createdDate),
+                            lastModifiedBy: this.userList[basic.lastModifiedBy] ? this.userList[basic.lastModifiedBy].name : basic.lastModifiedBy,
+                            lastModifiedDate: basic.lastModifiedDate && formatDate(basic.lastModifiedDate)
                         }
                     }
                     if (this.repoType === 'npm') {

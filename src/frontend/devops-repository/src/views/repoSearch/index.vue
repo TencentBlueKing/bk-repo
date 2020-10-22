@@ -56,7 +56,7 @@
                             <div>{{ `${$t('versionCount')}: ${result.versions}` }}</div>
                             <div>{{ `${$t('downloads')}: ${result.downloads}` }}</div>
                             <div>{{ `${$t('lastModifiedDate')}: ${formatDate(result.lastModifiedDate)}` }}</div>
-                            <div>{{ `${$t('lastModifiedBy')}: ${result.lastModifiedBy}` }}</div>
+                            <div>{{ `${$t('lastModifiedBy')}: ${userList[result.lastModifiedBy] ? userList[result.lastModifiedBy].name : result.lastModifiedBy}` }}</div>
                         </div>
                     </div>
                 </main>
@@ -71,18 +71,18 @@
                     :limit-list="pagination.limitList">
                 </bk-pagination>
             </template>
-            <template v-else>
-                <div class="flex-column flex-center">{{ $t('noData') }}</div>
-            </template>
+            <empty-data v-else></empty-data>
         </main>
     </div>
 </template>
 <script>
-    import { mapActions } from 'vuex'
+    import emptyData from '@/components/emptyData'
+    import { mapState, mapActions } from 'vuex'
     import { repoEnum } from '@/store/publicEnum'
     import { formatDate } from '@/utils'
     export default {
         name: 'repoSearch',
+        components: { emptyData },
         data () {
             return {
                 repoEnum,
@@ -100,6 +100,7 @@
             }
         },
         computed: {
+            ...mapState(['userList']),
             projectId () {
                 return this.$route.params.projectId
             }

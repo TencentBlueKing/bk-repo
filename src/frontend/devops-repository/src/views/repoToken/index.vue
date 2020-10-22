@@ -46,7 +46,7 @@
 <script>
     import createTokenDialog from './createTokenDialog'
     import { formatDate } from '@/utils'
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     export default {
         name: 'repoToken',
         components: { createTokenDialog },
@@ -56,20 +56,20 @@
                 tokenList: []
             }
         },
+        computed: {
+            ...mapState(['userInfo'])
+        },
+        watch: {
+            userInfo () {
+                this.getToken()
+            }
+        },
         created () {
-            this.getUserInfo()
+            this.userInfo.username && this.getToken()
         },
         methods: {
             formatDate,
             ...mapActions(['getTokenList', 'deleteToken']),
-            getUserInfo () {
-                if (this.$userInfo) this.getToken()
-                else {
-                    setTimeout(() => {
-                        this.getUserInfo()
-                    }, 1000)
-                }
-            },
             transformFormatDate (time) {
                 if (!time) {
                     return this.$t('neverExpires')
@@ -97,7 +97,7 @@
             getToken () {
                 this.isLoading = true
                 this.getTokenList({
-                    username: this.$userInfo.username
+                    username: this.userInfo.username
                 }).then(list => {
                     this.tokenList = list
                 }).finally(() => {
@@ -111,7 +111,7 @@
                     showFooter: true,
                     confirmFn: () => {
                         this.deleteToken({
-                            username: this.$userInfo.username,
+                            username: this.userInfo.username,
                             name: row.name
                         }).then(data => {
                             this.getToken()

@@ -1,12 +1,7 @@
+import { mapState } from 'vuex'
 export default {
-    data () {
-        return {
-            userInfo: {
-                username: ''
-            }
-        }
-    },
     computed: {
+        ...mapState(['userInfo']),
         projectId () {
             return this.$route.params.projectId
         },
@@ -556,19 +551,6 @@ export default {
         },
         articleInstall () {
             return this[`${this.$route.params.repoType}Install`]
-        }
-    },
-    mounted () {
-        this.getUserInfo()
-    },
-    methods: {
-        getUserInfo () {
-            if (this.$userInfo) this.userInfo = this.$userInfo
-            else {
-                setTimeout(() => {
-                    this.getUserInfo()
-                }, 1000)
-            }
         }
     }
 }
