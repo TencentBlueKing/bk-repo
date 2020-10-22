@@ -43,7 +43,7 @@ class ChartManipulationResourceImpl : ChartManipulationResource {
         return chartManipulationService.uploadProv(artifactInfo, artifactFileMap)
     }
 
-    override fun delete(artifactInfo: HelmArtifactInfo): HelmSuccessResponse {
-        return chartManipulationService.delete(artifactInfo)
+    override fun deleteVersion(artifactInfo: HelmArtifactInfo, name: String, version: String): HelmSuccessResponse {
+        return chartManipulationService.deleteVersion(artifactInfo, name, version)
     }
 }

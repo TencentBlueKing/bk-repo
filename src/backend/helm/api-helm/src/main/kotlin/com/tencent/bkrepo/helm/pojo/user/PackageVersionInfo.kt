@@ -19,45 +19,45 @@
  *
  */
 
-package com.tencent.bkrepo.helm.service
+package com.tencent.bkrepo.helm.pojo.user
 
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.setup.MockMvcBuilders
-import org.springframework.web.context.WebApplicationContext
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiModelProperty
 
-@DisplayName("helm仓库上传操作测试")
-@SpringBootTest
-class ChartManipulationServiceTest {
-    @Autowired
-    private lateinit var chartManipulationService: ChartManipulationService
+@Api("npm版本详情页返回包装模型")
+data class PackageVersionInfo(
+    @ApiModelProperty("基础信息")
+    val basic: BasicInfo,
+    @ApiModelProperty("元数据信息")
+    val metadata: Map<String, String>
+)
 
-    @Autowired
-    private lateinit var wac: WebApplicationContext
-
-    private lateinit var mockMvc: MockMvc
-
-    @BeforeEach
-    fun setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac).build()
-    }
-
-    @AfterEach
-    fun tearDown() {}
-
-    @Test
-    @DisplayName("测试tgz包的全路径")
-    fun chartFileFullPathTest() {
-        val chartMap = mapOf("name" to "bk-redis", "version" to "0.1.1")
-        val chartFileFullPath = chartManipulationService.getChartFileFullPath(chartMap)
-        Assertions.assertEquals(chartFileFullPath, "/bk-redis-0.1.1.tgz")
-        Assertions.assertNotEquals(chartFileFullPath, "/bk-redis-0.1.1.tgz.prov")
-    }
-}
+@Api("基础信息")
+data class BasicInfo(
+    @ApiModelProperty("版本字段")
+    val version: String,
+    @ApiModelProperty("完整路径")
+    val fullPath: String,
+    @ApiModelProperty("文件大小，单位byte")
+    val size: Long,
+    @ApiModelProperty("文件sha256")
+    val sha256: String,
+    @ApiModelProperty("文件md5")
+    val md5: String,
+    @ApiModelProperty("晋级状态标签")
+    val stageTag: List<String>,
+    @ApiModelProperty("所属项目id")
+    val projectId: String,
+    @ApiModelProperty("所属仓库名称")
+    val repoName: String,
+    @ApiModelProperty("下载次数")
+    val downloadCount: Long,
+    @ApiModelProperty("创建者")
+    val createdBy: String,
+    @ApiModelProperty("创建时间")
+    val createdDate: String,
+    @ApiModelProperty("修改者")
+    val lastModifiedBy: String,
+    @ApiModelProperty("修改时间")
+    val lastModifiedDate: String
+)

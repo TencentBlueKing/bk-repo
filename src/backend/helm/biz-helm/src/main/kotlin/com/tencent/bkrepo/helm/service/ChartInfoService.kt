@@ -27,6 +27,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
@@ -45,11 +46,20 @@ import com.tencent.bkrepo.helm.constants.NODE_METADATA_VERSION
 import com.tencent.bkrepo.helm.constants.NO_CHART_NAME_FOUND
 import com.tencent.bkrepo.helm.constants.PROJECT_ID
 import com.tencent.bkrepo.helm.constants.REPO_NAME
+import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.constants.VERSION
+import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.IndexEntity
+import com.tencent.bkrepo.helm.pojo.user.BasicInfo
+import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.apache.http.HttpStatus
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.InputStream
@@ -63,6 +73,9 @@ class ChartInfoService {
 
     @Autowired
     private lateinit var chartRepositoryService: ChartRepositoryService
+
+    @Autowired
+    private lateinit var packageClient: PackageClient
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime? = null): Map<String, *> {
@@ -158,8 +171,52 @@ class ChartInfoService {
         response.status = status
     }
 
+    fun detailVersion(
+        userId: String,
+        artifactInfo: HelmArtifactInfo,
+        packageKey: String,
+        version: String
+    ): PackageVersionInfo {
+        with(artifactInfo) {
+            val name = PackageKeys.resolveHelm(packageKey)
+            val fullPath = String.format("/%s-%s.tgz", name, version)
+            val nodeDetail = nodeClient.detail(projectId, repoName, REPO_TYPE, fullPath).data ?: run {
+                logger.warn("node [$fullPath] don't found.")
+                throw HelmFileNotFoundException("node [$fullPath] don't found.")
+            }
+            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: run {
+                logger.warn("packageKey [$packageKey] don't found.")
+                throw HelmFileNotFoundException("packageKey [$packageKey] don't found.")
+            }
+            val basicInfo = buildBasicInfo(nodeDetail, packageVersion)
+            return PackageVersionInfo(basicInfo, emptyMap())
+        }
+    }
+
     companion object {
         const val CURRENT_PAGE = 0
         const val SIZE = 5
+
+        val logger: Logger = LoggerFactory.getLogger(ChartInfoService::class.java)
+
+        fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
+            with(nodeDetail) {
+                return BasicInfo(
+                    packageVersion.name,
+                    fullPath,
+                    size,
+                    sha256.orEmpty(),
+                    md5.orEmpty(),
+                    packageVersion.stageTag,
+                    projectId,
+                    repoName,
+                    packageVersion.downloads,
+                    createdBy,
+                    createdDate,
+                    lastModifiedBy,
+                    lastModifiedDate
+                )
+            }
+        }
     }
 }

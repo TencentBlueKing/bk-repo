@@ -30,6 +30,7 @@ object PackageKeys {
 
     private const val DOCKER = "docker"
     private const val NPM = "npm"
+    private const val HELM = "helm"
     private const val RPM = "rpm"
     private const val SEPARATOR = "://"
 
@@ -71,6 +72,15 @@ object PackageKeys {
     }
 
     /**
+     * 生成npm格式key
+     *
+     * 例子: npm://test
+     */
+    fun ofHelm(name: String): String {
+        return ofName(HELM, name)
+    }
+
+    /**
      * 生成rpm格式key
      *
      * 例子: rpm://test
@@ -89,6 +99,15 @@ object PackageKeys {
      */
     fun resolveNpm(npmKey: String): String {
         return resolveName(NPM, npmKey)
+    }
+
+    /**
+     * 解析helm格式的key
+     *
+     * 例子: helm://test  ->  test
+     */
+    fun resolveHelm(helmKey: String): String {
+        return resolveName(HELM, helmKey)
     }
 
     /**
