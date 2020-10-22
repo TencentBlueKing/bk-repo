@@ -101,6 +101,7 @@ class ChartRepositoryService {
         downloadIndexYaml()
     }
 
+    @Synchronized
     fun freshIndexFile(artifactInfo: HelmArtifactInfo) {
         // 先查询index.yaml文件，如果不存在则创建，
         // 存在则根据最后一次更新时间与node节点创建时间对比进行增量更新
@@ -312,6 +313,8 @@ class ChartRepositoryService {
         }
         HelmZipResponseWriter.write(artifactResourceList)
     }
+
+
 
     companion object {
         const val page = 0

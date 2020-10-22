@@ -42,6 +42,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @RestControllerAdvice
 class HelmExceptionHandler {
 
+    @ExceptionHandler(HelmRepoNotFoundException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handlerRepoNotFoundException(exception: HelmRepoNotFoundException) {
+        val responseObject = HelmErrorResponse(exception.message)
+        helmResponse(responseObject, exception)
+    }
+
     @ExceptionHandler(AuthenticationException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handlerClientAuthException(exception: AuthenticationException) {

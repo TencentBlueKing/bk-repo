@@ -44,6 +44,7 @@ const val DOCKER_USER_TAG_SUFFIX = "/tag/{projectId}/{repoName}/**"
 const val DOCKER_USER_DELETE_IMAGE_SUFFIX = "/package/delete/{projectId}/{repoName}"
 const val DOCKER_USER_REPO_TAG_SUFFIX = "/version/delete/{projectId}/{repoName}"
 const val DOCKER_USER_REPO_TAG_DETAIL_SUFFIX = "/version/detail/{projectId}/{repoName}"
+const val DOCKER_REPO_ADDR = "/addr"
 const val DOCKER_TAGS_SUFFIX = "/{projectId}/{repoName}/{name}/tags/list"
 
 const val DOCKER_CATALOG_SUFFIX = "_catalog"
