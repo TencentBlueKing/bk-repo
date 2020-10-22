@@ -361,7 +361,6 @@ class NpmLocalRepository : LocalRepository() {
         val localVersions = cachePackageJson.getAsJsonObject(VERSIONS)
         val remoteVersionsSet = remoteVersions.keySet()
         val cacheVersionsSet = localVersions.keySet()
-        remoteVersionsSet.removeAll(cacheVersionsSet)
         remoteVersionsSet.removeAll(failVersionSet)
 
         val remoteDistTags = remoteJson.getAsJsonObject(DISTTAGS)
@@ -385,13 +384,24 @@ class NpmLocalRepository : LocalRepository() {
         logger.info("the different versions of the  package [$pkgName] is $remoteVersionsSet, size : ${remoteVersionsSet.size}")
         if (remoteVersionsSet.size > 0) {
             // 说明有版本更新,将新增的版本迁移过来
-            remoteVersionsSet.forEach {
-                val versionJson = remoteVersions.getAsJsonObject(it)
-                val versionTime = remoteJson.getAsJsonObject(TIME)[it].asString
+            remoteVersionsSet.forEach { version ->
+                val versionJson = remoteVersions.getAsJsonObject(version)
+                val versionTime = remoteJson.getAsJsonObject(TIME)[version].asString
                 // 以自身为准，如果已经存在该版本则不迁移过来
-                if (!cacheVersionsSet.contains(it)) {
-                    localVersions.add(it, versionJson)
-                    cachePackageJson.getAsJsonObject(TIME).addProperty(it, versionTime)
+                if (!cacheVersionsSet.contains(version)) {
+                    localVersions.add(version, versionJson)
+                    cachePackageJson.getAsJsonObject(TIME).addProperty(version, versionTime)
+                }else{
+                    val localVersionTime = cachePackageJson.getAsJsonObject(TIME)[version].asString
+                    if (TimeUtil.compareTime(versionTime, localVersionTime)){
+                        localVersions.add(version, versionJson)
+                        cachePackageJson.getAsJsonObject(TIME).addProperty(version, versionTime)
+                        remoteDistTags.entrySet().forEach {
+                            if (version == it.value.asString){
+                                localDistTags.addProperty(it.key, version)
+                            }
+                        }
+                    }
                 }
             }
         }
