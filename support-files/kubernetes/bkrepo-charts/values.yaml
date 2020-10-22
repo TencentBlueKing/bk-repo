@@ -8,12 +8,12 @@ bkrepo:
   replicaCount: 1
   init:
     mongodb: false
-    consul: false
+    consul: true
 
 env:
   # JVM
-  BK_REPO_JVM_XMS: 256m
-  BK_REPO_JVM_XMX: 512m
+  BK_REPO_JVM_XMS: 512m
+  BK_REPO_JVM_XMX: 768m
   # env
   BK_REPO_ENV: dev
   # gateway
@@ -36,14 +36,15 @@ env:
   BK_REPO_GATEWAY_ITLOGIN_HOST: it.login.com
   BK_REPO_GATEWAY_ITLOGIN_IP: 127.0.0.1
   BK_REPO_GATEWAY_ITLOGIN_PORT: 80
-  BK_CI_GATEWAY_DNS_ADDR: 127.0.0.1:8600
+  BK_REPO_GATEWAY_DNS_ADDR: kube-dns.kube-system.svc.cluster.local
   # consul 相关配置
-  BK_REPO_CONSUL_DNS_HOST: 127.0.0.1
+  BK_REPO_CONSUL_DNS_HOST: consul-dns.bkrepo.svc.cluster.local
   BK_REPO_CONSUL_DNS_PORT: 8600
   BK_REPO_CONSUL_DOMAIN: bkrepo
   BK_REPO_CONSUL_PORT: 8500
   BK_REPO_CONSUL_TAG: bkce
-  BK_REPO_CONSUL_SERVER: consul-server
+  # for init config
+  BK_REPO_CONSUL_SERVER: consul-server.bkrepo.svc.cluster.local
   # application
   BK_REPO_FILE_PATH: /data/storage
   BK_REPO_LOG_PATH: /data/logs
@@ -72,7 +73,7 @@ env:
   BK_REPO_DOCKER_CERT_KEY:
   BK_REPO_DOCKER_CERT_PEM:
   # docker adapter
-  BK_REPO_URL: http://bkrepo.kb.tencent.com
+  BK_REPO_URL: http://bkrepo.com
   BK_SSM_PRIVATE_URL: http://ssm.service.consul
   BK_REPO_HARBOR_URL:
   BK_REPO_HARBOR_USERNAME:

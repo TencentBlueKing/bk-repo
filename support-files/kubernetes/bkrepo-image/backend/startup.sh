@@ -1,5 +1,4 @@
 #! /bin/sh
-
 mkdir -p /data/logs
 java -server \
      -Dsun.jnu.encoding=UTF-8 \

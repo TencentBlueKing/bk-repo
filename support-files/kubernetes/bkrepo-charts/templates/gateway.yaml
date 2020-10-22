@@ -25,12 +25,6 @@ spec:
             - name : {{ $key }}
               value : "{{ $value }}"
             {{- end}}
-            - name: BK_REPO_CONSUL_DNS_HOST
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.hostIP
-            - name: BK_CI_GATEWAY_DNS_ADDR
-              value: "$(BK_REPO_CONSUL_DNS_HOST):$(BK_REPO_CONSUL_DNS_PORT)"
 ---
 apiVersion: v1
 kind: Service

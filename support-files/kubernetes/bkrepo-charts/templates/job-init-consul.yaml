@@ -1,4 +1,4 @@
-{{- if .Values.bkrepo.init.consul -}}
+{{if .Values.bkrepo.init.consul }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -23,4 +23,4 @@ spec:
             {{- end}}
       restartPolicy: Never
   backoffLimit: 4
-  {{end}}
+{{end}}

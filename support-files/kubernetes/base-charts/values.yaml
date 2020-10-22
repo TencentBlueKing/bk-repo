@@ -1,5 +1,6 @@
 # consul
 consul:
+  enabled: false
   global:
     name: consul
     domain: bkrepo
@@ -16,27 +17,17 @@ consul:
 
 
 # ingress-nginx
-#ingress-nginx:
-#  controller:
-#    image:
-##      repository: xbazhen/ingress-nginx-controller
-##      tag: v0.34.1
-##      digest: sha256:80359bdf124d49264fabf136d2aecadac729b54f16618162194356d3c78ce2fe
-##      pullPolicy: IfNotPresent
-#    hostNetwork: true
-#    hostPort:
-#      enabled: true
-#    kind: DaemonSet
-#    nodeSelector: {
-#      isIngress: "true"
-#    }
-#    service:
-#      type: NodePort
-#      nodePorts:
-#        http: 32081
-#        https: 32444
-#    admissionWebhooks:
-#      enabled: false
+ingress-nginx:
+  enabled: false
+  controller:
+    image:
+#      repository: xbazhen/ingress-nginx-controller
+#      tag: v0.34.1
+#      digest: sha256:80359bdf124d49264fabf136d2aecadac729b54f16618162194356d3c78ce2fe
+#      pullPolicy: IfNotPresent
+    kind: DaemonSet
+    admissionWebhooks:
+      enabled: false
 
 # volume
 volume:
@@ -47,11 +38,6 @@ volume:
   hostPath:
     path: /data/local/
   storage: 10Gi
-
-image:
-  hub: docker.io
-  tag: 0.0.1
-  pullPolicy: IfNotPresent
 
 env:
   BK_REPO_FQDN: bkrepo.com
