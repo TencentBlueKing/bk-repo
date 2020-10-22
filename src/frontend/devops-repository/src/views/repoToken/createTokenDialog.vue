@@ -30,6 +30,9 @@
                 <bk-form-item :label="$t('expiress')" property="expiredAt">
                     <bk-date-picker
                         v-model="tokenFormData.expiredAt"
+                        :options="{
+                            disabledDate: (date) => date < new Date()
+                        }"
                         :placeholder="$t('tokenExpiressTip')">
                     </bk-date-picker>
                 </bk-form-item>

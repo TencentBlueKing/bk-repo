@@ -100,7 +100,8 @@
             itemClickHandler (item) {
                 this.$emit('item-click', item)
             },
-            importantTransform (name = '') {
+            importantTransform (name) {
+                if (!this.importantSearch) return name
                 const normalText = name.split(this.reg)
                 const importantText = name.match(this.reg)
                 return normalText.reduce((a, b, index) => {

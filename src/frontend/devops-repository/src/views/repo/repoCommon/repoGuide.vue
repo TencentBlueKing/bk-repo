@@ -9,7 +9,7 @@
                 <div class="sub-section flex-column">
                     <span class="mb10">
                         {{ $t('tokenSubTitle') }}
-                        <router-link class="token-link" :to="{ name: 'repoToken' }">个人访问令牌</router-link>
+                        <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
                     </span>
                     <div class="token-main">
                         <bk-button theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
@@ -65,6 +65,7 @@
             color: inherit;
         }
         .bk-collapse-item-header {
+            position: relative;
             height: 48px;
             line-height: 48px;
             .icon-angle-right {
@@ -95,12 +96,6 @@
         .sub-section {
             & + .sub-section {
                 margin-top: 20px;
-            }
-        }
-        .token-link {
-            color: #3a84ff;
-            &:hover {
-                color: #699df4;
             }
         }
     }

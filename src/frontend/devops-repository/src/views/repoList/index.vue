@@ -28,6 +28,7 @@
                     :placeholder="$t('enterSearch')"
                     :clearable="true"
                     @enter="getListData"
+                    @clear="getListData"
                     :right-icon="'bk-icon icon-search'">
                 </bk-input>
             </div>
