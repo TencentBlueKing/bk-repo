@@ -72,6 +72,13 @@ label {
     }
 }
 
+.router-link {
+    color: #3a84ff;
+    &:hover {
+        color: #699df4;
+    }
+}
+
 .flex-column {
     display: flex;
     flex-direction: column;
