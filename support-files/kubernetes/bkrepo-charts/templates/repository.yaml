@@ -21,10 +21,14 @@ spec:
           workingDir: /data/bkrepo/
           command: ['/bin/sh','-c','/data/bkrepo/startup.sh']
           env:
-            { { - range $key, $value := .Values.env } }
-            - name: { { $key } }
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
               value: "{{ $value }}"
-            { { - end } }
+            {{- end }}
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
           volumeMounts:
             - mountPath: "/data/storage"
               name: pv-storage

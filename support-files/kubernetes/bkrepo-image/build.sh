@@ -36,7 +36,7 @@ echo "打包gateway镜像完成"
 ## 编译backend
 echo "编译backend..."
 cd $backend_dir
-# ./gradlew build -x test
+ ./gradlew build -x test
 cd $working_dir
 echo "编译frontend完成"
 
@@ -58,7 +58,7 @@ done
 ## 打包初始化镜像
 echo "打包初始化镜像中..."
 rm -rf tmp/*
-cp -rf init/init-mongo.sh tmp/
+cp -rf init/init-mongodb.sh tmp/
 cp -rf init/init-consul.sh tmp/
 cp -rf ../../scripts/render_tpl tmp/
 cp -rf ../../templates tmp/

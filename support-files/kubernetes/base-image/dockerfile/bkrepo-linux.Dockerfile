@@ -7,8 +7,6 @@ LABEL maintainer="blueking"
 ## 使用自己的yum源加速
 COPY linux/CentOS-Base.repo /etc/yum.repos.d/
 COPY linux/mongodb.repo /etc/yum.repos.d/
-## 安装consul
-COPY linux/consul /usr/bin/
 
 RUN yum clean all &&\
     yum makecache -y &&\

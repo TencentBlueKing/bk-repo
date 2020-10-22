@@ -1,5 +1,4 @@
 #! /bin/sh
-nohup consul agent -datacenter=dc -domain=bkrepo -data-dir=/tmp -join=consul-server > /dev/null 2>&1 &
 
 mkdir -p /data/logs
 java -server \
@@ -15,6 +14,7 @@ java -server \
      -Xms$BK_REPO_JVM_XMS \
      -Xmx$BK_REPO_JVM_XMX \
      -jar $MODULE.jar \
-     --spring.profiles.active=$BK_REPO_ENV
+     --spring.profiles.active=$BK_REPO_ENV \
+     --spring.cloud.consul.host=$HOST_IP
 
 tail -f /dev/null
