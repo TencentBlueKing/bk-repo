@@ -31,6 +31,7 @@ import com.tencent.bkrepo.docker.artifact.DockerPackageRepo
 import com.tencent.bkrepo.docker.constant.BLOB_PATTERN
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_CONTENT_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_CREATE_BY
 import com.tencent.bkrepo.docker.constant.DOCKER_CREATE_DATE
 import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST_SHA256
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
@@ -452,6 +453,7 @@ class DockerV2LocalRepoService @Autowired constructor(
             val basic = mapOf(
                 DOCKER_NODE_SIZE to versionDetail.size,
                 DOCKER_CREATE_DATE to versionDetail.createdDate,
+                DOCKER_CREATE_BY to versionDetail.createdBy,
                 DOCKER_VERSION to tag,
                 DOCKER_VERSION_DOMAIN to domain,
                 LAST_MODIFIED_BY to nodeDetail.lastModifiedBy,
