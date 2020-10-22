@@ -179,9 +179,6 @@
                     'lastModifiedBy': this.$t('lastModifiedBy'),
                     'lastModifiedDate': this.$t('lastModifiedDate')
                 }
-            },
-            dockerDomain () {
-                return this.detail.basic && this.detail.basic.dockerDomain
             }
         },
         created () {

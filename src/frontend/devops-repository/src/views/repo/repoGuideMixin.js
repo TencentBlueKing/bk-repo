@@ -1,5 +1,10 @@
-import { mapState } from 'vuex'
+import { mapState, mapActions } from 'vuex'
 export default {
+    data () {
+        return {
+            dockerDomain: ''
+        }
+    },
     computed: {
         ...mapState(['userInfo']),
         projectId () {
@@ -27,7 +32,7 @@ export default {
                     main: [
                         {
                             subTitle: '配置个人凭证',
-                            codeList: [`docker login -u ${this.userInfo.username} -p <PERSONAL_ACCESS_TOKEN> ${location.origin}`]
+                            codeList: [`docker login -u ${this.userInfo.username} -p <PERSONAL_ACCESS_TOKEN> ${location.protocol}//${this.dockerDomain}`]
                         }
                     ]
                 },
@@ -36,11 +41,11 @@ export default {
                     main: [
                         {
                             subTitle: '1、给本地的镜像打标签',
-                            codeList: [`docker tag <LOCAL_IMAGE_TAG> ${location.host}/${this.projectId}/${this.repoName}/${this.packageName}`]
+                            codeList: [`docker tag <LOCAL_IMAGE_TAG> ${this.dockerDomain}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         },
                         {
                             subTitle: '2、推送您的docker 镜像',
-                            codeList: [`docker push ${location.host}/${this.projectId}/${this.repoName}/${this.packageName}`]
+                            codeList: [`docker push ${this.dockerDomain}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         }
                     ]
                 },
@@ -48,7 +53,7 @@ export default {
                     title: '下载',
                     main: [
                         {
-                            codeList: [`docker pull ${location.host}/${this.projectId}/${this.repoName}/${this.packageName}`]
+                            codeList: [`docker pull ${this.dockerDomain}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         }
                     ]
                 }
@@ -552,5 +557,11 @@ export default {
         articleInstall () {
             return this[`${this.$route.params.repoType}Install`]
         }
+    },
+    async created () {
+        this.dockerDomain = await this.getDockerDomain()
+    },
+    methods: {
+        ...mapActions(['getDockerDomain'])
     }
 }
