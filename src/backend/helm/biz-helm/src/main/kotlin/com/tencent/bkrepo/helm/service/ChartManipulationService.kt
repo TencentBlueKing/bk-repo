@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.async.PackageHandler
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
@@ -40,24 +41,38 @@ import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.constants.PROVENANCE_FILE_EXTENSION
+import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmErrorInvalidProvenanceFileException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
+import com.tencent.bkrepo.helm.exception.HelmRepoNotFoundException
 import com.tencent.bkrepo.helm.pojo.HelmSuccessResponse
 import com.tencent.bkrepo.helm.pojo.IndexEntity
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.YamlUtils
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import kotlin.streams.toList
 
 @Service
 class ChartManipulationService {
 
     @Autowired
     private lateinit var chartRepositoryService: ChartRepositoryService
+
+    @Autowired
+    private lateinit var packageHandler: PackageHandler
+
+    @Autowired
+    private lateinit var nodeClient: NodeClient
+
+    @Autowired
+    private lateinit var repositoryClient: RepositoryClient
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
@@ -82,33 +97,12 @@ class ChartManipulationService {
             }
             if (CHART == name) {
                 context.putAttribute(name + FULL_PATH, getChartFileFullPath(chartFileInfo))
-                // attributesMap[name + FULL_PATH] = getChartFileFullPath(chartFileInfo)
             }
             if (PROV == name) {
                 context.putAttribute(name + FULL_PATH, getProvFileFullPath(artifactFileMap))
-                // attributesMap[name + FULL_PATH] = getProvFileFullPath(artifactFileMap)
             }
         }
     }
-
-    // fun getContextAttrMap(
-    //     artifactFileMap: ArtifactFileMap,
-    //     chartFileInfo: Map<String, Any>? = null
-    // ): MutableMap<String, Any> {
-    //     val attributesMap = mutableMapOf<String, Any>()
-    //     artifactFileMap.entries.forEach { (name, _) ->
-    //         if (CHART != name && PROV != name) {
-    //             throw HelmFileNotFoundException("no package or provenance file found in form fields chart and prov")
-    //         }
-    //         if (CHART == name) {
-    //             attributesMap[name + FULL_PATH] = getChartFileFullPath(chartFileInfo)
-    //         }
-    //         if (PROV == name) {
-    //             attributesMap[name + FULL_PATH] = getProvFileFullPath(artifactFileMap)
-    //         }
-    //     }
-    //     return attributesMap
-    // }
 
     fun getChartFileFullPath(chartFile: Map<String, Any>?): String {
         val chartName = chartFile?.get(NAME) as String
@@ -138,9 +132,15 @@ class ChartManipulationService {
         val context = ArtifactUploadContext(artifactFileMap)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         val chartFileInfo = getChartFile(artifactFileMap)
-        // context.contextAttributes = getContextAttrMap(artifactFileMap, chartFileInfo)
         setContextAttributes(context, artifactFileMap, chartFileInfo)
         repository.upload(context)
+        // 创建包
+        packageHandler.createVersion(
+            context.userId,
+            artifactInfo,
+            chartFileInfo,
+            context.getArtifactFile(CHART).getSize()
+        )
         return HelmSuccessResponse.pushSuccess()
     }
 
@@ -161,38 +161,57 @@ class ChartManipulationService {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    fun delete(artifactInfo: HelmArtifactInfo): HelmSuccessResponse {
+    fun deletePackage(artifactInfo: HelmArtifactInfo, name: String): HelmSuccessResponse {
+        checkRepositoryExist(artifactInfo.projectId, artifactInfo.repoName)
         chartRepositoryService.freshIndexFile(artifactInfo)
-        val chartInfo = getChartInfo(artifactInfo)
+        val indexEntity = chartRepositoryService.getOriginalIndexYaml()
+        val fullPathList = indexEntity.entries[name]!!.stream().map { "$name-${it[VERSION] as String}.tgz" }.toList()
         val context = ArtifactRemoveContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        val fullPath = String.format("/%s-%s.%s", chartInfo.first, chartInfo.second, CHART_PACKAGE_FILE_EXTENSION)
-        // context.contextAttributes[FULL_PATH] = fullPath
-        context.putAttribute(FULL_PATH, fullPath)
+
+        context.putAttribute(FULL_PATH, fullPathList)
         repository.remove(context)
-        logger.info("remove artifact [$fullPath] success!")
-        freshIndexYamlForRemove(chartInfo)
+        freshIndexYamlForRemove(name)
+        // 删除包版本
+        packageHandler.deletePackage(context.userId, name, artifactInfo)
         return HelmSuccessResponse.deleteSuccess()
     }
 
-    fun getChartInfo(artifactInfo: HelmArtifactInfo): Pair<String, String> {
-        val artifactUri = artifactInfo.getArtifactFullPath().trimStart('/')
-        val name = artifactUri.substringBeforeLast('/')
-        val version = artifactUri.substringAfterLast('/')
-        return Pair(name, version)
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    @Transactional(rollbackFor = [Throwable::class])
+    fun deleteVersion(artifactInfo: HelmArtifactInfo, name: String, version: String): HelmSuccessResponse {
+        val fullPath = String.format("/%s-%s.%s", name, version, CHART_PACKAGE_FILE_EXTENSION)
+        with(artifactInfo) {
+            checkRepositoryExist(projectId, repoName)
+            val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
+            if (!isExist) {
+                throw HelmFileNotFoundException("remove $fullPath failed: no such file or directory")
+            }
+        }
+        chartRepositoryService.freshIndexFile(artifactInfo)
+        val context = ArtifactRemoveContext()
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+        context.putAttribute(FULL_PATH, mutableListOf(fullPath))
+        repository.remove(context)
+        logger.info("remove artifact [$fullPath] success!")
+        freshIndexYamlForRemove(name, version)
+        // 删除包版本
+        packageHandler.deleteVersion(context.userId, name, version, artifactInfo)
+        return HelmSuccessResponse.deleteSuccess()
     }
 
-    private fun freshIndexYamlForRemove(chartInfo: Pair<String, String>) {
+    @Synchronized
+    private fun freshIndexYamlForRemove(name: String, version: String? = null) {
         try {
             val indexEntity = chartRepositoryService.getOriginalIndexYaml()
             indexEntity.entries.let {
-                if (it[chartInfo.first]?.size == 1 && chartInfo.second == it[chartInfo.first]?.get(0)?.get(VERSION) as String) {
-                    it.remove(chartInfo.first)
+                if (it[name]?.size == 1 && (version == it[name]?.get(0)?.get(VERSION) as String) || version == null) {
+                    it.remove(name)
                 } else {
                     run stop@{
-                        it[chartInfo.first]?.forEachIndexed { index, chartMap ->
-                            if (chartInfo.second == chartMap[VERSION] as String) {
-                                it[chartInfo.first]?.removeAt(index)
+                        it[name]?.forEachIndexed { index, chartMap ->
+                            if (version == chartMap[VERSION] as String) {
+                                it[name]?.removeAt(index)
                                 return@stop
                             }
                         }
@@ -200,10 +219,20 @@ class ChartManipulationService {
                 }
             }
             uploadIndexYaml(indexEntity)
-            logger.info("fresh index.yaml for delete [${chartInfo.first}-${chartInfo.second}.tgz] success!")
+            logger.info("fresh index.yaml for delete [$name-$version.tgz] success!")
         } catch (exception: TypeCastException) {
-            logger.error("fresh index.yaml for delete [${chartInfo.first}-${chartInfo.second}.tgz] failed, ${exception.message}")
+            logger.error("fresh index.yaml for delete [$name-$version.tgz] failed, $exception")
             throw exception
+        }
+    }
+
+    /**
+     * 查询仓库是否存在
+     */
+    fun checkRepositoryExist(projectId: String, repoName: String) {
+        repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
+            logger.error("check repository [$repoName] in projectId [$projectId] failed!")
+            throw HelmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
         }
     }
 

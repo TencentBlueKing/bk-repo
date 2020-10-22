@@ -36,7 +36,7 @@ class HelmArtifactInfo(
         const val HELM_PUSH_PROV_URL = "/api/{projectId}/{repoName}/prov"
 
         // chart delete
-        const val CHART_DELETE_URL = "/{projectId}/{repoName}/api/charts/*/*"
+        const val CHART_DELETE_VERSION_URL = "/{projectId}/{repoName}/api/charts/{name}/{version}"
 
         // get index.yaml
         const val HELM_INDEX_YAML_URL = "/{projectId}/{repoName}/index.yaml"
@@ -44,5 +44,11 @@ class HelmArtifactInfo(
         const val HELM_INSTALL_URL = "/{projectId}/{repoName}/charts/*.tgz"
         // chart prov install
         const val HELM_PROV_INSTALL_URL = "/{projectId}/{repoName}/charts/*.prov"
+
+        // helm version detail
+        const val HELM_VERSION_DETAIL = "/version/detail/{projectId}/{repoName}"
+        // chart delete
+        const val CHART_PACKAGE_DELETE_URL = "/package/delete/{projectId}/{repoName}"
+        const val CHART_VERSION_DELETE_URL = "/version/delete/{projectId}/{repoName}"
     }
 }

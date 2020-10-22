@@ -24,7 +24,7 @@ package com.tencent.bkrepo.helm.api
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.CHART_DELETE_URL
+import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.CHART_DELETE_VERSION_URL
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.HELM_PUSH_PROV_URL
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.HELM_PUSH_URL
 import com.tencent.bkrepo.helm.pojo.HelmSuccessResponse
@@ -32,6 +32,7 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 
@@ -53,9 +54,11 @@ interface ChartManipulationResource {
         artifactFileMap: ArtifactFileMap
     ): HelmSuccessResponse
 
-    @ApiOperation("delete chart")
-    @DeleteMapping(CHART_DELETE_URL)
-    fun delete(
-        @ArtifactPathVariable artifactInfo: HelmArtifactInfo
+    @ApiOperation("delete chart version")
+    @DeleteMapping(CHART_DELETE_VERSION_URL)
+    fun deleteVersion(
+        @ArtifactPathVariable artifactInfo: HelmArtifactInfo,
+        @PathVariable name: String,
+        @PathVariable version: String
     ): HelmSuccessResponse
 }
