@@ -24,6 +24,7 @@ package com.tencent.bkrepo.docker.api
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
 import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
+import com.tencent.bkrepo.docker.constant.DOCKER_REPO_ADDR
 import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
 import com.tencent.bkrepo.docker.constant.DOCKER_TAG
 import com.tencent.bkrepo.docker.constant.DOCKER_USER_DELETE_IMAGE_SUFFIX
@@ -193,4 +194,12 @@ interface User {
         @ApiParam(value = "version", required = true)
         version: String
     ): Response<DockerTagDetail?>
+
+    @ApiOperation("获取docker仓库地址")
+    @GetMapping(DOCKER_REPO_ADDR)
+    fun getDockerRepoAddr(
+        request: HttpServletRequest,
+        @RequestAttribute
+        userId: String?
+    ): Response<String?>
 }

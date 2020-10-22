@@ -411,45 +411,46 @@
 
 ```
 {
-  "code": 0,
-  "message": null,
-  "data": {
-    "basic": {
-      "domain":"bkrepo.com",
-      "size": 2487,
-      "version": "v1",
-      "lastModifiedBy": "admin",
-      "lastModifiedDate": "2020-09-10T14:49:37.904",
-      "downloadCount": 0,
-      "sha256": "fce289e99eb9bca977dae136fbe2a82b6b7d4c372474c9235adc1741675f587e",
-      "os": "linux"
+    "code":0,
+    "message":null,
+    "data":{
+        "basic":{
+            "domain":"bkrepo.com",
+            "size":2487,
+            "version":"v1",
+            "lastModifiedBy":"admin",
+            "createdDate":"2020-09-17 03:48:42.896Z",
+            "lastModifiedDate":"2020-09-10T14:49:37.904",
+            "downloadCount":0,
+            "sha256":"fce289e99eb9bca977dae136fbe2a82b6b7d4c372474c9235adc1741675f587e",
+            "os":"linux"
+        },
+        "history":[
+            {
+                "created":"2019-01-01T01:29:27.416803627Z",
+                "created_by":"/bin/sh -c #(nop) COPY file:f77490f70ce51da25bd21bfc30cb5e1a24b2b65eb37d4af0c327ddc24f0986a6 in / "
+            },
+            {
+                "created":"2019-01-01T01:29:27.650294696Z",
+                "created_by":"/bin/sh -c #(nop)  CMD ["/hello"]"
+            }
+        ],
+        "metadata":{
+            "docker.manifest":"v1",
+            "sha256":"92c7f9c92844bbbb5d0a101b22f7c2a7949e40f8ea90c8b3bc396879d95e899a",
+            "docker.repoName":"hello-world",
+            "docker.manifest.digest":"sha256:92c7f9c92844bbbb5d0a101b22f7c2a7949e40f8ea90c8b3bc396879d95e899a",
+            "docker.manifest.type":"application/vnd.docker.distribution.manifest.v2+json"
+        },
+        "layers":[
+            {
+                "mediaType":"application/vnd.docker.image.rootfs.diff.tar.gzip",
+                "size":977,
+                "digest":"sha256:1b930d010525941c1d56ec53b97bd057a67ae1865eebf042686d2a2d18271ced"
+            }
+        ]
     },
-    "history": [
-      {
-        "created": "2019-01-01T01:29:27.416803627Z",
-        "created_by": "/bin/sh -c #(nop) COPY file:f77490f70ce51da25bd21bfc30cb5e1a24b2b65eb37d4af0c327ddc24f0986a6 in / "
-      },
-      {
-        "created": "2019-01-01T01:29:27.650294696Z",
-        "created_by": "/bin/sh -c #(nop)  CMD [\"/hello\"]"
-      }
-    ],
-    "metadata": {
-      "docker.manifest": "v1",
-      "sha256": "92c7f9c92844bbbb5d0a101b22f7c2a7949e40f8ea90c8b3bc396879d95e899a",
-      "docker.repoName": "hello-world",
-      "docker.manifest.digest": "sha256:92c7f9c92844bbbb5d0a101b22f7c2a7949e40f8ea90c8b3bc396879d95e899a",
-      "docker.manifest.type": "application/vnd.docker.distribution.manifest.v2+json"
-    },
-    "layers": [
-      {
-        "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-        "size": 977,
-        "digest": "sha256:1b930d010525941c1d56ec53b97bd057a67ae1865eebf042686d2a2d18271ced"
-      }
-    ]
-  },
-  "traceId": ""
+    "traceId":""
 }
 ```
 
@@ -465,6 +466,47 @@
 |history|object array|镜像构建历史|the history of build|
 |metadata|object|元数据信息|the metadata of image tag|
 |layers|object array|层级信息|the layer info of image|
+
+### 获取docker仓库地址
+
+- API: GET /docker/ext/addr
+- API 名称: get_docker_repo_addr
+- 功能说明：
+	- 中文：获取docker镜像仓库配置地址
+	- English：get docker repo addr
+
+- input body:
+
+
+``` json
+
+```
+
+
+- input 字段说明
+
+
+
+
+- output:
+
+```
+{
+    "code":0,
+    "message":null,
+    "data":"docker.bk.com",
+    "traceId":""
+}
+```
+
+- output 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
+|message|result message|错误消息 |the failure message |
+|data | string |docker仓库地址|the docker registry addr|
+|traceId|string|请求跟踪id|the trace id|
 
 
 ### 鉴权示例

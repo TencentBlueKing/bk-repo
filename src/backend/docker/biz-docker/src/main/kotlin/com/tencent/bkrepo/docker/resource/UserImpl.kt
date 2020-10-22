@@ -149,4 +149,9 @@ class UserImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) 
         val result = dockerRepo.getRepoTagDetail(context, version)
         return ResponseBuilder.success(result)
     }
+
+    override fun getDockerRepoAddr(request: HttpServletRequest, userId: String?): Response<String?> {
+        val result = dockerRepo.domain
+        return ResponseBuilder.success(result)
+    }
 }

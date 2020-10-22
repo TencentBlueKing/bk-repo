@@ -100,7 +100,7 @@ class DockerV2LocalRepoService @Autowired constructor(
 ) : DockerV2RepoService {
 
     @Value("\${docker.domain: ''}")
-    private val domain: String = EMPTY
+    val domain: String = EMPTY
 
     var httpHeaders: HttpHeaders = HttpHeaders()
 
