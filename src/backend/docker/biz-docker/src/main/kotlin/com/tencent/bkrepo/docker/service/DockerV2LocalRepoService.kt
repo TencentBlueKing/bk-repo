@@ -31,6 +31,7 @@ import com.tencent.bkrepo.docker.artifact.DockerPackageRepo
 import com.tencent.bkrepo.docker.constant.BLOB_PATTERN
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_CONTENT_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_CREATE_DATE
 import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST_SHA256
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_LENGTH_EMPTY
@@ -450,6 +451,7 @@ class DockerV2LocalRepoService @Autowired constructor(
             val configBlob = JsonUtils.objectMapper.readValue(configBytes, DockerSchema2Config::class.java)
             val basic = mapOf(
                 DOCKER_NODE_SIZE to versionDetail.size,
+                DOCKER_CREATE_DATE to versionDetail.createdDate,
                 DOCKER_VERSION to tag,
                 DOCKER_VERSION_DOMAIN to domain,
                 LAST_MODIFIED_BY to nodeDetail.lastModifiedBy,
@@ -460,12 +462,6 @@ class DockerV2LocalRepoService @Autowired constructor(
                 DOCKER_OS to configBlob.os
             )
             return DockerTagDetail(basic, configBlob.history, nodeDetail.metadata, layers)
-            // return mapOf(
-            //     "basic" to basic,
-            //     "history" to configBlob.history,
-            //     "metadata" to nodeDetail.metadata,
-            //     "layers" to layers
-            // )
         } catch (ignored: Exception) {
             return null
         }
