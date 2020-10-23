@@ -317,19 +317,11 @@ class DockerArtifactRepo @Autowired constructor(
      * @return Boolean is the file can be read
      */
     fun canRead(context: RequestContext): Boolean {
-        try {
-            permissionManager.checkPermission(
-                userId,
-                ResourceType.PROJECT,
-                PermissionAction.WRITE,
-                context.projectId,
-                context.repoName
-            )
-        } catch (e: PermissionException) {
-            logger.debug("user: [$userId] ,check read permission fail [$context]")
-            return false
+        val projectP = checkProjectRepoPermission(context, ResourceType.PROJECT, PermissionAction.READ)
+        if (projectP) {
+            return true
         }
-        return true
+        return checkProjectRepoPermission(context, ResourceType.REPO, PermissionAction.READ)
     }
 
     /**
@@ -338,16 +330,35 @@ class DockerArtifactRepo @Autowired constructor(
      * @return Boolean is the file can be write
      */
     fun canWrite(context: RequestContext): Boolean {
+        val projectP = checkProjectRepoPermission(context, ResourceType.PROJECT, PermissionAction.WRITE)
+        if (projectP) {
+            return true
+        }
+        return checkProjectRepoPermission(context, ResourceType.REPO, PermissionAction.WRITE)
+    }
+
+    /**
+     * check  project repository permission
+     * @param context the request context
+     * @param resourceType ResourceType
+     * @param action PermissionAction
+     * @return Boolean is the file can be write
+     */
+    private fun checkProjectRepoPermission(
+        context: RequestContext,
+        resourceType: ResourceType,
+        action: PermissionAction
+    ): Boolean {
         try {
             permissionManager.checkPermission(
                 userId,
-                ResourceType.PROJECT,
-                PermissionAction.WRITE,
+                resourceType,
+                action,
                 context.projectId,
                 context.repoName
             )
         } catch (e: PermissionException) {
-            logger.debug("user: [$userId] ,check write permission fail [$context]")
+            logger.debug("user: [$userId] ,check  permission fail [$context]")
             return false
         }
         return true
