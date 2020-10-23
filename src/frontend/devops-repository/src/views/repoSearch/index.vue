@@ -15,6 +15,8 @@
                     class="mr20 file-name-search"
                     v-model="packageNameInput"
                     :placeholder="$t('pleaseInput') + $t('packageName')"
+                    @enter="searckPackageHandler"
+                    @clear="searckPackageHandler"
                     clearable>
                 </bk-input>
                 <bk-button :loading="isLoading" theme="primary" @click="searckPackageHandler">{{$t('search')}}</bk-button>
