@@ -48,7 +48,6 @@ import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.DELETE
 import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
 import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
-import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.rpmFileListsFilter
 import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.calculatePackages
 import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.getRpmBooleanHeader
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils
@@ -56,16 +55,11 @@ import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.XmlStrUtils
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
-import com.tencent.bkrepo.rpm.util.XmlStrUtils.rpmMetadataToPackageXml
 import com.tencent.bkrepo.rpm.util.rpm.RpmFormatUtils
 import com.tencent.bkrepo.rpm.util.rpm.RpmMetadataUtils
 import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChecksum
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadataChangeLog
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadataFileList
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageChangeLog
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageFileList
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoData
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
@@ -192,8 +186,10 @@ class RpmLocalRepository(
         stopWatchDetail.start("sha1")
         val sha1Digest = artifactFile.getInputStream().sha1()
         stopWatchDetail.stop()
+        val artifactSha256 = context.getArtifactFile().getFileSha256()
         val artifactRelativePath = repodataUri.artifactRelativePath
         stopWatchDetail.start("interpret")
+        // 纯后台模式下，这步的目的主要是提前检查rpm包数据能否被正确解析
         val rpmMetadata = RpmMetadataUtils().interpret(
             rpmFormat,
             artifactFile.getSize(),
@@ -210,48 +206,48 @@ class RpmLocalRepository(
             rpmMetadata.packages[0].version.rel
         )
         if (rpmRepoConf.enabledFileLists) {
-            val rpmMetadataFileList = RpmMetadataFileList(
-                listOf(
-                    RpmPackageFileList(
-                        rpmMetadata.packages[0].checksum.checksum,
-                        rpmMetadata.packages[0].name,
-                        rpmMetadata.packages[0].version,
-                        rpmMetadata.packages[0].format.files
-                    )
-                ),
-                1L
-            )
+//            val rpmMetadataFileList = RpmMetadataFileList(
+//                listOf(
+//                    RpmPackageFileList(
+//                        rpmMetadata.packages[0].checksum.checksum,
+//                        rpmMetadata.packages[0].name,
+//                        rpmMetadata.packages[0].version,
+//                        rpmMetadata.packages[0].format.files
+//                    )
+//                ),
+//                1L
+//            )
             // 单独存储每个包的filelists.xml
-            storeFileListsXml(
-                context, rpmMetadataFileList.rpmMetadataToPackageXml(IndexType.FILELISTS), repodataPath, repeat,
-                rpmVersion.toMetadata()
-            )
+            storeIndexMark(context, repodataPath, repeat, rpmVersion.toMetadata(), IndexType.FILELISTS, artifactSha256)
+//            storeFileListsXml(
+//                context, rpmMetadataFileList.rpmMetadataToPackageXml(IndexType.FILELISTS), repodataPath, repeat,
+//                rpmVersion.toMetadata()
+//            )
         }
         stopWatchDetail.stop()
         // 过滤files中的文件
-        rpmMetadata.rpmFileListsFilter()
-        val rpmMetadataChangeLog = RpmMetadataChangeLog(
-            listOf(
-                RpmPackageChangeLog(
-                    rpmMetadata.packages[0].checksum.checksum,
-                    rpmMetadata.packages[0].name,
-                    rpmMetadata.packages[0].version,
-                    rpmMetadata.packages[0].format.changeLogs
-                )
-            ),
-            1L
-        )
-        val artifactSha256 = context.getArtifactFile().getFileSha256()
+//        rpmMetadata.filterRpmFileLists()
+//        val rpmMetadataChangeLog = RpmMetadataChangeLog(
+//            listOf(
+//                RpmPackageChangeLog(
+//                    rpmMetadata.packages[0].checksum.checksum,
+//                    rpmMetadata.packages[0].name,
+//                    rpmMetadata.packages[0].version,
+//                    rpmMetadata.packages[0].format.changeLogs
+//                )
+//            ),
+//            1L
+//        )
         // 更新others.xml
         stopWatchDetail.start("others")
         storeIndexMark(context, repodataPath, repeat, rpmVersion.toMetadata(), IndexType.OTHERS, artifactSha256)
-        updateIndexXml(context, rpmMetadataChangeLog, repeat, repodataPath, IndexType.OTHERS)
-        rpmMetadata.packages[0].format.changeLogs.clear()
+//        updateIndexXml(context, rpmMetadataChangeLog, repeat, repodataPath, IndexType.OTHERS)
+//        rpmMetadata.packages[0].format.changeLogs.clear()
         stopWatchDetail.stop()
         // 更新primary.xml
         stopWatchDetail.start("primary")
         storeIndexMark(context, repodataPath, repeat, rpmVersion.toMetadata(), IndexType.PRIMARY, artifactSha256)
-        updateIndexXml(context, rpmMetadata, repeat, repodataPath, IndexType.PRIMARY)
+//        updateIndexXml(context, rpmMetadata, repeat, repodataPath, IndexType.PRIMARY)
         stopWatchDetail.stop()
         stopWatchAll.stop()
         if (logger.isDebugEnabled) {
@@ -459,7 +455,7 @@ class RpmLocalRepository(
         val xmlInputStream = FileInputStream(xmlFile)
         val xmlFileSize = xmlFile.length()
 
-        val xmlGZFile = xmlInputStream.gZip(indexType.value)
+        val xmlGZFile = xmlInputStream.gZip(indexType)
         val xmlFileSha1 = xmlInputStream.sha1()
         try {
             val xmlGZFileSha1 = FileInputStream(xmlGZFile).sha1()
@@ -758,7 +754,7 @@ class RpmLocalRepository(
             with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/$artifactUri") }
             nodeClient.create(nodeCreateRequest)
             logger.info("Success to insert $nodeCreateRequest")
-            flushRepoMdXML(context, null)
+//            flushRepoMdXML(context, null)
         }
         successUpload(context, mark, rpmRepoConf.repodataDepth)
     }
@@ -791,11 +787,12 @@ class RpmLocalRepository(
 
             // 更新 primary, others
             storeIndexMark(context, repodataPath, DELETE, rpmVersion.toMetadata(), IndexType.PRIMARY, artifactSha256)
-            deleteIndexXml(context, rpmVersion, repodataPath, IndexType.PRIMARY)
+//            deleteIndexXml(context, rpmVersion, repodataPath, IndexType.PRIMARY)
             storeIndexMark(context, repodataPath, DELETE, rpmVersion.toMetadata(), IndexType.OTHERS, artifactSha256)
-            deleteIndexXml(context, rpmVersion, repodataPath, IndexType.OTHERS)
+//            deleteIndexXml(context, rpmVersion, repodataPath, IndexType.OTHERS)
             if (rpmRepoConf.enabledFileLists) {
-                storeFileListsXml(context, "delete", repodataPath, DELETE, rpmVersion.toMetadata())
+                storeIndexMark(context, repodataPath, DELETE, rpmVersion.toMetadata(), IndexType.FILELISTS, artifactSha256)
+//                storeFileListsXml(context, "delete", repodataPath, DELETE, rpmVersion.toMetadata())
             }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactUri, context.userId)
             nodeClient.delete(nodeDeleteRequest)

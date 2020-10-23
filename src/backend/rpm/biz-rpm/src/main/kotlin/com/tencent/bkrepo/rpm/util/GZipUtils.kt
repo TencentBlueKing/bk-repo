@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
+import com.tencent.bkrepo.rpm.pojo.IndexType
 import java.io.File
 import java.io.FileOutputStream
 import java.io.BufferedOutputStream
@@ -20,8 +21,8 @@ object GZipUtils {
     }
 
     @Throws(IOException::class)
-    fun InputStream.gZip(indexType: String): File {
-        val file = File.createTempFile("rpm", "-$indexType.xml.gz")
+    fun InputStream.gZip(indexType: IndexType): File {
+        val file = File.createTempFile("rpm", "-${indexType.value}.xml.gz")
         val buffer = ByteArray(5 * 1024 * 1024)
         GZIPOutputStream(FileOutputStream(file)).use {
             var mark: Int

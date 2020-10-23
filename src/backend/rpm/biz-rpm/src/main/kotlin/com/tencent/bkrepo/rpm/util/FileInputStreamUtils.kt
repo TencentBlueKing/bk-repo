@@ -88,9 +88,13 @@ object FileInputStreamUtils {
     }
 
     /**
-     * xml
+     * [File] 需要查找的文件
+     * [XmlIndex] 封装结果
+     * [prefixStr] rpm 包索引package节点的开始字符串
+     * [locationStr] 可以唯一定位一个 rpm 包索引package节点位置的 字符串
+     * [suffixStr] rpm 包索引package节点的结束字符串
      */
-    fun File.indexPackage(
+    fun File.findPackageIndex(
         prefixStr: String,
         locationStr: String,
         suffixStr: String

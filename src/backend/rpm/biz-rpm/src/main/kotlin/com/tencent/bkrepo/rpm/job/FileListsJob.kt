@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class OthersJob {
+class FileListsJob {
 
     @Autowired
     private lateinit var repositoryClient: RepositoryClient
@@ -19,32 +19,32 @@ class OthersJob {
     @Autowired
     private lateinit var jobService: JobService
 
-    // 每次任务间隔100ms
-    @Scheduled(fixedDelay = 100)
-    @SchedulerLock(name = "OthersJob", lockAtMostFor = "PT10M")
+    // 每次任务间隔3s
+    @Scheduled(fixedDelay = 3000)
+    @SchedulerLock(name = "FileListsJob", lockAtMostFor = "PT10M")
     fun checkPrimaryXml() {
         val startMillis = System.currentTimeMillis()
         val repoList = repositoryClient.pageByType(0, 100, "RPM").data?.records
 
         repoList?.let {
             for (repo in repoList) {
-                logger.info("sync other (${repo.projectId}|${repo.name}) start")
+                logger.info("sync filelists (${repo.projectId}|${repo.name}) start")
                 val rpmConfiguration = repo.configuration as RpmLocalConfiguration
                 val repodataDepth = rpmConfiguration.repodataDepth ?: 0
                 val targetSet = mutableSetOf<String>()
                 jobService.findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
                 for (repoDataPath in targetSet) {
-                    logger.info("sync other (${repo.projectId}|${repo.name}|$repoDataPath) start")
-                    jobService.syncIndex(repo, repoDataPath, IndexType.OTHERS)
-                    logger.info("sync other (${repo.projectId}|${repo.name}|$repoDataPath) done")
+                    logger.info("sync filelists (${repo.projectId}|${repo.name}|$repoDataPath) start")
+                    jobService.syncIndex(repo, repoDataPath, IndexType.FILELISTS)
+                    logger.info("sync filelists (${repo.projectId}|${repo.name}|$repoDataPath) done")
                 }
-                logger.info("sync other (${repo.projectId}|${repo.name}) done")
+                logger.info("sync filelists (${repo.projectId}|${repo.name}) done")
             }
         }
-        logger.info("sync other, cost time: ${System.currentTimeMillis() - startMillis} ms")
+        logger.info("sync filelists done, cost time: ${System.currentTimeMillis() - startMillis} ms")
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(OthersJob::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(FileListJob::class.java)
     }
 }

@@ -50,7 +50,7 @@ object RpmCollectionUtils {
         return resultList
     }
 
-    fun RpmMetadata.rpmFileListsFilter() {
+    fun RpmMetadata.filterRpmFileLists() {
         this.packages[0].format.files = this.packages[0].format.files.filter {
             (it.filePath.contains("bin/") && (it.filePath.endsWith(".sh"))) ||
                 (it.filePath.startsWith("/etc/") && it.filePath.contains("conf")) ||

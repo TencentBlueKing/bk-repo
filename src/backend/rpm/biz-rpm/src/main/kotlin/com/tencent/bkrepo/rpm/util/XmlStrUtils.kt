@@ -6,7 +6,7 @@ import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.pojo.RepodataUri
 import com.tencent.bkrepo.rpm.pojo.RpmVersion
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.deleteContent
-import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.indexPackage
+import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.findPackageIndex
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.insertContent
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.rpmIndex
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
@@ -92,6 +92,13 @@ object XmlStrUtils {
         return resultFile
     }
 
+    /**
+     * 更新filelists 索引内容
+     * [file] filelists 索引文件
+     * [tempFileFullPath]
+     * [inputStream] 索引文件流
+     * [metadata]
+     */
     fun updateFileLists(
         file: File,
         tempFileFullPath: String,
@@ -107,7 +114,7 @@ object XmlStrUtils {
         val packageXml = String(inputStream.use { it.readBytes() })
         val stopWatch = StopWatch()
         stopWatch.start("findPackageIndex")
-        val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
+        val xmlIndex = file.findPackageIndex(prefix, locationStr, PACKAGE_END_MARK)
         stopWatch.stop()
 
         var resultFile = file
@@ -149,7 +156,9 @@ object XmlStrUtils {
             rpmXmlMetadata.packages.first().version.ver,
             rpmXmlMetadata.packages.first().version.rel
         )
-        val location = (rpmXmlMetadata as RpmMetadata).packages.first().location.href
+        val location = if (indexType == IndexType.PRIMARY) {
+            (rpmXmlMetadata as RpmMetadata).packages.first().location.href
+        } else { null }
 
         val locationStr = getLocationStr(indexType, rpmVersion, location)
         val prefix = getPackagePrefix(indexType)
@@ -157,7 +166,7 @@ object XmlStrUtils {
         val packageXml = rpmXmlMetadata.rpmMetadataToPackageXml(indexType)
         val stopWatch = StopWatch()
         stopWatch.start("findPackageIndex")
-        val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
+        val xmlIndex = file.findPackageIndex(prefix, locationStr, PACKAGE_END_MARK)
         stopWatch.stop()
 
         var resultFile = file
@@ -203,7 +212,7 @@ object XmlStrUtils {
 
         val stopWatch = StopWatch()
         stopWatch.start("findIndex")
-        val xmlIndex = file.indexPackage(prefix, locationStr, PACKAGE_END_MARK)
+        val xmlIndex = file.findPackageIndex(prefix, locationStr, PACKAGE_END_MARK)
         stopWatch.stop()
 
         var resultFile = file
@@ -223,7 +232,7 @@ object XmlStrUtils {
         return resultFile
     }
 
-    fun getLocationStr(
+    private fun getLocationStr(
         indexType: IndexType,
         rpmVersion: RpmVersion,
         location: String?
@@ -256,7 +265,7 @@ object XmlStrUtils {
      * 将RpmMetadata 序列化为xml，然后去除metadata根节点。
      * 不直接序列化Package的目的是为了保留缩进格式。
      */
-    fun RpmXmlMetadata.rpmMetadataToPackageXml(indexType: IndexType): String {
+    private fun RpmXmlMetadata.rpmMetadataToPackageXml(indexType: IndexType): String {
         val prefix = when (indexType) {
             IndexType.OTHERS -> {
                 OTHERS_METADATA_PREFIX

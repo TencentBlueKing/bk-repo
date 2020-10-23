@@ -13,7 +13,9 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.rpm.artifact.SurplusNodeCleaner
+import com.tencent.bkrepo.rpm.exception.RpmArtifactMetadataResolveException
 import com.tencent.bkrepo.rpm.exception.RpmVersionNotFoundException
+import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
 import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
@@ -21,11 +23,9 @@ import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.XmlStrUtils
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import org.springframework.util.StopWatch
 import java.io.ByteArrayInputStream
@@ -50,8 +50,8 @@ class FileListJob {
     @Autowired
     private lateinit var jobService: JobService
 
-    @Scheduled(cron = "0 0/2 * * * ?")
-    @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT60M")
+//    @Scheduled(cron = "0 0/2 * * * ?")
+//    @SchedulerLock(name = "FileListJob", lockAtMostFor = "PT60M")
     fun insertFileList() {
         logger.info("rpmInsertFileList start")
         val startMillis = System.currentTimeMillis()
@@ -79,115 +79,123 @@ class FileListJob {
         repo: RepositoryInfo,
         repodataPath: String
     ) {
-        val target = "-filelists.xml.gz"
-        with(repo) {
-            // repodata下'-filelists.xml.gz'最新节点。
-            val nodeList = nodeClient.list(
-                projectId, name,
-                repodataPath,
-                includeFolder = false, deep = false
-            ).data
-            val targetNodelist = nodeList?.filter {
-                it.name.endsWith(target)
-            }?.sortedByDescending {
-                it.createdDate
-            }
-
-            if (!targetNodelist.isNullOrEmpty()) {
-                val latestNode = targetNodelist[0]
-                // 从临时目录中遍历索引
-                val page = nodeClient.page(
-                    projectId, name, 0, BATCH_SIZE,
-                    "$repodataPath/temp/",
-                    includeFolder = false,
-                    includeMetadata = true
-                ).data ?: return
-                if (page.records.isEmpty()) {
-                    logger.info("no temp file to process")
-                    return
+        val indexNodeList = jobService.getIndexNodeList(repo, repodataPath, IndexType.FILELISTS)
+        if (indexNodeList.isNullOrEmpty()) {
+            // first upload
+            storeFileListXmlNode(repo, repodataPath)
+            insertFileListsXml(repo, repodataPath)
+        } else {
+            val latestIndexNode = indexNodeList[0]
+            val tempNodeList = getTempXml(repo, repodataPath) ?: return
+            val oldFileListsStream = storageService.load(
+                latestIndexNode.sha256!!,
+                Range.full(latestIndexNode.size),
+                null
+            ) ?: return
+            val stopWatch = StopWatch()
+            stopWatch.start("unzipOriginFileListsFile")
+            var newFileListsFile: File = oldFileListsStream.use { it.unGzipInputStream() }
+            stopWatch.stop()
+            logger.info("originFileSize: ${HumanReadable.size(latestIndexNode.size)}|${HumanReadable.size(newFileListsFile.length())}")
+            try {
+                val calculatedList = mutableListOf<NodeInfo>()
+                // 循环写入
+                stopWatch.start("updateFiles")
+                for (tempFile in tempNodeList) {
+                    storageService.load(
+                        tempFile.sha256!!,
+                        Range.full(tempFile.size),
+                        null
+                    )?.use {
+                        newFileListsFile = insertTempXmlToFileList(tempFile, newFileListsFile)
+                    }
+                    calculatedList.add(tempFile)
                 }
-                logger.info("${page.records.size} temp file to process")
-                val oldFileListsFile = storageService.load(
-                    latestNode.sha256!!,
-                    Range.full(latestNode.size),
-                    null
-                ) ?: return
-                val stopWatch = StopWatch()
-                stopWatch.start("unzipOriginFileListsFile")
-                var newFileListsFile: File = oldFileListsFile.use { it.unGzipInputStream() }
                 stopWatch.stop()
-                logger.info("originFileSize: ${HumanReadable.size(latestNode.size)}|${HumanReadable.size(newFileListsFile.length())}")
-                try {
-                    val tempFileListsNode = page.records.sortedBy { it.lastModifiedDate }
-                    val calculatedList = mutableListOf<NodeInfo>()
-                    // 循环写入
-                    stopWatch.start("updateFiles")
-                    for (tempFile in tempFileListsNode) {
-                        val inputStream = storageService.load(
-                            tempFile.sha256!!,
-                            Range.full(tempFile.size),
-                            null
-                        ) ?: continue
-                        try {
-                            newFileListsFile = if ((tempFile.metadata?.get("repeat")) == "FULLPATH") {
-                                logger.debug("update ${tempFile.fullPath}")
-                                XmlStrUtils.updateFileLists(
-                                    newFileListsFile,
-                                    tempFile.fullPath,
-                                    inputStream,
-                                    tempFile.metadata!!
-                                )
-                            } else if ((tempFile.metadata?.get("repeat")) == "DELETE") {
-                                logger.debug("delete ${tempFile.fullPath}")
-                                try {
-                                    XmlStrUtils.deletePackage(
-                                        IndexType.FILELISTS,
-                                        newFileListsFile,
-                                        tempFile.metadata!!.toRpmVersion(tempFile.fullPath),
-                                        tempFile.fullPath
-                                    )
-                                } catch (rpmVersionNotFound: RpmVersionNotFoundException) {
-                                    logger.info("${tempFile.fullPath} 的filelists 未被更新")
-                                    newFileListsFile
-                                }
-                            } else {
-                                logger.debug("insert ${tempFile.fullPath}")
-                                XmlStrUtils.insertFileLists(
-                                    IndexType.FILELISTS, newFileListsFile,
-                                    inputStream,
-                                    false
-                                )
-                            }
-                            calculatedList.add(tempFile)
-                        } finally {
-                            inputStream.closeQuietly()
-                            oldFileListsFile.closeQuietly()
-                        }
-                    }
-                    stopWatch.stop()
-                    stopWatch.start("storeFile")
-                    jobService.storeXmlGZNode(repo, newFileListsFile, repodataPath, IndexType.FILELISTS)
-                    stopWatch.stop()
-                    stopWatch.start("deleteTempXml")
-                    surplusNodeCleaner.deleteTempXml(calculatedList)
-                    stopWatch.stop()
-                    if (logger.isDebugEnabled) {
-                        logger.debug("updateFileLists stat: $stopWatch")
-                    }
-                } finally {
-                    newFileListsFile.delete()
+                stopWatch.start("storeFile")
+                jobService.storeXmlGZNode(repo, newFileListsFile, repodataPath, IndexType.FILELISTS)
+                stopWatch.stop()
+                stopWatch.start("deleteTempXml")
+                surplusNodeCleaner.deleteTempXml(calculatedList)
+                stopWatch.stop()
+                if (logger.isDebugEnabled) {
+                    logger.debug("updateFileLists stat: $stopWatch")
                 }
-            } else {
-                // first upload
-                storeFileListXmlNode(repo, repodataPath)
-                insertFileListsXml(repo, repodataPath)
+            } finally {
+                oldFileListsStream.closeQuietly()
+                newFileListsFile.delete()
             }
-            jobService.flushRepoMdXML(projectId, name, repodataPath)
-            // 删除多余索引节点
-            GlobalScope.launch {
-                targetNodelist?.let { surplusNodeCleaner.deleteSurplusNode(it) }
-            }.start()
         }
+        jobService.flushRepoMdXML(repo.projectId, repo.name, repodataPath)
+        GlobalScope.launch {
+            indexNodeList?.let { surplusNodeCleaner.deleteSurplusNode(it) }
+        }.start()
+    }
+
+    /**
+     * 从临时目录中遍历待处理索引
+     */
+    fun getTempXml(repo: RepositoryInfo, repodataPath: String): List<NodeInfo>? {
+        val page = nodeClient.page(
+            repo.projectId, repo.name, 0, BATCH_SIZE,
+            "$repodataPath/temp/",
+            includeFolder = false,
+            includeMetadata = true
+        ).data ?: return null
+        if (page.records.isEmpty()) {
+            logger.info("no temp file to process")
+            return null
+        }
+        logger.info("${page.records.size} temp file to process")
+        return page.records.sortedBy { it.lastModifiedDate }
+    }
+
+    fun insertTempXmlToFileList(node: NodeInfo, fileListsFile: File): File {
+        storageService.load(
+            node.sha256!!,
+            Range.full(node.size),
+            null
+        )?.use {
+            val repeatStr = node.metadata?.get("repeat")
+                ?: throw RpmArtifactMetadataResolveException("${node.fullPath}: not found metadata.repeat value")
+            return when (ArtifactRepeat.valueOf(repeatStr)) {
+                ArtifactRepeat.FULLPATH -> {
+                    logger.debug("update ${node.fullPath}")
+                    XmlStrUtils.updateFileLists(
+                        fileListsFile,
+                        node.fullPath,
+                        it,
+                        node.metadata!!
+                    )
+                }
+                ArtifactRepeat.DELETE -> {
+                    logger.debug("delete ${node.fullPath}")
+                    try {
+                        XmlStrUtils.deletePackage(
+                            IndexType.FILELISTS,
+                            fileListsFile,
+                            node.metadata!!.toRpmVersion(node.fullPath),
+                            node.fullPath
+                        )
+                    } catch (rpmVersionNotFound: RpmVersionNotFoundException) {
+                        logger.info("${node.fullPath} 的filelists 未被更新")
+                        fileListsFile
+                    }
+                }
+                ArtifactRepeat.NONE -> {
+                    logger.debug("insert ${node.fullPath}")
+                    XmlStrUtils.insertFileLists(
+                        IndexType.FILELISTS, fileListsFile,
+                        it,
+                        false
+                    )
+                }
+                ArtifactRepeat.FULLPATH_SHA256 -> {
+                    fileListsFile
+                }
+            }
+        }
+        return fileListsFile
     }
 
     private fun storeFileListXmlNode(
