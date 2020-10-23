@@ -85,6 +85,7 @@
                     name: this.tokenFormData.name,
                     expiredAt: this.tokenFormData.expiredAt instanceof Date ? this.tokenFormData.expiredAt.toISOString() : ''
                 }).then(({ id }) => {
+                    this.$emit('token', id)
                     this.token = id
                 }).finally(() => {
                     this.loading = false
