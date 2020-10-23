@@ -94,7 +94,9 @@ object NpmUtils {
         name: String,
         artifactInfo: ArtifactInfo
     ): String {
-        val tgzSuffix = name + oldTarball.substringAfter(name)
+        val list = oldTarball.split(name).map { it.trim() }
+        val tgzSuffix = name + list[list.lastIndex - 1] + name + list.last()
+        //val tgzSuffix = name + oldTarball.substringAfter(name)
         val npmPrefixHeader = HeaderUtils.getHeader(NPM_TGZ_TARBALL_PREFIX)
         val newTarball = StringBuilder()
         npmPrefixHeader?.let {
