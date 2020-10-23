@@ -19,7 +19,7 @@
                     <div class="repo-item flex-align-center" :class="repo.name === selectedItem.name ? 'selected' : ''"
                         @click="handlerRepoClick(repo)">
                         <icon size="24" :name="repo.type"></icon>
-                        <span class="ml10">{{repo.name}}</span>
+                        <div class="ml10 repo-item-title" :title="repo.name">{{repo.name}}</div>
                     </div>
                 </li>
             </ul>
@@ -98,7 +98,6 @@
     }
     .repo-select-main {
         position: absolute;
-        margin-left: 15px;
         margin-top: 50px;
         width: 250px;
         overflow: hidden;
@@ -119,6 +118,12 @@
             .repo-item {
                 height: 45px;
                 padding: 0 20px;
+                .repo-item-title {
+                    max-width: 180px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
                 &.selected, &:hover {
                     background-color: $bgHoverColor;
                 }
