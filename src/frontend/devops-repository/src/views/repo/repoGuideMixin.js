@@ -79,17 +79,35 @@ export default {
                     title: '设置凭证',
                     main: [
                         {
-                            subTitle: '1、在项目根目录下（与package.json同级），添加文件.npmrc，拷贝如下信息',
+                            subTitle: '方式一、使用个人令牌'
+                        },
+                        {
+                            subTitle: '在项目根目录下（与package.json同级），添加文件.npmrc，拷贝如下信息',
                             codeList: [
                                 `registry=${this.repoUrl}/`,
                                 `always-auth=true`,
-                                `//${this.repoUrl}/:username=${this.userInfo.username}`,
-                                `//${this.repoUrl}/:password=<PERSONAL_ACCESS_TOKEN>`,
-                                `//${this.repoUrl}/:email=<EMAIL>`
+                                `//${this.repoUrl.split('//')[1]}/:username=${this.userInfo.username}`,
+                                `//${this.repoUrl.split('//')[1]}/:_password=<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>`,
+                                `//${this.repoUrl.split('//')[1]}/:email=<EMAIL>`
                             ]
                         },
                         {
-                            subTitle: '2、设置 npm registry为当前制品库仓库，进入命令行根据用户凭证登录',
+                            subTitle: '生成<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>'
+                        },
+                        {
+                            subTitle: '1、在command/shell命令行运行以下代码',
+                            codeList: [
+                                `node -e "require('readline') .createInterface({input:process.stdin,output:process.stdout,historySize:0}) .question('PAT> ',p => { b64=Buffer.from(p.trim()).toString('base64');console.log(b64);process.exit(); })"`
+                            ]
+                        },
+                        {
+                            subTitle: '2、复制<PERSONAL_ACCESS_TOKEN>至命令行后，按下Enter键'
+                        },
+                        {
+                            subTitle: '方式二、使用命令行'
+                        },
+                        {
+                            subTitle: '设置 npm registry为当前制品库仓库，进入命令行根据用户凭证登录',
                             codeList: [
                                 `npm registry ${this.repoUrl}/`,
                                 `npm login`
