@@ -42,7 +42,11 @@
                     <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="200">
                         <template slot-scope="props">{{ formatDate(props.row.lastModifiedDate) }}</template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('lastModifiedBy')" prop="lastModifiedBy" width="120"></bk-table-column>
+                    <bk-table-column :label="$t('lastModifiedBy')" width="120">
+                        <template slot-scope="props">
+                            {{ userList[props.row.lastModifiedBy] ? userList[props.row.lastModifiedBy].name : props.row.lastModifiedBy }}
+                        </template>
+                    </bk-table-column>
                     <bk-table-column :label="$t('size')" width="100">
                         <template slot-scope="props">
                             <bk-button text
@@ -146,7 +150,7 @@
                     <bk-form-item :label="$t('share') + $t('object')" :required="true" property="user">
                         <bk-tag-input
                             v-model="formDialog.user"
-                            :list="userList"
+                            :list="Object.values(userList)"
                             trigger="focus"
                             allow-create
                             has-delete-icon>
@@ -232,7 +236,6 @@
                     user: [],
                     time: 1
                 },
-                userList: [],
                 // formDialog Rules
                 rules: {
                     path: [
@@ -306,7 +309,7 @@
             }
         },
         computed: {
-            ...mapState(['genericTree']),
+            ...mapState(['userList', 'genericTree']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -331,9 +334,6 @@
             this.initPage()
             this.setBreadcrumb()
         },
-        mounted () {
-            this.getUserList()
-        },
         beforeDestroy () {
             this.SET_BREADCRUMB([])
         },
@@ -357,14 +357,6 @@
                 'shareArtifactory',
                 'getFolderSize'
             ]),
-            getUserList () {
-                if (this.$userList) this.userList = Object.values(this.$userList)
-                else {
-                    setTimeout(() => {
-                        this.getUserList()
-                    }, 1000)
-                }
-            },
             async initPage () {
                 this.importantSearch = ''
                 this.INIT_TREE()
@@ -499,7 +491,9 @@
                     ...data,
                     name: data.name || this.repoName,
                     size: convertFileSize(data.size),
+                    createdBy: this.userList[data.createdBy] ? this.userList[data.createdBy].name : data.createdBy,
                     createdDate: formatDate(data.createdDate),
+                    lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
                     lastModifiedDate: formatDate(data.lastModifiedDate)
                 }
                 this.detailSlider.loading = false

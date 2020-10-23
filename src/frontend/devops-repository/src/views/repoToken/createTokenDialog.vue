@@ -46,7 +46,7 @@
 </template>
 <script>
     import Clipboard from 'clipboard'
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     export default {
         name: 'createToken',
         data () {
@@ -69,6 +69,9 @@
                 token: ''
             }
         },
+        computed: {
+            ...mapState(['userInfo'])
+        },
         methods: {
             ...mapActions(['addToken']),
             showDialogHandler () {
@@ -78,7 +81,7 @@
                 await this.$refs.tokenForm.validate()
                 this.loading = true
                 this.addToken({
-                    username: this.$userInfo.username,
+                    username: this.userInfo.username,
                     name: this.tokenFormData.name,
                     expiredAt: this.tokenFormData.expiredAt instanceof Date ? this.tokenFormData.expiredAt.toISOString() : ''
                 }).then(({ id }) => {

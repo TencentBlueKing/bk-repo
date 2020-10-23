@@ -11,7 +11,7 @@
                 <div>{{ `${$t('versionCount')}: ${cardData.versions}` }}</div>
                 <div>{{ `${$t('downloads')}: ${cardData.downloads}` }}</div>
                 <div>{{ `${$t('lastModifiedDate')}: ${formatDate(cardData.lastModifiedDate)}` }}</div>
-                <div>{{ `${$t('lastModifiedBy')}: ${cardData.lastModifiedBy}` }}</div>
+                <div>{{ `${$t('lastModifiedBy')}: ${userList[cardData.lastModifiedBy] ? userList[cardData.lastModifiedBy].name : cardData.lastModifiedBy}` }}</div>
             </div>
         </div>
         <i class="devops-icon icon-delete package-card-delete hover-btn" @click.stop="deleteCard"></i>
@@ -19,6 +19,7 @@
 </template>
 <script>
     import { formatDate } from '@/utils'
+    import { mapState } from 'vuex'
     export default {
         name: 'packageCard',
         props: {
@@ -30,6 +31,9 @@
                 type: String,
                 default: 'default-docker'
             }
+        },
+        computed: {
+            ...mapState(['userList'])
         },
         methods: {
             formatDate,

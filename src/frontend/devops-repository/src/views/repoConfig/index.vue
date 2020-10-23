@@ -213,7 +213,7 @@
                 return this.$route.params.repoType
             },
             showProxyConfigTab () {
-                return !['generic', 'docker'].includes(this.repoType)
+                return !['generic', 'docker', 'helm'].includes(this.repoType)
             },
             selectedPublicProxy () {
                 return this.publicProxy.find(v => v.channelId === this.editProxyData.channelId) || {}
@@ -313,7 +313,7 @@
                     ...this.editProxyData,
                     ...row,
                     type: 'edit',
-                    ticket: Boolean(row.username.length)
+                    ticket: Boolean(row.username && row.username.length)
                 }
             },
             deleteProxy (row) {

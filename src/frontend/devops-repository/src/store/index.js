@@ -15,7 +15,9 @@ export default new Vuex.Store({
                 children: [],
                 roadMap: '0'
             }
-        ]
+        ],
+        userList: {},
+        userInfo: {}
     },
     getters: {
     },
@@ -45,6 +47,12 @@ export default new Vuex.Store({
         },
         SET_BREADCRUMB (state, data) {
             state.breadcrumb = data
+        },
+        SET_USER_LIST (state, data) {
+            state.userList = data
+        },
+        SET_USER_INFO (state, data) {
+            state.userInfo = data
         }
     },
     actions
