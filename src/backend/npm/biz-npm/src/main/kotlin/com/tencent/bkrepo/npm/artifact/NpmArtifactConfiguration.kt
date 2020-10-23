@@ -48,8 +48,7 @@ class NpmArtifactConfiguration : ArtifactConfiguration {
     ): HttpAuthSecurityCustomizer {
         return object : HttpAuthSecurityCustomizer {
             override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-                httpAuthSecurity.disableBasicAuth()
-                    .addHttpAuthHandler(NpmLoginAuthHandler(authenticationManager, jwtProperties))
+                httpAuthSecurity.addHttpAuthHandler(NpmLoginAuthHandler(authenticationManager, jwtProperties))
             }
         }
     }

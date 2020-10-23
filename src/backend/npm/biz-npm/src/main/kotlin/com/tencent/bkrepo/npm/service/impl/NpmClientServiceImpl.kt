@@ -72,6 +72,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.IOException
 import java.io.InputStream
+import kotlin.system.measureTimeMillis
 
 @Service
 class NpmClientServiceImpl(
@@ -93,7 +94,11 @@ class NpmClientServiceImpl(
                 objectMapper.readValue(HttpContextHolder.getRequest().inputStream, NpmPackageMetaData::class.java)
             when {
                 isUploadRequest(npmPackageMetaData) -> {
-                    handlerPackagePublish(userId, artifactInfo, npmPackageMetaData)
+                    measureTimeMillis {
+                        handlerPackagePublish(userId, artifactInfo, npmPackageMetaData)
+                    }.apply {
+                        logger.info("user [$userId] public npm package [$name] to repo [${artifactInfo.getRepoIdentify()}] success, elapse $this ms")
+                    }
                     return NpmSuccessResponse.createEntitySuccess()
                 }
                 isDeprecateRequest(npmPackageMetaData) -> {
@@ -131,24 +136,22 @@ class NpmClientServiceImpl(
         name: String,
         showCustomTarball: Boolean = true
     ): NpmPackageMetaData {
-        with(artifactInfo) {
-            val packageFullPath = NpmUtils.getPackageMetadataPath(name)
-            val context = ArtifactQueryContext()
-            context.putAttribute(NPM_FILE_FULL_PATH, packageFullPath)
-            val inputStream =
-                ArtifactContextHolder.getRepository().query(context) as? InputStream
-                    ?: throw NpmArtifactNotFoundException("document not found")
-            val packageMetaData = inputStream.use { objectMapper.readValue(it, NpmPackageMetaData::class.java) }
-            if (showCustomTarball) {
-                val versionsMap = packageMetaData.versions.map
-                val iterator = versionsMap.entries.iterator()
-                while (iterator.hasNext()) {
-                    val entry = iterator.next()
-                    modifyVersionMetadataTarball(artifactInfo, name, entry.value)
-                }
+        val packageFullPath = NpmUtils.getPackageMetadataPath(name)
+        val context = ArtifactQueryContext()
+        context.putAttribute(NPM_FILE_FULL_PATH, packageFullPath)
+        val inputStream =
+            ArtifactContextHolder.getRepository().query(context) as? InputStream
+                ?: throw NpmArtifactNotFoundException("document not found")
+        val packageMetaData = inputStream.use { objectMapper.readValue(it, NpmPackageMetaData::class.java) }
+        if (showCustomTarball) {
+            val versionsMap = packageMetaData.versions.map
+            val iterator = versionsMap.entries.iterator()
+            while (iterator.hasNext()) {
+                val entry = iterator.next()
+                modifyVersionMetadataTarball(artifactInfo, name, entry.value)
             }
-            return packageMetaData
         }
+        return packageMetaData
     }
 
     private fun modifyVersionMetadataTarball(
@@ -179,13 +182,6 @@ class NpmClientServiceImpl(
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun download(artifactInfo: NpmArtifactInfo) {
-        // with(artifactInfo){
-        //     if (!exist(projectId, repoName, artifactInfo.getArtifactFullPath())){
-        //         val message = "artifact ${artifactInfo.getArtifactFullPath()} not found in repo [$projectId/$repoName]"
-        //         logger.error(message)
-        //         throw NpmArtifactNotFoundException(message)
-        //     }
-        // }
         val context = ArtifactDownloadContext()
         context.putAttribute(NPM_FILE_FULL_PATH, context.artifactInfo.getArtifactFullPath())
         ArtifactContextHolder.getRepository().download(context)
@@ -415,7 +411,7 @@ class NpmClientServiceImpl(
         val fullPath = "${versionMetadata.name}/-/$filename"
         with(artifactInfo) {
             if (exist(projectId, repoName, fullPath)) {
-                throw NpmArtifactExistException("cannot modify pre-existing version ${versionMetadata.version}.")
+                throw NpmArtifactExistException("cannot modify pre-existing version ${versionMetadata.version}")
             }
             logger.info("user [$userId] deploying npm package [$fullPath] into repo [$projectId/$repoName]")
             try {
