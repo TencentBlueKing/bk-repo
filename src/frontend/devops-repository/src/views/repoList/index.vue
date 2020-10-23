@@ -62,7 +62,11 @@
                         {{ formatDate(props.row.createdDate) }}
                     </template>
                 </bk-table-column>
-                <bk-table-column :label="$t('createdBy')" prop="createdBy"></bk-table-column>
+                <bk-table-column :label="$t('createdBy')">
+                    <template slot-scope="props">
+                        {{ userList[props.row.createdBy] ? userList[props.row.createdBy].name : props.row.createdBy }}
+                    </template>
+                </bk-table-column>
                 <bk-table-column :label="$t('operation')" width="100">
                     <template slot-scope="props">
                         <i class="hover-btn devops-icon icon-cog mr10" @click="showRepoConfig(props.row)"></i>
@@ -74,7 +78,7 @@
     </div>
 </template>
 <script>
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     import { repoEnum } from '@/store/publicEnum'
     import { formatDate } from '@/utils'
     export default {
@@ -97,6 +101,7 @@
             }
         },
         computed: {
+            ...mapState(['userList']),
             projectId () {
                 return this.$route.params.projectId
             }

@@ -9,7 +9,7 @@
                 <div class="flex-align-center">
                     <div class="mr50">{{ `${$t('downloads')}: ${pkg.downloads}` }}</div>
                     <div class="mr50">{{ `${$t('lastModifiedDate')}: ${formatDate(pkg.lastModifiedDate)}` }}</div>
-                    <div>{{ `${$t('lastModifiedBy')}: ${pkg.lastModifiedBy}` }}</div>
+                    <div>{{ `${$t('lastModifiedBy')}: ${userList[pkg.lastModifiedBy] ? userList[pkg.lastModifiedBy].name : pkg.lastModifiedBy}` }}</div>
                 </div>
             </div>
         </div>
@@ -50,7 +50,11 @@
                                 </template>
                             </bk-table-column>
                             <bk-table-column :label="$t('downloads')" prop="downloads"></bk-table-column>
-                            <bk-table-column :label="$t('lastModifiedBy')" prop="lastModifiedBy"></bk-table-column>
+                            <bk-table-column :label="$t('lastModifiedBy')">
+                                <template slot-scope="props">
+                                    {{ userList[props.row.lastModifiedBy] ? userList[props.row.lastModifiedBy].name : props.row.lastModifiedBy }}
+                                </template>
+                            </bk-table-column>
                             <bk-table-column :label="$t('lastModifiedDate')">
                                 <template slot-scope="props">
                                     {{ formatDate(props.row.lastModifiedDate) }}
@@ -85,22 +89,6 @@
                         </bk-pagination>
                     </div>
                 </bk-tab-panel>
-                <!-- <bk-tab-panel name="dockerDescription" :label="$t('dockerInfo')">
-                    <article class="docker-description">
-                        <section>
-                            <header class="docker-description-header">bkci base dockerimage</header>
-                        </section>
-                        <section>
-                            <header class="docker-description-header">{{ $t('dockerBaseInfo1') }}</header>
-                            <code-area :code-list="[`docker pull ${$route.query.name}/${$route.query.docker}:latest`]"></code-area>
-                        </section>
-                        <section>
-                            <header class="docker-description-header">{{ $t('dockerBaseInfo2') }}</header>
-                            <div class="docker-description-tip">{{ $t('dockerBaseInfo3') }}</div>
-                            <code-area :code-list="[`docker pull ${$route.query.name}/${$route.query.docker}:latest`]"></code-area>
-                        </section>
-                    </article>
-                </bk-tab-panel> -->
             </bk-tab>
         </div>
         
@@ -127,13 +115,11 @@
     </div>
 </template>
 <script>
-    // import CodeArea from '@/components/CodeArea'
     import { convertFileSize, formatDate } from '@/utils'
     import commonMixin from './commonMixin'
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     export default {
         name: 'commonPackageDetail',
-        // components: { CodeArea },
         mixins: [commonMixin],
         data () {
             return {
@@ -173,6 +159,9 @@
                     'limit-list': [10, 20, 40]
                 }
             }
+        },
+        computed: {
+            ...mapState(['userList'])
         },
         created () {
             this.getPackageInfoHandler()
