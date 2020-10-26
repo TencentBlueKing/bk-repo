@@ -88,7 +88,7 @@
                 <bk-tab-panel v-if="editProxyData.type === 'add'" name="publicProxy" :label="$t('publicProxy')">
                     <bk-form ref="publicProxy" :label-width="100" :model="editProxyData" :rules="rules">
                         <bk-form-item :label="$t('name')" :required="true" property="channelId">
-                            <bk-select v-model="editProxyData.channelId">
+                            <bk-select v-model="editProxyData.channelId" :clear="false">
                                 <bk-option
                                     v-for="option in publicProxy"
                                     :key="option.channelId"
@@ -168,7 +168,7 @@
                         {
                             required: true,
                             message: this.$t('pleaseSelect') + this.$t('publicProxy'),
-                            trigger: 'blur'
+                            trigger: 'change'
                         }
                     ],
                     name: [
@@ -228,7 +228,12 @@
             this.getPublicProxy({
                 repoType: this.repoType.toUpperCase()
             }).then(res => {
-                this.publicProxy = res
+                this.publicProxy = res.map(v => {
+                    return {
+                        ...v,
+                        channelId: v.id
+                    }
+                })
             })
         },
         methods: {

@@ -143,7 +143,9 @@ interface ServiceUserResource {
         @ApiParam(value = "name")
         @PathVariable("name") name: String,
         @ApiParam(value = "expiredAt", required = false)
-        @RequestParam expiredAt: String?
+        @RequestParam expiredAt: String?,
+        @ApiParam(value = "projectId", required = false)
+        @RequestParam projectId: String?
     ): Response<Token?>
 
     @ApiOperation("查询用户token列表")

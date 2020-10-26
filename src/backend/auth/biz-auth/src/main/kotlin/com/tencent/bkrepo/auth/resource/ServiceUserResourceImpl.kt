@@ -103,7 +103,15 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
-    override fun addUserToken(uid: String, name: String, expiredAt: String?): Response<Token?> {
+    override fun addUserToken(uid: String, name: String, expiredAt: String?, projectId: String?): Response<Token?> {
+        // add user to project first
+        projectId?.let {
+            val createRoleRequest =
+                CreateRoleRequest(PROJECT_MANAGE_ID, PROJECT_MANAGE_NAME, RoleType.PROJECT, projectId, null, true)
+            val roleId = roleService.createRole(createRoleRequest)
+            userService.addUserToRole(uid, roleId!!)
+        }
+        // add user token
         val result = userService.addUserToken(uid, name, expiredAt)
         return ResponseBuilder.success(result)
     }
