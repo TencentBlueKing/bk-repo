@@ -22,8 +22,11 @@ export default {
         version () {
             return this.$route.query.version || '<PACKAGE_VERSION>'
         },
+        repoType () {
+            return this.$route.params.repoType
+        },
         repoUrl () {
-            return `${location.origin}/${this.projectId}/${this.repoName}`
+            return `${location.origin}/${this.repoType}/${this.projectId}/${this.repoName}`
         },
         dockerGuide () {
             return [
@@ -95,19 +98,22 @@ export default {
                             subTitle: '生成<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>'
                         },
                         {
-                            subTitle: '1、在command/shell命令行运行以下代码',
+                            subTitle: '1、在command/shell命令行窗口运行以下代码',
                             codeList: [
                                 `node -e "require('readline') .createInterface({input:process.stdin,output:process.stdout,historySize:0}) .question('PAT> ',p => { b64=Buffer.from(p.trim()).toString('base64');console.log(b64);process.exit(); })"`
                             ]
                         },
                         {
-                            subTitle: '2、复制<PERSONAL_ACCESS_TOKEN>至命令行后，按下Enter键'
+                            subTitle: '2、复制<PERSONAL_ACCESS_TOKEN>至命令行窗口后，按下Enter键'
+                        },
+                        {
+                            subTitle: '3、复制编码后的token，替换<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>'
                         },
                         {
                             subTitle: '方式二、使用命令行'
                         },
                         {
-                            subTitle: '设置 npm registry为当前制品库仓库，进入命令行根据用户凭证登录',
+                            subTitle: '设置 npm registry为当前制品库仓库，进入command/shell命令行窗口根据用户凭证登录',
                             codeList: [
                                 `npm registry ${this.repoUrl}/`,
                                 `npm login`
