@@ -1,5 +1,5 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
  * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
@@ -19,20 +19,17 @@
  *
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+package com.tencent.bkrepo.nuget
+
+import com.tencent.bkrepo.common.service.MicroService
+import org.springframework.boot.runApplication
 
 /**
- * 仓库类型
+ * 仓库微服务启动类
  */
-enum class RepositoryType {
-    NONE,
-    GENERIC,
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    COMPOSER,
-    RPM,
-    NUGET
+@MicroService
+class NugetApplication
+
+fun main(args: Array<String>) {
+    runApplication<NugetApplication>(*args)
 }

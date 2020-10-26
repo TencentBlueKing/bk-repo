@@ -100,7 +100,11 @@ include(":rpm:api-rpm")
 include(":rpm:biz-rpm")
 include(":rpm:boot-rpm")
 
+include(":nuget")
+include(":nuget:api-nuget")
+include(":nuget:biz-nuget")
+include(":nuget:boot-nuget")
+
 include("dockerapi")
 include("dockerapi:biz-dockerapi")
 include("dockerapi:boot-dockerapi")
-

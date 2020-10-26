@@ -19,20 +19,10 @@
  *
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
-
-/**
- * 仓库类型
- */
-enum class RepositoryType {
-    NONE,
-    GENERIC,
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    COMPOSER,
-    RPM,
-    NUGET
+dependencies {
+    api project(":nuget:api-nuget")
+    api project(":common:common-job")
+    api project(":common:common-artifact:artifact-service")
+    implementation "org.springframework.retry:spring-retry"
+    implementation "org.apache.commons:commons-compress"
 }
