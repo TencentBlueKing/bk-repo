@@ -28,6 +28,7 @@ import org.springframework.stereotype.Repository
 @Repository
 interface UserRepository : MongoRepository<TUser, String> {
     fun findFirstByUserId(userId: String): TUser?
+    fun findFirstByUserIdAndRoles(userId: String, roleId: String): TUser?
     fun deleteByUserId(userId: String)
     fun findAllByRolesIn(rids: List<String>): List<TUser>
 }

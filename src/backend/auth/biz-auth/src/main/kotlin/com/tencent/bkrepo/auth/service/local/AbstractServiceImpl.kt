@@ -53,6 +53,14 @@ abstract class AbstractServiceImpl constructor(
         }
     }
 
+    fun checkUserRoleBind(userId: String, roleId: String): Boolean {
+        userRepository.findFirstByUserIdAndRoles(userId, roleId) ?: run {
+            logger.warn("user [$userId,$roleId]  not exist.")
+            return false
+        }
+        return true
+    }
+
     // check user is exist
     fun checkUserExistBatch(idList: List<String>) {
         idList.forEach {

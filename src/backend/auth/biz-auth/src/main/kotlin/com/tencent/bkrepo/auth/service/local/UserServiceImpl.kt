@@ -126,11 +126,14 @@ class UserServiceImpl constructor(
         checkUserExist(userId)
         // check role
         checkRoleExist(roleId)
+        //check is role bind to role
         val query = Query()
         val update = Update()
-        query.addCriteria(Criteria.where(TUser::userId.name).`is`(userId))
-        update.addToSet(TUser::roles.name, roleId)
-        mongoTemplate.upsert(query, update, TUser::class.java)
+        if (!checkUserRoleBind(userId, roleId)) {
+            query.addCriteria(Criteria.where(TUser::userId.name).`is`(userId))
+            update.addToSet(TUser::roles.name, roleId)
+            mongoTemplate.upsert(query, update, TUser::class.java)
+        }
         return getUserById(userId)
     }
 
@@ -205,6 +208,7 @@ class UserServiceImpl constructor(
         try {
             logger.info("add user token userId : [$userId] ,token : [$name]")
             checkUserExist(userId)
+
             val existUserInfo = getUserById(userId)
             val existTokens = existUserInfo!!.tokens
             existTokens.forEach {
