@@ -18,7 +18,7 @@ class FileListsJob {
     @Autowired
     private lateinit var jobService: JobService
 
-    // 每次任务间隔3s
+    // 每次任务间隔 ms
     @Scheduled(fixedDelay = 5000)
     @SchedulerLock(name = "FileListsJob", lockAtMostFor = "PT10M")
     fun checkPrimaryXml() {
@@ -28,13 +28,16 @@ class FileListsJob {
         repoList?.let {
             for (repo in repoList) {
                 val rpmConfiguration = repo.configuration
-                val repodataDepth = rpmConfiguration.getIntegerSetting("repodataDepth") ?: 0
-                val targetSet = mutableSetOf<String>()
-                jobService.findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
-                for (repoDataPath in targetSet) {
-                    logger.info("sync filelists (${repo.projectId}|${repo.name}|$repoDataPath) start")
-                    jobService.syncIndex(repo, repoDataPath, IndexType.FILELISTS)
-                    logger.info("sync filelists (${repo.projectId}|${repo.name}|$repoDataPath) done, cost time: ${System.currentTimeMillis() - startMillis} ms")
+                val enabledFileLists = rpmConfiguration.getBooleanSetting("enabledFileLists") ?: false
+                if (enabledFileLists) {
+                    val repodataDepth = rpmConfiguration.getIntegerSetting("repodataDepth") ?: 0
+                    val targetSet = mutableSetOf<String>()
+                    jobService.findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
+                    for (repoDataPath in targetSet) {
+                        logger.info("sync filelists (${repo.projectId}|${repo.name}|$repoDataPath) start")
+                        jobService.syncIndex(repo, repoDataPath, IndexType.FILELISTS)
+                        logger.info("sync filelists (${repo.projectId}|${repo.name}|$repoDataPath) done, cost time: ${System.currentTimeMillis() - startMillis} ms")
+                    }
                 }
             }
         }

@@ -21,6 +21,7 @@
 
 package com.tencent.bkrepo.repository.controller
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -74,5 +75,14 @@ class PackageController(
 
     override fun searchPackage(queryModel: QueryModel): Response<Page<MutableMap<*, *>>> {
         return ResponseBuilder.success(packageService.searchPackage(queryModel))
+    }
+
+    override fun listVersionPage(projectId: String, repoName: String, packageKey: String, version: String?, stageTag: String?, pageNumber: Int, pageSize: Int): Response<Page<PackageVersion>> {
+        val stageTagList = stageTag?.split(StringPool.COMMA)
+        val pageResult = packageService.listVersionPage(
+                projectId, repoName, packageKey,
+                version, stageTagList, pageNumber, pageSize
+        )
+        return ResponseBuilder.success(pageResult)
     }
 }

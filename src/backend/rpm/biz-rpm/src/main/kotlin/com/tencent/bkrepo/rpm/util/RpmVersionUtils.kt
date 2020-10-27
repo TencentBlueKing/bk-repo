@@ -34,12 +34,12 @@ object RpmVersionUtils {
     fun resolverRpmVersion(filename: String): RpmVersion {
         try {
             val strList = filename.split("-")
-            val suffixFormat = strList.last()
+            val suffixFormat = strList.last().removeSuffix(".rpm")
             val suffixList = suffixFormat.split(".")
-            val arch = suffixList[1]
-            val rel = suffixList[0]
+            val arch = suffixList.last()
+            val rel = suffixFormat.removeSuffix(".$arch")
             val ver = strList[strList.size - 2]
-            val name = filename.removeSuffix("-$ver-$suffixFormat")
+            val name = filename.removeSuffix("-$ver-$suffixFormat.rpm")
             return RpmVersion(name, arch, "0", ver, rel)
         } catch (indexOutOfBoundsException: IndexOutOfBoundsException) {
             throw RpmRequestParamMissException("$filename format error")
@@ -47,9 +47,9 @@ object RpmVersionUtils {
     }
 
     fun String.toRpmPackagePojo(): RpmPackagePojo {
-        val path = this.substringBeforeLast("/")
+        val path = this.substringBeforeLast("/").removePrefix("/")
         val rpmArtifactName = this.substringAfterLast("/")
-        val rpmVersion = RpmVersionUtils.resolverRpmVersion(rpmArtifactName)
+        val rpmVersion = resolverRpmVersion(rpmArtifactName)
         return RpmPackagePojo(
             path = path,
             name = rpmVersion.name,
