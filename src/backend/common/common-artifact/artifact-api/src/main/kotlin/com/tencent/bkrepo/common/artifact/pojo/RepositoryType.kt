@@ -33,5 +33,6 @@ enum class RepositoryType {
     NPM,
     HELM,
     COMPOSER,
-    RPM
+    RPM,
+    NUGET
 }

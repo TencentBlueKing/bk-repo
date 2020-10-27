@@ -47,7 +47,7 @@ data class RpmFormat(
     @XStreamAlias("rpm:obsoletes")
     val obsoletes: LinkedList<RpmEntry>?,
     @XStreamImplicit(itemFieldName = "file")
-    val files: LinkedList<RpmFile>,
+    var files: List<RpmFile>,
     @XStreamImplicit(itemFieldName = "changelog")
     val changeLogs: LinkedList<RpmChangeLog>
 )

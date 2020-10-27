@@ -4,8 +4,11 @@
             'background-color': bgColor,
             'color': color
         }">
-        <div v-for="(code, index) in codeList" :key="code + Math.random()" class="code-main">
-            <span v-if="lineNumber" class="code-index">{{index + 1}}</span>
+        <div v-for="code in codeList" :key="code + Math.random()"
+            :class="{
+                'code-main': true,
+                'line-number': lineNumber
+            }">
             <pre class="code-pre">{{ code }}</pre>
         </div>
         <i class="code-copy devops-icon icon-clipboard" @click="copyCode()"></i>
@@ -67,11 +70,14 @@
     padding: 10px 40px;
     min-height: 48px;
     word-break: break-all;
+    counter-reset: row-num;
     .code-main {
         position: relative;
-        .code-index {
+        &.line-number:before {
             position: absolute;
             margin-left: -30px;
+            counter-increment: row-num;
+            content: counter(row-num);
         }
         .code-pre {
             font-family: Helvetica Neue,Arial,PingFang SC,Hiragino Sans GB,Microsoft Yahei,WenQuanYi Micro Hei,sans-serif;

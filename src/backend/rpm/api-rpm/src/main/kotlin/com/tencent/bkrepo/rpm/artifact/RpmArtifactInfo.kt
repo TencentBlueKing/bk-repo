@@ -42,6 +42,7 @@ class RpmArtifactInfo(
         const val MAVEN_EXT_DETAIL = "/version/detail/{projectId}/{repoName}"
         const val MAVEN_EXT_PACKAGE_DELETE = "/package/delete/{projectId}/{repoName}"
         const val MAVEN_EXT_VERSION_DELETE = "/version/delete/{projectId}/{repoName}"
+        const val MAVEN_EXT_CONFIGURATION = "/configuration/{projectId}/{repoName}"
     }
 
     override fun getArtifactFullPath(): String {
