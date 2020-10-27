@@ -15,6 +15,16 @@
             }
         },
         created () {
+            const projectId = location.pathname.replace(/^\/ui\/([^/]*).*$/, '$1') || localStorage.getItem('projectId')
+            if (projectId) {
+                localStorage.setItem('projectId', projectId)
+                this.$router.replace({
+                    name: 'repoList',
+                    params: {
+                        projectId
+                    }
+                })
+            }
             const script = document.createElement('script')
             script.type = 'text/javascript'
             script.src = DEVOPS_SITE_URL + '/console/static/devops-utils.js'
@@ -22,6 +32,7 @@
             script.onload = () => {
                 this.$syncUrl(this.$route.fullPath.replace(/^\/ui\//, '/'))
                 window.globalVue.$on('change::$currentProjectId', data => { // 蓝鲸Devops选择项目时切换
+                    localStorage.setItem('projectId', data.currentProjectId)
                     if (this.$route.params.projectId !== data.currentProjectId) {
                         this.goHome(data.currentProjectId)
                     }
