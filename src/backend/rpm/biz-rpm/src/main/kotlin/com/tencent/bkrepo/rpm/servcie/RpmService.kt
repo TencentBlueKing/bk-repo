@@ -69,7 +69,7 @@ class RpmService {
     fun addGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
         val context = ArtifactSearchContext()
         groups.removeAll(rpmIndexSet)
-        val rpmLocalConfiguration = context.getLocalConfiguration()
+        val rpmLocalConfiguration = context.getCompositeConfiguration()
         (rpmLocalConfiguration.getSetting<MutableList<String>>("groupXmlSet") ?: mutableListOf())
             .updateList(groups, true)
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)
@@ -81,7 +81,7 @@ class RpmService {
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deleteGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
         val context = ArtifactSearchContext()
-        val rpmLocalConfiguration = context.getLocalConfiguration()
+        val rpmLocalConfiguration = context.getCompositeConfiguration()
         (rpmLocalConfiguration.getSetting<MutableList<String>>("groupXmlSet") ?: mutableListOf())
             .updateList(groups, false)
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)

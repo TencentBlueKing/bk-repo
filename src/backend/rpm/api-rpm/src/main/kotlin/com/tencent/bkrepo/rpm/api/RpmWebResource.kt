@@ -42,7 +42,7 @@ interface RpmWebResource {
         @RequestParam packageKey: String
     ): Response<Void>
 
-    @ApiOperation("rpm 包版本删除接口")
+    @ApiOperation("rpm 版本删除接口")
     @DeleteMapping(RpmArtifactInfo.MAVEN_EXT_VERSION_DELETE)
     fun deleteVersion(
         @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,

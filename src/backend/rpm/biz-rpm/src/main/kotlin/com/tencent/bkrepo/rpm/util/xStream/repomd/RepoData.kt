@@ -43,6 +43,6 @@ data class RepoData(
     @XStreamAlias("open-checksum")
     val openChecksum: RpmChecksum,
     @XStreamAlias("open-size")
-    val openSize: Int,
+    val openSize: Long,
     val revision: String = ""
 ) : RepoIndex()

@@ -26,12 +26,13 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class SurplusNodeCleaner(
-    private val nodeClient: NodeClient
-) {
+class SurplusNodeCleaner {
+    @Autowired
+    private lateinit var nodeClient: NodeClient
     /**
      * 删除目标List<NodeInfo> 中排序 >=2 的节点
      */
@@ -42,6 +43,13 @@ class SurplusNodeCleaner(
                 nodeClient.delete(NodeDeleteRequest(node.projectId, node.repoName, node.fullPath, node.createdBy))
                 logger.info("Success to delete ${node.projectId}/${node.repoName}/${node.fullPath}")
             }
+        }
+    }
+
+    fun deleteTempXml(list: List<NodeInfo>) {
+        for (node in list) {
+            nodeClient.delete(NodeDeleteRequest(node.projectId, node.repoName, node.fullPath, node.createdBy))
+            logger.info("Success to delete ${node.projectId}/${node.repoName}/${node.fullPath}")
         }
     }
 
