@@ -35,7 +35,9 @@ class RpmWebService {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun deletePackage(rpmArtifactInfo: RpmArtifactInfo, packageKey: String) {
-        // 先查出所有版本，deleteIndex时一次性删除所有版本。
+        val context = ArtifactRemoveContext()
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+        repository.remove(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)

@@ -1,5 +1,5 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
  * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
@@ -19,28 +19,17 @@
  *
  */
 
-package com.tencent.bkrepo.rpm.util
+package com.tencent.bkrepo.nuget
 
-import com.tencent.bkrepo.rpm.exception.RpmIndexNotFoundException
-import com.tencent.bkrepo.rpm.pojo.RpmPackagePojo
-import java.util.regex.Pattern
+import com.tencent.bkrepo.common.service.MicroService
+import org.springframework.boot.runApplication
 
-object RpmStringUtils {
+/**
+ * 仓库微服务启动类
+ */
+@MicroService
+class NugetApplication
 
-    fun String.toRpmPackagePojo(): RpmPackagePojo {
-        val path = this.substringBeforeLast("/")
-        val rpmArtifactName = this.substringAfterLast("/")
-        val regex =
-            """^(.+)-([0-9a-zA-Z\.]+)-([0-9a-zA-Z\.]+)\.(x86_64|i386|i586|i686|noarch])\.rpm$"""
-        val matcher = Pattern.compile(regex).matcher(rpmArtifactName)
-        if (matcher.find()) {
-            return RpmPackagePojo(
-                path = path,
-                name = matcher.group(1),
-                version = "${matcher.group(2)}-${matcher.group(3)}.${matcher.group(4)}"
-            )
-        } else {
-            throw RpmIndexNotFoundException("Rpm artifact name can not resolve")
-        }
-    }
+fun main(args: Array<String>) {
+    runApplication<NugetApplication>(*args)
 }

@@ -22,7 +22,7 @@
 package com.tencent.bkrepo.rpm.pojo
 
 data class RpmRepoConf(
-    val repodataDepth: Int,
-    val enabledFileLists: Boolean,
-    val groupXmlSet: MutableList<String>
+    val repodataDepth: Int = 0,
+    val enabledFileLists: Boolean = false,
+    val groupXmlSet: MutableList<String> = mutableListOf()
 )

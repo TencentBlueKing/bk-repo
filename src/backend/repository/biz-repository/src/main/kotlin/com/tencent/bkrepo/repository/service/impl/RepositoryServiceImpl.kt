@@ -61,6 +61,7 @@ import com.tencent.bkrepo.repository.service.StorageCredentialService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -396,6 +397,17 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         )
         repoRepository.insert(proxyRepository)
         logger.info("Success to create private proxy repository[$proxyRepository]")
+    }
+
+    override fun pageByType(repoType: String, page: Int, size: Int): Page<RepositoryInfo> {
+        val query = Query(
+                Criteria.where(TRepository::type.name).`is`(repoType)
+        ).with(Sort.by(TRepository::name.name))
+        val count = mongoTemplate.count(query, TRepository::class.java)
+        val pageQuery = query.with(PageRequest.of(page, size))
+        val data = mongoTemplate.find(pageQuery, TRepository::class.java).map { convertToInfo(it)!! }
+
+        return Page(page, size, count, data)
     }
 
     companion object {
