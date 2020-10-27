@@ -151,6 +151,7 @@
                         <bk-tag-input
                             v-model="formDialog.user"
                             :list="Object.values(userList)"
+                            :clearable="false"
                             trigger="focus"
                             allow-create
                             has-delete-icon>
@@ -379,7 +380,12 @@
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
-                    this.artifactoryList = records
+                    this.artifactoryList = records.map(v => {
+                        return {
+                            ...v,
+                            name: v.metadata.displayName || v.name
+                        }
+                    })
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -396,8 +402,13 @@
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
-                    this.artifactoryList = records
                     this.pagination.count = totalRecords
+                    this.artifactoryList = records.map(v => {
+                        return {
+                            ...v,
+                            name: v.metadata.displayName || v.name
+                        }
+                    })
                 }).finally(() => {
                     this.isLoading = false
                 })
