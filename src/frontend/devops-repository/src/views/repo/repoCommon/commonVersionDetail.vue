@@ -77,17 +77,16 @@
             <div class="version-history">
                 <div class="version-history-left">
                     <div class="version-history-code hover-btn"
-                        v-for="(code, index) in detail.history"
+                        v-for="code in detail.history"
                         :key="code.created_by"
                         :class="{ select: selectedHistory.created_by === code.created_by }"
                         @click="selectedHistory = code">
-                        <span class="version-history-index">{{index + 1}}</span>
                         {{code.created_by}}
                     </div>
                 </div>
                 <div class="version-history-right">
                     <header class="version-history-header">Command</header>
-                    <code-area class="mt20 version-history-code"
+                    <code-area class="mt20"
                         :line-number="false"
                         :code-list="[selectedHistory.created_by]">
                     </code-area>
@@ -334,6 +333,7 @@
             margin-right: 40px;
             border-right: 2px solid $borderWeightColor;
             overflow-y: auto;
+            counter-reset: row-num;
             .version-history-code {
                 height: 42px;
                 line-height: 42px;
@@ -346,12 +346,14 @@
                 &.select {
                     background-color: #ebedf0;
                 }
-                .version-history-index {
+                &:before {
                     display: inline-block;
                     width: 30px;
                     margin-right: 5px;
                     text-align: center;
                     background-color: #f9f9f9;
+                    counter-increment: row-num;
+                    content: counter(row-num);
                 }
             }
         }

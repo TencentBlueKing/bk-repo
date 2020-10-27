@@ -119,7 +119,7 @@
                 height: 45px;
                 padding: 0 20px;
                 .repo-item-title {
-                    max-width: 180px;
+                    max-width: 170px;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
