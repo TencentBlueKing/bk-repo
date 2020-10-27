@@ -2,7 +2,7 @@
 
 ### 新增用户token
 
-- API:POST  /auth/api/user/token/{uid}/{name}?expiredAt=2019-12-21T09:46:37.877Z
+- API:POST  /auth/api/user/token/{uid}/{name}?expiredAt=2019-12-21T09:46:37.877Z&projectId=aaa
 - API 名称: add_user_token
 - 功能说明：
 	- 中文：新增用户token
@@ -21,6 +21,7 @@
 |name|string|是|无|token名|the token name|
 |uid|string|是|无|用户id|the user id|
 |expiredAt|datetime|否|无|过期时间|expiredAt|
+|projectId|aaa|否|无|项目ID|projectId|
 
 - output:
 
