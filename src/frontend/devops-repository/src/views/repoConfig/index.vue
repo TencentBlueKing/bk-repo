@@ -19,7 +19,7 @@
             <bk-tab class="repo-config-tab" type="unborder-card">
                 <bk-tab-panel name="baseInfo" :label="$t('repoBaseInfo')">
                     <div class="repo-base-info">
-                        <bk-form :label-width="100">
+                        <bk-form ref="repoBaseInfo" :label-width="150" :model="repoBaseInfo" :rules="rules">
                             <bk-form-item :label="$t('repoName')">
                                 <div class="flex-align-center">
                                     <icon size="24" :name="repoBaseInfo.repoType || repoType" />
@@ -29,6 +29,29 @@
                             <bk-form-item :label="$t('repoAddress')">
                                 <span>{{repoAddress}}</span>
                             </bk-form-item>
+                            <template v-if="repoType === 'rpm'">
+                                <bk-form-item :label="$t('enableFileLists')">
+                                    <bk-checkbox v-model="repoBaseInfo.enableFileLists"></bk-checkbox>
+                                </bk-form-item>
+                                <bk-form-item :label="$t('repodataDepth')" property="repodataDepth">
+                                    <bk-input v-model="repoBaseInfo.repodataDepth"></bk-input>
+                                </bk-form-item>
+                                <bk-form-item :label="$t('groupXmlSet')" property="groupXmlSet">
+                                    <bk-tag-input
+                                        :value="repoBaseInfo.groupXmlSet"
+                                        @change="(val) => {
+                                            repoBaseInfo.groupXmlSet = val.map(v => {
+                                                return v.replace(/^([^.]*)(\.xml)?$/, '$1.xml')
+                                            })
+                                        }"
+                                        :list="[]"
+                                        trigger="focus"
+                                        :clearable="false"
+                                        allow-create
+                                        has-delete-icon>
+                                    </bk-tag-input>
+                                </bk-form-item>
+                            </template>
                             <bk-form-item :label="$t('description')">
                                 <bk-input type="textarea"
                                     maxlength="200"
@@ -145,6 +168,9 @@
                     loading: false,
                     repoName: '',
                     repoType: '',
+                    enableFileLists: false,
+                    repodataDepth: 0,
+                    groupXmlSet: [],
                     description: ''
                 },
                 // 公共源
@@ -198,6 +224,24 @@
                             message: this.$t('pleaseInput') + this.$t('password'),
                             trigger: 'blur'
                         }
+                    ],
+                    repodataDepth: [
+                        {
+                            regex: /^(0|[1-9][0-9]*)$/,
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repodataDepth'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    groupXmlSet: [
+                        {
+                            validator: arr => {
+                                return arr.every(v => {
+                                    return /\.xml$/.test(v)
+                                })
+                            },
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
+                            trigger: 'change'
+                        }
                     ]
                 }
             }
@@ -213,7 +257,7 @@
                 return this.$route.params.repoType
             },
             showProxyConfigTab () {
-                return !['generic', 'docker', 'helm'].includes(this.repoType)
+                return !['generic', 'docker', 'helm', 'rpm'].includes(this.repoType)
             },
             selectedPublicProxy () {
                 return this.publicProxy.find(v => v.channelId === this.editProxyData.channelId) || {}
@@ -225,16 +269,18 @@
         created () {
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
-            this.getPublicProxy({
-                repoType: this.repoType.toUpperCase()
-            }).then(res => {
-                this.publicProxy = res.map(v => {
-                    return {
-                        ...v,
-                        channelId: v.id
-                    }
+            if (this.showProxyConfigTab) {
+                this.getPublicProxy({
+                    repoType: this.repoType.toUpperCase()
+                }).then(res => {
+                    this.publicProxy = res.map(v => {
+                        return {
+                            ...v,
+                            channelId: v.id
+                        }
+                    })
                 })
-            })
+            }
         },
         methods: {
             ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getPublicProxy']),
@@ -263,22 +309,38 @@
                     repoType: this.repoType.toUpperCase()
                 }).then(res => {
                     this.repoBaseInfo = {
+                        ...this.repoBaseInfo,
                         ...res,
+                        ...res.configuration.settings,
                         repoType: res.type.toLowerCase()
                     }
-                    this.proxyList = res.configuration.proxy.channelList
+                    if (this.showProxyConfigTab) {
+                        this.proxyList = res.configuration.proxy.channelList
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
             },
-            saveBaseInfo () {
+            async saveBaseInfo () {
+                const body = {
+                    description: this.repoBaseInfo.description
+                }
+                if (this.repoType === 'rpm') {
+                    await this.$refs.repoBaseInfo.validate()
+                    body.configuration = {
+                        ...this.repoBaseInfo.configuration,
+                        settings: {
+                            enableFileLists: this.repoBaseInfo.enableFileLists,
+                            repodataDepth: this.repoBaseInfo.repodataDepth,
+                            groupXmlSet: this.repoBaseInfo.groupXmlSet
+                        }
+                    }
+                }
                 this.repoBaseInfo.loading = true
                 this.updateRepoInfo({
                     projectId: this.projectId,
                     name: this.repoName,
-                    body: {
-                        description: this.repoBaseInfo.description
-                    }
+                    body
                 }).then(res => {
                     this.getRepoInfoHandler()
                     this.$bkMessage({

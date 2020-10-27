@@ -41,7 +41,11 @@ export default new Vuex.Store({
             })
             list = list.map(item => {
                 const children = (tree.find(oldItem => oldItem.fullPath === item.fullPath) || {}).children || []
-                return { ...item, children }
+                return {
+                    ...item,
+                    children,
+                    name: item.metadata.displayName || item.name
+                }
             })
             tree.splice(0, tree.length, ...list)
         },

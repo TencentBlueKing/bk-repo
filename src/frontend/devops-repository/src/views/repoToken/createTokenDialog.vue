@@ -76,11 +76,18 @@
             ...mapActions(['addToken']),
             showDialogHandler () {
                 this.show = true
+                this.tokenFormData = {
+                    name: '',
+                    expiredAt: ''
+                }
+                this.token = ''
+                this.$refs.tokenForm && this.$refs.tokenForm.clearError()
             },
             async confirm () {
                 await this.$refs.tokenForm.validate()
                 this.loading = true
                 this.addToken({
+                    projectId: this.$route.params.projectId,
                     username: this.userInfo.username,
                     name: this.tokenFormData.name,
                     expiredAt: this.tokenFormData.expiredAt instanceof Date ? this.tokenFormData.expiredAt.toISOString() : ''
@@ -93,12 +100,6 @@
             },
             cancel () {
                 this.show = false
-                this.tokenFormData = {
-                    name: '',
-                    expiredAt: ''
-                }
-                this.token = ''
-                this.$refs.tokenForm && this.$refs.tokenForm.clearError()
                 this.$emit('refresh')
             },
             copyToken () {
