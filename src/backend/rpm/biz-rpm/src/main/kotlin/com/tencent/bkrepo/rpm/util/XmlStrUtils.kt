@@ -236,7 +236,7 @@ object XmlStrUtils {
      */
     fun splitUriByDepth(uri: String, depth: Int): RepodataUri {
         val uriList = uri.removePrefix("/").split("/")
-        val repodataPath = java.lang.StringBuilder()
+        val repodataPath = StringBuilder("/")
         for (i in 0 until depth) {
             repodataPath.append(uriList[i]).append("/")
         }

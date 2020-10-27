@@ -21,6 +21,8 @@
 
 package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -89,4 +91,16 @@ interface PackageClient {
     fun searchPackage(
         @RequestBody queryModel: QueryModel
     ): Response<Page<MutableMap<*, *>>>
+
+    @ApiOperation("分页查询版本")
+    @GetMapping("/version/page/{projectId}/{repoName}")
+    fun listVersionPage(
+            @PathVariable projectId: String,
+            @PathVariable repoName: String,
+            @RequestParam packageKey: String,
+            @RequestParam version: String? = null,
+            @RequestParam stageTag: String? = null,
+            @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
+            @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE
+    ): Response<Page<PackageVersion>>
 }

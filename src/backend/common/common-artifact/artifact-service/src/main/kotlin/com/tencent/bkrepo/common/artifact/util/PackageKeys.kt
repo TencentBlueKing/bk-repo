@@ -86,10 +86,16 @@ object PackageKeys {
      * 例子: rpm://test
      */
     fun ofRpm(path: String, name: String): String {
-        return StringBuilder(RPM).append(SEPARATOR).append(path)
-            .append(StringPool.COLON)
-            .append(name)
-            .toString()
+        return if (!path.isBlank()) {
+            StringBuilder(RPM).append(SEPARATOR).append(path)
+                    .append(StringPool.SLASH)
+                    .append(name)
+                    .toString()
+        } else {
+            StringBuilder(RPM).append(SEPARATOR)
+                    .append(name)
+                    .toString()
+        }
     }
 
     /**

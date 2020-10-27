@@ -24,7 +24,6 @@ package com.tencent.bkrepo.rpm.artifact
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.rpm.util.StrUtils.formatSeparator
 import org.apache.commons.lang.StringUtils
 
 class RpmArtifactInfo(
@@ -53,10 +52,7 @@ class RpmArtifactInfo(
             if (StringUtils.isBlank(packageKey)) {
                 super.getArtifactFullPath()
             } else {
-                val rpmInfoList = PackageKeys.resolveRpm(packageKey).split(":")
-                val path = rpmInfoList.first().formatSeparator(".", "/")
-                val name = rpmInfoList.last()
-                "/$path/$name-$version.rpm"
+                "/${PackageKeys.resolveRpm(packageKey)}-$version.rpm"
             }
         } else {
             super.getArtifactFullPath()
