@@ -122,5 +122,8 @@
     "neverExpires": "永久有效",
     "expired": "已过期",
     "deleteTokenTitle": "确认删除Token {0} ?",
-    "versionPlacehodler": "支持前缀搜索版本"
+    "versionPlacehodler": "支持前缀搜索版本",
+    "enableFileLists": "启用FileLists",
+    "repodataDepth": "索引目录深度",
+    "groupXmlSet": "分组文件名"
 }

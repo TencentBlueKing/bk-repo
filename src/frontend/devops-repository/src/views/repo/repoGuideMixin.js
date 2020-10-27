@@ -201,7 +201,7 @@ export default {
                                 `   <server>`,
                                 `       <id>${this.projectId}-${this.repoName}</id>`,
                                 `       <username>${this.userInfo.username}</username>`,
-                                `       <password><PERSONAL_ACCESS_TOKEN></password>`,
+                                `       <password><PASSWORD></password>`,
                                 `   </server>`,
                                 `</servers>`
                             ]
@@ -377,21 +377,15 @@ export default {
                     title: '设置凭证',
                     main: [
                         {
-                            subTitle: '配置文件目录：/etc/yum.repos.d/'
-                        },
-                        {
-                            subTitle: '全局默认配置文件：CentOS-Base.repo'
-                        },
-                        {
-                            subTitle: '或者自定义：{name}.repo',
+                            subTitle: `请将下列配置添加到您的 /etc/yum.repos.d/${this.repoName}.repo 文件中`,
                             codeList: [
-                                `[bkrepo]`,
-                                `name=bkrepo //仓库名`,
-                                `baseurl=http://admin:password@${this.repoUrl}/$releasever/os/$basearch //仓库地址，如果有开启认证，需要在请求前添加 用户名：密码`,
-                                `keepcache=0 //是否开启缓存，测试阶段推荐开启，否则上传后，yum install 时会优先去本地缓存找`,
-                                `enabled=1 //地址授信，如果非 https 环境必须设为1`,
-                                `gpgcheck=0 //设为0，目前还不支持gpg签名`,
-                                `metadata_expire=1m //本地元数据过期时间 ，测试阶段数据量不大的话，时间越短测试越方便`
+                                `[${this.repoName}]`,
+                                `name=${this.repoName}`,
+                                `baseurl=${this.repoUrl}`,
+                                `username=${this.userInfo.username}`,
+                                `password=<PERSONAL_ACCESS_TOKEN>`,
+                                `enabled=1`,
+                                `gpgcheck=0`
                             ]
                         }
                     ]
@@ -401,7 +395,7 @@ export default {
                     main: [
                         {
                             codeList: [
-                                `curl -u admin:password -XPUT ${this.repoUrl} -T {文件路径}`
+                                `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> -X PUT ${this.repoUrl} -T ${this.packageName}.rpm`
                             ]
                         }
                     ]
@@ -410,8 +404,18 @@ export default {
                     title: '下载',
                     main: [
                         {
+                            subTitle: '使用RPM或者yum方式拉取包'
+                        },
+                        {
+                            subTitle: 'RPM',
                             codeList: [
-                                `yum install -y ${this.packageName}`
+                                `rpm -i ${location.protocol}//${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN>@${this.repoUrl}/${this.packageName}.rpm`
+                            ]
+                        },
+                        {
+                            subTitle: 'yum',
+                            codeList: [
+                                `yum install --repo ${this.repoName} ${this.packageName}`
                             ]
                         }
                     ]
@@ -423,9 +427,18 @@ export default {
                 {
                     main: [
                         {
-                            subTitle: '使用如下命令去拉取包',
+                            subTitle: '使用RPM或者yum方式拉取包'
+                        },
+                        {
+                            subTitle: 'RPM',
                             codeList: [
-                                `yum install -y ${this.packageName}:${this.version}`
+                                `rpm -i ${location.protocol}//${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN>@${this.repoUrl}/${this.packageName}.rpm`
+                            ]
+                        },
+                        {
+                            subTitle: 'yum',
+                            codeList: [
+                                `yum install --repo ${this.repoName} ${this.packageName}`
                             ]
                         }
                     ]
@@ -438,23 +451,49 @@ export default {
                     title: '设置凭证',
                     main: [
                         {
+                            subTitle: '请将下列配置添加到您的 $HOME/.pypirc 文件中',
+                            codeList: [
+                                `[distutils]`,
+                                `index-servers =`,
+                                `  ${this.repoUrl}`,
+                                `[${this.repoUrl}]`,
+                                `repository: ${this.repoUrl}`,
+                                `username: ${this.userInfo.username}`,
+                                `password: <PASSWORD>`
+                            ]
+                        },
+                        {
+                            subTitle: 'MacOS / Linux'
+                        },
+                        {
                             subTitle: '在您的 $HOME/.pip/pip.conf 文件添加以下配置',
                             codeList: [
-                                `[global]`,
+                                `[${this.repoName}]`,
                                 `index-url = ${this.repoUrl}`,
                                 `username = ${this.userInfo.username}`,
-                                `password = <PERSONAL_ACCESS_TOKEN>`
+                                `password = <PASSWORD>`
+                            ]
+                        },
+                        {
+                            subTitle: 'Windows'
+                        },
+                        {
+                            subTitle: '在您的 %HOME%/pip/pip.ini 文件添加以下配置',
+                            codeList: [
+                                `[${this.repoName}]`,
+                                `index-url = ${this.repoUrl}`,
+                                `username = ${this.userInfo.username}`,
+                                `password = <PASSWORD>`
                             ]
                         }
                     ]
                 },
                 {
-                    title: '上传',
+                    title: '推送',
                     main: [
                         {
-                            subTitle: '使用twine作为上传工具',
                             codeList: [
-                                `python3 -m twine upload --repository-url ${this.repoUrl} [-u user] [-p password] dist/`
+                                `python3 -m twine upload --repository-url ${this.repoUrl} -u ${this.userInfo.username} -p <PASSWORD> dist/`
                             ]
                         }
                     ]
@@ -464,7 +503,7 @@ export default {
                     main: [
                         {
                             codeList: [
-                                `pip3 install -i ${this.repoUrl} ${this.packageName}==${this.version}`
+                                `pip3 install ${this.packageName}`
                             ]
                         }
                     ]
@@ -476,13 +515,13 @@ export default {
                 {
                     main: [
                         {
-                            subTitle: '1、在设置仓库地址之后就可以使用如下命令去拉取包',
+                            subTitle: '方式一、在设置仓库地址之后使用如下命令去拉取包',
                             codeList: [
                                 `pypi install ${this.packageName}@${this.version}`
                             ]
                         },
                         {
-                            subTitle: '2、也可以通过指定registry的方式去拉取包，如下命令',
+                            subTitle: '方式二、通过指定registry的方式去拉取包，如下命令',
                             codeList: [
                                 `pypi install ${this.packageName}@${this.version} --registry ${this.repoUrl}`
                             ]
