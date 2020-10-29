@@ -1,9 +1,29 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.rpm.exception.RpmArtifactMetadataResolveException
+import com.tencent.bkrepo.rpm.exception.RpmRequestParamMissException
 import com.tencent.bkrepo.rpm.pojo.RpmVersion
 
 object RpmVersionUtils {
+
+    /**
+     * filename解析rpm构件版本信息
+     */
+    fun resolverRpmVersion(filename: String): RpmVersion {
+        try {
+            val strList = filename.split("-")
+            val suffixFormat = strList.last()
+            val suffixList = suffixFormat.split(".")
+            val arch = suffixList[1]
+            val rel = suffixList[0]
+            val ver = strList[strList.size - 2]
+            val name = filename.removeSuffix("-$ver-$suffixFormat")
+            return RpmVersion(name, arch, "0", ver, rel)
+        } catch (indexOutOfBoundsException: IndexOutOfBoundsException) {
+            throw RpmRequestParamMissException("$filename format error")
+        }
+    }
+
     fun RpmVersion.toMetadata(): MutableMap<String, String> {
         return mutableMapOf(
             "name" to this.name,
