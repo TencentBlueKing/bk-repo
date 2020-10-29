@@ -32,7 +32,7 @@ echo "编译backend..."
 cd $backend_dir
  ./gradlew build -x test
 cd $working_dir
-echo "编译frontend完成"
+echo "编译backend完成"
 
 ## 打包backend镜像
 echo "打包backend镜像开始..."

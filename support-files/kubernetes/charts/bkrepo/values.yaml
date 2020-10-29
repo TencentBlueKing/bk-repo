@@ -7,7 +7,7 @@ image:
 bkrepo:
   replicaCount: 1
   init:
-    mongodb: false
+    mongodb: true
     consul: true
   affinity:
     enabled: false
@@ -70,7 +70,7 @@ env:
   BK_REPO_DOCKER_PORT: 25802
   BK_REPO_DOCKER_ADDR:
   BK_REPO_DOCKER_FQDN: docker.bkrepo.com
-  BK_REPO_DOCKER_HOST: bkrepo-docker.service.consul
+  BK_REPO_DOCKER_HOST: docker.bkrepo.com
   BK_REPO_DOCKER_HTTP_PORT: 80
   BK_REPO_DOCKER_HTTPS_PORT: 443
   BK_REPO_DOCKER_CERT_KEY:
