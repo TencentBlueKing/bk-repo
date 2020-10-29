@@ -1,3 +1,4 @@
+{{if .Values.consul.enabled }}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -11,11 +12,12 @@ spec:
     storage: 10Gi
   accessModes:
     - ReadWriteOnce
-{{if .Values.volume.nfs.enabled }}
+  {{if .Values.volume.nfs.enabled }}
   nfs:
     path: {{ .Values.volume.nfs.path }}/bkrepo/consul
     server: {{ .Values.volume.nfs.server }}
-{{else}}
+  {{else}}
   hostPath:
     path: {{ .Values.volume.hostPath.path }}/bkrepo/consul
+  {{end}}
 {{end}}

@@ -9,7 +9,10 @@ bkrepo:
   init:
     mongodb: false
     consul: true
-
+  affinity:
+    enabled: false
+    # 指定依赖源pod运行在哪个节点上
+    node: node-1
 env:
   # JVM
   BK_REPO_JVM_XMS: 512m
@@ -26,7 +29,7 @@ env:
   BK_REPO_APIGW_URL:
   BK_REPO_APP_CODE:
   BK_REPO_APP_TOKEN:
-  BK_REPO_HOME: /data/bkrepo
+  BK_REPO_HOME: /data/workspace
   BK_REPO_LOGS_DIR: /data/logs
   BK_CI_FQDN:
   BK_REPO_PAAS_FQDN:

@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: bkrepo-gateway
   labels:
+    tier: frontend
     app: bkrepo-gateway
 spec:
   replicas: {{ .Values.replicaCount }}
@@ -19,11 +20,11 @@ spec:
           name: bkrepo-gateway
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           workingDir: /usr/local/openresty/nginx/
-          command: ['/bin/sh','-c','/data/bkrepo/startup.sh']
+          command: ['/bin/sh','-c','/data/workspace/startup.sh']
           env:
             {{- range $key, $value := .Values.env }}
-            - name : {{ $key }}
-              value : "{{ $value }}"
+            - name: {{ $key }}
+              value: {{ $value | quote }}
             {{- end}}
 ---
 apiVersion: v1

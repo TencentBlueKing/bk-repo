@@ -159,7 +159,7 @@ set +o allexport
 
 # 替换模板用的sed文件，执行退出时自动清理掉
 trap 'rm -f $sed_script' EXIT TERM
-sed_script=$(mktemp /tmp/XXXXXX.sed)
+sed_script=$(mktemp /tmp/sed.XXXXXX)
 
 # 载入额外变量
 if (( ${#EXTRA_ENV[@]} >= 1 )); then

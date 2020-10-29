@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.common.mongo
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.autoconfigure.mongo.MongoProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.PropertySource
@@ -30,13 +31,17 @@ class MongoAutoConfiguration {
      * remove _class
      */
     @Bean
-    fun mappingMongoConverter(mongoDatabaseFactory: MongoDatabaseFactory): MappingMongoConverter {
+    fun mappingMongoConverter(
+        mongoProperties: MongoProperties,
+        mongoDatabaseFactory: MongoDatabaseFactory
+    ): MappingMongoConverter {
         val dbRefResolver = DefaultDbRefResolver(mongoDatabaseFactory)
 
         val conversions = MongoCustomConversions(emptyList<Any>())
         val mappingContext = MongoMappingContext()
         mappingContext.setSimpleTypeHolder(conversions.simpleTypeHolder)
         mappingContext.afterPropertiesSet()
+        mappingContext.isAutoIndexCreation = mongoProperties.isAutoIndexCreation
 
         val converter = MappingMongoConverter(dbRefResolver, mappingContext)
         converter.setTypeMapper(DefaultMongoTypeMapper(null))
