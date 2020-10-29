@@ -22,42 +22,47 @@
 package com.tencent.bkrepo.pypi.artifact.repository
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_MD5MAP
-import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_SHA256MAP
-import com.tencent.bkrepo.common.artifact.hash.md5
-import com.tencent.bkrepo.common.artifact.hash.sha256
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.pypi.artifact.model.MigrateDataCreateNode
 import com.tencent.bkrepo.pypi.artifact.model.MigrateDataInfo
 import com.tencent.bkrepo.pypi.artifact.model.TMigrateData
 import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil.parameterMaps
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
-import com.tencent.bkrepo.pypi.exception.PypiMigrateReject
+import com.tencent.bkrepo.pypi.pojo.Basic
+import com.tencent.bkrepo.pypi.pojo.PypiArtifactVersionData
 import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
 import com.tencent.bkrepo.pypi.util.DecompressUtil.getPkgInfo
 import com.tencent.bkrepo.pypi.util.FileNameUtil.fileFormat
 import com.tencent.bkrepo.pypi.util.HttpUtil.downloadUrlHttpClient
-import com.tencent.bkrepo.pypi.util.JsoupUtil.htmlHrefs
-import com.tencent.bkrepo.pypi.util.JsoupUtil.sumTasks
+import com.tencent.bkrepo.pypi.util.XmlUtils
+import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
+import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.jsoup.nodes.Element
@@ -71,12 +76,9 @@ import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.net.UnknownServiceException
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 @Component
-class PypiLocalRepository : LocalRepository(), PypiRepository {
+class PypiLocalRepository : LocalRepository() {
 
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
@@ -84,107 +86,238 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
     @Autowired
     private lateinit var migrateDataRepository: MigrateDataRepository
 
-    override fun onUpload(context: ArtifactUploadContext) {
-        val nodeCreateRequest = buildNodeCreateRequest(context)
-        nodeClient.create(nodeCreateRequest)
-        context.getArtifactFile("content")?.let {
-            storageService.store(
-                nodeCreateRequest.sha256!!,
-                it, context.storageCredentials
-            )
-        }
-    }
+    @Autowired
+    lateinit var packageClient: PackageClient
+
+    @Autowired
+    lateinit var stageClient: StageClient
 
     /**
      * 获取PYPI节点创建请求
      */
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val artifactInfo = context.artifactInfo
         val repositoryDetail = context.repositoryDetail
-        val artifactFile = context.artifactFileMap["content"]
+        val artifactFile = context.getArtifactFile("content")
         val metadata = context.request.parameterMaps()
         val filename = (artifactFile as MultipartArtifactFile).getOriginalFilename()
-        val sha256 = (context.contextAttributes[ATTRIBUTE_SHA256MAP] as Map<*, *>)["content"] as String
-        val md5 = (context.contextAttributes[ATTRIBUTE_MD5MAP] as Map<*, *>)["content"] as String
+        val sha256 = artifactFile.getFileSha256()
+        val md5 = artifactFile.getFileMd5()
+        val name: String = context.request.getParameter("name")
+        val version: String = context.request.getParameter("version")
+        val artifactFullPath = "/$name/$version/$filename"
 
         return NodeCreateRequest(
             projectId = repositoryDetail.projectId,
             repoName = repositoryDetail.name,
             folder = false,
             overwrite = true,
-            fullPath = artifactInfo.artifactUri + "/$filename",
+            fullPath = artifactFullPath,
             size = artifactFile.getSize(),
-            sha256 = sha256 as String?,
-            md5 = md5 as String?,
+            sha256 = sha256,
+            md5 = md5,
             operator = context.userId,
             metadata = metadata
         )
     }
 
-    override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
-        val repository = context.repositoryDetail
-        val searchArgs = XmlUtil.getSearchArgs(xmlString)
-        val packageName = searchArgs["packageName"]
-        val summary = searchArgs["summary"]
-        if (packageName != null && summary != null) {
-            with(repository) {
-                val projectId = Rule.QueryRule("projectId", projectId)
-                val repoName = Rule.QueryRule("repoName", name)
-                val packageQuery = Rule.QueryRule("metadata.name", packageName, OperationType.MATCH)
-                val filetypeAuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
-                val rule1 = Rule.NestedRule(
-                    mutableListOf(repoName, projectId, packageQuery, filetypeAuery),
-                    Rule.NestedRule.RelationType.AND
-                )
-
-                val queryModel = QueryModel(
-                    page = PageLimit(pageLimitCurrent, pageLimitSize),
-                    sort = Sort(listOf("name"), Sort.Direction.ASC),
-                    select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-                    rule = rule1
-                )
-                val nodeList: List<Map<String, Any>>? = nodeClient.query(queryModel).data?.records
-                if (nodeList != null) {
-                    return XmlUtil.nodeLis2Values(nodeList)
-                }
-            }
-        }
-        return null
+    override fun onUpload(context: ArtifactUploadContext) {
+        val nodeCreateRequest = buildNodeCreateRequest(context)
+        val artifactFile = context.getArtifactFile("content")
+        val name: String = context.request.getParameter("name")
+        val version: String = context.request.getParameter("version")
+        packageClient.createVersion(
+            PackageVersionCreateRequest(
+                context.projectId,
+                context.repoName,
+                name,
+                PackageKeys.ofPypi(name),
+                PackageType.PYPI,
+                null,
+                version,
+                context.getArtifactFile("content").getSize(),
+                null,
+                nodeCreateRequest.fullPath,
+                overwrite = true,
+                createdBy = context.userId
+            )
+        )
+        store(nodeCreateRequest, artifactFile, context.storageCredentials)
     }
 
-    override fun list(context: ArtifactListContext) {
-        val artifactInfo = context.artifactInfo
-        val repositoryDetail = context.repositoryDetail
-        with(artifactInfo) {
-            val node = nodeClient.detail(projectId, repositoryDetail.name, artifactUri).data
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
+    /**
+     * pypi search
+     */
+    override fun search(context: ArtifactSearchContext): List<Value> {
+        val pypiSearchPojo = XmlUtils.getPypiSearchPojo(context.request.reader.readXml())
+        val name = pypiSearchPojo.name
+        val summary = pypiSearchPojo.summary
+        if (name != null && summary != null) {
+            val projectId = Rule.QueryRule("projectId", context.projectId)
+            val repoName = Rule.QueryRule("repoName", context.repoName)
+            val packageQuery = Rule.QueryRule("metadata.name", "*$name*", OperationType.MATCH)
+            val summaryQuery = Rule.QueryRule("metadata.summary", "*$summary*", OperationType.MATCH)
+            val filetypeQuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
+            val matchQuery = Rule.NestedRule(
+                mutableListOf(packageQuery, summaryQuery),
+                Rule.NestedRule.RelationType.OR
+            )
+            val rule = Rule.NestedRule(
+                mutableListOf(repoName, projectId, filetypeQuery, matchQuery),
+                Rule.NestedRule.RelationType.AND
+            )
 
-            val response = HttpContextHolder.getResponse()
-            response.contentType = "text/html; charset=UTF-8"
+            val queryModel = QueryModel(
+                page = PageLimit(pageLimitCurrent, pageLimitSize),
+                sort = Sort(listOf("name"), Sort.Direction.ASC),
+                select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
+                rule = rule
+            )
+            val nodeList: List<Map<String, Any?>>? = nodeClient.query(queryModel).data?.records
+            if (nodeList != null) {
+                return XmlUtil.nodeLis2Values(nodeList)
+            }
+        }
+        return mutableListOf()
+    }
+
+    /**
+     * pypi 产品删除接口
+     */
+    override fun remove(context: ArtifactRemoveContext) {
+        val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
+        val name = PackageKeys.resolvePypi(packageKey)
+        val version = HttpContextHolder.getRequest().getParameter("version")
+        if (version.isNullOrBlank()) {
+            // 删除包
+            nodeClient.delete(
+                NodeDeleteRequest(
+                    context.projectId,
+                    context.repoName,
+                    "/$name",
+                    context.userId
+                )
+            )
+            packageClient.deletePackage(
+                context.projectId,
+                context.repoName,
+                packageKey
+            )
+        } else {
+            // 删除版本
+            nodeClient.delete(
+                NodeDeleteRequest(
+                    context.projectId,
+                    context.repoName,
+                    "/$name/$version",
+                    context.userId
+                )
+            )
+            deleteVersion(context.projectId, context.repoName, packageKey, version)
+        }
+    }
+
+    /**
+     * 删除版本后，检查改packageKey下版本是否为空，为空则删除packageKey
+     */
+    fun deleteVersion(projectId: String, repoName: String, packageKey: String, version: String) {
+        packageClient.deleteVersion(projectId, repoName, packageKey, version)
+        val page = packageClient.listVersionPage(projectId, repoName, packageKey).data ?: return
+        if (page.records.isEmpty()) packageClient.deletePackage(projectId, repoName, packageKey)
+    }
+
+    /**
+     * 1，pypi 产品 版本详情
+     * 2，pypi simple html页面
+     */
+    override fun query(context: ArtifactQueryContext): Any? {
+        val servletPath = context.request.servletPath
+        return if (servletPath.startsWith("/ext/version/detail")) {
+            // 请求版本详情
+            getVersionDetail(context)
+        } else {
+            getSimpleHtml(context.artifactInfo)
+        }
+    }
+
+    fun getVersionDetail(context: ArtifactQueryContext): Any? {
+        val packageKey = context.request.getParameter("packageKey")
+        val version = context.request.getParameter("version")
+        val name = PackageKeys.resolvePypi(packageKey)
+        val trueVersion = packageClient.findVersionByName(
+            context.projectId,
+            context.repoName,
+            packageKey,
+            version
+        ).data ?: return null
+        val artifactPath = trueVersion.contentPath ?: return null
+        with(context.artifactInfo) {
+            val jarNode = nodeClient.detail(
+                projectId, repoName, artifactPath
+            ).data ?: return null
+            val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
+            val pypiArtifactMetadata = jarNode.metadata
+            val packageVersion = packageClient.findVersionByName(
+                projectId, repoName, packageKey, version
+            ).data
+            val count = packageVersion?.downloads ?: 0
+            val pypiArtifactBasic = Basic(
+                name,
+                version,
+                jarNode.size, jarNode.fullPath, jarNode.lastModifiedBy, jarNode.lastModifiedDate,
+                count,
+                jarNode.sha256,
+                jarNode.md5,
+                stageTag,
+                null
+            )
+            return PypiArtifactVersionData(pypiArtifactBasic, pypiArtifactMetadata)
+        }
+    }
+
+    /**
+     *
+     */
+    fun getSimpleHtml(artifactInfo: ArtifactInfo): Any? {
+        with(artifactInfo) {
+            val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
             // 请求不带包名，返回包名列表.
-            if (artifactUri == "/") {
+            if (getArtifactFullPath() == "/") {
                 if (node.folder) {
-                    val nodeList = nodeClient.list(projectId, repositoryDetail.name, artifactUri, includeFolder = true, deep = true).data
-                        ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
+                    val nodeList = nodeClient.list(
+                        projectId, repoName, getArtifactFullPath(), includeFolder = true,
+                        deep =
+                            true
+                    ).data
+                        ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
                     // 过滤掉'根节点',
-                    val htmlContent = buildPackageListContent(
+                    return buildPackageListContent(
                         artifactInfo.projectId,
                         artifactInfo.repoName,
                         nodeList.filter { it.folder }.filter { it.path == "/" }
                     )
-                    response.writer.print(htmlContent)
                 }
             }
             // 请求中带包名，返回对应包的文件列表。
             else {
                 if (node.folder) {
-                    val packageNode = nodeClient.list(projectId, repositoryDetail.name, artifactUri, includeFolder = false, deep = true).data
-                        ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactUri)
-                    val htmlContent = buildPypiPageContent(buildPackageFilenodeListContent(artifactInfo.projectId, artifactInfo.repoName, packageNode))
-                    response.writer.print(htmlContent)
+                    val packageNode = nodeClient.list(
+                        projectId, repoName, getArtifactFullPath(), includeFolder = false,
+                        deep = true
+                    ).data
+                        ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+                    return buildPypiPageContent(
+                        buildPackageFilenodeListContent(
+                            artifactInfo.projectId,
+                            artifactInfo
+                                .repoName,
+                            packageNode
+                        )
+                    )
                 }
             }
         }
+        return null
     }
 
     /**
@@ -243,8 +376,8 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
      * 根据每个文件节点数据去查metadata
      * @param nodeInfo 节点
      */
-    fun filenodeMetadata(nodeInfo: NodeInfo): List<Map<String, Any>>? {
-        val filenodeList: List<Map<String, Any>>?
+    fun filenodeMetadata(nodeInfo: NodeInfo): List<Map<String, Any?>>? {
+        val filenodeList: List<Map<String, Any?>>?
         with(nodeInfo) {
             val projectId = Rule.QueryRule("projectId", projectId)
             val repoName = Rule.QueryRule("repoName", repoName)
@@ -311,49 +444,49 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
         return migrateResult(context)
     }
 
-    override fun migrate(context: ArtifactMigrateContext) {
-        val verifiedUrl = beforeMigrate()
-
-        var totalCount: Int
-        val cpuCore = cpuCore()
-        val threadPool = ThreadPoolExecutor(
-            cpuCore, cpuCore.shl(doubleNum), threadAliveTime, TimeUnit.SECONDS,
-            LinkedBlockingQueue(),
-            ThreadFactoryBuilder().setNameFormat("pypiRepo-migrate-thread-%d").build(),
-            PypiMigrateReject()
-        )
-
-        // 获取所有的包,开始计时
-        val start = System.currentTimeMillis()
-        verifiedUrl.htmlHrefs(limitPackages.toInt()).let { simpleHrefs ->
-            totalCount = migrateUrl.sumTasks(simpleHrefs)
-            for (e in simpleHrefs) {
-                // 每一个包所包含的文件列表
-                e.text()?.let { packageName ->
-                    "$verifiedUrl/$packageName".htmlHrefs().let { filenodes ->
-                        for (filenode in filenodes) {
-                            threadPool.submit(
-                                Runnable {
-                                    migrateUpload(context, filenode, verifiedUrl, packageName)
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        threadPool.shutdown()
-        while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {}
-        val end = System.currentTimeMillis()
-        val elapseTimeSeconds = (end - start) / thousand
-        insertMigrateData(
-            context,
-            failSet,
-            limitPackages.toInt(),
-            totalCount,
-            elapseTimeSeconds
-        )
-    }
+//    override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
+//        val verifiedUrl = beforeMigrate()
+//
+//        var totalCount: Int
+//        val cpuCore = cpuCore()
+//        val threadPool = ThreadPoolExecutor(
+//            cpuCore, cpuCore.shl(doubleNum), threadAliveTime, TimeUnit.SECONDS,
+//            LinkedBlockingQueue(),
+//            ThreadFactoryBuilder().setNameFormat("pypiRepo-migrate-thread-%d").build(),
+//            PypiMigrateReject()
+//        )
+//
+//        // 获取所有的包,开始计时
+//        val start = System.currentTimeMillis()
+//        verifiedUrl.htmlHrefs(limitPackages.toInt()).let { simpleHrefs ->
+//            totalCount = migrateUrl.sumTasks(simpleHrefs)
+//            for (e in simpleHrefs) {
+//                // 每一个包所包含的文件列表
+//                e.text()?.let { packageName ->
+//                    "$verifiedUrl/$packageName".htmlHrefs().let { filenodes ->
+//                        for (filenode in filenodes) {
+//                            threadPool.submit(
+//                                Runnable {
+//                                    migrateUpload(context, filenode, verifiedUrl, packageName)
+//                                }
+//                            )
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        threadPool.shutdown()
+//        while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {}
+//        val end = System.currentTimeMillis()
+//        val elapseTimeSeconds = (end - start) / thousand
+//        insertMigrateData(
+//            context,
+//            failSet,
+//            limitPackages.toInt(),
+//            totalCount,
+//            elapseTimeSeconds
+//        )
+//    }
 
     private fun insertMigrateData(
         context: ArtifactMigrateContext,
@@ -404,11 +537,7 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 val artifactFile = ArtifactFileFactory.build(inputStream)
                 val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename)
                 nodeCreateRequest?.let {
-                    nodeClient.create(nodeCreateRequest)
-                    storageService.store(
-                        nodeCreateRequest.sha256!!,
-                        artifactFile, context.storageCredentials
-                    )
+                    store(nodeCreateRequest, artifactFile, context.storageCredentials)
                 }
             }
         } catch (unknownServiceException: UnknownServiceException) {
@@ -434,8 +563,8 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
                 return null
             }
         }
-        val sha256 = artifactFile.getInputStream().sha256()
-        val md5 = artifactFile.getInputStream().md5()
+        val sha256 = artifactFile.getFileSha256()
+        val md5 = artifactFile.getFileMd5()
 
         return NodeCreateRequest(
             projectId = repositoryDetail.projectId,
@@ -455,12 +584,6 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
      * 检验地址格式
      */
     fun beforeMigrate(): String {
-//        val okHttp = HttpClientBuilderFactory.create().build()
-//        val request = Request.Builder().get().url(migrateUrl).build()
-//        val response = okHttp.newCall(request).execute()
-//        if (!(response.message().equals("OK", true))) {
-//            return PypiMigrateResponse("$migrateUrl cannot reach")
-//        }
         return migrateUrl.removeSuffix("/")
     }
 
@@ -469,6 +592,13 @@ class PypiLocalRepository : LocalRepository(), PypiRepository {
      */
     fun cpuCore(): Int {
         return Runtime.getRuntime().availableProcessors()
+    }
+
+    fun store(node: NodeCreateRequest, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?) {
+        storageManager.storeArtifactFile(node, artifactFile, storageCredentials)
+        artifactFile.delete()
+        with(node) { logger.info("Success to store$projectId/$repoName/$fullPath") }
+        logger.info("Success to insert $node")
     }
 
     companion object {

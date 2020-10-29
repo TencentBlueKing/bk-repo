@@ -22,23 +22,25 @@
 package com.tencent.bkrepo.pypi.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import org.springframework.stereotype.Component
+import java.lang.StringBuilder
 
 @Component
-class PypiVirtualRepository : VirtualRepository(), PypiRepository {
+class PypiVirtualRepository : VirtualRepository() {
 
     /**
      * 整合多个仓库的内容。
      */
-    override fun list(context: ArtifactListContext) {
+    override fun query(context: ArtifactQueryContext): Any? {
         val virtualConfiguration = context.getVirtualConfiguration()
 
         val repoList = virtualConfiguration.repositoryList
         val traversedList = getTraversedList(context)
+        val stringBuilder = StringBuilder()
         for (repoIdentify in repoList) {
             if (repoIdentify in traversedList) {
                 continue
@@ -46,12 +48,12 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
             traversedList.add(repoIdentify)
             val subRepoInfo = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
             val repository = ArtifactContextHolder.getRepository(subRepoInfo.category)
-            val subContext = context.copy(repositoryDetail = subRepoInfo) as ArtifactListContext
-            repository.list(subContext)
+            stringBuilder.append(repository.query(context))
         }
+        return stringBuilder.toString()
     }
 
-    override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
+    override fun search(context: ArtifactSearchContext): List<Any> {
         val valueList: MutableList<Value> = mutableListOf()
         val virtualConfiguration = context.getVirtualConfiguration()
         val repoList = virtualConfiguration.repositoryList
@@ -62,11 +64,11 @@ class PypiVirtualRepository : VirtualRepository(), PypiRepository {
             }
             traversedList.add(repoIdentify)
             val subRepoInfo = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-            val repository = ArtifactContextHolder.getRepository(subRepoInfo.category) as PypiRepository
+            val repository = ArtifactContextHolder.getRepository(subRepoInfo.category)
             val subContext = context.copy(subRepoInfo) as ArtifactSearchContext
-            val subValueList = repository.searchNodeList(subContext, xmlString)
-            subValueList?.let {
-                valueList.addAll(it)
+            val subValueList = repository.search(subContext)
+            subValueList.let {
+                valueList.addAll(it as List<Value>)
             }
         }
         return valueList

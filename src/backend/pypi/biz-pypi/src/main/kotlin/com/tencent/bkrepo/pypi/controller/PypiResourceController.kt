@@ -19,7 +19,7 @@
  *
  */
 
-package com.tencent.bkrepo.pypi.resource
+package com.tencent.bkrepo.pypi.controller
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.pypi.api.PypiResource
@@ -27,47 +27,33 @@ import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
 import com.tencent.bkrepo.pypi.service.PypiService
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Controller
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.ResponseBody
+import org.springframework.web.bind.annotation.RestController
 
 /**
  * pypi服务接口实现类
  */
-@Controller
-class PypiResourceImpl : PypiResource {
+@RestController
+class PypiResourceController : PypiResource {
 
     @Autowired
     private lateinit var pypiService: PypiService
 
-    @ResponseBody
-    override fun upload(
-        pypiArtifactInfo: PypiArtifactInfo,
-        artifactFileMap: ArtifactFileMap
-
-    ) {
+    override fun upload(pypiArtifactInfo: PypiArtifactInfo, artifactFileMap: ArtifactFileMap) {
         pypiService.upload(pypiArtifactInfo, artifactFileMap)
     }
 
-    @ResponseBody
-    override fun search(
-        pypiArtifactInfo: PypiArtifactInfo,
-        @RequestBody xmlString: String
-    ) {
-        pypiService.search(pypiArtifactInfo, xmlString)
+    override fun search(pypiArtifactInfo: PypiArtifactInfo): String {
+        return pypiService.search(pypiArtifactInfo)
     }
 
-    @ResponseBody
-    override fun simple(artifactInfo: PypiArtifactInfo) {
-        pypiService.simple(artifactInfo)
+    override fun simple(artifactInfo: PypiArtifactInfo): Any? {
+        return pypiService.simple(artifactInfo)
     }
 
-    @ResponseBody
     override fun packages(artifactInfo: PypiArtifactInfo) {
         pypiService.packages(artifactInfo)
     }
 
-    @ResponseBody
     override fun migrateByUrl(pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
         return pypiService.migrate(pypiArtifactInfo)
     }
@@ -75,7 +61,6 @@ class PypiResourceImpl : PypiResource {
     /**
      * 数据迁移结果查询接口
      */
-    @ResponseBody
     override fun migrateResult(pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
         return pypiService.migrateResult(pypiArtifactInfo)
     }

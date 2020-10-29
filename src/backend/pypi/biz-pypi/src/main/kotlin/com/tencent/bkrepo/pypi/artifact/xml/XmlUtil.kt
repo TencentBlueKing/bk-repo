@@ -23,15 +23,6 @@ package com.tencent.bkrepo.pypi.artifact.xml
 
 object XmlUtil {
 
-    fun getSearchArgs(xmlString: String): HashMap<String, String?> {
-        val methodCall = XmlConvertUtil.xml2MethodCall(xmlString)
-        val action = methodCall.methodName
-        val packageName = methodCall.params.paramList[0].value.struct?.memberList?.get(0)?.value?.array?.data?.valueList?.get(0)?.string
-        val summary = methodCall.params.paramList[0].value.struct?.memberList?.get(1)?.value?.array?.data?.valueList?.get(0)?.string
-        val operation = methodCall.params.paramList[1].value.string
-        return hashMapOf("action" to action, "packageName" to packageName, "summary" to summary, "operation" to operation)
-    }
-
     /**
      * null response
      */
@@ -57,7 +48,7 @@ object XmlUtil {
         )
     }
 
-    fun nodeLis2Values(nodeList: List<Map<String, Any>>): MutableList<Value> {
+    fun nodeLis2Values(nodeList: List<Map<String, Any?>>): MutableList<Value> {
         val values: MutableList<Value> = ArrayList()
         // 过滤掉重复节点，每个节点对应一个Struct
         for (node in nodeList) {
