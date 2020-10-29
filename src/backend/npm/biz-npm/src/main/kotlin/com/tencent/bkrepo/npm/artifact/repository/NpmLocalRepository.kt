@@ -387,17 +387,22 @@ class NpmLocalRepository : LocalRepository() {
             remoteVersionsSet.forEach { version ->
                 val versionJson = remoteVersions.getAsJsonObject(version)
                 val versionTime = remoteJson.getAsJsonObject(TIME)[version].asString
-                // 以自身为准，如果已经存在该版本则不迁移过来
+                // 以自身为准，如果已经存在该版本则比较时间，将最新的迁移过来
                 if (!cacheVersionsSet.contains(version)) {
                     localVersions.add(version, versionJson)
                     cachePackageJson.getAsJsonObject(TIME).addProperty(version, versionTime)
-                }else{
+                    remoteDistTags.entrySet().forEach {
+                        if (version == it.value.asString) {
+                            localDistTags.addProperty(it.key, version)
+                        }
+                    }
+                } else {
                     val localVersionTime = cachePackageJson.getAsJsonObject(TIME)[version].asString
-                    if (TimeUtil.compareTime(versionTime, localVersionTime)){
+                    if (TimeUtil.compareTime(versionTime, localVersionTime)) {
                         localVersions.add(version, versionJson)
                         cachePackageJson.getAsJsonObject(TIME).addProperty(version, versionTime)
                         remoteDistTags.entrySet().forEach {
-                            if (version == it.value.asString){
+                            if (version == it.value.asString) {
                                 localDistTags.addProperty(it.key, version)
                             }
                         }
