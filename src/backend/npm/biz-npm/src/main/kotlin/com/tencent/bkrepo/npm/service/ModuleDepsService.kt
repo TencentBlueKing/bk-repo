@@ -133,10 +133,10 @@ class ModuleDepsService {
 
     fun deleteAllByName(depsDeleteRequest: DepsDeleteRequest, soft: Boolean = true) {
         with(depsDeleteRequest) {
-            if (!exist(projectId, repoName, name, deps)) throw ErrorCodeException(
-                ArtifactMessageCode.NODE_EXISTED,
-                deps
-            )
+            if (!exist(projectId, repoName, name, deps)){
+                logger.warn("package [$deps] don't have dependents info.")
+                return
+            }
             val depsQuery = depsQuery(this)
             mongoTemplate.remove(depsQuery, TModuleDeps::class.java).also {
                 logger.info("Delete all module deps [$depsDeleteRequest] by [$operator] success.")
