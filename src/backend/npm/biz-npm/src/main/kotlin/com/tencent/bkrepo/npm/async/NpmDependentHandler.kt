@@ -79,7 +79,6 @@ class NpmDependentHandler {
                 operator = userId
             )
         )
-        logger.info("unPublish dependent for [$name] success.")
     }
 
     private fun doDependentWithMigration(userId: String, artifactInfo: ArtifactInfo, jsonData: JsonObject) {
