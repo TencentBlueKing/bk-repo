@@ -57,8 +57,6 @@ import com.tencent.bkrepo.pypi.pojo.Basic
 import com.tencent.bkrepo.pypi.pojo.PypiArtifactVersionData
 import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
 import com.tencent.bkrepo.pypi.util.ArtifactFileUtils
-import com.tencent.bkrepo.pypi.util.DecompressUtil.getPkgInfo
-import com.tencent.bkrepo.pypi.util.FileNameUtil.fileFormat
 import com.tencent.bkrepo.pypi.util.HttpUtil.downloadUrlHttpClient
 import com.tencent.bkrepo.pypi.util.JsoupUtil.htmlHrefs
 import com.tencent.bkrepo.pypi.util.JsoupUtil.sumTasks
@@ -474,9 +472,9 @@ class PypiLocalRepository : LocalRepository() {
                 // 每一个包所包含的文件列表
                 e.text()?.let { packageName ->
                     val packageMigrateDetail = PackageMigrateDetail(
-                            packageName,
-                            mutableSetOf(),
-                            mutableSetOf<VersionMigrateErrorDetail>()
+                        packageName,
+                        mutableSetOf(),
+                        mutableSetOf<VersionMigrateErrorDetail>()
                     )
                     "$verifiedUrl/$packageName".htmlHrefs().let { filenodes ->
                         for (filenode in filenodes) {
@@ -568,21 +566,22 @@ class PypiLocalRepository : LocalRepository() {
                 val isExists = checkExists(context, pypiInfo, packageName, filename)
                 if (isExists == null) {
                     packageMigrateDetail.failureVersionDetailList.add(
-                            VersionMigrateErrorDetail(
-                                    pypiInfo.version,
-                                    "查询该版本在仓库中是否存在失败，不处理"
-                            ))
+                        VersionMigrateErrorDetail(
+                            pypiInfo.version,
+                            "查询该版本在仓库中是否存在失败，不处理"
+                        )
+                    )
                 } else if (isExists == true) {
                     packageMigrateDetail.failureVersionDetailList.add(
-                            VersionMigrateErrorDetail(
-                                    pypiInfo.version,
-                                    "改版本在仓库中已存在，不处理"
-                            ))
+                        VersionMigrateErrorDetail(
+                            pypiInfo.version,
+                            "改版本在仓库中已存在，不处理"
+                        )
+                    )
                 } else {
                     val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename, pypiInfo)
                     store(nodeCreateRequest, artifactFile, context.storageCredentials)
                 }
-
             }
         } catch (unknownServiceException: UnknownServiceException) {
             logger.error(unknownServiceException.message)
@@ -617,18 +616,17 @@ class PypiLocalRepository : LocalRepository() {
         // 文件fullPath
         val path = "/$packageName/${pypiInfo.version}/$filename"
         return NodeCreateRequest(
-                projectId = context.projectId,
-                repoName = context.repoName,
-                folder = false,
-                overwrite = true,
-                fullPath = path,
-                size = artifactFile.getSize(),
-                sha256 = artifactFile.getFileSha256(),
-                md5 = artifactFile.getFileMd5(),
-                operator = context.userId,
-                metadata = metadata
-            )
-
+            projectId = context.projectId,
+            repoName = context.repoName,
+            folder = false,
+            overwrite = true,
+            fullPath = path,
+            size = artifactFile.getSize(),
+            sha256 = artifactFile.getFileSha256(),
+            md5 = artifactFile.getFileMd5(),
+            operator = context.userId,
+            metadata = metadata
+        )
     }
 
     /**
