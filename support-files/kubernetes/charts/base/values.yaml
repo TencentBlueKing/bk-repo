@@ -38,6 +38,3 @@ volume:
   hostPath:
     path: /data/local/
   storage: 10Gi
-
-env:
-  BK_REPO_FQDN: bkrepo.com
