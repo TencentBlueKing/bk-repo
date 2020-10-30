@@ -22,6 +22,7 @@
 package com.tencent.bkrepo.pypi.artifact.repository
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -32,6 +33,9 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateCont
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
+import com.tencent.bkrepo.common.artifact.repository.migration.PackageMigrateDetail
+import com.tencent.bkrepo.common.artifact.repository.migration.VersionMigrateErrorDetail
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
@@ -48,14 +52,19 @@ import com.tencent.bkrepo.pypi.artifact.model.TMigrateData
 import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil.parameterMaps
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
+import com.tencent.bkrepo.pypi.exception.PypiMigrateReject
 import com.tencent.bkrepo.pypi.pojo.Basic
 import com.tencent.bkrepo.pypi.pojo.PypiArtifactVersionData
 import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
+import com.tencent.bkrepo.pypi.util.ArtifactFileUtils
 import com.tencent.bkrepo.pypi.util.DecompressUtil.getPkgInfo
 import com.tencent.bkrepo.pypi.util.FileNameUtil.fileFormat
 import com.tencent.bkrepo.pypi.util.HttpUtil.downloadUrlHttpClient
+import com.tencent.bkrepo.pypi.util.JsoupUtil.htmlHrefs
+import com.tencent.bkrepo.pypi.util.JsoupUtil.sumTasks
 import com.tencent.bkrepo.pypi.util.XmlUtils
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
+import com.tencent.bkrepo.pypi.util.pojo.PypiInfo
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -75,7 +84,12 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.net.UnknownServiceException
+import java.time.Duration
+import java.time.Instant
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @Component
 class PypiLocalRepository : LocalRepository() {
@@ -307,12 +321,7 @@ class PypiLocalRepository : LocalRepository() {
                     ).data
                         ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
                     return buildPypiPageContent(
-                        buildPackageFilenodeListContent(
-                            artifactInfo.projectId,
-                            artifactInfo
-                                .repoName,
-                            packageNode
-                        )
+                        buildPackageFilenodeListContent(packageNode)
                     )
                 }
             }
@@ -337,11 +346,9 @@ class PypiLocalRepository : LocalRepository() {
 
     /**
      * 对应包中的文件列表
-     * @param projectId
-     * @param repoName
-     * @param nodeList
+     * [nodeList]
      */
-    private fun buildPackageFilenodeListContent(projectId: String, repoName: String, nodeList: List<NodeInfo>): String {
+    private fun buildPackageFilenodeListContent(nodeList: List<NodeInfo>): String {
         val builder = StringBuilder()
         if (nodeList.isEmpty()) {
             builder.append("The directory is empty.")
@@ -350,7 +357,10 @@ class PypiLocalRepository : LocalRepository() {
             val md5 = node.md5
             // 查询的对应的文件节点的metadata
             val metadata = filenodeMetadata(node)
-            builder.append("<a data-requires-python=\">=$metadata[\"requires_python\"]\" href=\"/$projectId/$repoName/packages${node.fullPath}#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>")
+            builder.append(
+                "<a data-requires-python=\">=$metadata[\"requires_python\"]\" href=\"../../packages${node
+                    .fullPath}#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>"
+            )
         }
         return builder.toString()
     }
@@ -383,7 +393,7 @@ class PypiLocalRepository : LocalRepository() {
             val repoName = Rule.QueryRule("repoName", repoName)
             val packageQuery = Rule.QueryRule("metadata.name", name, OperationType.EQ)
             val fullPathQuery = Rule.QueryRule("fullPath", fullPath)
-            val rule1 = Rule.NestedRule(
+            val rule = Rule.NestedRule(
                 mutableListOf(repoName, projectId, packageQuery, fullPathQuery),
                 Rule.NestedRule.RelationType.AND
             )
@@ -391,7 +401,7 @@ class PypiLocalRepository : LocalRepository() {
                 page = PageLimit(pageLimitCurrent, pageLimitSize),
                 sort = Sort(listOf("name"), Sort.Direction.ASC),
                 select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-                rule = rule1
+                rule = rule
             )
             filenodeList = nodeClient.query(queryModel).data?.records
         }
@@ -444,49 +454,62 @@ class PypiLocalRepository : LocalRepository() {
         return migrateResult(context)
     }
 
-//    override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
-//        val verifiedUrl = beforeMigrate()
-//
-//        var totalCount: Int
-//        val cpuCore = cpuCore()
-//        val threadPool = ThreadPoolExecutor(
-//            cpuCore, cpuCore.shl(doubleNum), threadAliveTime, TimeUnit.SECONDS,
-//            LinkedBlockingQueue(),
-//            ThreadFactoryBuilder().setNameFormat("pypiRepo-migrate-thread-%d").build(),
-//            PypiMigrateReject()
-//        )
-//
-//        // 获取所有的包,开始计时
-//        val start = System.currentTimeMillis()
-//        verifiedUrl.htmlHrefs(limitPackages.toInt()).let { simpleHrefs ->
-//            totalCount = migrateUrl.sumTasks(simpleHrefs)
-//            for (e in simpleHrefs) {
-//                // 每一个包所包含的文件列表
-//                e.text()?.let { packageName ->
-//                    "$verifiedUrl/$packageName".htmlHrefs().let { filenodes ->
-//                        for (filenode in filenodes) {
-//                            threadPool.submit(
-//                                Runnable {
-//                                    migrateUpload(context, filenode, verifiedUrl, packageName)
-//                                }
-//                            )
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        threadPool.shutdown()
-//        while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {}
-//        val end = System.currentTimeMillis()
-//        val elapseTimeSeconds = (end - start) / thousand
-//        insertMigrateData(
-//            context,
-//            failSet,
-//            limitPackages.toInt(),
-//            totalCount,
-//            elapseTimeSeconds
-//        )
-//    }
+    override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
+        val verifiedUrl = beforeMigrate()
+        val packageMigrateDetailList = mutableListOf<PackageMigrateDetail>()
+        var totalCount: Int
+        val cpuCore = cpuCore()
+        val threadPool = ThreadPoolExecutor(
+            cpuCore, cpuCore.shl(doubleNum), threadAliveTime, TimeUnit.SECONDS,
+            LinkedBlockingQueue(),
+            ThreadFactoryBuilder().setNameFormat("pypiRepo-migrate-thread-%d").build(),
+            PypiMigrateReject()
+        )
+
+        // 获取所有的包,开始计时
+        val start = Instant.now()
+        verifiedUrl.htmlHrefs(limitPackages.toInt()).let { simpleHrefs ->
+            totalCount = migrateUrl.sumTasks(simpleHrefs)
+            for (e in simpleHrefs) {
+                // 每一个包所包含的文件列表
+                e.text()?.let { packageName ->
+                    val packageMigrateDetail = PackageMigrateDetail(
+                            packageName,
+                            mutableSetOf(),
+                            mutableSetOf<VersionMigrateErrorDetail>()
+                    )
+                    "$verifiedUrl/$packageName".htmlHrefs().let { filenodes ->
+                        for (filenode in filenodes) {
+                            threadPool.submit(
+                                Runnable {
+                                    migrateUpload(context, filenode, verifiedUrl, packageName, packageMigrateDetail)
+                                }
+                            )
+                        }
+                    }
+                    packageMigrateDetailList.add(packageMigrateDetail)
+                }
+            }
+        }
+        threadPool.shutdown()
+        while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {}
+        val end = Instant.now()
+        val elapseTimeSeconds = Duration.between(start, end)
+        insertMigrateData(
+            context,
+            failSet,
+            limitPackages.toInt(),
+            totalCount,
+            elapseTimeSeconds.seconds
+        )
+        return MigrateDetail(
+            context.projectId,
+            context.repoName,
+            packageMigrateDetailList,
+            elapseTimeSeconds,
+            null
+        )
+    }
 
     private fun insertMigrateData(
         context: ArtifactMigrateContext,
@@ -528,17 +551,38 @@ class PypiLocalRepository : LocalRepository() {
         }
     }
 
-    fun migrateUpload(context: ArtifactMigrateContext, filenode: Element, verifiedUrl: String, packageName: String) {
+    fun migrateUpload(
+        context: ArtifactMigrateContext,
+        filenode: Element,
+        verifiedUrl: String,
+        packageName: String,
+        packageMigrateDetail: PackageMigrateDetail
+    ) {
         val filename = filenode.text()
         val hrefValue = filenode.attributes()["href"]
         // 获取文件流
         try {
             "$verifiedUrl/$packageName/$hrefValue".downloadUrlHttpClient()?.use { inputStream ->
                 val artifactFile = ArtifactFileFactory.build(inputStream)
-                val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename)
-                nodeCreateRequest?.let {
+                val pypiInfo = ArtifactFileUtils.getPypiInfo(filename, artifactFile)
+                val isExists = checkExists(context, pypiInfo, packageName, filename)
+                if (isExists == null) {
+                    packageMigrateDetail.failureVersionDetailList.add(
+                            VersionMigrateErrorDetail(
+                                    pypiInfo.version,
+                                    "查询该版本在仓库中是否存在失败，不处理"
+                            ))
+                } else if (isExists == true) {
+                    packageMigrateDetail.failureVersionDetailList.add(
+                            VersionMigrateErrorDetail(
+                                    pypiInfo.version,
+                                    "改版本在仓库中已存在，不处理"
+                            ))
+                } else {
+                    val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename, pypiInfo)
                     store(nodeCreateRequest, artifactFile, context.storageCredentials)
                 }
+
             }
         } catch (unknownServiceException: UnknownServiceException) {
             logger.error(unknownServiceException.message)
@@ -546,38 +590,45 @@ class PypiLocalRepository : LocalRepository() {
         }
     }
 
+    /**
+     * 读取到的远程节点在本地仓库是否存在
+     */
+    fun checkExists(
+        context: ArtifactMigrateContext,
+        pypiInfo: PypiInfo,
+        packageName: String,
+        filename: String
+    ): Boolean? {
+        with(context.repositoryDetail) {
+            // 文件fullPath
+            val path = "/$packageName/${pypiInfo.version}/$filename"
+            return nodeClient.exist(projectId, name, path).data
+        }
+    }
+
     fun createMigrateNode(
         context: ArtifactMigrateContext,
         artifactFile: ArtifactFile,
         packageName: String,
-        filename: String
-    ): NodeCreateRequest? {
-        val repositoryDetail = context.repositoryDetail
+        filename: String,
+        pypiInfo: PypiInfo
+    ): NodeCreateRequest {
         val metadata = context.request.parameterMaps()
-        // 获取文件版本信息
-        val pypiInfo = filename.fileFormat().let { artifactFile.getInputStream().getPkgInfo(it) }
         // 文件fullPath
         val path = "/$packageName/${pypiInfo.version}/$filename"
-        nodeClient.exist(repositoryDetail.projectId, repositoryDetail.name, path).data?.let {
-            if (it) {
-                return null
-            }
-        }
-        val sha256 = artifactFile.getFileSha256()
-        val md5 = artifactFile.getFileMd5()
-
         return NodeCreateRequest(
-            projectId = repositoryDetail.projectId,
-            repoName = repositoryDetail.name,
-            folder = false,
-            overwrite = true,
-            fullPath = path,
-            size = artifactFile.getSize(),
-            sha256 = sha256,
-            md5 = md5,
-            operator = context.userId,
-            metadata = metadata
-        )
+                projectId = context.projectId,
+                repoName = context.repoName,
+                folder = false,
+                overwrite = true,
+                fullPath = path,
+                size = artifactFile.getSize(),
+                sha256 = artifactFile.getFileSha256(),
+                md5 = artifactFile.getFileMd5(),
+                operator = context.userId,
+                metadata = metadata
+            )
+
     }
 
     /**
@@ -622,6 +673,5 @@ class PypiLocalRepository : LocalRepository() {
         const val pageLimitSize = 10
         const val threadAliveTime = 15L
         const val doubleNum = 1
-        const val thousand = 1000
     }
 }
