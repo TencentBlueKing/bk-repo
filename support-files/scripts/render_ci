@@ -9,7 +9,7 @@ BK_ENV_FILE=./ci_env.properties
 set +a
 
 trap 'rm -f $sed_script' EXIT TERM
-sed_script=$(mktemp /tmp/XXXXXX.sed)
+sed_script=$(mktemp /tmp/sed.XXXXXX)
 
 usage () {
     echo "Usage: $0 [-c] [-n] [-E k=v, -E k=v] tpl_path ..."

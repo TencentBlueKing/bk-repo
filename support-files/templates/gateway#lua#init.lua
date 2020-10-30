@@ -29,7 +29,7 @@ config = {
   allow_headers = "Authorization,Content-Type,withcredentials,credentials,Accept,Origin,User-Agent,Cache-Control,Keep-Alive,X-Requested-With,If-Modified-Since,X-CSRFToken,X-DEVOPS-PROJECT-ID,X-DEVOPS-TASK-ID,X-BKREPO-UID,X-BKREPO-API-TYPE",
   ns = {
     ip = {
-      "127.0.0.1"
+      "__BK_REPO_CONSUL_DNS_HOST__"
     },
     port = "__BK_REPO_CONSUL_DNS_PORT__",
     http_port = "__BK_REPO_CONSUL_PORT__",
