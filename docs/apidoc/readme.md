@@ -24,7 +24,5 @@
 
 **[12. docker仓库相关接口](./docker.md)**
 
-**[13. docker仓库扩展相关接口](./docker_ext.md)**
-
-**[14. npm仓库扩展相关接口](./npm.md)**
+**[13. npm仓库扩展相关接口](./npm.md)**
 

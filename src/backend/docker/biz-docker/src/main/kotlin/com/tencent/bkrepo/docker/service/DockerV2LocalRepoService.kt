@@ -1,3 +1,24 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ */
+
 package com.tencent.bkrepo.docker.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
@@ -10,6 +31,8 @@ import com.tencent.bkrepo.docker.artifact.DockerPackageRepo
 import com.tencent.bkrepo.docker.constant.BLOB_PATTERN
 import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_CONTENT_DIGEST
+import com.tencent.bkrepo.docker.constant.DOCKER_CREATE_BY
+import com.tencent.bkrepo.docker.constant.DOCKER_CREATE_DATE
 import com.tencent.bkrepo.docker.constant.DOCKER_DIGEST_SHA256
 import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.constant.DOCKER_LENGTH_EMPTY
@@ -78,7 +101,7 @@ class DockerV2LocalRepoService @Autowired constructor(
 ) : DockerV2RepoService {
 
     @Value("\${docker.domain: ''}")
-    private val domain: String = EMPTY
+    val domain: String = EMPTY
 
     var httpHeaders: HttpHeaders = HttpHeaders()
 
@@ -429,6 +452,8 @@ class DockerV2LocalRepoService @Autowired constructor(
             val configBlob = JsonUtils.objectMapper.readValue(configBytes, DockerSchema2Config::class.java)
             val basic = mapOf(
                 DOCKER_NODE_SIZE to versionDetail.size,
+                DOCKER_CREATE_DATE to versionDetail.createdDate,
+                DOCKER_CREATE_BY to versionDetail.createdBy,
                 DOCKER_VERSION to tag,
                 DOCKER_VERSION_DOMAIN to domain,
                 LAST_MODIFIED_BY to nodeDetail.lastModifiedBy,
@@ -439,12 +464,6 @@ class DockerV2LocalRepoService @Autowired constructor(
                 DOCKER_OS to configBlob.os
             )
             return DockerTagDetail(basic, configBlob.history, nodeDetail.metadata, layers)
-            // return mapOf(
-            //     "basic" to basic,
-            //     "history" to configBlob.history,
-            //     "metadata" to nodeDetail.metadata,
-            //     "layers" to layers
-            // )
         } catch (ignored: Exception) {
             return null
         }

@@ -42,7 +42,11 @@
                     <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="200">
                         <template slot-scope="props">{{ formatDate(props.row.lastModifiedDate) }}</template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('lastModifiedBy')" prop="lastModifiedBy" width="120"></bk-table-column>
+                    <bk-table-column :label="$t('lastModifiedBy')" width="120">
+                        <template slot-scope="props">
+                            {{ userList[props.row.lastModifiedBy] ? userList[props.row.lastModifiedBy].name : props.row.lastModifiedBy }}
+                        </template>
+                    </bk-table-column>
                     <bk-table-column :label="$t('size')" width="100">
                         <template slot-scope="props">
                             <bk-button text
@@ -133,26 +137,27 @@
                     <bk-form-item :label="$t('folder') + $t('path')">
                         <span class="break-all">{{ selectedRow.fullPath + '/' + formDialog.path }}</span>
                     </bk-form-item>
-                    <bk-form-item :label="$t('createFolderLabel')" :required="true" property="path" error-display-type="normal">
+                    <bk-form-item :label="$t('createFolderLabel')" :required="true" property="path">
                         <bk-input v-model="formDialog.path" :placeholder="$t('folderNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
                 <template v-else-if="formDialog.type === 'rename'">
-                    <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
+                    <bk-form-item :label="$t('name')" :required="true" property="name">
                         <bk-input v-model="formDialog.name" :placeholder="$t('folderNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
                 <template v-else-if="formDialog.type === 'share'">
-                    <bk-form-item :label="$t('share') + $t('object')" :required="true" property="user" error-display-type="normal">
+                    <bk-form-item :label="$t('share') + $t('object')" :required="true" property="user">
                         <bk-tag-input
                             v-model="formDialog.user"
-                            :list="userList"
+                            :list="Object.values(userList)"
+                            :clearable="false"
                             trigger="focus"
                             allow-create
                             has-delete-icon>
                         </bk-tag-input>
                     </bk-form-item>
-                    <bk-form-item :label="`${$t('validity')}(${$t('day')})`" :required="true" property="time" error-display-type="normal">
+                    <bk-form-item :label="`${$t('validity')}(${$t('day')})`" :required="true" property="time">
                         <bk-input v-model="formDialog.time" :placeholder="$t('repoNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
@@ -232,7 +237,6 @@
                     user: [],
                     time: 1
                 },
-                userList: [],
                 // formDialog Rules
                 rules: {
                     path: [
@@ -306,7 +310,7 @@
             }
         },
         computed: {
-            ...mapState(['genericTree']),
+            ...mapState(['userList', 'genericTree']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -331,9 +335,6 @@
             this.initPage()
             this.setBreadcrumb()
         },
-        mounted () {
-            this.getUserList()
-        },
         beforeDestroy () {
             this.SET_BREADCRUMB([])
         },
@@ -357,14 +358,6 @@
                 'shareArtifactory',
                 'getFolderSize'
             ]),
-            getUserList () {
-                if (this.$userList) this.userList = Object.values(this.$userList)
-                else {
-                    setTimeout(() => {
-                        this.getUserList()
-                    }, 1000)
-                }
-            },
             async initPage () {
                 this.importantSearch = ''
                 this.INIT_TREE()
@@ -387,7 +380,12 @@
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
-                    this.artifactoryList = records
+                    this.artifactoryList = records.map(v => {
+                        return {
+                            ...v,
+                            name: v.metadata.displayName || v.name
+                        }
+                    })
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -404,8 +402,13 @@
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
-                    this.artifactoryList = records
                     this.pagination.count = totalRecords
+                    this.artifactoryList = records.map(v => {
+                        return {
+                            ...v,
+                            name: v.metadata.displayName || v.name
+                        }
+                    })
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -499,7 +502,9 @@
                     ...data,
                     name: data.name || this.repoName,
                     size: convertFileSize(data.size),
+                    createdBy: this.userList[data.createdBy] ? this.userList[data.createdBy].name : data.createdBy,
                     createdDate: formatDate(data.createdDate),
+                    lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
                     lastModifiedDate: formatDate(data.lastModifiedDate)
                 }
                 this.detailSlider.loading = false

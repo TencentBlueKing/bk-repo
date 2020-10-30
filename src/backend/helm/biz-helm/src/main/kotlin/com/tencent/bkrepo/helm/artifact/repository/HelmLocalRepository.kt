@@ -1,3 +1,24 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ */
+
 package com.tencent.bkrepo.helm.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -9,9 +30,13 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.helm.constants.FULL_PATH
+import com.tencent.bkrepo.helm.constants.NAME
+import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.Logger
@@ -20,11 +45,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class HelmLocalRepository : LocalRepository() {
-
-    // override fun determineArtifactName(context: ArtifactContext): String {
-    //     val fileName = context.artifactInfo.getArtifactFullPath().trimStart('/')
-    //     return if (StringUtils.isBlank(fileName)) INDEX_YAML else fileName
-    // }
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         // 判断是否是强制上传
@@ -45,7 +65,11 @@ class HelmLocalRepository : LocalRepository() {
     override fun onUpload(context: ArtifactUploadContext) {
         context.getArtifactFileMap().entries.forEach { (name, _) ->
             val nodeCreateRequest = getNodeCreateRequest(name, context)
-            storageManager.storeArtifactFile(nodeCreateRequest, context.getArtifactFile(name), context.storageCredentials)
+            storageManager.storeArtifactFile(
+                nodeCreateRequest,
+                context.getArtifactFile(name),
+                context.storageCredentials
+            )
         }
     }
 
@@ -84,18 +108,33 @@ class HelmLocalRepository : LocalRepository() {
         return isForce || !(fullPath.trim().endsWith(".tgz", true) || fullPath.trim().endsWith(".prov", true))
     }
 
-    // override fun determineArtifactUri(context: ArtifactDownloadContext): String {
-    //     return context.getStringAttribute(FULL_PATH)!!
-    // }
-
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         val fullPath = context.getStringAttribute(FULL_PATH)!!
         with(context) {
-            val node =  nodeClient.detail(projectId, repoName, fullPath).data
+            val node = nodeClient.detail(projectId, repoName, fullPath).data
             if (node == null || node.folder) return null
+            node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
+            node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
             val range = resolveRange(context, node.size)
             val inputStream = storageService.load(node.sha256!!, range, storageCredentials) ?: return null
-            return ArtifactResource(inputStream, artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL, useDisposition)
+            return ArtifactResource(
+                inputStream,
+                artifactInfo.getResponseName(),
+                node,
+                ArtifactChannel.LOCAL,
+                useDisposition
+            )
+        }
+    }
+
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): DownloadStatisticsAddRequest? {
+        val name = context.getStringAttribute(NAME).orEmpty()
+        val version = context.getStringAttribute(VERSION).orEmpty()
+        with(context) {
+            return DownloadStatisticsAddRequest(projectId, repoName, PackageKeys.ofHelm(name), name, version)
         }
     }
 
@@ -120,13 +159,11 @@ class HelmLocalRepository : LocalRepository() {
         val repositoryDetail = context.repositoryDetail
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
-        val fullPath = context.getStringAttribute(FULL_PATH)!!
+        val fullPath = context.getAttribute<List<String>>(FULL_PATH).orEmpty()
         val userId = context.userId
-        val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
-        if (!isExist) {
-            throw HelmFileNotFoundException("remove $fullPath failed: no such file or directory")
+        fullPath.forEach {
+            nodeClient.delete(NodeDeleteRequest(projectId, repoName, it, userId))
         }
-        nodeClient.delete(NodeDeleteRequest(projectId, repoName, fullPath, userId))
     }
 
     companion object {

@@ -9,7 +9,7 @@
                 <div class="flex-align-center">
                     <div class="mr50">{{ `${$t('downloads')}: ${pkg.downloads}` }}</div>
                     <div class="mr50">{{ `${$t('lastModifiedDate')}: ${formatDate(pkg.lastModifiedDate)}` }}</div>
-                    <div>{{ `${$t('lastModifiedBy')}: ${pkg.lastModifiedBy}` }}</div>
+                    <div>{{ `${$t('lastModifiedBy')}: ${userList[pkg.lastModifiedBy] ? userList[pkg.lastModifiedBy].name : pkg.lastModifiedBy}` }}</div>
                 </div>
             </div>
         </div>
@@ -21,10 +21,12 @@
                             <bk-input
                                 class="common-version-search"
                                 v-model="versionInput"
-                                :placeholder="$t('enterSearch')"
+                                clearable
+                                :placeholder="$t('versionPlacehodler')"
                                 @enter="handlerPaginationChange"
-                                clearable>
+                                @clear="handlerPaginationChange">
                             </bk-input>
+                            <i class="common-version-search-btn devops-icon icon-search" @click="handlerPaginationChange"></i>
                         </div>
                         <bk-table
                             class="common-version-table"
@@ -35,7 +37,7 @@
                             size="small"
                             @row-click="toCommonVersionDetail"
                         >
-                            <bk-table-column :label="$t('name')" prop="name"></bk-table-column>
+                            <bk-table-column :label="$t('version')" prop="name"></bk-table-column>
                             <bk-table-column :label="$t('artiStatus')">
                                 <template v-if="props.row.stageTag" slot-scope="props">
                                     <span class="mr5 repo-tag" v-for="tag in props.row.stageTag"
@@ -48,7 +50,11 @@
                                 </template>
                             </bk-table-column>
                             <bk-table-column :label="$t('downloads')" prop="downloads"></bk-table-column>
-                            <bk-table-column :label="$t('lastModifiedBy')" prop="lastModifiedBy"></bk-table-column>
+                            <bk-table-column :label="$t('lastModifiedBy')">
+                                <template slot-scope="props">
+                                    {{ userList[props.row.lastModifiedBy] ? userList[props.row.lastModifiedBy].name : props.row.lastModifiedBy }}
+                                </template>
+                            </bk-table-column>
                             <bk-table-column :label="$t('lastModifiedDate')">
                                 <template slot-scope="props">
                                     {{ formatDate(props.row.lastModifiedDate) }}
@@ -83,22 +89,6 @@
                         </bk-pagination>
                     </div>
                 </bk-tab-panel>
-                <!-- <bk-tab-panel name="dockerDescription" :label="$t('dockerInfo')">
-                    <article class="docker-description">
-                        <section>
-                            <header class="docker-description-header">bkci base dockerimage</header>
-                        </section>
-                        <section>
-                            <header class="docker-description-header">{{ $t('dockerBaseInfo1') }}</header>
-                            <code-area :code-list="[`docker pull ${$route.query.name}/${$route.query.docker}:latest`]"></code-area>
-                        </section>
-                        <section>
-                            <header class="docker-description-header">{{ $t('dockerBaseInfo2') }}</header>
-                            <div class="docker-description-tip">{{ $t('dockerBaseInfo3') }}</div>
-                            <code-area :code-list="[`docker pull ${$route.query.name}/${$route.query.docker}:latest`]"></code-area>
-                        </section>
-                    </article>
-                </bk-tab-panel> -->
             </bk-tab>
         </div>
         
@@ -110,7 +100,7 @@
             width="600"
             header-position="left">
             <bk-form :label-width="120" :model="formDialog" :rules="rules" ref="formDialog">
-                <bk-form-item :label="$t('upgradeTo')" :required="true" property="tag" error-display-type="normal">
+                <bk-form-item :label="$t('upgradeTo')" :required="true" property="tag">
                     <bk-radio-group v-model="formDialog.tag">
                         <bk-radio :disabled="!!formDialog.default.length" value="@prerelease">@prerelease</bk-radio>
                         <bk-radio class="ml20" value="@release">@release</bk-radio>
@@ -125,13 +115,11 @@
     </div>
 </template>
 <script>
-    // import CodeArea from '@/components/CodeArea'
     import { convertFileSize, formatDate } from '@/utils'
     import commonMixin from './commonMixin'
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     export default {
         name: 'commonPackageDetail',
-        // components: { CodeArea },
         mixins: [commonMixin],
         data () {
             return {
@@ -171,6 +159,9 @@
                     'limit-list': [10, 20, 40]
                 }
             }
+        },
+        computed: {
+            ...mapState(['userList'])
         },
         created () {
             this.getPackageInfoHandler()
@@ -337,6 +328,19 @@
                 margin-bottom: -40px;
                 .common-version-search {
                     width: 250px;
+                }
+                .common-version-search-btn {
+                    position: relative;
+                    z-index: 1;
+                    padding: 9px;
+                    color: white;
+                    margin-left: -2px;
+                    border-radius: 0 2px 2px 0;
+                    background-color: #3a84ff;
+                    cursor: pointer;
+                    &:hover {
+                        background-color: #699df4;
+                    }
                 }
                 .common-version-table {
                     .devops-icon {

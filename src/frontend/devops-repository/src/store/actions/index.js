@@ -2,14 +2,14 @@ import Vue from 'vue'
 
 import repoGeneric from './repoGeneric'
 import repoCommon from './repoCommon'
-import search from './search'
+import token from './token'
 
 const prefix = 'repository/api'
 
 export default {
     ...repoGeneric,
     ...repoCommon,
-    ...search,
+    ...token,
     /*
         创建仓库
         body: {

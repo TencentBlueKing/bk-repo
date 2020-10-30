@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: dockerapi
+  cloud:
+    consul:
+      discovery:
+        heartbeat:
+          enabled: true
+        query-passing: true
+        prefer-ip-address: true
+      config:
+        prefix: bkrepo-config
+        format: YAML
+        data-key: data
+        profileSeparator: '::'
+
+server:
+  port: 25906
+
+dockerapi:
+  realm: bkrepo

@@ -8,7 +8,7 @@
         <main class="create-repo-main">
             <div class="repo-base-info">
                 <bk-form :label-width="200" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
-                    <bk-form-item :label="$t('repoType')" :required="true" property="type" error-display-type="normal">
+                    <bk-form-item :label="$t('repoType')" :required="true" property="type">
                         <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group">
                             <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
                                 <div class="flex-center repo-type-radio">
@@ -21,9 +21,32 @@
                             </bk-radio-button>
                         </bk-radio-group>
                     </bk-form-item>
-                    <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
+                    <bk-form-item :label="$t('repoName')" :required="true" property="name">
                         <bk-input v-model="repoBaseInfo.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
                     </bk-form-item>
+                    <template v-if="repoBaseInfo.type === 'rpm'">
+                        <bk-form-item :label="$t('enableFileLists')">
+                            <bk-checkbox v-model="repoBaseInfo.enableFileLists"></bk-checkbox>
+                        </bk-form-item>
+                        <bk-form-item :label="$t('repodataDepth')" property="repodataDepth">
+                            <bk-input v-model="repoBaseInfo.repodataDepth"></bk-input>
+                        </bk-form-item>
+                        <bk-form-item :label="$t('groupXmlSet')" property="groupXmlSet">
+                            <bk-tag-input
+                                :value="repoBaseInfo.groupXmlSet"
+                                @change="(val) => {
+                                    repoBaseInfo.groupXmlSet = val.map(v => {
+                                        return v.replace(/^([^.]*)(\.xml)?$/, '$1.xml')
+                                    })
+                                }"
+                                :list="[]"
+                                trigger="focus"
+                                :clearable="false"
+                                allow-create
+                                has-delete-icon>
+                            </bk-tag-input>
+                        </bk-form-item>
+                    </template>
                     <bk-form-item :label="$t('description')">
                         <bk-input type="textarea"
                             maxlength="200"
@@ -52,6 +75,9 @@
                 repoBaseInfo: {
                     type: '',
                     name: '',
+                    enableFileLists: false,
+                    repodataDepth: 0,
+                    groupXmlSet: [],
                     description: ''
                 },
                 rules: {
@@ -77,6 +103,24 @@
                             validator: this.asynCheckRepoName,
                             message: this.$t('repoName') + this.$t('repeat'),
                             trigger: 'blur'
+                        }
+                    ],
+                    repodataDepth: [
+                        {
+                            regex: /^(0|[1-9][0-9]*)$/,
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repodataDepth'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    groupXmlSet: [
+                        {
+                            validator: arr => {
+                                return arr.every(v => {
+                                    return /\.xml$/.test(v)
+                                })
+                            },
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
+                            trigger: 'change'
                         }
                     ]
                 }
@@ -106,8 +150,18 @@
                 await this.createRepo({
                     body: {
                         projectId: this.projectId,
-                        ...this.repoBaseInfo,
-                        type: this.repoBaseInfo.type.toUpperCase()
+                        type: this.repoBaseInfo.type.toUpperCase(),
+                        name: this.repoBaseInfo.name,
+                        description: this.repoBaseInfo.description,
+                        ...(this.repoBaseInfo.type === 'rpm' ? {
+                            configuration: {
+                                settings: {
+                                    enableFileLists: this.repoBaseInfo.enableFileLists,
+                                    repodataDepth: this.repoBaseInfo.repodataDepth,
+                                    groupXmlSet: this.repoBaseInfo.groupXmlSet
+                                }
+                            }
+                        } : {})
                     }
                 }).finally(() => {
                     this.isLoading = false

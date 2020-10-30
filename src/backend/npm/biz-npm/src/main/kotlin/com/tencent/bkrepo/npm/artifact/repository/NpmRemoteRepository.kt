@@ -1,205 +1,166 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ */
+
 package com.tencent.bkrepo.npm.artifact.repository
 
-import com.google.gson.JsonObject
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.npm.constants.DIST
-import com.tencent.bkrepo.npm.constants.ID
-import com.tencent.bkrepo.npm.constants.NAME
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
-import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
-import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_METADATA_FULL_PATH
-import com.tencent.bkrepo.npm.constants.TARBALL
-import com.tencent.bkrepo.npm.constants.VERSIONS
+import com.tencent.bkrepo.npm.constants.REPO_TYPE
+import com.tencent.bkrepo.npm.exception.NpmBadRequestException
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
-import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import io.undertow.util.BadRequestException
 import okhttp3.Request
 import okhttp3.Response
-import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import java.io.IOException
 import java.io.InputStream
+import java.util.concurrent.Executor
+import javax.annotation.Resource
 
 @Component
-class NpmRemoteRepository : RemoteRepository() {
+class NpmRemoteRepository(
+    // private val npmProperties: NpmProperties
+) : RemoteRepository() {
 
-    @Value("\${npm.tarball.prefix: ${StringPool.SLASH}}")
-    private val tarballPrefix: String = StringPool.SLASH
+    @Resource
+    private lateinit var taskAsyncExecutor: Executor
 
-    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        getCacheArtifactResource(context)?.let { return it }
-        val tgzFile = super.onDownload(context)
-        installPkgVersionFile(context)
-        return tgzFile
+    override fun onDownloadSuccess(context: ArtifactDownloadContext, artifactResource: ArtifactResource) {
+        super.onDownloadSuccess(context, artifactResource)
+        // 存储package-version.json文件
+        taskAsyncExecutor.execute { cachePackageVersionMetadata(context) }
     }
 
-    override fun createRemoteDownloadUrl(context: ArtifactContext): String {
-        val remoteConfiguration = context.getRemoteConfiguration()
-        val tarballPrefix = getTarballPrefix(context)
-        val queryString = context.request.queryString
-        val requestURL =
-            context.request.requestURL.toString() + if (StringUtils.isNotEmpty(queryString)) "?$queryString" else ""
-        context.putAttribute(NPM_FILE_FULL_PATH, requestURL.removePrefix(tarballPrefix))
-        return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
-    }
+    private fun cachePackageVersionMetadata(context: ArtifactDownloadContext) {
+        with(context) {
+            val packageInfo = NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
 
-    override fun buildCacheNodeCreateRequest(context: ArtifactContext, artifactFile: ArtifactFile): NodeCreateRequest {
-        val nodeCreateRequest = super.buildCacheNodeCreateRequest(context, artifactFile)
-        return nodeCreateRequest.copy(
-            fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
-        )
-    }
-
-    private fun getCacheArtifactResource(context: ArtifactContext): ArtifactResource? {
-        val remoteConfiguration = context.getRemoteConfiguration()
-        if (!remoteConfiguration.cache.enabled) return null
-        val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
-        val cacheNode = nodeClient.detail(context.projectId, context.repoName, fullPath).data
-        if (cacheNode == null || cacheNode.folder) return null
-        return if (!isExpired(cacheNode, remoteConfiguration.cache.expiration)) {
-            storageService.load(
-                cacheNode.sha256!!, Range.full(cacheNode.size),
-                context.storageCredentials
-            )?.run {
-                logger.debug("Cached remote artifact[${context.artifactInfo}] is hit")
-                ArtifactResource(this, context.artifactInfo.getResponseName(), cacheNode, ArtifactChannel.LOCAL, true)
+            val versionMetadataFullPath = NpmUtils.getVersionPackageMetadataPath(packageInfo.first, packageInfo.second)
+            if (nodeClient.exist(projectId, repoName, versionMetadataFullPath).data!!) {
+                logger.info("version metadata [$versionMetadataFullPath] is already exits in the repo [$projectId/$repoName]")
+                return
             }
-        } else null
-    }
-
-    /**
-     * install pkg-version json file when download tgzFile
-     */
-    fun installPkgVersionFile(context: ArtifactDownloadContext) {
-        val tgzFullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
-        val pkgInfo = parseArtifactInfo(tgzFullPath)
-        context.putAttribute(NPM_FILE_FULL_PATH,
-            String.format(NPM_PKG_METADATA_FULL_PATH, pkgInfo.first))
-        try {
-            val artifactResource = getCacheArtifactResource(context) ?: return
-            val jsonFile = transFileToJson(artifactResource.inputStream, context)
-            val versionFile = jsonFile.getAsJsonObject(VERSIONS).getAsJsonObject(pkgInfo.second)
-            val artifact = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionFile))
-            val name = jsonFile[NAME].asString
-            context.putAttribute(NPM_FILE_FULL_PATH,
-                String.format(NPM_PKG_VERSION_METADATA_FULL_PATH, name, name, pkgInfo.second))
-            cacheArtifactFile(context, artifact)
-        } catch (ex: TypeCastException) {
-            logger.warn("cache artifact [${pkgInfo.first}-${pkgInfo.second}.json] failed, {}", ex.message)
-        }
-    }
-
-    private fun parseArtifactInfo(tgzFullPath: String): Pair<String, String> {
-        val pkgList = tgzFullPath.split('/').filter { it.isNotBlank() }.map { it.trim() }.toList()
-        var pkgName = pkgList[0]
-        if (pkgList[1].contains('@')) {
-            pkgName = pkgList[0] + pkgList[1]
-        }
-        val version = pkgList.last().substringAfterLast('-').substringBeforeLast(".tgz")
-        return Pair(pkgName, version)
-    }
-
-    override fun query(context: ArtifactQueryContext): JsonObject? {
-        getCacheArtifactResource(context)?.let {
-            return transFileToJson(it.inputStream, context)
-        }
-        val remoteConfiguration = context.getRemoteConfiguration()
-        val httpClient = createHttpClient(remoteConfiguration)
-        val searchUri = generateRemoteSearchUrl(context)
-        val request = Request.Builder().url(searchUri).build()
-        var response: Response? = null
-        return try {
-            response = httpClient.newCall(request).execute()
+            val remoteConfiguration = context.getRemoteConfiguration()
+            val httpClient = createHttpClient(remoteConfiguration)
+            context.putAttribute("requestURI", "/${packageInfo.first}/${packageInfo.second}")
+            val downloadUri = createRemoteSearchUrl(context)
+            val request = Request.Builder().url(downloadUri).build()
+            val response = httpClient.newCall(request).execute()
             if (checkResponse(response)) {
-                val file = createTempFile(response.body()!!)
-                val resultJson = transFileToJson(file.getInputStream(), context)
-                cacheArtifactFile(context, file)
-                resultJson
-            } else null
-        } catch (exception: IOException) {
-            logger.error("http send [$searchUri] failed, {}", exception)
-            throw exception
-        } finally {
-            if (response != null) {
-                response.body()?.close()
+                val artifactFile = createTempFile(response.body()!!)
+                context.putAttribute(NPM_FILE_FULL_PATH, versionMetadataFullPath)
+                cacheArtifactFile(context, artifactFile)
+                logger.info("cache version metadata [$versionMetadataFullPath] success.")
             }
         }
     }
 
-    private fun transFileToJson(inputStream: InputStream, context: ArtifactContext): JsonObject {
-        val pkgJson = GsonUtils.transferInputStreamToJson(inputStream)
-        val name = pkgJson.get(NAME).asString
-        val id = pkgJson[ID].asString
-        if (id.substring(1).contains('@')) {
-            val oldTarball = pkgJson.getAsJsonObject(DIST)[TARBALL].asString
-            pkgJson.getAsJsonObject(DIST).addProperty(
-                TARBALL,
-                NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, context.artifactInfo)
-            )
-        } else {
-            val versions = pkgJson.getAsJsonObject(VERSIONS)
-            versions.keySet().forEach {
-                val versionObject = versions.getAsJsonObject(it)
-                val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
-                versionObject.getAsJsonObject(DIST).addProperty(
-                    TARBALL,
-                    NpmUtils.buildPackageTgzTarball(oldTarball, tarballPrefix, name, context.artifactInfo)
-                )
-            }
+    override fun upload(context: ArtifactUploadContext) {
+        with(context) {
+            val message = "Unable to upload npm package into a remote repository [$projectId/$repoName]"
+            logger.warn(message)
+            throw NpmBadRequestException(message)
         }
-        return pkgJson
     }
 
-    private fun getTarballPrefix(context: ArtifactContext): String {
-        val requestURL = context.request.requestURL.toString()
-        val requestURI = context.request.requestURI
-        val projectId = context.artifactInfo.projectId
-        val repoName = context.artifactInfo.repoName
-        val replace = requestURL.replace(requestURI, "")
-        return "$replace/$projectId/$repoName"
-    }
-
-    private fun generateRemoteSearchUrl(context: ArtifactQueryContext): String {
-        val remoteConfiguration = context.getRemoteConfiguration()
-        val tarballPrefix = getTarballPrefix(context)
-        val requestURL = context.request.requestURL.toString()
-        return requestURL.replace(tarballPrefix, remoteConfiguration.url.trimEnd('/'))
-    }
-
-    override fun search(context: ArtifactSearchContext): List<NpmSearchInfoMap> {
+    override fun query(context: ArtifactQueryContext): InputStream? {
         val remoteConfiguration = context.getRemoteConfiguration()
         val httpClient = createHttpClient(remoteConfiguration)
-        val downloadUri = createRemoteDownloadUrl(context)
+        val downloadUri = createRemoteSearchUrl(context)
         val request = Request.Builder().url(downloadUri).build()
         val response = httpClient.newCall(request).execute()
         return if (checkResponse(response)) {
-            val npmSearchResponse = JsonUtils.objectMapper.readValue(response.body()!!.byteStream(), NpmSearchResponse::class.java)
-            npmSearchResponse.objects
-        } else emptyList()
+            onQueryResponse(context, response)
+        } else null
+    }
+
+    private fun createRemoteSearchUrl(context: ArtifactContext): String {
+        val configuration = context.getRemoteConfiguration()
+        val requestURI = context.getStringAttribute("requestURI")
+        val artifactUri =
+            requestURI ?: context.request.requestURI.substringAfterLast(context.artifactInfo.getRepoIdentify())
+        val queryString = context.request.queryString
+        return UrlFormatter.format(configuration.url, artifactUri, queryString)
+    }
+
+    override fun onQueryResponse(context: ArtifactQueryContext, response: Response): InputStream? {
+        val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
+        val body = response.body()!!
+        val artifactFile = createTempFile(body)
+        val sha256 = artifactFile.getFileSha256()
+        with(context) {
+            nodeClient.detail(projectId, repoName, REPO_TYPE, fullPath).data?.let {
+                if (it.sha256.equals(sha256)) {
+                    logger.info("artifact [$fullPath] is hit the cache.")
+                    return artifactFile.getInputStream()
+                }
+                cacheArtifactFile(context, artifactFile)
+            } ?: run {
+                // 存储构件
+                cacheArtifactFile(context, artifactFile)
+            }
+        }
+        return artifactFile.getInputStream()
+    }
+
+    override fun buildCacheNodeCreateRequest(context: ArtifactContext, artifactFile: ArtifactFile): NodeCreateRequest {
+        return NodeCreateRequest(
+            projectId = context.repositoryDetail.projectId,
+            repoName = context.repositoryDetail.name,
+            folder = false,
+            fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!,
+            size = artifactFile.getSize(),
+            sha256 = artifactFile.getFileSha256(),
+            md5 = artifactFile.getFileMd5(),
+            overwrite = true,
+            operator = context.userId
+        )
+    }
+
+    override fun onSearchResponse(context: ArtifactSearchContext, response: Response): List<NpmSearchInfoMap> {
+        val npmSearchResponse =
+            JsonUtils.objectMapper.readValue(response.body()!!.byteStream(), NpmSearchResponse::class.java)
+        return npmSearchResponse.objects
     }
 
     override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
-        logger.warn("Unable to migrate npm package into a remote repository")
-        throw BadRequestException("Unable to migrate npm package into a remote repository")
+        with(context) {
+            val message = "Unable to migrate npm package info a remote repository [$projectId/$repoName]"
+            logger.warn(message)
+            throw NpmBadRequestException(message)
+        }
     }
 
     companion object {

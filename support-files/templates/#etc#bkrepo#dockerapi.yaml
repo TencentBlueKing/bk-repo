@@ -1,0 +1,18 @@
+server:
+  port: __BK_REPO_DOCKERAPI_PORT__
+
+dockerapi:
+  realm: __BK_REPO_DOCKERAPI_REALM__
+  bkssmServer: __BK_SSM_PRIVATE_URL__
+  apigwServer: __BK_REPO_APIGW_URL__
+  appCode: __BK_REPO_APP_CODE__
+  appSecret: __BK_REPO_APP_SECRET__
+  harbor:
+    url: __BK_REPO_HARBOR_URL__
+    username: __BK_REPO_HARBOR_USERNAME__
+    password: __BK_REPO_HARBOR_PASSWORD__
+    imagePrefix: __BK_REPO_HARBOR___
+  bkrepo:
+    url: __BK_REPO_URL__
+    authorization: __BK_REPO_AUTHORIZATION__
+    domain: __BK_REPO_DOCKER_FQDN__

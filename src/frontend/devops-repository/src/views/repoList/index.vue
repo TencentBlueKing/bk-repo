@@ -28,6 +28,7 @@
                     :placeholder="$t('enterSearch')"
                     :clearable="true"
                     @enter="getListData"
+                    @clear="getListData"
                     :right-icon="'bk-icon icon-search'">
                 </bk-input>
             </div>
@@ -41,7 +42,6 @@
             <bk-table
                 :data="repoList"
                 height="100%"
-                stripe
                 :outer-border="false"
                 :row-border="false"
                 size="small"
@@ -62,11 +62,15 @@
                         {{ formatDate(props.row.createdDate) }}
                     </template>
                 </bk-table-column>
-                <bk-table-column :label="$t('createdBy')" prop="createdBy"></bk-table-column>
+                <bk-table-column :label="$t('createdBy')">
+                    <template slot-scope="props">
+                        {{ userList[props.row.createdBy] ? userList[props.row.createdBy].name : props.row.createdBy }}
+                    </template>
+                </bk-table-column>
                 <bk-table-column :label="$t('operation')" width="100">
                     <template slot-scope="props">
-                        <i class="devops-icon icon-cog mr20" @click="showRepoConfig(props.row)"></i>
-                        <i v-if="props.row.type !== 'generic'" class="devops-icon icon-delete" @click="deleteRepo(props.row)"></i>
+                        <i class="hover-btn devops-icon icon-cog mr10" @click="showRepoConfig(props.row)"></i>
+                        <i v-if="props.row.repoType !== 'generic'" class="hover-btn devops-icon icon-delete" @click="deleteRepo(props.row)"></i>
                     </template>
                 </bk-table-column>
             </bk-table>
@@ -74,7 +78,7 @@
     </div>
 </template>
 <script>
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     import { repoEnum } from '@/store/publicEnum'
     import { formatDate } from '@/utils'
     export default {
@@ -83,52 +87,7 @@
             return {
                 repoEnum: ['generic', ...repoEnum],
                 isLoading: false,
-                repoList: [
-                    {
-                        name: 'custom',
-                        type: 'generic',
-                        category: 'LOCAL',
-                        public: false,
-                        description: '',
-                        createdBy: 'system',
-                        createdDate: '2020-03-16T12:13:03.371',
-                        lastModifiedBy: 'system',
-                        lastModifiedDate: '2020-03-16T12:13:03.371'
-                    },
-                    {
-                        name: 'pipeline',
-                        type: 'generic',
-                        category: 'LOCAL',
-                        public: false,
-                        description: '',
-                        createdBy: 'system',
-                        createdDate: '2020-03-16T12:13:03.371',
-                        lastModifiedBy: 'system',
-                        lastModifiedDate: '2020-03-16T12:13:03.371'
-                    },
-                    {
-                        name: 'report',
-                        type: 'generic',
-                        category: 'LOCAL',
-                        public: false,
-                        description: '',
-                        createdBy: 'system',
-                        createdDate: '2020-03-16T12:13:03.371',
-                        lastModifiedBy: 'system',
-                        lastModifiedDate: '2020-03-16T12:13:03.371'
-                    },
-                    {
-                        name: 'docker',
-                        type: 'docker',
-                        category: 'COMPOSITE',
-                        public: false,
-                        description: '',
-                        createdBy: 'system',
-                        createdDate: '2020-03-16T12:13:03.371',
-                        lastModifiedBy: 'system',
-                        lastModifiedDate: '2020-03-16T12:13:03.371'
-                    }
-                ],
+                repoList: [],
                 query: {
                     name: '',
                     type: ''
@@ -142,6 +101,7 @@
             }
         },
         computed: {
+            ...mapState(['userList']),
             projectId () {
                 return this.$route.params.projectId
             }
@@ -259,11 +219,7 @@
     }
 }
 .devops-icon {
-    font-size: 14px;
-    cursor: pointer;
-    &:hover {
-        color: $primaryColor;
-    }
+    font-size: 16px;
 }
 .repo-name {
     height: 44px;

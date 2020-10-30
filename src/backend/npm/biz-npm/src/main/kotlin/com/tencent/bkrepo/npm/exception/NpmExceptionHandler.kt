@@ -1,3 +1,24 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ */
+
 package com.tencent.bkrepo.npm.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
@@ -27,9 +48,16 @@ import java.util.concurrent.ExecutionException
 @RestControllerAdvice
 class NpmExceptionHandler {
 
+    @ExceptionHandler(NpmBadRequestException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handlerBadRequestException(exception: NpmBadRequestException) {
+        val responseObject = NpmErrorResponse("bad request", exception.message)
+        npmResponse(responseObject, exception)
+    }
+
     @ExceptionHandler(NpmRepoNotFoundException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handlerExecutionException(exception: NpmRepoNotFoundException) {
+    fun handlerRepoNotFoundException(exception: NpmRepoNotFoundException) {
         val responseObject = NpmErrorResponse("bad request", exception.message)
         npmResponse(responseObject, exception)
     }
@@ -37,7 +65,7 @@ class NpmExceptionHandler {
     @ExceptionHandler(ExecutionException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerExecutionException(exception: ExecutionException) {
-        val responseObject = NpmErrorResponse("bad request", exception.message.orEmpty())
+        val responseObject = NpmErrorResponse("execution exception", exception.message.orEmpty())
         npmResponse(responseObject, exception)
     }
 
@@ -99,7 +127,7 @@ class NpmExceptionHandler {
     @ExceptionHandler(NpmArtifactExistException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handlerNpmArtifactExistException(exception: NpmArtifactExistException) {
-        val responseObject = NpmErrorResponse("forbidden", exception.message)
+        val responseObject = NpmErrorResponse( exception.message,"forbidden")
         npmResponse(responseObject, exception)
     }
 

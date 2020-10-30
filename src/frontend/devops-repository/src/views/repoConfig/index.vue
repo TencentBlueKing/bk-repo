@@ -19,7 +19,7 @@
             <bk-tab class="repo-config-tab" type="unborder-card">
                 <bk-tab-panel name="baseInfo" :label="$t('repoBaseInfo')">
                     <div class="repo-base-info">
-                        <bk-form :label-width="100">
+                        <bk-form ref="repoBaseInfo" :label-width="150" :model="repoBaseInfo" :rules="rules">
                             <bk-form-item :label="$t('repoName')">
                                 <div class="flex-align-center">
                                     <icon size="24" :name="repoBaseInfo.repoType || repoType" />
@@ -29,6 +29,29 @@
                             <bk-form-item :label="$t('repoAddress')">
                                 <span>{{repoAddress}}</span>
                             </bk-form-item>
+                            <template v-if="repoType === 'rpm'">
+                                <bk-form-item :label="$t('enableFileLists')">
+                                    <bk-checkbox v-model="repoBaseInfo.enableFileLists"></bk-checkbox>
+                                </bk-form-item>
+                                <bk-form-item :label="$t('repodataDepth')" property="repodataDepth">
+                                    <bk-input v-model="repoBaseInfo.repodataDepth"></bk-input>
+                                </bk-form-item>
+                                <bk-form-item :label="$t('groupXmlSet')" property="groupXmlSet">
+                                    <bk-tag-input
+                                        :value="repoBaseInfo.groupXmlSet"
+                                        @change="(val) => {
+                                            repoBaseInfo.groupXmlSet = val.map(v => {
+                                                return v.replace(/^([^.]*)(\.xml)?$/, '$1.xml')
+                                            })
+                                        }"
+                                        :list="[]"
+                                        trigger="focus"
+                                        :clearable="false"
+                                        allow-create
+                                        has-delete-icon>
+                                    </bk-tag-input>
+                                </bk-form-item>
+                            </template>
                             <bk-form-item :label="$t('description')">
                                 <bk-input type="textarea"
                                     maxlength="200"
@@ -46,7 +69,8 @@
                     <span class="proxy-config-tips">{{$t('proxyConfigTips')}}</span>
                     <div class="proxy-item">
                         <div class="proxy-index"></div>
-                        <div class="proxy-origin">{{$t('origin')}}</div>
+                        <div class="proxy-origin">{{$t('name')}}</div>
+                        <div class="proxy-type">{{$t('type')}}</div>
                         <div class="proxy-address">{{$t('address')}}</div>
                         <div class="proxy-operation">{{$t('operation')}}</div>
                     </div>
@@ -57,6 +81,7 @@
                                 <i class="devops-icon icon-more" style="margin-left:-5px"></i>
                             </div>
                             <div class="proxy-origin">{{proxy.name}}</div>
+                            <div class="proxy-type">{{proxy.public ? $t('publicProxy') : $t('privateProxy')}}</div>
                             <div class="proxy-address">{{proxy.url}}</div>
                             <div class="flex-align-center proxy-operation">
                                 <i v-if="!proxy.public" class="devops-icon icon-edit hover-btn" @click.stop.prevent="editProxy(proxy)"></i>
@@ -85,8 +110,8 @@
                 type="unborder-card">
                 <bk-tab-panel v-if="editProxyData.type === 'add'" name="publicProxy" :label="$t('publicProxy')">
                     <bk-form ref="publicProxy" :label-width="100" :model="editProxyData" :rules="rules">
-                        <bk-form-item :label="$t('name')" :required="true" property="channelId" error-display-type="normal">
-                            <bk-select v-model="editProxyData.channelId">
+                        <bk-form-item :label="$t('name')" :required="true" property="channelId">
+                            <bk-select v-model="editProxyData.channelId" :clear="false">
                                 <bk-option
                                     v-for="option in publicProxy"
                                     :key="option.channelId"
@@ -102,20 +127,20 @@
                 </bk-tab-panel>
                 <bk-tab-panel name="privateProxy" :label="$t('privateProxy')">
                     <bk-form ref="privateProxy" :label-width="100" :model="editProxyData" :rules="rules">
-                        <bk-form-item :label="$t('privateProxy') + $t('name')" :required="true" property="name" error-display-type="normal">
+                        <bk-form-item :label="$t('privateProxy') + $t('name')" :required="true" property="name">
                             <bk-input v-model="editProxyData.name"></bk-input>
                         </bk-form-item>
-                        <bk-form-item :label="$t('privateProxy') + $t('address')" :required="true" property="url" error-display-type="normal">
+                        <bk-form-item :label="$t('privateProxy') + $t('address')" :required="true" property="url">
                             <bk-input v-model="editProxyData.url"></bk-input>
                         </bk-form-item>
                         <bk-form-item :label="$t('ticket')" property="ticket">
                             <bk-checkbox v-model="editProxyData.ticket"></bk-checkbox>
                         </bk-form-item>
-                        <bk-form-item v-if="editProxyData.ticket" :label="$t('account')" :required="true" property="username" error-display-type="normal">
+                        <bk-form-item v-if="editProxyData.ticket" :label="$t('account')" :required="true" property="username">
                             <bk-input v-model="editProxyData.username"></bk-input>
                         </bk-form-item>
-                        <bk-form-item v-if="editProxyData.ticket" :label="$t('password')" :required="true" property="password" error-display-type="normal">
-                            <bk-input v-model="editProxyData.password"></bk-input>
+                        <bk-form-item v-if="editProxyData.ticket" :label="$t('password')" :required="true" property="password">
+                            <bk-input type="password" v-model="editProxyData.password"></bk-input>
                         </bk-form-item>
                         <!-- <bk-form-item>
                             <bk-button text theme="primary" @click="testPrivateProxy">{{$t('test') + $t('privateProxy')}}</bk-button>
@@ -143,6 +168,9 @@
                     loading: false,
                     repoName: '',
                     repoType: '',
+                    enableFileLists: false,
+                    repodataDepth: 0,
+                    groupXmlSet: [],
                     description: ''
                 },
                 // 公共源
@@ -166,7 +194,7 @@
                         {
                             required: true,
                             message: this.$t('pleaseSelect') + this.$t('publicProxy'),
-                            trigger: 'blur'
+                            trigger: 'change'
                         }
                     ],
                     name: [
@@ -196,6 +224,24 @@
                             message: this.$t('pleaseInput') + this.$t('password'),
                             trigger: 'blur'
                         }
+                    ],
+                    repodataDepth: [
+                        {
+                            regex: /^(0|[1-9][0-9]*)$/,
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repodataDepth'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    groupXmlSet: [
+                        {
+                            validator: arr => {
+                                return arr.every(v => {
+                                    return /\.xml$/.test(v)
+                                })
+                            },
+                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
+                            trigger: 'change'
+                        }
                     ]
                 }
             }
@@ -211,7 +257,7 @@
                 return this.$route.params.repoType
             },
             showProxyConfigTab () {
-                return !['generic', 'docker'].includes(this.repoType)
+                return !['generic', 'docker', 'helm', 'rpm'].includes(this.repoType)
             },
             selectedPublicProxy () {
                 return this.publicProxy.find(v => v.channelId === this.editProxyData.channelId) || {}
@@ -223,11 +269,18 @@
         created () {
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
-            this.getPublicProxy({
-                repoType: this.repoType.toUpperCase()
-            }).then(res => {
-                this.publicProxy = res
-            })
+            if (this.showProxyConfigTab) {
+                this.getPublicProxy({
+                    repoType: this.repoType.toUpperCase()
+                }).then(res => {
+                    this.publicProxy = res.map(v => {
+                        return {
+                            ...v,
+                            channelId: v.id
+                        }
+                    })
+                })
+            }
         },
         methods: {
             ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getPublicProxy']),
@@ -256,22 +309,38 @@
                     repoType: this.repoType.toUpperCase()
                 }).then(res => {
                     this.repoBaseInfo = {
+                        ...this.repoBaseInfo,
                         ...res,
+                        ...res.configuration.settings,
                         repoType: res.type.toLowerCase()
                     }
-                    this.proxyList = res.configuration.proxy.channelList
+                    if (this.showProxyConfigTab) {
+                        this.proxyList = res.configuration.proxy.channelList
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
             },
-            saveBaseInfo () {
+            async saveBaseInfo () {
+                const body = {
+                    description: this.repoBaseInfo.description
+                }
+                if (this.repoType === 'rpm') {
+                    await this.$refs.repoBaseInfo.validate()
+                    body.configuration = {
+                        ...this.repoBaseInfo.configuration,
+                        settings: {
+                            enableFileLists: this.repoBaseInfo.enableFileLists,
+                            repodataDepth: this.repoBaseInfo.repodataDepth,
+                            groupXmlSet: this.repoBaseInfo.groupXmlSet
+                        }
+                    }
+                }
                 this.repoBaseInfo.loading = true
                 this.updateRepoInfo({
                     projectId: this.projectId,
                     name: this.repoName,
-                    body: {
-                        description: this.repoBaseInfo.description
-                    }
+                    body
                 }).then(res => {
                     this.getRepoInfoHandler()
                     this.$bkMessage({
@@ -311,7 +380,7 @@
                     ...this.editProxyData,
                     ...row,
                     type: 'edit',
-                    ticket: Boolean(row.username.length)
+                    ticket: Boolean(row.username && row.username.length)
                 }
             },
             deleteProxy (row) {
@@ -431,7 +500,10 @@
                     flex-basis: 50px;
                 }
                 .proxy-origin {
-                    flex:3;
+                    flex:2;
+                }
+                .proxy-type {
+                    flex: 1;
                 }
                 .proxy-address {
                     flex: 6;

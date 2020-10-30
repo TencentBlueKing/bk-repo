@@ -1,3 +1,24 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ */
+
 package com.tencent.bkrepo.docker.constant
 
 const val REPO_TYPE = "DOCKER"
@@ -23,6 +44,7 @@ const val DOCKER_USER_TAG_SUFFIX = "/tag/{projectId}/{repoName}/**"
 const val DOCKER_USER_DELETE_IMAGE_SUFFIX = "/package/delete/{projectId}/{repoName}"
 const val DOCKER_USER_REPO_TAG_SUFFIX = "/version/delete/{projectId}/{repoName}"
 const val DOCKER_USER_REPO_TAG_DETAIL_SUFFIX = "/version/detail/{projectId}/{repoName}"
+const val DOCKER_REPO_ADDR = "/addr"
 const val DOCKER_TAGS_SUFFIX = "/{projectId}/{repoName}/{name}/tags/list"
 
 const val DOCKER_CATALOG_SUFFIX = "_catalog"
@@ -57,7 +79,6 @@ const val DOCKER_NODE_PATH = "path"
 const val DOCKER_NODE_NAME = "name"
 const val DOCKER_NODE_SIZE = "size"
 const val DOCKER_NODE_FULL_PATH = "fullPath"
-const val DOCKER_CREATE_BY = "createdBy"
 const val DOCKER_DIGEST = "digest"
 const val DOCKER_REFERENCE = "reference"
 const val DOCKER_UUID = "uuid"
@@ -93,6 +114,8 @@ const val DOCKER_FOREIGN_KEY = "application/vnd.docker.image.rootfs.foreign.diff
 const val PAGE_NUMBER = "pageNumber"
 const val PAGE_SIZE = "pageSize"
 
+const val DOCKER_CREATE_BY = "createdBy"
+const val DOCKER_CREATE_DATE = "createdDate"
 const val LAST_MODIFIED_BY = "lastModifiedBy"
 const val LAST_MODIFIED_DATE = "lastModifiedDate"
 const val DOWNLOAD_COUNT = "downloadCount"

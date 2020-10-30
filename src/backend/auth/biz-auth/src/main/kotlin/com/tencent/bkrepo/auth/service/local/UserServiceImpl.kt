@@ -1,3 +1,24 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ */
+
 package com.tencent.bkrepo.auth.service.local
 
 import com.mongodb.BasicDBObject
@@ -7,6 +28,7 @@ import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.Token
+import com.tencent.bkrepo.auth.pojo.TokenResult
 import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.repository.RoleRepository
@@ -16,12 +38,13 @@ import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 class UserServiceImpl constructor(
     private val userRepository: UserRepository,
@@ -103,11 +126,14 @@ class UserServiceImpl constructor(
         checkUserExist(userId)
         // check role
         checkRoleExist(roleId)
+        //check is role bind to role
         val query = Query()
         val update = Update()
-        query.addCriteria(Criteria.where(TUser::userId.name).`is`(userId))
-        update.addToSet(TUser::roles.name, roleId)
-        mongoTemplate.upsert(query, update, TUser::class.java)
+        if (!checkUserRoleBind(userId, roleId)) {
+            query.addCriteria(Criteria.where(TUser::userId.name).`is`(userId))
+            update.addToSet(TUser::roles.name, roleId)
+            mongoTemplate.upsert(query, update, TUser::class.java)
+        }
         return getUserById(userId)
     }
 
@@ -172,33 +198,74 @@ class UserServiceImpl constructor(
         return false
     }
 
-    override fun createToken(userId: String): User? {
+    override fun createToken(userId: String): Token? {
         logger.info("create token userId : [$userId]")
         val token = IDUtil.genRandomId()
-        return addUserToken(userId, token)
+        return addUserToken(userId, token, null)
     }
 
-    override fun addUserToken(userId: String, token: String): User? {
-        logger.info("add user token userId : [$userId] ,token : [$token]")
+    override fun addUserToken(userId: String, name: String, expiredAt: String?): Token? {
+        try {
+            logger.info("add user token userId : [$userId] ,token : [$name]")
+            checkUserExist(userId)
+
+            val existUserInfo = getUserById(userId)
+            val existTokens = existUserInfo!!.tokens
+            existTokens.forEach {
+                if (it.name == name) {
+                    logger.warn("user token exist [$name]")
+                    throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_EXIST)
+                }
+            }
+            val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
+            val update = Update()
+            val id = IDUtil.genRandomId()
+            val now = LocalDateTime.now()
+            var expiredTime: LocalDateTime? = null
+            expiredAt?.let {
+                val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                expiredTime = LocalDateTime.parse(expiredAt, dateTimeFormatter)
+                // conv time
+                expiredTime = expiredTime!!.plusHours(8)
+            }
+            val userToken = Token(name = name, id = id, createdAt = now, expiredAt = expiredTime)
+            update.addToSet(TUser::tokens.name, userToken)
+            mongoTemplate.upsert(query, update, TUser::class.java)
+            val userInfo = getUserById(userId)
+            val tokens = userInfo!!.tokens
+            tokens.forEach {
+                if (it.name == name) {
+                    return it
+                }
+            }
+            return null
+        } catch (ignored: DateTimeParseException) {
+            logger.error("add user token false [$ignored]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_ERROR)
+        }
+    }
+
+    override fun listUserToken(userId: String): List<TokenResult> {
         checkUserExist(userId)
-        val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
-        val update = Update()
-        val userToken = Token(id = token, createdAt = LocalDateTime.now(), expiredAt = LocalDateTime.now().plusYears(2))
-        update.addToSet(TUser::tokens.name, userToken)
-        mongoTemplate.upsert(query, update, TUser::class.java)
-        return getUserById(userId)
+        val userInfo = getUserById(userId)
+        val tokens = userInfo!!.tokens
+        val result = mutableListOf<TokenResult>()
+        tokens.forEach {
+            result.add(TokenResult(it.name, it.createdAt, it.expiredAt))
+        }
+        return result
     }
 
-    override fun removeToken(userId: String, token: String): User? {
-        logger.info("remove token userId : [$userId] ,token : [$token]")
+    override fun removeToken(userId: String, name: String): Boolean {
+        logger.info("remove token userId : [$userId] ,token : [$name]")
         checkUserExist(userId)
         val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
         val s = BasicDBObject()
-        s["id"] = token
+        s["name"] = name
         val update = Update()
         update.pull(TUser::tokens.name, s)
         mongoTemplate.updateFirst(query, update, TUser::class.java)
-        return getUserById(userId)
+        return true
     }
 
     override fun getUserById(userId: String): User? {

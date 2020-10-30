@@ -25,7 +25,7 @@
 html,
 body {
     height: 100%;
-    font-family: Helvetica Neue,Arial,PingFang SC,Hiragino Sans GB,Microsoft Yahei,WenQuanYi Micro Hei,sans-serif;
+    font-family: Microsoft Yahei,Helvetica Neue,Arial,PingFang SC,Hiragino Sans GB,WenQuanYi Micro Hei,sans-serif;
     font-size: 14px;
     color: $fontColor;
 }
@@ -72,6 +72,13 @@ label {
     }
 }
 
+.router-link {
+    color: #3a84ff;
+    &:hover {
+        color: #699df4;
+    }
+}
+
 .flex-column {
     display: flex;
     flex-direction: column;
@@ -85,6 +92,10 @@ label {
 .flex-align-center {
     display: flex;
     align-items: center;
+}
+
+:focus {
+    outline: none;
 }
 
 ::-webkit-scrollbar {

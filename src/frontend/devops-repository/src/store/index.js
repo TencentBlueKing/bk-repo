@@ -15,7 +15,9 @@ export default new Vuex.Store({
                 children: [],
                 roadMap: '0'
             }
-        ]
+        ],
+        userList: {},
+        userInfo: {}
     },
     getters: {
     },
@@ -39,12 +41,22 @@ export default new Vuex.Store({
             })
             list = list.map(item => {
                 const children = (tree.find(oldItem => oldItem.fullPath === item.fullPath) || {}).children || []
-                return { ...item, children }
+                return {
+                    ...item,
+                    children,
+                    name: item.metadata.displayName || item.name
+                }
             })
             tree.splice(0, tree.length, ...list)
         },
         SET_BREADCRUMB (state, data) {
             state.breadcrumb = data
+        },
+        SET_USER_LIST (state, data) {
+            state.userList = data
+        },
+        SET_USER_INFO (state, data) {
+            state.userInfo = data
         }
     },
     actions

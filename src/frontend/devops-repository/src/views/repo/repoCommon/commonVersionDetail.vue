@@ -5,7 +5,12 @@
                 <div class="base-info-left">
                     <div class="base-info-guide">
                         <header class="base-info-header">{{ $t('useTips') }}</header>
-                        <repo-guide class="pt20" :article="articleInstall"></repo-guide>
+                        <div class="section-main">
+                            <div class="sub-section flex-column" v-for="block in articleInstall[0].main" :key="block.subTitle">
+                                <span class="mb10">{{ block.subTitle }}</span>
+                                <code-area v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
+                            </div>
+                        </div>
                     </div>
                     <div class="base-info-checksums">
                         <header class="base-info-header">Checksums</header>
@@ -53,7 +58,7 @@
                     <span class="display-key">{{ key }}</span>
                     <span class="display-value">{{ value }}</span>
                 </div>
-                <div class="ml20 mt10" v-if="!Object.keys(detail.metadata).length">{{$t('noData')}}</div>
+                <empty-data v-if="!Object.keys(detail.metadata).length"></empty-data>
             </div>
         </bk-tab-panel>
         <bk-tab-panel v-if="detail.layers" name="versionLayers" label="Layers">
@@ -72,17 +77,16 @@
             <div class="version-history">
                 <div class="version-history-left">
                     <div class="version-history-code hover-btn"
-                        v-for="(code, index) in detail.history"
+                        v-for="code in detail.history"
                         :key="code.created_by"
                         :class="{ select: selectedHistory.created_by === code.created_by }"
                         @click="selectedHistory = code">
-                        <span class="version-history-index">{{index + 1}}</span>
                         {{code.created_by}}
                     </div>
                 </div>
                 <div class="version-history-right">
                     <header class="version-history-header">Command</header>
-                    <code-area class="mt20 version-history-code"
+                    <code-area class="mt20"
                         :line-number="false"
                         :code-list="[selectedHistory.created_by]">
                     </code-area>
@@ -133,29 +137,20 @@
     </bk-tab>
 </template>
 <script>
+    import emptyData from '@/components/emptyData'
     import CodeArea from '@/components/CodeArea'
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@/utils'
-    import repoGuide from './repoGuide'
     import repoGuideMixin from '../repoGuideMixin'
     import commonMixin from './commonMixin'
     export default {
         name: 'commonVersionDetail',
-        components: { CodeArea, repoGuide },
+        components: { CodeArea, emptyData },
         mixins: [repoGuideMixin, commonMixin],
         data () {
             return {
                 isLoading: false,
                 detail: {
-                    basic: {},
-                    history: [],
-                    metadata: {},
-                    layers: [],
-                    dependencyInfo: {
-                        dependencies: [],
-                        devDependencies: [],
-                        dependents: []
-                    }
                 },
                 // 当前已请求页数，0代表没有更多
                 dependentsPage: 1,
@@ -169,6 +164,7 @@
             }
         },
         computed: {
+            ...mapState(['userList']),
             detailInfoMap () {
                 return {
                     'version': this.$t('version'),
@@ -182,9 +178,6 @@
                     'lastModifiedBy': this.$t('lastModifiedBy'),
                     'lastModifiedDate': this.$t('lastModifiedDate')
                 }
-            },
-            dockerDomain () {
-                return this.detail.basic.dockerDomain
             }
         },
         created () {
@@ -208,13 +201,16 @@
                     packageKey: this.packageKey,
                     version: this.version
                 }).then(res => {
+                    const basic = res.basic
                     this.detail = {
                         ...res,
                         basic: {
-                            ...res.basic,
-                            size: convertFileSize(res.basic.size),
-                            createdDate: formatDate(res.basic.createdDate),
-                            lastModifiedDate: formatDate(res.basic.lastModifiedDate)
+                            ...basic,
+                            size: basic.size && convertFileSize(basic.size),
+                            createdBy: this.userList[basic.createdBy] ? this.userList[basic.createdBy].name : basic.createdBy,
+                            createdDate: basic.createdDate && formatDate(basic.createdDate),
+                            lastModifiedBy: this.userList[basic.lastModifiedBy] ? this.userList[basic.lastModifiedBy].name : basic.lastModifiedBy,
+                            lastModifiedDate: basic.lastModifiedDate && formatDate(basic.lastModifiedDate)
                         }
                     }
                     if (this.repoType === 'npm') {
@@ -271,6 +267,17 @@
             border-right: 1px solid $borderWeightColor;
             .base-info-guide {
                 border-top: 1px solid $borderWeightColor;
+                .section-main {
+                    margin-top: 20px;
+                    padding: 20px;
+                    border: 2px dashed $borderWeightColor;
+                    border-radius: 5px;
+                    .sub-section {
+                        & + .sub-section {
+                            margin-top: 20px;
+                        }
+                    }
+                }
             }
             .base-info-checksums {
                 margin-top: 20px;
@@ -326,6 +333,7 @@
             margin-right: 40px;
             border-right: 2px solid $borderWeightColor;
             overflow-y: auto;
+            counter-reset: row-num;
             .version-history-code {
                 height: 42px;
                 line-height: 42px;
@@ -338,12 +346,14 @@
                 &.select {
                     background-color: #ebedf0;
                 }
-                .version-history-index {
+                &:before {
                     display: inline-block;
                     width: 30px;
                     margin-right: 5px;
                     text-align: center;
                     background-color: #f9f9f9;
+                    counter-increment: row-num;
+                    content: counter(row-num);
                 }
             }
         }

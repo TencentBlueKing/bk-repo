@@ -23,17 +23,21 @@
                 :limit-list="pagination.limitList">
             </bk-pagination>
         </template>
-        <div v-else class="flex-column flex-center">{{ $t('noData') }}</div>
+        <empty-guide v-else-if="showEmptyGuide" class="empty-guide" :article="articleGuide"></empty-guide>
+        <empty-data v-else></empty-data>
     </div>
 </template>
 <script>
+    import emptyData from '@/components/emptyData'
     import packageCard from './packageCard'
+    import emptyGuide from './emptyGuide'
     import commonMixin from './commonMixin'
+    import repoGuideMixin from '../repoGuideMixin'
     import { mapActions } from 'vuex'
     export default {
         name: 'commonPackageList',
-        components: { packageCard },
-        mixins: [commonMixin],
+        components: { packageCard, emptyGuide, emptyData },
+        mixins: [commonMixin, repoGuideMixin],
         props: {
             queryForList: {
                 type: Object,
@@ -50,6 +54,11 @@
                     limitList: [10, 20, 40]
                 },
                 packageList: []
+            }
+        },
+        computed: {
+            showEmptyGuide () {
+                return !this.isLoading && !this.queryForList.name && !this.packageList.length
             }
         },
         watch: {
@@ -131,8 +140,18 @@
 .common-package-list-container {
     .common-package-main {
         height: calc(100% - 42px);
+        overflow-y: auto;
         flex: 1;
         border-bottom: 1px solid $borderWeightColor;
+    }
+    .empty-guide {
+        height: 100%;
+        flex: 1;
+        overflow-y: auto;
+    }
+    .icon-empty {
+        font-size: 65px;
+        color: $borderLightColor;
     }
 }
 </style>

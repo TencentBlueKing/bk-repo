@@ -1,3 +1,24 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ */
+
 package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -40,6 +61,7 @@ import com.tencent.bkrepo.repository.service.StorageCredentialService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -128,7 +150,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     override fun create(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
         with(repoCreateRequest) {
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
-            Preconditions.checkArgument(description?.length ?: 0 < REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
+            Preconditions.checkArgument(description?.length ?: 0 <= REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
             // 确保项目一定存在
             projectService.checkProject(projectId)
             // 确保同名仓库不存在
@@ -239,7 +261,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         criteria.and(TRepository::display.name).ne(false)
         repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name.name).regex("^$this") }
         repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type.name).`is`(this.toUpperCase()) }
-        return Query(criteria).with(Sort.by(TRepository::name.name))
+        return Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
     }
 
     /**
@@ -306,8 +328,8 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         val newPrivateProxyRepos = new.proxy.channelList.filter { !it.public }
         val existPrivateProxyRepos = old?.proxy?.channelList?.filter { !it.public }.orEmpty()
 
-        val newPrivateProxyRepoMap = newPrivateProxyRepos.map { it.name!! to it}.toMap()
-        val existPrivateProxyRepoMap = existPrivateProxyRepos.map { it.name!! to it}.toMap()
+        val newPrivateProxyRepoMap = newPrivateProxyRepos.map { it.name!! to it }.toMap()
+        val existPrivateProxyRepoMap = existPrivateProxyRepos.map { it.name!! to it }.toMap()
         Preconditions.checkArgument(newPrivateProxyRepoMap.size == newPrivateProxyRepos.size, "channelList")
 
         val toCreateList = mutableListOf<ProxyChannelSetting>()
@@ -324,7 +346,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         }
         // 查找要删除的代理库
         existPrivateProxyRepoMap.forEach { (name, channel) ->
-            if(!newPrivateProxyRepoMap.containsKey(name)) {
+            if (!newPrivateProxyRepoMap.containsKey(name)) {
                 toDeleteList.add(channel)
             }
         }
@@ -375,6 +397,17 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         )
         repoRepository.insert(proxyRepository)
         logger.info("Success to create private proxy repository[$proxyRepository]")
+    }
+
+    override fun pageByType(repoType: String, page: Int, size: Int): Page<RepositoryInfo> {
+        val query = Query(
+                Criteria.where(TRepository::type.name).`is`(repoType)
+        ).with(Sort.by(TRepository::name.name))
+        val count = mongoTemplate.count(query, TRepository::class.java)
+        val pageQuery = query.with(PageRequest.of(page, size))
+        val data = mongoTemplate.find(pageQuery, TRepository::class.java).map { convertToInfo(it)!! }
+
+        return Page(page, size, count, data)
     }
 
     companion object {

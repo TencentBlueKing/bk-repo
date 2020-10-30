@@ -1,7 +1,14 @@
 <template>
-    <div class="code-area">
-        <div v-for="(code, index) in codeList" :key="code + Math.random()" class="code-main">
-            <span v-if="lineNumber" class="code-index">{{index + 1}}</span>
+    <div class="code-area"
+        :style="{
+            'background-color': bgColor,
+            'color': color
+        }">
+        <div v-for="code in codeList" :key="code + Math.random()"
+            :class="{
+                'code-main': true,
+                'line-number': lineNumber
+            }">
             <pre class="code-pre">{{ code }}</pre>
         </div>
         <i class="code-copy devops-icon icon-clipboard" @click="copyCode()"></i>
@@ -19,6 +26,14 @@
             lineNumber: {
                 type: Boolean,
                 default: true
+            },
+            bgColor: {
+                type: String,
+                default: '#555e66'
+            },
+            color: {
+                type: String,
+                default: '#ffffff'
             }
         },
         methods: {
@@ -52,16 +67,17 @@
 .code-area {
     position: relative;
     line-height: 2;
-    background-color: #191929;
-    color: white;
     padding: 10px 40px;
     min-height: 48px;
     word-break: break-all;
+    counter-reset: row-num;
     .code-main {
         position: relative;
-        .code-index {
+        &.line-number:before {
             position: absolute;
             margin-left: -30px;
+            counter-increment: row-num;
+            content: counter(row-num);
         }
         .code-pre {
             font-family: Helvetica Neue,Arial,PingFang SC,Hiragino Sans GB,Microsoft Yahei,WenQuanYi Micro Hei,sans-serif;
@@ -71,14 +87,14 @@
     }
     .code-copy {
         position: absolute;
+        visibility: hidden;
         top: 10px;
         right: 10px;
         font-size: 24px;
-        color: #191929;
         cursor: pointer;
     }
     &:hover .code-copy {
-        color: white;
+        visibility: visible;
         &:hover {
             color: $iconPrimaryColor;
         }

@@ -1,3 +1,24 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ */
+
 package com.tencent.bkrepo.helm.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
@@ -6,6 +27,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
@@ -24,11 +46,20 @@ import com.tencent.bkrepo.helm.constants.NODE_METADATA_VERSION
 import com.tencent.bkrepo.helm.constants.NO_CHART_NAME_FOUND
 import com.tencent.bkrepo.helm.constants.PROJECT_ID
 import com.tencent.bkrepo.helm.constants.REPO_NAME
+import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.constants.VERSION
+import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.IndexEntity
+import com.tencent.bkrepo.helm.pojo.user.BasicInfo
+import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.helm.utils.YamlUtils
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.apache.http.HttpStatus
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.InputStream
@@ -42,6 +73,9 @@ class ChartInfoService {
 
     @Autowired
     private lateinit var chartRepositoryService: ChartRepositoryService
+
+    @Autowired
+    private lateinit var packageClient: PackageClient
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime? = null): Map<String, *> {
@@ -137,8 +171,52 @@ class ChartInfoService {
         response.status = status
     }
 
+    fun detailVersion(
+        userId: String,
+        artifactInfo: HelmArtifactInfo,
+        packageKey: String,
+        version: String
+    ): PackageVersionInfo {
+        with(artifactInfo) {
+            val name = PackageKeys.resolveHelm(packageKey)
+            val fullPath = String.format("/%s-%s.tgz", name, version)
+            val nodeDetail = nodeClient.detail(projectId, repoName, REPO_TYPE, fullPath).data ?: run {
+                logger.warn("node [$fullPath] don't found.")
+                throw HelmFileNotFoundException("node [$fullPath] don't found.")
+            }
+            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: run {
+                logger.warn("packageKey [$packageKey] don't found.")
+                throw HelmFileNotFoundException("packageKey [$packageKey] don't found.")
+            }
+            val basicInfo = buildBasicInfo(nodeDetail, packageVersion)
+            return PackageVersionInfo(basicInfo, emptyMap())
+        }
+    }
+
     companion object {
         const val CURRENT_PAGE = 0
         const val SIZE = 5
+
+        val logger: Logger = LoggerFactory.getLogger(ChartInfoService::class.java)
+
+        fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
+            with(nodeDetail) {
+                return BasicInfo(
+                    packageVersion.name,
+                    fullPath,
+                    size,
+                    sha256.orEmpty(),
+                    md5.orEmpty(),
+                    packageVersion.stageTag,
+                    projectId,
+                    repoName,
+                    packageVersion.downloads,
+                    createdBy,
+                    createdDate,
+                    lastModifiedBy,
+                    lastModifiedDate
+                )
+            }
+        }
     }
 }

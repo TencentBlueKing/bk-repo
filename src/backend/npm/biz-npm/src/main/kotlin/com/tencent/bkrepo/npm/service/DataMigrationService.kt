@@ -1,66 +1,72 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
+ */
+
 package com.tencent.bkrepo.npm.service
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
-import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
-import com.tencent.bkrepo.npm.constants.PKG_NAME
 import com.tencent.bkrepo.npm.dao.repository.MigrationErrorDataRepository
 import com.tencent.bkrepo.npm.model.TMigrationErrorData
-import com.tencent.bkrepo.npm.pojo.migration.NpmDataMigrationResponse
 import com.tencent.bkrepo.npm.pojo.migration.MigrationErrorDataInfo
-import com.tencent.bkrepo.npm.pojo.migration.MigrationFailDataDetailInfo
 import com.tencent.bkrepo.npm.pojo.migration.service.MigrationErrorDataCreateRequest
+import com.tencent.bkrepo.npm.properties.NpmProperties
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.OkHttpUtil
-import com.tencent.bkrepo.npm.utils.ThreadPoolManager
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
 import java.io.IOException
 import java.io.InputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.Callable
 import java.util.stream.Collectors
-import kotlin.system.measureTimeMillis
 
 @Service
-class DataMigrationService {
-
-    @Value("\${npm.migration.data.url: ''}")
-    private val url: String = StringPool.EMPTY
-
-    @Autowired
-    private lateinit var migrationErrorDataRepository: MigrationErrorDataRepository
-
-    @Autowired
-    private lateinit var mongoTemplate: MongoTemplate
-
-    @Autowired
-    private lateinit var okHttpUtil: OkHttpUtil
+class DataMigrationService(
+    private val npmProperties: NpmProperties,
+    private val mongoTemplate: MongoTemplate,
+    private val okHttpUtil: OkHttpUtil,
+    private val migrationErrorDataRepository: MigrationErrorDataRepository
+) {
 
     private final fun initTotalDataSetByUrl(): Set<String> {
         var totalDataSet: Set<String> = emptySet()
+        val url = npmProperties.migration.dataUrl
         if (url.isEmpty()) {
             return totalDataSet
         }
@@ -68,12 +74,13 @@ class DataMigrationService {
         try {
             response = okHttpUtil.doGet(url)
             if (checkResponse(response)) {
-                val pkgNameData = response.body()!!.byteStream().use { GsonUtils.transferInputStreamToJson(it) }
+                val pkgNameData =
+                    response.body()!!.byteStream().use { JsonUtils.objectMapper.readValue<Map<String, Boolean>>(it) }
                 totalDataSet =
-                    pkgNameData.entrySet().stream().filter { it.value.asBoolean }.map { it.key }.collect(Collectors.toSet())
+                    pkgNameData.entries.stream().filter { it.value }.map { it.key }.collect(Collectors.toSet())
             }
         } catch (exception: IOException) {
-            logger.error("http send [$url] for get all package name data failed, {}", exception.message)
+            logger.error("http send [$url] for get all migration package name data failed, {}", exception.message)
             throw exception
         } finally {
             response?.body()?.close()
@@ -88,16 +95,14 @@ class DataMigrationService {
     }
 
     private final fun initTotalDataSetByPkgName(pkgName: String): Set<String> {
-        if (pkgName.isNotBlank()) {
-            return pkgName.split(',').filter { it.isNotBlank() }.map { it.trim() }.toMutableSet()
-        }
-        return emptySet()
+        if (pkgName.isBlank()) return emptySet()
+        return pkgName.split(',').filter { it.isNotBlank() }.map { it.trim() }.toMutableSet()
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    fun dataMigrationByFile(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse {
-        logger.info("migraion by file request parameter:[isUseErrorData: $useErrorData, fileName: $FILE_NAME]")
+    fun dataMigrationByFile(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): MigrateDetail {
+        logger.info("handling migration by file request parameter:[isUseErrorData: $useErrorData, fileName: $FILE_NAME]")
         val totalDataSet: Set<String>
         totalDataSet = if (useErrorData) {
             val result = find(artifactInfo.projectId, artifactInfo.repoName)
@@ -111,8 +116,8 @@ class DataMigrationService {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    fun dataMigrationByUrl(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): NpmDataMigrationResponse {
-        logger.info("migraion by url request parameter: [url: $url, isUseErrorData: $useErrorData]")
+    fun dataMigrationByUrl(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): MigrateDetail {
+        logger.info("handling migration by url request parameter: [url: ${npmProperties.migration.dataUrl}, isUseErrorData: $useErrorData]")
         val totalDataSet: Set<String>
         totalDataSet = if (useErrorData) {
             val result = find(artifactInfo.projectId, artifactInfo.repoName)
@@ -130,8 +135,8 @@ class DataMigrationService {
         artifactInfo: NpmArtifactInfo,
         useErrorData: Boolean,
         pkgName: String
-    ): NpmDataMigrationResponse {
-        logger.info("request parameter: [isUseErrorData: $useErrorData, pkgName: $pkgName]")
+    ): MigrateDetail {
+        logger.info("handling migration by package name request parameter: [isUseErrorData: $useErrorData, pkgName: $pkgName]")
         val pkgNameSet = initTotalDataSetByPkgName(pkgName)
         logger.info("migration by pkgName filter results: [$pkgNameSet], size: ${pkgNameSet.size}")
         return dataMigration(pkgNameSet, artifactInfo, useErrorData)
@@ -141,84 +146,14 @@ class DataMigrationService {
         totalDataSet: Set<String>,
         artifactInfo: NpmArtifactInfo,
         useErrorData: Boolean
-    ): NpmDataMigrationResponse {
-        val attributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
-        RequestContextHolder.setRequestAttributes(attributes, true)
-
-        val start = System.currentTimeMillis()
-        val callableList: MutableList<Callable<MigrationFailDataDetailInfo>> = mutableListOf()
-        var successCount = 0
-        var failCount = 0
-        totalDataSet.forEach {
-            callableList.add(
-                Callable {
-                    RequestContextHolder.setRequestAttributes(attributes, true)
-                    val migrationResult = doDataMigration(artifactInfo, it, totalDataSet.size)
-                    if (!hasMigrationFailData(migrationResult)) {
-                        successCount++
-                    } else {
-                        failCount++
-                    }
-                    if (isMultipleOfFive(totalDataSet.size)) {
-                        logger.info(
-                            "progress rate : successRate:[$successCount/${totalDataSet.size}], " +
-                                "failRate[$failCount/${totalDataSet.size}]"
-                        )
-                    }
-                    migrationResult
-                }
-            )
-        }
-        val resultList = ThreadPoolManager.submit(callableList)
-        val elapseTimeMillis = System.currentTimeMillis() - start
-        logger.info(
-            "npm history data migration, total size[${totalDataSet.size}], success[$successCount], " +
-                "fail[$failCount], elapse [${millisToSecond(elapseTimeMillis)}] s totally."
-        )
-        val resultDetailInfoSet = resultList.stream().filter { hasMigrationFailData(it) }.collect(Collectors.toSet())
-        val collect = resultList.stream().map { it.pkgName }.collect(Collectors.toSet())
-        if (collect.isNotEmpty() && useErrorData) {
-            insertErrorData(artifactInfo, collect)
-        }
-        return NpmDataMigrationResponse(
-            "Data migration information display：",
-            totalDataSet.size,
-            successCount,
-            failCount,
-            millisToSecond(elapseTimeMillis),
-            resultDetailInfoSet
-        )
-    }
-
-    fun doDataMigration(
-        artifactInfo: NpmArtifactInfo,
-        pkgName: String,
-        totalDataSet: Int
-    ): MigrationFailDataDetailInfo {
-        var failDataDetailInfo: MigrationFailDataDetailInfo? = null
-        try {
-            Thread.sleep(SLEEP_MILLIS)
-            measureTimeMillis {
-                failDataDetailInfo = migrate(artifactInfo, pkgName)
-            }.apply {
-                if (!hasMigrationFailData(failDataDetailInfo!!)) {
-                    logger.info("migrate npm package [$pkgName] success, elapse $this ms.")
-                }
-            }
-        } catch (exception: IOException) {
-            logger.error("failed to migrate [$pkgName.json] file, {}", exception.message)
-        } catch (exception: InterruptedException) {
-            logger.error("failed to migrate [$pkgName.json] file, {}", exception.message)
-        }
-        return failDataDetailInfo!!
-    }
-
-    fun migrate(artifactInfo: NpmArtifactInfo, pkgName: String): MigrationFailDataDetailInfo {
+    ): MigrateDetail {
         val context = ArtifactMigrateContext()
-        context.putAttribute(NPM_FILE_FULL_PATH, String.format(NPM_PKG_METADATA_FULL_PATH, pkgName))
-        context.putAttribute(PKG_NAME, pkgName)
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        return repository.migrate(context) as MigrationFailDataDetailInfo
+        context.putAttribute("migrationDateSet", totalDataSet)
+        return ArtifactContextHolder.getRepository().migrate(context)
+        // if (useErrorData && migrateDetail.packageList.isEmpty()) {
+        //     // 插入迁移失败数据
+        //
+        // }
     }
 
     fun checkResponse(response: Response): Boolean {
@@ -273,7 +208,6 @@ class DataMigrationService {
     companion object {
         const val FILE_NAME = "pkgName.json"
         const val MILLIS_RATE = 1000L
-        const val SLEEP_MILLIS = 20L
 
         val logger: Logger = LoggerFactory.getLogger(DataMigrationService::class.java)
 
@@ -290,18 +224,6 @@ class DataMigrationService {
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
                 )
             }
-        }
-
-        fun millisToSecond(millis: Long): Long {
-            return millis / MILLIS_RATE
-        }
-
-        fun isMultipleOfFive(size: Int): Boolean {
-            return size.rem(1) == 0
-        }
-
-        fun hasMigrationFailData(failDataDetailInfo: MigrationFailDataDetailInfo): Boolean {
-            return failDataDetailInfo.versionSet.size > 0
         }
     }
 }
