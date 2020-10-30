@@ -34,7 +34,6 @@ import io.swagger.annotations.ApiOperation
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
 
 interface PypiResource {
 
@@ -42,31 +41,19 @@ interface PypiResource {
      * pypi upload 接口
      */
     @PostMapping(PYPI_ROOT_POST_URI)
-    fun upload(
-        @ArtifactPathVariable
-        pypiArtifactInfo: PypiArtifactInfo,
-        artifactFileMap: ArtifactFileMap
-    )
+    fun upload(@ArtifactPathVariable pypiArtifactInfo: PypiArtifactInfo, artifactFileMap: ArtifactFileMap)
 
     /**
      * pypi search 接口
      */
-    @PostMapping(
-        PYPI_ROOT_POST_URI,
-        consumes = [MediaType.TEXT_XML_VALUE],
-        produces = [MediaType.TEXT_XML_VALUE]
-    )
-    fun search(
-        @ArtifactPathVariable
-        pypiArtifactInfo: PypiArtifactInfo,
-        @RequestBody xmlString: String
-    )
+    @PostMapping(PYPI_ROOT_POST_URI, consumes = [MediaType.TEXT_XML_VALUE], produces = [MediaType.TEXT_XML_VALUE])
+    fun search(@ArtifactPathVariable pypiArtifactInfo: PypiArtifactInfo): String
 
     /**
-     * pypi simple/{package} 接口
+     * pypi simple/{package} 页面接口，
      */
     @GetMapping(PYPI_SIMPLE_MAPPING_INSTALL_URI)
-    fun simple(@ArtifactPathVariable artifactInfo: PypiArtifactInfo)
+    fun simple(@ArtifactPathVariable artifactInfo: PypiArtifactInfo): Any?
 
     /**
      * pypi install 接口

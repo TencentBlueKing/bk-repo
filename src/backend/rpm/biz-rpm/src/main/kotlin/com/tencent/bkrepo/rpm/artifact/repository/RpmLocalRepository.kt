@@ -675,7 +675,7 @@ class RpmLocalRepository : LocalRepository() {
                 projectId, repoName, packageKey, version
             ).data
             val count = packageVersion?.downloads ?: 0
-            val mavenArtifactBasic = Basic(
+            val rpmArtifactBasic = Basic(
                 path,
                 name,
                 version,
@@ -686,7 +686,7 @@ class RpmLocalRepository : LocalRepository() {
                 stageTag,
                 null
             )
-            return RpmArtifactVersionData(mavenArtifactBasic, rpmArtifactMetadata)
+            return RpmArtifactVersionData(rpmArtifactBasic, rpmArtifactMetadata)
         }
     }
 
