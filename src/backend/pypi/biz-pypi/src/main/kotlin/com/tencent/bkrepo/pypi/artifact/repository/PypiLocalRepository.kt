@@ -23,6 +23,7 @@ package com.tencent.bkrepo.pypi.artifact.repository
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -406,11 +407,11 @@ class PypiLocalRepository : LocalRepository() {
         return filenodeList
     }
 
-    @org.springframework.beans.factory.annotation.Value("\${migrate.url:10}")
-    private lateinit var migrateUrl: String
+    @org.springframework.beans.factory.annotation.Value("\${migrate.url:''}")
+    private val migrateUrl: String = StringPool.EMPTY
 
-    @org.springframework.beans.factory.annotation.Value("\${limitPackages:''}")
-    private lateinit var limitPackages: String
+    @org.springframework.beans.factory.annotation.Value("\${limitPackages:10}")
+    private val limitPackages: Int = DEFAULT_COUNT
 
     private val failSet = mutableSetOf<String>()
 
@@ -466,7 +467,7 @@ class PypiLocalRepository : LocalRepository() {
 
         // 获取所有的包,开始计时
         val start = Instant.now()
-        verifiedUrl.htmlHrefs(limitPackages.toInt()).let { simpleHrefs ->
+        verifiedUrl.htmlHrefs(limitPackages).let { simpleHrefs ->
             totalCount = migrateUrl.sumTasks(simpleHrefs)
             for (e in simpleHrefs) {
                 // 每一个包所包含的文件列表
@@ -496,7 +497,7 @@ class PypiLocalRepository : LocalRepository() {
         insertMigrateData(
             context,
             failSet,
-            limitPackages.toInt(),
+            limitPackages,
             totalCount,
             elapseTimeSeconds.seconds
         )
@@ -671,5 +672,6 @@ class PypiLocalRepository : LocalRepository() {
         const val pageLimitSize = 10
         const val threadAliveTime = 15L
         const val doubleNum = 1
+        const val DEFAULT_COUNT = 10
     }
 }
