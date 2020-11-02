@@ -27,6 +27,8 @@ data class Basic(
     val version: String,
     val size: Long,
     val fullPath: String,
+    val createdBy: String,
+    val createdDate: String,
     val lastModifiedBy: String,
     val lastModifiedDate: String,
     val downloadCount: Long,
