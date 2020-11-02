@@ -17,7 +17,8 @@ export default new Vuex.Store({
             }
         ],
         userList: {},
-        userInfo: {}
+        userInfo: {},
+        dockerDomain: ''
     },
     getters: {
     },
@@ -57,6 +58,9 @@ export default new Vuex.Store({
         },
         SET_USER_INFO (state, data) {
             state.userInfo = data
+        },
+        SET_DOCKER_DOMAIN (state, data) {
+            state.dockerDomain = data
         }
     },
     actions

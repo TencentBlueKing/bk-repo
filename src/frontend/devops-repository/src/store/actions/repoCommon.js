@@ -126,9 +126,11 @@ export default {
         )
     },
     // 获取docker域名
-    getDockerDomain () {
-        return Vue.prototype.$ajax.get(
+    getDockerDomain ({ commit }) {
+        Vue.prototype.$ajax.get(
             `docker/ext/addr`
-        )
+        ).then(data => {
+            commit('SET_DOCKER_DOMAIN', data)
+        })
     }
 }

@@ -1,12 +1,7 @@
-import { mapState, mapActions } from 'vuex'
+import { mapState } from 'vuex'
 export default {
-    data () {
-        return {
-            dockerDomain: ''
-        }
-    },
     computed: {
-        ...mapState(['userInfo']),
+        ...mapState(['userInfo', 'dockerDomain']),
         projectId () {
             return this.$route.params.projectId
         },
@@ -606,20 +601,6 @@ export default {
         },
         articleInstall () {
             return this[`${this.$route.params.repoType}Install`]
-        }
-    },
-    async created () {
-        this.getDockerDomainHandler()
-    },
-    watch: {
-        repoType (val) {
-            this.getDockerDomainHandler()
-        }
-    },
-    methods: {
-        ...mapActions(['getDockerDomain']),
-        async getDockerDomainHandler () {
-            this.repoType === 'docker' && !this.dockerDomain && (this.dockerDomain = await this.getDockerDomain())
         }
     }
 }
