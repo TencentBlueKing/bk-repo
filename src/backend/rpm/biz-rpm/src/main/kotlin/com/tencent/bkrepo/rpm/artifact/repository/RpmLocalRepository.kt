@@ -39,9 +39,11 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
@@ -57,7 +59,6 @@ import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
-import com.tencent.bkrepo.rpm.pojo.RpmDeleteResponse
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat
 import com.tencent.bkrepo.rpm.pojo.Basic
 import com.tencent.bkrepo.rpm.pojo.RpmArtifactVersionData
@@ -207,15 +208,18 @@ class RpmLocalRepository : LocalRepository() {
         )
         if (rpmRepoConf.enabledFileLists) {
             // 单独存储每个包的filelists.xml
-            storeIndexMark(context, repodataPath, repeat, rpmVersion.toMetadata(), IndexType.FILELISTS, artifactSha256)
+            storeIndexMark(
+                context, repodataPath, repeat, rpmVersion.toMetadata(), IndexType.FILELISTS,
+                artifactSha256, null
+            )
         }
         stopWatchDetail.stop()
         stopWatchDetail.start("others")
-        storeIndexMark(context, repodataPath, repeat, rpmVersion.toMetadata(), IndexType.OTHERS, artifactSha256)
+        storeIndexMark(context, repodataPath, repeat, rpmVersion.toMetadata(), IndexType.OTHERS, artifactSha256, null)
         stopWatchDetail.stop()
         // 更新primary.xml
         stopWatchDetail.start("primary")
-        storeIndexMark(context, repodataPath, repeat, rpmVersion.toMetadata(), IndexType.PRIMARY, artifactSha256)
+        storeIndexMark(context, repodataPath, repeat, rpmVersion.toMetadata(), IndexType.PRIMARY, artifactSha256, null)
         stopWatchDetail.stop()
         stopWatchAll.stop()
         if (logger.isDebugEnabled) {
@@ -237,18 +241,14 @@ class RpmLocalRepository : LocalRepository() {
     ) {
         val markFile = ArtifactFileFactory.build(ByteArrayInputStream("mark".toByteArray()))
         metadata["repeat"] = NONE.name
-        val xmlFileNode = xmlIndexNodeCreate(
+        val xmlMarkNode = xmlIndexNodeCreate(
             context.userId,
             context.repositoryDetail,
             "/$repodataPath/$REPODATA/${indexType.value}/$rpmLocation",
             markFile,
             metadata
         )
-        storageService.store(xmlFileNode.sha256!!, markFile, context.storageCredentials)
-        with(xmlFileNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-        markFile.delete()
-        nodeClient.create(xmlFileNode)
-        logger.info("Success to insert $xmlFileNode")
+        store(xmlMarkNode, markFile, context.storageCredentials)
     }
 
     /**
@@ -260,25 +260,27 @@ class RpmLocalRepository : LocalRepository() {
         repeat: ArtifactRepeat,
         metadata: MutableMap<String, String>,
         indexType: IndexType,
-        sha256: String?
+        sha256: String?,
+        artifactFullPath: String?
     ) {
         with(context.artifactInfo) {
-            val rpmLocation = getArtifactFullPath().removePrefix("/$repodataPath")
+            val rpmLocation = (artifactFullPath ?: getArtifactFullPath()).removePrefix("/$repodataPath")
             val markFile = ArtifactFileFactory.build(ByteArrayInputStream("mark".toByteArray()))
             metadata["repeat"] = repeat.name
             sha256?.let { metadata["sha256"] = it }
-            val xmlFileNode = xmlIndexNodeCreate(
+            val fullPath = if (repodataPath.isBlank() || repodataPath == "/") {
+                "/$REPODATA/${indexType.value}/$rpmLocation"
+            } else {
+                "/$repodataPath/$REPODATA/${indexType.value}/$rpmLocation"
+            }
+            val xmlMarkNode = xmlIndexNodeCreate(
                 context.userId,
                 context.repositoryDetail,
-                "/$repodataPath/$REPODATA/${indexType.value}/$rpmLocation",
+                fullPath,
                 markFile,
                 metadata
             )
-            storageService.store(xmlFileNode.sha256!!, markFile, context.storageCredentials)
-            with(xmlFileNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            markFile.delete()
-            nodeClient.create(xmlFileNode)
-            logger.info("Success to insert $xmlFileNode")
+            store(xmlMarkNode, markFile, context.storageCredentials)
         }
     }
 
@@ -323,18 +325,6 @@ class RpmLocalRepository : LocalRepository() {
         }
     }
 
-    private fun deleteFailed(context: ArtifactRemoveContext, description: String) {
-        val response = HttpContextHolder.getResponse()
-        response.contentType = "application/json; charset=UTF-8"
-        with(context.artifactInfo) {
-            val rpmUploadResponse = RpmDeleteResponse(
-                projectId, repoName, getArtifactFullPath(),
-                description
-            )
-            response.writer.print(rpmUploadResponse.toJsonString())
-        }
-    }
-
     private fun getArtifactFormat(context: ArtifactUploadContext): ArtifactFormat {
         val format = context.artifactInfo.getArtifactFullPath()
             .split(SLASH).last().split(".").last()
@@ -370,9 +360,7 @@ class RpmLocalRepository : LocalRepository() {
             xmlSha1ArtifactFile,
             metadata
         )
-        storageManager.storeArtifactFile(xmlNode, xmlSha1ArtifactFile, context.storageCredentials)
-        with(xmlNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-        xmlSha1ArtifactFile.delete()
+        store(xmlNode, xmlSha1ArtifactFile, context.storageCredentials)
 
         // 保存xml.gz
         val groupGZFile = xmlByteArray.gZip(IndexType.OTHERS)
@@ -393,9 +381,7 @@ class RpmLocalRepository : LocalRepository() {
                 groupGZArtifactFile,
                 metadataGZ
             )
-            storageManager.storeArtifactFile(groupGZNode, groupGZArtifactFile, context.storageCredentials)
-            with(groupGZNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            groupGZArtifactFile.delete()
+            store(groupGZNode, groupGZArtifactFile, context.storageCredentials)
         } finally {
             groupGZFile.delete()
         }
@@ -478,11 +464,7 @@ class RpmLocalRepository : LocalRepository() {
                 "$SLASH${indexPath}${SLASH}repomd.xml",
                 xmlRepodataArtifact, null
             )
-            storageService.store(xmlRepomdNode.sha256!!, xmlRepodataArtifact, context.storageCredentials)
-            with(xmlRepomdNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            nodeClient.create(xmlRepomdNode)
-            logger.info("Success to insert $xmlRepomdNode")
-            xmlRepodataArtifact.delete()
+            store(xmlRepomdNode, xmlRepodataArtifact, context.storageCredentials)
         }
     }
 
@@ -528,8 +510,7 @@ class RpmLocalRepository : LocalRepository() {
                 }
             } else { rpmNodeCreateRequest(context, mutableMapOf()) }
 
-            storageManager.storeArtifactFile(nodeCreateRequest, context.getArtifactFile(), context.storageCredentials)
-            with(context.artifactInfo) { logger.info("Success to store $projectId/$repoName/${getArtifactFullPath()}") }
+            store(nodeCreateRequest, context.getArtifactFile(), context.storageCredentials)
         }
         successUpload(context, mark, rpmRepoConf.repodataDepth)
     }
@@ -561,42 +542,82 @@ class RpmLocalRepository : LocalRepository() {
     override fun remove(context: ArtifactRemoveContext) {
         val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
         val version = HttpContextHolder.getRequest().getParameter("version")
-        with(context.artifactInfo) {
-            val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data
-            if (node == null) {
-                deleteFailed(context, "未找到该构件或已经被删除")
-                return
+        if (version.isNullOrBlank()) {
+            val pages = packageClient.listVersionPage(
+                context.projectId,
+                context.repoName,
+                packageKey,
+                null,
+                null,
+                0,
+                100
+            ).data?.records ?: return
+            for (packageVersion in pages) {
+                val artifactFullPath = "$packageKey-${packageVersion.name}.rpm".removePrefix("rpm:/")
+                val node = nodeClient.detail(context.projectId, context.repoName, artifactFullPath).data ?: continue
+                removeRpmArtifact(node, artifactFullPath, context, packageKey, packageVersion.name)
             }
-            if (node.folder) {
-                throw UnsupportedMethodException("Delete folder is forbidden")
+            packageClient.deletePackage(context.projectId, context.repoName, packageKey)
+        } else {
+            with(context.artifactInfo) {
+                val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data ?: return
+                removeRpmArtifact(node, getArtifactFullPath(), context, packageKey, version)
             }
-            val nodeMetadata = node.metadata
-            val artifactSha256 = node.sha256
-            val rpmVersion = try {
-                nodeMetadata.toRpmVersion(getArtifactFullPath())
-            } catch (rpmArtifactMetadataResolveException: RpmArtifactMetadataResolveException) {
-                logger.warn("$this not found metadata")
-                RpmVersionUtils.resolverRpmVersion(getArtifactFullPath().split("/").last())
-            }
-            // 定位对应请求的索引目录
-            val rpmRepoConf = getRpmRepoConf(context)
-            val repodataDepth = rpmRepoConf.repodataDepth
-            val repodataUri = XmlStrUtils.splitUriByDepth(context.artifactInfo.getArtifactFullPath(), repodataDepth)
-            val repodataPath = repodataUri.repodataPath
+        }
+    }
 
-            // 更新 primary, others
-            storeIndexMark(context, repodataPath, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.PRIMARY, artifactSha256)
-            storeIndexMark(context, repodataPath, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHERS, artifactSha256)
-            if (rpmRepoConf.enabledFileLists) {
-                storeIndexMark(context, repodataPath, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.FILELISTS, artifactSha256)
-            }
-            val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, getArtifactFullPath(), context.userId)
+    fun removeRpmArtifact(
+        node: NodeDetail,
+        artifactFullPath: String,
+        context: ArtifactRemoveContext,
+        packageKey: String,
+        version: String
+    ) {
+        if (node.folder) {
+            throw UnsupportedMethodException("Delete folder is forbidden")
+        }
+        val nodeMetadata = node.metadata
+        val artifactSha256 = node.sha256
+        val rpmVersion = try {
+            nodeMetadata.toRpmVersion(artifactFullPath)
+        } catch (rpmArtifactMetadataResolveException: RpmArtifactMetadataResolveException) {
+            logger.warn("$this not found metadata")
+            RpmVersionUtils.resolverRpmVersion(artifactFullPath.split("/").last())
+        }
+        // 定位对应请求的索引目录
+        val rpmRepoConf = getRpmRepoConf(context)
+        val repodataDepth = rpmRepoConf.repodataDepth
+        val repodataUri = XmlStrUtils.splitUriByDepth(context.artifactInfo.getArtifactFullPath(), repodataDepth)
+        val repodataPath = repodataUri.repodataPath
+
+        // 更新 primary, others
+        storeIndexMark(
+            context, repodataPath, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.PRIMARY,
+            artifactSha256, artifactFullPath
+        )
+        storeIndexMark(context, repodataPath, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHERS, artifactSha256, artifactFullPath)
+        if (rpmRepoConf.enabledFileLists) {
+            storeIndexMark(
+                context, repodataPath, ArtifactRepeat.DELETE, rpmVersion.toMetadata(),
+                IndexType
+                    .FILELISTS,
+                artifactSha256, artifactFullPath
+            )
+        }
+        with(context) {
+            val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactFullPath, context.userId)
             nodeClient.delete(nodeDeleteRequest)
             logger.info("Success to delete node $nodeDeleteRequest")
-            packageClient.deleteVersion(projectId, repoName, packageKey, version)
+            deleteVersion(projectId, repoName, packageKey, version)
             logger.info("Success to delete version $projectId | $repoName : $packageKey $version")
             flushRepoMdXML(context, null)
         }
+    }
+
+    fun deleteVersion(projectId: String, repoName: String, packageKey: String, version: String) {
+        packageClient.deleteVersion(projectId, repoName, packageKey, version)
+        val page = packageClient.listVersionPage(projectId, repoName, packageKey).data ?: return
+        if (page.records.isEmpty()) packageClient.deletePackage(projectId, repoName, packageKey)
     }
 
     /**
@@ -654,7 +675,7 @@ class RpmLocalRepository : LocalRepository() {
                 projectId, repoName, packageKey, version
             ).data
             val count = packageVersion?.downloads ?: 0
-            val mavenArtifactBasic = Basic(
+            val rpmArtifactBasic = Basic(
                 path,
                 name,
                 version,
@@ -665,8 +686,15 @@ class RpmLocalRepository : LocalRepository() {
                 stageTag,
                 null
             )
-            return RpmArtifactVersionData(mavenArtifactBasic, rpmArtifactMetadata)
+            return RpmArtifactVersionData(rpmArtifactBasic, rpmArtifactMetadata)
         }
+    }
+
+    fun store(node: NodeCreateRequest, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?) {
+        storageManager.storeArtifactFile(node, artifactFile, storageCredentials)
+        artifactFile.delete()
+        with(node) { logger.info("Success to store$projectId/$repoName/$fullPath") }
+        logger.info("Success to insert $node")
     }
 
     companion object {

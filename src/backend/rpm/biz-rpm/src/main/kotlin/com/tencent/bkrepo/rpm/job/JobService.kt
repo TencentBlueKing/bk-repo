@@ -3,6 +3,7 @@ package com.tencent.bkrepo.rpm.job
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.sha1
+import com.tencent.bkrepo.common.artifact.repository.core.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -66,6 +67,9 @@ class JobService {
 
     @Autowired
     private lateinit var storageService: StorageService
+
+    @Autowired
+    private lateinit var storageManager: StorageManager
 
     @Autowired
     private lateinit var surplusNodeCleaner: SurplusNodeCleaner
@@ -163,11 +167,7 @@ class JobService {
                 xmlRepodataArtifact.getFileSha256(),
                 xmlRepodataArtifact.getFileMd5()
             )
-            storageService.store(xmlRepomdNode.sha256!!, xmlRepodataArtifact, null)
-            with(xmlRepomdNode) { logger.info("Success to store $projectId/$repoName/$fullPath") }
-            nodeClient.create(xmlRepomdNode)
-            logger.info("Success to insert $xmlRepomdNode")
-            xmlRepodataArtifact.delete()
+            store(xmlRepomdNode, xmlRepodataArtifact)
         }
     }
 
@@ -231,10 +231,9 @@ class JobService {
     }
 
     fun store(node: NodeCreateRequest, artifactFile: ArtifactFile) {
-        storageService.store(node.sha256!!, artifactFile, null)
+        storageManager.storeArtifactFile(node, artifactFile, null)
         artifactFile.delete()
         with(node) { logger.info("Success to store$projectId/$repoName/$fullPath") }
-        nodeClient.create(node)
         logger.info("Success to insert $node")
     }
 

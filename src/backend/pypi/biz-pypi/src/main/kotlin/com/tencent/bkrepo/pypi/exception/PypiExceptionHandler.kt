@@ -37,4 +37,16 @@ class PypiExceptionHandler {
     fun handleException(exception: PypiUnSupportCompressException): PypiExceptionResponse {
         return PypiExceptionResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE.toString(), exception.message)
     }
+
+    @ExceptionHandler(PypiSearchParamException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleException(exception: PypiSearchParamException): PypiExceptionResponse {
+        return PypiExceptionResponse(HttpStatus.NOT_FOUND.toString(), exception.message)
+    }
+
+    @ExceptionHandler(PypiRemoteSearchException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleException(exception: PypiRemoteSearchException): PypiExceptionResponse {
+        return PypiExceptionResponse(HttpStatus.NOT_FOUND.toString(), exception.message)
+    }
 }

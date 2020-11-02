@@ -21,21 +21,21 @@
 
 package com.tencent.bkrepo.pypi.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.hash.md5
-import com.tencent.bkrepo.common.artifact.hash.sha256
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.pypi.artifact.FLUSH_CACHE_EXPIRE
 import com.tencent.bkrepo.pypi.artifact.REMOTE_HTML_CACHE_FULL_PATH
 import com.tencent.bkrepo.pypi.artifact.XML_RPC_URI
-import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlConvertUtil
+import com.tencent.bkrepo.pypi.exception.PypiRemoteSearchException
+import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -47,52 +47,43 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.BufferedReader
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileWriter
-import java.io.IOException
+import java.io.ByteArrayInputStream
+import java.io.InputStreamReader
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Component
-class PypiRemoteRepository : RemoteRepository(), PypiRepository {
+class PypiRemoteRepository : RemoteRepository() {
 
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
         val remoteConfiguration = context.getRemoteConfiguration()
-        val artifactUri = context.artifactInfo.artifactUri
+        val artifactUri = context.artifactInfo.getArtifactFullPath()
         return remoteConfiguration.url.trimEnd('/') + "/packages" + artifactUri
     }
 
     /**
      * 生成远程list url
      */
-    fun generateRemoteListUrl(context: ArtifactListContext): String {
+    fun generateRemoteListUrl(context: ArtifactQueryContext): String {
         val remoteConfiguration = context.getRemoteConfiguration()
-        val artifactUri = context.artifactInfo.artifactUri
+        val artifactUri = context.artifactInfo.getArtifactFullPath()
         return remoteConfiguration.url.trimEnd('/') + "/simple$artifactUri"
     }
 
-    override fun list(context: ArtifactListContext) {
+    override fun query(context: ArtifactQueryContext): Any? {
         val response = HttpContextHolder.getResponse()
         response.contentType = "text/html; charset=UTF-8"
-        val cacheHtml = getCacheHtml(context)
-        cacheHtml?.let {
-            BufferedReader(cacheHtml.bufferedReader()).use {
-                while (true) {
-                    response.writer.print(it.readLine() ?: break)
-                }
-            }
-        }
+        return getCacheHtml(context)
     }
 
     /**
      * 获取项目-仓库缓存对应的html文件
      */
-    fun getCacheHtml(context: ArtifactListContext): ArtifactInputStream? {
+    fun getCacheHtml(context: ArtifactQueryContext): String? {
         val repositoryDetail = context.repositoryDetail
-        val projectId = repositoryInfo.projectId
-        val repoName = repositoryInfo.name
+        val projectId = repositoryDetail.projectId
+        val repoName = repositoryDetail.name
         val fullPath = REMOTE_HTML_CACHE_FULL_PATH
         val node = nodeClient.detail(projectId, repoName, fullPath).data
         while (node == null) {
@@ -103,69 +94,65 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
         val date = LocalDateTime.parse(node.lastModifiedDate, format)
         val currentTime = LocalDateTime.now()
         val duration = Duration.between(date, currentTime).toMinutes()
-        val job = GlobalScope.launch {
+        GlobalScope.launch {
             if (duration > FLUSH_CACHE_EXPIRE) {
                 cacheRemoteRepoList(context)
             }
+        }.start()
+        val stringBuilder = StringBuilder()
+        storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)?.use {
+            artifactInputStream ->
+            var line: String?
+            val br = BufferedReader(InputStreamReader(artifactInputStream))
+            while (br.readLine().also { line = it } != null) {
+                stringBuilder.append(line)
+            }
         }
-        job.start()
-        return storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
+        return stringBuilder.toString()
     }
 
     /**
      * 缓存html文件
      */
-    fun cacheRemoteRepoList(context: ArtifactListContext) {
+    fun cacheRemoteRepoList(context: ArtifactQueryContext) {
         val listUri = generateRemoteListUrl(context)
         val remoteConfiguration = context.getRemoteConfiguration()
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
         val build: Request = Request.Builder().get().url(listUri).build()
         val htmlContent = okHttpClient.newCall(build).execute().body()?.string()
-        val cacheHtmlFile = File(REMOTE_HTML_CACHE_FULL_PATH)
-        htmlContent?.let {
-            // 保存html文件
-            try {
-                val fileWriter = FileWriter(cacheHtmlFile)
-                fileWriter.write(htmlContent)
-                fileWriter.close()
-            } catch (ioe: IOException) {
-                logger.error("The remote url : ${remoteConfiguration.url}  can not reach!")
-            }
-        }
-        onUpload(context, cacheHtmlFile)
+//        val cacheHtmlFile = File(REMOTE_HTML_CACHE_FULL_PATH)
+//        htmlContent?.let {
+//            // 保存html文件
+//            try {
+//                val fileWriter = FileWriter(cacheHtmlFile)
+//                fileWriter.write(htmlContent)
+//                fileWriter.close()
+//            } catch (ioe: IOException) {
+//                logger.error("The remote url : ${remoteConfiguration.url}  can not reach!")
+//            }
+//        }
+        htmlContent?.let { storeCacheHtml(context, it) }
     }
 
-    fun onUpload(context: ArtifactListContext, file: File) {
-        val nodeCreateRequest = getNodeCreateRequest(context, file)
-        nodeClient.create(nodeCreateRequest)
-        storageService.store(nodeCreateRequest.sha256!!, ArtifactFileFactory.build(file.inputStream()), context.storageCredentials)
+    fun storeCacheHtml(context: ArtifactQueryContext, htmlContent: String) {
+        val artifactFile = ArtifactFileFactory.build(ByteArrayInputStream(htmlContent.toByteArray()))
+        val nodeCreateRequest = getNodeCreateRequest(context, artifactFile)
+        store(nodeCreateRequest, artifactFile, context.storageCredentials)
     }
 
     /**
      * 需要单独给fullpath赋值。
      */
-    fun getNodeCreateRequest(context: ArtifactListContext, file: File): NodeCreateRequest {
-        val repositoryDetail = context.repositoryDetail
-        // 分别计算sha256与md5
-        val fileInputStream01 = FileInputStream(file)
-        val sha256 = fileInputStream01.sha256()
-        val fileInputStream02 = FileInputStream(file)
-        val md5 = fileInputStream02.md5()
-
-        return NodeCreateRequest(
-            projectId = repositoryInfo.projectId,
-            repoName = repositoryInfo.name,
-            folder = false,
-            overwrite = true,
-            fullPath = "/$REMOTE_HTML_CACHE_FULL_PATH",
-            size = file.length(),
-            sha256 = sha256 as String?,
-            md5 = md5 as String?,
-            operator = context.userId
+    fun getNodeCreateRequest(context: ArtifactQueryContext, artifactFile: ArtifactFile): NodeCreateRequest {
+        return super.buildCacheNodeCreateRequest(context, artifactFile).copy(
+            fullPath = "/$REMOTE_HTML_CACHE_FULL_PATH"
         )
     }
 
-    override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
+    /**
+     */
+    override fun search(context: ArtifactSearchContext): List<Any> {
+        val xmlString = context.request.reader.readXml()
         val remoteConfiguration = context.getRemoteConfiguration()
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
         val body = RequestBody.create(MediaType.parse("text/xml"), xmlString)
@@ -173,11 +160,17 @@ class PypiRemoteRepository : RemoteRepository(), PypiRepository {
             .addHeader("Connection", "keep-alive")
             .post(body)
             .build()
-        val htmlContent: String? = okHttpClient.newCall(build).execute().body()?.string()
-        return htmlContent?.let {
-            val methodResponse = XmlConvertUtil.xml2MethodResponse(it)
-            return methodResponse.params.paramList[0].value.array?.data?.valueList
-        }
+        val htmlContent: String = okHttpClient.newCall(build).execute().body()?.string()
+            ?: throw PypiRemoteSearchException("search from ${remoteConfiguration.url} error")
+        val methodResponse = XmlConvertUtil.xml2MethodResponse(htmlContent)
+        return methodResponse.params.paramList[0].value.array?.data?.valueList ?: mutableListOf()
+    }
+
+    fun store(node: NodeCreateRequest, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?) {
+        storageManager.storeArtifactFile(node, artifactFile, storageCredentials)
+        artifactFile.delete()
+        with(node) { PypiLocalRepository.logger.info("Success to store$projectId/$repoName/$fullPath") }
+        logger.info("Success to insert $node")
     }
 
     companion object {
