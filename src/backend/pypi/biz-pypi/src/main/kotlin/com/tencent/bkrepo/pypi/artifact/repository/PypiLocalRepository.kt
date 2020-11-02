@@ -406,10 +406,10 @@ class PypiLocalRepository : LocalRepository() {
         return filenodeList
     }
 
-    @org.springframework.beans.factory.annotation.Value("\${migrate.url}")
+    @org.springframework.beans.factory.annotation.Value("\${migrate.url:10}")
     private lateinit var migrateUrl: String
 
-    @org.springframework.beans.factory.annotation.Value("\${limitPackages}")
+    @org.springframework.beans.factory.annotation.Value("\${limitPackages:''}")
     private lateinit var limitPackages: String
 
     private val failSet = mutableSetOf<String>()

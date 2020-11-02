@@ -6,10 +6,11 @@ import com.tencent.bkrepo.nuget.util.DecompressUtil.resolverNuspec
 
 object ArtifactFileUtils {
     fun ArtifactFile.getNupkgFullPath(): NupkgVersion {
-        val inputStream = this.getInputStream()
-        val nuspecPackage = inputStream.resolverNuspec()
-        val nupkgId = nuspecPackage.metadata.id
-        val nupkgVersion = nuspecPackage.metadata.version
-        return NupkgVersion(nupkgId, nupkgVersion)
+        this.getInputStream().use {
+            val nuspecPackage = it.resolverNuspec()
+            val nupkgId = nuspecPackage.metadata.id
+            val nupkgVersion = nuspecPackage.metadata.version
+            return NupkgVersion(nupkgId, nupkgVersion)
+        }
     }
 }
