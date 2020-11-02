@@ -33,12 +33,14 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.migration.PackageMigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.migration.VersionMigrateErrorDetail
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -61,11 +63,13 @@ import com.tencent.bkrepo.pypi.util.ArtifactFileUtils
 import com.tencent.bkrepo.pypi.util.HttpUtil.downloadUrlHttpClient
 import com.tencent.bkrepo.pypi.util.JsoupUtil.htmlHrefs
 import com.tencent.bkrepo.pypi.util.JsoupUtil.sumTasks
+import com.tencent.bkrepo.pypi.util.PypiVersionUtils.toPypiPackagePojo
 import com.tencent.bkrepo.pypi.util.XmlUtils
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.pypi.util.pojo.PypiInfo
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -276,7 +280,9 @@ class PypiLocalRepository : LocalRepository() {
             val pypiArtifactBasic = Basic(
                 name,
                 version,
-                jarNode.size, jarNode.fullPath, jarNode.lastModifiedBy, jarNode.lastModifiedDate,
+                jarNode.size, jarNode.fullPath,
+                jarNode.createdBy, jarNode.createdDate,
+                jarNode.lastModifiedBy, jarNode.lastModifiedDate,
                 count,
                 jarNode.sha256,
                 jarNode.md5,
@@ -649,6 +655,22 @@ class PypiLocalRepository : LocalRepository() {
         artifactFile.delete()
         with(node) { logger.info("Success to store$projectId/$repoName/$fullPath") }
         logger.info("Success to insert $node")
+    }
+
+    // pypi 客户端下载统计
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): DownloadStatisticsAddRequest? {
+        with(context) {
+            val fullPath = context.artifactInfo.getArtifactFullPath()
+            val pypiPackagePojo = fullPath.toPypiPackagePojo()
+            val packageKey = PackageKeys.ofPypi(pypiPackagePojo.name)
+            return DownloadStatisticsAddRequest(
+                projectId, repoName,
+                packageKey, pypiPackagePojo.name, pypiPackagePojo.version
+            )
+        }
     }
 
     companion object {
