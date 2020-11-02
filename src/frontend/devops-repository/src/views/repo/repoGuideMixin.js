@@ -609,9 +609,17 @@ export default {
         }
     },
     async created () {
-        this.repoType === 'docker' && !this.dockerDomain && (this.dockerDomain = await this.getDockerDomain())
+        this.getDockerDomainHandler()
+    },
+    watch: {
+        repoType (val) {
+            this.getDockerDomainHandler()
+        }
     },
     methods: {
-        ...mapActions(['getDockerDomain'])
+        ...mapActions(['getDockerDomain']),
+        async getDockerDomainHandler () {
+            this.repoType === 'docker' && !this.dockerDomain && (this.dockerDomain = await this.getDockerDomain())
+        }
     }
 }
