@@ -201,7 +201,7 @@ export default {
                                 `   <server>`,
                                 `       <id>${this.projectId}-${this.repoName}</id>`,
                                 `       <username>${this.userInfo.username}</username>`,
-                                `       <password><PASSWORD></password>`,
+                                `       <password><PERSONAL_ACCESS_TOKEN></password>`,
                                 `   </server>`,
                                 `</servers>`
                             ]
@@ -448,61 +448,55 @@ export default {
         pypiGuide () {
             return [
                 {
-                    title: '设置凭证',
+                    title: '发布',
                     main: [
                         {
-                            subTitle: '请将下列配置添加到您的 $HOME/.pypirc 文件中',
+                            subTitle: '配置文件目录：$HOME/.pypirc',
                             codeList: [
                                 `[distutils]`,
                                 `index-servers = ${this.repoName}`,
                                 `[${this.repoName}]`,
                                 `repository: ${this.repoUrl}`,
                                 `username: ${this.userInfo.username}`,
-                                `password: <PASSWORD>`
+                                `password: <PERSONAL_ACCESS_TOKEN>`
                             ]
                         },
                         {
-                            subTitle: 'MacOS / Linux'
-                        },
-                        {
-                            subTitle: '在您的 $HOME/.pip/pip.conf 文件添加以下配置',
+                            subTitle: '执行下面命令',
                             codeList: [
-                                `[${this.repoName}]`,
-                                `index-url = ${this.repoUrl}`,
-                                `username = ${this.userInfo.username}`,
-                                `password = <PASSWORD>`
-                            ]
-                        },
-                        {
-                            subTitle: 'Windows'
-                        },
-                        {
-                            subTitle: '在您的 %HOME%/pip/pip.ini 文件添加以下配置',
-                            codeList: [
-                                `[${this.repoName}]`,
-                                `index-url = ${this.repoUrl}`,
-                                `username = ${this.userInfo.username}`,
-                                `password = <PASSWORD>`
+                                `python3 -m twine upload -r ${this.repoName} dist/*`
                             ]
                         }
                     ]
                 },
                 {
-                    title: '推送',
+                    title: '拉取',
                     main: [
                         {
+                            subTitle: '替换默认依赖源地址'
+                        },
+                        {
+                            subTitle: 'MacOS/Liunx配置目录 :  $HOME/.pip/pip.conf',
                             codeList: [
-                                `twine upload -r ${this.repoName} dist/*`
+                                `[global]`,
+                                `index-url = ${this.repoUrl}`,
+                                `username = ${this.userInfo.username}`,
+                                `password = <PERSONAL_ACCESS_TOKEN>`
                             ]
-                        }
-                    ]
-                },
-                {
-                    title: '下载',
-                    main: [
+                        },
                         {
+                            subTitle: 'Windows配置目录 :  %HOME%/pip/pip.ini',
                             codeList: [
-                                `pip3 install -i ${this.repoUrl}/simple ${this.packageName}==${this.version}`
+                                `[global]`,
+                                `index-url = ${this.repoUrl}`,
+                                `username = ${this.userInfo.username}`,
+                                `password = <PERSONAL_ACCESS_TOKEN>`
+                            ]
+                        },
+                        {
+                            subTitle: '执行下面命令',
+                            codeList: [
+                                `pip3 install ${this.packageName}==${this.version}`
                             ]
                         }
                     ]
@@ -615,7 +609,7 @@ export default {
         }
     },
     async created () {
-        this.dockerDomain = await this.getDockerDomain()
+        this.repoType === 'docker' && !this.dockerDomain && (this.dockerDomain = await this.getDockerDomain())
     },
     methods: {
         ...mapActions(['getDockerDomain'])

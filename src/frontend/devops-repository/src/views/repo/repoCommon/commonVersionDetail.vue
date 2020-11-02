@@ -7,7 +7,7 @@
                         <header class="base-info-header">{{ $t('useTips') }}</header>
                         <div class="section-main">
                             <div class="sub-section flex-column" v-for="block in articleInstall[0].main" :key="block.subTitle">
-                                <span class="mb10">{{ block.subTitle }}</span>
+                                <span>{{ block.subTitle }}</span>
                                 <code-area v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
                             </div>
                         </div>
