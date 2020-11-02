@@ -32,6 +32,7 @@ object PackageKeys {
     private const val NPM = "npm"
     private const val HELM = "helm"
     private const val RPM = "rpm"
+    private const val PYPI = "pypi"
     private const val SEPARATOR = "://"
 
     /**
@@ -82,14 +83,27 @@ object PackageKeys {
 
     /**
      * 生成rpm格式key
-     *
      * 例子: rpm://test
      */
     fun ofRpm(path: String, name: String): String {
-        return StringBuilder(RPM).append(SEPARATOR).append(path)
-            .append(StringPool.COLON)
-            .append(name)
-            .toString()
+        return if (!path.isBlank()) {
+            StringBuilder(RPM).append(SEPARATOR).append(path)
+                    .append(StringPool.SLASH)
+                    .append(name)
+                    .toString()
+        } else {
+            StringBuilder(RPM).append(SEPARATOR)
+                    .append(name)
+                    .toString()
+        }
+    }
+
+    /**
+     * 生成pypi格式key
+     * 例子: pypi://test
+     */
+    fun ofPypi(name: String): String {
+        return ofName(PYPI, name)
     }
 
     /**
@@ -121,11 +135,19 @@ object PackageKeys {
 
     /**
      * 解析rpm格式的key
-     *
      * 例子: rpm://test  ->  test
      */
     fun resolveRpm(rpmKey: String): String {
         return resolveName(RPM, rpmKey)
+    }
+
+    /**
+     * 解析pypi格式的key
+     *
+     * 例子: pypi://test  ->  test
+     */
+    fun resolvePypi(pypiKey: String): String {
+        return resolveName(PYPI, pypiKey)
     }
 
     /**

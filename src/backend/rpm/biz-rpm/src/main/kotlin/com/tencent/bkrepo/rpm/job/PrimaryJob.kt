@@ -18,7 +18,7 @@ class PrimaryJob {
     @Autowired
     private lateinit var jobService: JobService
 
-    // 每次任务间隔100ms
+    // 每次任务间隔 ms
     @Scheduled(fixedDelay = 2000)
     @SchedulerLock(name = "PrimaryJob", lockAtMostFor = "PT10M")
     fun checkPrimaryXml() {

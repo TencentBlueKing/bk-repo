@@ -100,13 +100,14 @@ object DecompressUtil {
         val stringBuilder = StringBuffer("")
         var zipEntry: ArchiveEntry
         archiveInputStream.use {
-            while (archiveInputStream.nextEntry.also { zipEntry = it } != null) {
+            loop@while (archiveInputStream.nextEntry.also { zipEntry = it } != null) {
                 if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == file) {
                     var length: Int
                     val bytes = ByteArray(bufferSize)
                     while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
                         stringBuilder.append(String(bytes, 0, length))
                     }
+                    break@loop
                 }
             }
         }

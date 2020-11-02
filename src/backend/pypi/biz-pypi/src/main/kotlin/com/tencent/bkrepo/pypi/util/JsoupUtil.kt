@@ -24,11 +24,14 @@ package com.tencent.bkrepo.pypi.util
 import org.jsoup.Jsoup
 import org.jsoup.select.Elements
 
+/**
+ * 爬取 pypi仓库 simple仓库的内容
+ */
 object JsoupUtil {
 
     /**
-     * @param limitPackages 限制packages 数量
-     * @return
+     * [limitPackages] 限制packages 数量
+     *
      */
     fun String.htmlHrefs(limitPackages: Int): Elements {
         val document = Jsoup.connect(this).get()

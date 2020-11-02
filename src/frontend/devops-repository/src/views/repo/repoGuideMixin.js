@@ -454,9 +454,8 @@ export default {
                             subTitle: '请将下列配置添加到您的 $HOME/.pypirc 文件中',
                             codeList: [
                                 `[distutils]`,
-                                `index-servers =`,
-                                `  ${this.repoUrl}`,
-                                `[${this.repoUrl}]`,
+                                `index-servers = ${this.repoName}`,
+                                `[${this.repoName}]`,
                                 `repository: ${this.repoUrl}`,
                                 `username: ${this.userInfo.username}`,
                                 `password: <PASSWORD>`
@@ -493,7 +492,7 @@ export default {
                     main: [
                         {
                             codeList: [
-                                `python3 -m twine upload --repository-url ${this.repoUrl} -u ${this.userInfo.username} -p <PASSWORD> dist/`
+                                `twine upload -r ${this.repoName} dist/*`
                             ]
                         }
                     ]
@@ -503,7 +502,7 @@ export default {
                     main: [
                         {
                             codeList: [
-                                `pip3 install ${this.packageName}`
+                                `pip3 install -i ${this.repoUrl}/simple ${this.packageName}==${this.version}`
                             ]
                         }
                     ]
@@ -515,15 +514,9 @@ export default {
                 {
                     main: [
                         {
-                            subTitle: '方式一、在设置仓库地址之后使用如下命令去拉取包',
+                            subTitle: '通过指定registry的方式去拉取包',
                             codeList: [
-                                `pypi install ${this.packageName}@${this.version}`
-                            ]
-                        },
-                        {
-                            subTitle: '方式二、通过指定registry的方式去拉取包，如下命令',
-                            codeList: [
-                                `pypi install ${this.packageName}@${this.version} --registry ${this.repoUrl}`
+                                `pip3 install -i ${this.repoUrl}/simple ${this.packageName}==${this.version}`
                             ]
                         }
                     ]
