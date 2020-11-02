@@ -19,29 +19,28 @@ class PrimaryJob {
     @Autowired
     private lateinit var jobService: JobService
 
-    // 每次任务间隔100ms
-    @Scheduled(fixedDelay = 100)
-    @SchedulerLock(name = "PrimaryJob", lockAtMostFor = "PT10M")
-    fun checkPrimaryXml() {
+    @Scheduled(fixedDelay = 20 * 1000)
+    @SchedulerLock(name = "PrimaryJob", lockAtMostFor = "PT30M")
+    fun updatePrimaryIndex() {
+        logger.info("update primary index start")
         val startMillis = System.currentTimeMillis()
         val repoList = repositoryClient.pageByType(0, 100, "RPM").data?.records
-
         repoList?.let {
             for (repo in repoList) {
-                logger.info("sync primary (${repo.projectId}|${repo.name}) start")
+                logger.info("update primary index [${repo.projectId}|${repo.name}] start")
                 val rpmConfiguration = repo.configuration as RpmLocalConfiguration
                 val repodataDepth = rpmConfiguration.repodataDepth ?: 0
                 val targetSet = mutableSetOf<String>()
                 jobService.findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
                 for (repoDataPath in targetSet) {
-                    logger.info("sync primary (${repo.projectId}|${repo.name}|$repoDataPath) start")
-                    jobService.syncIndex(repo, repoDataPath, IndexType.PRIMARY)
-                    logger.info("sync primary (${repo.projectId}|${repo.name}|$repoDataPath) done")
+                    logger.info("update primary index [${repo.projectId}|${repo.name}|$repoDataPath] start")
+                    jobService.batchUpdateIndex(repo, repoDataPath, IndexType.PRIMARY, 20)
+                    logger.info("update primary index [${repo.projectId}|${repo.name}|$repoDataPath] done")
                 }
-                logger.info("sync primary (${repo.projectId}|${repo.name}) done")
+                logger.info("update primary index [${repo.projectId}|${repo.name}] done")
             }
         }
-        logger.info("sync primary, cost time: ${System.currentTimeMillis() - startMillis} ms")
+        logger.info("update primary index done, cost time: ${System.currentTimeMillis() - startMillis} ms")
     }
 
     companion object {

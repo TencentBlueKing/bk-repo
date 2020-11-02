@@ -19,32 +19,36 @@ class FileListsJob {
     @Autowired
     private lateinit var jobService: JobService
 
-    // 每次任务间隔3s
-    @Scheduled(fixedDelay = 3000)
-    @SchedulerLock(name = "FileListsJob", lockAtMostFor = "PT10M")
-    fun checkPrimaryXml() {
+    @Scheduled(fixedDelay = 60 * 1000)
+    @SchedulerLock(name = "FileListsJob", lockAtMostFor = "PT60M")
+    fun updateFileListsIndex() {
+        logger.info("update filelists index start")
         val startMillis = System.currentTimeMillis()
         val repoList = repositoryClient.pageByType(0, 100, "RPM").data?.records
 
         repoList?.let {
             for (repo in repoList) {
-                logger.info("sync filelists (${repo.projectId}|${repo.name}) start")
                 val rpmConfiguration = repo.configuration as RpmLocalConfiguration
+                if (rpmConfiguration.enabledFileLists != true) {
+                    logger.info("filelists[${repo.projectId}|${repo.name}] disabled, skip")
+                    continue
+                }
+                logger.info("update filelists index[${repo.projectId}|${repo.name}] start")
                 val repodataDepth = rpmConfiguration.repodataDepth ?: 0
                 val targetSet = mutableSetOf<String>()
                 jobService.findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
                 for (repoDataPath in targetSet) {
-                    logger.info("sync filelists (${repo.projectId}|${repo.name}|$repoDataPath) start")
-                    jobService.syncIndex(repo, repoDataPath, IndexType.FILELISTS)
-                    logger.info("sync filelists (${repo.projectId}|${repo.name}|$repoDataPath) done")
+                    logger.info("update filelists index[${repo.projectId}|${repo.name}|$repoDataPath] start")
+                    jobService.batchUpdateIndex(repo, repoDataPath, IndexType.FILELISTS, 30)
+                    logger.info("update filelists index[${repo.projectId}|${repo.name}|$repoDataPath] done")
                 }
-                logger.info("sync filelists (${repo.projectId}|${repo.name}) done")
+                logger.info("update filelists index[${repo.projectId}|${repo.name}] done")
             }
         }
-        logger.info("sync filelists done, cost time: ${System.currentTimeMillis() - startMillis} ms")
+        logger.info("update filelists index done, cost time: ${System.currentTimeMillis() - startMillis} ms")
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(FileListJob::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(FileListsJob::class.java)
     }
 }

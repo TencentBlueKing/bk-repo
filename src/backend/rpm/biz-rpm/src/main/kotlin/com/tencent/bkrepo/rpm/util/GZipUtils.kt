@@ -23,12 +23,12 @@ object GZipUtils {
     @Throws(IOException::class)
     fun InputStream.gZip(indexType: IndexType): File {
         val file = File.createTempFile("rpm", "-${indexType.value}.xml.gz")
-        val buffer = ByteArray(5 * 1024 * 1024)
-        GZIPOutputStream(FileOutputStream(file)).use {
+        val buffer = ByteArray(1 * 1024 * 1024)
+        GZIPOutputStream(FileOutputStream(file)).use { gzipOutputStream ->
             var mark: Int
             while (this.read(buffer).also { mark = it } > 0) {
-                it.write(buffer, 0, mark)
-                it.flush()
+                gzipOutputStream.write(buffer, 0, mark)
+                gzipOutputStream.flush()
             }
         }
         return file
@@ -41,7 +41,7 @@ object GZipUtils {
         val gZIPInputStream = GZIPInputStream(this)
         val file = File.createTempFile("rpm", ".xmlStream")
         val bufferedOutputStream = BufferedOutputStream(FileOutputStream(file))
-        val buffer = ByteArray(5 * 1024 * 1024)
+        val buffer = ByteArray(1 * 1024 * 1024)
         var mark: Int
         try {
             while (gZIPInputStream.read(buffer).also { mark = it } > 0) {

@@ -231,9 +231,9 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 repoName = repoName,
                 metadata = MetadataServiceImpl.convert(metadata),
                 createdBy = createdBy ?: operator,
-                createdDate = createdDate?: LocalDateTime.now(),
+                createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
-                lastModifiedDate = lastModifiedDate?: LocalDateTime.now()
+                lastModifiedDate = lastModifiedDate ?: LocalDateTime.now()
             )
             return node.apply { doCreate(this, repo) }
                 .also { publishEvent(NodeCreatedEvent(createRequest)) }
@@ -282,7 +282,6 @@ class NodeServiceImpl : AbstractService(), NodeService {
         }.also {
             logger.info("Rename node [$it] success.")
         }
-        // notifyService.sendWechat(listOf("necrohuang"), "test wechat")
     }
 
     /**
@@ -612,7 +611,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
      * 根据有效天数，计算到期时间
      */
     private fun parseExpireDate(expireDays: Long?): LocalDateTime? {
-        return expireDays?.takeIf { it > 0 }?.run { LocalDateTime.now().plusDays(this)  }
+        return expireDays?.takeIf { it > 0 }?.run { LocalDateTime.now().plusDays(this) }
     }
 
     companion object {
