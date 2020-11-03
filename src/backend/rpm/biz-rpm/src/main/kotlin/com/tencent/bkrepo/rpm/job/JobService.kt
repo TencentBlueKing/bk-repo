@@ -30,7 +30,6 @@ import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.pojo.RpmVersion
 import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
 import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
-import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmFileLists
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.XmlStrUtils
@@ -83,15 +82,15 @@ class JobService {
      */
     fun findRepoDataByRepo(
         repo: RepositoryInfo
-    ): MutableSet<String> {
-        var count = 1
-        var temp = mutableListOf<String>()
-        val repodataSet = mutableSetOf<String>()
-        while (queryAllRepodata(repo, count).also{ temp = it}.isNotEmpty()) {
-            repodataSet.addAll(temp)
-            ++count
+    ): MutableList<String> {
+        val tempPage = queryAllRepodata(repo, repoPageSize) ?: return mutableListOf()
+        val totalPages = tempPage.totalPages
+        val page = queryAllRepodata(repo, (repoPageSize * totalPages + 1)) ?: return mutableListOf()
+        val repodataList = mutableListOf<String>()
+        val node = page.records.map {
+            repodataList.add(it["fullPath"] as String)
         }
-        return repodataSet
+        return repodataList
     }
 
     /**
@@ -99,17 +98,17 @@ class JobService {
      */
     fun queryRepodata(repo: RepositoryInfo, path: String): String {
         val ruleList = mutableListOf<Rule>(
-                Rule.QueryRule("projectId", repo.projectId, OperationType.EQ),
-                Rule.QueryRule("repoName", repo.name, OperationType.EQ),
-                Rule.QueryRule("path", path, OperationType.EQ),
-                Rule.QueryRule("folder", true, OperationType.EQ),
-                Rule.QueryRule("name", "repodata", OperationType.EQ)
+            Rule.QueryRule("projectId", repo.projectId, OperationType.EQ),
+            Rule.QueryRule("repoName", repo.name, OperationType.EQ),
+            Rule.QueryRule("path", path, OperationType.EQ),
+            Rule.QueryRule("folder", true, OperationType.EQ),
+            Rule.QueryRule("name", "repodata", OperationType.EQ)
         )
         val queryModel = QueryModel(
-                page = PageLimit(1, 1),
-                sort = Sort(listOf("lastModifiedDate"), Sort.Direction.DESC),
-                select = mutableListOf("fullPath"),
-                rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
+            page = PageLimit(1, 1),
+            sort = Sort(listOf("lastModifiedDate"), Sort.Direction.DESC),
+            select = mutableListOf("fullPath"),
+            rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
         )
         if (logger.isDebugEnabled) {
             logger.debug("queryModel: $queryModel")
@@ -118,41 +117,58 @@ class JobService {
         return node["fullPath"] as String
     }
 
-    fun queryAllRepodata(repo: RepositoryInfo, count: Int): MutableList<String> {
+    fun queryAllRepodata(repo: RepositoryInfo, pageSize: Int): Page<Map<String, Any>>? {
         val ruleList = mutableListOf<Rule>(
-                Rule.QueryRule("projectId", repo.projectId, OperationType.EQ),
-                Rule.QueryRule("repoName", repo.name, OperationType.EQ),
-                Rule.QueryRule("folder", true, OperationType.EQ),
-                Rule.QueryRule("name", "repodata", OperationType.EQ)
+            Rule.QueryRule("projectId", repo.projectId, OperationType.EQ),
+            Rule.QueryRule("repoName", repo.name, OperationType.EQ),
+            Rule.QueryRule("folder", true, OperationType.EQ),
+            Rule.QueryRule("name", "repodata", OperationType.EQ)
         )
         val queryModel = QueryModel(
-                page = PageLimit(count, repoPageSize),
-                sort = Sort(listOf("lastModifiedDate"), Sort.Direction.DESC),
-                select = mutableListOf("fullPath"),
-                rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
+            page = PageLimit(1, pageSize),
+            sort = Sort(listOf("lastModifiedDate"), Sort.Direction.DESC),
+            select = mutableListOf("fullPath"),
+            rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
         )
         if (logger.isDebugEnabled) {
             logger.debug("queryAllRepodata: $queryModel")
         }
-        val repodataList = mutableListOf<String>()
-        val node = nodeClient.query(queryModel).data!!.records.map {
-            repodataList.add(it["fullPath"] as String)
-        }
-        return repodataList
+        return nodeClient.query(queryModel).data
     }
 
-    fun flushRepoMdXML(project: String, repoName: String, repoDataPath: String) {
-        logger.info("flushRepoMdXML, [$project|$repoName|$repoDataPath]")
-        val repositoryInfo = repositoryClient.detail(project, repoName).data ?: return
+    /**
+     * 合并索引和group 字段
+     */
+    fun getTargetIndexList(groupXmlSet: MutableSet<String>, enabledFileLists: Boolean): MutableList<String> {
+        val doubleSet = mutableSetOf<String>()
+        for (str in groupXmlSet) {
+            doubleSet.add(str)
+            doubleSet.add("$str.gz")
+        }
+        val groupAndIndex = mutableListOf<String>()
+        if (enabledFileLists) groupAndIndex.add("${IndexType.FILELISTS.value}.xml.gz")
+        groupAndIndex.add("${IndexType.PRIMARY.value}.xml.gz")
+        groupAndIndex.add("${IndexType.OTHERS.value}.xml.gz")
+        groupAndIndex.addAll(doubleSet)
+        return groupAndIndex
+    }
+
+    fun findIndexXml(repo: RepositoryInfo, repoDataPath: String): List<NodeInfo> {
+        val repositoryInfo = repositoryClient.detail(repo.projectId, repo.name).data ?: return mutableListOf()
         val rpmRepoConf = repositoryInfo.configuration as RpmLocalConfiguration
         val enabledFileLists = rpmRepoConf.enabledFileLists ?: false
-        val groupXmlSet = rpmRepoConf.groupXmlSet ?: mutableSetOf()
+        val groupXmlSet = rpmRepoConf.groupXmlSet ?: mutableSetOf<String>()
+        val groupAndIndex = getTargetIndexList(groupXmlSet, enabledFileLists)
+        val targetIndexList = mutableListOf<NodeInfo>()
 
-        // 查询该请求路径对应的索引目录下所有文件
-        val page = nodeClient.page(project, repoName, 1, 1000, repoDataPath, includeMetadata = true)
-        val nodeList = (page.data ?: return).records.sortedByDescending { it.lastModifiedDate }
-        logger.debug("index file count: ${nodeList.size}")
-        val targetIndexList = nodeList.filterRpmCustom(groupXmlSet, enabledFileLists)
+        for (index in groupAndIndex) {
+            getLatestIndexNode(repo, repoDataPath, index)?.let { targetIndexList.add(it) }
+        }
+        return targetIndexList
+    }
+
+    fun flushRepoMdXML(repo: RepositoryInfo, repoDataPath: String) {
+        val targetIndexList = findIndexXml(repo, repoDataPath)
         val repoDataList = mutableListOf<RepoIndex>()
         for (index in targetIndexList) {
             repoDataList.add(
@@ -184,8 +200,8 @@ class JobService {
             val xmlRepodataArtifact = ArtifactFileFactory.build(xmlRepodataInputStream)
             // 保存repodata 节点
             val xmlRepomdNode = NodeCreateRequest(
-                project,
-                repoName,
+                repo.projectId,
+                repo.name,
                 "$repoDataPath/repomd.xml",
                 false,
                 0L,
@@ -308,14 +324,17 @@ class JobService {
         logger.info("Success to insert $node")
     }
 
-    fun getLatestIndexNode(repo: RepositoryInfo, repodataPath: String, indexType: IndexType): NodeInfo {
-        logger.debug("getLatestIndexNode: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
+    /**
+     * 获取最新的索引或分组文件。
+     */
+    fun getLatestIndexNode(repo: RepositoryInfo, repodataPath: String, nameSuffix: String): NodeInfo? {
+        logger.debug("getLatestIndexNode: [${repo.projectId}|${repo.name}|$repodataPath|$nameSuffix]")
         val ruleList = mutableListOf<Rule>(
-            Rule.QueryRule("projectId", repo.projectId, OperationType.EQ),
-            Rule.QueryRule("repoName", repo.name, OperationType.EQ),
-            Rule.QueryRule("path", "${repodataPath.removeSuffix("/")}/", OperationType.EQ),
+            Rule.QueryRule("projectId", repo.projectId),
+            Rule.QueryRule("repoName", repo.name),
+            Rule.QueryRule("path", "${repodataPath.removeSuffix("/")}/"),
             Rule.QueryRule("folder", false, OperationType.EQ),
-            Rule.QueryRule("name", "*-${indexType.value}.xml.gz", OperationType.MATCH)
+            Rule.QueryRule("name", "*-$nameSuffix", OperationType.MATCH)
         )
         val queryModel = QueryModel(
             page = PageLimit(1, 1),
@@ -327,12 +346,25 @@ class JobService {
             logger.debug("queryModel: $queryModel")
         }
         var nodeList = nodeClient.query(queryModel).data!!.records.map { resolveNode(it) }
-        if (nodeList.isEmpty()) {
-            initIndex(repo, repodataPath, indexType)
-            nodeList = nodeClient.query(queryModel).data!!.records.map { resolveNode(it) }
-        }
-        if (nodeList.isEmpty()) {
-            throw ArtifactNotFoundException("latest index node not found: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
+        val regex = Regex(
+            "${IndexType.PRIMARY.value}.xml.gz" +
+                "|${IndexType.OTHERS.value}.xml.gz" +
+                "|${IndexType.FILELISTS.value}.xml.gz"
+        )
+        // 如果是索引文件则执行
+        if (nameSuffix.matches(regex)) {
+            val indexType = IndexType.valueOf(nameSuffix.removeSuffix(".xml.gz").toUpperCase())
+            if (nodeList.isEmpty()) {
+                initIndex(repo, repodataPath, indexType)
+                nodeList = nodeClient.query(queryModel).data!!.records.map { resolveNode(it) }
+            }
+            if (nodeList.isEmpty()) {
+                throw ArtifactNotFoundException("latest index node not found: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
+            }
+        } else {
+            if (nodeList.isEmpty()) {
+                return null
+            }
         }
         return nodeList.first()
     }
@@ -511,7 +543,7 @@ class JobService {
         }
         logger.info("${markNodePage.records.size} of ${markNodePage.count} ${indexType.name} mark file to process")
         val markNodes = markNodePage.records
-        val latestIndexNode = getLatestIndexNode(repo, repodataPath, indexType)
+        val latestIndexNode = getLatestIndexNode(repo, repodataPath, "${indexType.value}.xml.gz")!!
         logger.info("latestIndexNode, fullPath: ${latestIndexNode.fullPath}")
         val unzipedIndexTempFile = storageService.load(latestIndexNode.sha256!!, Range.full(latestIndexNode.size), null)!!.use { it.unGzipInputStream() }
         logger.info("temp index file ${unzipedIndexTempFile.absolutePath}(${HumanReadable.size(unzipedIndexTempFile.length())}) created")
@@ -550,11 +582,8 @@ class JobService {
                     logger.debug("updatePackageCount indexType: $indexType, indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, cost: ${System.currentTimeMillis() - start} ms")
                 }
             }
-
-
             storeXmlGZNode(repo, unzipedIndexTempFile, repodataPath, indexType)
-            flushRepoMdXML(repo.projectId, repo.name, repodataPath)
-
+            flushRepoMdXML(repo, repodataPath)
             deleteNodes(processedMarkNodes)
         } finally {
             unzipedIndexTempFile.delete()

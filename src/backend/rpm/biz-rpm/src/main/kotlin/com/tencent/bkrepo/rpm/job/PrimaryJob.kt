@@ -3,7 +3,7 @@ package com.tencent.bkrepo.rpm.job
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.repository.RpmLocalConfiguration
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.rpm.pojo.IndexType
-import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.checkDepth
+import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -31,7 +31,7 @@ class PrimaryJob {
                 logger.info("update primary index [${repo.projectId}|${repo.name}] start")
                 val rpmConfiguration = repo.configuration as RpmLocalConfiguration
                 val repodataDepth = rpmConfiguration.repodataDepth ?: 0
-                val targetSet = jobService.findRepoDataByRepo(repo).checkDepth(repodataDepth)
+                val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepoDataByRepo(repo), repodataDepth)
                 for (repoDataPath in targetSet) {
                     logger.info("update primary index [${repo.projectId}|${repo.name}|$repoDataPath] start")
                     jobService.batchUpdateIndex(repo, repoDataPath, IndexType.PRIMARY, 20)

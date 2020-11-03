@@ -36,7 +36,7 @@ object GZipUtils {
                 }
             }
             return file
-        }finally {
+        } finally {
             this.closeQuietly()
         }
     }
