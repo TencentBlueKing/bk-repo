@@ -61,6 +61,6 @@ class ModuleDepsServiceTest {
     @DisplayName("npm依赖分页测试")
     fun pageDepsTest() {
         val page = moduleDepsService.page("test", "npm-local", 0, 20, "babel-messages")
-        Assertions.assertEquals(page.count, 1)
+        Assertions.assertEquals(page.totalRecords, 1)
     }
 }
