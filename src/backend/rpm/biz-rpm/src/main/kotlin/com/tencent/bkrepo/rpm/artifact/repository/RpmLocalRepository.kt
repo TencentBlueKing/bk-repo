@@ -133,7 +133,7 @@ class RpmLocalRepository(
     private fun getRpmRepoConf(context: ArtifactTransferContext): RpmRepoConf {
         val rpmConfiguration = context.repositoryInfo.configuration as RpmLocalConfiguration
         val repodataDepth = rpmConfiguration.repodataDepth ?: 0
-        val enabledFileLists = rpmConfiguration.enabledFileLists ?: true
+        val enabledFileLists = rpmConfiguration.enabledFileLists ?: false
         val groupXmlSet = rpmConfiguration.groupXmlSet ?: mutableSetOf()
         return RpmRepoConf(repodataDepth, enabledFileLists, groupXmlSet)
     }
