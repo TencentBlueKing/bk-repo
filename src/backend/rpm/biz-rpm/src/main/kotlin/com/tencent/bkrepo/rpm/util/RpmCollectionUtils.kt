@@ -57,4 +57,13 @@ object RpmCollectionUtils {
                 it.filePath == "/usr/lib/sendmail"
         }
     }
+
+    /**
+     * 检查repodata 目录是否契合深度
+     */
+    fun MutableSet<String>.checkDepth(depth: Int): List<String> {
+        return this.filter {
+            it.removePrefix("/").removeSuffix("/").split("/").size == (depth.inc())
+        }
+    }
 }

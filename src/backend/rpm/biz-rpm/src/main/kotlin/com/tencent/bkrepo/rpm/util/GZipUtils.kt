@@ -20,18 +20,25 @@ object GZipUtils {
         return file
     }
 
+    /**
+     * 压缩文件，并关闭文件流
+     */
     @Throws(IOException::class)
     fun InputStream.gZip(indexType: IndexType): File {
-        val file = File.createTempFile("rpm", "-${indexType.value}.xml.gz")
-        val buffer = ByteArray(1 * 1024 * 1024)
-        GZIPOutputStream(FileOutputStream(file)).use { gzipOutputStream ->
-            var mark: Int
-            while (this.read(buffer).also { mark = it } > 0) {
-                gzipOutputStream.write(buffer, 0, mark)
-                gzipOutputStream.flush()
+        try {
+            val file = File.createTempFile("rpm", "-${indexType.value}.xml.gz")
+            val buffer = ByteArray(1 * 1024 * 1024)
+            GZIPOutputStream(FileOutputStream(file)).use { gzipOutputStream ->
+                var mark: Int
+                while (this.read(buffer).also { mark = it } > 0) {
+                    gzipOutputStream.write(buffer, 0, mark)
+                    gzipOutputStream.flush()
+                }
             }
+            return file
+        }finally {
+            this.closeQuietly()
         }
-        return file
     }
 
     /**

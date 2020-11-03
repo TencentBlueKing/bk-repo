@@ -3,6 +3,7 @@ package com.tencent.bkrepo.rpm.job
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.repository.RpmLocalConfiguration
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.rpm.pojo.IndexType
+import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.checkDepth
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -31,8 +32,7 @@ class OthersJob {
                 logger.info("update others index [${repo.projectId}|${repo.name}] start")
                 val rpmConfiguration = repo.configuration as RpmLocalConfiguration
                 val repodataDepth = rpmConfiguration.repodataDepth ?: 0
-                val targetSet = mutableSetOf<String>()
-                jobService.findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
+                val targetSet = jobService.findRepoDataByRepo(repo).checkDepth(repodataDepth)
                 for (repoDataPath in targetSet) {
                     logger.info("update others index [${repo.projectId}|${repo.name}|$repoDataPath] start")
                     jobService.batchUpdateIndex(repo, repoDataPath, IndexType.OTHERS, 20)

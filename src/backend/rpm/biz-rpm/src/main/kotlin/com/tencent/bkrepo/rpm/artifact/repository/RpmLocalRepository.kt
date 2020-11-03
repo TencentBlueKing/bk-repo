@@ -466,7 +466,7 @@ class RpmLocalRepository(
         with(context.artifactInfo) {
             val node = nodeClient.detail(projectId, repoName, artifactUri).data
             if (node == null) {
-                deleteFailed(context, "未找到该构件或已经被删除")
+                deleteFailed(context, "Can not found this artifact!")
                 return
             }
             if (node.folder) {
