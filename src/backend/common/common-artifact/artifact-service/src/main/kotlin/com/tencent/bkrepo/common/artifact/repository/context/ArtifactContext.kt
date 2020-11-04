@@ -96,6 +96,13 @@ open class ArtifactContext(repo: RepositoryDetail? = null, artifact: ArtifactInf
     }
 
     /**
+     * 根据属性名[key]获取Long类型属性
+     */
+    fun getLongAttribute(key: String): Long? {
+        return this.contextAttributes[key]?.toString()?.toLong()
+    }
+
+    /**
      * 根据属性名[key]获取Boolean类型属性
      */
     fun getBooleanAttribute(key: String): Boolean? {

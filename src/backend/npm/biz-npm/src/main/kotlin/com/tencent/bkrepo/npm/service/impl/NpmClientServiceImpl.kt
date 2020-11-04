@@ -202,7 +202,7 @@ class NpmClientServiceImpl(
         logger.info("handling get distTags request for package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}]")
         val packageMetaData = queryPackageInfo(artifactInfo, name, false)
         with(packageMetaData) {
-            return DistTags(distTags.getMap())
+            return distTags.getMap()
         }
     }
 
@@ -411,7 +411,7 @@ class NpmClientServiceImpl(
         val fullPath = "${versionMetadata.name}/-/$filename"
         with(artifactInfo) {
             if (exist(projectId, repoName, fullPath)) {
-                throw NpmArtifactExistException("cannot modify pre-existing version ${versionMetadata.version}")
+                throw NpmArtifactExistException("cannot publish pre-existing version ${versionMetadata.version}")
             }
             logger.info("user [$userId] deploying npm package [$fullPath] into repo [$projectId/$repoName]")
             try {
