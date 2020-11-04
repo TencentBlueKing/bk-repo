@@ -129,7 +129,7 @@ class NpmService @Autowired constructor(
 
         val distTags = getDistTags(jsonObj)!!
         if (pkgInfo.size() > 0 && pkgInfo.getAsJsonObject(VERSIONS).has(distTags.second)) {
-            throw NpmArtifactExistException("cannot publish pre-existing version: ${distTags.second}")
+            throw NpmArtifactExistException("You cannot publish over the previously published versions: ${distTags.second}.")
         }
 
         // first upload
