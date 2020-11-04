@@ -180,7 +180,7 @@
 
 ### 校验用户token
 
-- API:GET /auth/api/user/token/{uid}/{token}
+- API:GET /auth/api/user/token/{uid}/{token}?from=web
 - API 名称: check_user_token
 - 功能说明：
 	- 中文：校验用户token
@@ -198,6 +198,7 @@
 |---|---|---|---|---|---|
 |uid|string|是|无|用户id|the user id|
 |token|string|是|无|用户token|the user token|
+|from|string|是|无|source to check|the source to check|
 
 - output:
 
@@ -216,6 +217,6 @@
 | 字段|类型|说明|Description|
 |---|---|---|---|
 |code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
+|message|string|错误消息,或者用户token |the failure message,or bkrepo token |
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
