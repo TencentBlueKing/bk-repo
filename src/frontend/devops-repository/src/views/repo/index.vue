@@ -83,7 +83,7 @@
             }
         },
         computed: {
-            ...mapState(['breadcrumb']),
+            ...mapState(['breadcrumb', 'dockerDomain']),
             showFilterIcon () {
                 return this.$route.name === 'commonList' || this.$route.name === 'repoGeneric'
             }
@@ -105,6 +105,7 @@
             }).then(res => {
                 this.repoList = res.map(v => ({ ...v, type: v.type.toLowerCase() }))
             })
+            !this.dockerDomain && this.getDockerDomain()
             this.setRepositoryHistory({
                 projectId: this.projectId,
                 repoType: this.repoType,
@@ -120,7 +121,7 @@
             next()
         },
         methods: {
-            ...mapActions(['getRepoListAll']),
+            ...mapActions(['getRepoListAll', 'getDockerDomain']),
             setRepositoryHistory (data) {
                 const repositoryHistory = JSON.parse(localStorage.getItem('repositoryHistory') || '{}')
                 repositoryHistory[data.projectId] = {

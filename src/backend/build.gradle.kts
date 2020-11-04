@@ -38,6 +38,7 @@ allprojects {
             mavenBom("org.springframework.cloud:spring-cloud-dependencies:Hoxton.SR7")
         }
         dependencies {
+            dependency("com.github.zafarkhaja:java-semver:0.9.0")
             dependency("io.swagger:swagger-annotations:1.5.22")
             dependency("io.swagger:swagger-models:1.5.22")
             dependency("io.springfox:springfox-swagger2:2.9.2")

@@ -21,7 +21,7 @@
                         {{ $t('tokenSubTitle') }}
                         <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
                     </div>
-                    <bk-button theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
+                    <bk-button class="mt15" theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
                 </div>
                 <create-token-dialog ref="createToken"></create-token-dialog>
             </div>
@@ -29,8 +29,8 @@
                 <header v-if="section.title" class="empty-guide-item-title">{{ section.title }}</header>
                 <div class="empty-guide-item-main">
                     <div v-for="block in section.main" :key="block.subTitle">
-                        <div class="empty-guide-item-subtitle">{{ block.subTitle }}</div>
-                        <code-area bg-color="#f6f8fa" color="#63656E" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
+                        <div v-if="block.subTitle" class="empty-guide-item-subtitle" :style="block.subTitleStyle">{{ block.subTitle }}</div>
+                        <code-area class="mt15" bg-color="#f6f8fa" color="#63656E" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
                     </div>
                 </div>
             </div>
@@ -107,6 +107,7 @@ $bgColor: #f1f8ff;
             line-height: 40px;
             color: $fontBoldColor;
             font-weight: bold;
+            font-size: 16px;
             &:before {
                 counter-increment: step;
                 content: counter(step);
@@ -130,7 +131,6 @@ $bgColor: #f1f8ff;
             .empty-guide-item-subtitle {
                 position: relative;
                 margin-top: 15px;
-                margin-bottom: 20px;
                 &:before {
                     content: '';
                     position: absolute;

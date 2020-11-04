@@ -23,6 +23,7 @@ package com.tencent.bkrepo.common.api.util
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
@@ -35,6 +36,8 @@ object YamlUtils {
     val objectMapper: ObjectMapper = YAMLMapper().apply {
         registerKotlinModule()
         enable(SerializationFeature.INDENT_OUTPUT)
+        // 缺省文件以三个横杠开头 禁用该属性
+        disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
     }
 }
 
