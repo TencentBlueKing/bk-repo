@@ -255,18 +255,6 @@ class NpmLocalRepository : LocalRepository() {
         return fileJson
     }
 
-    // private fun buildPackageTgzTarball(oldTarball: String, name: String, context: ArtifactSearchContext):String{
-    //     val tgzSuffix = oldTarball.substringAfter(name)
-    //     val npmPrefixHeader = HeaderUtils.getHeader(NPM_TGZ_TARBALL_PREFIX)
-    //     val newTarball = StringBuilder()
-    //     npmPrefixHeader?.let {
-    //         newTarball.append(it.trimEnd('/')).append('/').append(context.repositoryInfo.projectId).append('/')
-    //             .append(context.repositoryInfo.name).append('/').append(tgzSuffix.trimStart('/'))
-    //     } ?: newTarball.append(tarballPrefix.trimEnd('/')).append('/').append(context.repositoryInfo.projectId).append('/')
-    //         .append(context.repositoryInfo.name).append('/').append(tgzSuffix.trimStart('/'))
-    //     return newTarball.toString()
-    // }
-
     override fun remove(context: ArtifactRemoveContext) {
         val repositoryInfo = context.repositoryInfo
         val projectId = repositoryInfo.projectId
@@ -356,6 +344,7 @@ class NpmLocalRepository : LocalRepository() {
         remoteJson: JsonObject,
         failVersionSet: Set<String>
     ): JsonObject {
+        val differentVersionSet = mutableSetOf<String>()
         val pkgName = cachePackageJson[NAME].asString
         val remoteVersions = remoteJson.getAsJsonObject(VERSIONS)
         val localVersions = cachePackageJson.getAsJsonObject(VERSIONS)
@@ -381,7 +370,6 @@ class NpmLocalRepository : LocalRepository() {
             cachePackageJson.getAsJsonObject(TIME)
                 .addProperty(MODIFIED, remoteJson.getAsJsonObject(TIME)[MODIFIED].asString)
         }
-        logger.info("the different versions of the  package [$pkgName] is $remoteVersionsSet, size : ${remoteVersionsSet.size}")
         if (remoteVersionsSet.size > 0) {
             // 说明有版本更新,将新增的版本迁移过来
             remoteVersionsSet.forEach { version ->
@@ -396,6 +384,7 @@ class NpmLocalRepository : LocalRepository() {
                             localDistTags.addProperty(it.key, version)
                         }
                     }
+                    differentVersionSet.add(version)
                 } else {
                     val localVersionTime = cachePackageJson.getAsJsonObject(TIME)[version].asString
                     if (TimeUtil.compareTime(versionTime, localVersionTime)) {
@@ -406,9 +395,19 @@ class NpmLocalRepository : LocalRepository() {
                                 localDistTags.addProperty(it.key, version)
                             }
                         }
+                        differentVersionSet.add(version)
+                    }
+                    // 兼容历史数据的dist-tags迁移问题
+                    if (TimeUtil.isTimeNotBefore(versionTime, localVersionTime)) {
+                        remoteDistTags.entrySet().forEach {
+                            if (version == it.value.asString && localDistTags.keySet().contains(it.key)) {
+                                localDistTags.addProperty(it.key, version)
+                            }
+                        }
                     }
                 }
             }
+            logger.info("compare package.json and migrate different versions of the package [$pkgName] file is $differentVersionSet, size : ${differentVersionSet.size}")
         }
         return cachePackageJson
     }
