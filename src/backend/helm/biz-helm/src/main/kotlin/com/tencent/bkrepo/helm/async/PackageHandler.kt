@@ -21,10 +21,12 @@
 
 package com.tencent.bkrepo.helm.async
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.VERSION
+import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
+import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -45,14 +47,14 @@ class PackageHandler {
     @Async
     fun createVersion(
         userId: String,
-        artifactInfo: HelmArtifactInfo,
-        chartInfo: Map<String, Any>,
+        artifactInfo: ArtifactInfo,
+        chartInfo: HelmChartMetadata,
         size: Long
     ) {
-        val name = chartInfo[NAME] as String
-        val description = chartInfo["description"] as? String
-        val version = chartInfo[VERSION] as String
-        val contentPath = getContentPath(name, version)
+        val name = chartInfo.name
+        val description = chartInfo.description
+        val version = chartInfo.version
+        val contentPath = HelmUtils.getChartFileFullPath(name, version)
         with(artifactInfo) {
             val packageVersionCreateRequest =
                 PackageVersionCreateRequest(
@@ -81,7 +83,7 @@ class PackageHandler {
      * 删除包
      */
     @Async
-    fun deletePackage(userId: String, name: String, artifactInfo: HelmArtifactInfo) {
+    fun deletePackage(userId: String, name: String, artifactInfo: ArtifactInfo) {
         val packageKey = PackageKeys.ofHelm(name)
         with(artifactInfo) {
             packageClient.deletePackage(projectId, repoName, packageKey).apply {
@@ -94,17 +96,13 @@ class PackageHandler {
      * 删除版本
      */
     @Async
-    fun deleteVersion(userId: String, name: String, version: String, artifactInfo: HelmArtifactInfo) {
+    fun deleteVersion(userId: String, name: String, version: String, artifactInfo: ArtifactInfo) {
         val packageKey = PackageKeys.ofHelm(name)
         with(artifactInfo) {
             packageClient.deleteVersion(projectId, repoName, packageKey, version).apply {
                 logger.info("user: [$userId] delete package [$name] with version [$version] in repo [$projectId/$repoName] success!")
             }
         }
-    }
-
-    fun getContentPath(name: String, version: String): String {
-        return String.format("/%s-%s.tgz", name, version)
     }
 
     companion object {

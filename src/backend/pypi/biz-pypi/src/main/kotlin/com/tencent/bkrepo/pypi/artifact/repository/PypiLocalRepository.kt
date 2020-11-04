@@ -23,6 +23,7 @@ package com.tencent.bkrepo.pypi.artifact.repository
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -32,12 +33,14 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.migration.PackageMigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.migration.VersionMigrateErrorDetail
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -60,11 +63,13 @@ import com.tencent.bkrepo.pypi.util.ArtifactFileUtils
 import com.tencent.bkrepo.pypi.util.HttpUtil.downloadUrlHttpClient
 import com.tencent.bkrepo.pypi.util.JsoupUtil.htmlHrefs
 import com.tencent.bkrepo.pypi.util.JsoupUtil.sumTasks
+import com.tencent.bkrepo.pypi.util.PypiVersionUtils.toPypiPackagePojo
 import com.tencent.bkrepo.pypi.util.XmlUtils
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.pypi.util.pojo.PypiInfo
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -275,7 +280,9 @@ class PypiLocalRepository : LocalRepository() {
             val pypiArtifactBasic = Basic(
                 name,
                 version,
-                jarNode.size, jarNode.fullPath, jarNode.lastModifiedBy, jarNode.lastModifiedDate,
+                jarNode.size, jarNode.fullPath,
+                jarNode.createdBy, jarNode.createdDate,
+                jarNode.lastModifiedBy, jarNode.lastModifiedDate,
                 count,
                 jarNode.sha256,
                 jarNode.md5,
@@ -406,11 +413,11 @@ class PypiLocalRepository : LocalRepository() {
         return filenodeList
     }
 
-    @org.springframework.beans.factory.annotation.Value("\${migrate.url}")
-    private lateinit var migrateUrl: String
+    @org.springframework.beans.factory.annotation.Value("\${migrate.url:''}")
+    private val migrateUrl: String = StringPool.EMPTY
 
-    @org.springframework.beans.factory.annotation.Value("\${limitPackages}")
-    private lateinit var limitPackages: String
+    @org.springframework.beans.factory.annotation.Value("\${limitPackages:10}")
+    private val limitPackages: Int = DEFAULT_COUNT
 
     private val failSet = mutableSetOf<String>()
 
@@ -466,7 +473,7 @@ class PypiLocalRepository : LocalRepository() {
 
         // 获取所有的包,开始计时
         val start = Instant.now()
-        verifiedUrl.htmlHrefs(limitPackages.toInt()).let { simpleHrefs ->
+        verifiedUrl.htmlHrefs(limitPackages).let { simpleHrefs ->
             totalCount = migrateUrl.sumTasks(simpleHrefs)
             for (e in simpleHrefs) {
                 // 每一个包所包含的文件列表
@@ -496,7 +503,7 @@ class PypiLocalRepository : LocalRepository() {
         insertMigrateData(
             context,
             failSet,
-            limitPackages.toInt(),
+            limitPackages,
             totalCount,
             elapseTimeSeconds.seconds
         )
@@ -650,6 +657,22 @@ class PypiLocalRepository : LocalRepository() {
         logger.info("Success to insert $node")
     }
 
+    // pypi 客户端下载统计
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): DownloadStatisticsAddRequest? {
+        with(context) {
+            val fullPath = context.artifactInfo.getArtifactFullPath()
+            val pypiPackagePojo = fullPath.toPypiPackagePojo()
+            val packageKey = PackageKeys.ofPypi(pypiPackagePojo.name)
+            return DownloadStatisticsAddRequest(
+                projectId, repoName,
+                packageKey, pypiPackagePojo.name, pypiPackagePojo.version
+            )
+        }
+    }
+
     companion object {
         val logger: Logger = LoggerFactory.getLogger(PypiLocalRepository::class.java)
         fun convert(tMigrateData: TMigrateData): MigrateDataInfo {
@@ -671,5 +694,6 @@ class PypiLocalRepository : LocalRepository() {
         const val pageLimitSize = 10
         const val threadAliveTime = 15L
         const val doubleNum = 1
+        const val DEFAULT_COUNT = 10
     }
 }

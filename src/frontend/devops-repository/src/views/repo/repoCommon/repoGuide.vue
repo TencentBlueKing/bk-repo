@@ -6,13 +6,13 @@
                 {{ $t('token') }}
             </header>
             <div slot="content" class="section-main">
-                <div class="sub-section flex-column">
-                    <span class="mb10">
+                <div class="flex-column">
+                    <span class="sub-title">
                         {{ $t('tokenSubTitle') }}
                         <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
                     </span>
                     <div class="token-main">
-                        <bk-button theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
+                        <bk-button class="mt15" theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
                     </div>
                 </div>
             </div>
@@ -24,9 +24,9 @@
                 {{ section.title }}
             </header>
             <div slot="content" class="section-main">
-                <div class="sub-section flex-column" v-for="block in section.main" :key="block.subTitle">
-                    <span class="mb10">{{ block.subTitle }}</span>
-                    <code-area v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
+                <div class="flex-column" v-for="block in section.main" :key="block.subTitle">
+                    <span v-if="block.subTitle" class="sub-title" :style="block.subTitleStyle">{{ block.subTitle }}</span>
+                    <code-area class="mt15" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
                 </div>
             </div>
         </bk-collapse-item>
@@ -89,14 +89,12 @@
         }
     }
     .section-main {
-        margin-top: 10px;
-        padding: 20px;
+        margin-top: 15px;
+        padding: 5px 20px 20px;
         border: 2px dashed $borderWeightColor;
         border-radius: 5px;
-        .sub-section {
-            & + .sub-section {
-                margin-top: 20px;
-            }
+        .sub-title {
+            margin-top: 15px;
         }
     }
 }

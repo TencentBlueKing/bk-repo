@@ -21,7 +21,7 @@
 
 package com.tencent.bkrepo.helm.utils
 
-import org.junit.jupiter.api.Assertions
+import com.tencent.bkrepo.common.api.util.toYamlString
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
@@ -32,14 +32,8 @@ class YamlUtilsTest {
     @Test
     @DisplayName("yaml转换为json测试")
     fun yaml2JsonTest() {
-        val jsonString = YamlUtils.yaml2Json(yamlStr.byteInputStream())
+        val jsonString = yamlStr.byteInputStream().toYamlString()
         println(jsonString)
-    }
-
-    @Test
-    fun convertStringToEntityTest() {
-        val map = YamlUtils.convertStringToEntity<Map<String, Any>>(yamlStr)
-        Assertions.assertEquals(map.size, 4)
     }
 
     companion object {

@@ -21,6 +21,4 @@
 
 package com.tencent.bkrepo.npm.pojo.metadata.disttags
 
-data class DistTags(
-    val tags: Map<String, String>
-)
+typealias DistTags = Map<String,String>
