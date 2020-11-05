@@ -1,5 +1,5 @@
 /data/workspace/render_tpl -u -m bkrepo -p /data /data/workspace/templates/*.yaml
-backends=(application auth repository generic)
+backends=(application auth repository dockerapi generic docker helm maven npm )
 for var in ${backends[@]};
 do
     echo "properties $var start..."
