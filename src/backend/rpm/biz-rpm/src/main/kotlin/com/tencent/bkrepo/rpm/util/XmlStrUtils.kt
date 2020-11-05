@@ -209,7 +209,6 @@ object XmlStrUtils {
         updatePackageXml(randomAccessFile, xmlIndex.prefixIndex, xmlIndex.suffixEndIndex - xmlIndex.prefixIndex, "")
     }
 
-
     /**
      * [File] 需要查找的文件
      * [XmlIndex] 封装结果

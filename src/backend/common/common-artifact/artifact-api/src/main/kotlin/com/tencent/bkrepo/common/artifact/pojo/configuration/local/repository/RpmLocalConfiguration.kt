@@ -9,7 +9,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfigur
  */
 class RpmLocalConfiguration(
     val repodataDepth: Int? = 0,
-    val enabledFileLists: Boolean? = true,
+    val enabledFileLists: Boolean? = false,
     val groupXmlSet: MutableSet<String>? = mutableSetOf()
 ) : LocalConfiguration() {
     companion object {
