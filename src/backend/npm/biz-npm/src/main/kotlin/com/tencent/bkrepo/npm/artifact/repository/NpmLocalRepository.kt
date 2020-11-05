@@ -31,7 +31,6 @@ import com.tencent.bkrepo.npm.constants.DATE
 import com.tencent.bkrepo.npm.constants.DESCRIPTION
 import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.DISTTAGS
-import com.tencent.bkrepo.npm.constants.ID
 import com.tencent.bkrepo.npm.constants.KEYWORDS
 import com.tencent.bkrepo.npm.constants.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.npm.constants.LATEST
@@ -43,7 +42,6 @@ import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_METADATA
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.NPM_PKG_FULL_PATH
-import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PACKAGE
 import com.tencent.bkrepo.npm.constants.PKG_NAME
@@ -61,7 +59,6 @@ import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.OkHttpUtil
 import com.tencent.bkrepo.npm.utils.TimeUtil
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -69,7 +66,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.util.NodeUtils
 import okhttp3.Response
 import okhttp3.ResponseBody
-import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -87,13 +83,10 @@ import kotlin.system.measureTimeMillis
 @Component
 class NpmLocalRepository : LocalRepository() {
 
-    @Autowired
-    lateinit var metadataClient: MetadataClient
-
-    @Value("\${npm.migration.remote.registry}")
+    @Value("\${npm.migration.remote.registry: ''}")
     private val registry: String = StringPool.EMPTY
 
-    @Value("\${npm.tarball.prefix}")
+    @Value("\${npm.tarball.prefix: ''}")
     private val tarballPrefix: String = StringPool.SLASH
 
     @Autowired
@@ -207,23 +200,13 @@ class NpmLocalRepository : LocalRepository() {
                 .also {
                     logger.info("search artifact [$fullPath] success!")
                 }
-        return inputStream?.let { getPkgInfo(context, it) }
+        return inputStream?.let { getPkgInfo(it) }
     }
 
-    private fun getPkgInfo(context: ArtifactSearchContext, inputStream: ArtifactInputStream): JsonObject {
+    private fun getPkgInfo(inputStream: ArtifactInputStream): JsonObject {
         val fileJson = GsonUtils.transferInputStreamToJson(inputStream)
         val name = fileJson.get(NAME).asString
-        val containsVersion = fileJson[ID].asString.substring(1).contains('@')
-        if (containsVersion) {
-            val version = fileJson[VERSION].asString
-            val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
-            val metadataInfo =
-                metadataClient.query(context.artifactInfo.projectId, context.artifactInfo.repoName, tgzFullPath).data
-            metadataInfo?.forEach { (key, value) ->
-                if (StringUtils.isNotBlank(value)) fileJson.addProperty(key, value)
-                if (key == KEYWORDS || key == MAINTAINERS) fileJson.add(key, GsonUtils.stringToArray(value))
-            }
-
+        if (!fileJson.has(VERSIONS)) {
             // 根据配置和请求头来进行判断返回的URL
             val oldTarball = fileJson.getAsJsonObject(DIST)[TARBALL].asString
             fileJson.getAsJsonObject(DIST).addProperty(
@@ -233,17 +216,6 @@ class NpmLocalRepository : LocalRepository() {
         } else {
             val versions = fileJson.getAsJsonObject(VERSIONS)
             versions.keySet().forEach {
-                val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, it)
-                val metadataInfo =
-                    metadataClient.query(context.artifactInfo.projectId, context.artifactInfo.repoName, tgzFullPath)
-                        .data
-                metadataInfo?.forEach { (key, value) ->
-                    if (StringUtils.isNotBlank(value)) versions.getAsJsonObject(it).addProperty(key, value)
-                    if (key == KEYWORDS || key == MAINTAINERS) versions.getAsJsonObject(it).add(
-                        key,
-                        GsonUtils.stringToArray(value)
-                    )
-                }
                 val versionObject = versions.getAsJsonObject(it)
                 val oldTarball = versionObject.getAsJsonObject(DIST)[TARBALL].asString
                 versionObject.getAsJsonObject(DIST).addProperty(
