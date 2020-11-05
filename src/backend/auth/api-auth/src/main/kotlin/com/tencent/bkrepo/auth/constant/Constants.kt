@@ -26,6 +26,8 @@ package com.tencent.bkrepo.auth.constant
  */
 const val SERVICE_NAME = "auth"
 
+const val LOGIN_FROM = "from"
+
 const val PROJECT_MANAGE_ID = "project_manage"
 
 const val PROJECT_MANAGE_NAME = "项目管理员"
