@@ -23,10 +23,10 @@ package com.tencent.bkrepo.auth.model
 
 import com.tencent.bkrepo.auth.pojo.PermissionSet
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import java.time.LocalDateTime
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
  * 角色

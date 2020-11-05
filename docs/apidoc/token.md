@@ -198,7 +198,7 @@
 |---|---|---|---|---|---|
 |uid|string|是|无|用户id|the user id|
 |token|string|是|无|用户token|the user token|
-|from|string|是|无|source to check|the source to check|
+|from|string|否|无|source to check|the source to check|
 
 - output:
 

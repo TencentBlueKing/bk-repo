@@ -45,6 +45,8 @@ class ServiceUserResourceImpl @Autowired constructor(
     private val roleService: RoleService
 ) : ServiceUserResource {
 
+    //private val signingKey = JwtUtils.createSigningKey(jwtProperties.secretKey)
+
     override fun createUser(request: CreateUserRequest): Response<Boolean> {
         userService.createUser(request)
         return ResponseBuilder.success(true)
@@ -129,5 +131,14 @@ class ServiceUserResourceImpl @Autowired constructor(
     override fun checkUserToken(uid: String, token: String): Response<Boolean> {
         userService.findUserByUserToken(uid, token) ?: return ResponseBuilder.success(false)
         return ResponseBuilder.success(true)
+    }
+
+    override fun loginUser(uid: String, token: String): Response<Boolean> {
+        val result = userService.findUserByUserToken(uid, token)
+        result?.let {
+            //val bkrepoToken = JwtUtils.generateToken(signingKey, jwtProperties.expiration, uid)
+            ResponseBuilder.success("aaa")
+        }
+        return ResponseBuilder.success(false)
     }
 }

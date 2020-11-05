@@ -172,4 +172,13 @@ interface ServiceUserResource {
         @ApiParam(value = "用户token")
         @PathVariable token: String
     ): Response<Boolean>
+
+    @ApiOperation("校验用户token")
+    @GetMapping("/login/{uid}/{token}")
+    fun loginUser(
+        @ApiParam(value = "用户id")
+        @PathVariable uid: String,
+        @ApiParam(value = "用户token")
+        @PathVariable token: String
+    ): Response<Boolean>
 }
