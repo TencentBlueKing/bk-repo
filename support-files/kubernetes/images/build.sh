@@ -20,7 +20,7 @@ info "编译frontend完成"
 ## 打包gateway镜像
 info "构建gateway镜像..."
 rm -rf tmp/*
-cp -rf $root_dir/src/frontend tmp/
+cp -rf $root_dir/src/frontend/frontend tmp/
 cp -rf $root_dir/src/gateway tmp/gateway
 cp -rf gateway/startup.sh tmp/
 cp -rf $root_dir/support-files/scripts/render_tpl tmp/
