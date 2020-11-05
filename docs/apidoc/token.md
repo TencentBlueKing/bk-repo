@@ -180,7 +180,7 @@
 
 ### 校验用户token
 
-- API:GET /auth/api/user/token/{uid}/{token}?from=web
+- API:GET /auth/api/user/login/{uid}/{token}
 - API 名称: check_user_token
 - 功能说明：
 	- 中文：校验用户token
@@ -198,7 +198,6 @@
 |---|---|---|---|---|---|
 |uid|string|是|无|用户id|the user id|
 |token|string|是|无|用户token|the user token|
-|from|string|否|无|source to check|the source to check|
 
 - output:
 

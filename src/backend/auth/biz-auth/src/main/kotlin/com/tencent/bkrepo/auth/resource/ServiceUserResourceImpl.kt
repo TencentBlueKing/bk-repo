@@ -35,6 +35,8 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
+import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -42,10 +44,11 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class ServiceUserResourceImpl @Autowired constructor(
     private val userService: UserService,
-    private val roleService: RoleService
+    private val roleService: RoleService,
+    private val jwtProperties: JwtAuthProperties
 ) : ServiceUserResource {
 
-    //private val signingKey = JwtUtils.createSigningKey(jwtProperties.secretKey)
+    private val signingKey = JwtUtils.createSigningKey(jwtProperties.secretKey)
 
     override fun createUser(request: CreateUserRequest): Response<Boolean> {
         userService.createUser(request)
@@ -133,11 +136,11 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    override fun loginUser(uid: String, token: String): Response<Boolean> {
+    override fun loginUser(uid: String, token: String): Response<Any> {
         val result = userService.findUserByUserToken(uid, token)
         result?.let {
-            //val bkrepoToken = JwtUtils.generateToken(signingKey, jwtProperties.expiration, uid)
-            ResponseBuilder.success("aaa")
+            val bkrepoToken = JwtUtils.generateToken(signingKey, jwtProperties.expiration, uid)
+            return ResponseBuilder.success(bkrepoToken)
         }
         return ResponseBuilder.success(false)
     }

@@ -180,5 +180,5 @@ interface ServiceUserResource {
         @PathVariable uid: String,
         @ApiParam(value = "用户token")
         @PathVariable token: String
-    ): Response<Boolean>
+    ): Response<Any>
 }

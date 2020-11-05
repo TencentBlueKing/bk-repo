@@ -38,9 +38,9 @@ import java.time.LocalDateTime
     CompoundIndex(name = "projectId_idx", def = "{'projectId': 1}", background = true),
     CompoundIndex(name = "includePattern_idx", def = "{'includePattern': 1}", background = true),
     CompoundIndex(name = "excludePattern_idx", def = "{'excludePattern': 1}", background = true),
-    CompoundIndex(name = "users_id_idx", def = "{'users.id': 1}", background = true),
+    CompoundIndex(name = "users_iid_idx", def = "{'users._id': 1}", background = true),
     CompoundIndex(name = "users_action_idx", def = "{'users.action': 1}", background = true),
-    CompoundIndex(name = "roles_id_idx", def = "{'roles.id': 1}", background = true),
+    CompoundIndex(name = "roles_iid_idx", def = "{'roles._id': 1}", background = true),
     CompoundIndex(name = "roles_action_idx", def = "{'roles.action': 1}", background = true)
 )
 
