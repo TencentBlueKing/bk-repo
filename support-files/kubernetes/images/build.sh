@@ -14,7 +14,7 @@ mkdir -p tmp
 
 ## 编译frontend
 info "编译frontend..."
- yarn --cwd $root_dir/src/frontend run public
+yarn --cwd $root_dir/src/frontend run public
 info "编译frontend完成"
 
 ## 打包gateway镜像
@@ -32,7 +32,18 @@ info "构建gateway镜像完成"
 
 ## 编译backend
 info "编译backend..."
-gradle -p $root_dir/src/backend build -x test
+gradle -p $root_dir/src/backend build \
+-x test \
+-x :composer:build \
+-x :composer:boot-composer:build \
+-x :composer:biz-composer:build \
+-x :monitor:boot-monitor:build \
+-x :pypi:build \
+-x :pypi:boot-pypi:build \
+-x :pypi:biz-pypi:build \
+-x :replication:build \
+-x :replication:boot-replication:build \
+-x :replication:biz-replication:build
 info "编译backend完成"
 
 ## 构建backend镜像

@@ -40,14 +40,14 @@ env:
   BK_REPO_GATEWAY_DNS_ADDR: kube-dns.kube-system.svc.cluster.local
 
   # consul 相关配置
-  BK_REPO_CONSUL_DNS_HOST: consul-dns.bkrepo.svc.cluster.local
+  BK_REPO_CONSUL_DNS_HOST: consul-dns.default.svc.cluster.local
   BK_REPO_CONSUL_DNS_PORT: 53
   BK_REPO_CONSUL_DOMAIN: consul
   BK_REPO_CONSUL_PORT: 8500
   BK_REPO_CONSUL_TAG: bkce
 
   # init job
-  BK_REPO_CONSUL_SERVER: consul-server.bkrepo.svc.cluster.local
+  BK_REPO_CONSUL_SERVER: consul-server.default.svc.cluster.local
 
   # application
   BK_REPO_FILE_PATH: /data/storage
@@ -98,4 +98,6 @@ env:
 
   # helm
   BK_REPO_HELM_PORT: 25806
+  BK_REPO_HELM_FQDN: helm.bkrepo.com
+  BK_REPO_HELM_HTTP_PORT: 80
 
