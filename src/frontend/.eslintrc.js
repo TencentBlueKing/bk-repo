@@ -42,6 +42,7 @@ module.exports = {
         'vue'
     ],
     globals: {
+        'PAAS_CONFIG': true,
         'DOCS_URL_PREFIX': true,
         'LOGIN_SERVICE_URL': true,
         'DEVOPS_SITE_URL': true,

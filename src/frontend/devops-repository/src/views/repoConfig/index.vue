@@ -481,6 +481,7 @@
         padding: 20px;
         display: flex;
         background-color: white;
+        overflow-y: auto;
         .repo-config-tab {
             flex: 1;
             .repo-base-info {

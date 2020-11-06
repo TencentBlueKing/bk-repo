@@ -1,22 +1,42 @@
 import Vue from 'vue'
 
+const prefix = 'auth/api'
+
 export default {
     // 用户token列表
     getTokenList (_, { username }) {
         return Vue.prototype.$ajax.get(
-            `auth/api/user/list/token/${username}`
+            `${prefix}/user/list/token/${username}`
         )
     },
     // 新增用户token
     addToken (_, { projectId, username, name, expiredAt }) {
         return Vue.prototype.$ajax.post(
-            `auth/api/user/token/${username}/${name}?projectId=${projectId}${expiredAt ? `&expiredAt=${expiredAt}` : ''}`
+            `${prefix}/user/token/${username}/${name}?projectId=${projectId}${expiredAt ? `&expiredAt=${expiredAt}` : ''}`
         )
     },
     // 删除用户token
     deleteToken (_, { username, name }) {
         return Vue.prototype.$ajax.delete(
-            `auth/api/user/token/${username}/${name}`
+            `${prefix}/user/token/${username}/${name}`
+        )
+    },
+    // 查询用户信息
+    ajaxUserInfo ({ commit }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/user/info`
+        ).then(res => {
+            res && commit('SET_USER_INFO', {
+                username: res.userId
+            })
+        })
+    },
+    // 登录
+    bkrepoLogin (_, formData) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/user/login`,
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
         )
     }
 }

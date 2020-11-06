@@ -73,11 +73,17 @@ export default {
             `${prefix}/proxy-channel/list/public/${repoType}`
         )
     },
-
-    // 制品晋级
-    changeStageTag (_, { projectId, repoName, packageKey, version, tag }) {
-        return Vue.prototype.$ajax.post(
-            `${prefix}/stage/upgrade/${projectId}/${repoName}?packageKey=${packageKey}&version=${version}&tag=${tag}`
-        )
+    // 查询项目列表
+    getProjectList ({ commit }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/project/list`
+        ).then(res => {
+            commit('SET_PROJECT_LIST', res.map(v => {
+                return {
+                    id: v.name,
+                    name: v.displayName
+                }
+            }))
+        })
     }
 }

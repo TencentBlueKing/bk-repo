@@ -471,21 +471,13 @@ export default {
                             subTitle: '替换默认依赖源地址'
                         },
                         {
-                            subTitle: 'MacOS/Liunx配置目录 :  $HOME/.pip/pip.conf',
-                            codeList: [
-                                `[global]`,
-                                `index-url = ${this.repoUrl}`,
-                                `username = ${this.userInfo.username}`,
-                                `password = <PERSONAL_ACCESS_TOKEN>`
-                            ]
+                            subTitle: 'MacOS/Liunx配置目录 :  $HOME/.pip/pip.conf'
                         },
                         {
                             subTitle: 'Windows配置目录 :  %HOME%/pip/pip.ini',
                             codeList: [
                                 `[global]`,
-                                `index-url = ${this.repoUrl}`,
-                                `username = ${this.userInfo.username}`,
-                                `password = <PERSONAL_ACCESS_TOKEN>`
+                                `index-url = ${location.protocol}//${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN>@${location.host}/${this.repoType}/${this.projectId}/${this.repoName}/simple`
                             ]
                         },
                         {

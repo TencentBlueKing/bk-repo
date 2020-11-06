@@ -354,7 +354,6 @@
                 'renameNode',
                 'moveNode',
                 'copyNode',
-                // 'changeStageTag',
                 'shareArtifactory',
                 'getFolderSize'
             ]),
