@@ -51,7 +51,6 @@ env:
 
   # application
   BK_REPO_FILE_PATH: /data/storage
-  BK_REPO_LOG_PATH: /data/logs
   BK_REPO_MONGODB_ADDR: 127.0.0.1:27017
   BK_REPO_MONGODB_DB_NAME: bkrepo
   BK_REPO_MONGODB_USER: root
