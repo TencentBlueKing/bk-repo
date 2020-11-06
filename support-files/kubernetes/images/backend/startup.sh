@@ -1,9 +1,9 @@
 #! /bin/sh
-mkdir -p /data/logs
+mkdir -p $BK_REPO_LOGS_DIR
 java -server \
      -Dsun.jnu.encoding=UTF-8 \
      -Dfile.encoding=UTF-8 \
-     -Xloggc:/data/logs/gc.log \
+     -Xloggc:$BK_REPO_LOGS_DIR/gc.log \
      -XX:+PrintTenuringDistribution \
      -XX:+PrintGCDetails \
      -XX:+PrintGCDateStamps \

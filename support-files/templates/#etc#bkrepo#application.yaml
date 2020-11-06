@@ -11,7 +11,7 @@ spring:
 
 logging:
   config: classpath:logback-config.xml
-  path: __BK_REPO_LOG_PATH__
+  path: __BK_REPO_LOGS_DIR__
 
 storage:
   type: filesystem
