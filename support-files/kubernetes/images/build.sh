@@ -1,65 +1,77 @@
-#!/bin/sh
+#!/bin/bash
+
+function info() {
+    echo -e "\033[32m $1 \033[0m"
+}
+
+cd $(dirname $0)
+working_dir=$(pwd)
+root_dir=${working_dir%/*/*/*}
 
 set -e
 source ../build.env
-mkdir -p tmp && rm -rf tmp/*
-
-working_dir=$(pwd)
-frontend_dir=../../../src/frontend
-gateway_dir=../../../src/gateway
-backend_dir=../../../src/backend
+mkdir -p tmp
 
 ## 编译frontend
-echo "编译frontend..."
-yarn --cwd $frontend_dir run public
-echo "编译frontend完成"
+info "编译frontend..."
+yarn --cwd $root_dir/src/frontend run public
+info "编译frontend完成"
 
-##打包gateway镜像
-echo "打包gateway镜像开始..."
+## 打包gateway镜像
+info "构建gateway镜像..."
 rm -rf tmp/*
-cp -rf ${frontend_dir}/frontend tmp/
-cp -rf ${gateway_dir} tmp/gateway
+cp -rf $root_dir/src/frontend/frontend tmp/
+cp -rf $root_dir/src/gateway tmp/gateway
 cp -rf gateway/startup.sh tmp/
-cp -rf ../../scripts/render_tpl tmp/
-cp -rf ../../templates tmp/
+cp -rf $root_dir/support-files/scripts/render_tpl tmp/
+cp -rf $root_dir/support-files/templates tmp/
 docker build -f gateway/gateway.Dockerfile -t $hub/bkrepo/gateway:$bkrepo_version tmp --network=host
 docker push $hub/bkrepo/gateway:$bkrepo_version
 docker tag $hub/bkrepo/gateway:$bkrepo_version bkrepo/gateway
-echo "打包gateway镜像完成"
+info "构建gateway镜像完成"
 
 ## 编译backend
-echo "编译backend..."
-cd $backend_dir
- ./gradlew build -x test
-cd $working_dir
-echo "编译backend完成"
+info "编译backend..."
+gradle -p $root_dir/src/backend build \
+-x test \
+-x :composer:build \
+-x :composer:boot-composer:build \
+-x :composer:biz-composer:build \
+-x :monitor:boot-monitor:build \
+-x :pypi:build \
+-x :pypi:boot-pypi:build \
+-x :pypi:biz-pypi:build \
+-x :replication:build \
+-x :replication:boot-replication:build \
+-x :replication:biz-replication:build
+info "编译backend完成"
 
-## 打包backend镜像
-echo "打包backend镜像开始..."
-backends=(repository auth generic docker)
-for var in ${backends[@]};
+## 构建backend镜像
+info "构建backend镜像..."
+backends=(repository auth generic docker helm dockerapi)
+for service in ${backends[@]};
 do
-    echo "build $var start..."
+    info "build $service start..."
     rm -rf tmp/*
     cp backend/startup.sh tmp/
-    cp $backend_dir/$var/boot-$var/build/libs/*.jar tmp/$var.jar
-    docker build -f backend/$var.Dockerfile -t $hub/bkrepo/$var:$bkrepo_version tmp --network=host
-    docker push $hub/bkrepo/$var:$bkrepo_version
-    docker tag $hub/bkrepo/$var:$bkrepo_version bkrepo/$var
-    echo "build $var finish..."
+    cp $root_dir/src/backend/$service/boot-$service/build/libs/*.jar tmp/$service.jar
+    docker build -f backend/$service.Dockerfile -t $hub/bkrepo/$service:$bkrepo_version tmp --network=host
+    docker push $hub/bkrepo/$service:$bkrepo_version
+    docker tag $hub/bkrepo/$service:$bkrepo_version bkrepo/$service
+    info "build $service finish..."
 done
 
-## 打包初始化镜像
-echo "打包初始化镜像中..."
+## 构建init镜像
+info "构建init镜像..."
 rm -rf tmp/*
 cp -rf init/init-mongodb.sh tmp/
 cp -rf init/init-consul.sh tmp/
-cp -rf ../../scripts/render_tpl tmp/
-cp -rf ../../templates tmp/
-cp -rf ../../sql/init-data.js tmp/
+cp -rf $root_dir/support-files/scripts/render_tpl tmp/
+cp -rf $root_dir/support-files/templates tmp/
+cp -rf $root_dir/support-files/sql/init-data.js tmp/
 docker build -f init/init.Dockerfile -t $hub/bkrepo/init:$bkrepo_version tmp --no-cache --network=host
 docker push $hub/bkrepo/init:$bkrepo_version
 docker tag $hub/bkrepo/init:$bkrepo_version bkrepo/init
-echo "打包初始化镜像完成"
+info "构建init镜像完成"
 
 rm -rf tmp

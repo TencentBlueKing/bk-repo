@@ -13,14 +13,6 @@ allprojects {
     group = "com.tencent.bkrepo"
     version = "0.7.1"
 
-    apply(plugin = "java")
-    apply(plugin = "org.jetbrains.kotlin.jvm")
-    apply(plugin = "org.jetbrains.kotlin.plugin.spring")
-    apply(plugin = "org.springframework.boot")
-    apply(plugin = "io.spring.dependency-management")
-    apply(from = rootProject.file("gradle/ktlint.gradle.kts"))
-    apply(from = rootProject.file("gradle/publish.gradle.kts"))
-
     repositories {
         val publicMavenRepoUrl: String by project
         val privateMavenRepoUrl: String by project
@@ -32,6 +24,16 @@ allprojects {
         mavenCentral()
         jcenter()
     }
+}
+
+subprojects {
+    apply(plugin = "java")
+    apply(plugin = "org.jetbrains.kotlin.jvm")
+    apply(plugin = "org.jetbrains.kotlin.plugin.spring")
+    apply(plugin = "org.springframework.boot")
+    apply(plugin = "io.spring.dependency-management")
+    apply(from = rootProject.file("gradle/ktlint.gradle.kts"))
+    apply(from = rootProject.file("gradle/publish.gradle.kts"))
 
     dependencyManagement {
         imports {
@@ -64,6 +66,14 @@ allprojects {
         }
     }
 
+    dependencies {
+        implementation(kotlin("stdlib-jdk8"))
+        implementation(kotlin("reflect"))
+        testImplementation("org.springframework.boot:spring-boot-starter-test") {
+            exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
+        }
+    }
+
     configurations.all {
         exclude(group = "log4j", module = "log4j")
         exclude(group = "org.slf4j", module = "slf4j-log4j12")
@@ -80,16 +90,6 @@ allprojects {
         }
         test {
             useJUnitPlatform()
-        }
-    }
-}
-
-subprojects {
-    dependencies {
-        implementation(kotlin("stdlib-jdk8"))
-        implementation(kotlin("reflect"))
-        testImplementation("org.springframework.boot:spring-boot-starter-test") {
-            exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
         }
     }
 

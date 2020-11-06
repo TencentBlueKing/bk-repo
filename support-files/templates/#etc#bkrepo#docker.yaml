@@ -5,4 +5,4 @@ auth:
   url: http://__BK_REPO_FQDN__/docker/v2/auth
 
 docker:
-  domain: __BK_REPO_DOCKER_ADDR__
+  domain: __BK_REPO_DOCKER_FQDN__
