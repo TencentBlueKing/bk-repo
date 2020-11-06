@@ -20,6 +20,13 @@ spec:
             backend:
               serviceName: bkrepo-gateway
               servicePort: 80
+    - host: { { .Values.env.BK_REPO_HELM_FQDN } }
+        http:
+          paths:
+            - path: /
+              backend:
+                serviceName: bkrepo-gateway
+                servicePort: 80
     - host: consul.{{ .Values.env.BK_REPO_FQDN }}
       http:
         paths:
