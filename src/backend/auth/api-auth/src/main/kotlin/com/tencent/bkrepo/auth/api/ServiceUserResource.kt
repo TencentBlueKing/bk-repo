@@ -180,5 +180,12 @@ interface ServiceUserResource {
         @PathVariable uid: String,
         @ApiParam(value = "用户token")
         @PathVariable token: String
-    ): Response<Any>
+    ): Response<Boolean>
+
+    @ApiOperation("获取用户信息")
+    @GetMapping("/info/{uid}")
+    fun userInfo(
+        @ApiParam(value = "用户id")
+        @PathVariable uid: String
+    ): Response<Map<String, Any>>
 }

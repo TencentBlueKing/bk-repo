@@ -136,12 +136,14 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    override fun loginUser(uid: String, token: String): Response<Any> {
-        val result = userService.findUserByUserToken(uid, token)
-        result?.let {
-            val bkrepoToken = JwtUtils.generateToken(signingKey, jwtProperties.expiration, uid)
-            return ResponseBuilder.success(bkrepoToken)
-        }
-        return ResponseBuilder.success(false)
+    override fun loginUser(uid: String, token: String): Response<Boolean> {
+        userService.findUserByUserToken(uid, token) ?: return ResponseBuilder.success(false)
+        return ResponseBuilder.success(true)
+    }
+
+    override fun userInfo(uid: String): Response<Map<String, Any>> {
+        val ticket = JwtUtils.generateToken(signingKey, jwtProperties.expiration, uid)
+        val result = mapOf("userId" to uid, "bkrepo_ticket" to ticket)
+        return ResponseBuilder.success(result)
     }
 }
