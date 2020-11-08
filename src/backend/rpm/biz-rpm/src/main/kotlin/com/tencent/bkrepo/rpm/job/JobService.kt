@@ -29,13 +29,13 @@ import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
 import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.XmlStrUtils
+import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChecksum
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoData
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoIndex
 import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
-import com.thoughtworks.xstream.XStream
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.slf4j.Logger
@@ -46,7 +46,6 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.RandomAccessFile
-import java.nio.charset.Charset
 
 @Component
 class JobService {
@@ -381,14 +380,11 @@ class JobService {
     private fun resolveIndexXml(indexNodeInfo: NodeInfo): ByteArray? {
         storageService.load(indexNodeInfo.sha256!!, Range.full(indexNodeInfo.size), null).use { inputStream ->
             val content = inputStream!!.readBytes()
-            // 校验内容合法性
-            try {
-                XStream().fromXML(content.toString(Charset.forName("UTF-8")))
-            } catch (e: Exception) {
-                logger.warn("resolveIndexXml failed for path: ${indexNodeInfo.fullPath}")
-                return null
+            return if (XStreamUtil.checkMarkFile(content)) {
+                content
+            } else {
+                null
             }
-            return content
         }
     }
 

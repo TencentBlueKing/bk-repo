@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.rpm.pojo.IndexType
-import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.findPackageIndex
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.indexOf
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.updatePackageCount
+import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -86,17 +86,9 @@ class XmlStrUtilsTest {
     }
 
     @Test
-    fun outFileTest() {
-        val file = File("${System.getenv("HOME")}/Downloads/63da8904a2791e4965dcda350b26ffa3d1eda27b-primary.xml.gz")
-        val unzipFile = file.inputStream().unGzipInputStream()
-        val randomAccessFile = RandomAccessFile(unzipFile, "rw")
-        randomAccessFile.seek(0)
-        var line: String?
-        randomAccessFile.use { raf ->
-            while (raf.readLine().also { line = it } != null) {
-                println(line)
-            }
-            println("")
-        }
+    fun test() {
+        val file = File("${System.getenv("HOME")}/Downloads/nfaprofile_consumer_request-master-20200921636887-1-x86_64.rpm")
+        println(XStreamUtil.checkMarkFile(file.inputStream().readBytes()))
+
     }
 }
