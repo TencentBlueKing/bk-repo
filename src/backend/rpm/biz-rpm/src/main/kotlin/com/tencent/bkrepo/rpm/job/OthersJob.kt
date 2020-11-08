@@ -32,7 +32,7 @@ class OthersJob {
                 logger.info("update others index [${repo.projectId}|${repo.name}] start")
                 val rpmConfiguration = repo.configuration as RpmLocalConfiguration
                 val repodataDepth = rpmConfiguration.repodataDepth ?: 0
-                val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepoDataByRepo(repo), repodataDepth)
+                val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepodataDirs(repo), repodataDepth)
                 for (repoDataPath in targetSet) {
                     logger.info("update others index [${repo.projectId}|${repo.name}|$repoDataPath] start")
                     jobService.batchUpdateIndex(repo, repoDataPath, IndexType.OTHERS, 20)

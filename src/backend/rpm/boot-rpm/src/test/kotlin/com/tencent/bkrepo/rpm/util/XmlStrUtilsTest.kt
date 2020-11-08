@@ -74,7 +74,7 @@ class XmlStrUtilsTest {
     @Test
     fun updateFileTest() {
         val file = File("others.xml")
-        XmlStrUtils.updatePackageXml(RandomAccessFile(file, "rw"), 3, 1, "a")
+        XmlStrUtils.updatePackageXml(RandomAccessFile(file, "rw"), 3, 1, "a".toByteArray())
     }
 
     @Test

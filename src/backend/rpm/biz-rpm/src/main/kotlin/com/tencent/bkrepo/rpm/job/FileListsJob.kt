@@ -22,7 +22,7 @@ class FileListsJob {
 
     @Scheduled(fixedDelay = 60 * 1000)
     @SchedulerLock(name = "FileListsJob", lockAtMostFor = "PT60M")
-    fun updateFileListsIndex() {
+    fun updateFilelistsIndex() {
         logger.info("update filelists index start")
         val startMillis = System.currentTimeMillis()
         val repoList = repositoryClient.pageByType(0, 100, "RPM").data?.records
@@ -36,7 +36,7 @@ class FileListsJob {
                 }
                 logger.info("update filelists index[${repo.projectId}|${repo.name}] start")
                 val repodataDepth = rpmConfiguration.repodataDepth ?: 0
-                val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepoDataByRepo(repo), repodataDepth)
+                val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepodataDirs(repo), repodataDepth)
                 for (repoDataPath in targetSet) {
                     logger.info("update filelists index[${repo.projectId}|${repo.name}|$repoDataPath] start")
                     jobService.batchUpdateIndex(repo, repoDataPath, IndexType.FILELISTS, 30)
