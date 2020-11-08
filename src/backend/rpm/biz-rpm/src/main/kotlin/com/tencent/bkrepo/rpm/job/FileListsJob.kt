@@ -3,6 +3,7 @@ package com.tencent.bkrepo.rpm.job
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.repository.RpmLocalConfiguration
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.rpm.pojo.IndexType
+import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -21,7 +22,7 @@ class FileListsJob {
 
     @Scheduled(fixedDelay = 60 * 1000)
     @SchedulerLock(name = "FileListsJob", lockAtMostFor = "PT60M")
-    fun updateFileListsIndex() {
+    fun updateFilelistsIndex() {
         logger.info("update filelists index start")
         val startMillis = System.currentTimeMillis()
         val repoList = repositoryClient.pageByType(0, 100, "RPM").data?.records
@@ -35,8 +36,7 @@ class FileListsJob {
                 }
                 logger.info("update filelists index[${repo.projectId}|${repo.name}] start")
                 val repodataDepth = rpmConfiguration.repodataDepth ?: 0
-                val targetSet = mutableSetOf<String>()
-                jobService.findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
+                val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepodataDirs(repo), repodataDepth)
                 for (repoDataPath in targetSet) {
                     logger.info("update filelists index[${repo.projectId}|${repo.name}|$repoDataPath] start")
                     jobService.batchUpdateIndex(repo, repoDataPath, IndexType.FILELISTS, 30)

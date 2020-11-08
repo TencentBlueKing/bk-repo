@@ -1,18 +1,15 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.rpm.pojo.IndexType
-import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
 import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.findPackageIndex
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.indexOf
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.updatePackageCount
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.RandomAccessFile
 import java.util.regex.Pattern
-
 
 class XmlStrUtilsTest {
     /**

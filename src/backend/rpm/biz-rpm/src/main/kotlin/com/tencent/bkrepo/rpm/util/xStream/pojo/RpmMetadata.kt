@@ -17,4 +17,12 @@ class RpmMetadata(
     @XStreamAsAttribute
     @XStreamAlias("xmlns:rpm")
     val rpm: String = "http://linux.duke.edu/metadata/rpm"
+
+    fun filterRpmFileLists() {
+        packages[0].format.files = packages[0].format.files.filter {
+            (it.filePath.contains("bin/") && (it.filePath.endsWith(".sh"))) ||
+                (it.filePath.startsWith("/etc/") && it.filePath.contains("conf")) ||
+                it.filePath == "/usr/lib/sendmail"
+        }
+    }
 }
