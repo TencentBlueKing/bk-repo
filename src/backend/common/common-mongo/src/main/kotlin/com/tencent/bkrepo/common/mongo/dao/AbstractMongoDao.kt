@@ -89,8 +89,6 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao remove: [$query]")
         }
-        val determineCollectionName = determineCollectionName(query)
-        val determineMongoTemplate = determineMongoTemplate()
         return determineMongoTemplate().remove(query, classType, determineCollectionName(query))
     }
 

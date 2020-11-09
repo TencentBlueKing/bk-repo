@@ -180,7 +180,7 @@
 
 ### 校验用户token
 
-- API:GET /auth/api/user/token/{uid}/{token}
+- API:GET /auth/api/user/login/{uid}/{token}
 - API 名称: check_user_token
 - 功能说明：
 	- 中文：校验用户token
@@ -216,6 +216,59 @@
 | 字段|类型|说明|Description|
 |---|---|---|---|
 |code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
+|message|string|错误消息,或者用户token |the failure message,or bkrepo token |
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
+
+### 获取用户信息
+
+- API:GET /auth/api/user/info /{uid}
+- API 名称: check_user_token
+- 功能说明：
+	- 中文：校验用户token
+	- English：check user token
+
+- input body:
+
+``` json
+
+```
+
+- input 字段说明
+
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|uid|string|是|无|用户id|the user id|
+|token|string|是|无|用户token|the user token|
+
+- output:
+
+```
+{
+  "code": 0,
+  "message": null,
+  "data": {
+    "userId": "owenlxu2",
+    "bkrepo_ticket": "eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE2MDQ2NTI5NDAsInN1YiI6Im93ZW5seHUyIn0.Y19Zz5hhLNzRP_SeUo7bKM86RQIgl7g_lv9sRtb_pK8ymW1DShZXFcx_hTXsusppxRPIwHmapY8H5m4MNRfpuQ"
+  },
+  "traceId": ""
+}
+
+```
+
+- output 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
+|message|string|错误消息,或者用户token |the failure message,or bkrepo token |
+|data | bool | result data |the data for response|
+|traceId|string|请求跟踪id|the trace id|
+
+
+- data字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|userId | string | 用户id |the user Id|
+|bkrepo_ticket|string|请求跟踪id|the bkrepo ticket|

@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bkrepo-helm
+  labels:
+    tier: backend
+    app: bkrepo-helm
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: bkrepo-helm
+  template:
+    metadata:
+      labels:
+        app: bkrepo-helm
+    spec:
+      containers:
+        - name: bkrepo-helm
+          image: {{ .Values.image.hub }}/bkrepo/helm:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          workingDir: /data/workspace/
+          command: ['/bin/sh','-c','/data/workspace/startup.sh']
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          volumeMounts:
+            - mountPath: /data/storage
+              name: pv-storage
+      {{if .Values.bkrepo.affinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - {{ .Values.bkrepo.affinity.node }}
+      {{end}}
+      volumes:
+        - name: pv-storage
+          persistentVolumeClaim:
+            claimName: pvc-storage

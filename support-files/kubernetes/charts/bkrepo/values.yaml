@@ -1,0 +1,102 @@
+image:
+  hub: docker.io
+  tag: 0.0.1
+  pullPolicy: IfNotPresent
+
+# bkrepo
+bkrepo:
+  replicaCount: 1
+  init:
+    mongodb: true
+    consul: true
+  affinity:
+    enabled: false
+    # 指定依赖源pod运行在哪个节点上
+    node: node-1
+env:
+  # JVM
+  BK_REPO_JVM_XMS: 512m
+  BK_REPO_JVM_XMX: 768m
+
+  # env
+  BK_REPO_ENV: dev
+
+  # gateway
+  BK_HTTP_SCHEMA: http
+  BK_REPO_FQDN: bkrepo.com
+  BK_REPO_HOST: bkrepo.com
+  BK_CI_FQDN: bkci.com
+  BK_REPO_HTTP_PORT: 80
+  BK_REPO_HTTPS_PORT: 443
+  BK_REPO_APIGW_URL:
+  BK_REPO_APP_CODE:
+  BK_REPO_APP_TOKEN:
+  BK_REPO_HOME: /data/workspace
+  BK_REPO_LOGS_DIR: /data/logs
+  BK_REPO_PAAS_FQDN:
+  BK_REPO_PAAS_LOGIN_URL:
+  BK_REPO_AUTHORIZATION: "Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="
+  BK_REPO_GATEWAY_CORS_ALLOW_LIST:
+  BK_REPO_GATEWAY_DNS_ADDR: kube-dns.kube-system.svc.cluster.local
+
+  # consul 相关配置
+  BK_REPO_CONSUL_DNS_HOST: consul-dns.default.svc.cluster.local
+  BK_REPO_CONSUL_DNS_PORT: 53
+  BK_REPO_CONSUL_DOMAIN: consul
+  BK_REPO_CONSUL_PORT: 8500
+  BK_REPO_CONSUL_TAG: bkce
+
+  # init job
+  BK_REPO_CONSUL_SERVER: consul-server.default.svc.cluster.local
+
+  # application
+  BK_REPO_FILE_PATH: /data/storage
+  BK_REPO_MONGODB_ADDR: 127.0.0.1:27017
+  BK_REPO_MONGODB_DB_NAME: bkrepo
+  BK_REPO_MONGODB_USER: root
+  BK_REPO_MONGODB_PASSWORD:
+
+  # repository
+  BK_REPO_REPOSITORY_PORT: 25901
+
+  # auth
+  BK_REPO_AUTH_PORT: 25902
+  BK_REPO_AUTH_REALM: bkiam
+  BK_IAM_PRIVATE_URL: http://iam.service.consul:8080
+  BK_PAAS_PRIVATE_URL: http://paas.service.consul
+  BK_REPO_IAM_CALLBACK_USER:
+  BK_REPO_IAM_ENV: prod
+  BK_REPO_IAM_HOST: iam.service.consul
+  BK_REPO_IAM_HTTP_PORT: 80
+  BK_REPO_IAM_IP0: iam.service.consul
+  BK_REPO_IAM_TOKEN_URL: /bkiam/api/v1/auth/access-tokens
+
+  # docker api
+  BK_REPO_DOCKERAPI_PORT: 25906
+  BK_REPO_DOCKERAPI_REALM: bkrepo
+  BK_REPO_DOCKERAPI_HARBOR_URL:
+  BK_REPO_DOCKERAPI_HARBOR_USERNAME:
+  BK_REPO_DOCKERAPI_HARBOR_PASSWORD:
+  BK_REPO_DOCKERAPI_HARBOR_IMAGE_PREFIX:
+  BK_SSM_PRIVATE_URL: http://ssm.service.consul
+
+  # generic
+  BK_REPO_GENERIC_PORT: 25801
+
+  # docker
+  BK_REPO_DOCKER_PORT: 25802
+  BK_REPO_DOCKER_FQDN: docker.bkrepo.com
+  BK_REPO_DOCKER_HOST: docker.bkrepo.com
+  BK_REPO_DOCKER_HTTP_PORT: 80
+  BK_REPO_DOCKER_HTTPS_PORT: 443
+  BK_REPO_DOCKER_CERT_KEY:
+  BK_REPO_DOCKER_CERT_PEM:
+
+  # npm
+  BK_REPO_NPM_PORT: 25804
+
+  # helm
+  BK_REPO_HELM_PORT: 25806
+  BK_REPO_HELM_FQDN: helm.bkrepo.com
+  BK_REPO_HELM_HTTP_PORT: 80
+

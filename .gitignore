@@ -22,5 +22,8 @@ node_modules/
 
 *.log
 
+
 data/
 /remoteHtml.html
+build.yml
+.temp/

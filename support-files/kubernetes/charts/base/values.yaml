@@ -1,0 +1,40 @@
+# consul
+consul:
+  enabled: false
+  global:
+    name: consul
+    domain: bkrepo
+    datacenter: dc
+  server:
+    replicas: 1
+    bootstrapExpect: 1
+    storage: 10Gi
+    storageClass: pv-consul
+  client:
+    enabled: true
+  meshGateway:
+    enabled: false
+
+
+# ingress-nginx
+ingress-nginx:
+  enabled: false
+  controller:
+    image:
+#      repository: xbazhen/ingress-nginx-controller
+#      tag: v0.34.1
+#      digest: sha256:80359bdf124d49264fabf136d2aecadac729b54f16618162194356d3c78ce2fe
+#      pullPolicy: IfNotPresent
+    kind: DaemonSet
+    admissionWebhooks:
+      enabled: false
+
+# volume
+volume:
+  nfs:
+    enabled: false
+    path: /data/nfs/
+    server: 10.0.1.3
+  hostPath:
+    path: /data/local/
+  storage: 10Gi

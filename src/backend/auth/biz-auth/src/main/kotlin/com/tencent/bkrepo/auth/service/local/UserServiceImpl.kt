@@ -126,7 +126,7 @@ class UserServiceImpl constructor(
         checkUserExist(userId)
         // check role
         checkRoleExist(roleId)
-        //check is role bind to role
+        // check is role bind to role
         val query = Query()
         val update = Update()
         if (!checkUserRoleBind(userId, roleId)) {
