@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: bkrepo-ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+    - host: {{ .Values.env.BK_REPO_FQDN }}
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: bkrepo-gateway
+              servicePort: 80
+    - host: {{ .Values.env.BK_REPO_DOCKER_FQDN }}
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: bkrepo-gateway
+              servicePort: 80
+    - host: { { .Values.env.BK_REPO_HELM_FQDN } }
+        http:
+          paths:
+            - path: /
+              backend:
+                serviceName: bkrepo-gateway
+                servicePort: 80
+    - host: consul.{{ .Values.env.BK_REPO_FQDN }}
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: consul-ui
+              servicePort: 80

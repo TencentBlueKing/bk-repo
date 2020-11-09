@@ -25,6 +25,8 @@ const val REPO_TYPE = "HELM"
 
 const val INDEX_YAML = "index.yaml"
 const val INDEX_CACHE_YAML = "index-cache.yaml"
+const val SIZE = "size"
+const val FORCE = "force"
 
 const val FULL_PATH = "_full_path"
 

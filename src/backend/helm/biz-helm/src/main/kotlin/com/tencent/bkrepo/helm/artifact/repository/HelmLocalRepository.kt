@@ -31,8 +31,10 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.helm.constants.FORCE
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.NAME
+import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
@@ -48,46 +50,31 @@ class HelmLocalRepository : LocalRepository() {
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         // 判断是否是强制上传
-        val isForce = context.request.getParameter("force")?.let { true } ?: false
-        context.putAttribute("force", isForce)
+        val isForce = context.request.getParameter(FORCE)?.let { true } ?: false
+        context.putAttribute(FORCE, isForce)
         val repositoryDetail = context.repositoryDetail
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
-        context.getArtifactFileMap().entries.forEach { (name, _) ->
-            val fullPath = context.getStringAttribute(name + "_full_path")!!
-            val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
-            if (isExist && !isOverwrite(fullPath, isForce)) {
-                throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
-            }
+        val fullPath = context.getStringAttribute(FULL_PATH).orEmpty()
+        val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
+        if (isExist && !isOverwrite(fullPath, isForce)) {
+            throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
         }
     }
 
-    override fun onUpload(context: ArtifactUploadContext) {
-        context.getArtifactFileMap().entries.forEach { (name, _) ->
-            val nodeCreateRequest = getNodeCreateRequest(name, context)
-            storageManager.storeArtifactFile(
-                nodeCreateRequest,
-                context.getArtifactFile(name),
-                context.storageCredentials
-            )
-        }
-    }
-
-    private fun getNodeCreateRequest(name: String, context: ArtifactUploadContext): NodeCreateRequest {
-        val repositoryDetail = context.repositoryDetail
-        val artifactFile = context.getArtifactFile(name)
-        val sha256 = context.getArtifactSha256(name)
-        val md5 = context.getArtifactMd5(name)
-        val fullPath = context.getStringAttribute(name + FULL_PATH)!!
-        val isForce = context.getBooleanAttribute("force")!!
+    override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
+        val fullPath = context.getStringAttribute(FULL_PATH).orEmpty()
+        val isForce = context.getBooleanAttribute(FORCE)!!
+        val size = context.getArtifactFile().getSize()
+        context.putAttribute(SIZE, size)
         return NodeCreateRequest(
-            projectId = repositoryDetail.projectId,
-            repoName = repositoryDetail.name,
+            projectId = context.projectId,
+            repoName = context.repoName,
             folder = false,
             fullPath = fullPath,
-            size = artifactFile.getSize(),
-            sha256 = sha256,
-            md5 = md5,
+            size = size,
+            sha256 = context.getArtifactSha256(),
+            md5 = context.getArtifactMd5(),
             operator = context.userId,
             metadata = parseMetaData(fullPath, isForce),
             overwrite = isOverwrite(fullPath, isForce)
@@ -133,6 +120,8 @@ class HelmLocalRepository : LocalRepository() {
     ): DownloadStatisticsAddRequest? {
         val name = context.getStringAttribute(NAME).orEmpty()
         val version = context.getStringAttribute(VERSION).orEmpty()
+        // 下载index.yaml不进行下载次数统计
+        if (name.isEmpty() && version.isEmpty()) return null
         with(context) {
             return DownloadStatisticsAddRequest(projectId, repoName, PackageKeys.ofHelm(name), name, version)
         }

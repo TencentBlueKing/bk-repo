@@ -29,6 +29,8 @@ import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.CHART_PACKAGE_DELETE_URL
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.CHART_VERSION_DELETE_URL
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.HELM_VERSION_DETAIL
+import com.tencent.bkrepo.helm.pojo.chart.ChartDeleteRequest
+import com.tencent.bkrepo.helm.pojo.chart.ChartVersionDeleteRequest
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.helm.service.ChartInfoService
 import com.tencent.bkrepo.helm.service.ChartManipulationService
@@ -72,9 +74,12 @@ class UserHelmController(
         @ApiParam(value = "包唯一key", required = true)
         @RequestParam packageKey: String
     ): Response<Void> {
-        val pkgName = PackageKeys.resolveHelm(packageKey)
-        chartManipulationService.deletePackage(artifactInfo, pkgName)
-        return ResponseBuilder.success()
+        with(artifactInfo) {
+            val name = PackageKeys.resolveHelm(packageKey)
+            val chartDeleteRequest = ChartDeleteRequest(projectId, repoName, name, userId)
+            chartManipulationService.deletePackage(chartDeleteRequest)
+            return ResponseBuilder.success()
+        }
     }
 
     @ApiOperation("删除仓库下的包版本")
@@ -88,8 +93,11 @@ class UserHelmController(
         @ApiParam(value = "包版本", required = true)
         @RequestParam version: String
     ): Response<Void> {
-        val pkgName = PackageKeys.resolveHelm(packageKey)
-        chartManipulationService.deleteVersion(artifactInfo, pkgName, version)
-        return ResponseBuilder.success()
+        with(artifactInfo) {
+            val name = PackageKeys.resolveHelm(packageKey)
+            val chartDeleteRequest = ChartVersionDeleteRequest(projectId, repoName, name, version, userId)
+            chartManipulationService.deleteVersion(chartDeleteRequest)
+            return ResponseBuilder.success()
+        }
     }
 }
