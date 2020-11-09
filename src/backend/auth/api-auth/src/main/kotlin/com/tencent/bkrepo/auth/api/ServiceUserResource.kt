@@ -36,6 +36,7 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -45,6 +46,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import javax.servlet.http.HttpServletResponse
 
 @Api(tags = ["SERVICE_USER"], description = "服务-用户接口")
 @FeignClient(SERVICE_NAME, contextId = "ServiceUserResource")
@@ -179,13 +181,14 @@ interface ServiceUserResource {
         @ApiParam(value = "用户id")
         @PathVariable uid: String,
         @ApiParam(value = "用户token")
-        @PathVariable token: String
+        @PathVariable token: String,
+        response: HttpServletResponse
     ): Response<Boolean>
 
     @ApiOperation("获取用户信息")
-    @GetMapping("/info/{uid}")
+    @GetMapping("/info")
     fun userInfo(
         @ApiParam(value = "用户id")
-        @PathVariable uid: String
+        @CookieValue(value = "bkrepo_ticket") bkrepoToken: String?
     ): Response<Map<String, Any>>
 }

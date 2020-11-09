@@ -22,6 +22,7 @@
 package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.constant.BKREPO_TICKET
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
 import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
@@ -34,12 +35,15 @@ import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
+import javax.servlet.http.Cookie
+import javax.servlet.http.HttpServletResponse
 
 @RestController
 class ServiceUserResourceImpl @Autowired constructor(
@@ -136,14 +140,25 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    override fun loginUser(uid: String, token: String): Response<Boolean> {
-        userService.findUserByUserToken(uid, token) ?: return ResponseBuilder.success(false)
+    override fun loginUser(uid: String, token: String, response: HttpServletResponse): Response<Boolean> {
+        userService.findUserByUserToken(uid, token) ?: run {
+            return ResponseBuilder.success(false)
+        }
+        val ticket = JwtUtils.generateToken(signingKey, jwtProperties.expiration, uid)
+        val cookie = Cookie(BKREPO_TICKET, ticket)
+        cookie.path = "/"
+        cookie.maxAge = 60 * 60 * 24
+        response.addCookie(cookie)
         return ResponseBuilder.success(true)
     }
 
-    override fun userInfo(uid: String): Response<Map<String, Any>> {
-        val ticket = JwtUtils.generateToken(signingKey, jwtProperties.expiration, uid)
-        val result = mapOf("userId" to uid, "bkrepo_ticket" to ticket)
+    override fun userInfo(bkrepoToken: String?): Response<Map<String, Any>> {
+        var userId = ANONYMOUS_USER
+        bkrepoToken?.let {
+            userId = JwtUtils.validateToken(signingKey, bkrepoToken).body.subject
+        }
+
+        val result = mapOf("userId" to userId)
         return ResponseBuilder.success(result)
     }
 }
