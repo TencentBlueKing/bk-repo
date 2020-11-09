@@ -33,5 +33,10 @@ class ComposerArtifactInfo(
         const val COMPOSER_JSON = "/{projectId}/{repoName}/**/*.json"
         const val COMPOSER_INSTALL = "/{projectId}/{repoName}/direct-dists/**"
         const val COMPOSER_PACKAGES = "/{projectId}/{repoName}/packages.json"
+
+        // RPM 产品接口
+        const val COMPOSER_EXT_DETAIL = "/version/detail/{projectId}/{repoName}"
+        const val COMPOSER_EXT_PACKAGE_DELETE = "/package/delete/{projectId}/{repoName}"
+        const val COMPOSER_EXT_VERSION_DELETE = "/version/delete/{projectId}/{repoName}"
     }
 }
