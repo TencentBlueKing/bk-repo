@@ -176,12 +176,12 @@ interface ServiceUserResource {
     ): Response<Boolean>
 
     @ApiOperation("校验用户token")
-    @GetMapping("/login/{uid}/{token}")
+    @PostMapping("/login")
     fun loginUser(
         @ApiParam(value = "用户id")
-        @PathVariable uid: String,
+        @RequestParam("uid") uid: String,
         @ApiParam(value = "用户token")
-        @PathVariable token: String,
+        @RequestParam("token") token: String,
         response: HttpServletResponse
     ): Response<Boolean>
 

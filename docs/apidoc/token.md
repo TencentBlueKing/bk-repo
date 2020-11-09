@@ -180,7 +180,7 @@
 
 ### 校验用户token
 
-- API:GET /auth/api/user/login/{uid}/{token}
+- API:POST /auth/api/user/login?uid=owen&token=blueking
 - API 名称: check_user_token
 - 功能说明：
 	- 中文：校验用户token
@@ -222,7 +222,7 @@
 
 ### 获取用户信息
 
-- API:GET /auth/api/user/info /{uid}
+- API:GET /auth/api/user/info
 - API 名称: check_user_token
 - 功能说明：
 	- 中文：校验用户token
@@ -239,7 +239,7 @@
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
 |uid|string|是|无|用户id|the user id|
-|token|string|是|无|用户token|the user token|
+|bkrepo_ticket|cookie|是|无|用户token|the user token|
 
 - output:
 
@@ -248,9 +248,8 @@
   "code": 0,
   "message": null,
   "data": {
-    "userId": "owenlxu2",
-    "bkrepo_ticket": "eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE2MDQ2NTI5NDAsInN1YiI6Im93ZW5seHUyIn0.Y19Zz5hhLNzRP_SeUo7bKM86RQIgl7g_lv9sRtb_pK8ymW1DShZXFcx_hTXsusppxRPIwHmapY8H5m4MNRfpuQ"
-  },
+    "userId": "owenlxu2"
+},
   "traceId": ""
 }
 
