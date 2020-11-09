@@ -59,7 +59,7 @@ class StorageManager(
     ): NodeDetail {
         val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials)
         try {
-            return nodeClient.create(request).data!!
+            return nodeClient.createNode(request).data!!
         } catch (exception: Exception) {
             // 当文件有创建，则删除文件
             if (affectedCount == 1) {

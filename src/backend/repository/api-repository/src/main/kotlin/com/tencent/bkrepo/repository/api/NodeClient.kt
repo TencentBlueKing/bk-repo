@@ -59,21 +59,8 @@ import org.springframework.web.bind.annotation.RequestParam
 interface NodeClient {
 
     @ApiOperation("根据路径查看节点详情")
-    @GetMapping("/query/{projectId}/{repoName}/{repoType}")
-    fun detail(
-        @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
-        @ApiParam(value = "仓库类型", required = true)
-        @PathVariable repoType: String,
-        @ApiParam(value = "节点完整路径", required = true)
-        @RequestParam fullPath: String
-    ): Response<NodeDetail?>
-
-    @ApiOperation("根据路径查看节点详情")
-    @GetMapping("/query/{projectId}/{repoName}")
-    fun detail(
+    @GetMapping("/detail/{projectId}/{repoName}")
+    fun getNodeDetail(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -84,7 +71,7 @@ interface NodeClient {
 
     @ApiOperation("根据路径查看节点是否存在")
     @GetMapping("/exist/{projectId}/{repoName}")
-    fun exist(
+    fun checkExist(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -103,24 +90,9 @@ interface NodeClient {
         @RequestBody fullPathList: List<String>
     ): Response<List<String>>
 
-    @ApiOperation("列表查询指定目录下所有节点")
-    @GetMapping("/list/{projectId}/{repoName}")
-    fun list(
-        @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
-        @ApiParam(value = "所属目录", required = true)
-        @RequestParam path: String,
-        @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
-        @RequestParam includeFolder: Boolean = true,
-        @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
-        @RequestParam deep: Boolean = false
-    ): Response<List<NodeInfo>>
-
     @ApiOperation("分页查询指定目录下所有节点")
     @GetMapping("/page/{projectId}/{repoName}/{pageNumber}/{pageSize}")
-    fun page(
+    fun listNodePage(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -140,38 +112,38 @@ interface NodeClient {
     ): Response<Page<NodeInfo>>
 
     @ApiOperation("创建节点")
-    @PostMapping
-    fun create(
+    @PostMapping("/create")
+    fun createNode(
         @RequestBody nodeCreateRequest: NodeCreateRequest
     ): Response<NodeDetail>
 
+    @ApiOperation("更新节点")
+    @PostMapping("/update")
+    fun updateNode(
+            @RequestBody nodeUpdateRequest: NodeUpdateRequest
+    ): Response<Void>
+
     @ApiOperation("重命名节点")
-    @PutMapping("/rename")
-    fun rename(
+    @PostMapping("/rename")
+    fun renameNode(
         @RequestBody nodeRenameRequest: NodeRenameRequest
     ): Response<Void>
 
-    @ApiOperation("更新节点")
-    @PutMapping("/update")
-    fun update(
-        @RequestBody nodeUpdateRequest: NodeUpdateRequest
-    ): Response<Void>
-
     @ApiOperation("移动节点")
-    @PutMapping("/move")
-    fun move(
+    @PostMapping("/move")
+    fun moveNode(
         @RequestBody nodeMoveRequest: NodeMoveRequest
     ): Response<Void>
 
     @ApiOperation("复制节点")
-    @PutMapping("/copy")
-    fun copy(
+    @PostMapping("/copy")
+    fun copyNode(
         @RequestBody nodeCopyRequest: NodeCopyRequest
     ): Response<Void>
 
     @ApiOperation("删除节点")
     @DeleteMapping("/delete")
-    fun delete(
+    fun deleteNode(
         @RequestBody nodeDeleteRequest: NodeDeleteRequest
     ): Response<Void>
 
@@ -197,17 +169,66 @@ interface NodeClient {
         @RequestParam path: String
     ): Response<Long>
 
-    @ApiOperation("列表查询分享链接")
-    @GetMapping("/share/list/{projectId}/{repoName}")
-    fun listShareRecord(
+    @ApiOperation("自定义查询节点")
+    @PostMapping("/search")
+    fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
+
+    @Deprecated("replace with getNodeDetail")
+    @ApiOperation("根据路径查看节点详情")
+    @GetMapping("/query/{projectId}/{repoName}/{repoType}")
+    fun getNodeDetail(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
+        @ApiParam(value = "仓库类型", required = true)
+        @PathVariable repoType: String,
         @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
-    ): Response<List<ShareRecordInfo>>
+    ): Response<NodeDetail?>
 
+    @Deprecated("replace with page")
+    @ApiOperation("列表查询指定目录下所有节点")
+    @GetMapping("/list/{projectId}/{repoName}")
+    fun listNode(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "所属目录", required = true)
+        @RequestParam path: String,
+        @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
+        @RequestParam includeFolder: Boolean = true,
+        @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
+        @RequestParam deep: Boolean = false
+    ): Response<List<NodeInfo>>
+
+    @Deprecated("replace with createNode")
+    @ApiOperation("创建节点")
+    @PostMapping
+    fun create(@RequestBody nodeCreateRequest: NodeCreateRequest): Response<NodeDetail>
+
+    @Deprecated("replace with renameNode")
+    @ApiOperation("重命名节点")
+    @PutMapping("/rename")
+    fun rename(@RequestBody nodeRenameRequest: NodeRenameRequest): Response<Void>
+
+    @Deprecated("replace with updateNode")
+    @ApiOperation("更新节点")
+    @PutMapping("/update")
+    fun update(@RequestBody nodeUpdateRequest: NodeUpdateRequest): Response<Void>
+
+    @Deprecated("replace with moveNode")
+    @ApiOperation("移动节点")
+    @PutMapping("/move")
+    fun move(@RequestBody nodeMoveRequest: NodeMoveRequest): Response<Void>
+
+    @Deprecated("replace with copyNode")
+    @ApiOperation("复制节点")
+    @PutMapping("/copy")
+    fun copy(@RequestBody nodeCopyRequest: NodeCopyRequest): Response<Void>
+
+    @Deprecated("replace with search")
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
     fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>

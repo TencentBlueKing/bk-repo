@@ -85,7 +85,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
             with(composerJsonNode) {
                 // 查询对应的 "/p/%package%.json" 是否存在
                 val pArtifactUri = "/p/$packageName.json"
-                val node = nodeClient.detail(projectId, repoName, pArtifactUri).data
+                val node = nodeClient.getNodeDetail(projectId, repoName, pArtifactUri).data
                 val resultJson = if (node == null) {
                     JsonUtil.addComposerVersion(String.format(COMPOSER_VERSION_INIT, packageName), json, packageName, version)
                 } else {
@@ -102,7 +102,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
                         context = jsonUploadContext,
                         fullPath = "/p/$packageName.json"
                     )
-                    nodeClient.create(jsonNodeCreateRequest)
+                    nodeClient.createNode(jsonNodeCreateRequest)
                     jsonFile.let {
                         storageService.store(
                             jsonNodeCreateRequest.sha256!!,
@@ -119,7 +119,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
         val repeat = checkRepeatArtifact(context)
         if (repeat != ArtifactRepeat.FULLPATH_SHA256) { indexer(context) }
         val nodeCreateRequest = getCompressNodeCreateRequest(context)
-        nodeClient.create(nodeCreateRequest)
+        nodeClient.createNode(nodeCreateRequest)
         storageService.store(
             nodeCreateRequest.sha256!!,
             context.getArtifactFile(), context.storageCredentials
@@ -146,12 +146,12 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
         with(context.artifactInfo) {
             val request = HttpContextHolder.getRequest()
             val host = "${request.requestAddr()}/$projectId/$repoName"
-            while (nodeClient.detail(projectId, repoName, artifactUri).data == null) {
+            while (nodeClient.getNodeDetail(projectId, repoName, artifactUri).data == null) {
                 val byteArrayInputStream = ByteArrayInputStream(INIT_PACKAGES.toByteArray())
                 val artifactFile = ArtifactFileFactory.build(byteArrayInputStream)
                 val artifactUploadContext = ArtifactUploadContext(artifactFile)
                 val nodeCreateRequest = buildNodeCreateRequest(context = artifactUploadContext)
-                nodeClient.create(nodeCreateRequest)
+                nodeClient.createNode(nodeCreateRequest)
                 artifactUploadContext.getArtifactFile().let {
                     storageService.store(
                         nodeCreateRequest.sha256!!,
@@ -190,7 +190,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
                 select = mutableListOf("projectId", "repoName", "fullPath", "sha256"),
                 rule = queryRule
             )
-            val nodeList = nodeClient.query(queryModel).data?.records
+            val nodeList = nodeClient.search(queryModel).data?.records
             if (nodeList.isNullOrEmpty()) {
                 NONE
             } else {
@@ -209,7 +209,7 @@ class ComposerLocalRepository : LocalRepository(), ComposerRepository {
      */
     private fun stream2Json(context: ArtifactContext): String? {
         return with(context.artifactInfo) {
-            val node = nodeClient.detail(projectId, repoName, artifactUri).data ?: return null
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactUri).data ?: return null
             node.takeIf { !it.folder } ?: return null
             val inputStream = storageService.load(
                 node.sha256!!,

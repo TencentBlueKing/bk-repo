@@ -53,7 +53,7 @@ class UserProjectController(
 ) {
     @ApiOperation("创建项目")
     @PostMapping("/create")
-    fun create(
+    fun createProject(
         @RequestAttribute userId: String,
         @RequestBody userProjectRequest: UserProjectCreateRequest
     ): Response<Void> {
@@ -65,24 +65,43 @@ class UserProjectController(
                 operator = userId
             )
         }
-        projectService.create(createRequest)
+        projectService.createProject(createRequest)
         return ResponseBuilder.success()
     }
 
     @ApiOperation("查询项目是否存在")
     @GetMapping("/exist/{projectId}")
-    fun checkProjectExist(
+    fun checkExist(
         @RequestAttribute userId: String,
         @ApiParam(value = "项目ID", required = true)
         @PathVariable projectId: String
     ): Response<Boolean> {
         permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
-        return ResponseBuilder.success(projectService.exist(projectId))
+        return ResponseBuilder.success(projectService.checkExist(projectId))
     }
 
     @ApiOperation("项目列表")
     @GetMapping("/list")
-    fun list(): Response<List<ProjectInfo>> {
-        return ResponseBuilder.success(projectService.list())
+    fun listProject(): Response<List<ProjectInfo>> {
+        return ResponseBuilder.success(projectService.listProject())
+    }
+
+    @Deprecated("replace with createProject, waiting kb-ci ")
+    @ApiOperation("创建项目")
+    @PostMapping
+    fun create(
+        @RequestAttribute userId: String,
+        @RequestBody userProjectRequest: UserProjectCreateRequest
+    ): Response<Void> {
+        val createRequest = with(userProjectRequest) {
+            ProjectCreateRequest(
+                    name = name,
+                    displayName = displayName,
+                    description = description,
+                    operator = userId
+            )
+        }
+        projectService.createProject(createRequest)
+        return ResponseBuilder.success()
     }
 }

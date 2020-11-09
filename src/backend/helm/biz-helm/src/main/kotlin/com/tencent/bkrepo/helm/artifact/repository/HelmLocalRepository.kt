@@ -56,7 +56,7 @@ class HelmLocalRepository : LocalRepository() {
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = context.getStringAttribute(FULL_PATH).orEmpty()
-        val isExist = nodeClient.exist(projectId, repoName, fullPath).data!!
+        val isExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
         if (isExist && !isOverwrite(fullPath, isForce)) {
             throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
         }
@@ -98,7 +98,7 @@ class HelmLocalRepository : LocalRepository() {
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         val fullPath = context.getStringAttribute(FULL_PATH)!!
         with(context) {
-            val node = nodeClient.detail(projectId, repoName, fullPath).data
+            val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
             if (node == null || node.folder) return null
             node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
             node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
@@ -137,7 +137,7 @@ class HelmLocalRepository : LocalRepository() {
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = context.getStringAttribute(FULL_PATH)!!
-        val node = nodeClient.detail(projectId, repoName, fullPath).data
+        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
         if (node == null || node.folder) return null
         return storageService.load(
             node.sha256!!, Range.full(node.size), context.storageCredentials
@@ -151,7 +151,7 @@ class HelmLocalRepository : LocalRepository() {
         val fullPath = context.getAttribute<List<String>>(FULL_PATH).orEmpty()
         val userId = context.userId
         fullPath.forEach {
-            nodeClient.delete(NodeDeleteRequest(projectId, repoName, it, userId))
+            nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, it, userId))
         }
     }
 

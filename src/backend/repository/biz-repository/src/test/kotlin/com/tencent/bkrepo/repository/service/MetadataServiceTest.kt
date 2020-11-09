@@ -65,9 +65,9 @@ class MetadataServiceTest @Autowired constructor(
     fun beforeAll() {
         initMock()
 
-        if (!projectService.exist(UT_PROJECT_ID)) {
+        if (!projectService.checkExist(UT_PROJECT_ID)) {
             val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
-            projectService.create(projectCreateRequest)
+            projectService.createProject(projectCreateRequest)
         }
         if (!repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME)) {
             val repoCreateRequest = RepoCreateRequest(

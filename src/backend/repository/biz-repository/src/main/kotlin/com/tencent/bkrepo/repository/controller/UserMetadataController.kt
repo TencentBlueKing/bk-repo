@@ -57,7 +57,7 @@ class UserMetadataController(
     @ApiOperation("查询元数据列表")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping(DEFAULT_MAPPING_URI)
-    fun query(
+    fun listMetadata(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<Map<String, Any>> {

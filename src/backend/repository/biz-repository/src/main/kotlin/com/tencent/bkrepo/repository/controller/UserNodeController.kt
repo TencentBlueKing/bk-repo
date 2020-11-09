@@ -75,7 +75,7 @@ class UserNodeController(
     @ApiOperation("根据路径查看节点详情")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/detail/$DEFAULT_MAPPING_URI")
-    fun detail(
+    fun getNodeDetail(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<NodeDetail> {
@@ -110,7 +110,7 @@ class UserNodeController(
     @ApiOperation("删除节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     @DeleteMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/delete/$DEFAULT_MAPPING_URI")
-    fun delete(
+    fun deleteNode(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<Void> {
@@ -129,7 +129,7 @@ class UserNodeController(
     @ApiOperation("更新节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     @PostMapping("/update/$DEFAULT_MAPPING_URI")
-    fun update(
+    fun updateNode(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestBody request: UserNodeUpdateRequest
@@ -150,7 +150,7 @@ class UserNodeController(
     @ApiOperation("重命名节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     @PostMapping("/rename/$DEFAULT_MAPPING_URI")
-    fun rename(
+    fun renameNode(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestParam newFullPath: String
@@ -171,7 +171,7 @@ class UserNodeController(
     @Deprecated("/rename/{projectId}/{repoName}/**")
     @ApiOperation("重命名节点")
     @PostMapping("/rename")
-    fun rename(
+    fun renameNode(
         @RequestAttribute userId: String,
         @RequestBody request: UserNodeRenameRequest
     ): Response<Void> {
@@ -191,7 +191,7 @@ class UserNodeController(
 
     @ApiOperation("移动节点")
     @PostMapping("/move")
-    fun move(
+    fun moveNode(
         @RequestAttribute userId: String,
         @RequestBody request: UserNodeMoveRequest
     ): Response<Void> {
@@ -217,7 +217,7 @@ class UserNodeController(
 
     @ApiOperation("复制节点")
     @PostMapping("/copy")
-    fun copy(
+    fun copyNode(
         @RequestAttribute userId: String,
         @RequestBody request: UserNodeCopyRequest
     ): Response<Void> {
@@ -257,7 +257,7 @@ class UserNodeController(
     @ApiOperation("分页查询节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/page/$DEFAULT_MAPPING_URI")
-    fun page(
+    fun listPageNode(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @ApiParam(value = "当前页", required = true, defaultValue = "1")
@@ -274,7 +274,7 @@ class UserNodeController(
         @RequestParam sort: Boolean = false
     ): Response<Page<NodeInfo>> {
         with(artifactInfo) {
-            val nodePage = nodeService.page(
+            val nodePage = nodeService.listNodePage(
                 projectId, repoName, getArtifactFullPath(),
                 pageNumber, pageSize,
                 includeFolder, includeMetadata, deep, sort
@@ -283,6 +283,13 @@ class UserNodeController(
         }
     }
 
+    @ApiOperation("自定义查询节点")
+    @PostMapping("/search")
+    fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
+        return ResponseBuilder.success(nodeQueryService.query(queryModel))
+    }
+
+    @Deprecated("replace with search")
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
     fun query(

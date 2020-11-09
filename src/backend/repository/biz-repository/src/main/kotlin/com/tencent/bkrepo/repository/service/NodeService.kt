@@ -55,7 +55,7 @@ interface NodeService {
     /**
      * 列表查询节点
      */
-    fun list(
+    fun listNode(
         projectId: String,
         repoName: String,
         path: String,
@@ -67,7 +67,7 @@ interface NodeService {
     /**
      * 分页查询节点
      */
-    fun page(
+    fun listNodePage(
         projectId: String,
         repoName: String,
         path: String,

@@ -63,7 +63,7 @@ class ListViewServiceImpl(
             response.contentType = MediaTypes.TEXT_HTML
             if (node.folder) {
                 trailingSlash()
-                val nodeList = nodeService.list(
+                val nodeList = nodeService.listNode(
                     artifactInfo.projectId,
                     artifactInfo.repoName,
                     getArtifactFullPath(),
@@ -109,7 +109,7 @@ class ListViewServiceImpl(
 
     override fun listProjectView() {
         trailingSlash()
-        val itemList = projectService.list().map { ProjectListViewItem.from(it) }
+        val itemList = projectService.listProject().map { ProjectListViewItem.from(it) }
         val headerList = listOf(
             HeaderItem("Name"),
             HeaderItem("Created by"),

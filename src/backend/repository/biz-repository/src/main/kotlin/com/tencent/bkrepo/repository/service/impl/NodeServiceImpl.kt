@@ -143,7 +143,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
         return nodeDao.count(query)
     }
 
-    override fun list(
+    override fun listNode(
         projectId: String,
         repoName: String,
         path: String,
@@ -159,7 +159,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
         return nodeDao.find(query).map { convert(it)!! }
     }
 
-    override fun page(
+    override fun listNodePage(
         projectId: String,
         repoName: String,
         path: String,

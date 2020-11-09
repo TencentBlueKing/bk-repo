@@ -72,9 +72,9 @@ class NodeServiceTest @Autowired constructor(
     fun beforeAll() {
         initMock()
 
-        if (!projectService.exist(UT_PROJECT_ID)) {
+        if (!projectService.checkExist(UT_PROJECT_ID)) {
             val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
-            projectService.create(projectCreateRequest)
+            projectService.createProject(projectCreateRequest)
         }
         if (!repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME)) {
             val repoCreateRequest = RepoCreateRequest(
@@ -202,21 +202,21 @@ class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试列表查询")
     fun testListNode() {
-        assertEquals(0, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "", includeFolder = false, deep = false).size)
+        assertEquals(0, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "", includeFolder = false, deep = false).size)
 
         nodeService.create(createRequest("/a/b/1.txt", false))
-        assertEquals(1, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "", includeFolder = true, deep = false).size)
+        assertEquals(1, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "", includeFolder = true, deep = false).size)
 
         val size = 20
         repeat(size) { i -> nodeService.create(createRequest("/a/b/c/$i.txt", false)) }
         repeat(size) { i -> nodeService.create(createRequest("/a/b/d/$i.txt", false)) }
 
-        assertEquals(1, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = false, deep = false).size)
-        assertEquals(3, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = true, deep = false).size)
-        assertEquals(size, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", includeFolder = true, deep = true).size)
-        assertEquals(size * 2 + 1, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = false, deep = true).size)
-        assertEquals(size * 2 + 1 + 2, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = true, deep = true).size)
-        assertEquals(size * 2 + 1 + 2 + 2, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/", includeFolder = true, deep = true).size)
+        assertEquals(1, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = false, deep = false).size)
+        assertEquals(3, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = true, deep = false).size)
+        assertEquals(size, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", includeFolder = true, deep = true).size)
+        assertEquals(size * 2 + 1, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = false, deep = true).size)
+        assertEquals(size * 2 + 1 + 2, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = true, deep = true).size)
+        assertEquals(size * 2 + 1 + 2 + 2, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/", includeFolder = true, deep = true).size)
     }
 
     @Test
@@ -226,21 +226,21 @@ class NodeServiceTest @Autowired constructor(
         repeat(size.toInt()) { i -> nodeService.create(createRequest("/a/b/c/$i.txt", false)) }
 
         // 测试从第0页开始，兼容性测试
-        var page = nodeService.page(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 0, 10, includeFolder = false, deep = false)
+        var page = nodeService.listNodePage(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 0, 10, includeFolder = false, deep = false)
         assertEquals(10, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
         assertEquals(10, page.pageSize)
         assertEquals(1, page.pageNumber)
 
-        page = nodeService.page(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 1, 10, includeFolder = false, deep = false)
+        page = nodeService.listNodePage(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 1, 10, includeFolder = false, deep = false)
         assertEquals(10, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
         assertEquals(10, page.pageSize)
         assertEquals(1, page.pageNumber)
 
-        page = nodeService.page(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 6, 10, includeFolder = false, deep = false)
+        page = nodeService.listNodePage(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 6, 10, includeFolder = false, deep = false)
         assertEquals(1, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
@@ -248,7 +248,7 @@ class NodeServiceTest @Autowired constructor(
         assertEquals(6, page.pageNumber)
 
         // 测试空页码
-        page = nodeService.page(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 7, 10, includeFolder = false, deep = false)
+        page = nodeService.listNodePage(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 7, 10, includeFolder = false, deep = false)
         assertEquals(0, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
@@ -300,10 +300,10 @@ class NodeServiceTest @Autowired constructor(
         nodeService.create(createRequest("/.*|^/a/1.txt", false))
         nodeService.create(createRequest("/a/1.txt", false))
 
-        assertEquals(1, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/.*|^/a", includeFolder = true, deep = true).size)
+        assertEquals(1, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/.*|^/a", includeFolder = true, deep = true).size)
         nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, "/.*|^/a", UT_USER)
-        assertEquals(0, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/.*|^/a", includeFolder = true, deep = true).size)
-        assertEquals(1, nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/a", includeFolder = true, deep = true).size)
+        assertEquals(0, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/.*|^/a", includeFolder = true, deep = true).size)
+        assertEquals(1, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a", includeFolder = true, deep = true).size)
     }
 
     @Test
@@ -503,7 +503,7 @@ class NodeServiceTest @Autowired constructor(
             operator = UT_USER
         )
         nodeService.move(moveRequest)
-        assertTrue(nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/data/dir3", includeFolder = false, deep = false).size == 1)
+        assertTrue(nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/data/dir3", includeFolder = false, deep = false).size == 1)
     }
 
     @Test
@@ -649,7 +649,7 @@ class NodeServiceTest @Autowired constructor(
             operator = UT_USER
         )
         nodeService.move(moveRequest)
-        nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "").forEach {
+        nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "").forEach {
             println("path: ${it.path}, name: ${it.name}, fullPath: ${it.fullPath}")
         }
         assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/b/1.txt"))
@@ -727,7 +727,7 @@ class NodeServiceTest @Autowired constructor(
 
         assertTrue(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/b")?.folder == true)
         assertTrue(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/b/1.txt")?.folder == false)
-        nodeService.list(UT_PROJECT_ID, UT_REPO_NAME, "/", true, deep = true).forEach { println(it) }
+        nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/", true, deep = true).forEach { println(it) }
     }
 
     @Test

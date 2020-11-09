@@ -37,17 +37,25 @@ class MetadataController(
     private val metadataService: MetadataService
 ) : MetadataClient {
 
-    override fun query(projectId: String, repoName: String, fullPath: String): Response<Map<String, Any>> {
+    override fun listMetadata(projectId: String, repoName: String, fullPath: String): Response<Map<String, Any>> {
         return ResponseBuilder.success(metadataService.query(projectId, repoName, fullPath))
     }
 
-    override fun save(metadataSaveRequest: MetadataSaveRequest): Response<Void> {
-        metadataService.save(metadataSaveRequest)
+    override fun saveMetadata(request: MetadataSaveRequest): Response<Void> {
+        metadataService.save(request)
         return ResponseBuilder.success()
     }
 
-    override fun delete(metadataDeleteRequest: MetadataDeleteRequest): Response<Void> {
-        metadataService.delete(metadataDeleteRequest)
+    override fun deleteMetadata(request: MetadataDeleteRequest): Response<Void> {
+        metadataService.delete(request)
         return ResponseBuilder.success()
+    }
+
+    override fun save(request: MetadataSaveRequest): Response<Void> {
+        return saveMetadata(request)
+    }
+
+    override fun delete(request: MetadataDeleteRequest): Response<Void> {
+        return deleteMetadata(request)
     }
 }

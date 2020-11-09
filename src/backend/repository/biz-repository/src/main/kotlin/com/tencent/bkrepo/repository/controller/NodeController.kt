@@ -47,24 +47,14 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class NodeController(
     private val nodeService: NodeService,
-    private val nodeQueryService: NodeQueryService,
-    private val shareService: ShareService
+    private val nodeQueryService: NodeQueryService
 ) : NodeClient {
 
-    override fun detail(
-        projectId: String,
-        repoName: String,
-        repoType: String,
-        fullPath: String
-    ): Response<NodeDetail?> {
-        return ResponseBuilder.success(nodeService.detail(projectId, repoName, fullPath, repoType))
-    }
-
-    override fun detail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
+    override fun getNodeDetail(projectId: String, repoName: String, fullPath: String): Response<NodeDetail?> {
         return ResponseBuilder.success(nodeService.detail(projectId, repoName, fullPath))
     }
 
-    override fun exist(projectId: String, repoName: String, fullPath: String): Response<Boolean> {
+    override fun checkExist(projectId: String, repoName: String, fullPath: String): Response<Boolean> {
         return ResponseBuilder.success(nodeService.exist(projectId, repoName, fullPath))
     }
 
@@ -76,17 +66,7 @@ class NodeController(
         return ResponseBuilder.success(nodeService.listExistFullPath(projectId, repoName, fullPathList))
     }
 
-    override fun list(
-        projectId: String,
-        repoName: String,
-        path: String,
-        includeFolder: Boolean,
-        deep: Boolean
-    ): Response<List<NodeInfo>> {
-        return ResponseBuilder.success(nodeService.list(projectId, repoName, path, includeFolder, false, deep))
-    }
-
-    override fun page(
+    override fun listNodePage(
         projectId: String,
         repoName: String,
         pageNumber: Int,
@@ -96,35 +76,35 @@ class NodeController(
         includeMetadata: Boolean,
         deep: Boolean
     ): Response<Page<NodeInfo>> {
-        val nodePage = nodeService.page(projectId, repoName, path, pageNumber, pageSize, includeFolder, includeMetadata, deep)
+        val nodePage = nodeService.listNodePage(projectId, repoName, path, pageNumber, pageSize, includeFolder, includeMetadata, deep)
         return ResponseBuilder.success(nodePage)
     }
 
-    override fun create(nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {
+    override fun createNode(nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {
         return ResponseBuilder.success(nodeService.create(nodeCreateRequest))
     }
 
-    override fun rename(nodeRenameRequest: NodeRenameRequest): Response<Void> {
-        nodeService.rename(nodeRenameRequest)
-        return ResponseBuilder.success()
-    }
-
-    override fun update(nodeUpdateRequest: NodeUpdateRequest): Response<Void> {
+    override fun updateNode(nodeUpdateRequest: NodeUpdateRequest): Response<Void> {
         nodeService.update(nodeUpdateRequest)
         return ResponseBuilder.success()
     }
 
-    override fun move(nodeMoveRequest: NodeMoveRequest): Response<Void> {
+    override fun renameNode(nodeRenameRequest: NodeRenameRequest): Response<Void> {
+        nodeService.rename(nodeRenameRequest)
+        return ResponseBuilder.success()
+    }
+
+    override fun moveNode(nodeMoveRequest: NodeMoveRequest): Response<Void> {
         nodeService.move(nodeMoveRequest)
         return ResponseBuilder.success()
     }
 
-    override fun copy(nodeCopyRequest: NodeCopyRequest): Response<Void> {
+    override fun copyNode(nodeCopyRequest: NodeCopyRequest): Response<Void> {
         nodeService.copy(nodeCopyRequest)
         return ResponseBuilder.success()
     }
 
-    override fun delete(nodeDeleteRequest: NodeDeleteRequest): Response<Void> {
+    override fun deleteNode(nodeDeleteRequest: NodeDeleteRequest): Response<Void> {
         nodeService.delete(nodeDeleteRequest)
         return ResponseBuilder.success()
     }
@@ -137,15 +117,50 @@ class NodeController(
         return ResponseBuilder.success(nodeService.countFileNode(projectId, repoName, path))
     }
 
-    override fun listShareRecord(
+    override fun search(queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
+        return ResponseBuilder.success(nodeQueryService.query(queryModel))
+    }
+
+    override fun getNodeDetail(
         projectId: String,
         repoName: String,
+        repoType: String,
         fullPath: String
-    ): Response<List<ShareRecordInfo>> {
-        return ResponseBuilder.success(shareService.list(projectId, repoName, fullPath))
+    ): Response<NodeDetail?> {
+        return ResponseBuilder.success(nodeService.detail(projectId, repoName, fullPath, repoType))
+    }
+
+    override fun listNode(
+        projectId: String,
+        repoName: String,
+        path: String,
+        includeFolder: Boolean,
+        deep: Boolean
+    ): Response<List<NodeInfo>> {
+        return ResponseBuilder.success(nodeService.listNode(projectId, repoName, path, includeFolder, false, deep))
+    }
+
+    override fun create(nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {
+        return this.createNode(nodeCreateRequest)
+    }
+
+    override fun rename(nodeRenameRequest: NodeRenameRequest): Response<Void> {
+        return this.renameNode(nodeRenameRequest)
+    }
+
+    override fun update(nodeUpdateRequest: NodeUpdateRequest): Response<Void> {
+        return this.updateNode(nodeUpdateRequest)
+    }
+
+    override fun move(nodeMoveRequest: NodeMoveRequest): Response<Void> {
+        return this.moveNode(nodeMoveRequest)
+    }
+
+    override fun copy(nodeCopyRequest: NodeCopyRequest): Response<Void> {
+        return this.copyNode(nodeCopyRequest)
     }
 
     override fun query(queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
-        return ResponseBuilder.success(nodeQueryService.query(queryModel))
+        return this.search(queryModel)
     }
 }

@@ -82,9 +82,9 @@ class RepositoryServiceTest @Autowired constructor(
     @BeforeAll
     fun beforeAll() {
         initMock()
-        if (!projectService.exist(UT_PROJECT_ID)) {
+        if (!projectService.checkExist(UT_PROJECT_ID)) {
             val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
-            projectService.create(projectCreateRequest)
+            projectService.createProject(projectCreateRequest)
         }
         val storageCreateRequest = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, storageCredentials)
         storageCredentialService.create(UT_USER, storageCreateRequest)

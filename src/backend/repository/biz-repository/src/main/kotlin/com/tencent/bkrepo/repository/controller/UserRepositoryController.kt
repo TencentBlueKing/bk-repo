@@ -138,7 +138,7 @@ class UserRepositoryController(
         @RequestParam type: String? = null
     ): Response<List<RepositoryInfo>> {
         permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
-        return ResponseBuilder.success(repositoryService.list(projectId))
+        return ResponseBuilder.success(repositoryService.list(projectId, name, type))
     }
 
     @ApiOperation("删除仓库")

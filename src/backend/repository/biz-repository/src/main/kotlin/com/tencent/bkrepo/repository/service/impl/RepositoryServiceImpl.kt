@@ -152,7 +152,9 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
             Preconditions.checkArgument(description?.length ?: 0 <= REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
             // 确保项目一定存在
-            projectService.checkProject(projectId)
+            if (projectService.checkExist(projectId)) {
+                throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
+            }
             // 确保同名仓库不存在
             if (exist(projectId, name)) {
                 throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)

@@ -37,6 +37,7 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -50,11 +51,11 @@ class ProjectServiceImpl(
     private val projectRepository: ProjectRepository
 ) : AbstractService(), ProjectService {
 
-    override fun query(name: String): ProjectInfo? {
-        return convert(queryProject(name))
+    override fun getProjectInfo(name: String): ProjectInfo? {
+        return convert(getProjectByName(name))
     }
 
-    override fun list(): List<ProjectInfo> {
+    override fun listProject(): List<ProjectInfo> {
         return projectRepository.findAll().map { convert(it)!! }
     }
 
@@ -73,14 +74,14 @@ class ProjectServiceImpl(
         }
     }
 
-    override fun exist(name: String): Boolean {
-        return queryProject(name) != null
+    override fun checkExist(name: String): Boolean {
+        return getProjectByName(name) != null
     }
 
-    override fun create(request: ProjectCreateRequest): ProjectInfo {
+    override fun createProject(request: ProjectCreateRequest): ProjectInfo {
         with(request) {
             validateParameter(this)
-            if (exist(name)) {
+            if (checkExist(name)) {
                 throw ErrorCodeException(ArtifactMessageCode.PROJECT_EXISTED, name)
             }
             val project = TProject(
@@ -100,20 +101,13 @@ class ProjectServiceImpl(
                     .let { convert(it)!! }
             } catch (exception: DuplicateKeyException) {
                 logger.warn("Insert project[$name] error: [${exception.message}]")
-                query(name)!!
+                getProjectInfo(name)!!
             }
         }
     }
 
-    override fun checkProject(name: String) {
-        if (!exist(name)) throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
-    }
-
-    private fun queryProject(name: String): TProject? {
-        if (name.isBlank()) return null
-
-        val criteria = Criteria.where(TProject::name.name).`is`(name)
-        return mongoTemplate.findOne(Query(criteria), TProject::class.java)
+    private fun getProjectByName(name: String): TProject? {
+        return mongoTemplate.findOne(Query(TProject::name.isEqualTo(name)), TProject::class.java)
     }
 
     private fun validateParameter(request: ProjectCreateRequest) {
