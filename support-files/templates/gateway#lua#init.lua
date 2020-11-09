@@ -55,7 +55,7 @@ config = {
     domain = "__BK_REPO_HOST__",
     authorization = "__BK_REPO_AUTHORIZATION__"
   },
-  apigwUrl = "__BK_REPO_APIGW_URL__"
+  mode = "standalone"
 }
   
 require("init_common")
