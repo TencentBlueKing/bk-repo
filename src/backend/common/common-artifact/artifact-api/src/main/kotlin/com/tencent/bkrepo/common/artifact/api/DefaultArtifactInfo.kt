@@ -21,6 +21,9 @@
 
 package com.tencent.bkrepo.common.artifact.api
 
+/**
+ * 默认格式构件信息
+ */
 class DefaultArtifactInfo(
     projectId: String,
     repoName: String,

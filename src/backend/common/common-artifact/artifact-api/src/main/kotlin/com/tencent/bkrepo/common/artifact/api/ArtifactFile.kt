@@ -26,17 +26,65 @@ import java.io.InputStream
 import java.security.SecureRandom
 import kotlin.math.abs
 
+/**
+ * 构件文件接口
+ */
 interface ArtifactFile {
+
+    /**
+     * 获取文件流，使用完记得关闭
+     */
     fun getInputStream(): InputStream
+
+    /**
+     * 返回文件大小，单位字节
+     */
     fun getSize(): Long
+
+    /**
+     * 判断文件是否在内存中
+     */
     fun isInMemory(): Boolean
+
+    /**
+     * 获取文件对象。当文件在内存中时，返回空
+     */
     fun getFile(): File?
+
+    /**
+     * 强制将文件数据写入到文件中，并返回该文件对象
+     */
     fun flushToFile(): File
-    fun isFallback(): Boolean
+
+    /**
+     * 获取文件数据的md5校验值
+     */
     fun getFileMd5(): String
+
+    /**
+     * 获取文件数据的sha1校验值
+     */
+    fun getFileSha1(): String
+
+    /**
+     * 获取文件数据的sha256校验值
+     */
     fun getFileSha256(): String
+
+    /**
+     * 删除文件
+     */
     fun delete()
+
+    /**
+     * 判断是否初始化
+     */
     fun hasInitialized(): Boolean
+
+    /**
+     * 判断数据存储过程是否降级到本地磁盘
+     */
+    fun isFallback(): Boolean
 
     companion object {
         protected const val ARTIFACT_PREFIX = "artifact_"

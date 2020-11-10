@@ -22,13 +22,18 @@
 package com.tencent.bkrepo.common.artifact.api
 
 import com.tencent.bkrepo.common.artifact.hash.md5
+import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import java.io.File
 import java.nio.file.Files
 
+/**
+ * 用系统文件接口实现的ArtifactFile
+ */
 class FileSystemArtifactFile(private val file: File) : ArtifactFile {
 
     private var md5: String? = null
+    private var sha1: String? = null
     private var sha256: String? = null
 
     override fun getInputStream() = file.inputStream()
@@ -45,6 +50,10 @@ class FileSystemArtifactFile(private val file: File) : ArtifactFile {
 
     override fun getFileMd5(): String {
         return md5 ?: run { file.md5().apply { md5 = this } }
+    }
+
+    override fun getFileSha1(): String {
+        return sha1 ?: run { file.sha1().apply { sha1 = this } }
     }
 
     override fun getFileSha256(): String {
