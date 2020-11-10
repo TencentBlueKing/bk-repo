@@ -228,7 +228,7 @@
         background-color: white;
         .result-list {
             flex: 1;
-            overflow: auto;
+            overflow-y: auto;
             border-bottom: 1px solid $borderWeightColor;
             .result-item{
                 justify-content: space-around;
