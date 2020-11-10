@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
@@ -66,7 +67,10 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -97,18 +101,18 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     private lateinit var repositoryProperties: RepositoryProperties
 
     override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
-        val tRepository = queryRepository(projectId, name, type)
+        val tRepository = findByNameAndType(projectId, name, type)
         return convertToInfo(tRepository)
     }
 
     override fun getRepoDetail(projectId: String, name: String, type: String?): RepositoryDetail? {
-        val tRepository = queryRepository(projectId, name, type)
+        val tRepository = findByNameAndType(projectId, name, type)
         val storageCredentials = tRepository?.credentialsKey?.let { storageCredentialService.findByKey(it) }
         return convertToDetail(tRepository, storageCredentials)
     }
 
     override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String) {
-        queryRepository(projectId, repoName, null)?.run {
+        findByNameAndType(projectId, repoName, null)?.run {
             this.credentialsKey = storageCredentialsKey
             repoRepository.save(this)
         }
@@ -133,9 +137,9 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         val projectId = request.projectId
 
         val criteria = if (request.repoNames.isEmpty()) {
-            Criteria.where(TRepository::projectId.name).`is`(projectId)
+            Criteria.where(TRepository::projectId.name).isEqualTo(projectId)
         } else {
-            Criteria.where(TRepository::projectId.name).`is`(projectId)
+            Criteria.where(TRepository::projectId.name).isEqualTo(projectId)
                 .and(TRepository::name.name).inValues(request.repoNames)
         }
         val totalCount = mongoTemplate.count(Query(criteria), TRepository::class.java)
@@ -144,7 +148,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     }
 
     override fun checkExist(projectId: String, name: String, type: String?): Boolean {
-        return queryRepository(projectId, name, type) != null
+        return findByNameAndType(projectId, name, type) != null
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -187,7 +191,6 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
                     updateCompositeConfiguration(repoConfiguration, null, repository, operator)
                 }
                 repoRepository.insert(repository)
-                    .also { createRepoManager(it.projectId, it.name, it.createdBy) }
                     .also { publishEvent(RepoCreatedEvent(repoCreateRequest)) }
                     .also { logger.info("Create repository [$repoCreateRequest] success.") }
                     .let { convertToDetail(repository, storageCredential)!! }
@@ -245,7 +248,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     /**
      * 查询仓库
      */
-    private fun queryRepository(projectId: String, name: String, type: String?): TRepository? {
+    private fun findByNameAndType(projectId: String, name: String, type: String?): TRepository? {
         val query = buildSingleQuery(projectId, name, type)
         return mongoTemplate.findOne(query, TRepository::class.java)
     }
@@ -254,17 +257,17 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
      * 检查仓库是否存在，不存在则抛异常
      */
     override fun checkRepository(projectId: String, repoName: String, repoType: String?): TRepository {
-        return queryRepository(projectId, repoName, repoType) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
+        return findByNameAndType(projectId, repoName, repoType) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
     }
 
     /**
      * 构造list查询条件
      */
     private fun buildListQuery(projectId: String, repoName: String? = null, repoType: String? = null): Query {
-        val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId)
-        criteria.and(TRepository::display.name).ne(false)
-        repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name.name).regex("^$this") }
-        repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type.name).`is`(this.toUpperCase()) }
+        val criteria = where(TRepository::projectId).isEqualTo(projectId)
+        criteria.and(TRepository::display).ne(false)
+        repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name).regex("^$this") }
+        repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
         return Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
     }
 
@@ -272,9 +275,11 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
      * 构造单个仓库查询条件
      */
     private fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
-        val criteria = Criteria.where(TRepository::projectId.name).`is`(projectId)
-        criteria.and(TRepository::name.name).`is`(repoName)
-        repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type.name).`is`(this.toUpperCase()) }
+        val criteria = where(TRepository::projectId).isEqualTo(projectId)
+            .and(TRepository::name).isEqualTo(repoName)
+        if (repoType != null && repoType.toUpperCase() != RepositoryType.NONE.name) {
+            criteria.and(TRepository::type).isEqualTo(repoType.toUpperCase())
+        }
         return Query(criteria)
     }
 
@@ -373,7 +378,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
      */
     private fun deleteProxyRepo(projectId: String, repoName: String, channelName: String) {
         val proxyRepoName = PRIVATE_PROXY_REPO_NAME.format(repoName, channelName)
-        val proxyRepo = queryRepository(projectId, proxyRepoName, null)
+        val proxyRepo = findByNameAndType(projectId, proxyRepoName, null)
         proxyRepo?.let { repo ->
             // 删除仓库
             nodeService.deleteByPath(repo.projectId, repo.name, ROOT, SYSTEM_USER)
