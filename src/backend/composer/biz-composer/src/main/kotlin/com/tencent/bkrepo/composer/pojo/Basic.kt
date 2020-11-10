@@ -19,15 +19,20 @@
  *
  */
 
-package com.tencent.bkrepo.rpm.pojo
+package com.tencent.bkrepo.composer.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-
-@ApiModel("索引目录数据类")
-data class RepodataUri(
-    @ApiModelProperty("契合本次请求的repodata_depth 目录路径")
-    val repodataPath: String,
-    @ApiModelProperty("构件相对于索引文件的保存路径")
-    val artifactRelativePath: String
+data class Basic(
+    val name: String,
+    val version: String,
+    val size: Long,
+    val fullPath: String,
+    val createdBy: String,
+    val createdDate: String,
+    val lastModifiedBy: String,
+    val lastModifiedDate: String,
+    val downloadCount: Long,
+    val sha256: String?,
+    val md5: String?,
+    val stageTag: List<String>?,
+    val description: String?
 )

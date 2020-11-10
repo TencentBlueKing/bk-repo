@@ -24,7 +24,7 @@ package com.tencent.bkrepo.composer.util
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.tencent.bkrepo.composer.ARTIFACT_DIRECT_DOWNLOAD_PREFIX
+import com.tencent.bkrepo.composer.DIRECT_DISTS
 import com.tencent.bkrepo.composer.COMPOSER_JSON
 import com.tencent.bkrepo.composer.exception.ComposerUnSupportCompressException
 import com.tencent.bkrepo.composer.pojo.ComposerMetadata
@@ -34,7 +34,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import java.io.InputStream
 import java.util.zip.GZIPInputStream
-import com.tencent.bkrepo.composer.util.pojo.ComposerJsonNode
+import com.tencent.bkrepo.composer.util.pojo.ComposerArtifact
 import org.apache.commons.compress.archivers.ArchiveEntry
 import java.util.UUID
 
@@ -93,19 +93,19 @@ object DecompressUtil {
      * @param uri 请求中的全文件名
      * @return composerJsonNode
      */
-    fun InputStream.wrapperJson(uri: String): ComposerJsonNode {
+    fun InputStream.wrapperJson(uri: String): ComposerArtifact {
         val uriArgs = UriUtil.getUriArgs(uri)
         val json = this.getComposerJson(uriArgs.format)
         JsonParser.parseString(json).asJsonObject.let {
             it.addProperty(UID, UUID.randomUUID().leastSignificantBits)
             val distObject = JsonObject()
             distObject.addProperty(TYPE, uriArgs.format)
-            distObject.addProperty(URL, "$ARTIFACT_DIRECT_DOWNLOAD_PREFIX$uri")
+            distObject.addProperty(URL, "$DIRECT_DISTS$uri")
             it.add(DIST, distObject)
             it.addProperty(TYPE, LIBRARY)
 
-            return ComposerJsonNode(
-                packageName = (json jsonValue NAME),
+            return ComposerArtifact(
+                name = (json jsonValue NAME),
                 version = (json jsonValue VERSION),
                 json = GsonBuilder().create().toJson(it)
             )
@@ -133,13 +133,14 @@ object DecompressUtil {
         val stringBuilder = StringBuffer("")
         var zipEntry: ArchiveEntry
         archiveInputStream.use {
-            while (archiveInputStream.nextEntry.also { zipEntry = it } != null) {
+            loop@while (archiveInputStream.nextEntry.also { zipEntry = it } != null) {
                 if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == COMPOSER_JSON) {
                     var length: Int
                     val bytes = ByteArray(BUFFER_SIZE)
                     while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
                         stringBuilder.append(String(bytes, 0, length))
                     }
+                    break@loop
                 }
             }
         }

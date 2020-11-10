@@ -21,32 +21,6 @@
 
 package com.tencent.bkrepo.composer.exception
 
-import com.tencent.bkrepo.composer.pojo.ComposerExceptionResponse
-import org.springframework.core.Ordered
-import org.springframework.core.annotation.Order
-import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.ResponseStatus
-import org.springframework.web.bind.annotation.RestControllerAdvice
+import java.lang.RuntimeException
 
-@Order(Ordered.HIGHEST_PRECEDENCE)
-@RestControllerAdvice
-class ComposerExceptionHandler {
-    @ExceptionHandler(ComposerUnSupportCompressException::class)
-    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-    fun handleException(exception: ComposerUnSupportCompressException): ComposerExceptionResponse {
-        return ComposerExceptionResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE.toString(), exception.message)
-    }
-
-    @ExceptionHandler(ComposerPackageMessageDeficiencyException::class)
-    @ResponseStatus(HttpStatus.PRECONDITION_FAILED)
-    fun handleException(exception: ComposerPackageMessageDeficiencyException): ComposerExceptionResponse {
-        return ComposerExceptionResponse(HttpStatus.PRECONDITION_FAILED.toString(), exception.message)
-    }
-
-    @ExceptionHandler(ComposerArtifactMetadataException::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleException(exception: ComposerArtifactMetadataException): ComposerExceptionResponse {
-        return ComposerExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
-    }
-}
+class ComposerArtifactMetadataException(error: String) : RuntimeException(error)

@@ -45,11 +45,11 @@ object GZipUtils {
     fun InputStream.gZip(indexType: IndexType): File {
         val file = File.createTempFile("rpm", "-${indexType.value}.xml.gz")
         val buffer = ByteArray(5 * 1024 * 1024)
-        GZIPOutputStream(FileOutputStream(file)).use {
+        GZIPOutputStream(FileOutputStream(file)).use { gZIPOutputStream ->
             var mark: Int
             while (this.read(buffer).also { mark = it } > 0) {
-                it.write(buffer, 0, mark)
-                it.flush()
+                gZIPOutputStream.write(buffer, 0, mark)
+                gZIPOutputStream.flush()
             }
         }
         return file

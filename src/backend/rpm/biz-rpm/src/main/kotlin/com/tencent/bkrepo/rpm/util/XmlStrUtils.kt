@@ -24,7 +24,7 @@ package com.tencent.bkrepo.rpm.util
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
 import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
 import com.tencent.bkrepo.rpm.pojo.IndexType
-import com.tencent.bkrepo.rpm.pojo.RepodataUri
+import com.tencent.bkrepo.rpm.pojo.RepoDataPojo
 import com.tencent.bkrepo.rpm.pojo.RpmVersion
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.deleteContent
 import com.tencent.bkrepo.rpm.util.FileInputStreamUtils.findPackageIndex
@@ -234,14 +234,14 @@ object XmlStrUtils {
     /**
      * 按照仓库设置的repodata深度 分割请求参数
      */
-    fun splitUriByDepth(uri: String, depth: Int): RepodataUri {
-        val uriList = uri.removePrefix("/").split("/")
+    fun splitUriByDepth(uri: String, depth: Int): RepoDataPojo {
+        val uriList = uri.removePrefix("/").removeSuffix("/").split("/")
         val repodataPath = StringBuilder("/")
         for (i in 0 until depth) {
             repodataPath.append(uriList[i]).append("/")
         }
-        val artifactRelativePath = uri.removePrefix("/").split(repodataPath.toString())[1]
-        return RepodataUri(repodataPath.toString(), artifactRelativePath)
+        val artifactRelativePath = uri.removePrefix(repodataPath.toString())
+        return RepoDataPojo(repodataPath.toString(), artifactRelativePath)
     }
 
     /**
