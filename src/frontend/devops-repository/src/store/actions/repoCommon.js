@@ -132,5 +132,12 @@ export default {
         ).then(data => {
             commit('SET_DOCKER_DOMAIN', data)
         })
+    },
+
+    // 制品晋级
+    changeStageTag (_, { projectId, repoName, packageKey, version, tag }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/stage/upgrade/${projectId}/${repoName}?packageKey=${packageKey}&version=${version}&tag=${tag}`
+        )
     }
 }
