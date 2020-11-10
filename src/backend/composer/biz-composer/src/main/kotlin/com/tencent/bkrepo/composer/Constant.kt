@@ -40,4 +40,4 @@ const val PACKAGE_JSON_PREFIX = "/p/"
 // 对 "%package%.json" 请求的后缀标识
 const val PACKAGE_JSON_SUFFIX = ".json"
 // 构件下载前缀标识
-const val ARTIFACT_DIRECT_DOWNLOAD_PREFIX = "direct-dists"
+const val DIRECT_DISTS = "direct-dists"

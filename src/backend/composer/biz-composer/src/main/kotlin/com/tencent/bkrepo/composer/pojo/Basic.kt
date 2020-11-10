@@ -19,12 +19,20 @@
  *
  */
 
-package com.tencent.bkrepo.composer.artifact.repository
+package com.tencent.bkrepo.composer.pojo
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-
-interface ComposerRepository {
-    fun packages(context: ArtifactSearchContext): String?
-
-    fun getJson(context: ArtifactSearchContext): String?
-}
+data class Basic(
+    val name: String,
+    val version: String,
+    val size: Long,
+    val fullPath: String,
+    val createdBy: String,
+    val createdDate: String,
+    val lastModifiedBy: String,
+    val lastModifiedDate: String,
+    val downloadCount: Long,
+    val sha256: String?,
+    val md5: String?,
+    val stageTag: List<String>?,
+    val description: String?
+)

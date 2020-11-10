@@ -19,7 +19,7 @@
  *
  */
 
-package com.tencent.bkrepo.composer.resource
+package com.tencent.bkrepo.composer.controller
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -31,7 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class ComposerResourceImpl(
+class ComposerResourceController(
     @Autowired
     private val composerService: ComposerService
 ) : ComposerResource {

@@ -284,17 +284,12 @@ class RpmLocalRepository : LocalRepository() {
     private fun checkRepeatArtifact(context: ArtifactUploadContext): ArtifactRepeat {
         val artifactUri = context.artifactInfo.getArtifactFullPath()
         val artifactSha256 = context.getArtifactSha256()
-
         return with(context.artifactInfo) {
-            val node = nodeClient.detail(projectId, repoName, artifactUri).data
-            if (node == null) {
-                NONE
+            val node = nodeClient.detail(projectId, repoName, artifactUri).data?: return NONE
+            if (node.sha256 == artifactSha256) {
+                FULLPATH_SHA256
             } else {
-                if (node.sha256 == artifactSha256) {
-                    FULLPATH_SHA256
-                } else {
-                    FULLPATH
-                }
+                FULLPATH
             }
         }
     }

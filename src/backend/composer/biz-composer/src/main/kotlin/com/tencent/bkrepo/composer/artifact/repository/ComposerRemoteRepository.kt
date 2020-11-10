@@ -22,6 +22,7 @@
 package com.tencent.bkrepo.composer.artifact.repository
 
 import com.google.gson.JsonParser
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -32,17 +33,26 @@ import okhttp3.Request
 import org.springframework.stereotype.Component
 
 @Component
-class ComposerRemoteRepository : RemoteRepository(), ComposerRepository {
-    override fun packages(context: ArtifactSearchContext): String? {
+class ComposerRemoteRepository : RemoteRepository() {
+
+    override fun query(context: ArtifactQueryContext): String? {
+        return if (context.artifactInfo.equals("/packages.json")) {
+            getPackages(context)
+        } else {
+            getJson(context)
+        }
+    }
+
+    fun getPackages(context: ArtifactQueryContext): String? {
         val artifactInfo = context.artifactInfo
         val request = HttpContextHolder.getRequest()
-        val host = "${request.requestAddr()}/${artifactInfo.projectId}/${artifactInfo.repoName}"
+        val host = request.requestURL.toString().removeSuffix(context.artifactInfo.getArtifactFullPath())
         return INIT_PACKAGES.wrapperPackageJson(host)
     }
 
-    override fun getJson(context: ArtifactSearchContext): String? {
+    fun getJson(context: ArtifactQueryContext): String? {
         val remoteConfiguration = context.getRemoteConfiguration()
-        val artifactUri = context.artifactInfo.artifactUri
+        val artifactUri = context.artifactInfo.getArtifactFullPath()
         val remotePackagesUri = "${remoteConfiguration.url.removeSuffix("/")}$artifactUri"
         val okHttpClient = createHttpClient(remoteConfiguration)
         val request = Request.Builder().url(remotePackagesUri)

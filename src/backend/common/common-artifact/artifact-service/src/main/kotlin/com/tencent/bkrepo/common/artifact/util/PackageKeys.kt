@@ -33,6 +33,7 @@ object PackageKeys {
     private const val HELM = "helm"
     private const val RPM = "rpm"
     private const val PYPI = "pypi"
+    private const val COMPOSER = "composer"
     private const val SEPARATOR = "://"
 
     /**
@@ -107,6 +108,14 @@ object PackageKeys {
     }
 
     /**
+     * 生成composer格式key
+     * 例子: composer://test
+     */
+    fun ofComposer(name: String): String {
+        return ofName(COMPOSER, name)
+    }
+
+    /**
      * 解析npm格式的key
      *
      * 例子: npm://test  ->  test
@@ -148,6 +157,15 @@ object PackageKeys {
      */
     fun resolvePypi(pypiKey: String): String {
         return resolveName(PYPI, pypiKey)
+    }
+
+    /**
+     * 解析composer格式的key
+     *
+     * 例子: composer://test  ->  test
+     */
+    fun resolveComposer(composerKey: String): String {
+        return resolveName(COMPOSER, composerKey)
     }
 
     /**
