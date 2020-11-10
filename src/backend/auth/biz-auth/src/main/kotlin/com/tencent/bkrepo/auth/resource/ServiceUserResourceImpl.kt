@@ -25,6 +25,7 @@ import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.auth.constant.BKREPO_TICKET
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
+import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
@@ -35,11 +36,12 @@ import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.Cookie
@@ -153,12 +155,34 @@ class ServiceUserResourceImpl @Autowired constructor(
     }
 
     override fun userInfo(bkrepoToken: String?): Response<Map<String, Any>> {
-        var userId = ANONYMOUS_USER
-        bkrepoToken?.let {
-            userId = JwtUtils.validateToken(signingKey, bkrepoToken).body.subject
+        bkrepoToken ?: run {
+            throw IllegalArgumentException("ticket can not be null")
         }
+        try {
+            val userId = JwtUtils.validateToken(signingKey, bkrepoToken).body.subject
+            val result = mapOf("userId" to userId)
+            return ResponseBuilder.success(result)
+        } catch (ignored: Exception) {
+            logger.warn("validate user token false [$bkrepoToken]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_LOGIN_TOKEN_CHECK_FAILED)
+        }
+    }
 
-        val result = mapOf("userId" to userId)
-        return ResponseBuilder.success(result)
+    override fun verify(bkrepoToken: String?): Response<Map<String, Any>> {
+        bkrepoToken ?: run {
+            throw IllegalArgumentException("ticket can not be null")
+        }
+        try {
+            val userId = JwtUtils.validateToken(signingKey, bkrepoToken).body.subject
+            val result = mapOf("user_id" to userId)
+            return ResponseBuilder.success(result)
+        } catch (ignored: Exception) {
+            logger.warn("validate user token false [$bkrepoToken]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_LOGIN_TOKEN_CHECK_FAILED)
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ServiceUserResourceImpl::class.java)
     }
 }
