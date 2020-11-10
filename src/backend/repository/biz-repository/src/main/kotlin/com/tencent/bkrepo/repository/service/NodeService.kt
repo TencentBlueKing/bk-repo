@@ -41,32 +41,32 @@ interface NodeService {
     /**
      * 查询节点详情
      */
-    fun getNodeDetail(artifactInfo: ArtifactInfo, repoType: String? = null): NodeDetail?
+    fun getNodeDetail(artifact: ArtifactInfo, repoType: String? = null): NodeDetail?
 
     /**
      * 计算文件或者文件夹大小
      */
-    fun computeSize(artifactInfo: ArtifactInfo): NodeSizeInfo
+    fun computeSize(artifact: ArtifactInfo): NodeSizeInfo
 
     /**
      * 查询文件节点数量
      */
-    fun countFileNode(artifactInfo: ArtifactInfo): Long
+    fun countFileNode(artifact: ArtifactInfo): Long
 
     /**
      * 列表查询节点
      */
-    fun listNode(artifactInfo: ArtifactInfo, option: NodeListOption): List<NodeInfo>
+    fun listNode(artifact: ArtifactInfo, option: NodeListOption): List<NodeInfo>
 
     /**
      * 分页查询节点
      */
-    fun listNodePage(artifactInfo: ArtifactInfo, option: NodeListOption): Page<NodeInfo>
+    fun listNodePage(artifact: ArtifactInfo, option: NodeListOption): Page<NodeInfo>
 
     /**
      * 判断节点是否存在
      */
-    fun checkExist(artifactInfo: ArtifactInfo): Boolean
+    fun checkExist(artifact: ArtifactInfo): Boolean
 
     /**
      * 判断节点列表是否存在

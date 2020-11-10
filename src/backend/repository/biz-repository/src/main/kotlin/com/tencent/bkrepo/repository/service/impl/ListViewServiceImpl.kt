@@ -63,12 +63,12 @@ class ListViewServiceImpl(
         response.contentType = MediaTypes.TEXT_HTML
         if (node.folder) {
             trailingSlash()
-            val option = NodeListOption(
+            val listOption = NodeListOption(
                 includeFolder = true,
                 includeMetadata = false,
                 deep = false
             )
-            val nodeList = nodeService.listNode(artifactInfo, option)
+            val nodeList = nodeService.listNode(artifactInfo, listOption)
             val currentPath = computeCurrentPath(node)
             val headerList = listOf(
                 HeaderItem("Name"),

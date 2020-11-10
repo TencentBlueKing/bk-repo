@@ -46,6 +46,7 @@ abstract class ArtifactInfo(
 ) {
 
     private val normalizedUri = PathUtils.normalizeFullPath(artifactUri)
+
     /**
      * 构件名称，不同依赖源解析规则不一样，可以override
      *
