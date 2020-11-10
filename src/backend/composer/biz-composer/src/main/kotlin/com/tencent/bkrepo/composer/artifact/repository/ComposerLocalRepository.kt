@@ -67,9 +67,19 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 
 @Component
 class ComposerLocalRepository : LocalRepository() {
+
+    //默认值为方便本地调试
+    //服务域名,例：bkrepo.com
+    @Value("\${bkrepo.host:127.0.0.1}")
+    private val bkrepoHost: String = ""
+
+    //服务端口识别字段，例 8083或composer
+    @Value("\${bkrepo.composer.port:8083}")
+    private val composerPort: String = ""
 
     @Autowired
     lateinit var packageClient: PackageClient
@@ -277,16 +287,9 @@ class ComposerLocalRepository : LocalRepository() {
 
     fun getHost(context: ArtifactContext): String {
         val request = HttpContextHolder.getRequest()
-        // 需要网关传参
-        val serverName = request.getHeader("Server-Name")
-        val serverService = request.getHeader("Server-Service")
-        return if (serverName == null || serverService == null) {
-            request.requestURL.toString().removeSuffix(context.artifactInfo.getArtifactFullPath())
-        } else {
-            val scheme = request.scheme
-            val servletPath = request.servletPath.removeSuffix(context.artifactInfo.getArtifactFullPath())
-            "$scheme://$serverName/$serverService$servletPath"
-        }
+        val scheme = request.scheme
+        val servletPath = request.servletPath.removeSuffix(context.artifactInfo.getArtifactFullPath())
+        return "$scheme://$bkrepoHost/$composerPort$servletPath"
     }
 
     fun getPackages(context: ArtifactQueryContext): String {
