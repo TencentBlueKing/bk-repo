@@ -20,9 +20,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 --- 蓝鲸平台登录对接
 --- 获取Cookie中bk_token
 local bk_token, err = cookieUtil:get_cookie("bk_ticket")
-if config.mode == "standalone"
+if config.mode == "standalone" then
     return
 end
+
 local devops_access_token =  ngx.var.http_x_devops_access_token
 if bk_token == nil and devops_access_token == nil then
   ngx.log(ngx.STDERR, "failed to read user request bk_token or devops_access_token: ", err)
