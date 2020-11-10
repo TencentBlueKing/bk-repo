@@ -23,6 +23,10 @@ package com.tencent.bkrepo.common.artifact.stream
 
 import java.io.InputStream
 
+/**
+ * 由固定数字0构成的输入流
+ * 用于测试以及健康检查时快速生成数据
+ */
 class ZeroInputStream(private var size: Long = -1) : InputStream() {
     private var read = 0
 

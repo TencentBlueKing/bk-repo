@@ -22,7 +22,7 @@
 package com.tencent.bkrepo.common.artifact.api
 
 /**
- * 默认格式构件信息
+ * 默认构件信息格式
  */
 class DefaultArtifactInfo(
     projectId: String,
