@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -15,37 +15,29 @@
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.pojo.node
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import io.swagger.annotations.ApiParam
+import org.springframework.web.bind.annotation.RequestParam
 
-/**
- * 元数据服务接口
- */
-interface MetadataService {
-
-    /**
-     * 查询节点的元数据
-     *
-     * [projectId]为节点所属项目，[repoName]为节点所属仓库，[fullPath]为节点完整路径
-     * 返回[Map]数据结构，`key`为元数据名称，`value`为元数据值
-     */
-    fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any>
-
-    /**
-     * 根据请求[request]保存或者更新元数据
-     *
-     * 如果元数据`key`已经存在则更新，否则创建新的
-     */
-    fun saveMetadata(request: MetadataSaveRequest)
-
-    /**
-     * 根据请求[request]删除元数据
-     */
-    fun deleteMetadata(request: MetadataDeleteRequest)
-}
+@ApiModel("节点列表选项")
+data class NodeListOption(
+    @ApiModelProperty("当前页")
+    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
+    @ApiModelProperty("分页大小")
+    val pageSize: Int = DEFAULT_PAGE_SIZE,
+    @ApiModelProperty("是否包含目录")
+    val includeFolder: Boolean = true,
+    @ApiModelProperty("是否包含元数据")
+    val includeMetadata: Boolean = false,
+    @ApiModelProperty("是否深度查询文件")
+    val deep: Boolean = false,
+    @ApiModelProperty("是否排序")
+    val sort: Boolean = false
+)

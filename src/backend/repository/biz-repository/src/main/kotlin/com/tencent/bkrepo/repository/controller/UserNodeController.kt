@@ -23,8 +23,6 @@ package com.tencent.bkrepo.repository.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -38,6 +36,7 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -49,11 +48,10 @@ import com.tencent.bkrepo.repository.pojo.node.user.UserNodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
+import com.tencent.bkrepo.repository.service.NodeSearchService
 import com.tencent.bkrepo.repository.service.NodeService
-import com.tencent.bkrepo.repository.service.NodeQueryService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -67,9 +65,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/node")
 class UserNodeController(
-    private val nodeService: NodeService,
-    private val nodeQueryService: NodeQueryService,
-    private val permissionManager: PermissionManager
+        private val nodeService: NodeService,
+        private val nodeSearchService: NodeSearchService,
+        private val permissionManager: PermissionManager
 ) {
 
     @ApiOperation("根据路径查看节点详情")
@@ -79,11 +77,9 @@ class UserNodeController(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<NodeDetail> {
-        with(artifactInfo) {
-            val node = nodeService.detail(projectId, repoName, getArtifactFullPath())
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactName())
-            return ResponseBuilder.success(node)
-        }
+        val node = nodeService.getNodeDetail(artifactInfo)
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
+        return ResponseBuilder.success(node)
     }
 
     @ApiOperation("创建文件夹")
@@ -102,7 +98,7 @@ class UserNodeController(
                 overwrite = false,
                 operator = userId
             )
-            nodeService.create(createRequest)
+            nodeService.createNode(createRequest)
             return ResponseBuilder.success()
         }
     }
@@ -121,7 +117,7 @@ class UserNodeController(
                 fullPath = getArtifactFullPath(),
                 operator = userId
             )
-            nodeService.delete(deleteRequest)
+            nodeService.deleteNode(deleteRequest)
             return ResponseBuilder.success()
         }
     }
@@ -142,7 +138,7 @@ class UserNodeController(
                 expires = request.expires,
                 operator = userId
             )
-            nodeService.update(updateRequest)
+            nodeService.updateNode(updateRequest)
             return ResponseBuilder.success()
         }
     }
@@ -163,7 +159,7 @@ class UserNodeController(
                 newFullPath = newFullPath,
                 operator = userId
             )
-            nodeService.rename(renameRequest)
+            nodeService.renameNode(renameRequest)
             return ResponseBuilder.success()
         }
     }
@@ -184,7 +180,7 @@ class UserNodeController(
                 newFullPath = newFullPath,
                 operator = userId
             )
-            nodeService.rename(renameRequest)
+            nodeService.renameNode(renameRequest)
             return ResponseBuilder.success()
         }
     }
@@ -210,7 +206,7 @@ class UserNodeController(
                 overwrite = overwrite,
                 operator = userId
             )
-            nodeService.move(moveRequest)
+            nodeService.moveNode(moveRequest)
             return ResponseBuilder.success()
         }
     }
@@ -236,7 +232,7 @@ class UserNodeController(
                 overwrite = overwrite,
                 operator = userId
             )
-            nodeService.copy(copyRequest)
+            nodeService.copyNode(copyRequest)
             return ResponseBuilder.success()
         }
     }
@@ -248,45 +244,26 @@ class UserNodeController(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<NodeSizeInfo> {
-        with(artifactInfo) {
-            val nodeSizeInfo = nodeService.computeSize(projectId, repoName, getArtifactFullPath())
-            return ResponseBuilder.success(nodeSizeInfo)
-        }
+        val nodeSizeInfo = nodeService.computeSize(artifactInfo)
+        return ResponseBuilder.success(nodeSizeInfo)
     }
 
     @ApiOperation("分页查询节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/page/$DEFAULT_MAPPING_URI")
     fun listPageNode(
-        @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: ArtifactInfo,
-        @ApiParam(value = "当前页", required = true, defaultValue = "1")
-        @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
-        @ApiParam(value = "分页大小", required = true, defaultValue = "20")
-        @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE,
-        @ApiParam("是否包含目录", required = false, defaultValue = "true")
-        @RequestParam includeFolder: Boolean = true,
-        @ApiParam("是否包含元数据", required = false, defaultValue = "false")
-        @RequestParam includeMetadata: Boolean = false,
-        @ApiParam("是否深度查询文件", required = false, defaultValue = "false")
-        @RequestParam deep: Boolean = false,
-        @ApiParam("是否排序", required = false, defaultValue = "false")
-        @RequestParam sort: Boolean = false
+            @RequestAttribute userId: String,
+            @ArtifactPathVariable artifactInfo: ArtifactInfo,
+            nodeListOption: NodeListOption
     ): Response<Page<NodeInfo>> {
-        with(artifactInfo) {
-            val nodePage = nodeService.listNodePage(
-                projectId, repoName, getArtifactFullPath(),
-                pageNumber, pageSize,
-                includeFolder, includeMetadata, deep, sort
-            )
-            return ResponseBuilder.success(nodePage)
-        }
+        val nodePage = nodeService.listNodePage(artifactInfo, nodeListOption)
+        return ResponseBuilder.success(nodePage)
     }
 
     @ApiOperation("自定义查询节点")
     @PostMapping("/search")
     fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
-        return ResponseBuilder.success(nodeQueryService.query(queryModel))
+        return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 
     @Deprecated("replace with search")
@@ -295,6 +272,6 @@ class UserNodeController(
     fun query(
         @RequestBody queryModel: QueryModel
     ): Response<Page<Map<String, Any?>>> {
-        return ResponseBuilder.success(nodeQueryService.query(queryModel))
+        return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 }

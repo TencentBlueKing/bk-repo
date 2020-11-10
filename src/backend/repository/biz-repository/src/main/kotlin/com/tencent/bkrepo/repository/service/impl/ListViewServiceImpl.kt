@@ -34,6 +34,7 @@ import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.ListViewObject
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
 import com.tencent.bkrepo.repository.pojo.project.ProjectListViewItem
 import com.tencent.bkrepo.repository.pojo.repo.RepoListViewItem
@@ -56,41 +57,37 @@ class ListViewServiceImpl(
 ) : ListViewService {
 
     override fun listNodeView(artifactInfo: ArtifactInfo) {
-        with(artifactInfo) {
-            val node = nodeService.detail(projectId, repoName, getArtifactFullPath())
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactName())
-            val response = HttpContextHolder.getResponse()
-            response.contentType = MediaTypes.TEXT_HTML
-            if (node.folder) {
-                trailingSlash()
-                val nodeList = nodeService.listNode(
-                    artifactInfo.projectId,
-                    artifactInfo.repoName,
-                    getArtifactFullPath(),
-                    includeFolder = true,
-                    includeMetadata = false,
-                    deep = false
-                )
-                val currentPath = computeCurrentPath(node)
-                val headerList = listOf(
-                    HeaderItem("Name"),
-                    HeaderItem("Created by"),
-                    HeaderItem("Last modified"),
-                    HeaderItem("Size")
-                )
-                val itemList = nodeList.map { NodeListViewItem.from(it) }.sorted()
-                val rowList = itemList.map { RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size)) }
-                writePageContent(ListViewObject(currentPath, headerList, rowList, FOOTER, true))
-            } else {
-                val context = ArtifactDownloadContext(useDisposition = false)
-                ArtifactContextHolder.getRepository().download(context)
-            }
+        val node = nodeService.getNodeDetail(artifactInfo)
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
+        val response = HttpContextHolder.getResponse()
+        response.contentType = MediaTypes.TEXT_HTML
+        if (node.folder) {
+            trailingSlash()
+            val option = NodeListOption(
+                includeFolder = true,
+                includeMetadata = false,
+                deep = false
+            )
+            val nodeList = nodeService.listNode(artifactInfo, option)
+            val currentPath = computeCurrentPath(node)
+            val headerList = listOf(
+                HeaderItem("Name"),
+                HeaderItem("Created by"),
+                HeaderItem("Last modified"),
+                HeaderItem("Size")
+            )
+            val itemList = nodeList.map { NodeListViewItem.from(it) }.sorted()
+            val rowList = itemList.map { RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size)) }
+            writePageContent(ListViewObject(currentPath, headerList, rowList, FOOTER, true))
+        } else {
+            val context = ArtifactDownloadContext(useDisposition = false)
+            ArtifactContextHolder.getRepository().download(context)
         }
     }
 
     override fun listRepoView(projectId: String) {
         trailingSlash()
-        val itemList = repositoryService.list(projectId).map { RepoListViewItem.from(it) }
+        val itemList = repositoryService.listRepo(projectId).map { RepoListViewItem.from(it) }
         val title = "Repository[$projectId]"
         val headerList = listOf(
             HeaderItem("Name"),

@@ -27,6 +27,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PRIVATE_PROXY_REPO_NAME
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
@@ -113,12 +114,12 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         }
     }
 
-    override fun list(projectId: String, name: String?, type: String?): List<RepositoryInfo> {
+    override fun listRepo(projectId: String, name: String?, type: String?): List<RepositoryInfo> {
         val query = buildListQuery(projectId, name, type)
         return mongoTemplate.find(query, TRepository::class.java).map { convertToInfo(it)!! }
     }
 
-    override fun page(projectId: String, pageNumber: Int, pageSize: Int, name: String?, type: String?): Page<RepositoryInfo> {
+    override fun listRepoPage(projectId: String, pageNumber: Int, pageSize: Int, name: String?, type: String?): Page<RepositoryInfo> {
         val query = buildListQuery(projectId, name, type)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val totalRecords = mongoTemplate.count(query, TRepository::class.java)
@@ -142,21 +143,21 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         return Page(0, limit, totalCount, records)
     }
 
-    override fun exist(projectId: String, name: String, type: String?): Boolean {
+    override fun checkExist(projectId: String, name: String, type: String?): Boolean {
         return queryRepository(projectId, name, type) != null
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun create(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
+    override fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
         with(repoCreateRequest) {
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
             Preconditions.checkArgument(description?.length ?: 0 <= REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
             // 确保项目一定存在
-            if (projectService.checkExist(projectId)) {
+            if (!projectService.checkExist(projectId)) {
                 throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
             }
             // 确保同名仓库不存在
-            if (exist(projectId, name)) {
+            if (checkExist(projectId, name)) {
                 throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
             }
             // 确保存储凭证Key一定存在
@@ -198,7 +199,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun update(repoUpdateRequest: RepoUpdateRequest) {
+    override fun updateRepo(repoUpdateRequest: RepoUpdateRequest) {
         repoUpdateRequest.apply {
             Preconditions.checkArgument(description?.length ?: 0 < REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
             val repository = checkRepository(projectId, name)
@@ -218,13 +219,14 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun delete(repoDeleteRequest: RepoDeleteRequest) {
+    override fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) {
         repoDeleteRequest.apply {
             val repository = checkRepository(projectId, name)
             if (repoDeleteRequest.forced) {
                 nodeService.deleteByPath(projectId, name, ROOT, operator)
             } else {
-                nodeService.countFileNode(projectId, name).takeIf { it == 0L } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_CONTAINS_FILE)
+                val artifactInfo = DefaultArtifactInfo(projectId, name, ROOT)
+                nodeService.countFileNode(artifactInfo).takeIf { it == 0L } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_CONTAINS_FILE)
                 nodeService.deleteByPath(projectId, name, ROOT, operator)
             }
             repoRepository.delete(repository)
@@ -355,7 +357,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         // 创建新的代理库
         toCreateList.forEach {
             val proxyRepoName = PRIVATE_PROXY_REPO_NAME.format(repository.name, it.name)
-            if (exist(repository.projectId, proxyRepoName, null)) {
+            if (checkExist(repository.projectId, proxyRepoName, null)) {
                 logger.error("Repository[$proxyRepoName] exist in project[${repository.projectId}], skip create proxy repo.")
             }
             createProxyRepo(repository, proxyRepoName, operator)

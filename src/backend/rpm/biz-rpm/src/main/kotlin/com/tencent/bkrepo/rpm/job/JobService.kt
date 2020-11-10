@@ -115,7 +115,7 @@ class JobService {
         val limit = groupXmlSet.size * 3 + 9
 
         // 查询该请求路径对应的索引目录下所有文件
-        val nodePage = nodeClient.listNodePage(
+        val nodePage = nodeClient.page(
             project, repoName, 0, limit,
             repoDataPath,
             includeMetadata = true
@@ -435,7 +435,7 @@ class JobService {
     ): NodeInfo? {
         val indexMarkFolder = "$repodataPath/${indexType.value}/"
         // 查询repodata/indexType 的标记节点 ,每次只处理一个节点
-        val page = nodeClient.listNodePage(
+        val page = nodeClient.page(
             projectId = repo.projectId,
             repoName = repo.name,
             pageNumber = 0,

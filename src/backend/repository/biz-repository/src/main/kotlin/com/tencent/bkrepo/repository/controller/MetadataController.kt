@@ -38,16 +38,16 @@ class MetadataController(
 ) : MetadataClient {
 
     override fun listMetadata(projectId: String, repoName: String, fullPath: String): Response<Map<String, Any>> {
-        return ResponseBuilder.success(metadataService.query(projectId, repoName, fullPath))
+        return ResponseBuilder.success(metadataService.listMetadata(projectId, repoName, fullPath))
     }
 
     override fun saveMetadata(request: MetadataSaveRequest): Response<Void> {
-        metadataService.save(request)
+        metadataService.saveMetadata(request)
         return ResponseBuilder.success()
     }
 
     override fun deleteMetadata(request: MetadataDeleteRequest): Response<Void> {
-        metadataService.delete(request)
+        metadataService.deleteMetadata(request)
         return ResponseBuilder.success()
     }
 

@@ -27,6 +27,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -34,7 +35,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -90,62 +90,37 @@ interface NodeClient {
         @RequestBody fullPathList: List<String>
     ): Response<List<String>>
 
-    @ApiOperation("分页查询指定目录下所有节点")
-    @GetMapping("/page/{projectId}/{repoName}/{pageNumber}/{pageSize}")
+    @GetMapping("/page/{projectId}/{repoName}")
     fun listNodePage(
-        @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "当前页", required = true, example = "1")
-        @PathVariable pageNumber: Int,
-        @ApiParam(value = "分页大小", required = true, example = "20")
-        @PathVariable pageSize: Int,
-        @ApiParam(value = "所属目录", required = true)
         @RequestParam path: String,
-        @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
-        @RequestParam includeFolder: Boolean = true,
-        @ApiParam("是否包含元数据", required = false, defaultValue = "false")
-        @RequestParam includeMetadata: Boolean = false,
-        @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
-        @RequestParam deep: Boolean = false
+        nodeListOption: NodeListOption
     ): Response<Page<NodeInfo>>
 
     @ApiOperation("创建节点")
     @PostMapping("/create")
-    fun createNode(
-        @RequestBody nodeCreateRequest: NodeCreateRequest
-    ): Response<NodeDetail>
+    fun createNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Response<NodeDetail>
 
     @ApiOperation("更新节点")
     @PostMapping("/update")
-    fun updateNode(
-            @RequestBody nodeUpdateRequest: NodeUpdateRequest
-    ): Response<Void>
+    fun updateNode(@RequestBody nodeUpdateRequest: NodeUpdateRequest): Response<Void>
 
     @ApiOperation("重命名节点")
     @PostMapping("/rename")
-    fun renameNode(
-        @RequestBody nodeRenameRequest: NodeRenameRequest
-    ): Response<Void>
+    fun renameNode(@RequestBody nodeRenameRequest: NodeRenameRequest): Response<Void>
 
     @ApiOperation("移动节点")
     @PostMapping("/move")
-    fun moveNode(
-        @RequestBody nodeMoveRequest: NodeMoveRequest
-    ): Response<Void>
+    fun moveNode(@RequestBody nodeMoveRequest: NodeMoveRequest): Response<Void>
 
     @ApiOperation("复制节点")
     @PostMapping("/copy")
-    fun copyNode(
-        @RequestBody nodeCopyRequest: NodeCopyRequest
-    ): Response<Void>
+    fun copyNode(@RequestBody nodeCopyRequest: NodeCopyRequest): Response<Void>
 
     @ApiOperation("删除节点")
     @DeleteMapping("/delete")
-    fun deleteNode(
-        @RequestBody nodeDeleteRequest: NodeDeleteRequest
-    ): Response<Void>
+    fun deleteNode(@RequestBody nodeDeleteRequest: NodeDeleteRequest): Response<Void>
 
     @ApiOperation("查询节点大小信息")
     @GetMapping("/size/{projectId}/{repoName}")
@@ -187,7 +162,7 @@ interface NodeClient {
         @RequestParam fullPath: String
     ): Response<NodeDetail?>
 
-    @Deprecated("replace with page")
+    @Deprecated("replace with listNodePage")
     @ApiOperation("列表查询指定目录下所有节点")
     @GetMapping("/list/{projectId}/{repoName}")
     fun listNode(
@@ -202,6 +177,28 @@ interface NodeClient {
         @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
         @RequestParam deep: Boolean = false
     ): Response<List<NodeInfo>>
+
+    @Deprecated("replace with listNodePage")
+    @ApiOperation("分页查询指定目录下所有节点")
+    @GetMapping("/page/{projectId}/{repoName}/{pageNumber}/{pageSize}")
+    fun page(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "当前页", required = true, example = "1")
+        @PathVariable pageNumber: Int,
+        @ApiParam(value = "分页大小", required = true, example = "20")
+        @PathVariable pageSize: Int,
+        @ApiParam(value = "所属目录", required = true)
+        @RequestParam path: String,
+        @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
+        @RequestParam includeFolder: Boolean = true,
+        @ApiParam("是否包含元数据", required = false, defaultValue = "false")
+        @RequestParam includeMetadata: Boolean = false,
+        @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
+        @RequestParam deep: Boolean = false
+    ): Response<Page<NodeInfo>>
 
     @Deprecated("replace with createNode")
     @ApiOperation("创建节点")

@@ -41,6 +41,9 @@ import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
+import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
+import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -56,18 +59,18 @@ import org.springframework.context.annotation.Import
 @DataMongoTest
 @Import(
     NodeDao::class,
-    FileReferenceDao::class
+    FileReferenceDao::class,
+    NodeQueryInterpreter::class,
+    RepoNameRuleInterceptor::class,
+    RepoTypeRuleInterceptor::class
 )
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class NodeQueryServiceTest @Autowired constructor(
+class NodeSearchServiceTest @Autowired constructor(
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
-    private val nodeQueryService: NodeQueryService
+    private val nodeSearchService: NodeSearchService
 ) : ServiceBaseTest() {
-
-    @MockBean
-    private lateinit var permissionManager: PermissionManager
 
     @BeforeAll
     fun beforeAll() {
@@ -77,7 +80,7 @@ class NodeQueryServiceTest @Autowired constructor(
             val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
             projectService.createProject(projectCreateRequest)
         }
-        if (!repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME)) {
+        if (!repositoryService.checkExist(UT_PROJECT_ID, UT_REPO_NAME)) {
             val repoCreateRequest = RepoCreateRequest(
                 projectId = UT_PROJECT_ID,
                 name = UT_REPO_NAME,
@@ -88,7 +91,7 @@ class NodeQueryServiceTest @Autowired constructor(
                 configuration = LocalConfiguration(),
                 operator = UT_USER
             )
-            repositoryService.create(repoCreateRequest)
+            repositoryService.createRepo(repoCreateRequest)
         }
     }
 
@@ -100,12 +103,12 @@ class NodeQueryServiceTest @Autowired constructor(
 
     @Test
     @DisplayName("完整路径前缀匹配查询")
-    fun testFullPathQuery() {
-        nodeService.create(createRequest("/a/b"))
-        nodeService.create(createRequest("/a/b/1.txt", false))
+    fun testFullPathSearch() {
+        nodeService.createNode(createRequest("/a/b"))
+        nodeService.createNode(createRequest("/a/b/1.txt", false))
         val size = 21
-        repeat(size) { i -> nodeService.create(createRequest("/a/b/c/$i.txt", false)) }
-        repeat(size) { i -> nodeService.create(createRequest("/a/b/d/$i.txt", false)) }
+        repeat(size) { i -> nodeService.createNode(createRequest("/a/b/c/$i.txt", false)) }
+        repeat(size) { i -> nodeService.createNode(createRequest("/a/b/d/$i.txt", false)) }
 
         val projectId = Rule.QueryRule("projectId", UT_PROJECT_ID)
         val repoName = Rule.QueryRule("repoName", UT_REPO_NAME)
@@ -120,18 +123,18 @@ class NodeQueryServiceTest @Autowired constructor(
             rule = rule
         )
 
-        val result = nodeQueryService.query(queryModel)
+        val result = nodeSearchService.search(queryModel)
         Assertions.assertEquals(21, result.totalRecords)
         Assertions.assertEquals(11, result.records.size)
     }
 
     @Test
     @DisplayName("元数据精确查询")
-    fun testMetadataUserQuery() {
-        nodeService.create(createRequest("/a/b/1.txt", false, metadata = mapOf("key1" to "1", "key2" to "2")))
-        nodeService.create(createRequest("/a/b/2.txt", false, metadata = mapOf("key1" to "11", "key2" to "2")))
-        nodeService.create(createRequest("/a/b/3.txt", false, metadata = mapOf("key1" to "22")))
-        nodeService.create(createRequest("/a/b/4.txt", false, metadata = mapOf("key1" to "2", "key2" to "1")))
+    fun testMetadataUserSearch() {
+        nodeService.createNode(createRequest("/a/b/1.txt", false, metadata = mapOf("key1" to "1", "key2" to "2")))
+        nodeService.createNode(createRequest("/a/b/2.txt", false, metadata = mapOf("key1" to "11", "key2" to "2")))
+        nodeService.createNode(createRequest("/a/b/3.txt", false, metadata = mapOf("key1" to "22")))
+        nodeService.createNode(createRequest("/a/b/4.txt", false, metadata = mapOf("key1" to "2", "key2" to "1")))
 
         val projectId = Rule.QueryRule("projectId", UT_PROJECT_ID)
         val repoName = Rule.QueryRule("repoName", UT_REPO_NAME)
@@ -145,7 +148,7 @@ class NodeQueryServiceTest @Autowired constructor(
             rule = rule
         )
 
-        val result = nodeQueryService.query(queryModel)
+        val result = nodeSearchService.search(queryModel)
         Assertions.assertEquals(1, result.totalRecords)
         Assertions.assertEquals(1, result.records.size)
         val node = result.records[0]
@@ -156,11 +159,11 @@ class NodeQueryServiceTest @Autowired constructor(
 
     @Test
     @DisplayName("元数据前缀匹配查询")
-    fun testMetadataPrefixQuery() {
-        nodeService.create(createRequest("/a/b/1.txt", false, metadata = mapOf("key" to "1")))
-        nodeService.create(createRequest("/a/b/2.txt", false, metadata = mapOf("key" to "11")))
-        nodeService.create(createRequest("/a/b/3.txt", false, metadata = mapOf("key" to "22")))
-        nodeService.create(createRequest("/a/b/4.txt", false, metadata = mapOf("key" to "22", "key1" to "1")))
+    fun testMetadataPrefixSearch() {
+        nodeService.createNode(createRequest("/a/b/1.txt", false, metadata = mapOf("key" to "1")))
+        nodeService.createNode(createRequest("/a/b/2.txt", false, metadata = mapOf("key" to "11")))
+        nodeService.createNode(createRequest("/a/b/3.txt", false, metadata = mapOf("key" to "22")))
+        nodeService.createNode(createRequest("/a/b/4.txt", false, metadata = mapOf("key" to "22", "key1" to "1")))
 
         val projectId = Rule.QueryRule("projectId", UT_PROJECT_ID)
         val repoName = Rule.QueryRule("repoName", UT_REPO_NAME)
@@ -174,17 +177,17 @@ class NodeQueryServiceTest @Autowired constructor(
             rule = rule
         )
 
-        val result = nodeQueryService.query(queryModel)
+        val result = nodeSearchService.search(queryModel)
         Assertions.assertEquals(2, result.totalRecords)
         Assertions.assertEquals(2, result.records.size)
     }
 
     @Test
     @DisplayName("元数据模糊匹配查询")
-    fun testMetadataFuzzyQuery() {
-        nodeService.create(createRequest("/a/b/1.txt", false, metadata = mapOf("key" to "121")))
-        nodeService.create(createRequest("/a/b/2.txt", false, metadata = mapOf("key" to "131")))
-        nodeService.create(createRequest("/a/b/3.txt", false, metadata = mapOf("key" to "144")))
+    fun testMetadataFuzzySearch() {
+        nodeService.createNode(createRequest("/a/b/1.txt", false, metadata = mapOf("key" to "121")))
+        nodeService.createNode(createRequest("/a/b/2.txt", false, metadata = mapOf("key" to "131")))
+        nodeService.createNode(createRequest("/a/b/3.txt", false, metadata = mapOf("key" to "144")))
 
         val projectId = Rule.QueryRule("projectId", UT_PROJECT_ID)
         val repoName = Rule.QueryRule("repoName", UT_REPO_NAME)
@@ -198,7 +201,7 @@ class NodeQueryServiceTest @Autowired constructor(
             rule = rule
         )
 
-        val result = nodeQueryService.query(queryModel)
+        val result = nodeSearchService.search(queryModel)
         Assertions.assertEquals(2, result.totalRecords)
         Assertions.assertEquals(2, result.records.size)
     }

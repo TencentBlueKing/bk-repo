@@ -81,8 +81,7 @@ class RepoDataService(
     }
 
     fun listFileNode(projectId: String, repoName: String, path: String = ROOT, pageNumber: Int, pageSize: Int): List<NodeInfo> {
-        val nodePage = nodeClient.listNodePage(projectId, repoName, pageNumber, pageSize, path, includeFolder = false, includeMetadata = true, deep = true)
-        return nodeClient.listNodePage(projectId, repoName, pageNumber, pageSize, path, includeFolder = false, includeMetadata = true, deep = true).data!!.records
+        return nodeClient.page(projectId, repoName, pageNumber, pageSize, path, includeFolder = false, includeMetadata = true, deep = true).data!!.records
     }
 
     fun getMetadata(nodeInfo: NodeInfo): Map<String, Any> {

@@ -22,17 +22,19 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_DESC
-import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -67,16 +69,21 @@ class NodeServiceTest @Autowired constructor(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService
 ) : ServiceBaseTest() {
+    
+    private val option = NodeListOption(includeFolder = false, deep = false)
+    private val folderOption = NodeListOption(includeFolder = true, deep = false)
+    private val deepOption = NodeListOption(includeFolder = false, deep = true)
+    private val folderAndDeepOption = NodeListOption(includeFolder = true, deep = true)
 
     @BeforeAll
     fun beforeAll() {
         initMock()
 
         if (!projectService.checkExist(UT_PROJECT_ID)) {
-            val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
+            val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_USER)
             projectService.createProject(projectCreateRequest)
         }
-        if (!repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME)) {
+        if (!repositoryService.checkExist(UT_PROJECT_ID, UT_REPO_NAME)) {
             val repoCreateRequest = RepoCreateRequest(
                 projectId = UT_PROJECT_ID,
                 name = UT_REPO_NAME,
@@ -87,7 +94,7 @@ class NodeServiceTest @Autowired constructor(
                 configuration = LocalConfiguration(),
                 operator = UT_USER
             )
-            repositoryService.create(repoCreateRequest)
+            repositoryService.createRepo(repoCreateRequest)
         }
     }
 
@@ -101,8 +108,8 @@ class NodeServiceTest @Autowired constructor(
     @DisplayName("测试根节点")
     fun testRootNode() {
         // 查询根节点，一直存在
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, ""))
-        val nodeDetail = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "")
+        assertTrue(nodeService.checkExist(node("")))
+        val nodeDetail = nodeService.getNodeDetail(node(""))
         assertNotNull(nodeDetail)
         assertEquals("", nodeDetail?.name)
         assertEquals(ROOT, nodeDetail?.path)
@@ -112,8 +119,8 @@ class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试创建文件")
     fun testCreateFile() {
-        nodeService.create(createRequest("/1/2/3.txt", folder = false, size = 100, metadata = mapOf("key" to "value")))
-        val node = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/1/2/3.txt")!!
+        nodeService.createNode(createRequest("/1/2/3.txt", folder = false, size = 100, metadata = mapOf("key" to "value")))
+        val node = nodeService.getNodeDetail(node("/1/2/3.txt"))!!
         assertEquals(UT_USER, node.createdBy)
         assertNotNull(node.createdDate)
         assertEquals(UT_USER, node.lastModifiedBy)
@@ -131,8 +138,8 @@ class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试创建目录")
     fun testCreateDir() {
-        nodeService.create(createRequest("/1/2/3.txt", folder = true, size = 100, metadata = mapOf("key" to "value")))
-        val node = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/1/2/3.txt")!!
+        nodeService.createNode(createRequest("/1/2/3.txt", folder = true, size = 100, metadata = mapOf("key" to "value")))
+        val node = nodeService.getNodeDetail(node("/1/2/3.txt"))!!
         assertEquals(UT_USER, node.createdBy)
         assertNotNull(node.createdDate)
         assertEquals(UT_USER, node.lastModifiedBy)
@@ -150,50 +157,50 @@ class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试自动创建父目录")
     fun testCreateParentPath() {
-        nodeService.create(createRequest("/1/2/3.txt", folder = false))
-        assertNotNull(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, ""))
-        assertNotNull(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/1"))
-        assertNotNull(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/1/2"))
-        assertNotNull(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/1/2/3.txt"))
+        nodeService.createNode(createRequest("/1/2/3.txt", folder = false))
+        assertNotNull(nodeService.getNodeDetail(node("")))
+        assertNotNull(nodeService.getNodeDetail(node("/1")))
+        assertNotNull(nodeService.getNodeDetail(node("/1/2")))
+        assertNotNull(nodeService.getNodeDetail(node("/1/2/3.txt")))
 
-        nodeService.create(createRequest("/a/b/c", folder = true))
-        assertNotNull(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, ""))
-        assertNotNull(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/a"))
-        assertNotNull(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/a/b"))
-        assertNotNull(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c"))
+        nodeService.createNode(createRequest("/a/b/c", folder = true))
+        assertNotNull(nodeService.getNodeDetail(node("")))
+        assertNotNull(nodeService.getNodeDetail(node("/a")))
+        assertNotNull(nodeService.getNodeDetail(node("/a/b")))
+        assertNotNull(nodeService.getNodeDetail(node("/a/b/c")))
     }
 
     @Test
     @DisplayName("测试使用.路径创建节点")
     fun testCreateWithDot() {
-        nodeService.create(createRequest("/ a / b / . / 2.txt", true))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "./a/b/./2.txt"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/"))
+        nodeService.createNode(createRequest("/ a / b / . / 2.txt", true))
+        assertTrue(nodeService.checkExist(node("./a/b/./2.txt")))
+        assertTrue(nodeService.checkExist(node("/a/b/")))
     }
 
     @Test
     @DisplayName("测试使用..路径创建节点")
     fun testCreateWithDoubleDot() {
-        nodeService.create(createRequest("/a/b/ .. ", true))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b"))
+        nodeService.createNode(createRequest("/a/b/ .. ", true))
+        assertTrue(nodeService.checkExist(node("/a")))
+        assertFalse(nodeService.checkExist(node("/a/b")))
         // /aa/bb/.. 应该存在，因为会格式化
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/c/.././a/b/.."))
+        assertTrue(nodeService.checkExist(node("/c/.././a/b/..")))
 
-        nodeService.create(createRequest("/aa/bb/ . . ", true))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/aa"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/aa/bb"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/aa/bb/. ."))
+        nodeService.createNode(createRequest("/aa/bb/ . . ", true))
+        assertTrue(nodeService.checkExist(node("/aa")))
+        assertTrue(nodeService.checkExist(node("/aa/bb")))
+        assertTrue(nodeService.checkExist(node("/aa/bb/. .")))
     }
 
     @Test
     @DisplayName("测试元数据查询")
     fun testIncludeMetadata() {
-        nodeService.create(createRequest("/a/b/1.txt", folder = false, metadata = mapOf("key" to "value")))
-        nodeService.create(createRequest("/a/b/2.txt", folder = false))
+        nodeService.createNode(createRequest("/a/b/1.txt", folder = false, metadata = mapOf("key" to "value")))
+        nodeService.createNode(createRequest("/a/b/2.txt", folder = false))
 
-        val node1 = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/1.txt")
-        val node2 = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/2.txt")
+        val node1 = nodeService.getNodeDetail(node("/a/b/1.txt"))
+        val node2 = nodeService.getNodeDetail(node("/a/b/2.txt"))
         assertNotNull(node1!!.metadata)
         assertNotNull(node1.metadata["key"])
         assertNotNull(node2!!.metadata)
@@ -202,45 +209,45 @@ class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试列表查询")
     fun testListNode() {
-        assertEquals(0, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "", includeFolder = false, deep = false).size)
+        assertEquals(0, nodeService.listNode(node(""), option).size)
 
-        nodeService.create(createRequest("/a/b/1.txt", false))
-        assertEquals(1, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "", includeFolder = true, deep = false).size)
+        nodeService.createNode(createRequest("/a/b/1.txt", false))
+        assertEquals(1, nodeService.listNode(node(""), folderOption).size)
 
         val size = 20
-        repeat(size) { i -> nodeService.create(createRequest("/a/b/c/$i.txt", false)) }
-        repeat(size) { i -> nodeService.create(createRequest("/a/b/d/$i.txt", false)) }
+        repeat(size) { i -> nodeService.createNode(createRequest("/a/b/c/$i.txt", false)) }
+        repeat(size) { i -> nodeService.createNode(createRequest("/a/b/d/$i.txt", false)) }
 
-        assertEquals(1, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = false, deep = false).size)
-        assertEquals(3, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = true, deep = false).size)
-        assertEquals(size, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", includeFolder = true, deep = true).size)
-        assertEquals(size * 2 + 1, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = false, deep = true).size)
-        assertEquals(size * 2 + 1 + 2, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a/b", includeFolder = true, deep = true).size)
-        assertEquals(size * 2 + 1 + 2 + 2, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/", includeFolder = true, deep = true).size)
+        assertEquals(1, nodeService.listNode(node("/a/b"), option).size)
+        assertEquals(3, nodeService.listNode(node("/a/b"), folderOption).size)
+        assertEquals(size, nodeService.listNode(node("/a/b/c"), folderAndDeepOption).size)
+        assertEquals(size * 2 + 1, nodeService.listNode(node("/a/b"), deepOption).size)
+        assertEquals(size * 2 + 1 + 2, nodeService.listNode(node("/a/b"), folderAndDeepOption).size)
+        assertEquals(size * 2 + 1 + 2 + 2, nodeService.listNode(node("/"), folderAndDeepOption).size)
     }
 
     @Test
     @DisplayName("测试分页查询")
     fun testListNodePage() {
         val size = 51L
-        repeat(size.toInt()) { i -> nodeService.create(createRequest("/a/b/c/$i.txt", false)) }
+        repeat(size.toInt()) { i -> nodeService.createNode(createRequest("/a/b/c/$i.txt", false)) }
 
         // 测试从第0页开始，兼容性测试
-        var page = nodeService.listNodePage(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 0, 10, includeFolder = false, deep = false)
+        var page = nodeService.listNodePage(node("/a/b/c"), page(0))
         assertEquals(10, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
         assertEquals(10, page.pageSize)
         assertEquals(1, page.pageNumber)
 
-        page = nodeService.listNodePage(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 1, 10, includeFolder = false, deep = false)
+        page = nodeService.listNodePage(node("/a/b/c"), page(1))
         assertEquals(10, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
         assertEquals(10, page.pageSize)
         assertEquals(1, page.pageNumber)
 
-        page = nodeService.listNodePage(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 6, 10, includeFolder = false, deep = false)
+        page = nodeService.listNodePage(node("/a/b/c"), page(6))
         assertEquals(1, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
@@ -248,7 +255,7 @@ class NodeServiceTest @Autowired constructor(
         assertEquals(6, page.pageNumber)
 
         // 测试空页码
-        page = nodeService.listNodePage(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c", 7, 10, includeFolder = false, deep = false)
+        page = nodeService.listNodePage(node("/a/b/c"), page(7))
         assertEquals(0, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
@@ -259,8 +266,8 @@ class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试删除文件")
     fun testDeleteFile() {
-        nodeService.create(createRequest("/a/b/1.txt", false))
-        nodeService.delete(
+        nodeService.createNode(createRequest("/a/b/1.txt", false))
+        nodeService.deleteNode(
             NodeDeleteRequest(
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
@@ -268,14 +275,14 @@ class NodeServiceTest @Autowired constructor(
                 operator = UT_USER
             )
         )
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/1.txt"))
+        assertFalse(nodeService.checkExist(node("/a/b/1.txt")))
     }
 
     @Test
     @DisplayName("测试删除目录")
     fun testDeleteDir() {
-        nodeService.create(createRequest("/a/b/1.txt", false))
-        nodeService.delete(
+        nodeService.createNode(createRequest("/a/b/1.txt", false))
+        nodeService.deleteNode(
             NodeDeleteRequest(
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
@@ -283,34 +290,34 @@ class NodeServiceTest @Autowired constructor(
                 operator = UT_USER
             )
         )
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/1.txt"))
+        assertFalse(nodeService.checkExist(node("/a/b")))
+        assertFalse(nodeService.checkExist(node("/a/b/1.txt")))
     }
 
     @Test
     @DisplayName("测试正则转义")
     fun testWindowsSeparator() {
-        nodeService.create(createRequest("/a\\b\\\\c\\/\\d", false))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d"))
+        nodeService.createNode(createRequest("/a\\b\\\\c\\/\\d", false))
+        assertTrue(nodeService.checkExist(node("/a/b/c/d")))
     }
 
     @Test
     @DisplayName("测试正则转义")
     fun testEscape() {
-        nodeService.create(createRequest("/.*|^/a/1.txt", false))
-        nodeService.create(createRequest("/a/1.txt", false))
+        nodeService.createNode(createRequest("/.*|^/a/1.txt", false))
+        nodeService.createNode(createRequest("/a/1.txt", false))
 
-        assertEquals(1, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/.*|^/a", includeFolder = true, deep = true).size)
+        assertEquals(1, nodeService.listNode(node("/.*|^/a"), folderAndDeepOption).size)
         nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, "/.*|^/a", UT_USER)
-        assertEquals(0, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/.*|^/a", includeFolder = true, deep = true).size)
-        assertEquals(1, nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/a", includeFolder = true, deep = true).size)
+        assertEquals(0, nodeService.listNode(node("/.*|^/a"), folderAndDeepOption).size)
+        assertEquals(1, nodeService.listNode(node("/a"), folderAndDeepOption).size)
     }
 
     @Test
     @DisplayName("测试特殊字符")
     fun testSpecialCharacter() {
-        nodeService.create(createRequest("/~`!@#$%^&*()_-+=<,>.?/:;\"'{[}]|"))
-        val nodeDetail = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/~`!@#$%^&*()_-+=<,>.?/:;\"'{[}]|\\")
+        nodeService.createNode(createRequest("/~`!@#$%^&*()_-+=<,>.?/:;\"'{[}]|"))
+        val nodeDetail = nodeService.getNodeDetail(node("/~`!@#$%^&*()_-+=<,>.?/:;\"'{[}]|\\"))
         assertEquals("/~`!@#$%^&*()_-+=<,>.?/:;\"'{[}]|", nodeDetail?.fullPath)
     }
 
@@ -318,10 +325,10 @@ class NodeServiceTest @Autowired constructor(
     @DisplayName("测试计算目录大小")
     fun testComputeDirSize() {
         val size = 20
-        repeat(size) { i -> nodeService.create(createRequest("/a/b/c/$i.txt", false)) }
-        repeat(size) { i -> nodeService.create(createRequest("/a/b/d/$i.txt", false)) }
+        repeat(size) { i -> nodeService.createNode(createRequest("/a/b/c/$i.txt", false)) }
+        repeat(size) { i -> nodeService.createNode(createRequest("/a/b/d/$i.txt", false)) }
 
-        val pathSizeInfo = nodeService.computeSize(UT_PROJECT_ID, UT_REPO_NAME, "/a/b")
+        val pathSizeInfo = nodeService.computeSize(node("/a/b"))
 
         assertEquals(42, pathSizeInfo.subNodeCount)
         assertEquals(40, pathSizeInfo.size)
@@ -330,9 +337,9 @@ class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试计算文件大小")
     fun testComputeFileSize() {
-        nodeService.create(createRequest("/a/b/c/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/1.txt", false))
 
-        val fileSizeInfo = nodeService.computeSize(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/1.txt")
+        val fileSizeInfo = nodeService.computeSize(node("/a/b/c/1.txt"))
         assertEquals(0, fileSizeInfo.subNodeCount)
         assertEquals(1, fileSizeInfo.size)
     }
@@ -341,10 +348,10 @@ class NodeServiceTest @Autowired constructor(
     @DisplayName("测试计算根节点大小")
     fun testComputeRootNodeSize() {
         val size = 20
-        repeat(size) { i -> nodeService.create(createRequest("/a/$i.txt", false)) }
-        repeat(size) { i -> nodeService.create(createRequest("/b/$i.txt", false)) }
+        repeat(size) { i -> nodeService.createNode(createRequest("/a/$i.txt", false)) }
+        repeat(size) { i -> nodeService.createNode(createRequest("/b/$i.txt", false)) }
 
-        val pathSizeInfo = nodeService.computeSize(UT_PROJECT_ID, UT_REPO_NAME, "/")
+        val pathSizeInfo = nodeService.computeSize(node("/"))
 
         assertEquals(42, pathSizeInfo.subNodeCount)
         assertEquals(40, pathSizeInfo.size)
@@ -353,10 +360,10 @@ class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("重命名目录")
     fun testRenamePath() {
-        nodeService.create(createRequest("/a/b/1.txt", false))
-        nodeService.create(createRequest("/a/b/2.txt", false))
-        nodeService.create(createRequest("/a/b/c/1.txt", false))
-        nodeService.create(createRequest("/a/b/c/2.txt", false))
+        nodeService.createNode(createRequest("/a/b/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/2.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/2.txt", false))
 
         val renameRequest = NodeRenameRequest(
             projectId = UT_PROJECT_ID,
@@ -365,25 +372,25 @@ class NodeServiceTest @Autowired constructor(
             newFullPath = "/aa",
             operator = UT_USER
         )
-        nodeService.rename(renameRequest)
+        nodeService.renameNode(renameRequest)
 
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/1.txt"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/2.txt"))
+        assertFalse(nodeService.checkExist(node("/a")))
+        assertFalse(nodeService.checkExist(node("/a/b")))
+        assertFalse(nodeService.checkExist(node("/a/b/c")))
+        assertFalse(nodeService.checkExist(node("/a/b/1.txt")))
+        assertFalse(nodeService.checkExist(node("/a/b/c/2.txt")))
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/aa"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/aa/b"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/aa/b/c"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/aa/b/1.txt"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/aa/b/c/2.txt"))
+        assertTrue(nodeService.checkExist(node("/aa")))
+        assertTrue(nodeService.checkExist(node("/aa/b")))
+        assertTrue(nodeService.checkExist(node("/aa/b/c")))
+        assertTrue(nodeService.checkExist(node("/aa/b/1.txt")))
+        assertTrue(nodeService.checkExist(node("/aa/b/c/2.txt")))
     }
 
     @Test
     @DisplayName("重命名中间目录")
     fun testRenameSubPath() {
-        nodeService.create(createRequest("/a/b/c", true))
+        nodeService.createNode(createRequest("/a/b/c", true))
 
         val renameRequest = NodeRenameRequest(
             projectId = UT_PROJECT_ID,
@@ -392,25 +399,25 @@ class NodeServiceTest @Autowired constructor(
             newFullPath = "/a/d/c",
             operator = UT_USER
         )
-        nodeService.rename(renameRequest)
+        nodeService.renameNode(renameRequest)
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c"))
+        assertTrue(nodeService.checkExist(node("/a")))
+        assertTrue(nodeService.checkExist(node("/a/b")))
+        assertFalse(nodeService.checkExist(node("/a/b/c")))
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/d"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/d/c"))
+        assertTrue(nodeService.checkExist(node("/a/d")))
+        assertTrue(nodeService.checkExist(node("/a/d/c")))
     }
 
     @Test
     @DisplayName("重命名文件，遇同名文件抛异常")
     fun testRenameThrow() {
-        nodeService.create(createRequest("/a/b/1.txt", false))
-        nodeService.create(createRequest("/a/b/2.txt", false))
-        nodeService.create(createRequest("/a/b/c/1.txt", false))
-        nodeService.create(createRequest("/a/b/c/2.txt", false))
+        nodeService.createNode(createRequest("/a/b/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/2.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/2.txt", false))
 
-        nodeService.create(createRequest("/aa/b/c/2.txt", false))
+        nodeService.createNode(createRequest("/aa/b/c/2.txt", false))
 
         val renameRequest = NodeRenameRequest(
             projectId = UT_PROJECT_ID,
@@ -419,17 +426,17 @@ class NodeServiceTest @Autowired constructor(
             newFullPath = "/aa",
             operator = UT_USER
         )
-        assertThrows<ErrorCodeException> { nodeService.rename(renameRequest) }
+        assertThrows<ErrorCodeException> { nodeService.renameNode(renameRequest) }
     }
 
     @Test
     @DisplayName("移动文件，目录 -> 不存在的目录")
     fun testMovePathToNotExistPath() {
-        nodeService.create(createRequest("/a/b/c/d/1.txt", false))
-        nodeService.create(createRequest("/a/b/c/d/2.txt", false))
-        nodeService.create(createRequest("/a/b/c/d/e/1.txt", false))
-        nodeService.create(createRequest("/a/b/c/d/e/2.txt", false))
-        nodeService.create(createRequest("/a/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/d/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/d/2.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/d/e/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/d/e/2.txt", false))
+        nodeService.createNode(createRequest("/a/1.txt", false))
 
         val moveRequest = NodeMoveRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -438,34 +445,34 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "/ab",
             operator = UT_USER
         )
-        nodeService.move(moveRequest)
+        nodeService.moveNode(moveRequest)
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/1.txt"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d/e"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d/1.txt"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d/e/2.txt"))
+        assertTrue(nodeService.checkExist(node("/a")))
+        assertTrue(nodeService.checkExist(node("/a/1.txt")))
+        assertFalse(nodeService.checkExist(node("/a/b")))
+        assertFalse(nodeService.checkExist(node("/a/b/c")))
+        assertFalse(nodeService.checkExist(node("/a/b/c/d")))
+        assertFalse(nodeService.checkExist(node("/a/b/c/d/e")))
+        assertFalse(nodeService.checkExist(node("/a/b/c/d/1.txt")))
+        assertFalse(nodeService.checkExist(node("/a/b/c/d/e/2.txt")))
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/c"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/c/d"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/c/d/e"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/c/d/1.txt"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/c/d/e/2.txt"))
+        assertTrue(nodeService.checkExist(node("/ab")))
+        assertTrue(nodeService.checkExist(node("/ab/c")))
+        assertTrue(nodeService.checkExist(node("/ab/c/d")))
+        assertTrue(nodeService.checkExist(node("/ab/c/d/e")))
+        assertTrue(nodeService.checkExist(node("/ab/c/d/1.txt")))
+        assertTrue(nodeService.checkExist(node("/ab/c/d/e/2.txt")))
     }
 
     @Test
     @DisplayName("移动文件，目录 -> 存在的目录")
     fun testMovePathToExistPath() {
-        nodeService.create(createRequest("/a/b/c/d/1.txt", false))
-        nodeService.create(createRequest("/a/b/c/d/2.txt", false))
-        nodeService.create(createRequest("/a/b/c/d/e/1.txt", false))
-        nodeService.create(createRequest("/a/b/c/d/e/2.txt", false))
-        nodeService.create(createRequest("/a/1.txt", false))
-        nodeService.create(createRequest("/ab", true))
+        nodeService.createNode(createRequest("/a/b/c/d/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/d/2.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/d/e/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/d/e/2.txt", false))
+        nodeService.createNode(createRequest("/a/1.txt", false))
+        nodeService.createNode(createRequest("/ab", true))
 
         var moveRequest = NodeMoveRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -474,26 +481,26 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "/ab",
             operator = UT_USER
         )
-        nodeService.move(moveRequest)
+        nodeService.moveNode(moveRequest)
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/1.txt"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d/e"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d/1.txt"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d/e/2.txt"))
+        assertTrue(nodeService.checkExist(node("/a")))
+        assertTrue(nodeService.checkExist(node("/a/1.txt")))
+        assertFalse(nodeService.checkExist(node("/a/b")))
+        assertFalse(nodeService.checkExist(node("/a/b/c")))
+        assertFalse(nodeService.checkExist(node("/a/b/c/d")))
+        assertFalse(nodeService.checkExist(node("/a/b/c/d/e")))
+        assertFalse(nodeService.checkExist(node("/a/b/c/d/1.txt")))
+        assertFalse(nodeService.checkExist(node("/a/b/c/d/e/2.txt")))
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/b"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/b/c"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/b/c/d"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/b/c/d/1.txt"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/b/c/d/e/2.txt"))
+        assertTrue(nodeService.checkExist(node("/ab")))
+        assertTrue(nodeService.checkExist(node("/ab/b")))
+        assertTrue(nodeService.checkExist(node("/ab/b/c")))
+        assertTrue(nodeService.checkExist(node("/ab/b/c/d")))
+        assertTrue(nodeService.checkExist(node("/ab/b/c/d/1.txt")))
+        assertTrue(nodeService.checkExist(node("/ab/b/c/d/e/2.txt")))
 
-        nodeService.create(createRequest("/data/mkdir/aa.txt", false))
-        nodeService.create(createRequest("/data/dir3", true))
+        nodeService.createNode(createRequest("/data/mkdir/aa.txt", false))
+        nodeService.createNode(createRequest("/data/dir3", true))
 
         moveRequest = NodeMoveRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -502,15 +509,15 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "/data/dir3",
             operator = UT_USER
         )
-        nodeService.move(moveRequest)
-        assertTrue(nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/data/dir3", includeFolder = false, deep = false).size == 1)
+        nodeService.moveNode(moveRequest)
+        assertTrue(nodeService.listNode(node("/data/dir3"), option).size == 1)
     }
 
     @Test
     @DisplayName("移动文件 -> 存在的目录")
     fun testMoveFileToExistPath() {
-        nodeService.create(createRequest("/a/1.txt", false))
-        nodeService.create(createRequest("/ab", true))
+        nodeService.createNode(createRequest("/a/1.txt", false))
+        nodeService.createNode(createRequest("/ab", true))
 
         val moveRequest = NodeMoveRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -519,19 +526,19 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "/ab",
             operator = UT_USER
         )
-        nodeService.move(moveRequest)
+        nodeService.moveNode(moveRequest)
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/1.txt"))
+        assertTrue(nodeService.checkExist(node("/a")))
+        assertFalse(nodeService.checkExist(node("/a/1.txt")))
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/1.txt"))
+        assertTrue(nodeService.checkExist(node("/ab")))
+        assertTrue(nodeService.checkExist(node("/ab/1.txt")))
     }
 
     @Test
     @DisplayName("移动文件，文件 -> 不存在的路径")
     fun testMoveFileToNotExistPath() {
-        nodeService.create(createRequest("/a/1.txt", false))
+        nodeService.createNode(createRequest("/a/1.txt", false))
 
         val moveRequest = NodeMoveRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -540,12 +547,12 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "/ab",
             operator = UT_USER
         )
-        nodeService.move(moveRequest)
+        nodeService.moveNode(moveRequest)
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/1.txt"))
+        assertTrue(nodeService.checkExist(node("/a")))
+        assertFalse(nodeService.checkExist(node("/a/1.txt")))
 
-        val destNode = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/ab")
+        val destNode = nodeService.getNodeDetail(node("/ab"))
         assertNotNull(destNode)
         assertFalse(destNode!!.folder)
     }
@@ -553,9 +560,9 @@ class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("移动文件，文件 -> 存在的文件且覆盖")
     fun testMoveFileToExistFileAndOverwrite() {
-        nodeService.create(createRequest("/a/1.txt", false, size = 1))
-        nodeService.create(createRequest("/ab/a/1.txt", false, size = 2))
-        nodeService.create(createRequest("/abc/a/1.txt", false, size = 2))
+        nodeService.createNode(createRequest("/a/1.txt", false, size = 1))
+        nodeService.createNode(createRequest("/ab/a/1.txt", false, size = 2))
+        nodeService.createNode(createRequest("/abc/a/1.txt", false, size = 2))
 
         // path -> path
         var moveRequest = NodeMoveRequest(
@@ -566,10 +573,10 @@ class NodeServiceTest @Autowired constructor(
             operator = UT_USER,
             overwrite = true
         )
-        nodeService.move(moveRequest)
+        nodeService.moveNode(moveRequest)
 
         // file -> file
-        var node = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/ab/a/1.txt")!!
+        var node = nodeService.getNodeDetail(node("/ab/a/1.txt"))!!
         assertEquals(1, node.size)
 
         moveRequest = NodeMoveRequest(
@@ -580,17 +587,17 @@ class NodeServiceTest @Autowired constructor(
             operator = UT_USER,
             overwrite = true
         )
-        nodeService.move(moveRequest)
+        nodeService.moveNode(moveRequest)
 
-        node = nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/abc/a/1.txt")!!
+        node = nodeService.getNodeDetail(node("/abc/a/1.txt"))!!
         assertEquals(1, node.size)
     }
 
     @Test
     @DisplayName("移动文件，文件 -> 存在的文件且不覆盖")
     fun testMoveOverwriteThrow() {
-        nodeService.create(createRequest("/a/1.txt", false))
-        nodeService.create(createRequest("/ab/a/1.txt", false))
+        nodeService.createNode(createRequest("/a/1.txt", false))
+        nodeService.createNode(createRequest("/ab/a/1.txt", false))
 
         val moveRequest = NodeMoveRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -599,14 +606,14 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "/ab",
             operator = UT_USER
         )
-        assertThrows<ErrorCodeException> { nodeService.move(moveRequest) }
+        assertThrows<ErrorCodeException> { nodeService.moveNode(moveRequest) }
     }
 
     @Test
     @DisplayName("移动文件，目录 -> 自己")
     fun testMovePathToSelf() {
-        nodeService.create(createRequest("/a/1.txt", false))
-        nodeService.create(createRequest("/a/b/1.txt", false))
+        nodeService.createNode(createRequest("/a/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/1.txt", false))
 
         val moveRequest = NodeMoveRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -615,13 +622,13 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "/a",
             operator = UT_USER
         )
-        nodeService.move(moveRequest)
+        nodeService.moveNode(moveRequest)
     }
 
     @Test
     @DisplayName("移动文件, 目录 -> 父目录")
     fun testMovePathToParentPath() {
-        nodeService.create(createRequest("/a/b/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/1.txt", false))
 
         val moveRequest = NodeMoveRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -630,16 +637,16 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "/a",
             operator = UT_USER
         )
-        nodeService.move(moveRequest)
+        nodeService.moveNode(moveRequest)
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/1.txt"))
+        assertTrue(nodeService.checkExist(node("/a/b")))
+        assertTrue(nodeService.checkExist(node("/a/b/1.txt")))
     }
 
     @Test
     @DisplayName("移动文件, 目录 -> 根目录")
     fun testMoveToRootPath() {
-        nodeService.create(createRequest("/a/b/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/1.txt", false))
 
         val moveRequest = NodeMoveRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -648,19 +655,16 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "",
             operator = UT_USER
         )
-        nodeService.move(moveRequest)
-        nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "").forEach {
-            println("path: ${it.path}, name: ${it.name}, fullPath: ${it.fullPath}")
-        }
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/b/1.txt"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a"))
-        assertFalse(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b"))
+        nodeService.moveNode(moveRequest)
+        assertTrue(nodeService.checkExist(node("/b/1.txt")))
+        assertTrue(nodeService.checkExist(node("/a")))
+        assertFalse(nodeService.checkExist(node("/a/b")))
     }
 
     @Test
     @DisplayName("移动文件, 文件 -> 父目录")
     fun testMoveFileToRootPath() {
-        nodeService.create(createRequest("/a/b/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/1.txt", false))
 
         val moveRequest = NodeMoveRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -669,19 +673,19 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "/a/b",
             operator = UT_USER
         )
-        nodeService.move(moveRequest)
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/1.txt"))
+        nodeService.moveNode(moveRequest)
+        assertTrue(nodeService.checkExist(node("/a/b")))
+        assertTrue(nodeService.checkExist(node("/a/b/1.txt")))
     }
 
     @Test
     @DisplayName("拷贝文件, 目录 -> 不存在的目录")
     fun testCopy() {
-        nodeService.create(createRequest("/a/b/c/d/1.txt", false))
-        nodeService.create(createRequest("/a/b/c/d/2.txt", false))
-        nodeService.create(createRequest("/a/b/c/d/e/1.txt", false))
-        nodeService.create(createRequest("/a/b/c/d/e/2.txt", false))
-        nodeService.create(createRequest("/a/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/d/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/d/2.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/d/e/1.txt", false))
+        nodeService.createNode(createRequest("/a/b/c/d/e/2.txt", false))
+        nodeService.createNode(createRequest("/a/1.txt", false))
 
         val copyRequest = NodeCopyRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -690,30 +694,30 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "/ab",
             operator = UT_USER
         )
-        nodeService.copy(copyRequest)
+        nodeService.copyNode(copyRequest)
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/1.txt"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d/e"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d/1.txt"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c/d/e/2.txt"))
+        assertTrue(nodeService.checkExist(node("/a")))
+        assertTrue(nodeService.checkExist(node("/a/1.txt")))
+        assertTrue(nodeService.checkExist(node("/a/b")))
+        assertTrue(nodeService.checkExist(node("/a/b/c")))
+        assertTrue(nodeService.checkExist(node("/a/b/c/d")))
+        assertTrue(nodeService.checkExist(node("/a/b/c/d/e")))
+        assertTrue(nodeService.checkExist(node("/a/b/c/d/1.txt")))
+        assertTrue(nodeService.checkExist(node("/a/b/c/d/e/2.txt")))
 
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/c"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/c/d"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/c/d/e"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/c/d/1.txt"))
-        assertTrue(nodeService.exist(UT_PROJECT_ID, UT_REPO_NAME, "/ab/c/d/e/2.txt"))
+        assertTrue(nodeService.checkExist(node("/ab")))
+        assertTrue(nodeService.checkExist(node("/ab/c")))
+        assertTrue(nodeService.checkExist(node("/ab/c/d")))
+        assertTrue(nodeService.checkExist(node("/ab/c/d/e")))
+        assertTrue(nodeService.checkExist(node("/ab/c/d/1.txt")))
+        assertTrue(nodeService.checkExist(node("/ab/c/d/e/2.txt")))
     }
 
     @Test
     @DisplayName("拷贝文件 -> 存在的目录")
     fun testCopyFileToExistPath() {
-        nodeService.create(createRequest("/a/1.txt", false))
-        nodeService.create(createRequest("/b", true))
+        nodeService.createNode(createRequest("/a/1.txt", false))
+        nodeService.createNode(createRequest("/b", true))
 
         val copyRequest = NodeCopyRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -723,17 +727,16 @@ class NodeServiceTest @Autowired constructor(
             operator = UT_USER,
             overwrite = true
         )
-        nodeService.copy(copyRequest)
+        nodeService.copyNode(copyRequest)
 
-        assertTrue(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/b")?.folder == true)
-        assertTrue(nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/b/1.txt")?.folder == false)
-        nodeService.listNode(UT_PROJECT_ID, UT_REPO_NAME, "/", true, deep = true).forEach { println(it) }
+        assertTrue(nodeService.getNodeDetail(node("/b"))?.folder == true)
+        assertTrue(nodeService.getNodeDetail(node("/b/1.txt"))?.folder == false)
     }
 
     @Test
     @DisplayName("拷贝文件, 元数据一起拷贝")
     fun testCopyWithMetadata() {
-        nodeService.create(createRequest("/a", false, metadata = mapOf("key" to "value")))
+        nodeService.createNode(createRequest("/a", false, metadata = mapOf("key" to "value")))
 
         val copyRequest = NodeCopyRequest(
             srcProjectId = UT_PROJECT_ID,
@@ -742,8 +745,8 @@ class NodeServiceTest @Autowired constructor(
             destFullPath = "/b",
             operator = UT_USER
         )
-        nodeService.copy(copyRequest)
-        assertEquals("value", nodeService.detail(UT_PROJECT_ID, UT_REPO_NAME, "/b")!!.metadata["key"])
+        nodeService.copyNode(copyRequest)
+        assertEquals("value", nodeService.getNodeDetail(node("/b"))!!.metadata["key"])
     }
 
     private fun createRequest(fullPath: String = "/a/b/c", folder: Boolean = true, size: Long = 1, metadata: Map<String, String>? = null): NodeCreateRequest {
@@ -759,6 +762,21 @@ class NodeServiceTest @Autowired constructor(
             md5 = "md5",
             operator = UT_USER,
             metadata = metadata
+        )
+    }
+    
+    private fun node(fullPath: String = ROOT): ArtifactInfo {
+        return DefaultArtifactInfo(UT_PROJECT_ID, UT_REPO_NAME, fullPath)
+    }
+
+    private fun page(pageNumber: Int, pageSize: Int = 10): NodeListOption {
+        return NodeListOption(
+            pageNumber = pageNumber,
+            pageSize = pageSize,
+            includeFolder = false,
+            includeMetadata = false,
+            deep = false,
+            sort = false
         )
     }
 }

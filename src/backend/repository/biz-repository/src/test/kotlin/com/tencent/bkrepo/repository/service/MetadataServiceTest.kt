@@ -69,7 +69,7 @@ class MetadataServiceTest @Autowired constructor(
             val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
             projectService.createProject(projectCreateRequest)
         }
-        if (!repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME)) {
+        if (!repositoryService.checkExist(UT_PROJECT_ID, UT_REPO_NAME)) {
             val repoCreateRequest = RepoCreateRequest(
                 projectId = UT_PROJECT_ID,
                 name = UT_REPO_NAME,
@@ -80,7 +80,7 @@ class MetadataServiceTest @Autowired constructor(
                 configuration = LocalConfiguration(),
                 operator = UT_USER
             )
-            repositoryService.create(repoCreateRequest)
+            repositoryService.createRepo(repoCreateRequest)
         }
     }
 
@@ -92,10 +92,10 @@ class MetadataServiceTest @Autowired constructor(
 
     @Test
     fun testCreate() {
-        val node = nodeService.create(createRequest())
-        Assertions.assertEquals(0, metadataService.query(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath).size)
-        metadataService.save(MetadataSaveRequest(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath, DEFAULT_METADATA))
-        val dbMetadata = metadataService.query(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath)
+        val node = nodeService.createNode(createRequest())
+        Assertions.assertEquals(0, metadataService.listMetadata(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath).size)
+        metadataService.saveMetadata(MetadataSaveRequest(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath, DEFAULT_METADATA))
+        val dbMetadata = metadataService.listMetadata(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath)
         Assertions.assertEquals(2, dbMetadata.size)
         Assertions.assertEquals("value1", dbMetadata["key1"])
         Assertions.assertEquals("value2", dbMetadata["key2"])
@@ -103,23 +103,23 @@ class MetadataServiceTest @Autowired constructor(
 
     @Test
     fun testSaveEmpty() {
-        val node = nodeService.create(createRequest(DEFAULT_METADATA))
+        val node = nodeService.createNode(createRequest(DEFAULT_METADATA))
         // update with empty key list
-        metadataService.save(MetadataSaveRequest(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath, mutableMapOf()))
+        metadataService.saveMetadata(MetadataSaveRequest(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath, mutableMapOf()))
 
-        val dbMetadata = metadataService.query(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath)
+        val dbMetadata = metadataService.listMetadata(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath)
         Assertions.assertEquals("value1", dbMetadata["key1"])
         Assertions.assertEquals("value2", dbMetadata["key2"])
     }
 
     @Test
     fun testUpdate() {
-        val node = nodeService.create(createRequest(DEFAULT_METADATA))
+        val node = nodeService.createNode(createRequest(DEFAULT_METADATA))
         // update
         val newMetadata = mapOf("key1" to "value1", "key2" to "value22", "key3" to "value3")
-        metadataService.save(MetadataSaveRequest(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath, newMetadata))
+        metadataService.saveMetadata(MetadataSaveRequest(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath, newMetadata))
 
-        val dbMetadata = metadataService.query(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath)
+        val dbMetadata = metadataService.listMetadata(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath)
         Assertions.assertEquals(3, dbMetadata.size)
         Assertions.assertEquals("value1", dbMetadata["key1"])
         Assertions.assertEquals("value22", dbMetadata["key2"])
@@ -129,11 +129,11 @@ class MetadataServiceTest @Autowired constructor(
     @Test
     fun testDelete() {
         val metadata = mapOf("key1" to "value1", "key2" to "value2", "key3" to "value3")
-        val node = nodeService.create(createRequest(metadata))
+        val node = nodeService.createNode(createRequest(metadata))
         // delete
-        metadataService.delete(MetadataDeleteRequest(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath, setOf("key1", "key2", "key0")))
+        metadataService.deleteMetadata(MetadataDeleteRequest(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath, setOf("key1", "key2", "key0")))
 
-        val dbMetadata = metadataService.query(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath)
+        val dbMetadata = metadataService.listMetadata(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath)
         Assertions.assertEquals(1, dbMetadata.size)
         Assertions.assertEquals("value3", dbMetadata["key3"])
     }

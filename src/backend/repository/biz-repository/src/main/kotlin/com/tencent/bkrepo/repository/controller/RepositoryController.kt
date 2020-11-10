@@ -51,7 +51,7 @@ class RepositoryController(
     }
 
     override fun listRepo(projectId: String, name: String?, type: String?): Response<List<RepositoryInfo>> {
-        return ResponseBuilder.success(repositoryService.list(projectId, name, type))
+        return ResponseBuilder.success(repositoryService.listRepo(projectId, name, type))
     }
 
     override fun rangeQuery(request: RepoRangeQueryRequest): Response<Page<RepositoryInfo?>> {
@@ -59,16 +59,16 @@ class RepositoryController(
     }
 
     override fun createRepo(request: RepoCreateRequest): Response<RepositoryDetail> {
-        return ResponseBuilder.success(repositoryService.create(request))
+        return ResponseBuilder.success(repositoryService.createRepo(request))
     }
 
     override fun updateRepo(request: RepoUpdateRequest): Response<Void> {
-        repositoryService.update(request)
+        repositoryService.updateRepo(request)
         return ResponseBuilder.success()
     }
 
     override fun deleteRepo(request: RepoDeleteRequest): Response<Void> {
-        repositoryService.delete(request)
+        repositoryService.deleteRepo(request)
         return ResponseBuilder.success()
     }
 

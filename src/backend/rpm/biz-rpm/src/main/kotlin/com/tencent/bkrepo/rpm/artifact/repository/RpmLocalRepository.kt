@@ -412,7 +412,7 @@ class RpmLocalRepository : LocalRepository() {
         // 查询该请求路径对应的索引目录下所有文件
         val nodeList = with(context.artifactInfo) {
             (
-                nodeClient.listNodePage(
+                nodeClient.page(
                     projectId, repoName, 0, limit,
                     "$SLASH$indexPath$SLASH",
                     includeMetadata = true
