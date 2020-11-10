@@ -21,6 +21,7 @@
 
 dependencies {
     implementation project(":common:common-api")
+    api project(":common:common-service")
     api fileTree(dir: 'lib/iam-sdk-1.0.0.jar', includes: ['*.jar'])
     compileOnly "org.springframework.cloud:spring-cloud-openfeign-core"
 }
