@@ -31,6 +31,6 @@ data class ComposerArtifact(
     @ApiModelProperty("composer package version")
     val version: String,
     @ApiModelProperty("composer package content")
-// 保存到 package.json 索引中的内容
+    // 保存到 package.json 索引中的内容
     val json: String
 )

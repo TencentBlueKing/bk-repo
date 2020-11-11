@@ -42,7 +42,6 @@ class ComposerRemoteRepository : RemoteRepository() {
     }
 
     fun getPackages(context: ArtifactQueryContext): String? {
-        val artifactInfo = context.artifactInfo
         val request = HttpContextHolder.getRequest()
         val host = request.requestURL.toString().removeSuffix(context.artifactInfo.getArtifactFullPath())
         return INIT_PACKAGES.wrapperPackageJson(host)

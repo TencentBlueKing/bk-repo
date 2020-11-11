@@ -37,6 +37,7 @@ import java.util.zip.GZIPInputStream
 import com.tencent.bkrepo.composer.util.pojo.ComposerArtifact
 import org.apache.commons.compress.archivers.ArchiveEntry
 import java.util.UUID
+import kotlin.math.abs
 
 object DecompressUtil {
 
@@ -97,7 +98,7 @@ object DecompressUtil {
         val uriArgs = UriUtil.getUriArgs(uri)
         val json = this.getComposerJson(uriArgs.format)
         JsonParser.parseString(json).asJsonObject.let {
-            it.addProperty(UID, UUID.randomUUID().leastSignificantBits)
+            it.addProperty(UID, abs(UUID.randomUUID().leastSignificantBits))
             val distObject = JsonObject()
             distObject.addProperty(TYPE, uriArgs.format)
             distObject.addProperty(URL, "$DIRECT_DISTS$uri")
