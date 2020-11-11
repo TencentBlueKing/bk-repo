@@ -19,7 +19,6 @@ import com.tencent.bkrepo.helm.constants.NODE_METADATA_VERSION
 import com.tencent.bkrepo.helm.constants.NO_CHART_NAME_FOUND
 import com.tencent.bkrepo.helm.constants.PROJECT_ID
 import com.tencent.bkrepo.helm.constants.REPO_NAME
-import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.pojo.user.BasicInfo
@@ -112,7 +111,7 @@ class ChartInfoServiceImpl(
                     select = mutableListOf(PROJECT_ID, REPO_NAME, NODE_FULL_PATH, NODE_METADATA),
                     rule = rule
                 )
-                val nodeList: List<Map<String, Any?>>? = nodeClient.query(queryModel).data?.records
+                val nodeList: List<Map<String, Any?>>? = nodeClient.search(queryModel).data?.records
                 if (nodeList.isNullOrEmpty()) HttpStatus.SC_NOT_FOUND else HttpStatus.SC_OK
             } else {
                 HttpStatus.SC_NOT_FOUND
@@ -130,7 +129,7 @@ class ChartInfoServiceImpl(
         with(artifactInfo) {
             val name = PackageKeys.resolveHelm(packageKey)
             val fullPath = String.format("/%s-%s.tgz", name, version)
-            val nodeDetail = nodeClient.detail(projectId, repoName, REPO_TYPE, fullPath).data ?: run {
+            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
                 logger.warn("node [$fullPath] don't found.")
                 throw HelmFileNotFoundException("node [$fullPath] don't found.")
             }

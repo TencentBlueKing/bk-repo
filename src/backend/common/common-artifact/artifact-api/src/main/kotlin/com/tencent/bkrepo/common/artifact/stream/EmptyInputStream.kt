@@ -23,15 +23,16 @@ package com.tencent.bkrepo.common.artifact.stream
 
 import java.io.InputStream
 
+/**
+ * 长度为0的空输入流
+ */
 class EmptyInputStream : InputStream() {
     override fun available() = 0
     override fun read() = -1
     override fun read(buf: ByteArray) = -1
     override fun read(buf: ByteArray, off: Int, len: Int): Int = -1
     override fun reset() {}
-    override fun skip(n: Long): Long {
-        return 0L
-    }
+    override fun skip(n: Long) = 0L
     override fun close() {}
     override fun mark(readLimit: Int) {}
     override fun markSupported() = true

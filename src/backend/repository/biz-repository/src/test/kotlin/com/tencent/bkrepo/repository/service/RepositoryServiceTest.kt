@@ -82,9 +82,9 @@ class RepositoryServiceTest @Autowired constructor(
     @BeforeAll
     fun beforeAll() {
         initMock()
-        if (!projectService.exist(UT_PROJECT_ID)) {
+        if (!projectService.checkExist(UT_PROJECT_ID)) {
             val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
-            projectService.create(projectCreateRequest)
+            projectService.createProject(projectCreateRequest)
         }
         val storageCreateRequest = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, storageCredentials)
         storageCredentialService.create(UT_USER, storageCreateRequest)
@@ -93,28 +93,28 @@ class RepositoryServiceTest @Autowired constructor(
     @BeforeEach
     fun beforeEach() {
         initMock()
-        repositoryService.list(UT_PROJECT_ID).forEach {
-            repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, it.name, operator = UT_USER))
+        repositoryService.listRepo(UT_PROJECT_ID).forEach {
+            repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, it.name, operator = UT_USER))
         }
     }
 
     @Test
     @DisplayName("测试列表查询")
     fun `test list query`() {
-        assertEquals(0, repositoryService.list(UT_PROJECT_ID).size)
+        assertEquals(0, repositoryService.listRepo(UT_PROJECT_ID).size)
         val size = 20
-        repeat(size) { repositoryService.create(createRequest("repo$it")) }
-        assertEquals(size, repositoryService.list(UT_PROJECT_ID).size)
+        repeat(size) { repositoryService.createRepo(createRequest("repo$it")) }
+        assertEquals(size, repositoryService.listRepo(UT_PROJECT_ID).size)
     }
 
     @Test
     @DisplayName("测试分页查询")
     fun `test page query`() {
-        assertEquals(0, repositoryService.list(UT_PROJECT_ID).size)
+        assertEquals(0, repositoryService.listRepo(UT_PROJECT_ID).size)
         val size = 51L
-        repeat(size.toInt()) { repositoryService.create(createRequest("repo$it")) }
+        repeat(size.toInt()) { repositoryService.createRepo(createRequest("repo$it")) }
         // 兼容性测试
-        var page = repositoryService.page(UT_PROJECT_ID, 0, 10)
+        var page = repositoryService.listRepoPage(UT_PROJECT_ID, 0, 10)
         assertEquals(10, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
@@ -122,14 +122,14 @@ class RepositoryServiceTest @Autowired constructor(
         assertEquals(1, page.pageNumber)
 
         // 测试第一页
-        page = repositoryService.page(UT_PROJECT_ID, 1, 10)
+        page = repositoryService.listRepoPage(UT_PROJECT_ID, 1, 10)
         assertEquals(10, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
         assertEquals(10, page.pageSize)
         assertEquals(1, page.pageNumber)
 
-        page = repositoryService.page(UT_PROJECT_ID, 6, 10)
+        page = repositoryService.listRepoPage(UT_PROJECT_ID, 6, 10)
         assertEquals(1, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
@@ -137,7 +137,7 @@ class RepositoryServiceTest @Autowired constructor(
         assertEquals(6, page.pageNumber)
 
         // 测试空页码
-        page = repositoryService.page(UT_PROJECT_ID, 7, 10)
+        page = repositoryService.listRepoPage(UT_PROJECT_ID, 7, 10)
         assertEquals(0, page.records.size)
         assertEquals(size, page.totalRecords)
         assertEquals(6, page.totalPages)
@@ -148,29 +148,29 @@ class RepositoryServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试判断仓库是否存在")
     fun `test check exist`() {
-        repositoryService.create(createRequest())
-        assertTrue(repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME))
-        assertTrue(repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name))
-        assertFalse(repositoryService.exist("", ""))
-        assertFalse(repositoryService.exist(UT_PROJECT_ID, ""))
-        assertFalse(repositoryService.exist("", UT_REPO_NAME))
+        repositoryService.createRepo(createRequest())
+        assertTrue(repositoryService.checkExist(UT_PROJECT_ID, UT_REPO_NAME))
+        assertTrue(repositoryService.checkExist(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name))
+        assertFalse(repositoryService.checkExist("", ""))
+        assertFalse(repositoryService.checkExist(UT_PROJECT_ID, ""))
+        assertFalse(repositoryService.checkExist("", UT_REPO_NAME))
 
-        repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, UT_REPO_NAME, operator = SYSTEM_USER))
-        assertFalse(repositoryService.exist(UT_PROJECT_ID, UT_REPO_NAME))
+        repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, UT_REPO_NAME, operator = SYSTEM_USER))
+        assertFalse(repositoryService.checkExist(UT_PROJECT_ID, UT_REPO_NAME))
     }
 
     @Test
     @DisplayName("测试创建同名仓库")
     fun `should throw exception when repo name exists`() {
-        repositoryService.create(createRequest())
-        assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
+        repositoryService.createRepo(createRequest())
+        assertThrows<ErrorCodeException> { repositoryService.createRepo(createRequest()) }
     }
 
     @Test
     @DisplayName("测试使用指定storage key创建仓库")
     fun `test create with specific storage key`() {
         val request = createRequest(storageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY)
-        repositoryService.create(request)
+        repositoryService.createRepo(request)
         val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
         assertEquals(UT_REPO_NAME, repository.name)
         assertEquals(RepositoryType.GENERIC, repository.type)
@@ -181,14 +181,14 @@ class RepositoryServiceTest @Autowired constructor(
         assertEquals(storageCredentials, repository.storageCredentials)
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, repository.storageCredentials!!.key)
 
-        assertThrows<ErrorCodeException> { repositoryService.create(createRequest()) }
+        assertThrows<ErrorCodeException> { repositoryService.createRepo(createRequest()) }
     }
 
     @Test
     @DisplayName("测试使用空storage key创建仓库")
     fun `test create with null storage key`() {
         assertNull(repositoryProperties.defaultStorageCredentialsKey)
-        repositoryService.create(createRequest())
+        repositoryService.createRepo(createRequest())
         val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
         assertNull(repository.storageCredentials)
     }
@@ -197,7 +197,7 @@ class RepositoryServiceTest @Autowired constructor(
     @DisplayName("测试使用默认storage key创建仓库")
     fun `test create with default storage key`() {
         repositoryProperties.defaultStorageCredentialsKey = UT_STORAGE_CREDENTIALS_KEY
-        repositoryService.create(createRequest())
+        repositoryService.createRepo(createRequest())
         val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC.name)!!
         val dbCredential = repository.storageCredentials
         assertEquals(storageCredentials, dbCredential)
@@ -207,13 +207,13 @@ class RepositoryServiceTest @Autowired constructor(
     @DisplayName("测试使用不存在的storage key创建仓库")
     fun `should throw exception when storage key nonexistent`() {
         val request = createRequest(storageCredentialsKey = "non-exist-credentials-key")
-        assertThrows<ErrorCodeException> { repositoryService.create(request) }
+        assertThrows<ErrorCodeException> { repositoryService.createRepo(request) }
     }
 
     @Test
     @DisplayName("测试更新仓库信息")
     fun `test update repository info`() {
-        repositoryService.create(createRequest())
+        repositoryService.createRepo(createRequest())
         val updateRequest = RepoUpdateRequest(
             projectId = UT_PROJECT_ID,
             name = UT_REPO_NAME,
@@ -221,7 +221,7 @@ class RepositoryServiceTest @Autowired constructor(
             description = "updated description",
             operator = UT_USER
         )
-        repositoryService.update(updateRequest)
+        repositoryService.updateRepo(updateRequest)
         val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME)!!
         assertEquals(false, repository.public)
         assertEquals("updated description", repository.description)
@@ -230,7 +230,7 @@ class RepositoryServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试使用不同类型的仓库更新配置")
     fun `should throw exception when update with different configuration type`() {
-        repositoryService.create(createRequest())
+        repositoryService.createRepo(createRequest())
         val updateRequest = RepoUpdateRequest(
             projectId = UT_PROJECT_ID,
             name = UT_REPO_NAME,
@@ -239,7 +239,7 @@ class RepositoryServiceTest @Autowired constructor(
             configuration = RemoteConfiguration(),
             operator = UT_USER
         )
-        assertThrows<ErrorCodeException> { repositoryService.update(updateRequest) }
+        assertThrows<ErrorCodeException> { repositoryService.updateRepo(updateRequest) }
     }
 
     @Test
@@ -254,7 +254,6 @@ class RepositoryServiceTest @Autowired constructor(
         val privateProxyRepoName1 = PRIVATE_PROXY_REPO_NAME.format(UT_REPO_NAME, "private1")
         val privateProxyRepoName2 = PRIVATE_PROXY_REPO_NAME.format(UT_REPO_NAME, "private2")
         val privateProxyRepoName3 = PRIVATE_PROXY_REPO_NAME.format(UT_REPO_NAME, "private3")
-        val privateProxyRepoName4 = PRIVATE_PROXY_REPO_NAME.format(UT_REPO_NAME, "private1")
 
         // 测试使用不存在的public channel, 抛异常
         var proxyConfiguration = ProxyConfiguration(channelList = listOf(publicChannel))
@@ -269,7 +268,7 @@ class RepositoryServiceTest @Autowired constructor(
             configuration = configuration,
             operator = UT_USER
         )
-        assertThrows<ErrorCodeException> { repositoryService.create(createRequest) }
+        assertThrows<ErrorCodeException> { repositoryService.createRepo(createRequest) }
 
         // 正常创建 1 2
         proxyConfiguration = ProxyConfiguration(channelList = listOf(privateChannel1, privateChannel2))
@@ -284,7 +283,7 @@ class RepositoryServiceTest @Autowired constructor(
             configuration = configuration,
             operator = UT_USER
         )
-        repositoryService.create(createRequest)
+        repositoryService.createRepo(createRequest)
         var repoDetail = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, "GENERIC")
         var compositeConfiguration = (repoDetail!!.configuration as CompositeConfiguration)
         assertEquals(2, compositeConfiguration.proxy.channelList.size)
@@ -310,7 +309,7 @@ class RepositoryServiceTest @Autowired constructor(
             operator = UT_USER
         )
 
-        repositoryService.update(updateRequest)
+        repositoryService.updateRepo(updateRequest)
         // 检查配置
         repoDetail = repositoryService.getRepoDetail(UT_PROJECT_ID, UT_REPO_NAME, "GENERIC")
         assertNotNull(repoDetail)
@@ -340,7 +339,7 @@ class RepositoryServiceTest @Autowired constructor(
             configuration = configuration,
             operator = UT_USER
         )
-        assertThrows<ErrorCodeException> { repositoryService.update(updateRequest) }
+        assertThrows<ErrorCodeException> { repositoryService.updateRepo(updateRequest) }
 
         // 更新 1 1，报错
         proxyConfiguration = ProxyConfiguration(channelList = listOf(privateChannel1, privateChannel1))
@@ -352,19 +351,19 @@ class RepositoryServiceTest @Autowired constructor(
             configuration = configuration,
             operator = UT_USER
         )
-        assertThrows<ErrorCodeException> { repositoryService.update(updateRequest) }
+        assertThrows<ErrorCodeException> { repositoryService.updateRepo(updateRequest) }
     }
 
     @Test
     @DisplayName("测试删除仓库")
     fun `test delete repository`() {
-        repositoryService.create(createRequest("test1"))
-        repositoryService.create(createRequest("test2"))
-        repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER))
+        repositoryService.createRepo(createRequest("test1"))
+        repositoryService.createRepo(createRequest("test2"))
+        repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER))
         assertNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test1"))
 
-        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "", operator = SYSTEM_USER)) }
-        assertThrows<ErrorCodeException> { repositoryService.delete(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER)) }
+        assertThrows<ErrorCodeException> { repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "", operator = SYSTEM_USER)) }
+        assertThrows<ErrorCodeException> { repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER)) }
 
         assertNotNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test2"))
     }

@@ -109,7 +109,7 @@ class RpmLocalRepository : LocalRepository() {
         val overwrite = HeaderUtils.getRpmBooleanHeader("X-BKREPO-OVERWRITE")
         if (!overwrite) {
             with(context.artifactInfo) {
-                val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data
+                val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
                 if (node != null) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactFullPath())
                 }
@@ -295,7 +295,7 @@ class RpmLocalRepository : LocalRepository() {
         val artifactSha256 = context.getArtifactSha256()
 
         return with(context.artifactInfo) {
-            val node = nodeClient.detail(projectId, repoName, artifactUri).data
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactUri).data
             if (node == null) {
                 NONE
             } else {
@@ -554,13 +554,13 @@ class RpmLocalRepository : LocalRepository() {
             ).data?.records ?: return
             for (packageVersion in pages) {
                 val artifactFullPath = "$packageKey-${packageVersion.name}.rpm".removePrefix("rpm:/")
-                val node = nodeClient.detail(context.projectId, context.repoName, artifactFullPath).data ?: continue
+                val node = nodeClient.getNodeDetail(context.projectId, context.repoName, artifactFullPath).data ?: continue
                 removeRpmArtifact(node, artifactFullPath, context, packageKey, packageVersion.name)
             }
             packageClient.deletePackage(context.projectId, context.repoName, packageKey)
         } else {
             with(context.artifactInfo) {
-                val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data ?: return
+                val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data ?: return
                 removeRpmArtifact(node, getArtifactFullPath(), context, packageKey, version)
             }
         }
@@ -606,7 +606,7 @@ class RpmLocalRepository : LocalRepository() {
         }
         with(context) {
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactFullPath, context.userId)
-            nodeClient.delete(nodeDeleteRequest)
+            nodeClient.deleteNode(nodeDeleteRequest)
             logger.info("Success to delete node $nodeDeleteRequest")
             deleteVersion(projectId, repoName, packageKey, version)
             logger.info("Success to delete version $projectId | $repoName : $packageKey $version")
@@ -640,7 +640,7 @@ class RpmLocalRepository : LocalRepository() {
         repoDataSet: MutableSet<String>
     ) {
         with(context.artifactInfo) {
-            val nodeList = nodeClient.list(projectId, repoName, fullPath).data ?: return
+            val nodeList = nodeClient.listNode(projectId, repoName, fullPath).data ?: return
             if (repodataDepth == 0) {
                 for (node in nodeList.filter { it.folder }.filter { it.name == REPODATA }) {
                     repoDataSet.add(node.fullPath)
@@ -666,7 +666,7 @@ class RpmLocalRepository : LocalRepository() {
         ).data ?: return null
         val artifactPath = trueVersion.contentPath ?: return null
         with(context.artifactInfo) {
-            val jarNode = nodeClient.detail(
+            val jarNode = nodeClient.getNodeDetail(
                 projectId, repoName, artifactPath
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data

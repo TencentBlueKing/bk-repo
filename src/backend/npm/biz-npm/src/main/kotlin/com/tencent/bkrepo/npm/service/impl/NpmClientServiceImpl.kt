@@ -465,7 +465,7 @@ class NpmClientServiceImpl(
             val entry = iterator.next()
             val tgzFullPath = NpmUtils.getTgzPath(npmPackageMetaData.name!!, entry.key)
             if (entry.value.any().containsKey("deprecated")) {
-                metadataClient.save(
+                metadataClient.saveMetadata(
                     MetadataSaveRequest(
                         artifactInfo.projectId,
                         artifactInfo.repoName,

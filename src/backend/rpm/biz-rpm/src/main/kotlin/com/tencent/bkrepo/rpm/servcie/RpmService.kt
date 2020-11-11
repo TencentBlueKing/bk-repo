@@ -73,7 +73,7 @@ class RpmService {
         (rpmLocalConfiguration.getSetting<MutableList<String>>("groupXmlSet") ?: mutableListOf())
             .updateList(groups, true)
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)
-        repositoryClient.update(repoUpdateRequest)
+        repositoryClient.updateRepo(repoUpdateRequest)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         (repository as RpmLocalRepository).flushAllRepoData(context)
     }
@@ -85,7 +85,7 @@ class RpmService {
         (rpmLocalConfiguration.getSetting<MutableList<String>>("groupXmlSet") ?: mutableListOf())
             .updateList(groups, false)
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)
-        repositoryClient.update(repoUpdateRequest)
+        repositoryClient.updateRepo(repoUpdateRequest)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         (repository as RpmLocalRepository).flushAllRepoData(context)
     }

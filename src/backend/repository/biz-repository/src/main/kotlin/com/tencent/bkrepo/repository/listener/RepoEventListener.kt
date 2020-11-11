@@ -21,10 +21,10 @@
 
 package com.tencent.bkrepo.repository.listener
 
+import com.tencent.bkrepo.auth.api.ServiceRoleResource
+import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.stream.message.repo.RepoCreatedMessage
-import com.tencent.bkrepo.common.stream.message.repo.RepoDeletedMessage
-import com.tencent.bkrepo.common.stream.message.repo.RepoUpdatedMessage
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.listener.event.repo.RepoCreatedEvent
 import com.tencent.bkrepo.repository.listener.event.repo.RepoDeletedEvent
@@ -36,28 +36,31 @@ import org.springframework.stereotype.Component
 
 @Component
 class RepoEventListener @Autowired constructor(
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val roleResource: ServiceRoleResource,
+    private val userResource: ServiceUserResource
 ) : AbstractEventListener() {
 
     @Async
     @EventListener(RepoCreatedEvent::class)
     fun handle(event: RepoCreatedEvent) {
-        event.apply { sendMessage(RepoCreatedMessage(request)) }
-            .also { logEvent(it) }
-            .takeIf { event.request.operator != SYSTEM_USER }?.run {
+        logEvent(event)
+        if (event.request.operator != SYSTEM_USER && event.request.operator != ANONYMOUS_USER) {
             permissionManager.registerRepo(event.request.operator, event.request.projectId, event.request.name)
+            val repoManagerRoleId = roleResource.createRepoManage(event.request.projectId, event.request.name).data!!
+            userResource.addUserRole(event.request.operator, repoManagerRoleId)
         }
     }
 
     @Async
     @EventListener(RepoUpdatedEvent::class)
     fun handle(event: RepoUpdatedEvent) {
-        event.apply { sendMessage(RepoUpdatedMessage(request)) }.also { logEvent(it) }
+        logEvent(event)
     }
 
     @Async
     @EventListener(RepoDeletedEvent::class)
     fun handle(event: RepoDeletedEvent) {
-        event.apply { sendMessage(RepoDeletedMessage(request)) }.also { logEvent(it) }
+        logEvent(event)
     }
 }
