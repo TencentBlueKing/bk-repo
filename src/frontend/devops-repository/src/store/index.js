@@ -6,6 +6,7 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
     state: {
+        showLoginDialog: false,
         breadcrumb: [],
         genericTree: [
             {
@@ -16,6 +17,7 @@ export default new Vuex.Store({
                 roadMap: '0'
             }
         ],
+        projectList: [],
         userList: {},
         userInfo: {},
         dockerDomain: ''
@@ -61,6 +63,12 @@ export default new Vuex.Store({
         },
         SET_DOCKER_DOMAIN (state, data) {
             state.dockerDomain = data
+        },
+        SET_PROJECT_LIST (state, data) {
+            state.projectList = data
+        },
+        SHOW_LOGIN_DIALOG (state, show = true) {
+            state.showLoginDialog = show
         }
     },
     actions
