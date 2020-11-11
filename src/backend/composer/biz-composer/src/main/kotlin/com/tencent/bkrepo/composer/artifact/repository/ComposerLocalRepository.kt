@@ -98,11 +98,10 @@ class ComposerLocalRepository : LocalRepository() {
         )
     }
 
-
     private fun updateIndex(composerArtifact: ComposerArtifact, context: ArtifactContext) {
         // 查询对应的 "/p/%package%.json" 是否存在
         val pArtifactUri = "/p/${composerArtifact.name}.json"
-        val node = nodeClient.detail(context.projectId, context.repoName, pArtifactUri).data
+        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, pArtifactUri).data
         val resultJson = if (node == null) {
             with(composerArtifact) {
                 JsonUtil.addComposerVersion(String.format(COMPOSER_VERSION_INIT, name), json, name, version)
@@ -110,7 +109,6 @@ class ComposerLocalRepository : LocalRepository() {
         } else {
             nodeToJson(node).let { with(composerArtifact) {
                     JsonUtil.addComposerVersion(it, json, name, version) }
->>>>>>> c1b9cedbd6c3cf3efb0a03d21d816101ce08dec6
             }
         }
         val jsonFile = ByteArrayInputStream(resultJson.toByteArray()).use {
@@ -138,15 +136,6 @@ class ComposerLocalRepository : LocalRepository() {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
-<<<<<<< HEAD
-        val repeat = checkRepeatArtifact(context)
-        if (repeat != ArtifactRepeat.FULLPATH_SHA256) { indexer(context) }
-        val nodeCreateRequest = getCompressNodeCreateRequest(context)
-        nodeClient.createNode(nodeCreateRequest)
-        storageService.store(
-            nodeCreateRequest.sha256!!,
-            context.getArtifactFile(), context.storageCredentials
-=======
         //读取需要保存数据
         val composerArtifact = context.getArtifactFile().getInputStream().use {
             it.wrapperJson(context.artifactInfo.getArtifactFullPath())
@@ -176,7 +165,6 @@ class ComposerLocalRepository : LocalRepository() {
                         overwrite = true,
                         createdBy = context.userId
                 )
->>>>>>> c1b9cedbd6c3cf3efb0a03d21d816101ce08dec6
         )
         //更新索引
         updateIndex(composerArtifact, context)
@@ -198,7 +186,7 @@ class ComposerLocalRepository : LocalRepository() {
                     1000
             ).data?.records ?: return
             for (packageVersion in pages) {
-                val node = nodeClient.detail(context.projectId, context.repoName, packageVersion.contentPath!!).data
+                val node = nodeClient.getNodeDetail(context.projectId, context.repoName, packageVersion.contentPath!!).data
                         ?: continue
                 removeComposerArtifact(node, packageKey, packageVersion.name, context)
             }
@@ -210,7 +198,7 @@ class ComposerLocalRepository : LocalRepository() {
                         packageKey,
                         version
                 ).data ?: return
-                val node = nodeClient.detail(projectId, repoName, packageVersion.contentPath!!).data ?: return
+                val node = nodeClient.getNodeDetail(projectId, repoName, packageVersion.contentPath!!).data ?: return
                 removeComposerArtifact(node, packageKey, version, context)
             }
         }
@@ -218,7 +206,7 @@ class ComposerLocalRepository : LocalRepository() {
 
     private fun getPackageJson(context: ArtifactContext, name: String): String? {
         val jsonPath = "/p/$name.json"
-        val node = nodeClient.detail(context.projectId, context.repoName, jsonPath).data?: return null
+        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, jsonPath).data?: return null
         return nodeToJson(node)
     }
 
@@ -254,7 +242,7 @@ class ComposerLocalRepository : LocalRepository() {
             // 更新索引
             deleteJsonVersion(context, PackageKeys.resolveComposer(packageKey), version)
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, node.fullPath, context.userId)
-            nodeClient.delete(nodeDeleteRequest)
+            nodeClient.deleteNode(nodeDeleteRequest)
             logger.info("Success to delete node $nodeDeleteRequest")
             deleteVersion(projectId, repoName, packageKey, version)
             logger.info("Success to delete version $projectId | $repoName : $packageKey $version")
@@ -285,23 +273,6 @@ class ComposerLocalRepository : LocalRepository() {
         }
     }
 
-<<<<<<< HEAD
-    override fun packages(context: ArtifactSearchContext): String? {
-        with(context.artifactInfo) {
-            val request = HttpContextHolder.getRequest()
-            val host = "${request.requestAddr()}/$projectId/$repoName"
-            while (nodeClient.getNodeDetail(projectId, repoName, artifactUri).data == null) {
-                val byteArrayInputStream = ByteArrayInputStream(INIT_PACKAGES.toByteArray())
-                val artifactFile = ArtifactFileFactory.build(byteArrayInputStream)
-                val artifactUploadContext = ArtifactUploadContext(artifactFile)
-                val nodeCreateRequest = buildNodeCreateRequest(context = artifactUploadContext)
-                nodeClient.createNode(nodeCreateRequest)
-                artifactUploadContext.getArtifactFile().let {
-                    storageService.store(
-                        nodeCreateRequest.sha256!!,
-                        it, context.storageCredentials
-                    )
-=======
     fun getHost(context: ArtifactContext): String {
         val request = HttpContextHolder.getRequest()
         val scheme = request.scheme
@@ -315,7 +286,7 @@ class ComposerLocalRepository : LocalRepository() {
     fun getPackages(context: ArtifactQueryContext): String {
         val host = getHost(context)
         val node = with(context.artifactInfo) {
-            nodeClient.detail(projectId, repoName, getArtifactFullPath()).data
+            nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
         }
         return if (node == null) {
             val artifactFile = ByteArrayInputStream(INIT_PACKAGES.toByteArray()).use {
@@ -351,7 +322,6 @@ class ComposerLocalRepository : LocalRepository() {
             BufferedReader(InputStreamReader(inputStream)).use { bufferedReader ->
                 while ((bufferedReader.readLine().also { line = it }) != null) {
                     stringBuilder.append(line)
->>>>>>> c1b9cedbd6c3cf3efb0a03d21d816101ce08dec6
                 }
             }
         } finally {
@@ -365,7 +335,7 @@ class ComposerLocalRepository : LocalRepository() {
      */
     private fun stream2Json(context: ArtifactContext): String? {
         return with(context.artifactInfo) {
-            val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data ?: return null
+            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data ?: return null
             nodeToJson(node)
         }
     }
@@ -379,25 +349,19 @@ class ComposerLocalRepository : LocalRepository() {
     ): DownloadStatisticsAddRequest? {
         with(context) {
             val fullPath = context.artifactInfo.getArtifactFullPath()
-            val node = nodeClient.detail(projectId, repoName, fullPath).data ?: return null
+            val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return null
             val packageKey = node.metadata["packageKey"] ?: throw ComposerArtifactMetadataException(
                     "${artifactInfo.getArtifactFullPath()} : not found metadata.packageKay value"
             )
             val version = node.metadata["version"] ?: throw ComposerArtifactMetadataException(
                     "${artifactInfo.getArtifactFullPath()} : not found metadata.version value"
             )
-<<<<<<< HEAD
-            val nodeList = nodeClient.search(queryModel).data?.records
-            if (nodeList.isNullOrEmpty()) {
-                NONE
-=======
             val name = PackageKeys.resolveComposer(packageKey.toString())
             return if (fullPath.endsWith("")) {
                 return DownloadStatisticsAddRequest(
                         projectId, repoName,
                         packageKey.toString(), name, version.toString()
                 )
->>>>>>> c1b9cedbd6c3cf3efb0a03d21d816101ce08dec6
             } else {
                 null
             }
@@ -407,17 +371,6 @@ class ComposerLocalRepository : LocalRepository() {
     /**
      * 版本详情
      */
-<<<<<<< HEAD
-    private fun stream2Json(context: ArtifactContext): String? {
-        return with(context.artifactInfo) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactUri).data ?: return null
-            node.takeIf { !it.folder } ?: return null
-            val inputStream = storageService.load(
-                node.sha256!!,
-                Range.full(node.size),
-                context.storageCredentials
-            ) ?: return null
-=======
     fun getVersionDetail(context: ArtifactQueryContext): Any? {
         val packageKey = context.request.getParameter("packageKey")
         val version = context.request.getParameter("version")
@@ -430,7 +383,7 @@ class ComposerLocalRepository : LocalRepository() {
         ).data ?: return null
         val artifactPath = trueVersion.contentPath ?: return null
         with(context.artifactInfo) {
-            val jarNode = nodeClient.detail(
+            val jarNode = nodeClient.getNodeDetail(
                     projectId, repoName, artifactPath
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
@@ -454,7 +407,6 @@ class ComposerLocalRepository : LocalRepository() {
             return ArtifactVersionDetail(composerArtifactBasic, rpmArtifactMetadata)
         }
     }
->>>>>>> c1b9cedbd6c3cf3efb0a03d21d816101ce08dec6
 
     fun store(node: NodeCreateRequest, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?): Boolean {
         try {
