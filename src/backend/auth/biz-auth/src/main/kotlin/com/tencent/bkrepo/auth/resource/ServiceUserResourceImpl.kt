@@ -155,10 +155,10 @@ class ServiceUserResourceImpl @Autowired constructor(
     }
 
     override fun userInfo(bkrepoToken: String?): Response<Map<String, Any>> {
-        bkrepoToken ?: run {
-            throw IllegalArgumentException("ticket can not be null")
-        }
         try {
+            bkrepoToken ?: run {
+                throw IllegalArgumentException("ticket can not be null")
+            }
             val userId = JwtUtils.validateToken(signingKey, bkrepoToken).body.subject
             val result = mapOf("userId" to userId)
             return ResponseBuilder.success(result)
@@ -169,10 +169,10 @@ class ServiceUserResourceImpl @Autowired constructor(
     }
 
     override fun verify(bkrepoToken: String?): Response<Map<String, Any>> {
-        bkrepoToken ?: run {
-            throw IllegalArgumentException("ticket can not be null")
-        }
         try {
+            bkrepoToken ?: run {
+                throw IllegalArgumentException("ticket can not be null")
+            }
             val userId = JwtUtils.validateToken(signingKey, bkrepoToken).body.subject
             val result = mapOf("user_id" to userId)
             return ResponseBuilder.success(result)
