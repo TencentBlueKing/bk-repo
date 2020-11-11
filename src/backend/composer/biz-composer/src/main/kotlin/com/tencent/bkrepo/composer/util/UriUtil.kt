@@ -23,7 +23,6 @@ package com.tencent.bkrepo.composer.util
 
 import com.tencent.bkrepo.composer.exception.ComposerUnSupportCompressException
 import com.tencent.bkrepo.composer.util.pojo.UriArgs
-import java.util.regex.Pattern
 
 object UriUtil {
     /**
@@ -33,13 +32,13 @@ object UriUtil {
     fun getUriArgs(uri: String): UriArgs {
         val format = if (uri.endsWith(".zip")) {
             "zip"
-        }else if (uri.endsWith("tar")) {
+        } else if (uri.endsWith("tar")) {
             "tar"
-        }else if (uri.endsWith("tar.gz")) {
+        } else if (uri.endsWith("tar.gz")) {
             "tar.gz"
-        }else if (uri.endsWith(".tgz")) {
+        } else if (uri.endsWith(".tgz")) {
             "tgz"
-        }else if (uri.endsWith("whl")) {
+        } else if (uri.endsWith("whl")) {
             "whl"
         } else {
             throw ComposerUnSupportCompressException("Can not support compress format!")

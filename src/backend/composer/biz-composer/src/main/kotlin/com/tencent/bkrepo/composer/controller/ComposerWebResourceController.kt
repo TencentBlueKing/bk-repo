@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ComposerWebResourceController(
-        private val composerWebService: ComposerWebService
+    private val composerWebService: ComposerWebService
 ) : ComposerWebResource {
     override fun deletePackage(composerArtifactInfo: ComposerArtifactInfo, packageKey: String): Response<Void> {
         composerWebService.deletePackage(composerArtifactInfo, packageKey)

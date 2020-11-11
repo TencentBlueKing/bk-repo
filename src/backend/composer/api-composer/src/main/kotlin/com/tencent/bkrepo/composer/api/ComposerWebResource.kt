@@ -17,23 +17,23 @@ interface ComposerWebResource {
     @ApiOperation("composer 包删除接口")
     @DeleteMapping(ComposerArtifactInfo.COMPOSER_EXT_PACKAGE_DELETE)
     fun deletePackage(
-            @ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo,
-            @RequestParam packageKey: String
+        @ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo,
+        @RequestParam packageKey: String
     ): Response<Void>
 
     @ApiOperation("composer 版本删除接口")
     @DeleteMapping(ComposerArtifactInfo.COMPOSER_EXT_VERSION_DELETE)
     fun deleteVersion(
-            @ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo,
-            @RequestParam packageKey: String,
-            @RequestParam version: String?
+        @ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo,
+        @RequestParam packageKey: String,
+        @RequestParam version: String?
     ): Response<Void>
 
     @ApiOperation("composer 版本详情接口")
     @GetMapping(ComposerArtifactInfo.COMPOSER_EXT_DETAIL)
     fun artifactDetail(
-            @ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo,
-            @RequestParam packageKey: String,
-            @RequestParam version: String?
+        @ArtifactPathVariable composerArtifactInfo: ComposerArtifactInfo,
+        @RequestParam packageKey: String,
+        @RequestParam version: String?
     ): Response<Any?>
 }
