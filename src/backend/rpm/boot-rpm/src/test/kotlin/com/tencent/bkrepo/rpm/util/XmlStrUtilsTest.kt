@@ -23,10 +23,15 @@ package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.packagesModify
+import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
+import java.io.BufferedReader
 import java.io.File
+import java.io.FileInputStream
+import java.io.InputStreamReader
+import java.lang.StringBuilder
 import java.util.regex.Pattern
 
 @SpringBootTest
@@ -36,11 +41,23 @@ class XmlStrUtilsTest {
      */
     @Test
     fun splitUriByDepthTest() {
-        val uri = "/7/os/x86_64/hello-world-1-1.x86_64.rpm"
-        val depth = 3
-        val repodataUri = XmlStrUtils.splitUriByDepth(uri, depth)
-        Assertions.assertEquals("7/os/x86_64/", repodataUri.repodataPath)
+        val uri1 = "/7/os/x86_64/hello-world-1-1.x86_64.rpm"
+        val depth1 = 3
+        val repodataUri = XmlStrUtils.splitUriByDepth(uri1, depth1)
+        Assertions.assertEquals("/7/os/x86_64/", repodataUri.repoDataPath)
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri.artifactRelativePath)
+
+        val uri2 = "/7/hello-world-1-1.x86_64.rpm"
+        val depth2 = 1
+        val repodataUri2 = XmlStrUtils.splitUriByDepth(uri2, depth2)
+        Assertions.assertEquals("/7/", repodataUri2.repoDataPath)
+        Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri2.artifactRelativePath)
+
+        val uri3 = "/hello-world-1-1.x86_64.rpm"
+        val depth3 = 0
+        val repodataUri3 = XmlStrUtils.splitUriByDepth(uri3, depth3)
+        Assertions.assertEquals("/", repodataUri3.repoDataPath)
+        Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri3.artifactRelativePath)
     }
 
     @Test

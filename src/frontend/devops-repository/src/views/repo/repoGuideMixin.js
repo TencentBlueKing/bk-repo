@@ -168,10 +168,10 @@ export default {
                             subTitle: '1、全局配置，conf/setting.xml中添加源地址',
                             codeList: [
                                 `<mirror>`,
-                                `   <id>${this.projectId}-${this.repoName}</id>`,
-                                `   <name>${this.repoName}</name>`,
-                                `   <url>${this.repoUrl}/</url>`,
-                                `   <mirrorOf>central</mirrorOf>`,
+                                `       <id>${this.projectId}-${this.repoName}</id>`,
+                                `       <name>${this.repoName}</name>`,
+                                `       <url>${this.repoUrl}/</url>`,
+                                `       <mirrorOf>central</mirrorOf>`,
                                 `</mirror>`
                             ]
                         },
@@ -179,8 +179,8 @@ export default {
                             subTitle: '2、项目设置，项目pom.xml中添加源地址',
                             codeList: [
                                 `<repository>`,
-                                `   <id>${this.projectId}-${this.repoName}</id>`,
-                                `   <url>${this.repoUrl}/</url>`,
+                                `       <id>${this.projectId}-${this.repoName}</id>`,
+                                `       <url>${this.repoUrl}/</url>`,
                                 `</repository>`
                             ]
                         }
@@ -193,11 +193,11 @@ export default {
                             subTitle: '在配置文件 conf/settings.xml设置账户密码；项目内 settings.xml 也可以设置，高优先级',
                             codeList: [
                                 `<servers>`,
-                                `   <server>`,
-                                `       <id>${this.projectId}-${this.repoName}</id>`,
-                                `       <username>${this.userInfo.username}</username>`,
-                                `       <password><PERSONAL_ACCESS_TOKEN></password>`,
-                                `   </server>`,
+                                `       <server>`,
+                                `               <id>${this.projectId}-${this.repoName}</id>`,
+                                `               <username>${this.userInfo.username}</username>`,
+                                `               <password><PERSONAL_ACCESS_TOKEN></password>`,
+                                `       </server>`,
                                 `</servers>`
                             ]
                         }
@@ -210,12 +210,12 @@ export default {
                             subTitle: '配置 pom.xml',
                             codeList: [
                                 `<distributionManagement>`,
-                                `   <repository>`,
-                                `       <!--id值与配置的server id 一致-->`,
-                                `       <id>${this.projectId}-${this.repoName}</id>`,
-                                `       <name>${this.repoName}</name>`,
-                                `       <url>${this.repoUrl}/</url>`,
-                                `   </repository>`,
+                                `       <repository>`,
+                                `               <!--id值与配置的server id 一致-->`,
+                                `               <id>${this.projectId}-${this.repoName}</id>`,
+                                `               <name>${this.repoName}</name>`,
+                                `               <url>${this.repoUrl}/</url>`,
+                                `       </repository>`,
                                 `</distributionManagement>`
                             ]
                         },
@@ -234,25 +234,25 @@ export default {
                             subTitle: '在maven配置文件 conf/settings.xml配置',
                             codeList: [
                                 `<profiles>`,
-                                `   <profile>`,
-                                `       <id>repository proxy</id>`,
-                                `       <activation>`,
-                                `           <activeByDefault>true</activeByDefault>`,
-                                `       </activation>`,
-                                `       <repositories>`,
-                                `           <repository>`,
-                                `               <id>${this.projectId}-${this.repoName}</id>`,
-                                `               <name>${this.repoName}</name>`,
-                                `               <url>${this.repoUrl}/</url>`,
-                                `               <releases>`,
-                                `                   <enabled>true</enabled>`,
-                                `               </releases>`,
-                                `               <snapshots>`,
-                                `                   <enabled>true</enabled>`,
-                                `               </snapshots>`,
-                                `           </repository>`,
-                                `       </repositories>`,
-                                `   </profile>`,
+                                `       <profile>`,
+                                `               <id>repository proxy</id>`,
+                                `               <activation>`,
+                                `                       <activeByDefault>true</activeByDefault>`,
+                                `               </activation>`,
+                                `               <repositories>`,
+                                `                       <repository>`,
+                                `                               <id>${this.projectId}-${this.repoName}</id>`,
+                                `                               <name>${this.repoName}</name>`,
+                                `                               <url>${this.repoUrl}/</url>`,
+                                `                               <releases>`,
+                                `                                       <enabled>true</enabled>`,
+                                `                               </releases>`,
+                                `                               <snapshots>`,
+                                `                                       <enabled>true</enabled>`,
+                                `                               </snapshots>`,
+                                `                       </repository>`,
+                                `               </repositories>`,
+                                `       </profile>`,
                                 `</profiles>`
                             ]
                         },
@@ -471,21 +471,13 @@ export default {
                             subTitle: '替换默认依赖源地址'
                         },
                         {
-                            subTitle: 'MacOS/Liunx配置目录 :  $HOME/.pip/pip.conf',
-                            codeList: [
-                                `[global]`,
-                                `index-url = ${this.repoUrl}`,
-                                `username = ${this.userInfo.username}`,
-                                `password = <PERSONAL_ACCESS_TOKEN>`
-                            ]
+                            subTitle: 'MacOS/Liunx配置目录 :  $HOME/.pip/pip.conf'
                         },
                         {
                             subTitle: 'Windows配置目录 :  %HOME%/pip/pip.ini',
                             codeList: [
                                 `[global]`,
-                                `index-url = ${this.repoUrl}`,
-                                `username = ${this.userInfo.username}`,
-                                `password = <PERSONAL_ACCESS_TOKEN>`
+                                `index-url = ${location.protocol}//${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN>@${location.host}/${this.repoType}/${this.projectId}/${this.repoName}/simple`
                             ]
                         },
                         {
@@ -515,67 +507,42 @@ export default {
         composerGuide () {
             return [
                 {
-                    title: '配置仓库地址',
-                    main: [
-                        {
-                            subTitle: '1、全局配置'
-                        },
-                        {
-                            subTitle: '首先把默认的源给禁用掉',
-                            codeList: [
-                                `composer config -g secure-http false`
-                            ]
-                        },
-                        {
-                            subTitle: '再修改镜像源',
-                            codeList: [
-                                `composer config -g repo.packagist composer ${this.repoUrl}`
-                            ]
-                        },
-                        {
-                            subTitle: '修改成功后可以先查看一下配置',
-                            codeList: [
-                                `composer config -g -l`
-                            ]
-                        },
-                        {
-                            subTitle: '2、局部换源（仅对当前项目有效）'
-                        },
-                        {
-                            subTitle: '在当前项目下的composer.json中添加',
-                            codeList: [
-                                `{`,
-                                `   "repositories": [`,
-                                `        {`,
-                                `           "type": "composer",`,
-                                `           "url": "${this.repoUrl}" //第一个源`,
-                                `        },`,
-                                `        {`,
-                                `           "type": "composer",`,
-                                `           "url": "${this.repoUrl}" //第二个源`,
-                                `        },`,
-                                `   ]`,
-                                `}`
-                            ]
-                        }
-                    ]
-                },
-                {
                     title: '推送',
                     main: [
                         {
+                            subTitle: '使用 cURL 命令将压缩包上传至仓库',
                             codeList: [
-                                `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> "${this.repoUrl}" -T filePath`
+                                `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> "${this.repoUrl}" -T <PACKAGE_FILE>`
                             ]
                         }
                     ]
                 },
                 {
-                    title: '下载',
+                    title: '拉取',
                     main: [
                         {
+                            subTitle: '1、在 Composer 包的文件目录，设置仓库地址',
                             codeList: [
-                                `composer require ${this.packageName}`
+                                `composer config repo.packagist composer ${this.repoUrl}`
+                            ]
+                        },
+                        {
+                            subTitle: '2、在 Composer 包的文件目录添加 auth.json，配置仓库认证信息',
+                            codeList: [
+                                `{`,
+                                `       "http-basic": {`,
+                                `               "${location.host}": {`,
+                                `                       "username": "${this.userInfo.username}",`,
+                                `                       "password": "<PERSONAL_ACCESS_TOKEN>"`,
+                                `               }`,
+                                `       }`,
+                                `}`
+                            ]
+                        },
+                        {
+                            subTitle: '3、使用如下命令去拉取包',
+                            codeList: [
+                                `composer require ${this.packageName} ${this.version}`
                             ]
                         }
                     ]

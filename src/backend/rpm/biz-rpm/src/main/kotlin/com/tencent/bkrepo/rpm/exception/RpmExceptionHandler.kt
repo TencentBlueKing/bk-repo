@@ -74,4 +74,10 @@ class RpmExceptionHandler {
     fun handleException(exception: RpmArtifactFormatNotSupportedException): RpmExceptionResponse {
         return RpmExceptionResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE.toString(), exception.message)
     }
+
+    @ExceptionHandler(RpmRepoDataException::class)
+    @ResponseStatus(HttpStatus.PRECONDITION_FAILED)
+    fun handleException(exception: RpmRepoDataException): RpmExceptionResponse {
+        return RpmExceptionResponse(HttpStatus.PRECONDITION_FAILED.toString(), exception.message)
+    }
 }

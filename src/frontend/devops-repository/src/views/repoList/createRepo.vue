@@ -155,6 +155,7 @@
                         description: this.repoBaseInfo.description,
                         ...(this.repoBaseInfo.type === 'rpm' ? {
                             configuration: {
+                                type: 'composite',
                                 settings: {
                                     enableFileLists: this.repoBaseInfo.enableFileLists,
                                     repodataDepth: this.repoBaseInfo.repodataDepth,
@@ -193,6 +194,7 @@
         padding-top: 20px;
         display: flex;
         background-color: white;
+        overflow-y: auto;
         .repo-base-info {
             flex: 1;
             max-width: 1080px;

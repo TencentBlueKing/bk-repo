@@ -1,4 +1,7 @@
 {
+    "bkrepo": "制品库管理",
+    "login": "登录",
+    "loginErrorTip": "账户或者密码错误，请重新输入",
     "repository": "仓库",
     "repoList": "仓库列表",
     "name": "名称",

@@ -19,18 +19,50 @@
  *
  */
 
-package com.tencent.bkrepo.composer.util.pojo
+package com.tencent.bkrepo.rpm.pojo
 
+import com.tencent.bkrepo.rpm.REPODATA
+import com.tencent.bkrepo.rpm.exception.RpmRepoDataException
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("composer 'package.json'文件中节点")
-data class ComposerJsonNode(
-    @ApiModelProperty("composer package name")
-    val packageName: String,
-    @ApiModelProperty("composer package version")
-    val version: String,
-    @ApiModelProperty("composer package content")
-    // 保存到 package.json 索引中的内容
-    val json: String
-)
+/**
+ * repodataPath : 索引目录的父级路径 `/`开头，`/`结尾
+ * artifactRelativePath：保存在索引中的路径 ， 不要`/`
+ */
+@ApiModel("索引目录数据类")
+data class RepoDataPojo(
+    @ApiModelProperty("契合本次请求的repodata_depth 目录路径")
+    val repoDataPath: String,
+    @ApiModelProperty("构件相对于索引文件的保存路径")
+    val artifactRelativePath: String
+) {
+
+    init {
+        checkRepoDataPathFormat(repoDataPath)
+        checkArtifactRelativePathFormat(artifactRelativePath)
+    }
+
+    private fun checkRepoDataPathFormat(repoDataPath: String) {
+        if (!(repoDataPath.endsWith("/") && repoDataPath.startsWith("/"))) {
+            throw RpmRepoDataException("$repoDataPath is invalid")
+        }
+    }
+    private fun checkArtifactRelativePathFormat(artifactRelativePath: String) {
+        if (artifactRelativePath.startsWith("/")) {
+            throw RpmRepoDataException("$repoDataPath is invalid")
+        }
+    }
+
+    override fun toString(): String {
+        return "$repoDataPath$artifactRelativePath"
+    }
+
+    fun getMarkPath(indexType: IndexType): String {
+        return if (repoDataPath == "/") {
+            "/$REPODATA/${indexType.value}/$artifactRelativePath"
+        } else {
+            "$repoDataPath$REPODATA/${indexType.value}/$artifactRelativePath"
+        }
+    }
+}
