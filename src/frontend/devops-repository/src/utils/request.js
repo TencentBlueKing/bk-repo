@@ -22,12 +22,12 @@ function errorHandler (error) {
 request.interceptors.response.use(response => {
     const { data: { code, data, message, status }, status: httpStatus } = response
     if (httpStatus === 401) {
-        if (PAAS_CONFIG) {
+        if (PAAS_CONFIG === 'paas') {
             window.postMessage({
                 action: 'toggleLoginDialog'
             }, '*')
             location.href = window.getLoginUrl()
-        } else {
+        } else if (PAAS_CONFIG === 'local') {
             window.repositoryVue.$store.commit('SHOW_LOGIN_DIALOG')
         }
         return Promise.reject() // eslint-disable-line
