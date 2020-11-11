@@ -21,7 +21,18 @@
 
 package com.tencent.bkrepo.common.artifact.stream
 
+/**
+ * 输入流数据接收监听器
+ */
 interface StreamReceiveListener {
+
+    /**
+     * 数据接收回调方法，从[offset]位置到共接收了[length]长度的数据，数据缓存在[buffer]中
+     */
     fun data(buffer: ByteArray, offset: Int, length: Int)
+
+    /**
+     * 数据接收完成通知
+     */
     fun finished()
 }

@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
-import com.tencent.bkrepo.npm.constants.REPO_TYPE
 import com.tencent.bkrepo.npm.exception.NpmBadRequestException
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
@@ -68,7 +67,7 @@ class NpmRemoteRepository(
             val packageInfo = NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
 
             val versionMetadataFullPath = NpmUtils.getVersionPackageMetadataPath(packageInfo.first, packageInfo.second)
-            if (nodeClient.exist(projectId, repoName, versionMetadataFullPath).data!!) {
+            if (nodeClient.checkExist(projectId, repoName, versionMetadataFullPath).data!!) {
                 logger.info("version metadata [$versionMetadataFullPath] is already exits in the repo [$projectId/$repoName]")
                 return
             }
@@ -121,7 +120,7 @@ class NpmRemoteRepository(
         val artifactFile = createTempFile(body)
         val sha256 = artifactFile.getFileSha256()
         with(context) {
-            nodeClient.detail(projectId, repoName, REPO_TYPE, fullPath).data?.let {
+            nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
                 if (it.sha256.equals(sha256)) {
                     logger.info("artifact [$fullPath] is hit the cache.")
                     return artifactFile.getInputStream()

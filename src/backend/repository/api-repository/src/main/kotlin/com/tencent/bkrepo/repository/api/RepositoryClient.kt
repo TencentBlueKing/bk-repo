@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 /**
  * 仓库服务接口
@@ -51,6 +52,64 @@ import org.springframework.web.bind.annotation.RequestMapping
 @FeignClient(SERVICE_NAME, contextId = "RepositoryClient")
 @RequestMapping("/service/repo")
 interface RepositoryClient {
+
+    @ApiOperation("查询仓库信息")
+    @GetMapping("/info/{projectId}/{repoName}")
+    fun getRepoInfo(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String
+    ): Response<RepositoryInfo?>
+
+    @ApiOperation("查询仓库详情")
+    @GetMapping("/detail/{projectId}/{repoName}")
+    fun getRepoDetail(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "仓库类型", required = true)
+        @RequestParam type: String? = null
+    ): Response<RepositoryDetail?>
+
+    @ApiOperation("列表查询项目所有仓库")
+    @GetMapping("/list/{projectId}")
+    fun listRepo(
+        @ApiParam(value = "项目id", required = true)
+        @PathVariable projectId: String,
+        @ApiParam("仓库名称", required = false)
+        @RequestParam name: String? = null,
+        @ApiParam("仓库类型", required = false)
+        @RequestParam type: String? = null
+    ): Response<List<RepositoryInfo>>
+
+    @ApiOperation("仓库分页查询")
+    @PostMapping("/rangeQuery")
+    fun rangeQuery(@RequestBody request: RepoRangeQueryRequest): Response<Page<RepositoryInfo?>>
+
+    @ApiOperation("创建仓库")
+    @PostMapping("/create")
+    fun createRepo(@RequestBody request: RepoCreateRequest): Response<RepositoryDetail>
+
+    @ApiOperation("修改仓库")
+    @PostMapping("/update")
+    fun updateRepo(@RequestBody request: RepoUpdateRequest): Response<Void>
+
+    @ApiOperation("删除仓库")
+    @DeleteMapping("/delete")
+    fun deleteRepo(@RequestBody request: RepoDeleteRequest): Response<Void>
+
+    @ApiOperation("分页查询指定类型仓库")
+    @GetMapping("/page/repoType/{page}/{size}/{repoType}")
+    fun pageByType(
+        @ApiParam(value = "当前页", required = true, example = "0")
+        @PathVariable page: Int,
+        @ApiParam(value = "分页大小", required = true, example = "20")
+        @PathVariable size: Int,
+        @ApiParam(value = "仓库类型", required = true)
+        @PathVariable repoType: String
+    ): Response<Page<RepositoryInfo>>
 
     @Deprecated("replace with getRepoDetail")
     @GetMapping("/query/{projectId}/{repoName}/{type}")
@@ -72,27 +131,10 @@ interface RepositoryClient {
         @PathVariable repoName: String
     ): Response<RepositoryDetail?>
 
-    @ApiOperation("查询仓库信息")
-    @GetMapping("/info/{projectId}/{repoName}")
-    fun getRepoInfo(
-        @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String
-    ): Response<RepositoryInfo?>
-
-    @ApiOperation("查询仓库详情")
-    @GetMapping("/detail/{projectId}/{repoName}")
-    fun getRepoDetail(
-        @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String
-    ): Response<RepositoryDetail?>
-
+    @Deprecated("replace with getRepoDetail")
     @ApiOperation("查询仓库详情")
     @GetMapping("/detail/{projectId}/{repoName}/{type}")
-    fun getRepoDetail(
+    fun getRepoDetailWithType(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -101,54 +143,18 @@ interface RepositoryClient {
         @PathVariable type: String? = null
     ): Response<RepositoryDetail?>
 
-    @ApiOperation("列表查询项目所有仓库")
-    @GetMapping("/list/{projectId}")
-    fun list(
-        @ApiParam(value = "项目id", required = true)
-        @PathVariable projectId: String
-    ): Response<List<RepositoryInfo>>
-
-    @ApiOperation("分页查询项目所有仓库")
-    @GetMapping("/page/{pageNumber}/{pageSize}/{projectId}")
-    fun page(
-        @ApiParam(value = "当前页", required = true, example = "1")
-        @PathVariable pageNumber: Int,
-        @ApiParam(value = "分页大小", required = true, example = "20")
-        @PathVariable pageSize: Int,
-        @ApiParam(value = "项目id", required = true)
-        @PathVariable projectId: String
-    ): Response<Page<RepositoryInfo>>
-
-    @ApiOperation("仓库分页查询")
-    @PostMapping("/rangeQuery")
-    fun rangeQuery(@RequestBody request: RepoRangeQueryRequest): Response<Page<RepositoryInfo?>>
-
+    @Deprecated("replace with createRepo")
     @ApiOperation("创建仓库")
     @PostMapping
-    fun create(
-        @RequestBody repoCreateRequest: RepoCreateRequest
-    ): Response<RepositoryDetail>
+    fun create(@RequestBody request: RepoCreateRequest): Response<RepositoryDetail>
 
+    @Deprecated("replace with updateRepo")
     @ApiOperation("修改仓库")
     @PutMapping
-    fun update(
-        @RequestBody repoUpdateRequest: RepoUpdateRequest
-    ): Response<Void>
+    fun update(@RequestBody request: RepoUpdateRequest): Response<Void>
 
+    @Deprecated("replace with deleteRepo")
     @ApiOperation("删除仓库")
     @DeleteMapping
-    fun delete(
-        @RequestBody repoDeleteRequest: RepoDeleteRequest
-    ): Response<Void>
-
-    @ApiOperation("分页查询指定类型仓库")
-    @GetMapping("/page/repoType/{page}/{size}/{repoType}")
-    fun pageByType(
-        @ApiParam(value = "当前页", required = true, example = "0")
-        @PathVariable page: Int,
-        @ApiParam(value = "分页大小", required = true, example = "20")
-        @PathVariable size: Int,
-        @ApiParam(value = "仓库类型", required = true)
-        @PathVariable repoType: String
-    ): Response<Page<RepositoryInfo>>
+    fun delete(@RequestBody request: RepoDeleteRequest): Response<Void>
 }

@@ -189,7 +189,7 @@ class PypiLocalRepository : LocalRepository() {
                 select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
                 rule = rule
             )
-            val nodeList: List<Map<String, Any?>>? = nodeClient.query(queryModel).data?.records
+            val nodeList: List<Map<String, Any?>>? = nodeClient.search(queryModel).data?.records
             if (nodeList != null) {
                 return XmlUtil.nodeLis2Values(nodeList)
             }
@@ -206,7 +206,7 @@ class PypiLocalRepository : LocalRepository() {
         val version = HttpContextHolder.getRequest().getParameter("version")
         if (version.isNullOrBlank()) {
             // 删除包
-            nodeClient.delete(
+            nodeClient.deleteNode(
                 NodeDeleteRequest(
                     context.projectId,
                     context.repoName,
@@ -221,7 +221,7 @@ class PypiLocalRepository : LocalRepository() {
             )
         } else {
             // 删除版本
-            nodeClient.delete(
+            nodeClient.deleteNode(
                 NodeDeleteRequest(
                     context.projectId,
                     context.repoName,
@@ -268,7 +268,7 @@ class PypiLocalRepository : LocalRepository() {
         ).data ?: return null
         val artifactPath = trueVersion.contentPath ?: return null
         with(context.artifactInfo) {
-            val jarNode = nodeClient.detail(
+            val jarNode = nodeClient.getNodeDetail(
                 projectId, repoName, artifactPath
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data
@@ -298,12 +298,12 @@ class PypiLocalRepository : LocalRepository() {
      */
     fun getSimpleHtml(artifactInfo: ArtifactInfo): Any? {
         with(artifactInfo) {
-            val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data
+            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
             // 请求不带包名，返回包名列表.
             if (getArtifactFullPath() == "/") {
                 if (node.folder) {
-                    val nodeList = nodeClient.list(
+                    val nodeList = nodeClient.listNode(
                         projectId, repoName, getArtifactFullPath(), includeFolder = true,
                         deep =
                             true
@@ -320,7 +320,7 @@ class PypiLocalRepository : LocalRepository() {
             // 请求中带包名，返回对应包的文件列表。
             else {
                 if (node.folder) {
-                    val packageNode = nodeClient.list(
+                    val packageNode = nodeClient.listNode(
                         projectId, repoName, getArtifactFullPath(), includeFolder = false,
                         deep = true
                     ).data
@@ -408,7 +408,7 @@ class PypiLocalRepository : LocalRepository() {
                 select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
                 rule = rule
             )
-            filenodeList = nodeClient.query(queryModel).data?.records
+            filenodeList = nodeClient.search(queryModel).data?.records
         }
         return filenodeList
     }
@@ -608,7 +608,7 @@ class PypiLocalRepository : LocalRepository() {
         with(context.repositoryDetail) {
             // 文件fullPath
             val path = "/$packageName/${pypiInfo.version}/$filename"
-            return nodeClient.exist(projectId, name, path).data
+            return nodeClient.checkExist(projectId, name, path).data
         }
     }
 

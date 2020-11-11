@@ -26,6 +26,9 @@ import com.tencent.bkrepo.repository.model.TPackageVersion
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 
 /**
  * 查询条件构造工具
@@ -34,17 +37,17 @@ object PackageQueryHelper {
 
     // package
     fun packageQuery(projectId: String, repoName: String, key: String): Query {
-        val criteria = Criteria.where(TPackage::projectId.name).`is`(projectId)
-            .and(TPackage::repoName.name).`is`(repoName)
-            .and(TPackage::key.name).`is`(key)
+        val criteria = where(TPackage::projectId).isEqualTo(projectId)
+            .and(TPackage::repoName).isEqualTo(repoName)
+            .and(TPackage::key).isEqualTo(key)
         return Query(criteria)
     }
 
-    fun packageListCriteria(projectId: String, repoName: String, packageName: String?): Criteria {
-        return Criteria.where(TPackage::projectId.name).`is`(projectId)
-            .and(TPackage::repoName.name).`is`(repoName)
+    private fun packageListCriteria(projectId: String, repoName: String, packageName: String?): Criteria {
+        return where(TPackage::projectId).isEqualTo(projectId)
+            .and(TPackage::repoName).isEqualTo(repoName)
             .apply {
-                packageName?.let { and(TPackage::name.name).regex("^$packageName") }
+                packageName?.let { and(TPackage::name).regex("^$packageName") }
             }
     }
 
@@ -54,20 +57,20 @@ object PackageQueryHelper {
 
     // version
     fun versionQuery(packageId: String, name: String? = null): Query {
-        val criteria = Criteria.where(TPackageVersion::packageId.name).`is`(packageId)
+        val criteria = where(TPackageVersion::packageId).isEqualTo(packageId)
             .apply {
-                name?.let { and(TPackageVersion::name.name).`is`(name) }
+                name?.let { and(TPackageVersion::name).isEqualTo(name) }
             }
         return Query(criteria)
     }
 
-    fun versionListCriteria(packageId: String, name: String? = null, stageTag: List<String>? = null): Criteria {
-        return Criteria.where(TPackageVersion::packageId.name).`is`(packageId)
+    private fun versionListCriteria(packageId: String, name: String? = null, stageTag: List<String>? = null): Criteria {
+        return where(TPackageVersion::packageId).isEqualTo(packageId)
             .apply {
-                name?.let { and(TPackageVersion::name.name).regex("^$name") }
+                name?.let { and(TPackageVersion::name).regex("^$name") }
             }.apply {
                 if (!stageTag.isNullOrEmpty()) {
-                    and(TPackageVersion::stageTag.name).all(stageTag)
+                    and(TPackageVersion::stageTag).all(stageTag)
                 }
             }
     }

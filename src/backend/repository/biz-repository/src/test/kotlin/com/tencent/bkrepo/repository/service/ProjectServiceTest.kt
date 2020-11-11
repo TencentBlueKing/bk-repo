@@ -52,63 +52,63 @@ class ProjectServiceTest @Autowired constructor(
     @DisplayName("测试创建项目")
     fun `test create project`() {
         val request = ProjectCreateRequest(UT_PROJECT_ID, UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
-        projectService.create(request)
+        projectService.createProject(request)
     }
 
     @Test
     @DisplayName("测试创建同名项目")
     fun `should throw exception when project exists`() {
         val request = ProjectCreateRequest(UT_PROJECT_ID, UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
-        projectService.create(request)
-        assertThrows<ErrorCodeException> { projectService.create(request) }
+        projectService.createProject(request)
+        assertThrows<ErrorCodeException> { projectService.createProject(request) }
     }
 
     @Test
     @DisplayName("测试非法项目名称")
     fun `should throw exception with illegal name`() {
         var request = ProjectCreateRequest("1", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
-        assertThrows<ErrorCodeException> { projectService.create(request) }
+        assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
         request = ProjectCreateRequest("11", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
-        assertThrows<ErrorCodeException> { projectService.create(request) }
+        assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
         request = ProjectCreateRequest("a".repeat(33), UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
-        assertThrows<ErrorCodeException> { projectService.create(request) }
+        assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
         request = ProjectCreateRequest("test_1", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
-        projectService.create(request)
+        projectService.createProject(request)
 
         request = ProjectCreateRequest("test-1", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
-        projectService.create(request)
+        projectService.createProject(request)
 
         request = ProjectCreateRequest("a1", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
-        projectService.create(request)
+        projectService.createProject(request)
 
         request = ProjectCreateRequest("_prebuild", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
-        projectService.create(request)
+        projectService.createProject(request)
 
         request = ProjectCreateRequest("CODECC_a1", UT_PROJECT_DISPLAY, UT_PROJECT_DESC, UT_USER)
-        projectService.create(request)
+        projectService.createProject(request)
     }
 
     @Test
     @DisplayName("测试非法项目显示名")
     fun `should throw exception with illegal display name`() {
         var request = ProjectCreateRequest(UT_PROJECT_ID, "", UT_PROJECT_DESC, UT_USER)
-        assertThrows<ErrorCodeException> { projectService.create(request) }
+        assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
         request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(33), UT_PROJECT_DESC, UT_USER)
-        assertThrows<ErrorCodeException> { projectService.create(request) }
+        assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
         request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(32), UT_PROJECT_DESC, UT_USER)
-        projectService.create(request)
+        projectService.createProject(request)
 
         projectRepository.deleteAll()
         request = ProjectCreateRequest(UT_PROJECT_ID, "1", UT_PROJECT_DESC, UT_USER)
-        projectService.create(request)
+        projectService.createProject(request)
 
         projectRepository.deleteAll()
         request = ProjectCreateRequest(UT_PROJECT_ID, "123-abc", UT_PROJECT_DESC, UT_USER)
-        projectService.create(request)
+        projectService.createProject(request)
     }
 }

@@ -72,7 +72,7 @@ class UserRepositoryController(
 
     @ApiOperation("根据名称查询仓库是否存在")
     @GetMapping("/exist/{projectId}/{repoName}")
-    fun checkRepoExist(
+    fun checkExist(
         @RequestAttribute userId: String,
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
@@ -80,7 +80,7 @@ class UserRepositoryController(
         @PathVariable repoName: String
     ): Response<Boolean> {
         permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
-        return ResponseBuilder.success(repositoryService.exist(projectId, repoName))
+        return ResponseBuilder.success(repositoryService.checkExist(projectId, repoName))
     }
 
     @ApiOperation("创建仓库")
@@ -103,8 +103,23 @@ class UserRepositoryController(
                 operator = userId
             )
         }
-        repositoryService.create(createRequest)
+        repositoryService.createRepo(createRequest)
         return ResponseBuilder.success()
+    }
+
+    @ApiOperation("列表查询项目所有仓库")
+    @GetMapping("/list/{projectId}")
+    fun listRepo(
+        @RequestAttribute userId: String,
+        @ApiParam(value = "项目id", required = true)
+        @PathVariable projectId: String,
+        @ApiParam("仓库名称", required = false)
+        @RequestParam name: String? = null,
+        @ApiParam("仓库类型", required = false)
+        @RequestParam type: String? = null
+    ): Response<List<RepositoryInfo>> {
+        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
+        return ResponseBuilder.success(repositoryService.listRepo(projectId, name, type))
     }
 
     @ApiOperation("分页查询仓库列表")
@@ -123,22 +138,7 @@ class UserRepositoryController(
         @RequestParam type: String? = null
     ): Response<Page<RepositoryInfo>> {
         permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
-        return ResponseBuilder.success(repositoryService.page(projectId, pageNumber, pageSize, name, type))
-    }
-
-    @ApiOperation("列表查询项目所有仓库")
-    @GetMapping("/list/{projectId}")
-    fun listRepo(
-        @RequestAttribute userId: String,
-        @ApiParam(value = "项目id", required = true)
-        @PathVariable projectId: String,
-        @ApiParam("仓库名称", required = false)
-        @RequestParam name: String? = null,
-        @ApiParam("仓库类型", required = false)
-        @RequestParam type: String? = null
-    ): Response<List<RepositoryInfo>> {
-        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
-        return ResponseBuilder.success(repositoryService.list(projectId))
+        return ResponseBuilder.success(repositoryService.listRepoPage(projectId, pageNumber, pageSize, name, type))
     }
 
     @ApiOperation("删除仓库")
@@ -153,7 +153,7 @@ class UserRepositoryController(
         @RequestParam forced: Boolean = false
     ): Response<Void> {
         permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.DELETE, projectId, repoName)
-        repositoryService.delete(RepoDeleteRequest(projectId, repoName, forced, userId))
+        repositoryService.deleteRepo(RepoDeleteRequest(projectId, repoName, forced, userId))
         return ResponseBuilder.success()
     }
 
@@ -176,7 +176,7 @@ class UserRepositoryController(
             configuration = request.configuration,
             operator = userId
         )
-        repositoryService.update(repoUpdateRequest)
+        repositoryService.updateRepo(repoUpdateRequest)
         return ResponseBuilder.success()
     }
 }

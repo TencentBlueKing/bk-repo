@@ -40,7 +40,7 @@ class SurplusNodeCleaner {
         if (list.size > 2) {
             val surplusNodes = list.subList(2, list.size)
             for (node in surplusNodes) {
-                nodeClient.delete(NodeDeleteRequest(node.projectId, node.repoName, node.fullPath, node.createdBy))
+                nodeClient.deleteNode(NodeDeleteRequest(node.projectId, node.repoName, node.fullPath, node.createdBy))
                 logger.info("Success to delete ${node.projectId}/${node.repoName}/${node.fullPath}")
             }
         }
@@ -48,7 +48,7 @@ class SurplusNodeCleaner {
 
     fun deleteTempXml(list: List<NodeInfo>) {
         for (node in list) {
-            nodeClient.delete(NodeDeleteRequest(node.projectId, node.repoName, node.fullPath, node.createdBy))
+            nodeClient.deleteNode(NodeDeleteRequest(node.projectId, node.repoName, node.fullPath, node.createdBy))
             logger.info("Success to delete ${node.projectId}/${node.repoName}/${node.fullPath}")
         }
     }

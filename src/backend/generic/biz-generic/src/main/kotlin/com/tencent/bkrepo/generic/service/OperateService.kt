@@ -40,7 +40,7 @@ class OperateService(
 
     fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
         permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName)
-        return nodeClient.list(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
+        return nodeClient.listNode(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
     }
 
     companion object {

@@ -24,6 +24,10 @@ package com.tencent.bkrepo.common.artifact.stream
 import java.math.BigInteger
 import java.security.MessageDigest
 
+/**
+ * 摘要计算监听器
+ * 用于接收数据流的同时计算文件摘要，避免多次读取数据
+ */
 class DigestCalculateListener : StreamReceiveListener {
     private val md5Digest = MessageDigest.getInstance("MD5")
     private val sha256Digest = MessageDigest.getInstance("SHA-256")

@@ -18,7 +18,6 @@ include(":common:common-api")
 include(":common:common-security")
 include(":common:common-mongo")
 include(":common:common-job")
-include(":common:common-stream")
 include(":common:common-service")
 
 include(":common:common-storage")
