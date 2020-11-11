@@ -144,6 +144,7 @@ class ServiceUserResourceImpl @Autowired constructor(
 
     override fun loginUser(uid: String, token: String, response: HttpServletResponse): Response<Boolean> {
         userService.findUserByUserToken(uid, token) ?: run {
+            logger.info("user not match [$uid]")
             return ResponseBuilder.success(false)
         }
         val ticket = JwtUtils.generateToken(signingKey, jwtProperties.expiration, uid)
