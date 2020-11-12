@@ -23,15 +23,10 @@ package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.packagesModify
-import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
-import java.io.BufferedReader
 import java.io.File
-import java.io.FileInputStream
-import java.io.InputStreamReader
-import java.lang.StringBuilder
 import java.util.regex.Pattern
 
 @SpringBootTest

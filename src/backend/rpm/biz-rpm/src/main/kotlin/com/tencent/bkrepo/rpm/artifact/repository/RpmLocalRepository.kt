@@ -522,6 +522,15 @@ class RpmLocalRepository : LocalRepository() {
     }
 
     /**
+     * 返回包的版本数量
+     */
+    private fun getVersions(packageKey: String, context: ArtifactContext): Long? {
+        return packageClient.findPackageByKey(
+            context.projectId, context.repoName, packageKey
+        ).data?.versions ?: return null
+    }
+
+    /**
      * 将构件在文件系统中的真实路径作为删除条件
      */
     @Transactional(rollbackFor = [Throwable::class])
@@ -529,6 +538,7 @@ class RpmLocalRepository : LocalRepository() {
         val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
         val version = HttpContextHolder.getRequest().getParameter("version")
         if (version.isNullOrBlank()) {
+            val versions = getVersions(packageKey, context)
             val pages = packageClient.listVersionPage(
                 context.projectId,
                 context.repoName,
@@ -536,14 +546,13 @@ class RpmLocalRepository : LocalRepository() {
                 null,
                 null,
                 0,
-                100
+                versions!!.toInt()
             ).data?.records ?: return
             for (packageVersion in pages) {
-                val artifactFullPath = "$packageKey-${packageVersion.name}.rpm".removePrefix("rpm:/")
+                val artifactFullPath = packageVersion.contentPath!!
                 val node = nodeClient.getNodeDetail(context.projectId, context.repoName, artifactFullPath).data ?: continue
                 removeRpmArtifact(node, artifactFullPath, context, packageKey, packageVersion.name)
             }
-            packageClient.deletePackage(context.projectId, context.repoName, packageKey)
         } else {
             with(context.artifactInfo) {
                 val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data ?: return
