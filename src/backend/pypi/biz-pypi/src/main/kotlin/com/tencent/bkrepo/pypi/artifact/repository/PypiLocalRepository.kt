@@ -206,30 +206,16 @@ class PypiLocalRepository : LocalRepository() {
         val version = HttpContextHolder.getRequest().getParameter("version")
         if (version.isNullOrBlank()) {
             // 删除包
-            nodeClient.delete(
-                NodeDeleteRequest(
-                    context.projectId,
-                    context.repoName,
-                    "/$name",
-                    context.userId
-                )
-            )
-            packageClient.deletePackage(
-                context.projectId,
-                context.repoName,
-                packageKey
-            )
+            with(context) {
+                nodeClient.delete(NodeDeleteRequest(projectId, repoName, "/$name", userId))
+                packageClient.deletePackage(projectId, repoName, packageKey)
+            }
         } else {
             // 删除版本
-            nodeClient.delete(
-                NodeDeleteRequest(
-                    context.projectId,
-                    context.repoName,
-                    "/$name/$version",
-                    context.userId
-                )
-            )
-            deleteVersion(context.projectId, context.repoName, packageKey, version)
+            with(context) {
+                nodeClient.delete(NodeDeleteRequest(projectId, repoName, "/$name/$version", userId))
+                deleteVersion(projectId, repoName, packageKey, version)
+            }
         }
     }
 
