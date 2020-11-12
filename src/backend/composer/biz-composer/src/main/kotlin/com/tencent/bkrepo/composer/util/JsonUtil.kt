@@ -104,7 +104,6 @@ object JsonUtil {
     fun deleteComposerVersion(versionJson: String, name: String, version: String): String {
         val jsonObject = JsonParser.parseString(versionJson).asJsonObject
         val nameParam = jsonObject.getAsJsonObject(packages).getAsJsonObject(name)
-        // 覆盖重复版本信息
         nameParam.remove(version)
         return GsonBuilder().create().toJson(jsonObject)
     }
