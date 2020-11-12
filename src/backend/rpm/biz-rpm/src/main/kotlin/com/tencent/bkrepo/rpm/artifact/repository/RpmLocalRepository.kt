@@ -29,10 +29,10 @@ import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -49,52 +49,52 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.rpm.REPODATA
 import com.tencent.bkrepo.rpm.INDEXER
 import com.tencent.bkrepo.rpm.NO_INDEXER
+import com.tencent.bkrepo.rpm.REPODATA
 import com.tencent.bkrepo.rpm.exception.RpmArtifactFormatNotSupportedException
 import com.tencent.bkrepo.rpm.exception.RpmArtifactMetadataResolveException
-import com.tencent.bkrepo.rpm.pojo.RpmVersion
-import com.tencent.bkrepo.rpm.pojo.RepoDataPojo
-import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
-import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
-import com.tencent.bkrepo.rpm.pojo.IndexType
-import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
 import com.tencent.bkrepo.rpm.pojo.ArtifactFormat
-import com.tencent.bkrepo.rpm.pojo.Basic
-import com.tencent.bkrepo.rpm.pojo.RpmArtifactVersionData
+import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.RPM
+import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
+import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
+import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH_SHA256
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.NONE
-import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat.FULLPATH
+import com.tencent.bkrepo.rpm.pojo.Basic
+import com.tencent.bkrepo.rpm.pojo.IndexType
+import com.tencent.bkrepo.rpm.pojo.RepoDataPojo
+import com.tencent.bkrepo.rpm.pojo.RpmArtifactVersionData
+import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
+import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
+import com.tencent.bkrepo.rpm.pojo.RpmVersion
+import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.filterRpmCustom
+import com.tencent.bkrepo.rpm.util.RpmConfiguration.toRpmRepoConf
 import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.getRpmBooleanHeader
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toMetadata
+import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmPackagePojo
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.XmlStrUtils
-import com.tencent.bkrepo.rpm.util.rpm.RpmMetadataUtils
+import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
 import com.tencent.bkrepo.rpm.util.rpm.RpmFormatUtils
+import com.tencent.bkrepo.rpm.util.rpm.RpmMetadataUtils
 import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil.objectToXml
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChecksum
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoData
+import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
+import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoIndex
 import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.util.StopWatch
 import java.io.ByteArrayInputStream
 import java.io.FileInputStream
 import java.nio.channels.Channels
-import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.RPM
-import com.tencent.bkrepo.rpm.pojo.ArtifactFormat.XML
-import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
-import com.tencent.bkrepo.rpm.util.RpmConfiguration.toRpmRepoConf
-import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmPackagePojo
-import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
-import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
-import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoIndex
-import org.springframework.beans.factory.annotation.Autowired
 
 @Component
 class RpmLocalRepository : LocalRepository() {
@@ -110,7 +110,7 @@ class RpmLocalRepository : LocalRepository() {
         val overwrite = HeaderUtils.getRpmBooleanHeader("X-BKREPO-OVERWRITE")
         if (!overwrite) {
             with(context.artifactInfo) {
-                val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data
+                val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
                 if (node != null) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactFullPath())
                 }
@@ -285,7 +285,7 @@ class RpmLocalRepository : LocalRepository() {
         val artifactUri = context.artifactInfo.getArtifactFullPath()
         val artifactSha256 = context.getArtifactSha256()
         return with(context.artifactInfo) {
-            val node = nodeClient.detail(projectId, repoName, artifactUri).data ?: return NONE
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactUri).data ?: return NONE
             if (node.sha256 == artifactSha256) {
                 FULLPATH_SHA256
             } else {
@@ -550,12 +550,12 @@ class RpmLocalRepository : LocalRepository() {
             ).data?.records ?: return
             for (packageVersion in pages) {
                 val artifactFullPath = packageVersion.contentPath!!
-                val node = nodeClient.detail(context.projectId, context.repoName, artifactFullPath).data ?: continue
+                val node = nodeClient.getNodeDetail(context.projectId, context.repoName, artifactFullPath).data ?: continue
                 removeRpmArtifact(node, artifactFullPath, context, packageKey, packageVersion.name)
             }
         } else {
             with(context.artifactInfo) {
-                val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data ?: return
+                val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data ?: return
                 removeRpmArtifact(node, getArtifactFullPath(), context, packageKey, version)
             }
         }
@@ -588,7 +588,14 @@ class RpmLocalRepository : LocalRepository() {
         storeIndexMark(
             context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.PRIMARY, artifactSha256
         )
-        storeIndexMark(context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHERS, artifactSha256)
+        storeIndexMark(
+            context,
+            repoData,
+            ArtifactRepeat.DELETE,
+            rpmVersion.toMetadata(),
+            IndexType.OTHERS,
+            artifactSha256
+        )
         if (rpmRepoConf.enabledFileLists) {
             storeIndexMark(
                 context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.FILELISTS, artifactSha256
@@ -596,7 +603,7 @@ class RpmLocalRepository : LocalRepository() {
         }
         with(context) {
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, artifactFullPath, context.userId)
-            nodeClient.delete(nodeDeleteRequest)
+            nodeClient.deleteNode(nodeDeleteRequest)
             logger.info("Success to delete node $nodeDeleteRequest")
             deleteVersion(projectId, repoName, packageKey, version)
             logger.info("Success to delete version $projectId | $repoName : $packageKey $version")
@@ -630,7 +637,7 @@ class RpmLocalRepository : LocalRepository() {
         repoDataSet: MutableSet<String>
     ) {
         with(context.artifactInfo) {
-            val nodeList = nodeClient.list(projectId, repoName, fullPath).data ?: return
+            val nodeList = nodeClient.listNode(projectId, repoName, fullPath).data ?: return
             if (repodataDepth == 0) {
                 for (node in nodeList.filter { it.folder }.filter { it.name == REPODATA }) {
                     repoDataSet.add(node.fullPath)
@@ -656,7 +663,7 @@ class RpmLocalRepository : LocalRepository() {
         ).data ?: return null
         val artifactPath = trueVersion.contentPath ?: return null
         with(context.artifactInfo) {
-            val jarNode = nodeClient.detail(
+            val jarNode = nodeClient.getNodeDetail(
                 projectId, repoName, artifactPath
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data

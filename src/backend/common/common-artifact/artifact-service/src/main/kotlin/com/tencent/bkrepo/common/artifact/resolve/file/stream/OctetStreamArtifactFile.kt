@@ -23,6 +23,7 @@ package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile.Companion.generateRandomName
+import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_BYTES_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_CONSUME_COUNT
 import com.tencent.bkrepo.common.artifact.resolve.file.SmartStreamReceiver
@@ -49,6 +50,7 @@ open class OctetStreamArtifactFile(
     private var hasInitialized: Boolean = false
     private val listener = DigestCalculateListener()
     private val receiver = createStreamReceiver()
+    private var sha1: String? = null
 
     private fun createStreamReceiver(): SmartStreamReceiver {
         val path = storageCredentials.upload.location.toPath()
@@ -105,6 +107,11 @@ open class OctetStreamArtifactFile(
     override fun getFileMd5(): String {
         init()
         return listener.md5
+    }
+
+    override fun getFileSha1(): String {
+        init()
+        return sha1 ?: run { getInputStream().sha1().apply { sha1 = this } }
     }
 
     override fun getFileSha256(): String {

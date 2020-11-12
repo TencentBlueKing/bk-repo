@@ -23,6 +23,7 @@ package com.tencent.bkrepo.common.artifact.repository.context
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.google.common.util.concurrent.UncheckedExecutionException
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
@@ -32,7 +33,6 @@ import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -97,7 +97,13 @@ class ArtifactContextHolder(
             val repositoryAttribute = request.getAttribute(REPO_KEY)
             return if (repositoryAttribute == null) {
                 val repositoryId = getRepositoryId(request)
-                repositoryDetailCache.get(repositoryId).apply { request.setAttribute(REPO_KEY, this) }
+                try {
+                    repositoryDetailCache.get(repositoryId).apply { request.setAttribute(REPO_KEY, this) }
+                } catch (exception: UncheckedExecutionException) {
+                    if (exception.cause is ArtifactNotFoundException) {
+                        throw exception.cause as ArtifactNotFoundException
+                    } else throw exception
+                }
             } else {
                 repositoryAttribute as RepositoryDetail
             }
@@ -118,12 +124,8 @@ class ArtifactContextHolder(
 
         private fun queryRepositoryDetail(repositoryId: RepositoryId): RepositoryDetail {
             with(repositoryId) {
-                val repositoryType = artifactConfiguration.getRepositoryType()
-                val response = if (repositoryType == RepositoryType.NONE) {
-                    repositoryClient.getRepoDetail(projectId, repoName)
-                } else {
-                    repositoryClient.getRepoDetail(projectId, repoName, repositoryType.name)
-                }
+                val repoType = artifactConfiguration.getRepositoryType().name
+                val response = repositoryClient.getRepoDetail(projectId, repoName, repoType)
                 return response.data ?: throw ArtifactNotFoundException("Repository[$repositoryId] not found")
             }
         }

@@ -84,7 +84,7 @@ class UploadService(
 
             expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
             // 判断文件是否存在
-            if (!overwrite && nodeClient.exist(projectId, repoName, getArtifactFullPath()).data == true) {
+            if (!overwrite && nodeClient.checkExist(projectId, repoName, getArtifactFullPath()).data == true) {
                 logger.warn("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: artifact already exists.")
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
@@ -116,7 +116,7 @@ class UploadService(
 
         val mergedFileInfo = storageService.mergeBlock(uploadId, storageCredentials)
         // 保存节点
-        nodeClient.create(
+        nodeClient.createNode(
             NodeCreateRequest(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,

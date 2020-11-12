@@ -21,39 +21,71 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.repository.UT_PACKAGE_KEY
+import com.tencent.bkrepo.repository.UT_PACKAGE_NAME
+import com.tencent.bkrepo.repository.UT_PACKAGE_VERSION
+import com.tencent.bkrepo.repository.UT_PROJECT_ID
+import com.tencent.bkrepo.repository.UT_REPO_NAME
+import com.tencent.bkrepo.repository.UT_USER
+import com.tencent.bkrepo.repository.dao.PackageDao
+import com.tencent.bkrepo.repository.dao.PackageVersionDao
+import com.tencent.bkrepo.repository.model.TPackage
+import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
+import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Import
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Query
 import java.time.LocalDate
 import java.util.concurrent.CyclicBarrier
 import kotlin.concurrent.thread
 
 @DisplayName("下载统计服务测试")
 @DataMongoTest
+@Import(
+    PackageDao::class,
+    PackageVersionDao::class
+)
 class PackageDownloadStatisticsServiceTest @Autowired constructor(
-    private val packageDownloadStatisticsService: PackageDownloadStatisticsService
+    private val packageDownloadStatisticsService: PackageDownloadStatisticsService,
+    private val packageService: PackageService,
+    private val mongoTemplate: MongoTemplate
 ) : ServiceBaseTest() {
 
     @MockBean
     private lateinit var repositoryService: RepositoryService
 
+    @MockBean
+    private lateinit var packageSearchInterpreter: PackageSearchInterpreter
+
+    @BeforeEach
+    fun beforeEach() {
+        initMock()
+        mongoTemplate.remove(Query(), TPackage::class.java)
+        mongoTemplate.remove(Query(), TPackageVersion::class.java)
+        
+    }
+
     @Test
     @DisplayName("创建下载量相关测试")
     fun createTest() {
+        val packageVersionRequest = buildPackageCreateRequest(version = UT_PACKAGE_VERSION, overwrite = false)
+        packageService.createPackageVersion(packageVersionRequest)
+        
         val count = 100
         val cyclicBarrier = CyclicBarrier(count)
         val threadList = mutableListOf<Thread>()
-        val request = DownloadStatisticsAddRequest(
-            "test",
-            "npm-local",
-            "npm://helloworld-npm-publish",
-            "helloworld-npm-publish",
-            "1.0.0"
-        )
+        val request = buildDownloadStatRequest()
         repeat(count) {
             val thread = thread {
                 cyclicBarrier.await()
@@ -63,28 +95,70 @@ class PackageDownloadStatisticsServiceTest @Autowired constructor(
         }
         threadList.forEach { it.join() }
         val result = packageDownloadStatisticsService.query(
-            projectId = "test",
-            repoName = "npm-local",
-            packageKey = "npm://helloworld-npm-publish",
+            projectId = UT_PROJECT_ID,
+            repoName = UT_REPO_NAME,
+            packageKey = UT_PACKAGE_KEY,
             version = null,
             startDay = LocalDate.now(),
             endDay = LocalDate.now()
         )
-        Assertions.assertEquals(count, result.count)
+        Assertions.assertEquals(count.toLong(), result.count)
     }
 
     @Test
     @DisplayName("查询下载量相关测试")
     fun testQueryForSpecial() {
-        packageDownloadStatisticsService.queryForSpecial("test", "npm-local", "npm://helloworld-npm-publish")
+        packageDownloadStatisticsService.queryForSpecial(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)
     }
 
     @Test
     @DisplayName("查询下载量相关测试")
     fun testQuery() {
         packageDownloadStatisticsService.query(
-            "test", "npm-local", "npm://helloworld-npm-publish", null, LocalDate.now().minusDays(1),
+            UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, null, LocalDate.now().minusDays(1),
             LocalDate.now().plusDays(5)
+        )
+    }
+
+    private fun buildPackageCreateRequest(
+        projectId: String = UT_PROJECT_ID,
+        repoName: String = UT_REPO_NAME,
+        packageName: String = UT_PACKAGE_NAME,
+        packageKey: String = UT_PACKAGE_KEY,
+        version: String = UT_PACKAGE_VERSION,
+        overwrite: Boolean = false
+    ): PackageVersionCreateRequest {
+        return PackageVersionCreateRequest(
+            projectId = projectId,
+            repoName = repoName,
+            packageName = packageName,
+            packageKey = packageKey,
+            packageType = PackageType.MAVEN,
+            packageDescription = "some description",
+            versionName = version,
+            size = 1024,
+            manifestPath = "/com/tencent/bkrepo/test/$version",
+            artifactPath = "/com/tencent/bkrepo/test/$version",
+            stageTag = listOf(ArtifactStageEnum.RELEASE.toString()),
+            metadata = mapOf("key" to "value"),
+            overwrite = overwrite,
+            createdBy = UT_USER
+        )
+    }
+
+    private fun buildDownloadStatRequest(
+        projectId: String = UT_PROJECT_ID,
+        repoName: String = UT_REPO_NAME,
+        packageName: String = UT_PACKAGE_NAME,
+        packageKey: String = UT_PACKAGE_KEY,
+        version: String = UT_PACKAGE_VERSION
+    ): DownloadStatisticsAddRequest {
+        return DownloadStatisticsAddRequest(
+            projectId = projectId,
+            repoName = repoName,
+            name = packageName,
+            packageKey = packageKey,
+            version = version
         )
     }
 }

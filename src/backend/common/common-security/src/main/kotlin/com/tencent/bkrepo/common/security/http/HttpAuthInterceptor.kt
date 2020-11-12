@@ -58,8 +58,10 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val requestUri = request.requestURI
-        logger.debug("HttpAuthInterceptor.preHandle, Authorization: ${request.getHeader(AUTHORIZATION)}")
-        logger.debug("HttpAuthInterceptor.preHandle, X-BKREPO-UID: ${request.getAttribute(AUTH_HEADER_UID)}")
+        if (logger.isDebugEnabled) {
+            logger.debug("HttpAuthInterceptor.preHandle, Authorization: ${request.getHeader(AUTHORIZATION)}")
+            logger.debug("HttpAuthInterceptor.preHandle, X-BKREPO-UID: ${request.getAttribute(AUTH_HEADER_UID)}")
+        }
         httpAuthSecurity.getAuthHandlerList().forEach { authHandler ->
             val isLoginRequest = authHandler.getLoginEndpoint()?.let { pathMatcher.match(it, requestUri) } ?: false
             if (authHandler.getLoginEndpoint() == null || isLoginRequest) {

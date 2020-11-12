@@ -55,12 +55,12 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
     @Autowired
     private lateinit var nodeDao: NodeDao
 
-    override fun query(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
+    override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
         return MetadataUtils.toMap(nodeDao.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))?.metadata)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun save(request: MetadataSaveRequest) {
+    override fun saveMetadata(request: MetadataSaveRequest) {
         if (request.metadata.isNullOrEmpty()) {
             logger.info("Metadata key list is empty, skip saving[$this]")
             return
@@ -81,7 +81,7 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun delete(request: MetadataDeleteRequest) {
+    override fun deleteMetadata(request: MetadataDeleteRequest) {
         if (request.keyList.isEmpty()) {
             logger.info("Metadata key list is empty, skip deleting[$this]")
             return

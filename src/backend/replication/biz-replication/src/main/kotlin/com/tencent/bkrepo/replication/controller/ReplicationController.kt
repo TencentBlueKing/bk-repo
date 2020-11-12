@@ -113,7 +113,7 @@ class ReplicationController : ReplicationClient {
         repoName: String,
         fullPath: String
     ): Response<Boolean> {
-        return nodeClient.exist(projectId, repoName, fullPath)
+        return nodeClient.checkExist(projectId, repoName, fullPath)
     }
 
     override fun checkNodeExistList(
@@ -220,58 +220,58 @@ class ReplicationController : ReplicationClient {
                 metadata = metadata,
                 operator = userId
             )
-            return nodeClient.create(request)
+            return nodeClient.createNode(request)
         }
     }
 
     override fun replicaNodeCreateRequest(token: String, nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {
-        return nodeClient.create(nodeCreateRequest)
+        return nodeClient.createNode(nodeCreateRequest)
     }
 
     override fun replicaNodeRenameRequest(token: String, nodeRenameRequest: NodeRenameRequest): Response<Void> {
-        return nodeClient.rename(nodeRenameRequest)
+        return nodeClient.renameNode(nodeRenameRequest)
     }
 
     override fun replicaNodeUpdateRequest(token: String, nodeUpdateRequest: NodeUpdateRequest): Response<Void> {
-        return nodeClient.update(nodeUpdateRequest)
+        return nodeClient.updateNode(nodeUpdateRequest)
     }
 
     override fun replicaNodeCopyRequest(token: String, nodeCopyRequest: NodeCopyRequest): Response<Void> {
-        return nodeClient.copy(nodeCopyRequest)
+        return nodeClient.copyNode(nodeCopyRequest)
     }
 
     override fun replicaNodeMoveRequest(token: String, nodeMoveRequest: NodeMoveRequest): Response<Void> {
-        return nodeClient.move(nodeMoveRequest)
+        return nodeClient.moveNode(nodeMoveRequest)
     }
 
     override fun replicaNodeDeleteRequest(token: String, nodeDeleteRequest: NodeDeleteRequest): Response<Void> {
-        return nodeClient.delete(nodeDeleteRequest)
+        return nodeClient.deleteNode(nodeDeleteRequest)
     }
 
     override fun replicaRepoCreateRequest(token: String, request: RepoCreateRequest): Response<RepositoryDetail> {
         return repositoryClient.getRepoDetail(request.projectId, request.name).data?.let { ResponseBuilder.success(it) }
-            ?: repositoryClient.create(request)
+            ?: repositoryClient.createRepo(request)
     }
 
     override fun replicaRepoUpdateRequest(token: String, request: RepoUpdateRequest): Response<Void> {
-        return repositoryClient.update(request)
+        return repositoryClient.updateRepo(request)
     }
 
     override fun replicaRepoDeleteRequest(token: String, request: RepoDeleteRequest): Response<Void> {
-        return repositoryClient.delete(request)
+        return repositoryClient.deleteRepo(request)
     }
 
     override fun replicaProjectCreateRequest(token: String, request: ProjectCreateRequest): Response<ProjectInfo> {
-        return projectClient.query(request.name).data?.let { ResponseBuilder.success(it) }
-            ?: projectClient.create(request)
+        return projectClient.getProjectInfo(request.name).data?.let { ResponseBuilder.success(it) }
+            ?: projectClient.createProject(request)
     }
 
     override fun replicaMetadataSaveRequest(token: String, request: MetadataSaveRequest): Response<Void> {
-        return metadataClient.save(request)
+        return metadataClient.saveMetadata(request)
     }
 
     override fun replicaMetadataDeleteRequest(token: String, request: MetadataDeleteRequest): Response<Void> {
-        return metadataClient.delete(request)
+        return metadataClient.deleteMetadata(request)
     }
 
     companion object {

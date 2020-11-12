@@ -58,15 +58,15 @@ class RepoDataService(
 
     fun listProject(projectId: String? = null): List<ProjectInfo> {
         return if (projectId == null) {
-            projectClient.list().data!!
+            projectClient.listProject().data!!
         } else {
-            listOf(projectClient.query(projectId).data!!)
+            listOf(projectClient.getProjectInfo(projectId).data!!)
         }
     }
 
     fun listRepository(projectId: String, repoName: String? = null): List<RepositoryInfo> {
         return if (repoName == null) {
-            repositoryClient.list(projectId).data!!
+            repositoryClient.listRepo(projectId).data!!
         } else {
             listOf(repositoryClient.getRepoInfo(projectId, repoName).data!!)
         }
@@ -81,12 +81,11 @@ class RepoDataService(
     }
 
     fun listFileNode(projectId: String, repoName: String, path: String = ROOT, pageNumber: Int, pageSize: Int): List<NodeInfo> {
-        val nodePage = nodeClient.page(projectId, repoName, pageNumber, pageSize, path, includeFolder = false, includeMetadata = true, deep = true)
         return nodeClient.page(projectId, repoName, pageNumber, pageSize, path, includeFolder = false, includeMetadata = true, deep = true).data!!.records
     }
 
-    fun getMetadata(nodeInfo: NodeInfo): Map<String, String> {
-        return metadataClient.query(nodeInfo.projectId, nodeInfo.repoName, nodeInfo.fullPath).data!!
+    fun getMetadata(nodeInfo: NodeInfo): Map<String, Any> {
+        return metadataClient.listMetadata(nodeInfo.projectId, nodeInfo.repoName, nodeInfo.fullPath).data!!
     }
 
     fun getFile(sha256: String, length: Long, repoInfo: RepositoryDetail): InputStream {

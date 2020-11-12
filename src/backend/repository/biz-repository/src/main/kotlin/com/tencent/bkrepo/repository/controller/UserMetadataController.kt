@@ -57,12 +57,12 @@ class UserMetadataController(
     @ApiOperation("查询元数据列表")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping(DEFAULT_MAPPING_URI)
-    fun query(
+    fun listMetadata(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ): Response<Map<String, Any>> {
         artifactInfo.run {
-            return ResponseBuilder.success(metadataService.query(projectId, repoName, getArtifactFullPath()))
+            return ResponseBuilder.success(metadataService.listMetadata(projectId, repoName, getArtifactFullPath()))
         }
     }
 
@@ -81,7 +81,7 @@ class UserMetadataController(
                 fullPath = getArtifactFullPath(),
                 metadata = metadataSaveRequest.metadata
             )
-            metadataService.save(request)
+            metadataService.saveMetadata(request)
             return ResponseBuilder.success()
         }
     }
@@ -101,7 +101,7 @@ class UserMetadataController(
                 fullPath = getArtifactFullPath(),
                 keyList = metadataDeleteRequest.keyList
             )
-            metadataService.delete(request)
+            metadataService.deleteMetadata(request)
             return ResponseBuilder.success()
         }
     }

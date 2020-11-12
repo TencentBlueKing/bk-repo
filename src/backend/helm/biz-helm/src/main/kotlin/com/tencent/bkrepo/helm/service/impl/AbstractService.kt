@@ -83,7 +83,7 @@ abstract class AbstractService {
             if (exist) {
                 lastModifyTime?.let { queryModelBuilder.rule(true, NODE_CREATE_DATE, it, OperationType.AFTER) }
             }
-            val result = nodeClient.query(queryModelBuilder.build()).data ?: run {
+            val result = nodeClient.search(queryModelBuilder.build()).data ?: run {
                 ChartRepositoryServiceImpl.logger.warn("don't find node list in repository: [$projectId/$repoName].")
                 return emptyList()
             }
@@ -105,7 +105,7 @@ abstract class AbstractService {
      * check node exists
      */
     fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
-        return nodeClient.exist(projectId, repoName, fullPath).data ?: false
+        return nodeClient.checkExist(projectId, repoName, fullPath).data ?: false
     }
 
     /**

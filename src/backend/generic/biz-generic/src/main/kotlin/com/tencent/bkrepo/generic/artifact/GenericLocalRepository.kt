@@ -57,7 +57,7 @@ class GenericLocalRepository : LocalRepository() {
         val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
         if (!overwrite && !isBlockUpload(uploadId, sequence)) {
             with(context.artifactInfo) {
-                val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data
+                val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
                 if (node != null) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
                 }
@@ -101,7 +101,7 @@ class GenericLocalRepository : LocalRepository() {
 
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
-            val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data
+            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
                 ?: throw ArtifactNotFoundException("Artifact[$this] not found")
             if (node.folder) {
                 if (nodeClient.countFileNode(projectId, repoName, getArtifactFullPath()).data!! > 0) {
@@ -109,7 +109,7 @@ class GenericLocalRepository : LocalRepository() {
                 }
             }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, getArtifactFullPath(), context.userId)
-            nodeClient.delete(nodeDeleteRequest)
+            nodeClient.deleteNode(nodeDeleteRequest)
         }
     }
 

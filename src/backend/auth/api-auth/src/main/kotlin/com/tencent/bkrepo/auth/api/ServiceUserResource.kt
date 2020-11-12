@@ -191,4 +191,11 @@ interface ServiceUserResource {
         @ApiParam(value = "用户id")
         @CookieValue(value = "bkrepo_ticket") bkrepoToken: String?
     ): Response<Map<String, Any>>
+
+    @ApiOperation("校验用户ticket")
+    @GetMapping("/verify")
+    fun verify(
+        @ApiParam(value = "用户id")
+        @RequestParam(value = "bkrepo_ticket") bkrepoToken: String?
+    ): Response<Map<String, Any>>
 }

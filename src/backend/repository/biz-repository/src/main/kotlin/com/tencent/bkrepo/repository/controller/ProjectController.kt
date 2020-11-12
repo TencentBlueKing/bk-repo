@@ -39,19 +39,27 @@ class ProjectController(
     private val projectService: ProjectService
 ) : ProjectClient {
 
-    override fun query(name: String): Response<ProjectInfo?> {
-        return ResponseBuilder.success(projectService.query(name))
+    override fun getProjectInfo(name: String): Response<ProjectInfo?> {
+        return ResponseBuilder.success(projectService.getProjectInfo(name))
     }
 
-    override fun list(): Response<List<ProjectInfo>> {
-        return ResponseBuilder.success(projectService.list())
+    override fun listProject(): Response<List<ProjectInfo>> {
+        return ResponseBuilder.success(projectService.listProject())
     }
 
     override fun rangeQuery(request: ProjectRangeQueryRequest): Response<Page<ProjectInfo?>> {
         return ResponseBuilder.success(projectService.rangeQuery(request))
     }
 
+    override fun createProject(request: ProjectCreateRequest): Response<ProjectInfo> {
+        return ResponseBuilder.success(projectService.createProject(request))
+    }
+
+    override fun query(name: String): Response<ProjectInfo?> {
+        return getProjectInfo(name)
+    }
+
     override fun create(request: ProjectCreateRequest): Response<ProjectInfo> {
-        return ResponseBuilder.success(projectService.create(request))
+        return createProject(request)
     }
 }

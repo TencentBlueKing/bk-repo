@@ -85,7 +85,7 @@ class JobService {
         repoDataSet: MutableSet<String>
     ) {
         with(repositoryInfo) {
-            val nodeList = nodeClient.list(projectId, name, path).data ?: return
+            val nodeList = nodeClient.listNode(projectId, name, path).data ?: return
             if (repodataDepth == 0) {
                 for (node in nodeList.filter { it.folder }.filter { it.name == REPODATA }) {
                     repoDataSet.add(node.fullPath)
@@ -226,7 +226,7 @@ class JobService {
 
     fun getIndexTypeList(repo: RepositoryInfo, repodataPath: String, indexType: IndexType): List<NodeInfo> {
         val target = "-${indexType.value}.xml.gz"
-        val indexList = nodeClient.list(repo.projectId, repo.name, repodataPath).data ?: return mutableListOf()
+        val indexList = nodeClient.listNode(repo.projectId, repo.name, repodataPath).data ?: return mutableListOf()
         return indexList.filter { it.name.endsWith(target) }.sortedByDescending { it.lastModifiedDate }
     }
 
@@ -239,7 +239,7 @@ class JobService {
 
     fun getLatestIndexNode(repo: RepositoryInfo, repodataPath: String, indexType: IndexType): NodeInfo? {
         val target = "-${indexType.value}.xml.gz"
-        val nodeList = nodeClient.list(
+        val nodeList = nodeClient.listNode(
             repo.projectId, repo.name,
             repodataPath,
             includeFolder = false, deep = false
@@ -482,7 +482,7 @@ class JobService {
                             indexType
                         )
                     } else {
-                        val rpmNode = nodeClient.detail(nodeInfo.projectId, nodeInfo.repoName, locationStr).data ?: return
+                        val rpmNode = nodeClient.getNodeDetail(nodeInfo.projectId, nodeInfo.repoName, locationStr).data ?: return
                         with(rpmNode) { logger.info("Start read index message form $projectId | $repoName | $fullPath") }
                         val metadata = rpmNode.metadata
                         val rpmMetadata = getRpmXmlMetadata(repodataPath, rpmNode, indexType)
@@ -494,7 +494,7 @@ class JobService {
                         )
                     }
                     with(nodeInfo) {
-                        nodeClient.delete(NodeDeleteRequest(projectId, repoName, fullPath, "jobService"))
+                        nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, fullPath, "jobService"))
                         logger.info("$projectId | $repoName | $fullPath has been delete")
                     }
                 } finally {

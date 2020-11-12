@@ -48,7 +48,7 @@ import org.springframework.web.bind.annotation.RequestParam
 interface MetadataClient {
     @ApiOperation("查询节点所有元数据")
     @GetMapping("/list/{projectId}/{repoName}")
-    fun query(
+    fun listMetadata(
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -58,10 +58,20 @@ interface MetadataClient {
     ): Response<Map<String, Any>>
 
     @ApiOperation("创建/更新元数据列表")
-    @PostMapping
-    fun save(@RequestBody metadataSaveRequest: MetadataSaveRequest): Response<Void>
+    @PostMapping("/save")
+    fun saveMetadata(@RequestBody request: MetadataSaveRequest): Response<Void>
 
     @ApiOperation("删除元数据")
+    @DeleteMapping("/delete")
+    fun deleteMetadata(@RequestBody request: MetadataDeleteRequest): Response<Void>
+
+    @Deprecated("replace with save")
+    @ApiOperation("创建/更新元数据列表")
+    @PostMapping
+    fun save(@RequestBody request: MetadataSaveRequest): Response<Void>
+
+    @Deprecated("replace with delete")
+    @ApiOperation("删除元数据")
     @DeleteMapping
-    fun delete(@RequestBody metadataDeleteRequest: MetadataDeleteRequest): Response<Void>
+    fun delete(@RequestBody request: MetadataDeleteRequest): Response<Void>
 }

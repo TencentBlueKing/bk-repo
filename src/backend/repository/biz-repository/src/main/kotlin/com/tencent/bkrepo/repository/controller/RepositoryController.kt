@@ -41,53 +41,62 @@ import org.springframework.web.bind.annotation.RestController
 class RepositoryController(
     private val repositoryService: RepositoryService
 ) : RepositoryClient {
-    override fun query(projectId: String, repoName: String, type: String): Response<RepositoryDetail?> {
-        return ResponseBuilder.success(repositoryService.getRepoDetail(projectId, repoName, type))
-    }
-
-    override fun query(projectId: String, repoName: String): Response<RepositoryDetail?> {
-        return ResponseBuilder.success(repositoryService.getRepoDetail(projectId, repoName, null))
-    }
 
     override fun getRepoInfo(projectId: String, repoName: String): Response<RepositoryInfo?> {
         return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, null))
-    }
-
-    override fun getRepoDetail(projectId: String, repoName: String): Response<RepositoryDetail?> {
-        return ResponseBuilder.success(repositoryService.getRepoDetail(projectId, repoName, null))
     }
 
     override fun getRepoDetail(projectId: String, repoName: String, type: String?): Response<RepositoryDetail?> {
         return ResponseBuilder.success(repositoryService.getRepoDetail(projectId, repoName, type))
     }
 
-    override fun list(projectId: String): Response<List<RepositoryInfo>> {
-        return ResponseBuilder.success(repositoryService.list(projectId))
-    }
-
-    override fun page(pageNumber: Int, pageSize: Int, projectId: String): Response<Page<RepositoryInfo>> {
-        return ResponseBuilder.success(repositoryService.page(projectId, pageNumber, pageSize))
+    override fun listRepo(projectId: String, name: String?, type: String?): Response<List<RepositoryInfo>> {
+        return ResponseBuilder.success(repositoryService.listRepo(projectId, name, type))
     }
 
     override fun rangeQuery(request: RepoRangeQueryRequest): Response<Page<RepositoryInfo?>> {
         return ResponseBuilder.success(repositoryService.rangeQuery(request))
     }
 
-    override fun create(repoCreateRequest: RepoCreateRequest): Response<RepositoryDetail> {
-        return ResponseBuilder.success(repositoryService.create(repoCreateRequest))
+    override fun createRepo(request: RepoCreateRequest): Response<RepositoryDetail> {
+        return ResponseBuilder.success(repositoryService.createRepo(request))
     }
 
-    override fun update(repoUpdateRequest: RepoUpdateRequest): Response<Void> {
-        repositoryService.update(repoUpdateRequest)
+    override fun updateRepo(request: RepoUpdateRequest): Response<Void> {
+        repositoryService.updateRepo(request)
         return ResponseBuilder.success()
     }
 
-    override fun delete(repoDeleteRequest: RepoDeleteRequest): Response<Void> {
-        repositoryService.delete(repoDeleteRequest)
+    override fun deleteRepo(request: RepoDeleteRequest): Response<Void> {
+        repositoryService.deleteRepo(request)
         return ResponseBuilder.success()
     }
 
     override fun pageByType(page: Int, size: Int, repoType: String): Response<Page<RepositoryInfo>> {
         return ResponseBuilder.success(repositoryService.pageByType(repoType, page, size))
+    }
+
+    override fun query(projectId: String, repoName: String, type: String): Response<RepositoryDetail?> {
+        return getRepoDetail(projectId, repoName, type)
+    }
+
+    override fun query(projectId: String, repoName: String): Response<RepositoryDetail?> {
+        return getRepoDetail(projectId, repoName, null)
+    }
+
+    override fun getRepoDetailWithType(projectId: String, repoName: String, type: String?): Response<RepositoryDetail?> {
+        return getRepoDetail(projectId, repoName, type)
+    }
+
+    override fun create(request: RepoCreateRequest): Response<RepositoryDetail> {
+        return createRepo(request)
+    }
+
+    override fun update(request: RepoUpdateRequest): Response<Void> {
+        return updateRepo(request)
+    }
+
+    override fun delete(request: RepoDeleteRequest): Response<Void> {
+        return deleteRepo(request)
     }
 }
