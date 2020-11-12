@@ -43,4 +43,10 @@ class ComposerExceptionHandler {
     fun handleException(exception: ComposerPackageMessageDeficiencyException): ComposerExceptionResponse {
         return ComposerExceptionResponse(HttpStatus.PRECONDITION_FAILED.toString(), exception.message)
     }
+
+    @ExceptionHandler(ComposerArtifactMetadataException::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun handleException(exception: ComposerArtifactMetadataException): ComposerExceptionResponse {
+        return ComposerExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
+    }
 }

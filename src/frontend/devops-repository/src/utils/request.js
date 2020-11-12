@@ -22,17 +22,25 @@ function errorHandler (error) {
 request.interceptors.response.use(response => {
     const { data: { code, data, message, status }, status: httpStatus } = response
     if (httpStatus === 401) {
-        window.postMessage({
-            action: 'toggleLoginDialog'
-        }, '*')
-        location.href = window.getLoginUrl()
-    } else if (httpStatus === 503) {
+        if (PAAS_CONFIG === 'paas') {
+            window.postMessage({
+                action: 'toggleLoginDialog'
+            }, '*')
+            location.href = window.getLoginUrl()
+        } else if (PAAS_CONFIG === 'local') {
+            window.repositoryVue.$store.commit('SHOW_LOGIN_DIALOG')
+        }
+        return Promise.reject() // eslint-disable-line
+    } else if (httpStatus === 500 || httpStatus === 503) {
         return Promise.reject({ // eslint-disable-line
             status: httpStatus,
             message: '服务维护中，请稍候...'
         })
-    } else if (httpStatus === 418) {
-        console.log('no permission')
+    } else if (httpStatus === 400) {
+        return Promise.reject({ // eslint-disable-line
+            status: httpStatus,
+            message
+        })
     } else if ((typeof code !== 'undefined' && code !== 0) || (typeof status !== 'undefined' && status !== 0)) {
         let msg = message
         if (Object.prototype.toString.call(message) === '[object Object]') {

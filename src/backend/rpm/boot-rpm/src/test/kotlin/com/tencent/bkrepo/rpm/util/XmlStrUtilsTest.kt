@@ -36,11 +36,23 @@ class XmlStrUtilsTest {
      */
     @Test
     fun splitUriByDepthTest() {
-        val uri = "/7/os/x86_64/hello-world-1-1.x86_64.rpm"
-        val depth = 3
-        val repodataUri = XmlStrUtils.splitUriByDepth(uri, depth)
-        Assertions.assertEquals("7/os/x86_64/", repodataUri.repodataPath)
+        val uri1 = "/7/os/x86_64/hello-world-1-1.x86_64.rpm"
+        val depth1 = 3
+        val repodataUri = XmlStrUtils.splitUriByDepth(uri1, depth1)
+        Assertions.assertEquals("/7/os/x86_64/", repodataUri.repoDataPath)
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri.artifactRelativePath)
+
+        val uri2 = "/7/hello-world-1-1.x86_64.rpm"
+        val depth2 = 1
+        val repodataUri2 = XmlStrUtils.splitUriByDepth(uri2, depth2)
+        Assertions.assertEquals("/7/", repodataUri2.repoDataPath)
+        Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri2.artifactRelativePath)
+
+        val uri3 = "/hello-world-1-1.x86_64.rpm"
+        val depth3 = 0
+        val repodataUri3 = XmlStrUtils.splitUriByDepth(uri3, depth3)
+        Assertions.assertEquals("/", repodataUri3.repoDataPath)
+        Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri3.artifactRelativePath)
     }
 
     @Test

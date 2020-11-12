@@ -43,7 +43,8 @@ enum class AuthMessageCode(private val businessCode: Int, private val key: Strin
     AUTH_CLUSTER_NOT_EXIST(16, "auth.cluster.notexist"),
     AUTH_PROJECT_NOT_EXIST(17, "auth.project.notexist"),
     AUTH_ASST_USER_EMPTY(18, "auth.group.asst.user.empty"),
-    AUTH_USER_TOKEN_EXIST(19, "auth.user.token.exist");
+    AUTH_USER_TOKEN_EXIST(19, "auth.user.token.exist"),
+    AUTH_LOGIN_TOKEN_CHECK_FAILED(20, "auth.login.token.checkfail");
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key

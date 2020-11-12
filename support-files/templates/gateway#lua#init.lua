@@ -46,11 +46,6 @@ config = {
     app_code = "__BK_REPO_APP_CODE__",
     app_secret = "__BK_REPO_APP_TOKEN__",
   },
-  itlogin = {
-    ip = "__BK_REPO_GATEWAY_ITLOGIN_IP__",
-    port = "__BK_REPO_GATEWAY_ITLOGIN_PORT__",
-    host = "__BK_REPO_GATEWAY_ITLOGIN_HOST__"
-  },
   bkrepo = {
     domain = "__BK_REPO_HOST__",
     authorization = "__BK_REPO_AUTHORIZATION__"

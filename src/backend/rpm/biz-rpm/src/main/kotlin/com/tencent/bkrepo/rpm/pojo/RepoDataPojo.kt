@@ -21,13 +21,48 @@
 
 package com.tencent.bkrepo.rpm.pojo
 
+import com.tencent.bkrepo.rpm.REPODATA
+import com.tencent.bkrepo.rpm.exception.RpmRepoDataException
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
+/**
+ * repodataPath : 索引目录的父级路径 `/`开头，`/`结尾
+ * artifactRelativePath：保存在索引中的路径 ， 不要`/`
+ */
 @ApiModel("索引目录数据类")
-data class RepodataUri(
+data class RepoDataPojo(
     @ApiModelProperty("契合本次请求的repodata_depth 目录路径")
-    val repodataPath: String,
+    val repoDataPath: String,
     @ApiModelProperty("构件相对于索引文件的保存路径")
     val artifactRelativePath: String
-)
+) {
+
+    init {
+        checkRepoDataPathFormat(repoDataPath)
+        checkArtifactRelativePathFormat(artifactRelativePath)
+    }
+
+    private fun checkRepoDataPathFormat(repoDataPath: String) {
+        if (!(repoDataPath.endsWith("/") && repoDataPath.startsWith("/"))) {
+            throw RpmRepoDataException("$repoDataPath is invalid")
+        }
+    }
+    private fun checkArtifactRelativePathFormat(artifactRelativePath: String) {
+        if (artifactRelativePath.startsWith("/")) {
+            throw RpmRepoDataException("$repoDataPath is invalid")
+        }
+    }
+
+    override fun toString(): String {
+        return "$repoDataPath$artifactRelativePath"
+    }
+
+    fun getMarkPath(indexType: IndexType): String {
+        return if (repoDataPath == "/") {
+            "/$REPODATA/${indexType.value}/$artifactRelativePath"
+        } else {
+            "$repoDataPath$REPODATA/${indexType.value}/$artifactRelativePath"
+        }
+    }
+}

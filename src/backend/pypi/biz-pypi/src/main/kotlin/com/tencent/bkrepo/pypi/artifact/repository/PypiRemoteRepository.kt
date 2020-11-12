@@ -120,17 +120,6 @@ class PypiRemoteRepository : RemoteRepository() {
         val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
         val build: Request = Request.Builder().get().url(listUri).build()
         val htmlContent = okHttpClient.newCall(build).execute().body()?.string()
-//        val cacheHtmlFile = File(REMOTE_HTML_CACHE_FULL_PATH)
-//        htmlContent?.let {
-//            // 保存html文件
-//            try {
-//                val fileWriter = FileWriter(cacheHtmlFile)
-//                fileWriter.write(htmlContent)
-//                fileWriter.close()
-//            } catch (ioe: IOException) {
-//                logger.error("The remote url : ${remoteConfiguration.url}  can not reach!")
-//            }
-//        }
         htmlContent?.let { storeCacheHtml(context, it) }
     }
 
