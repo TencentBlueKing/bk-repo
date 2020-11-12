@@ -38,6 +38,5 @@ class RpmVersionUtilsTest {
 
         val xml = string.toString()
         val primary = XStreamUtil.xmlToObject(xml)
-
     }
 }

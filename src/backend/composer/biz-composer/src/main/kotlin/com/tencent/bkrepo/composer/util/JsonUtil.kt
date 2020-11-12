@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.gson.GsonBuilder
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.lang.Exception
 
@@ -94,19 +93,19 @@ object JsonUtil {
      * @param version
      */
     @Throws(Exception::class)
-    fun addComposerVersion(versionJson: String, uploadFileJson: String, name: String, version: String): JsonObject {
+    fun addComposerVersion(versionJson: String, uploadFileJson: String, name: String, version: String): String {
         val jsonObject = JsonParser.parseString(versionJson).asJsonObject
         val nameParam = jsonObject.getAsJsonObject(packages).getAsJsonObject(name)
         // 覆盖重复版本信息
         nameParam.add(version, JsonParser.parseString(uploadFileJson))
-        return jsonObject
+        return GsonBuilder().create().toJson(jsonObject)
     }
 
-    fun deleteComposerVersion(versionJson: String, name: String, version: String): JsonObject {
+    fun deleteComposerVersion(versionJson: String, name: String, version: String): String {
         val jsonObject = JsonParser.parseString(versionJson).asJsonObject
         val nameParam = jsonObject.getAsJsonObject(packages).getAsJsonObject(name)
         // 覆盖重复版本信息
         nameParam.remove(version)
-        return jsonObject
+        return GsonBuilder().create().toJson(jsonObject)
     }
 }
