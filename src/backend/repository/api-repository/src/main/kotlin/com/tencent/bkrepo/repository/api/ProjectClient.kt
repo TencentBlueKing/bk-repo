@@ -21,6 +21,7 @@
 
 package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.constant.SERVICE_NAME
@@ -40,7 +41,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(description = "服务-项目接口")
 @Primary
-@FeignClient(SERVICE_NAME, contextId = "ProjectClient")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ProjectClient")
 @RequestMapping("/service/project")
 interface ProjectClient {
 

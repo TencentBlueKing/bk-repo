@@ -21,10 +21,10 @@
 
 package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -54,7 +54,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("节点服务接口")
 @Primary
-@FeignClient(SERVICE_NAME, contextId = "NodeClient")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeClient")
 @RequestMapping("/service/node")
 interface NodeClient {
 

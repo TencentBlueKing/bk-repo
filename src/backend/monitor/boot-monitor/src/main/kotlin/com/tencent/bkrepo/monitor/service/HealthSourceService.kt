@@ -26,6 +26,7 @@ import com.tencent.bkrepo.monitor.metrics.HealthEndpoint
 import com.tencent.bkrepo.monitor.metrics.HealthInfo
 import de.codecentric.boot.admin.server.services.InstanceRegistry
 import de.codecentric.boot.admin.server.web.client.InstanceWebClient
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import javax.annotation.PreDestroy
@@ -36,7 +37,10 @@ class HealthSourceService(
     private val instanceRegistry: InstanceRegistry,
     instanceWebClientBuilder: InstanceWebClient.Builder
 ) {
-
+    @Value("\${service.prefix:repo-}")
+    private val servicePrefix: String = "repo-"
+    @Value("\${service.suffix:}")
+    private val serviceSuffix: String = ""
     private val instanceWebClient = instanceWebClientBuilder.build()
     val healthSourceMap: MutableMap<HealthEndpoint, InstanceHealthSource> = mutableMapOf()
 
@@ -45,7 +49,7 @@ class HealthSourceService(
             val healthEndpoint = HealthEndpoint.ofHealthName(healthName)
             val trimmedApplicationListString = applicationListString.trim()
             val includeAll = trimmedApplicationListString.isEmpty() || trimmedApplicationListString == "*"
-            val applicationList = trimmedApplicationListString.split(",").map { it.trim() }.distinct()
+            val applicationList = trimmedApplicationListString.split(",").map { resolveServiceName(it) }.distinct()
             val healthSource = InstanceHealthSource(healthEndpoint, includeAll, applicationList, monitorProperties.interval, instanceRegistry, instanceWebClient)
             healthSourceMap[healthEndpoint] = healthSource
         }
@@ -55,6 +59,10 @@ class HealthSourceService(
 
     fun getMergedSource(): Flux<HealthInfo> {
         return Flux.merge(Flux.fromIterable(healthSourceMap.entries).map { it.value.healthSource })
+    }
+
+    fun resolveServiceName(ordinal: String): String {
+        return "$servicePrefix${ordinal.trim()}$serviceSuffix"
     }
 
     @PreDestroy

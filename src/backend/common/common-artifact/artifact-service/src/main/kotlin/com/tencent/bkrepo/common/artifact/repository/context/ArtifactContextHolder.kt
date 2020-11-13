@@ -22,8 +22,6 @@
 package com.tencent.bkrepo.common.artifact.repository.context
 
 import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.util.concurrent.UncheckedExecutionException
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
@@ -73,15 +71,10 @@ class ArtifactContextHolder(
         private lateinit var remoteRepository: ObjectProvider<RemoteRepository>
         private lateinit var virtualRepository: ObjectProvider<VirtualRepository>
         private lateinit var compositeRepository: ObjectProvider<CompositeRepository>
-        private val cacheLoader = object : CacheLoader<RepositoryId, RepositoryDetail>() {
-            override fun load(key: RepositoryId): RepositoryDetail {
-                return queryRepositoryDetail(key)
-            }
-        }
         private val repositoryDetailCache = CacheBuilder.newBuilder()
-                .maximumSize(1000)
-                .expireAfterWrite(60, TimeUnit.SECONDS)
-                .build(cacheLoader)
+            .maximumSize(1000)
+            .expireAfterWrite(60, TimeUnit.SECONDS)
+            .build<RepositoryId, RepositoryDetail>()
 
         fun getRepository(repositoryCategory: RepositoryCategory? = null): ArtifactRepository {
             return when (repositoryCategory ?: getRepoDetail()!!.category) {
@@ -97,13 +90,11 @@ class ArtifactContextHolder(
             val repositoryAttribute = request.getAttribute(REPO_KEY)
             return if (repositoryAttribute == null) {
                 val repositoryId = getRepositoryId(request)
-                try {
-                    repositoryDetailCache.get(repositoryId).apply { request.setAttribute(REPO_KEY, this) }
-                } catch (exception: UncheckedExecutionException) {
-                    if (exception.cause is ArtifactNotFoundException) {
-                        throw exception.cause as ArtifactNotFoundException
-                    } else throw exception
+                val repoDetail = repositoryDetailCache.getIfPresent(repositoryId) ?: run {
+                    queryRepoDetail(repositoryId).apply { repositoryDetailCache.put(repositoryId, this) }
                 }
+                request.setAttribute(REPO_KEY, repoDetail)
+                return repoDetail
             } else {
                 repositoryAttribute as RepositoryDetail
             }
@@ -122,7 +113,7 @@ class ArtifactContextHolder(
             }
         }
 
-        private fun queryRepositoryDetail(repositoryId: RepositoryId): RepositoryDetail {
+        private fun queryRepoDetail(repositoryId: RepositoryId): RepositoryDetail {
             with(repositoryId) {
                 val repoType = artifactConfiguration.getRepositoryType().name
                 val response = repositoryClient.getRepoDetail(projectId, repoName, repoType)
@@ -131,10 +122,7 @@ class ArtifactContextHolder(
         }
     }
 
-    data class RepositoryId(
-        val projectId: String,
-        val repoName: String
-    ) {
+    data class RepositoryId(val projectId: String, val repoName: String) {
         override fun toString(): String {
             return StringBuilder(projectId).append(CharPool.SLASH).append(repoName).toString()
         }

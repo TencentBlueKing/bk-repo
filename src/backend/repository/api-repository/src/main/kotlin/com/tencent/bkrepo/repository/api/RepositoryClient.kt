@@ -21,9 +21,9 @@
 
 package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -49,7 +49,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("仓库服务接口")
 @Primary
-@FeignClient(SERVICE_NAME, contextId = "RepositoryClient")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "RepositoryClient")
 @RequestMapping("/service/repo")
 interface RepositoryClient {
 

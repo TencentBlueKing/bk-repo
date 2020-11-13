@@ -21,8 +21,8 @@
 
 package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import io.swagger.annotations.Api
@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("节点元数据服务接口")
 @Primary
-@FeignClient(SERVICE_NAME, contextId = "MetadataClient")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "MetadataClient")
 @RequestMapping("/service/metadata")
 interface MetadataClient {
     @ApiOperation("查询节点所有元数据")

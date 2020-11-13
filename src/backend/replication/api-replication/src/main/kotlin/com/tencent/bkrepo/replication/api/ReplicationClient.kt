@@ -26,8 +26,8 @@ import com.tencent.bkrepo.auth.pojo.Permission
 import com.tencent.bkrepo.auth.pojo.Role
 import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.replication.constant.SERVICE_NAME
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
@@ -57,7 +57,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @RequestMapping("/replica")
-@FeignClient(SERVICE_NAME, contextId = "ReplicationClient")
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ReplicationClient")
 interface ReplicationClient {
 
     @GetMapping("/ping")

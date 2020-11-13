@@ -21,8 +21,8 @@
 
 package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
@@ -41,7 +41,7 @@ import java.time.LocalDate
 
 @Api("包下载量统计服务接口")
 @Primary
-@FeignClient(SERVICE_NAME, contextId = "PackageDownloadStatisticsClient")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageDownloadStatisticsClient")
 @RequestMapping("/service/package/download/statistics")
 interface PackageDownloadStatisticsClient {
 
