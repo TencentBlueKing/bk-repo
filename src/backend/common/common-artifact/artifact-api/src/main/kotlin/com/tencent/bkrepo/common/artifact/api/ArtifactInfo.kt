@@ -21,7 +21,7 @@
 
 package com.tencent.bkrepo.common.artifact.api
 
-import com.tencent.bkrepo.common.api.constant.CharPool.DASH
+import com.tencent.bkrepo.common.api.constant.CharPool.AT
 import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 
@@ -42,14 +42,17 @@ abstract class ArtifactInfo(
     /**
      * 构件完整uri，如/archive/file/tmp.data
      */
-    private val artifactUri: String? = null
+    private val artifactUri: String
 ) {
+
+    private val normalizedUri = PathUtils.normalizeFullPath(artifactUri)
+
     /**
      * 构件名称，不同依赖源解析规则不一样，可以override
      *
      * 默认使用传入的artifactUri作为名称
      */
-    open fun getArtifactName(): String = artifactUri.orEmpty()
+    open fun getArtifactName(): String = normalizedUri
 
     /**
      * 构件版本
@@ -62,14 +65,14 @@ abstract class ArtifactInfo(
      *
      * 默认使用传入的artifactUri作为名称
      */
-    open fun getArtifactFullPath(): String = artifactUri.orEmpty()
+    open fun getArtifactFullPath(): String = normalizedUri
 
     /**
      * 构件下载显示名称，不同依赖源解析规则不一样，可以override
      *
      * 默认使用传入的artifactUri作为名称
      */
-    open fun getResponseName(): String = PathUtils.resolveName(artifactUri.orEmpty())
+    open fun getResponseName(): String = PathUtils.resolveName(normalizedUri)
 
     /**
      * 获取仓库唯一名, 格式 /{projectId}/{repoName}
@@ -82,16 +85,18 @@ abstract class ArtifactInfo(
         return builder.toString()
     }
 
+    /**
+     *  /{projectId}/{repoName}/xxx
+     */
     override fun toString(): String {
         val builder = StringBuilder()
         builder.append(getRepoIdentify())
-        getArtifactName().let {
-            if (!it.startsWith(SLASH)) {
-                builder.append(SLASH)
-            }
-            builder.append(getArtifactName())
+        val artifactName = getArtifactName()
+        if (!artifactName.startsWith(SLASH)) {
+            builder.append(SLASH)
         }
-        getArtifactVersion()?.let { builder.append(DASH).append(it) }
+        builder.append(artifactName)
+        getArtifactVersion()?.let { builder.append(AT).append(it) }
         return builder.toString()
     }
 }

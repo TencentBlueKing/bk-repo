@@ -24,14 +24,11 @@ package com.tencent.bkrepo.composer.artifact.repository
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.composer.COMPOSER_VERSION_INIT
-import com.tencent.bkrepo.composer.INIT_PACKAGES
-import org.springframework.stereotype.Component
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -39,31 +36,33 @@ import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.composer.COMPOSER_VERSION_INIT
 import com.tencent.bkrepo.composer.DIRECT_DISTS
+import com.tencent.bkrepo.composer.INIT_PACKAGES
 import com.tencent.bkrepo.composer.exception.ComposerArtifactMetadataException
+import com.tencent.bkrepo.composer.pojo.ArtifactVersionDetail
+import com.tencent.bkrepo.composer.pojo.Basic
 import com.tencent.bkrepo.composer.util.DecompressUtil.wrapperJson
 import com.tencent.bkrepo.composer.util.JsonUtil
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperJson
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperPackageJson
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import org.springframework.transaction.annotation.Transactional
-import java.io.BufferedReader
-import java.io.ByteArrayInputStream
-import java.io.InputStreamReader
-import com.tencent.bkrepo.composer.pojo.ArtifactVersionDetail
-import com.tencent.bkrepo.composer.pojo.Basic
 import com.tencent.bkrepo.composer.util.pojo.ComposerArtifact
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import java.lang.RuntimeException
+import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
+import java.io.BufferedReader
+import java.io.ByteArrayInputStream
+import java.io.InputStreamReader
 
 @Component
 class ComposerLocalRepository : LocalRepository() {
@@ -101,7 +100,7 @@ class ComposerLocalRepository : LocalRepository() {
     private fun updateIndex(composerArtifact: ComposerArtifact, context: ArtifactContext) {
         // 查询对应的 "/p/%package%.json" 是否存在
         val pArtifactUri = "/p/${composerArtifact.name}.json"
-        val node = nodeClient.detail(context.projectId, context.repoName, pArtifactUri).data
+        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, pArtifactUri).data
         val resultJson = if (node == null) {
             with(composerArtifact) {
                 JsonUtil.addComposerVersion(String.format(COMPOSER_VERSION_INIT, name), json, name, version)
@@ -198,8 +197,8 @@ class ComposerLocalRepository : LocalRepository() {
                 versions!!.toInt()
             ).data?.records ?: return
             for (packageVersion in pages) {
-                val node = nodeClient.detail(context.projectId, context.repoName, packageVersion.contentPath!!).data
-                    ?: continue
+                val node = nodeClient.getNodeDetail(context.projectId, context.repoName, packageVersion.contentPath!!).data
+                        ?: continue
                 removeComposerArtifact(node, packageKey, packageVersion.name, context)
             }
         } else {
@@ -210,7 +209,7 @@ class ComposerLocalRepository : LocalRepository() {
                     packageKey,
                     version
                 ).data ?: return
-                val node = nodeClient.detail(projectId, repoName, packageVersion.contentPath!!).data ?: return
+                val node = nodeClient.getNodeDetail(projectId, repoName, packageVersion.contentPath!!).data ?: return
                 removeComposerArtifact(node, packageKey, version, context)
             }
         }
@@ -218,7 +217,7 @@ class ComposerLocalRepository : LocalRepository() {
 
     private fun getPackageJson(context: ArtifactContext, name: String): String? {
         val jsonPath = "/p/$name.json"
-        val node = nodeClient.detail(context.projectId, context.repoName, jsonPath).data ?: return null
+        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, jsonPath).data?: return null
         return nodeToJson(node)
     }
 
@@ -254,7 +253,7 @@ class ComposerLocalRepository : LocalRepository() {
             // 更新索引
             deleteJsonVersion(context, PackageKeys.resolveComposer(packageKey), version)
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, node.fullPath, context.userId)
-            nodeClient.delete(nodeDeleteRequest)
+            nodeClient.deleteNode(nodeDeleteRequest)
             logger.info("Success to delete node $nodeDeleteRequest")
             deleteVersion(projectId, repoName, packageKey, version)
             logger.info("Success to delete version $projectId | $repoName : $packageKey $version")
@@ -298,7 +297,7 @@ class ComposerLocalRepository : LocalRepository() {
     fun getPackages(context: ArtifactQueryContext): String {
         val host = getHost(context)
         val node = with(context.artifactInfo) {
-            nodeClient.detail(projectId, repoName, getArtifactFullPath()).data
+            nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
         }
         return if (node == null) {
             val artifactFile = ByteArrayInputStream(INIT_PACKAGES.toByteArray()).use {
@@ -347,7 +346,7 @@ class ComposerLocalRepository : LocalRepository() {
      */
     private fun stream2Json(context: ArtifactContext): String? {
         return with(context.artifactInfo) {
-            val node = nodeClient.detail(projectId, repoName, getArtifactFullPath()).data ?: return null
+            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data ?: return null
             nodeToJson(node)
         }
     }
@@ -361,7 +360,7 @@ class ComposerLocalRepository : LocalRepository() {
     ): DownloadStatisticsAddRequest? {
         with(context) {
             val fullPath = context.artifactInfo.getArtifactFullPath()
-            val node = nodeClient.detail(projectId, repoName, fullPath).data ?: return null
+            val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return null
             val packageKey = node.metadata["packageKey"] ?: throw ComposerArtifactMetadataException(
                 "${artifactInfo.getArtifactFullPath()} : not found metadata.packageKay value"
             )
@@ -395,7 +394,7 @@ class ComposerLocalRepository : LocalRepository() {
         ).data ?: return null
         val artifactPath = trueVersion.contentPath ?: return null
         with(context.artifactInfo) {
-            val jarNode = nodeClient.detail(
+            val jarNode = nodeClient.getNodeDetail(
                 projectId, repoName, artifactPath
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data

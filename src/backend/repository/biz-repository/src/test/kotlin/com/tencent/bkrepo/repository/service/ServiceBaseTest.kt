@@ -24,6 +24,7 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.security.http.HttpAuthProperties
+import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -53,6 +54,9 @@ abstract class ServiceBaseTest {
 
     @MockBean
     lateinit var userResource: ServiceUserResource
+
+    @MockBean
+    lateinit var permissionManager: PermissionManager
 
     fun initMock() {
         Mockito.`when`(roleResource.createRepoManage(ArgumentMatchers.anyString(), ArgumentMatchers.anyString())).then {

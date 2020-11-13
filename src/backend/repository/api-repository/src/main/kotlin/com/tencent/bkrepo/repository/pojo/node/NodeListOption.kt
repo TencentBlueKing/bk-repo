@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -15,33 +15,29 @@
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
  */
 
-package com.tencent.bkrepo.common.stream.producer
+package com.tencent.bkrepo.repository.pojo.node
 
-import com.tencent.bkrepo.common.stream.message.IMessage
-import com.tencent.bkrepo.common.stream.source.MessageSource
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.cloud.stream.annotation.EnableBinding
-import org.springframework.integration.support.MessageBuilder
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import io.swagger.annotations.ApiParam
+import org.springframework.web.bind.annotation.RequestParam
 
-@Component
-@EnableBinding(MessageSource::class)
-class StreamProducer {
-
-    @Autowired
-    private lateinit var messageSource: MessageSource
-
-    fun sendMessage(message: IMessage) {
-        messageSource.output().send(MessageBuilder.withPayload(message).build())
-        logger.debug("Send message[$message] to stream success.")
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(StreamProducer::class.java)
-    }
-}
+@ApiModel("节点列表选项")
+data class NodeListOption(
+    @ApiModelProperty("当前页")
+    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
+    @ApiModelProperty("分页大小")
+    val pageSize: Int = DEFAULT_PAGE_SIZE,
+    @ApiModelProperty("是否包含目录")
+    val includeFolder: Boolean = true,
+    @ApiModelProperty("是否包含元数据")
+    val includeMetadata: Boolean = false,
+    @ApiModelProperty("是否深度查询文件")
+    val deep: Boolean = false,
+    @ApiModelProperty("是否排序")
+    val sort: Boolean = false
+)

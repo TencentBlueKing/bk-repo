@@ -29,7 +29,7 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.search.node.NodeQueryContext
 import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
-import com.tencent.bkrepo.repository.service.NodeQueryService
+import com.tencent.bkrepo.repository.service.NodeSearchService
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -41,12 +41,12 @@ import java.util.Date
  */
 @Suppress("UNCHECKED_CAST")
 @Service
-class NodeQueryServiceImpl(
+class NodeSearchServiceImpl(
     private val nodeDao: NodeDao,
     private val nodeQueryInterpreter: NodeQueryInterpreter
-) : NodeQueryService {
+) : NodeSearchService {
 
-    override fun query(queryModel: QueryModel): Page<Map<String, Any?>> {
+    override fun search(queryModel: QueryModel): Page<Map<String, Any?>> {
         val context = nodeQueryInterpreter.interpret(queryModel) as NodeQueryContext
         return doQuery(context)
     }

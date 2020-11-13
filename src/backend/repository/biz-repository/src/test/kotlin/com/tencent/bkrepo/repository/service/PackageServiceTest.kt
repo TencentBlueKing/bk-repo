@@ -28,6 +28,8 @@ import com.tencent.bkrepo.repository.UT_PACKAGE_VERSION
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
+import com.tencent.bkrepo.repository.dao.FileReferenceDao
+import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
@@ -35,6 +37,9 @@ import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
+import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
+import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
+import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -42,6 +47,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
@@ -56,6 +62,9 @@ class PackageServiceTest @Autowired constructor(
     private val packageService: PackageService,
     private val mongoTemplate: MongoTemplate
 ) : ServiceBaseTest() {
+
+    @MockBean
+    private lateinit var packageSearchInterpreter: PackageSearchInterpreter
 
     @BeforeEach
     fun beforeEach() {

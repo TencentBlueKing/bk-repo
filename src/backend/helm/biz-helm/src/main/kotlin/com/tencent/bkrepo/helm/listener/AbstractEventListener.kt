@@ -21,7 +21,7 @@ abstract class AbstractEventListener {
      * check node exists
      */
     fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
-        return nodeClient.exist(projectId, repoName, fullPath).data ?: false
+        return nodeClient.checkExist(projectId, repoName, fullPath).data ?: false
     }
 
     /**

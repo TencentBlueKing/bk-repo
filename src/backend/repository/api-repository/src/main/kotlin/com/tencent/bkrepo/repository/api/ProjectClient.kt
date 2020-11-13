@@ -44,18 +44,28 @@ import org.springframework.web.bind.annotation.RequestMapping
 @RequestMapping("/service/project")
 interface ProjectClient {
 
+    @ApiOperation("查询项目信息")
+    @GetMapping("/info/{name}")
+    fun getProjectInfo(@ApiParam(value = "项目名") @PathVariable name: String): Response<ProjectInfo?>
+
+    @ApiOperation("列表查询项目")
+    @GetMapping("/list")
+    fun listProject(): Response<List<ProjectInfo>>
+
+    @ApiOperation("分页查询项目")
+    @PostMapping("/rangeQuery")
+    fun rangeQuery(@RequestBody request: ProjectRangeQueryRequest): Response<Page<ProjectInfo?>>
+
+    @ApiOperation("创建项目")
+    @PostMapping("/create")
+    fun createProject(@RequestBody request: ProjectCreateRequest): Response<ProjectInfo>
+
+    @Deprecated("replace with getProjectInfo")
     @ApiOperation("查询项目")
     @GetMapping("/query/{name}")
     fun query(@ApiParam(value = "项目名") @PathVariable name: String): Response<ProjectInfo?>
 
-    @ApiOperation("项目列表")
-    @GetMapping("/list")
-    fun list(): Response<List<ProjectInfo>>
-
-    @ApiOperation("项目分页查询")
-    @PostMapping("/rangeQuery")
-    fun rangeQuery(@RequestBody request: ProjectRangeQueryRequest): Response<Page<ProjectInfo?>>
-
+    @Deprecated("replace with createProject")
     @ApiOperation("创建项目")
     @PostMapping
     fun create(@RequestBody request: ProjectCreateRequest): Response<ProjectInfo>

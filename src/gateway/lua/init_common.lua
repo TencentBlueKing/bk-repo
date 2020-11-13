@@ -35,6 +35,7 @@ cookieUtil = require("util.cookie_util")
 grayUtil = require("util.gray_util")
 urlUtil = require("util.url_util")
 oauthUtil = require("util.oauth_util")
+hostUtil = require("util.host_util")
 
 math.randomseed(os.time())
 uuid.seed()

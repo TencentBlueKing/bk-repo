@@ -25,6 +25,9 @@ import java.io.File
 import java.io.InputStream
 import kotlin.math.min
 
+/**
+ * 限定长度的输入流，[limit]为限制读取的长度
+ */
 class BoundedInputStream(
     private val source: InputStream,
     limit: Long

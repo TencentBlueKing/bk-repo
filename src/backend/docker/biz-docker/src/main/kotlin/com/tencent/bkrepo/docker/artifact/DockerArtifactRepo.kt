@@ -144,7 +144,7 @@ class DockerArtifactRepo @Autowired constructor(
             overwrite = true
         )
         // save node
-        val result = nodeClient.create(node)
+        val result = nodeClient.createNode(node)
         if (result.isNotOk()) {
             logger.error("user [$userId] finish append file  [${context.fullPath}] failed: [$result]")
             throw DockerFileSaveFailedException(context.fullPath)
@@ -194,7 +194,7 @@ class DockerArtifactRepo @Autowired constructor(
         // store the file
         storageService.store(uploadContext.sha256, uploadContext.artifactFile!!, repository.storageCredentials)
         // save the node
-        val result = nodeClient.create(
+        val result = nodeClient.createNode(
             NodeCreateRequest(
                 projectId = uploadContext.projectId,
                 repoName = uploadContext.repoName,
@@ -237,7 +237,7 @@ class DockerArtifactRepo @Autowired constructor(
                     overwrite = true,
                     operator = userId
                 )
-                val result = nodeClient.copy(copyRequest)
+                val result = nodeClient.copyNode(copyRequest)
                 if (result.isNotOk()) {
                     logger.error("user [$userId] request [$copyRequest] copy file fail")
                     throw DockerMoveFileFailedException("$srcPath->$destPath")
@@ -261,7 +261,7 @@ class DockerArtifactRepo @Autowired constructor(
         with(context) {
             val renameRequest = NodeRenameRequest(projectId, repoName, from, to, userId)
             logger.debug("move request [$renameRequest]")
-            val result = nodeClient.rename(renameRequest)
+            val result = nodeClient.renameNode(renameRequest)
             if (result.isNotOk()) {
                 logger.error("user [$userId] request [$renameRequest] move file fail")
                 throw DockerMoveFileFailedException("$from->$to")
@@ -279,7 +279,7 @@ class DockerArtifactRepo @Autowired constructor(
      */
     fun setAttributes(projectId: String, repoName: String, fullPath: String, data: Map<String, String>) {
         logger.info("set attributes request [$projectId,$repoName,$fullPath,$data]")
-        val result = metadataService.save(MetadataSaveRequest(projectId, repoName, fullPath, data))
+        val result = metadataService.saveMetadata(MetadataSaveRequest(projectId, repoName, fullPath, data))
         if (result.isNotOk()) {
             logger.error("set attribute [$projectId,$repoName,$fullPath,$data] fail")
             throw DockerFileSaveFailedException("set attribute fail")
@@ -295,7 +295,7 @@ class DockerArtifactRepo @Autowired constructor(
      * @return String is the value of the metadata
      */
     fun getAttribute(projectId: String, repoName: String, fullPath: String, key: String): String? {
-        val result = metadataService.query(projectId, repoName, fullPath).data!!
+        val result = metadataService.listMetadata(projectId, repoName, fullPath).data!!
         logger.debug("get attribute params : [$projectId,$repoName,$fullPath,$key] ,result: [$result]")
         return result[key] as String
     }
@@ -308,7 +308,7 @@ class DockerArtifactRepo @Autowired constructor(
      * @return Boolean is the file exist
      */
     fun exists(projectId: String, repoName: String, fullPath: String): Boolean {
-        return nodeClient.exist(projectId, repoName, fullPath).data ?: return false
+        return nodeClient.checkExist(projectId, repoName, fullPath).data ?: return false
     }
 
     /**
@@ -366,7 +366,7 @@ class DockerArtifactRepo @Autowired constructor(
 
     // get docker  artifact
     fun getArtifact(projectId: String, repoName: String, fullPath: String): DockerArtifact? {
-        val node = nodeClient.detail(projectId, repoName, fullPath).data ?: run {
+        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
             logger.warn("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
             return null
         }
@@ -381,7 +381,7 @@ class DockerArtifactRepo @Autowired constructor(
     // get node detail
     fun getNodeDetail(context: RequestContext, fullPath: String): NodeDetail? {
         with(context) {
-            return nodeClient.detail(projectId, repoName, fullPath).data ?: run<RequestContext, NodeDetail> {
+            return nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run<RequestContext, NodeDetail> {
                 logger.warn("get artifact detail failed: [$projectId, $repoName, $fullPath] found no artifact")
                 return null
             }
@@ -401,7 +401,7 @@ class DockerArtifactRepo @Autowired constructor(
             rule = rule
         )
 
-        val result = nodeClient.query(queryModel).data ?: run {
+        val result = nodeClient.search(queryModel).data ?: run {
             logger.warn("find artifact list failed: [$projectId, $repoName, $fileName] found no node")
             return emptyList()
         }
@@ -426,7 +426,7 @@ class DockerArtifactRepo @Autowired constructor(
         name?.let {
             queryModel.path("*$name*", OperationType.MATCH)
         }
-        val result = nodeClient.query(queryModel.build()).data ?: run {
+        val result = nodeClient.search(queryModel.build()).data ?: run {
             logger.warn("find repo list failed: [$projectId, $repoName] ")
             return emptyList()
         }
@@ -477,7 +477,7 @@ class DockerArtifactRepo @Autowired constructor(
                 queryModel.name(DOCKER_MANIFEST).path("/$artifactName/*$version*", OperationType.MATCH)
             }
 
-            val result = nodeClient.query(queryModel.build()).data ?: run {
+            val result = nodeClient.search(queryModel.build()).data ?: run {
                 logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
                 return emptyList()
             }
@@ -512,7 +512,7 @@ class DockerArtifactRepo @Autowired constructor(
                 queryModel.name(DOCKER_MANIFEST).path("/$artifactName/*$tag*", OperationType.MATCH)
             }
 
-            val result = nodeClient.query(queryModel.build()).data ?: run {
+            val result = nodeClient.search(queryModel.build()).data ?: run {
                 logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
                 return 0L
             }
@@ -532,7 +532,7 @@ class DockerArtifactRepo @Autowired constructor(
             select = mutableListOf(DOCKER_NODE_PATH, DOCKER_NODE_SIZE),
             rule = rule
         )
-        val result = nodeClient.query(queryModel).data ?: run {
+        val result = nodeClient.search(queryModel).data ?: run {
             logger.warn("find artifacts failed:  $digestName found no node")
             return null
         }
@@ -544,7 +544,7 @@ class DockerArtifactRepo @Autowired constructor(
         with(context) {
             val fullPath = "/$artifactName/$tag/$DOCKER_MANIFEST"
             val deleteNodeRequest = NodeDeleteRequest(projectId, repoName, fullPath, userId)
-            return nodeClient.delete(deleteNodeRequest).isOk()
+            return nodeClient.deleteNode(deleteNodeRequest).isOk()
         }
     }
 

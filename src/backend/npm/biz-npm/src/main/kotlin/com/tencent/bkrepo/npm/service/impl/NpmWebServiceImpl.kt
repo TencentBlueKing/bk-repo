@@ -83,7 +83,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         val fullPath = NpmUtils.getTgzPath(name, version)
         with(artifactInfo) {
             checkRepositoryExist(projectId, repoName)
-            val nodeDetail = nodeClient.detail(projectId, repoName, REPO_TYPE, fullPath).data ?: run {
+            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
                 logger.warn("node [$fullPath] don't found.")
                 throw NpmArtifactNotFoundException("node [$fullPath] don't found.")
             }

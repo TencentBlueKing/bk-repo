@@ -235,7 +235,7 @@ open class PermissionServiceImpl constructor(
         }
         if (user.admin || !request.appId.isNullOrBlank()) {
             // 查询该项目下的所有仓库并过滤返回
-            val repoList = repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
+            val repoList = repositoryClient.listRepo(request.projectId).data?.map { it.name } ?: emptyList()
             return filterRepos(repoList, request.repoNames)
         }
         val roles = user.roles
@@ -246,7 +246,7 @@ open class PermissionServiceImpl constructor(
             roles.forEach { role ->
                 val tRole = roleRepository.findFirstByIdAndProjectIdAndType(role, request.projectId, RoleType.PROJECT)
                 if (tRole != null && tRole.admin) {
-                    val repoList = repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
+                    val repoList = repositoryClient.listRepo(request.projectId).data?.map { it.name } ?: emptyList()
                     return filterRepos(repoList, request.repoNames)
                 }
             }
@@ -259,7 +259,7 @@ open class PermissionServiceImpl constructor(
                 // check project admin first
                 val pRole = roleRepository.findFirstByIdAndProjectIdAndType(role, request.projectId, RoleType.PROJECT)
                 if (pRole != null && pRole.admin) {
-                    val repoList = repositoryClient.list(request.projectId).data?.map { it.name } ?: emptyList()
+                    val repoList = repositoryClient.listRepo(request.projectId).data?.map { it.name } ?: emptyList()
                     return filterRepos(repoList, request.repoNames)
                 }
                 // check repo admin then

@@ -131,7 +131,7 @@ class NpmLocalRepository(
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
-        val node = nodeClient.detail(projectId, repoName, fullPath).data
+        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
         if (node == null || node.folder) return null
         return storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
             .also {
@@ -167,7 +167,7 @@ class NpmLocalRepository(
             .metadata("version", searchRequest.text, OperationType.MATCH)
             .metadata("keywords", searchRequest.text, OperationType.MATCH)
             .build()
-        val data = nodeClient.query(queryModel).data ?: run {
+        val data = nodeClient.search(queryModel).data ?: run {
             logger.warn("failed to find npm package in repo [${context.projectId}/${context.repoName}]")
             return emptyList()
         }
@@ -204,7 +204,7 @@ class NpmLocalRepository(
         val fullPath = context.getAttribute<List<*>>(NPM_FILE_FULL_PATH)
         val userId = context.userId
         fullPath?.forEach {
-            nodeClient.delete(NodeDeleteRequest(projectId, repoName, it as String, userId))
+            nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, it as String, userId))
             logger.info("delete artifact $it success.")
         }
     }
@@ -306,7 +306,7 @@ class NpmLocalRepository(
         val fullPath = NpmUtils.getPackageMetadataPath(name)
         try {
             with(context) {
-                val node = nodeClient.detail(projectId, repoName, fullPath).data
+                val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
                 val originalPackageMetadata = node?.let {
                     val inputStream = storageService.load(it.sha256!!, Range.full(it.size), storageCredentials)
                     JsonUtils.objectMapper.readValue(inputStream, NpmPackageMetaData::class.java)
@@ -452,7 +452,7 @@ class NpmLocalRepository(
             val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }
             val fullPath = NpmUtils.getVersionPackageMetadataPath(name, version)
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
-            if (nodeClient.exist(projectId, repoName, fullPath).data!!) {
+            if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
                 logger.info(
                     "package [$name] with version metadata [$name-$version.json] " +
                         "is already exists in repository [$projectId/$repoName], skip migration."
@@ -472,7 +472,7 @@ class NpmLocalRepository(
             val fullPath = NpmUtils.getTgzPath(name, version)
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
             // hit cache continue
-            if (nodeClient.exist(projectId, repoName, fullPath).data!!) {
+            if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
                 logger.info(
                     "package [$name] with tgz file [$fullPath] is " +
                         "already exists in repository [$projectId/$repoName], skip migration."
@@ -526,9 +526,9 @@ class NpmLocalRepository(
     private fun deleteVersionMetadata(context: ArtifactMigrateContext, name: String, version: String) {
         val fullPath = NpmUtils.getVersionPackageMetadataPath(name, version)
         with(context) {
-            if (nodeClient.exist(projectId, repoName, fullPath).data!!) {
+            if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
                 val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, fullPath, userId)
-                nodeClient.delete(nodeDeleteRequest)
+                nodeClient.deleteNode(nodeDeleteRequest)
                 logger.info(
                     "migrate package [$name] with version [$version] failed, " +
                         "delete package version metadata [$fullPath] success."

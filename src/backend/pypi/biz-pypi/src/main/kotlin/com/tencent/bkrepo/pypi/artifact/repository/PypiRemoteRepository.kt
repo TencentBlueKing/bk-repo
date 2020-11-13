@@ -85,7 +85,7 @@ class PypiRemoteRepository : RemoteRepository() {
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = REMOTE_HTML_CACHE_FULL_PATH
-        val node = nodeClient.detail(projectId, repoName, fullPath).data
+        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
         while (node == null) {
             cacheRemoteRepoList(context)
         }

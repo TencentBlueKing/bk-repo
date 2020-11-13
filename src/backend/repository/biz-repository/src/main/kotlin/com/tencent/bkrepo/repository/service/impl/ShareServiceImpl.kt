@@ -56,7 +56,10 @@ class ShareServiceImpl(
 
     override fun create(userId: String, artifactInfo: ArtifactInfo, request: ShareRecordCreateRequest): ShareRecordInfo {
         with(artifactInfo) {
-            checkNode(projectId, repoName, getArtifactFullPath())
+            val node = nodeService.getNodeDetail(artifactInfo)
+            if (node == null || node.folder) {
+                throw ArtifactNotFoundException("Artifact[${artifactInfo.getArtifactFullPath()}] not found")
+            }
             val shareRecord = TShareRecord(
                 projectId = projectId,
                 repoName = repoName,
@@ -106,13 +109,6 @@ class ShareServiceImpl(
                 .and(TShareRecord::fullPath.name).`is`(fullPath)
         )
         return mongoTemplate.find(query, TShareRecord::class.java).map { convert(it) }
-    }
-
-    private fun checkNode(projectId: String, repoName: String, fullPath: String) {
-        val node = nodeService.detail(projectId, repoName, fullPath)
-        if (node == null || node.folder) {
-            throw ArtifactNotFoundException("Artifact[$fullPath] not found")
-        }
     }
 
     companion object {

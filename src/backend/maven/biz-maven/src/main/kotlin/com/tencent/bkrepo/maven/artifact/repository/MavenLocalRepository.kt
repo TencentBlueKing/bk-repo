@@ -153,7 +153,7 @@ class MavenLocalRepository : LocalRepository() {
         val packageKey = context.request.getParameter("packageKey")
         val artifactPath = StringUtils.join(groupId.split("."), "/") + "/$artifactId"
         if (version.isNullOrBlank()) {
-            nodeClient.delete(
+            nodeClient.deleteNode(
                 NodeDeleteRequest(
                     context.projectId,
                     context.repoName,
@@ -165,7 +165,7 @@ class MavenLocalRepository : LocalRepository() {
         }
         // 加载xml
         with(context.artifactInfo) {
-            val nodeList = nodeClient.list(projectId, repoName, "/$artifactPath").data ?: return
+            val nodeList = nodeClient.listNode(projectId, repoName, "/$artifactPath").data ?: return
             val mavenMetadataNode = nodeList.filter { it.name == "maven-metadata.xml" }[0]
             val artifactInputStream = storageService.load(
                 mavenMetadataNode.sha256!!,
@@ -177,7 +177,7 @@ class MavenLocalRepository : LocalRepository() {
             mavenMetadata.versioning.versions.version.removeIf { it == version }
             // 当删除当前版本后不存在任一版本则删除整个包。
             if (mavenMetadata.versioning.versions.version.size == 0) {
-                nodeClient.delete(
+                nodeClient.deleteNode(
                     NodeDeleteRequest(
                         projectId,
                         repoName,
@@ -192,7 +192,7 @@ class MavenLocalRepository : LocalRepository() {
                 )
                 return
             } else {
-                nodeClient.delete(
+                nodeClient.deleteNode(
                     NodeDeleteRequest(
                         projectId,
                         repoName,
@@ -238,7 +238,7 @@ class MavenLocalRepository : LocalRepository() {
             version
         ).data ?: return null
         with(context.artifactInfo) {
-            val jarNode = nodeClient.detail(
+            val jarNode = nodeClient.getNodeDetail(
                 projectId, repoName, trueVersion.contentPath!!
             ).data ?: return null
             val stageTag = stageClient.query(projectId, repoName, packageKey, version).data

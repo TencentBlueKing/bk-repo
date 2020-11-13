@@ -23,6 +23,9 @@ package com.tencent.bkrepo.common.artifact.stream
 
 import java.io.InputStream
 
+/**
+ * 构件输入流，实际的操作的输入流是[delegate], [range]用于标识输入流在文件中的范围
+ */
 class ArtifactInputStream(
     private val delegate: InputStream,
     val range: Range

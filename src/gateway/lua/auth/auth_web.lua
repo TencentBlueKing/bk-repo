@@ -20,21 +20,38 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 --- 蓝鲸平台登录对接
 --- 获取Cookie中bk_token
 local bk_token, err = cookieUtil:get_cookie("bk_ticket")
-if config.mode == "standalone"
-    return
-end
-local devops_access_token =  ngx.var.http_x_devops_access_token
-if bk_token == nil and devops_access_token == nil then
-  ngx.log(ngx.STDERR, "failed to read user request bk_token or devops_access_token: ", err)
-  ngx.exit(401)
-  return
-end
+local bkrepo_token, err2 = cookieUtil:get_cookie("bkrepo_ticket")
 local ticket = nil
-if devops_access_token ~= nill then 
-  ticket = oauthUtil:verify_token(devops_access_token)
+
+--- standalone模式下校验bkrepo_ticket
+if config.mode == "standalone" then
+    --- 跳过登录请求
+    start_i = string.find(ngx.var.request_uri, "login")
+    if start_i ~= nil then
+        return
+    end
+    if bkrepo_token == nil then
+        ngx.log(ngx.STDERR, "failed to read user request bkrepo_ticket: ", err2)
+        ngx.exit(401)
+        return
+    end
+    ticket = oauthUtil:verify_bkrepo_token(bkrepo_token)
 else
-  ticket = oauthUtil:get_ticket(bk_token)
+    local devops_access_token = ngx.var.http_x_devops_access_token
+    if bk_token == nil and devops_access_token == nil then
+        ngx.log(ngx.STDERR, "failed to read user request bk_token or devops_access_token: ", err)
+        ngx.exit(401)
+        return
+    end
+    if devops_access_token ~= nill then
+        ticket = oauthUtil:verify_token(devops_access_token)
+    else
+        ticket = oauthUtil:get_ticket(bk_token)
+    end
 end
+
+--- 其它模式校验bk_ticket
+
 
 --- 设置用户信息
 ngx.header["x-bkrepo-uid"] = ticket.user_id
