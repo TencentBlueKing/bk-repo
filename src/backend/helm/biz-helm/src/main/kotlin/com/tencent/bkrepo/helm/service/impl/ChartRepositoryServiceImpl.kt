@@ -128,7 +128,7 @@ class ChartRepositoryServiceImpl : AbstractService(), ChartRepositoryService {
                     }
                 }
             }
-        return indexYamlMetadata
+            return indexYamlMetadata
         }
     }
 

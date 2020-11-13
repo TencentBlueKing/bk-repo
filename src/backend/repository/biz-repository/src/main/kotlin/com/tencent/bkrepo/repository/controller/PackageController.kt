@@ -80,8 +80,8 @@ class PackageController(
     override fun listVersionPage(projectId: String, repoName: String, packageKey: String, version: String?, stageTag: String?, pageNumber: Int, pageSize: Int): Response<Page<PackageVersion>> {
         val stageTagList = stageTag?.split(StringPool.COMMA)
         val pageResult = packageService.listVersionPage(
-                projectId, repoName, packageKey,
-                version, stageTagList, pageNumber, pageSize
+            projectId, repoName, packageKey,
+            version, stageTagList, pageNumber, pageSize
         )
         return ResponseBuilder.success(pageResult)
     }

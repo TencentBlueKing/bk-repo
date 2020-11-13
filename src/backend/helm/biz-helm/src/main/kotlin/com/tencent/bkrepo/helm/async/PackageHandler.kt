@@ -23,8 +23,6 @@ package com.tencent.bkrepo.helm.async
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.helm.constants.NAME
-import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.repository.api.PackageClient

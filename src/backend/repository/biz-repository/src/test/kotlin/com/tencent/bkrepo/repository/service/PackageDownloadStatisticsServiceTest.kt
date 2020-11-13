@@ -73,7 +73,6 @@ class PackageDownloadStatisticsServiceTest @Autowired constructor(
         initMock()
         mongoTemplate.remove(Query(), TPackage::class.java)
         mongoTemplate.remove(Query(), TPackageVersion::class.java)
-        
     }
 
     @Test
@@ -81,7 +80,7 @@ class PackageDownloadStatisticsServiceTest @Autowired constructor(
     fun createTest() {
         val packageVersionRequest = buildPackageCreateRequest(version = UT_PACKAGE_VERSION, overwrite = false)
         packageService.createPackageVersion(packageVersionRequest)
-        
+
         val count = 100
         val cyclicBarrier = CyclicBarrier(count)
         val threadList = mutableListOf<Thread>()

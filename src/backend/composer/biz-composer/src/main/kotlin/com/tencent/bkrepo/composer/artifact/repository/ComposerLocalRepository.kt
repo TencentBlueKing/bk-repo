@@ -198,7 +198,7 @@ class ComposerLocalRepository : LocalRepository() {
             ).data?.records ?: return
             for (packageVersion in pages) {
                 val node = nodeClient.getNodeDetail(context.projectId, context.repoName, packageVersion.contentPath!!).data
-                        ?: continue
+                    ?: continue
                 removeComposerArtifact(node, packageKey, packageVersion.name, context)
             }
         } else {
@@ -217,7 +217,7 @@ class ComposerLocalRepository : LocalRepository() {
 
     private fun getPackageJson(context: ArtifactContext, name: String): String? {
         val jsonPath = "/p/$name.json"
-        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, jsonPath).data?: return null
+        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, jsonPath).data ?: return null
         return nodeToJson(node)
     }
 

@@ -95,10 +95,10 @@ class UserProjectController(
     ): Response<Void> {
         val createRequest = with(userProjectRequest) {
             ProjectCreateRequest(
-                    name = name,
-                    displayName = displayName,
-                    description = description,
-                    operator = userId
+                name = name,
+                displayName = displayName,
+                description = description,
+                operator = userId
             )
         }
         projectService.createProject(createRequest)

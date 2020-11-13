@@ -19,7 +19,7 @@ object HelmUtils {
         return String.format("/%s-%s.%s", name, version, PROVENANCE_FILE_EXTENSION)
     }
 
-    fun getIndexYamlFullPath():String{
+    fun getIndexYamlFullPath(): String {
         return "/$INDEX_CACHE_YAML"
     }
 

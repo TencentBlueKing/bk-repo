@@ -95,12 +95,12 @@ interface PackageClient {
     @ApiOperation("分页查询版本")
     @GetMapping("/version/page/{projectId}/{repoName}")
     fun listVersionPage(
-            @PathVariable projectId: String,
-            @PathVariable repoName: String,
-            @RequestParam packageKey: String,
-            @RequestParam version: String? = null,
-            @RequestParam stageTag: String? = null,
-            @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
-            @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestParam version: String? = null,
+        @RequestParam stageTag: String? = null,
+        @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
+        @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE
     ): Response<Page<PackageVersion>>
 }

@@ -31,7 +31,7 @@ data class HelmChartMetadata(
         } else {
             try {
                 Version.valueOf(other.version).compareWithBuildsTo(Version.valueOf(this.version))
-            } catch (ignored: Exception){
+            } catch (ignored: Exception) {
                 other.version.compareTo(this.version)
             }
         }

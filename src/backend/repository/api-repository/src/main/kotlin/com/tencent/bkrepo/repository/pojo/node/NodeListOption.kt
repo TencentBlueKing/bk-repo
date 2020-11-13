@@ -23,8 +23,6 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import io.swagger.annotations.ApiParam
-import org.springframework.web.bind.annotation.RequestParam
 
 @ApiModel("节点列表选项")
 data class NodeListOption(

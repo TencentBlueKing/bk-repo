@@ -89,13 +89,13 @@ object PackageKeys {
     fun ofRpm(path: String, name: String): String {
         return if (!path.isBlank()) {
             StringBuilder(RPM).append(SEPARATOR).append(path)
-                    .append(StringPool.SLASH)
-                    .append(name)
-                    .toString()
+                .append(StringPool.SLASH)
+                .append(name)
+                .toString()
         } else {
             StringBuilder(RPM).append(SEPARATOR)
-                    .append(name)
-                    .toString()
+                .append(name)
+                .toString()
         }
     }
 

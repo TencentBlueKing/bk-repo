@@ -21,4 +21,4 @@
 
 package com.tencent.bkrepo.npm.pojo.metadata.disttags
 
-typealias DistTags = Map<String,String>
+typealias DistTags = Map<String, String>

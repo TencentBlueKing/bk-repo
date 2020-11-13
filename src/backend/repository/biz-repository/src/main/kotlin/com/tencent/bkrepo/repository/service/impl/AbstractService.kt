@@ -39,5 +39,4 @@ abstract class AbstractService {
     fun publishEvent(any: Any) {
         eventPublisher.publishEvent(any)
     }
-
 }

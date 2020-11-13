@@ -21,7 +21,7 @@ class ChartRepositoryController(
      * query index.yaml
      */
     @GetMapping(HELM_INDEX_YAML_URL)
-    fun queryIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo){
+    fun queryIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo) {
         chartRepositoryService.queryIndexYaml(artifactInfo)
     }
 
@@ -29,7 +29,7 @@ class ChartRepositoryController(
      * retrieved when you run helm install chartmuseum/mychart
      */
     @GetMapping(HELM_INSTALL_URL)
-    fun installTgz(@ArtifactPathVariable artifactInfo: HelmArtifactInfo){
+    fun installTgz(@ArtifactPathVariable artifactInfo: HelmArtifactInfo) {
         chartRepositoryService.installTgz(artifactInfo)
     }
 
@@ -37,7 +37,7 @@ class ChartRepositoryController(
      * retrieved when you run helm install with the --verify flag
      */
     @GetMapping(HELM_PROV_INSTALL_URL)
-    fun installProv(@ArtifactPathVariable artifactInfo: HelmArtifactInfo){
+    fun installProv(@ArtifactPathVariable artifactInfo: HelmArtifactInfo) {
         chartRepositoryService.installProv(artifactInfo)
     }
 
@@ -45,7 +45,7 @@ class ChartRepositoryController(
      * regenerate index.yaml
      */
     @GetMapping("/{projectId}/{repoName}/regenerate")
-    fun regenerateIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Response<Void>{
+    fun regenerateIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Response<Void> {
         chartRepositoryService.regenerateIndexYaml(artifactInfo)
         return ResponseBuilder.success()
     }
@@ -54,7 +54,7 @@ class ChartRepositoryController(
      * batch install chart
      */
     @GetMapping("/{projectId}/{repoName}/batch/charts")
-    fun batchInstallTgz(@ArtifactPathVariable artifactInfo: HelmArtifactInfo, @RequestParam startTime: LocalDateTime){
+    fun batchInstallTgz(@ArtifactPathVariable artifactInfo: HelmArtifactInfo, @RequestParam startTime: LocalDateTime) {
         chartRepositoryService.batchInstallTgz(artifactInfo, startTime)
     }
 }

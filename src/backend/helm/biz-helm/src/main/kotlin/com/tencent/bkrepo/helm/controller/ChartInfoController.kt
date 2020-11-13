@@ -21,7 +21,7 @@ class ChartInfoController(
         @ArtifactPathVariable
         artifactInfo: HelmArtifactInfo,
         @RequestParam startTime: LocalDateTime?
-    ): Map<String, Any>{
+    ): Map<String, Any> {
         return chartInfoService.allChartsList(artifactInfo, startTime)
     }
 
@@ -29,7 +29,7 @@ class ChartInfoController(
     fun exists(
         @ArtifactPathVariable
         artifactInfo: HelmArtifactInfo
-    ){
+    ) {
         chartInfoService.isExists(artifactInfo)
     }
 }

@@ -57,7 +57,7 @@ class ChartManipulationController(
         @PathVariable name: String,
         @PathVariable version: String
     ): HelmSuccessResponse {
-        with(artifactInfo){
+        with(artifactInfo) {
             val chartDeleteRequest = ChartVersionDeleteRequest(projectId, repoName, name, version, userId)
             chartManipulationService.deleteVersion(chartDeleteRequest)
             return HelmSuccessResponse.deleteSuccess()

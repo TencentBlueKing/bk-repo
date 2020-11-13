@@ -65,9 +65,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/node")
 class UserNodeController(
-        private val nodeService: NodeService,
-        private val nodeSearchService: NodeSearchService,
-        private val permissionManager: PermissionManager
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService,
+    private val permissionManager: PermissionManager
 ) {
 
     @ApiOperation("根据路径查看节点详情")
@@ -252,9 +252,9 @@ class UserNodeController(
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/page/$DEFAULT_MAPPING_URI")
     fun listPageNode(
-            @RequestAttribute userId: String,
-            @ArtifactPathVariable artifactInfo: ArtifactInfo,
-            nodeListOption: NodeListOption
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        nodeListOption: NodeListOption
     ): Response<Page<NodeInfo>> {
         val nodePage = nodeService.listNodePage(artifactInfo, nodeListOption)
         return ResponseBuilder.success(nodePage)

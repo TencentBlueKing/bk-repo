@@ -42,5 +42,4 @@ abstract class AbstractEventListener {
         )
         operateLogRepository.save(log)
     }
-
 }

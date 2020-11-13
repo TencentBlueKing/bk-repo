@@ -32,7 +32,7 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class ProjectEventListener (
+class ProjectEventListener(
     private val permissionManager: PermissionManager,
     private val roleResource: ServiceRoleResource,
     private val userResource: ServiceUserResource

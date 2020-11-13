@@ -61,8 +61,8 @@ class HealthSourceService(
         return Flux.merge(Flux.fromIterable(healthSourceMap.entries).map { it.value.healthSource })
     }
 
-    fun resolveServiceName(ordinal: String): String {
-        return "$servicePrefix${ordinal.trim()}$serviceSuffix"
+    fun resolveServiceName(original: String): String {
+        return "$servicePrefix${original.trim()}$serviceSuffix"
     }
 
     @PreDestroy

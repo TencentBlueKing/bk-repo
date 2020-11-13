@@ -69,7 +69,7 @@ class NodeServiceTest @Autowired constructor(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService
 ) : ServiceBaseTest() {
-    
+
     private val option = NodeListOption(includeFolder = false, deep = false)
     private val folderOption = NodeListOption(includeFolder = true, deep = false)
     private val deepOption = NodeListOption(includeFolder = false, deep = true)
@@ -764,7 +764,7 @@ class NodeServiceTest @Autowired constructor(
             metadata = metadata
         )
     }
-    
+
     private fun node(fullPath: String = ROOT): ArtifactInfo {
         return DefaultArtifactInfo(UT_PROJECT_ID, UT_REPO_NAME, fullPath)
     }

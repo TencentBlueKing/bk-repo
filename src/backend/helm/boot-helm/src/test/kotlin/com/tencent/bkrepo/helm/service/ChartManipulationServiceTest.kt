@@ -21,7 +21,6 @@
 
 package com.tencent.bkrepo.helm.service
 
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach

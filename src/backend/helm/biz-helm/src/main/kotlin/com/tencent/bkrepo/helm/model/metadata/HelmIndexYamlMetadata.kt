@@ -7,7 +7,7 @@ data class HelmIndexYamlMetadata(
     val entries: MutableMap<String, SortedSet<HelmChartMetadata>> = mutableMapOf(),
     var generated: String,
     val serverInfo: Map<String, Any> = emptyMap()
-){
+) {
     fun entriesSize(): Int {
         var count = 0
         entries.values.forEach {

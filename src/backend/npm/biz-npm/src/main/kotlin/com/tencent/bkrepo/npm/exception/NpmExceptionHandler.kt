@@ -127,7 +127,7 @@ class NpmExceptionHandler {
     @ExceptionHandler(NpmArtifactExistException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handlerNpmArtifactExistException(exception: NpmArtifactExistException) {
-        val responseObject = NpmErrorResponse( exception.message,"forbidden")
+        val responseObject = NpmErrorResponse(exception.message, "forbidden")
         npmResponse(responseObject, exception)
     }
 
