@@ -109,7 +109,7 @@ interface RepositoryClient {
         @PathVariable size: Int,
         @ApiParam(value = "仓库类型", required = true)
         @PathVariable repoType: String
-    ): Response<Page<RepositoryInfo>>
+    ): Response<Page<RepositoryDetail>>
 
     @Deprecated("replace with getRepoDetail")
     @GetMapping("/query/{projectId}/{repoName}/{type}")

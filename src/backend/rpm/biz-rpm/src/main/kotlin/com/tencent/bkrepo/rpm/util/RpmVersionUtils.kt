@@ -34,12 +34,12 @@ object RpmVersionUtils {
     fun resolverRpmVersion(filename: String): RpmVersion {
         try {
             val strList = filename.split("-")
-            val suffixFormat = strList.last().removeSuffix(".rpm")
+            val suffixFormat = strList.last()
             val suffixList = suffixFormat.split(".")
-            val arch = suffixList.last()
-            val rel = suffixFormat.removeSuffix(".$arch")
+            val arch = suffixList[1]
+            val rel = suffixList[0]
             val ver = strList[strList.size - 2]
-            val name = filename.removeSuffix("-$ver-$suffixFormat.rpm")
+            val name = filename.removeSuffix("-$ver-$suffixFormat")
             return RpmVersion(name, arch, "0", ver, rel)
         } catch (indexOutOfBoundsException: IndexOutOfBoundsException) {
             throw RpmRequestParamMissException("$filename format error")
@@ -70,24 +70,19 @@ object RpmVersionUtils {
     fun Map<String, Any>.toRpmVersion(artifactUri: String): RpmVersion {
         return RpmVersion(
             this["name"] as String? ?: throw RpmArtifactMetadataResolveException(
-                "$artifactUri: not found " +
-                    "metadata.name value"
+                "$artifactUri: not found metadata.name value"
             ),
             this["arch"] as String? ?: throw RpmArtifactMetadataResolveException(
-                "$artifactUri: not found " +
-                    "metadata.arch value"
+                "$artifactUri: not found metadata.arch value"
             ),
             this["epoch"] as String? ?: throw RpmArtifactMetadataResolveException(
-                "$artifactUri: not found " +
-                    "metadata.epoch value"
+                "$artifactUri: not found metadata.epoch value"
             ),
             this["ver"] as String? ?: throw RpmArtifactMetadataResolveException(
-                "$artifactUri: not found " +
-                    "metadata.ver value"
+                "$artifactUri: not found metadata.ver value"
             ),
             this["rel"] as String? ?: throw RpmArtifactMetadataResolveException(
-                "$artifactUri: not found " +
-                    "metadata.rel value"
+                "$artifactUri: not found metadata.rel value"
             )
         )
     }

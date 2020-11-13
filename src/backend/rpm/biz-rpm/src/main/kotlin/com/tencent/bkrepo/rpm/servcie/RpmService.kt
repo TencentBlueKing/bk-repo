@@ -38,7 +38,6 @@ import com.tencent.bkrepo.rpm.PRIMARY_XML
 import com.tencent.bkrepo.rpm.REPOMD_XML
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
 import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
-import com.tencent.bkrepo.rpm.util.RpmCollectionUtils.updateList
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -71,7 +70,7 @@ class RpmService {
         groups.removeAll(rpmIndexSet)
         val rpmLocalConfiguration = context.getCompositeConfiguration()
         (rpmLocalConfiguration.getSetting<MutableList<String>>("groupXmlSet") ?: mutableListOf())
-            .updateList(groups, true)
+            .addAll(groups)
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)
         repositoryClient.updateRepo(repoUpdateRequest)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
@@ -83,7 +82,7 @@ class RpmService {
         val context = ArtifactSearchContext()
         val rpmLocalConfiguration = context.getCompositeConfiguration()
         (rpmLocalConfiguration.getSetting<MutableList<String>>("groupXmlSet") ?: mutableListOf())
-            .updateList(groups, false)
+            .removeAll(groups)
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)
         repositoryClient.updateRepo(repoUpdateRequest)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)

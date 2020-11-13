@@ -2,6 +2,7 @@ package com.tencent.bkrepo.rpm.job
 
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.rpm.pojo.IndexType
+import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -18,26 +19,28 @@ class OthersJob {
     @Autowired
     private lateinit var jobService: JobService
 
-    // 每次任务间隔 ms
-    @Scheduled(fixedDelay = 5000)
-    @SchedulerLock(name = "OthersJob", lockAtMostFor = "PT10M")
-    fun checkPrimaryXml() {
+    // 每次任务间隔100ms
+    @Scheduled(fixedDelay = 30 * 1000)
+    @SchedulerLock(name = "OthersJob", lockAtMostFor = "PT30M")
+    fun updateOthersIndex() {
+        logger.info("update others index start")
         val startMillis = System.currentTimeMillis()
         val repoList = repositoryClient.pageByType(0, 100, "RPM").data?.records
-
         repoList?.let {
             for (repo in repoList) {
+                logger.info("update others index [${repo.projectId}|${repo.name}] start")
                 val rpmConfiguration = repo.configuration
                 val repodataDepth = rpmConfiguration.getIntegerSetting("repodataDepth") ?: 0
-                val targetSet = mutableSetOf<String>()
-                jobService.findRepoDataByRepo(repo, "/", repodataDepth, targetSet)
+                val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepodataDirs(repo), repodataDepth)
                 for (repoDataPath in targetSet) {
-                    logger.info("sync other (${repo.projectId}|${repo.name}|$repoDataPath) start")
-                    jobService.syncIndex(repo, repoDataPath, IndexType.OTHERS)
-                    logger.info("sync other (${repo.projectId}|${repo.name}|$repoDataPath) done, cost time: ${System.currentTimeMillis() - startMillis} ms")
+                    logger.info("update others index [${repo.projectId}|${repo.name}|$repoDataPath] start")
+                    jobService.batchUpdateIndex(repo, repoDataPath, IndexType.OTHERS, 20)
+                    logger.info("update others index [${repo.projectId}|${repo.name}|$repoDataPath] done")
                 }
+                logger.info("update others index [${repo.projectId}|${repo.name}] done")
             }
         }
+        logger.info("update others index done, cost time: ${System.currentTimeMillis() - startMillis} ms")
     }
 
     companion object {
