@@ -234,7 +234,7 @@ class UserServiceTest {
         userService.createUser(createUserRequest())
         val userWithToken = userService.createToken(userId)
         userWithToken?.let {
-            Assertions.assertNotEquals(it.tokens[0].id, IDUtil.genRandomId())
+            Assertions.assertNotEquals(it.id, IDUtil.genRandomId())
         }
     }
 
@@ -242,9 +242,10 @@ class UserServiceTest {
     @DisplayName("添加token测试用例")
     fun addUserTokenTest() {
         val token = IDUtil.genRandomId()
+        val expiredAt = null
         userService.createUser(createUserRequest())
-        userService.addUserToken(userId, token)?.let {
-            Assertions.assertEquals(token, it.tokens[0].id)
+        userService.addUserToken(userId, token, expiredAt)?.let {
+            Assertions.assertEquals(token, it.id)
         }
     }
 
@@ -253,9 +254,9 @@ class UserServiceTest {
     fun removeTokenTest() {
         userService.createUser(createUserRequest())
         val userWithToken = userService.createToken(userId)
-        val removeToken = userService.removeToken(userId, userWithToken!!.tokens[0].id)
+        val removeToken = userService.removeToken(userId, userWithToken!!.id)
         removeToken?.let {
-            Assertions.assertTrue(it.tokens.isEmpty())
+            Assertions.assertTrue(it)
         }
     }
 
@@ -265,7 +266,7 @@ class UserServiceTest {
         userService.createUser(createUserRequest())
         val user = userService.createToken(userId)
         val userWithPwd = userService.findUserByUserToken(userId, userPwd)!!
-        val userWithToken = userService.findUserByUserToken(userId, user!!.tokens[0].id)!!
+        val userWithToken = userService.findUserByUserToken(userId, user!!.id)!!
         Assertions.assertEquals(userWithPwd.toString(), userWithToken.toString())
     }
 
