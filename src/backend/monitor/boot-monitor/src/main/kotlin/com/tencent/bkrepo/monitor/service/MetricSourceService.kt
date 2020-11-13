@@ -26,6 +26,7 @@ import com.tencent.bkrepo.monitor.metrics.MetricEndpoint
 import com.tencent.bkrepo.monitor.metrics.MetricInfo
 import de.codecentric.boot.admin.server.services.InstanceRegistry
 import de.codecentric.boot.admin.server.web.client.InstanceWebClient
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import javax.annotation.PreDestroy
@@ -36,6 +37,11 @@ class MetricSourceService(
     private val instanceRegistry: InstanceRegistry,
     instanceWebClientBuilder: InstanceWebClient.Builder
 ) {
+
+    @Value("\${service.prefix:repo-}")
+    private val servicePrefix: String = "repo-"
+    @Value("\${service.suffix:}")
+    private val serviceSuffix: String = ""
     private val instanceWebClient = instanceWebClientBuilder.build()
     val metricSourceMap: MutableMap<MetricEndpoint, InstanceMetricSource> = mutableMapOf()
 
@@ -44,7 +50,7 @@ class MetricSourceService(
             val metricEndpoint = MetricEndpoint.ofMetricName(metricName)
             val trimmedApplicationListString = applicationListString.trim()
             val includeAll = trimmedApplicationListString.isEmpty() || trimmedApplicationListString == "*"
-            val applicationList = trimmedApplicationListString.split(",").map { it.trim() }.distinct()
+            val applicationList = trimmedApplicationListString.split(",").map { resolveServiceName(it) }.distinct()
             val metricSource = InstanceMetricSource(metricEndpoint, includeAll, applicationList, monitorProperties.interval, instanceRegistry, instanceWebClient)
             metricSourceMap[metricEndpoint] = metricSource
         }
@@ -54,6 +60,10 @@ class MetricSourceService(
 
     fun getMergedSource(): Flux<MetricInfo> {
         return Flux.merge(Flux.fromIterable(metricSourceMap.entries).map { it.value.metricsSource })
+    }
+
+    fun resolveServiceName(ordinal: String): String {
+        return "$servicePrefix${ordinal.trim()}$serviceSuffix"
     }
 
     @PreDestroy

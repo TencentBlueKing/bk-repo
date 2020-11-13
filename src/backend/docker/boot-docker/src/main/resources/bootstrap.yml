@@ -1,6 +1,6 @@
 spring:
   application:
-    name: docker
+    name: ${service.prefix:repo-}${service.name}${service.suffix:}
   cloud:
     consul:
       discovery:
@@ -13,3 +13,6 @@ spring:
         format: YAML
         data-key: data
         profileSeparator: '::'
+
+service:
+  name: docker
