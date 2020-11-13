@@ -556,7 +556,7 @@ export default {
                         {
                             subTitle: '使用如下命令去拉取包',
                             codeList: [
-                                `composer require ${this.packageName}@${this.version}`
+                                `composer require ${this.packageName} ${this.version}`
                             ]
                         }
                     ]
