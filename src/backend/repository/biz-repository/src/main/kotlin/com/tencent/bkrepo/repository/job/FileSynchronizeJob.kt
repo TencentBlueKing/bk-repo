@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -44,10 +43,9 @@ import org.springframework.stereotype.Component
  * 文件同步任务
  */
 @Component
-class FileSynchronizeJob {
-
-    @Autowired
-    private lateinit var storageService: StorageService
+class FileSynchronizeJob(
+    private val storageService: StorageService
+) {
 
     @Scheduled(cron = "0 0 0 ? * 6")
     @Async

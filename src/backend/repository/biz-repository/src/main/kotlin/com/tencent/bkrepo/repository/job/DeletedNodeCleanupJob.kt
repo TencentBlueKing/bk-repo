@@ -38,7 +38,6 @@ import com.tencent.bkrepo.repository.dao.repository.RepoRepository
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -50,19 +49,12 @@ import java.time.LocalDateTime
  * 清理被标记为删除的node，同时减少文件引用
  */
 @Component
-class DeletedNodeCleanupJob {
-
-    @Autowired
-    private lateinit var nodeDao: NodeDao
-
-    @Autowired
-    private lateinit var repoRepository: RepoRepository
-
-    @Autowired
-    private lateinit var fileReferenceService: FileReferenceService
-
-    @Autowired
-    private lateinit var repositoryProperties: RepositoryProperties
+class DeletedNodeCleanupJob(
+    private val nodeDao: NodeDao,
+    private val repoRepository: RepoRepository,
+    private val fileReferenceService: FileReferenceService,
+    private val repositoryProperties: RepositoryProperties
+) {
 
     @Scheduled(cron = "0 0 1/3 * * ?")
     @SchedulerLock(name = "DeletedNodeCleanupJob", lockAtMostFor = "PT1H")

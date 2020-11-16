@@ -49,16 +49,11 @@ import org.springframework.stereotype.Component
  * 清理引用=0的文件
  */
 @Component
-class FileReferenceCleanupJob {
-
-    @Autowired
-    private lateinit var fileReferenceDao: FileReferenceDao
-
-    @Autowired
-    private lateinit var storageService: StorageService
-
-    @Autowired
-    private lateinit var storageCredentialService: StorageCredentialService
+class FileReferenceCleanupJob(
+    private val fileReferenceDao: FileReferenceDao,
+    private val storageService: StorageService,
+    private val storageCredentialService: StorageCredentialService
+) {
 
     @Scheduled(cron = "0 0 2/3 * * ?")
     @SchedulerLock(name = "FileReferenceCleanupJob", lockAtMostFor = "PT1H")

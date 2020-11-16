@@ -45,10 +45,9 @@ import org.springframework.stereotype.Component
  * deleted = null -> deleted = 0 的文件
  */
 @Component
-class NodeDeletedCorrectionJob {
-
-    @Autowired
-    private lateinit var nodeDao: NodeDao
+class NodeDeletedCorrectionJob(
+    private val nodeDao: NodeDao
+) {
 
     fun correct() {
         logger.info("Starting to correct node deleted value.")

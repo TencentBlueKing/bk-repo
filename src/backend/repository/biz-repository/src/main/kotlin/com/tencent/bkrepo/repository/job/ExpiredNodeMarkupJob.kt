@@ -49,13 +49,10 @@ import java.time.LocalDateTime
  * 标记已过期的节点为已删除
  */
 @Component
-class ExpiredNodeMarkupJob {
-
-    @Autowired
-    private lateinit var nodeDao: NodeDao
-
-    @Autowired
-    private lateinit var nodeService: NodeService
+class ExpiredNodeMarkupJob(
+    private val nodeDao: NodeDao,
+    private val nodeService: NodeService
+) {
 
     @Scheduled(cron = "0 0 0/3 * * ?")
     @SchedulerLock(name = "ExpiredNodeMarkupJob", lockAtMostFor = "PT1H")

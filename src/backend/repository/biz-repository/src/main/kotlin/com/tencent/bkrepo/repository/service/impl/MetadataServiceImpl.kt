@@ -42,11 +42,9 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.service.MetadataService
-import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -57,13 +55,9 @@ import org.springframework.transaction.annotation.Transactional
  * 元数据服务实现类
  */
 @Service
-class MetadataServiceImpl : AbstractService(), MetadataService {
-
-    @Autowired
-    private lateinit var repositoryService: RepositoryService
-
-    @Autowired
-    private lateinit var nodeDao: NodeDao
+class MetadataServiceImpl(
+    private val nodeDao: NodeDao
+) : AbstractService(), MetadataService {
 
     override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
         return MetadataUtils.toMap(nodeDao.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))?.metadata)
@@ -98,7 +92,6 @@ class MetadataServiceImpl : AbstractService(), MetadataService {
         }
         request.apply {
             val fullPath = normalizeFullPath(request.fullPath)
-            repositoryService.checkRepository(projectId, repoName)
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
             val update = Update().pull(
                 TNode::metadata.name,

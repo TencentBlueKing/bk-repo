@@ -45,7 +45,6 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -54,31 +53,19 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDateTime
-import javax.annotation.Resource
 
 /**
  * 存储实例迁移任务
  */
 @Component
-class StorageInstanceMigrationJob {
-
-    @Autowired
-    private lateinit var nodeDao: NodeDao
-
-    @Autowired
-    private lateinit var repositoryService: RepositoryService
-
-    @Autowired
-    private lateinit var fileReferenceService: FileReferenceService
-
-    @Autowired
-    private lateinit var storageCredentialService: StorageCredentialService
-
-    @Autowired
-    private lateinit var storageProperties: StorageProperties
-
-    @Resource
-    lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
+class StorageInstanceMigrationJob(
+    private val nodeDao: NodeDao,
+    private val repositoryService: RepositoryService,
+    private val fileReferenceService: FileReferenceService,
+    private val storageCredentialService: StorageCredentialService,
+    private val storageProperties: StorageProperties,
+    private val taskAsyncExecutor: ThreadPoolTaskExecutor
+) {
 
     fun migrate(projectId: String, repoName: String, destStorageKey: String) {
         logger.info("Start to migrate storage instance, projectId: $projectId, repoName: $repoName, dest key: $destStorageKey.")
