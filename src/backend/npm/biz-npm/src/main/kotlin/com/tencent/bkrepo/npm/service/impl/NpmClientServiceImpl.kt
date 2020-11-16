@@ -210,7 +210,7 @@ class NpmClientServiceImpl(
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun getDistTags(artifactInfo: NpmArtifactInfo, name: String): DistTags {
         with(artifactInfo) {
-            logger.info("handling get distTags request for package [$name] in repo [${projectId}/${repoName}]")
+            logger.info("handling get distTags request for package [$name] in repo [$projectId/$repoName]")
             val packageMetaData = queryPackageInfo(artifactInfo, name, false)
             return packageMetaData.distTags.getMap()
         }

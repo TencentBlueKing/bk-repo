@@ -56,8 +56,8 @@ class ArtifactInfoMethodArgumentResolver : HandlerMethodArgumentResolver {
     private val resolverMap: ResolverMap = ResolverScannerRegistrar.resolverMap
 
     override fun supportsParameter(parameter: MethodParameter): Boolean {
-        return ArtifactInfo::class.java.isAssignableFrom(parameter.parameterType)
-            && parameter.hasParameterAnnotation(ArtifactPathVariable::class.java)
+        return ArtifactInfo::class.java.isAssignableFrom(parameter.parameterType) &&
+            parameter.hasParameterAnnotation(ArtifactPathVariable::class.java)
     }
 
     override fun resolveArgument(
