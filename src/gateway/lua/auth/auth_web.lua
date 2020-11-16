@@ -24,7 +24,7 @@ local bkrepo_token, err2 = cookieUtil:get_cookie("bkrepo_ticket")
 local ticket = nil
 
 --- standalone模式下校验bkrepo_ticket
-if config.mode == "standalone" then
+if config.mode == "standalone" or config.mode == "" or config.mode == nil then
     --- 跳过登录请求
     start_i = string.find(ngx.var.request_uri, "login")
     if start_i ~= nil then

@@ -23,6 +23,7 @@ config = {
   http_schema = "__BK_HTTP_SCHEMA__", -- 蓝鲸PaaS平台访问协议 http or https, 如果有对接才配置修改，开源默认没对接
   login_url = "__BK_REPO_PAAS_LOGIN_URL__",   -- 蓝鲸PaaS平台域名, 如果有对接才配置修改，开源默认没对接
   service_name = "",  -- 指定后台微服务名称，如果对接后端是boot-assembly的单体微服务，则该配置项为bk-ci, 否则请置空会自动路由相应微服务
+  service_prefix = "__BK_REPO_SERVICE_PREFIX__", -- 微服务前缀
   allow_hosts = {
     "__BK_REPO_GATEWAY_CORS_ALLOW_LIST__"
   },
@@ -50,7 +51,7 @@ config = {
     domain = "__BK_REPO_HOST__",
     authorization = "__BK_REPO_AUTHORIZATION__"
   },
-  mode = "standalone"
+  mode = "__BK_REPO_DEPLOY_MODE__"
 }
   
 require("init_common")

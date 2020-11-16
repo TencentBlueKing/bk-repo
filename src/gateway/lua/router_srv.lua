@@ -35,8 +35,14 @@ if service_name == "" then
   return
 end
 
+local service_prefix = config.service_prefix
+
+if service_prefix == nil or service_prefix == "" then
+  service_prefix = "repo-"
+end
+
 local ns_config = config.ns
-local query_subdomain = config.ns.tag .. "." .. service_name .. ".service." .. ns_config.domain
+local query_subdomain = config.ns.tag .. "." .. service_prefix .. service_name .. ".service." .. ns_config.domain
 
 if not ns_config.ip then
   ngx.log(ngx.ERR, "DNS ip not exist!")
