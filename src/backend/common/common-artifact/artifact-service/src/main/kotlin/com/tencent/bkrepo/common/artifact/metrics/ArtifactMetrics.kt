@@ -40,6 +40,7 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.atomic.AtomicInteger
 import javax.annotation.Resource
 
+@Suppress("LateinitUsage")
 @Component
 class ArtifactMetrics : MeterBinder {
     var uploadingCount = AtomicInteger(0)

@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -80,6 +79,15 @@ interface RepositoryService {
     fun listRepoPage(projectId: String, pageNumber: Int, pageSize: Int, name: String? = null, type: String? = null): Page<RepositoryInfo>
 
     /**
+     * 根据类型分页查询仓库列表
+     *
+     * @param type 仓库类型
+     * @param pageNumber 当前页
+     * @param pageSize 分页数量
+     */
+    fun listRepoPageByType(type: String, pageNumber: Int, pageSize: Int): Page<RepositoryInfo>
+
+    /**
      * 分页查询仓库列表
      *
      * 根据请求[request]查询仓库
@@ -116,11 +124,4 @@ interface RepositoryService {
      * 删除仓库前，需要保证仓库下的文件已经被删除
      */
     fun deleteRepo(repoDeleteRequest: RepoDeleteRequest)
-
-    /**
-     * 检查仓库是否存在，不存在则抛异常
-     */
-    fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository
-
-    fun pageByType(repoType: String, page: Int, size: Int): Page<RepositoryInfo>
 }

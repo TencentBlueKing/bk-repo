@@ -64,7 +64,7 @@ import kotlin.system.measureNanoTime
 /**
  * 存储服务抽象实现
  */
-@Suppress("TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionCaught", "LateinitUsage")
 abstract class AbstractStorageService : StorageService {
 
     @Autowired

@@ -78,7 +78,7 @@ class UserProxyChannelController(
         @RequestAttribute userId: String,
         @RequestBody request: ProxyChannelCreateRequest
     ): Response<Void> {
-        proxyChannelService.create(userId, request)
+        proxyChannelService.createProxy(userId, request)
         return ResponseBuilder.success()
     }
 }

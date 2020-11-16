@@ -34,7 +34,6 @@ package com.tencent.bkrepo.monitor.config
 import de.codecentric.boot.admin.server.config.AdminServerProperties
 import de.codecentric.boot.admin.server.web.client.HttpHeadersProvider
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -51,10 +50,9 @@ import java.util.UUID
 
 @Configuration
 @ConfigurationProperties("spring.boot.admin.auth")
-class SecurityConfiguration : WebSecurityConfigurerAdapter() {
-
-    @Autowired
-    private lateinit var adminServerProperties: AdminServerProperties
+class SecurityConfiguration(
+    private val adminServerProperties: AdminServerProperties
+) : WebSecurityConfigurerAdapter() {
 
     var username: String = "user"
     var password: String? = null

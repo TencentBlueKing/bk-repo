@@ -83,7 +83,7 @@ class RepositoryController(
     }
 
     override fun pageByType(page: Int, size: Int, repoType: String): Response<Page<RepositoryInfo>> {
-        return ResponseBuilder.success(repositoryService.pageByType(repoType, page, size))
+        return ResponseBuilder.success(repositoryService.listRepoPageByType(repoType, page, size))
     }
 
     override fun query(projectId: String, repoName: String, type: String): Response<RepositoryDetail?> {

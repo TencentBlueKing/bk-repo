@@ -53,6 +53,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SystemMetadata
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeMovedEvent
@@ -73,7 +74,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import com.tencent.bkrepo.repository.service.NodeService
-import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeDeleteUpdate
@@ -83,11 +83,12 @@ import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeListQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodePathUpdate
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeQuery
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -97,25 +98,14 @@ import java.time.format.DateTimeFormatter
  * 节点服务实现类
  */
 @Service
-class NodeServiceImpl : AbstractService(), NodeService {
-
-    @Autowired
-    private lateinit var nodeDao: NodeDao
-
-    @Autowired
-    private lateinit var repositoryService: RepositoryService
-
-    @Autowired
-    private lateinit var fileReferenceService: FileReferenceService
-
-    @Autowired
-    private lateinit var storageCredentialService: StorageCredentialService
-
-    @Autowired
-    private lateinit var storageService: StorageService
-
-    @Autowired
-    private lateinit var repositoryProperties: RepositoryProperties
+class NodeServiceImpl(
+    private val nodeDao: NodeDao,
+    private val repositoryDao: RepositoryDao,
+    private val fileReferenceService: FileReferenceService,
+    private val storageCredentialService: StorageCredentialService,
+    private val storageService: StorageService,
+    private val repositoryProperties: RepositoryProperties
+) : AbstractService(), NodeService {
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
@@ -295,8 +285,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
         val query = nodeQuery(projectId, repoName)
         query.addCriteria(
             Criteria().orOperator(
-                Criteria.where(TNode::fullPath.name).regex("^$escapedPath"),
-                Criteria.where(TNode::fullPath.name).`is`(normalizedFullPath)
+                where(TNode::fullPath).regex("^$escapedPath"),
+                where(TNode::fullPath).isEqualTo(normalizedFullPath)
             )
         )
         try {
@@ -386,9 +376,11 @@ class NodeServiceImpl : AbstractService(), NodeService {
 
             val isSameRepository = srcProjectId == destProjectId && srcRepoName == destRepoName
             // 查询repository
-            val srcRepository = repositoryService.checkRepository(srcProjectId, srcRepoName)
+            val srcRepository = repositoryDao.findByNameAndType(srcProjectId, srcRepoName)
+                ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, srcRepoName)
             val destRepository = if (!isSameRepository) {
-                repositoryService.checkRepository(destProjectId, destRepoName)
+                repositoryDao.findByNameAndType(destProjectId, destRepoName)
+                    ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, destRepoName)
             } else srcRepository
 
             // 查询storageCredentials

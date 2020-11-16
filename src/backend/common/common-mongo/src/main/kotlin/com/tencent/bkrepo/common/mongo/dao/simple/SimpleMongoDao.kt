@@ -37,8 +37,14 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Query
 
+/**
+ * mongodb simple类型数据访问层抽象类，其行为和mongoTemplate一致
+ */
+// 抽象类使用构造器注入不方便
 abstract class SimpleMongoDao<E> : AbstractMongoDao<E>() {
 
+    // 抽象类使用构造器注入不方便
+    @Suppress("LateinitUsage")
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
 

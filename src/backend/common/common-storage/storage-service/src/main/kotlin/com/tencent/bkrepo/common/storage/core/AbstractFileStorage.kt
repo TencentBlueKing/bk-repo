@@ -48,7 +48,7 @@ import kotlin.system.measureNanoTime
 /**
  * 文件存储接口
  */
-@Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught")
+@Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught", "LateinitUsage")
 abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : FileStorage {
 
     @Autowired

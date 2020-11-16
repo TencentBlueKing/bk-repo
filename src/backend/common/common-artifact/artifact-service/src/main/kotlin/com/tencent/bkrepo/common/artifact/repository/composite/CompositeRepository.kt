@@ -52,24 +52,16 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 组合仓库抽象逻辑
  */
-class CompositeRepository : AbstractArtifactRepository() {
-
-    @Autowired
-    private lateinit var localRepository: LocalRepository
-
-    @Autowired
-    private lateinit var remoteRepository: RemoteRepository
-
-    @Autowired
-    private lateinit var repositoryClient: RepositoryClient
-
-    @Autowired
-    private lateinit var proxyChannelClient: ProxyChannelClient
+class CompositeRepository(
+    private val localRepository: LocalRepository,
+    private val remoteRepository: RemoteRepository,
+    private val repositoryClient: RepositoryClient,
+    private val proxyChannelClient: ProxyChannelClient
+) : AbstractArtifactRepository() {
 
     /**
      * upload复用local仓库逻辑

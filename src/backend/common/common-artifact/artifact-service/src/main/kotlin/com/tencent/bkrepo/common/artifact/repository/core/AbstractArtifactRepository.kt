@@ -48,6 +48,8 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
 import com.tencent.bkrepo.common.security.http.SecurityUtils
+import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import org.slf4j.LoggerFactory
@@ -59,8 +61,19 @@ import javax.annotation.Resource
 /**
  * 构件仓库抽象类
  */
-@Suppress("TooGenericExceptionCaught")
+// TooGenericExceptionCaught: 需要捕捉文件传输阶段网络、IO等不可控的异常
+// LateinitUsage: AbstractArtifactRepository有大量子类，使用构造器注入十分不便
+@Suppress("TooGenericExceptionCaught", "LateinitUsage")
 abstract class AbstractArtifactRepository : ArtifactRepository {
+
+    @Autowired
+    lateinit var nodeClient: NodeClient
+
+    @Autowired
+    lateinit var storageService: StorageService
+
+    @Autowired
+    lateinit var storageManager: StorageManager
 
     @Autowired
     lateinit var artifactMetrics: ArtifactMetrics

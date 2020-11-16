@@ -33,6 +33,8 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TDownloadStatistics
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetric
 import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
@@ -40,7 +42,6 @@ import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.service.PackageDownloadStatisticsService
 import com.tencent.bkrepo.repository.service.PackageService
-import com.tencent.bkrepo.repository.service.RepositoryService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -56,7 +57,7 @@ import java.time.temporal.TemporalAdjusters
 
 @Service
 class PackageDownloadStatisticsServiceImpl(
-    private val repositoryService: RepositoryService,
+    private val repositoryDao: RepositoryDao,
     private val packageService: PackageService
 ) : AbstractService(), PackageDownloadStatisticsService {
 
@@ -94,7 +95,10 @@ class PackageDownloadStatisticsServiceImpl(
             CommonMessageCode.PARAMETER_MISSING,
             "packageKey"
         )
-        repositoryService.checkRepository(projectId, repoName)
+
+        if (repositoryDao.findByNameAndType(projectId, repoName) == null) {
+            throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+        }
 
         val criteria = criteria(projectId, repoName, packageKey, version)
         if (startDay != null && endDay != null) {
@@ -122,7 +126,9 @@ class PackageDownloadStatisticsServiceImpl(
             CommonMessageCode.PARAMETER_MISSING,
             "packageKey"
         )
-        repositoryService.checkRepository(projectId, repoName)
+        if (repositoryDao.findByNameAndType(projectId, repoName) == null) {
+            throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+        }
         val today = LocalDate.now()
         val monthCount = queryMonthDownloadCount(projectId, repoName, packageKey, today)
         if (monthCount.toInt() == 0) {

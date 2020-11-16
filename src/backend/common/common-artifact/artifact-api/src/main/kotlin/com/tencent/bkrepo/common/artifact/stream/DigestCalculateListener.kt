@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.stream
 
+import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import java.math.BigInteger
 import java.security.MessageDigest
 
@@ -42,8 +43,8 @@ class DigestCalculateListener : StreamReceiveListener {
     private val md5Digest = MessageDigest.getInstance("MD5")
     private val sha256Digest = MessageDigest.getInstance("SHA-256")
 
-    lateinit var md5: String
-    lateinit var sha256: String
+    private var md5: String? = null
+    private var sha256: String? = null
 
     override fun data(buffer: ByteArray, offset: Int, length: Int) {
         md5Digest.update(buffer, offset, length)
@@ -53,6 +54,14 @@ class DigestCalculateListener : StreamReceiveListener {
     override fun finished() {
         md5 = hexToString(md5Digest.digest(), 32)
         sha256 = hexToString(sha256Digest.digest(), 64)
+    }
+
+    fun getMd5(): String {
+        return md5 ?: throw ArtifactReceiveException("Artifact stream has not received.")
+    }
+
+    fun getSha256(): String {
+        return md5 ?: throw ArtifactReceiveException("Artifact stream has not received.")
     }
 
     private fun hexToString(byteArray: ByteArray, length: Int): String {

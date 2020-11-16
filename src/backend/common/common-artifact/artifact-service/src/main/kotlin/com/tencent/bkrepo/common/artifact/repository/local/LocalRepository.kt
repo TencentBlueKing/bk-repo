@@ -36,31 +36,18 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
-import com.tencent.bkrepo.common.artifact.repository.core.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 本地仓库抽象逻辑
  */
 abstract class LocalRepository : AbstractArtifactRepository() {
-
-    @Autowired
-    lateinit var nodeClient: NodeClient
-
-    @Autowired
-    lateinit var storageService: StorageService
-
-    @Autowired
-    lateinit var storageManager: StorageManager
 
     override fun onUpload(context: ArtifactUploadContext) {
         with(context) {

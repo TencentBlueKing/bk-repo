@@ -34,16 +34,14 @@ package com.tencent.bkrepo.common.artifact.event
 import com.tencent.bkrepo.common.artifact.webhook.WebHookService
 import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.event.EventListener
 
 /**
  * 构件相关事件监听器
  */
-class ArtifactEventListener {
-
-    @Autowired
-    private lateinit var webHookService: WebHookService
+class ArtifactEventListener(
+    private val webHookService: WebHookService
+) {
 
     @EventListener(StoreFailureEvent::class)
     fun listen(event: StoreFailureEvent) {

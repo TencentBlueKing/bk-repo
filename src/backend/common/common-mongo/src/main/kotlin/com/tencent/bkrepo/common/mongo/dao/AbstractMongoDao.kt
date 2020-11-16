@@ -67,6 +67,10 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         return find(query, classType)
     }
 
+    fun findAll(): List<E> {
+        return findAll(classType)
+    }
+
     override fun <T> findOne(query: Query, clazz: Class<T>): T? {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao findOne: [$query] [$clazz]")
@@ -79,6 +83,13 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
             logger.debug("Mongo Dao find: [$query]")
         }
         return determineMongoTemplate().find(query, clazz, determineCollectionName(query))
+    }
+
+    override fun <T> findAll(clazz: Class<T>): List<T> {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao find all")
+        }
+        return determineMongoTemplate().findAll(clazz, collectionName)
     }
 
     override fun insert(entity: E): E {

@@ -29,44 +29,51 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.dao
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.repository.model.TRepository
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
+import org.springframework.stereotype.Repository
 
 /**
- * 代理源服务接口
+ * 仓库数据访问层
  */
-interface ProxyChannelService {
+@Repository
+class RepositoryDao : SimpleMongoDao<TRepository>() {
 
     /**
-     * 根据[id]查询代理源信息
+     * 根据项目[projectId]、名称[name]和类型[type]查询仓库
      */
-    fun findById(id: String): ProxyChannelInfo?
+    fun findByNameAndType(projectId: String, name: String, type: String? = null): TRepository? {
+        val query = buildSingleQuery(projectId, name, type)
+        return this.findOne(query, TRepository::class.java)
+    }
 
     /**
-     * 根据[request]创建代理源
+     * 根据[id]删除仓库
      */
-    fun createProxy(userId: String, request: ProxyChannelCreateRequest)
+    fun deleteById(id: String?) {
+        if (id.isNullOrBlank()) {
+            return
+        }
+        val query = Query(TRepository::id.isEqualTo(id))
+        this.remove(query)
+    }
 
     /**
-     * 判断id为[id]类型为[repoType]的代理源是否存在
+     * 构造单个仓库查询条件
      */
-    fun checkExistById(id: String, repoType: RepositoryType): Boolean
-
-    /**
-     * 判断名称为[name]类型为[repoType]的代理源是否存在
-     */
-    fun checkExistByName(name: String, repoType: RepositoryType): Boolean
-
-    /**
-     * 判断url为[url]类型为[repoType]的代理源是否存在
-     */
-    fun checkExistByUrl(url: String, repoType: RepositoryType): Boolean
-
-    /**
-     * 列表查询公有源
-     */
-    fun listPublicChannel(repoType: RepositoryType): List<ProxyChannelInfo>
+    private fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
+        val criteria = where(TRepository::projectId).isEqualTo(projectId)
+            .and(TRepository::name).isEqualTo(repoName)
+        if (repoType != null && repoType.toUpperCase() != RepositoryType.NONE.name) {
+            criteria.and(TRepository::type).isEqualTo(repoType.toUpperCase())
+        }
+        return Query(criteria)
+    }
 }

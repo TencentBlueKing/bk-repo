@@ -34,7 +34,7 @@ package com.tencent.bkrepo.repository.job
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.repository.RepoRepository
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -51,7 +51,7 @@ import java.time.LocalDateTime
 @Component
 class DeletedNodeCleanupJob(
     private val nodeDao: NodeDao,
-    private val repoRepository: RepoRepository,
+    private val repositoryDao: RepositoryDao,
     private val fileReferenceService: FileReferenceService,
     private val repositoryProperties: RepositoryProperties
 ) {
@@ -67,7 +67,7 @@ class DeletedNodeCleanupJob(
             val startTimeMillis = System.currentTimeMillis()
             val expireDate = LocalDateTime.now().minusDays(repositoryProperties.deletedNodeReserveDays)
 
-            repoRepository.findAll().forEach { repo ->
+            repositoryDao.findAll().forEach { repo ->
                 val query = Query.query(
                     Criteria.where(TNode::projectId.name).`is`(repo.projectId)
                         .and(TNode::repoName.name).`is`(repo.name)

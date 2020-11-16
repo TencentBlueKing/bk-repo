@@ -53,6 +53,8 @@ import javax.annotation.PostConstruct
  */
 abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
 
+    // 抽象类使用构造器注入不方便
+    @Suppress("LateinitUsage")
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
 
@@ -192,6 +194,10 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
             }
         }
         return null
+    }
+
+    override fun <T> findAll(clazz: Class<T>): List<T> {
+        throw UnsupportedOperationException()
     }
 
     companion object {

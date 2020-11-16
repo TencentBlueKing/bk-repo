@@ -116,7 +116,7 @@ open class OctetStreamArtifactFile(
 
     override fun getFileMd5(): String {
         init()
-        return listener.md5
+        return listener.getMd5()
     }
 
     override fun getFileSha1(): String {
@@ -126,7 +126,7 @@ open class OctetStreamArtifactFile(
 
     override fun getFileSha256(): String {
         init()
-        return listener.sha256
+        return listener.getSha256()
     }
 
     override fun delete() {

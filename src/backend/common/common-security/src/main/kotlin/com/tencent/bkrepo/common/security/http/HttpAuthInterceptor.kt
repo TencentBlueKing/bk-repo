@@ -47,10 +47,11 @@ import javax.servlet.http.HttpServletResponse
 
 /**
  * Http请求认证拦截器
- * 拦截器中使用了FeignClient，不能使用构造器注入，否则会有循环依赖错误
  */
 class HttpAuthInterceptor : HandlerInterceptorAdapter() {
 
+    // 拦截器中使用了FeignClient，不能使用构造器注入，否则会有循环依赖错误
+    @Suppress("LateinitUsage")
     @Autowired
     private lateinit var httpAuthSecurity: HttpAuthSecurity
 

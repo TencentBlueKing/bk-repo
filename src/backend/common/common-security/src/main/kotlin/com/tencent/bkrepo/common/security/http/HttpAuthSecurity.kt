@@ -42,6 +42,7 @@ import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Autowired
 import javax.annotation.PostConstruct
 
+@Suppress("LateinitUsage")
 class HttpAuthSecurity {
 
     @Autowired

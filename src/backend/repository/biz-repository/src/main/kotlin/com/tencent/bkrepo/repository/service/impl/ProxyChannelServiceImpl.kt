@@ -57,7 +57,7 @@ class ProxyChannelServiceImpl(
         return convert(tProxyChannel)
     }
 
-    override fun create(userId: String, request: ProxyChannelCreateRequest) {
+    override fun createProxy(userId: String, request: ProxyChannelCreateRequest) {
         with(request) {
             Preconditions.checkArgument(public, this::public.name)
             Preconditions.checkNotBlank(name, this::name.name)

@@ -43,7 +43,6 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
@@ -54,7 +53,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.dao.repository.RepoRepository
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.listener.event.repo.RepoCreatedEvent
 import com.tencent.bkrepo.repository.listener.event.repo.RepoDeletedEvent
 import com.tencent.bkrepo.repository.listener.event.repo.RepoUpdatedEvent
@@ -71,11 +70,9 @@ import com.tencent.bkrepo.repository.service.ProxyChannelService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
@@ -90,54 +87,49 @@ import java.time.format.DateTimeFormatter
  * 仓库服务实现类
  */
 @Service
-class RepositoryServiceImpl : AbstractService(), RepositoryService {
-
-    @Autowired
-    private lateinit var repoRepository: RepoRepository
-
-    @Autowired
-    private lateinit var nodeService: NodeService
-
-    @Autowired
-    private lateinit var projectService: ProjectService
-
-    @Autowired
-    private lateinit var storageCredentialService: StorageCredentialService
-
-    @Autowired
-    private lateinit var proxyChannelService: ProxyChannelService
-
-    @Autowired
-    private lateinit var repositoryProperties: RepositoryProperties
+class RepositoryServiceImpl(
+    private val repositoryDao: RepositoryDao,
+    private val nodeService: NodeService,
+    private val projectService: ProjectService,
+    private val storageCredentialService: StorageCredentialService,
+    private val proxyChannelService: ProxyChannelService,
+    private val repositoryProperties: RepositoryProperties
+) : AbstractService(), RepositoryService {
 
     override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
-        val tRepository = findByNameAndType(projectId, name, type)
+        val tRepository = repositoryDao.findByNameAndType(projectId, name, type)
         return convertToInfo(tRepository)
     }
 
     override fun getRepoDetail(projectId: String, name: String, type: String?): RepositoryDetail? {
-        val tRepository = findByNameAndType(projectId, name, type)
+        val tRepository = repositoryDao.findByNameAndType(projectId, name, type)
         val storageCredentials = tRepository?.credentialsKey?.let { storageCredentialService.findByKey(it) }
         return convertToDetail(tRepository, storageCredentials)
     }
 
     override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String) {
-        findByNameAndType(projectId, repoName, null)?.run {
-            this.credentialsKey = storageCredentialsKey
-            repoRepository.save(this)
+        repositoryDao.findByNameAndType(projectId, repoName, null)?.run {
+            credentialsKey = storageCredentialsKey
+            repositoryDao.save(this)
         }
     }
 
     override fun listRepo(projectId: String, name: String?, type: String?): List<RepositoryInfo> {
         val query = buildListQuery(projectId, name, type)
-        return mongoTemplate.find(query, TRepository::class.java).map { convertToInfo(it)!! }
+        return repositoryDao.find(query).map { convertToInfo(it)!! }
     }
 
-    override fun listRepoPage(projectId: String, pageNumber: Int, pageSize: Int, name: String?, type: String?): Page<RepositoryInfo> {
+    override fun listRepoPage(
+        projectId: String,
+        pageNumber: Int,
+        pageSize: Int,
+        name: String?,
+        type: String?
+    ): Page<RepositoryInfo> {
         val query = buildListQuery(projectId, name, type)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val totalRecords = mongoTemplate.count(query, TRepository::class.java)
-        val records = mongoTemplate.find(query.with(pageRequest), TRepository::class.java).map { convertToInfo(it)!! }
+        val totalRecords = repositoryDao.count(query)
+        val records = repositoryDao.find(query.with(pageRequest)).map { convertToInfo(it)!! }
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
@@ -147,18 +139,18 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         val projectId = request.projectId
 
         val criteria = if (request.repoNames.isEmpty()) {
-            Criteria.where(TRepository::projectId.name).isEqualTo(projectId)
+            where(TRepository::projectId).isEqualTo(projectId)
         } else {
-            Criteria.where(TRepository::projectId.name).isEqualTo(projectId)
-                .and(TRepository::name.name).inValues(request.repoNames)
+            where(TRepository::projectId).isEqualTo(projectId).and(TRepository::name).inValues(request.repoNames)
         }
-        val totalCount = mongoTemplate.count(Query(criteria), TRepository::class.java)
-        val records = mongoTemplate.find(Query(criteria).limit(limit).skip(skip), TRepository::class.java).map { convertToInfo(it) }
+        val totalCount = repositoryDao.count(Query(criteria))
+        val records = repositoryDao.find(Query(criteria).limit(limit).skip(skip))
+            .map { convertToInfo(it) }
         return Page(0, limit, totalCount, records)
     }
 
     override fun checkExist(projectId: String, name: String, type: String?): Boolean {
-        return findByNameAndType(projectId, name, type) != null
+        return repositoryDao.findByNameAndType(projectId, name, type) != null
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -177,7 +169,10 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
             // 确保存储凭证Key一定存在
             val credentialsKey = storageCredentialsKey ?: repositoryProperties.defaultStorageCredentialsKey
             val storageCredential = credentialsKey?.takeIf { it.isNotBlank() }?.let {
-                storageCredentialService.findByKey(it) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, it)
+                storageCredentialService.findByKey(it) ?: throw ErrorCodeException(
+                    CommonMessageCode.RESOURCE_NOT_FOUND,
+                    it
+                )
             }
             // 初始化仓库配置
             val repoConfiguration = configuration ?: buildRepoConfiguration(this)
@@ -200,7 +195,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
                 if (repoConfiguration is CompositeConfiguration) {
                     updateCompositeConfiguration(repoConfiguration, null, repository, operator)
                 }
-                repoRepository.insert(repository)
+                repositoryDao.insert(repository)
                     .also { publishEvent(RepoCreatedEvent(repoCreateRequest)) }
                     .also { logger.info("Create repository [$repoCreateRequest] success.") }
                     .let { convertToDetail(repository, storageCredential)!! }
@@ -225,7 +220,7 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
                 updateRepoConfiguration(it, oldConfiguration, repository, operator)
                 repository.configuration = it.toJsonString()
             }
-            repoRepository.save(repository)
+            repositoryDao.save(repository)
         }
         publishEvent(RepoUpdatedEvent(repoUpdateRequest))
         logger.info("Update repository[$repoUpdateRequest] success.")
@@ -239,10 +234,12 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
                 nodeService.deleteByPath(projectId, name, ROOT, operator)
             } else {
                 val artifactInfo = DefaultArtifactInfo(projectId, name, ROOT)
-                nodeService.countFileNode(artifactInfo).takeIf { it == 0L } ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_CONTAINS_FILE)
+                nodeService.countFileNode(artifactInfo).takeIf { it == 0L } ?: throw ErrorCodeException(
+                    ArtifactMessageCode.REPOSITORY_CONTAINS_FILE
+                )
                 nodeService.deleteByPath(projectId, name, ROOT, operator)
             }
-            repoRepository.delete(repository)
+            repositoryDao.deleteById(repository.id)
             // 删除关联的库
             if (repository.category == RepositoryCategory.COMPOSITE) {
                 val configuration = repository.configuration.readJsonString<CompositeConfiguration>()
@@ -256,18 +253,11 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
     }
 
     /**
-     * 查询仓库
-     */
-    private fun findByNameAndType(projectId: String, name: String, type: String?): TRepository? {
-        val query = buildSingleQuery(projectId, name, type)
-        return mongoTemplate.findOne(query, TRepository::class.java)
-    }
-
-    /**
      * 检查仓库是否存在，不存在则抛异常
      */
-    override fun checkRepository(projectId: String, repoName: String, repoType: String?): TRepository {
-        return findByNameAndType(projectId, repoName, repoType) ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
+    private fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
+        return repositoryDao.findByNameAndType(projectId, repoName, repoType)
+            ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
     }
 
     /**
@@ -279,18 +269,6 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name).regex("^$this") }
         repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
         return Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
-    }
-
-    /**
-     * 构造单个仓库查询条件
-     */
-    private fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
-        val criteria = where(TRepository::projectId).isEqualTo(projectId)
-            .and(TRepository::name).isEqualTo(repoName)
-        if (repoType != null && repoType.toUpperCase() != RepositoryType.NONE.name) {
-            criteria.and(TRepository::type).isEqualTo(repoType.toUpperCase())
-        }
-        return Query(criteria)
     }
 
     /**
@@ -338,7 +316,10 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         // 校验
         new.proxy.channelList.forEach {
             if (it.public) {
-                Preconditions.checkArgument(proxyChannelService.checkExistById(it.channelId!!, repository.type), "channelId")
+                Preconditions.checkArgument(
+                    proxyChannelService.checkExistById(it.channelId!!, repository.type),
+                    "channelId"
+                )
             } else {
                 Preconditions.checkNotBlank(it.name, "name")
                 Preconditions.checkNotBlank(it.url, "url")
@@ -388,11 +369,11 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
      */
     private fun deleteProxyRepo(projectId: String, repoName: String, channelName: String) {
         val proxyRepoName = PRIVATE_PROXY_REPO_NAME.format(repoName, channelName)
-        val proxyRepo = findByNameAndType(projectId, proxyRepoName, null)
+        val proxyRepo = repositoryDao.findByNameAndType(projectId, proxyRepoName, null)
         proxyRepo?.let { repo ->
             // 删除仓库
             nodeService.deleteByPath(repo.projectId, repo.name, ROOT, SYSTEM_USER)
-            repoRepository.delete(proxyRepo)
+            repositoryDao.deleteById(repo.id)
             logger.info("Success to delete private proxy repository[$proxyRepo]")
         }
     }
@@ -414,19 +395,17 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
             lastModifiedBy = operator,
             lastModifiedDate = LocalDateTime.now()
         )
-        repoRepository.insert(proxyRepository)
+        repositoryDao.insert(proxyRepository)
         logger.info("Success to create private proxy repository[$proxyRepository]")
     }
 
-    override fun pageByType(repoType: String, page: Int, size: Int): Page<RepositoryInfo> {
-        val query = Query(
-            Criteria.where(TRepository::type.name).`is`(repoType)
-        ).with(Sort.by(TRepository::name.name))
-        val count = mongoTemplate.count(query, TRepository::class.java)
-        val pageQuery = query.with(PageRequest.of(page, size))
-        val data = mongoTemplate.find(pageQuery, TRepository::class.java).map { convertToInfo(it)!! }
+    override fun listRepoPageByType(type: String, pageNumber: Int, pageSize: Int): Page<RepositoryInfo> {
+        val query = Query(TRepository::type.isEqualTo(type)).with(Sort.by(TRepository::name.name))
+        val count = repositoryDao.count(query)
+        val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
+        val data = repositoryDao.find(pageQuery).map { convertToInfo(it)!! }
 
-        return Page(page, size, count, data)
+        return Page(pageNumber, pageSize, count, data)
     }
 
     companion object {
@@ -434,7 +413,10 @@ class RepositoryServiceImpl : AbstractService(), RepositoryService {
         private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,31}"
         private const val REPO_DESCRIPTION_MAX_LENGTH = 200
 
-        private fun convertToDetail(tRepository: TRepository?, storageCredentials: StorageCredentials? = null): RepositoryDetail? {
+        private fun convertToDetail(
+            tRepository: TRepository?,
+            storageCredentials: StorageCredentials? = null
+        ): RepositoryDetail? {
             return tRepository?.let {
                 RepositoryDetail(
                     name = it.name,

@@ -49,9 +49,9 @@ import org.springframework.util.ClassUtils
  */
 class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
 
-    private lateinit var resourceLoader: ResourceLoader
-    private lateinit var environment: Environment
-    private lateinit var classLoader: ClassLoader
+    private var resourceLoader: ResourceLoader? = null
+    private var environment: Environment? = null
+    private var classLoader: ClassLoader? = null
 
     override fun registerBeanDefinitions(annotationMetadata: AnnotationMetadata, beanDefinitionRegistry: BeanDefinitionRegistry) {
         logger.info("Scanning ArtifactInfo resolver.")

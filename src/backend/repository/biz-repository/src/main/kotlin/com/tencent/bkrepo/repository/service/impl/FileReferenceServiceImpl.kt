@@ -32,13 +32,12 @@
 package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TFileReference
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.service.FileReferenceService
-import com.tencent.bkrepo.repository.service.RepositoryService
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -49,13 +48,10 @@ import org.springframework.stereotype.Service
  * 文件引用服务实现类
  */
 @Service
-class FileReferenceServiceImpl : FileReferenceService {
-
-    @Autowired
-    private lateinit var fileReferenceDao: FileReferenceDao
-
-    @Autowired
-    private lateinit var repositoryService: RepositoryService
+class FileReferenceServiceImpl(
+    private val fileReferenceDao: FileReferenceDao,
+    private val repositoryDao: RepositoryDao
+) : FileReferenceService {
 
     override fun increment(node: TNode, repository: TRepository?): Boolean {
         if (!validateParameter(node)) return false
@@ -125,7 +121,7 @@ class FileReferenceServiceImpl : FileReferenceService {
         return if (repository != null) {
             repository.credentialsKey
         } else {
-            repositoryService.getRepoInfo(node.projectId, node.repoName)!!.storageCredentialsKey
+            return repositoryDao.findByNameAndType(node.projectId, node.repoName)?.credentialsKey
         }
     }
 

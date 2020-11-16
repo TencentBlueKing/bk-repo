@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.artifact.exception
 
 import com.tencent.bkrepo.common.api.pojo.Response
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.MethodParameter
 import org.springframework.http.MediaType
 import org.springframework.http.converter.HttpMessageConverter
@@ -42,10 +41,9 @@ import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice
 
 @ControllerAdvice
-class ArtifactExceptionResponseAdvice : ResponseBodyAdvice<Any> {
-
-    @Autowired
-    private lateinit var exceptionResponseTranslator: ExceptionResponseTranslator
+class ArtifactExceptionResponseAdvice(
+    private val exceptionResponseTranslator: ExceptionResponseTranslator
+) : ResponseBodyAdvice<Any> {
 
     override fun supports(returnType: MethodParameter, converterType: Class<out HttpMessageConverter<*>>): Boolean {
         return Response::class.java.isAssignableFrom(returnType.parameterType)
