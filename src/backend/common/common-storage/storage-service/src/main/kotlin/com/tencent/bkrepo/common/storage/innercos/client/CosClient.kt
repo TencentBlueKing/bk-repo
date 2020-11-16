@@ -184,7 +184,7 @@ class CosClient(val credentials: InnerCosCredentials) {
         val httpRequest = buildHttpRequest(cosRequest)
         try {
             return CosHttpClient.execute(httpRequest, VoidResponseHandler())
-        } catch (exception: Exception) {
+        } catch (ignored: Exception) {
         }
     }
 
