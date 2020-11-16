@@ -21,19 +21,18 @@
 
 package com.tencent.bkrepo.rpm.util.xStream
 
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmEntry
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmFile
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
+import com.tencent.bkrepo.rpm.util.xStream.pojo.*
 import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
 import com.thoughtworks.xstream.XStream
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.io.OutputStreamWriter
 import java.io.Writer
 
 object XStreamUtil {
+    private val logger = LoggerFactory.getLogger(XStreamUtil::class.java)
     /**
-     * @param Any 转 xml 字符串
+     * 对象转 xml 字符串
      */
     fun Any.objectToXml(): String {
         val xStream = XStream()
@@ -60,5 +59,26 @@ object XStreamUtil {
             )
         )
         return xStream.fromXML(xml)
+    }
+
+    fun checkMarkFile(markFileContent: ByteArray): Boolean {
+        return try {
+            val xStream = XStream()
+            XStream.setupDefaultSecurity(xStream)
+            xStream.autodetectAnnotations(true)
+            xStream.alias("package", RpmPackage::class.java)
+            xStream.allowTypes(
+                arrayOf(
+                    RpmPackage::class.java,
+                    RpmEntry::class.java,
+                    RpmFile::class.java
+                )
+            )
+            xStream.fromXML(markFileContent.inputStream())
+            true
+        } catch (e: Exception) {
+            logger.warn("checkMarkFile error: ${e.message}")
+            false
+        }
     }
 }

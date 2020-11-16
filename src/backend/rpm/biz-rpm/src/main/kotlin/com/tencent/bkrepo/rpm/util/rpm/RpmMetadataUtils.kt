@@ -23,26 +23,26 @@ package com.tencent.bkrepo.rpm.util.rpm
 
 import com.google.common.collect.Lists
 import com.tencent.bkrepo.rpm.util.redline.model.RpmFormat
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackage
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmVersion
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChangeLog
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChecksum
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmTime
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmSize
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmHeaderRange
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmEntry
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmFile
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChangeLog
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmHeaderRange
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackage
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmSize
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmTime
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmVersion
 import org.apache.commons.lang.StringUtils
-import org.redline_rpm.header.Header
-import org.redline_rpm.header.Flags
 import org.redline_rpm.header.AbstractHeader
-import org.redline_rpm.header.Signature
+import org.redline_rpm.header.Flags
+import org.redline_rpm.header.Header
 import org.redline_rpm.header.RpmType
+import org.redline_rpm.header.Signature
 import java.util.LinkedList
 
-class RpmMetadataUtils {
+object RpmMetadataUtils {
 
     fun interpret(rawFormat: RpmFormat, size: Long, checkSum: String, href: String): RpmMetadata {
         val header: Header = rawFormat.format.header
