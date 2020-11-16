@@ -112,5 +112,5 @@ interface RepositoryService {
      */
     fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository
 
-    fun pageByType(repoType: String, page: Int, size: Int): Page<RepositoryInfo>
+    fun pageByType(repoType: String, page: Int, size: Int): Page<RepositoryDetail>
 }

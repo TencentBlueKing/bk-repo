@@ -22,46 +22,44 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.rpm.pojo.IndexType
-import com.tencent.bkrepo.rpm.util.XmlStrUtils.packagesModify
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.context.SpringBootTest
 import java.io.File
+import java.io.RandomAccessFile
 import java.util.regex.Pattern
 
-@SpringBootTest
 class XmlStrUtilsTest {
     /**
      * 按照仓库设置的repodata 深度分割请求参数
      */
     @Test
-    fun splitUriByDepthTest() {
-        val uri1 = "/7/os/x86_64/hello-world-1-1.x86_64.rpm"
-        val depth1 = 3
-        val repodataUri = XmlStrUtils.splitUriByDepth(uri1, depth1)
-        Assertions.assertEquals("/7/os/x86_64/", repodataUri.repoDataPath)
+    fun resolveRepodataUriTest() {
+        val uri = "/7/os/x86_64/hello-world-1-1.x86_64.rpm"
+        val depth = 3
+        val repodataUri = XmlStrUtils.resolveRepodataUri(uri, depth)
+        Assertions.assertEquals("7/os/x86_64/", repodataUri.repodataPath)
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri.artifactRelativePath)
 
         val uri2 = "/7/hello-world-1-1.x86_64.rpm"
         val depth2 = 1
-        val repodataUri2 = XmlStrUtils.splitUriByDepth(uri2, depth2)
+        val repodataUri2 = XmlStrUtils.resolveRepodataUri(uri2, depth2)
         Assertions.assertEquals("/7/", repodataUri2.repoDataPath)
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri2.artifactRelativePath)
 
         val uri3 = "/hello-world-1-1.x86_64.rpm"
         val depth3 = 0
-        val repodataUri3 = XmlStrUtils.splitUriByDepth(uri3, depth3)
+        val repodataUri3 = XmlStrUtils.resolveRepodataUri(uri3, depth3)
         Assertions.assertEquals("/", repodataUri3.repoDataPath)
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri3.artifactRelativePath)
     }
 
     @Test
-    fun packagesModifyTest() {
+    fun updatePackageCountTest() {
         val start = System.currentTimeMillis()
-        val file = File("/Users/weaving/Downloads/6e437f1af3f3db504cb1d2fe6d453fccb48d2b63-primary.xml")
-        val resultFile = file.packagesModify(IndexType.PRIMARY, true, false)
+        val file = File("/Downloads/60M.xml")
+        val randomAccessFile = RandomAccessFile(file, "rw")
+        updatePackageCount(randomAccessFile, IndexType.PRIMARY, 0, true)
         println(System.currentTimeMillis() - start)
-        println(resultFile.absolutePath)
     }
 
     @Test
@@ -74,5 +72,51 @@ class XmlStrUtilsTest {
         if (matcher.find()) {
             println(matcher.group(1).toInt())
         }
+    }
+
+    @Test
+    fun indexOfTest() {
+        val file = File("/Users/weaving/Downloads/filelist/21e8c7280184d7428e4fa259c669fa4b2cfef05f-filelists.xml")
+        val randomAccessFile = RandomAccessFile(file, "r")
+        val index = indexOf(randomAccessFile, """<package pkgid="cb764f7906736425286341f6c5939347b01c5c17" name="httpd" arch="x86_64">""")
+        Assertions.assertEquals(287, index)
+    }
+
+    @Test
+    fun indexPackageTest() {
+        val file = File("others.xml")
+        val randomAccessFile = RandomAccessFile(file, "r")
+        val prefixStr = "  <package pkgid="
+        val locationStr =
+            """name="trpc-go-helloword">
+    <version epoch="0" ver="0.0.1" rel="1"/>"""
+        val suffixStr = "</package>"
+        val xmlIndex = findPackageIndex(randomAccessFile, prefixStr, locationStr, suffixStr)
+        if (xmlIndex != null) {
+            println(xmlIndex.prefixIndex)
+            println(xmlIndex.locationIndex)
+            println(xmlIndex.suffixIndex)
+            println(xmlIndex.suffixEndIndex)
+        }
+    }
+
+    @Test
+    fun updateFileTest() {
+        val file = File("others.xml")
+        XmlStrUtils.updatePackageXml(RandomAccessFile(file, "rw"), 3, 1, "a".toByteArray())
+    }
+
+    @Test
+    fun resolvePackageCountTest() {
+        val file = File("${System.getenv("HOME")}/Downloads/63da8904a2791e4965dcda350b26ffa3d1eda27b-primary")
+        val randomAccessFile = RandomAccessFile(file, "r")
+        val count = XmlStrUtils.resolvePackageCount(randomAccessFile, IndexType.PRIMARY)
+        print("count: $count")
+    }
+
+    @Test
+    fun test() {
+        val file = File("${System.getenv("HOME")}/Downloads/nfaprofile_consumer_request-master-20200921636887-1-x86_64.rpm")
+        println(XStreamUtil.checkMarkFile(file.inputStream().readBytes()))
     }
 }

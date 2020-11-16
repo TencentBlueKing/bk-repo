@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import java.lang.Exception
 
 object JsonUtil {
@@ -45,10 +47,13 @@ object JsonUtil {
      * get value with json-param, if string is json-format
      * @param param json 属性
      */
-    @Throws(Exception::class)
     infix fun String.jsonValue(param: String): String {
         val jsonObject = JsonParser.parseString(this).asJsonObject
-        return jsonObject.get(param).asString
+        try {
+            return jsonObject.get(param).asString
+        } catch (exception: IllegalStateException) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "composer.json `$param`")
+        }
     }
 
     /**
@@ -104,7 +109,6 @@ object JsonUtil {
     fun deleteComposerVersion(versionJson: String, name: String, version: String): String {
         val jsonObject = JsonParser.parseString(versionJson).asJsonObject
         val nameParam = jsonObject.getAsJsonObject(packages).getAsJsonObject(name)
-        // 覆盖重复版本信息
         nameParam.remove(version)
         return GsonBuilder().create().toJson(jsonObject)
     }
