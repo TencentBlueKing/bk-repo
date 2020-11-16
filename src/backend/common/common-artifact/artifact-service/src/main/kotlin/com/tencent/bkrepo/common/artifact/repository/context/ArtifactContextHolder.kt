@@ -55,6 +55,8 @@ import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 
+// LateinitUsage: 静态成员通过init构造函数初始化
+@Suppress("LateinitUsage")
 @Component
 class ArtifactContextHolder(
     artifactConfiguration: ArtifactConfiguration,

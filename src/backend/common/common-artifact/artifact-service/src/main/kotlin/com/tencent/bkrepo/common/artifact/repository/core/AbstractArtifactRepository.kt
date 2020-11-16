@@ -50,6 +50,7 @@ import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
 import com.tencent.bkrepo.common.security.http.SecurityUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
@@ -63,7 +64,7 @@ import javax.annotation.Resource
  * 构件仓库抽象类
  */
 // TooGenericExceptionCaught: 需要捕捉文件传输阶段网络、IO等不可控的异常
-// LateinitUsage: AbstractArtifactRepository有大量子类，使用构造器注入十分不便
+// LateinitUsage: AbstractArtifactRepository有大量子类，使用构造器注入将造成不便
 @Suppress("TooGenericExceptionCaught", "LateinitUsage")
 abstract class AbstractArtifactRepository : ArtifactRepository {
 
@@ -72,6 +73,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
     lateinit var repositoryClient: RepositoryClient
+
+    @Autowired
+    lateinit var packageClient: PackageClient
 
     @Autowired
     lateinit var storageService: StorageService
@@ -217,7 +221,10 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      *
      * 各依赖源自行判断是否需要增加下载记录，如果返回空则不记录
      */
-    open fun buildDownloadRecord(context: ArtifactDownloadContext, artifactResource: ArtifactResource): DownloadStatisticsAddRequest? {
+    open fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): DownloadStatisticsAddRequest? {
         return null
     }
 

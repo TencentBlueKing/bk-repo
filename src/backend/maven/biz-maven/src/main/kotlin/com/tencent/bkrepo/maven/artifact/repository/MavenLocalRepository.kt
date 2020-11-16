@@ -51,7 +51,6 @@ import com.tencent.bkrepo.maven.pojo.MavenMetadata
 import com.tencent.bkrepo.maven.pojo.MavenPom
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.GAVC
 import com.tencent.bkrepo.maven.util.StringUtils.formatSeparator
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -61,18 +60,11 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 
 @Component
-class MavenLocalRepository : LocalRepository() {
-
-    @Autowired
-    lateinit var packageClient: PackageClient
-
-    @Autowired
-    lateinit var stageClient: StageClient
+class MavenLocalRepository(private val stageClient: StageClient) : LocalRepository() {
 
     /**
      * 获取MAVEN节点创建请求

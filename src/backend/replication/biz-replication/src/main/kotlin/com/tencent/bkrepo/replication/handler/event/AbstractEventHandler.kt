@@ -42,13 +42,13 @@ import org.springframework.beans.factory.annotation.Autowired
  */
 abstract class AbstractEventHandler : AbstractHandler() {
 
+    // LateinitUsage: 抽象类中使用构造器注入会造成不便
+    @Suppress("LateinitUsage")
     @Autowired
     lateinit var replicationService: ReplicationService
 
     fun getRepoDetail(projectId: String, repoName: String, remoteRepoName: String): ReplicationRepoDetail? {
-        val detail = repoDataService.getRepositoryDetail(projectId, repoName) ?: run {
-            return null
-        }
+        val detail = repoDataService.getRepositoryDetail(projectId, repoName) ?: return null
         return convertReplicationRepo(detail, remoteRepoName)
     }
 

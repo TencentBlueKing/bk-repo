@@ -46,6 +46,8 @@ class SpringContextUtils : ApplicationContextAware {
 
     companion object {
 
+        // LateinitUsage: 静态成员通过init构造函数初始化
+        @Suppress("LateinitUsage")
         private lateinit var applicationContext: ApplicationContext
 
         /**

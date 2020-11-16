@@ -42,11 +42,8 @@ import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.repository.api.NodeClient
-import org.springframework.beans.factory.annotation.Autowired
 
-abstract class AbstractEventListener {
-    @Autowired
-    private lateinit var nodeClient: NodeClient
+abstract class AbstractEventListener(private val nodeClient: NodeClient) {
 
     /**
      * check node exists

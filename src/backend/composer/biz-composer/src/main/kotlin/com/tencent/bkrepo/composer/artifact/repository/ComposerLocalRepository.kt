@@ -57,7 +57,6 @@ import com.tencent.bkrepo.composer.util.JsonUtil
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperJson
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperPackageJson
 import com.tencent.bkrepo.composer.util.pojo.ComposerArtifact
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -66,7 +65,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -75,7 +73,7 @@ import java.io.ByteArrayInputStream
 import java.io.InputStreamReader
 
 @Component
-class ComposerLocalRepository : LocalRepository() {
+class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepository() {
 
     // 默认值为方便本地调试
     // 服务域名,例：bkrepo.com
@@ -85,12 +83,6 @@ class ComposerLocalRepository : LocalRepository() {
     // 服务端口识别字段，例 8083或composer
     @Value("\${bkrepo.composer.port:8083}")
     private val composerPort: String = ""
-
-    @Autowired
-    lateinit var packageClient: PackageClient
-
-    @Autowired
-    lateinit var stageClient: StageClient
 
     /**
      * Composer节点创建请求

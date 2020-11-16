@@ -41,6 +41,8 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.beans.factory.annotation.Autowired
 
+// LateinitUsage: 抽象类中使用构造器注入会造成不便
+@Suppress("LateinitUsage")
 abstract class AbstractHandler {
 
     @Autowired

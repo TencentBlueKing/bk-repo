@@ -39,6 +39,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
+// LateinitUsage: 抽象类中使用构造器注入会造成不便
+@Suppress("LateinitUsage")
 abstract class AbstractNpmService {
 
     @Autowired

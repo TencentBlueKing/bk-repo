@@ -35,13 +35,14 @@ import com.tencent.bkrepo.helm.exception.HelmException
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
 import com.tencent.bkrepo.helm.utils.HelmUtils
+import com.tencent.bkrepo.repository.api.NodeClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
 @Component
-class ChartEventListener : AbstractEventListener() {
+class ChartEventListener(nodeClient: NodeClient) : AbstractEventListener(nodeClient) {
 
     /**
      * 删除chart版本，更新index.yaml文件

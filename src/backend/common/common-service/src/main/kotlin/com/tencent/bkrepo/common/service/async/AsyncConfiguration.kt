@@ -33,7 +33,6 @@ package com.tencent.bkrepo.common.service.async
 
 import org.slf4j.LoggerFactory
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -48,10 +47,7 @@ import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 @EnableScheduling
 @EnableConfigurationProperties(AsyncProperties::class)
 @Configuration
-class AsyncConfiguration : AsyncConfigurerSupport() {
-
-    @Autowired
-    private lateinit var properties: AsyncProperties
+class AsyncConfiguration(private val properties: AsyncProperties) : AsyncConfigurerSupport() {
 
     /**
      * Spring异步任务Executor

@@ -47,6 +47,8 @@ import java.io.InputStream
 /**
  * ArtifactFile工厂方法
  */
+// LateinitUsage: 静态成员通过init构造函数初始化
+@Suppress("LateinitUsage")
 @Component
 class ArtifactFileFactory(
     storageProperties: StorageProperties,

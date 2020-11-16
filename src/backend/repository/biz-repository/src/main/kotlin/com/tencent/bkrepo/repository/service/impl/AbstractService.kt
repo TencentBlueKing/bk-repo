@@ -38,6 +38,8 @@ import org.springframework.data.mongodb.core.MongoTemplate
 /**
  * 服务抽象类，封装公共逻辑
  */
+// LateinitUsage: 抽象类中使用构造器注入会造成不便
+@Suppress("LateinitUsage")
 abstract class AbstractService {
 
     @Autowired

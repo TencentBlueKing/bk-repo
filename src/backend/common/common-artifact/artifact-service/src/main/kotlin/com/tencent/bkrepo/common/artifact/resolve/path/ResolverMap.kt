@@ -43,7 +43,6 @@ class ResolverMap : LinkedHashMap<KClass<out ArtifactInfo>, ArtifactInfoResolver
         return super.get(key) ?: defaultResolver ?: throw ArtifactResolveException("No artifact resolver matched.")
     }
 
-
     fun register(key: KClass<out ArtifactInfo>, resolver: ArtifactInfoResolver, default: Boolean) {
         if (default) {
             this.defaultResolver = resolver

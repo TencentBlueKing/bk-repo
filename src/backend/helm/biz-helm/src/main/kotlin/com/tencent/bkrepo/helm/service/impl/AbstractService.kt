@@ -64,6 +64,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import java.time.LocalDateTime
 
+// LateinitUsage: 抽象类中使用构造器注入会造成不便
+@Suppress("LateinitUsage")
 abstract class AbstractService {
     @Autowired
     lateinit var nodeClient: NodeClient

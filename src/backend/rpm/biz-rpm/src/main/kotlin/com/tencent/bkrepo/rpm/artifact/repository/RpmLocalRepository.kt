@@ -50,7 +50,6 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -98,7 +97,6 @@ import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoIndex
 import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.util.StopWatch
@@ -107,13 +105,7 @@ import java.io.FileInputStream
 import java.nio.channels.Channels
 
 @Component
-class RpmLocalRepository : LocalRepository() {
-
-    @Autowired
-    lateinit var packageClient: PackageClient
-
-    @Autowired
-    lateinit var stageClient: StageClient
+class RpmLocalRepository(private val stageClient: StageClient) : LocalRepository() {
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
