@@ -40,17 +40,12 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 虚拟仓库抽象逻辑
  */
 abstract class VirtualRepository : AbstractArtifactRepository() {
-
-    @Autowired
-    lateinit var repositoryClient: RepositoryClient
 
     override fun query(context: ArtifactQueryContext): Any? {
         val artifactInfo = context.artifactInfo

@@ -37,17 +37,12 @@ import kotlin.reflect.KClass
 
 class ResolverMap : LinkedHashMap<KClass<out ArtifactInfo>, ArtifactInfoResolver>() {
 
-    private lateinit var defaultResolver: ArtifactInfoResolver
+    private var defaultResolver: ArtifactInfoResolver? = null
 
     fun getResolver(key: KClass<out ArtifactInfo>): ArtifactInfoResolver {
-        return super.get(key) ?: run {
-            if (this::defaultResolver.isInitialized) {
-                defaultResolver
-            } else {
-                throw ArtifactResolveException("Cannot find property artifact resolver.")
-            }
-        }
+        return super.get(key) ?: defaultResolver ?: throw ArtifactResolveException("No artifact resolver matched.")
     }
+
 
     fun register(key: KClass<out ArtifactInfo>, resolver: ArtifactInfoResolver, default: Boolean) {
         if (default) {

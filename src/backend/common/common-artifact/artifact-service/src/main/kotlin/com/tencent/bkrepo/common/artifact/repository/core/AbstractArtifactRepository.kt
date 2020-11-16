@@ -51,6 +51,7 @@ import com.tencent.bkrepo.common.security.http.SecurityUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -68,6 +69,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
     lateinit var nodeClient: NodeClient
+
+    @Autowired
+    lateinit var repositoryClient: RepositoryClient
 
     @Autowired
     lateinit var storageService: StorageService

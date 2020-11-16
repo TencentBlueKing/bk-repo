@@ -41,13 +41,11 @@ import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
 import org.aspectj.lang.reflect.MethodSignature
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 
 @Aspect
-class PermissionAspect {
-
-    @Autowired
-    private lateinit var permissionCheckHandler: PermissionCheckHandler
+class PermissionAspect(
+    private val permissionCheckHandler: PermissionCheckHandler
+) {
 
     /**
      * 要求接口路径上必须使用标准格式/{projectId}/{repoName}，否则无法解析到仓库信息

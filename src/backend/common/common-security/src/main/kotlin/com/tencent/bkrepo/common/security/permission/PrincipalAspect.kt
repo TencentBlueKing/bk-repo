@@ -41,13 +41,11 @@ import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
 import org.aspectj.lang.reflect.MethodSignature
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 
 @Aspect
-class PrincipalAspect {
-
-    @Autowired
-    private lateinit var permissionCheckHandler: PermissionCheckHandler
+class PrincipalAspect(
+    private val permissionCheckHandler: PermissionCheckHandler
+) {
 
     @Around("@within(com.tencent.bkrepo.common.security.permission.Principal) || @annotation(com.tencent.bkrepo.common.security.permission.Principal)")
     @Throws(Throwable::class)

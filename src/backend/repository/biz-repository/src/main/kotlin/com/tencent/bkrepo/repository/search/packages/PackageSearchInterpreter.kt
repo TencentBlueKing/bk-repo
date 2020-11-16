@@ -39,19 +39,15 @@ import com.tencent.bkrepo.repository.search.common.ModelValidateInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.SelectFieldInterceptor
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
 
 @Component
-class PackageSearchInterpreter : MongoQueryInterpreter() {
-
-    @Autowired
-    private lateinit var repoNameRuleInterceptor: RepoNameRuleInterceptor
-
-    @Autowired
-    private lateinit var repoTypeRuleInterceptor: RepoTypeRuleInterceptor
+class PackageSearchInterpreter(
+    private val repoNameRuleInterceptor: RepoNameRuleInterceptor,
+    private val repoTypeRuleInterceptor: RepoTypeRuleInterceptor
+) : MongoQueryInterpreter() {
 
     @PostConstruct
     fun init() {

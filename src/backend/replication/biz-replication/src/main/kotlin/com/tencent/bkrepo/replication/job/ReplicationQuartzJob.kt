@@ -41,7 +41,7 @@ import java.time.Duration
 
 class ReplicationQuartzJob : InterruptableJob {
 
-    private lateinit var currentThread: Thread
+    private var currentThread: Thread? = null
     private val lockingTaskExecutor = SpringContextUtils.getBean(LockingTaskExecutor::class.java)
     private val replicationJobBean = SpringContextUtils.getBean(ReplicationJobBean::class.java)
 
@@ -53,7 +53,7 @@ class ReplicationQuartzJob : InterruptableJob {
     }
 
     override fun interrupt() {
-        currentThread.interrupt()
+        currentThread?.interrupt()
     }
 
     companion object {
