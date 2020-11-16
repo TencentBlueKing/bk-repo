@@ -390,7 +390,7 @@ export default {
                     main: [
                         {
                             codeList: [
-                                `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> -X PUT ${this.repoUrl} -T ${this.packageName}.rpm`
+                                `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> -X PUT ${this.repoUrl} -T <RPM_FILE_NAME>`
                             ]
                         }
                     ]
@@ -404,13 +404,13 @@ export default {
                         {
                             subTitle: 'RPM',
                             codeList: [
-                                `rpm -i ${location.protocol}//${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN>@${this.repoUrl}/${this.packageName}.rpm`
+                                `rpm -i ${location.protocol}//${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN>@${location.host}/${this.repoType}/${this.projectId}/${this.repoName}/<RPM_FILE_NAME>`
                             ]
                         },
                         {
                             subTitle: 'yum',
                             codeList: [
-                                `yum install --repo ${this.repoName} ${this.packageName}`
+                                `yum install ${this.packageName}`
                             ]
                         }
                     ]
@@ -427,7 +427,7 @@ export default {
                         {
                             subTitle: 'RPM',
                             codeList: [
-                                `rpm -i ${location.protocol}//${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN>@${this.repoUrl}/${this.packageName}.rpm`
+                                `rpm -i ${location.protocol}//${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN>@${this.repoUrl}/<RPM_FILE_NAME>`
                             ]
                         },
                         {
