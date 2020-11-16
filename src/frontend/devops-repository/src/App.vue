@@ -22,7 +22,7 @@
         data () {
             return {
                 isLoading: false,
-                iframeMode: PAAS_CONFIG === 'paas'
+                iframeMode: MODE_CONFIG === 'ci'
             }
         },
         computed: {

@@ -15,8 +15,9 @@
         var AJAX_URL_PREFIX = '__BK_HTTP_SCHEMA__://__BK_REPO_FQDN__/web'
         var DEVOPS_SITE_URL = '__BK_HTTP_SCHEMA__://__BK_CI_FQDN__'
         var LOGIN_SERVICE_URL = PAAS_SERVICE_URL + '/login/'
-        var PAAS_CONFIG = '__BK_REPO_REALM__'
-        var AUTH_CONFIG = '__BK_REPO_AUTHENTICATION_REALM__'
+        // standalone: 独立部署模式
+        // ci: ci模式
+        var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
     </script>
     <script>
         window.getLoginUrl = function () {
