@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.http.SecurityUtils
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 
@@ -50,10 +49,9 @@ import org.springframework.stereotype.Component
  * 条件构造器中传入条件是`repoName`，过滤无权限的仓库
  */
 @Component
-class RepoNameRuleInterceptor : QueryRuleInterceptor {
-
-    @Autowired
-    private lateinit var permissionManager: PermissionManager
+class RepoNameRuleInterceptor(
+    private val permissionManager: PermissionManager
+) : QueryRuleInterceptor {
 
     override fun match(rule: Rule): Boolean {
         return rule is Rule.QueryRule && rule.field == NodeInfo::repoName.name

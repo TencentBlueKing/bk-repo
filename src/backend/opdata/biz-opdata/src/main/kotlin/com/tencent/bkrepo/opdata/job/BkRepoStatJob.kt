@@ -36,7 +36,6 @@ import com.tencent.bkrepo.opdata.model.TBkRepoMetrics
 import com.tencent.bkrepo.opdata.repository.BkRepoMetricsRepository
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.Calendar
@@ -46,13 +45,10 @@ import java.util.Calendar
  * 00 45 23 * * ?
  */
 @Component
-class BkRepoStatJob {
-
-    @Autowired
-    private lateinit var bkRepoMetricsRepository: BkRepoMetricsRepository
-
-    @Autowired
-    private lateinit var projectMetricsRepository: ProjectMetricsRepository
+class BkRepoStatJob(
+    private val bkRepoMetricsRepository: BkRepoMetricsRepository,
+    private val projectMetricsRepository: ProjectMetricsRepository
+) {
 
     @Scheduled(cron = "00 45 23 * * ?")
     @SchedulerLock(name = "BkRepoStatJob", lockAtMostFor = "PT1H")

@@ -79,7 +79,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -88,22 +87,13 @@ import java.io.FileOutputStream
 import java.nio.channels.Channels
 
 @Component
-class JobService {
-
-    @Autowired
-    private lateinit var nodeClient: NodeClient
-
-    @Autowired
-    private lateinit var repositoryClient: RepositoryClient
-
-    @Autowired
-    private lateinit var storageService: StorageService
-
-    @Autowired
-    private lateinit var storageManager: StorageManager
-
-    @Autowired
-    private lateinit var surplusNodeCleaner: SurplusNodeCleaner
+class JobService(
+    private val nodeClient: NodeClient,
+    private val repositoryClient: RepositoryClient,
+    private val storageService: StorageService,
+    private val storageManager: StorageManager,
+    private val surplusNodeCleaner: SurplusNodeCleaner
+) {
 
     /**
      * 仓库下所有repodata目录

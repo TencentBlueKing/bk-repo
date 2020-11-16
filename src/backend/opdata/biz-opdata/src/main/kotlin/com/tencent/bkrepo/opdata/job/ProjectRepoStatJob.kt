@@ -39,7 +39,6 @@ import com.tencent.bkrepo.opdata.model.RepoModel
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.influxdb.dto.BatchPoints
 import org.influxdb.dto.Point
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
@@ -48,19 +47,12 @@ import java.util.concurrent.TimeUnit
  * stat bkrepo running status
  */
 @Component
-class ProjectRepoStatJob {
-
-    @Autowired
-    private lateinit var nodeModel: NodeModel
-
-    @Autowired
-    private lateinit var projectModel: ProjectModel
-
-    @Autowired
-    private lateinit var repoModel: RepoModel
-
-    @Autowired
-    private lateinit var influxDbConfig: InfluxDbConfig
+class ProjectRepoStatJob(
+    private val nodeModel: NodeModel,
+    private val projectModel: ProjectModel,
+    private val repoModel: RepoModel,
+    private val influxDbConfig: InfluxDbConfig
+) {
 
     @Scheduled(cron = "00 00 */1 * * ?")
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT1H")

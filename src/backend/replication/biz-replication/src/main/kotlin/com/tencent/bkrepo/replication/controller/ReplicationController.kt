@@ -76,7 +76,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.PostMapping
@@ -84,31 +83,16 @@ import org.springframework.web.bind.annotation.RestController
 
 @Principal(type = PrincipalType.ADMIN)
 @RestController
-class ReplicationController : ReplicationClient {
-
-    @Autowired
-    private lateinit var projectClient: ProjectClient
-
-    @Autowired
-    private lateinit var repositoryClient: RepositoryClient
-
-    @Autowired
-    private lateinit var nodeClient: NodeClient
-
-    @Autowired
-    private lateinit var metadataClient: MetadataClient
-
-    @Autowired
-    private lateinit var permissionResource: ServicePermissionResource
-
-    @Autowired
-    private lateinit var userResource: ServiceUserResource
-
-    @Autowired
-    private lateinit var roleResource: ServiceRoleResource
-
-    @Autowired
-    private lateinit var storageService: StorageService
+class ReplicationController(
+    private val projectClient: ProjectClient,
+    private val repositoryClient: RepositoryClient,
+    private val nodeClient: NodeClient,
+    private val metadataClient: MetadataClient,
+    private val permissionResource: ServicePermissionResource,
+    private val userResource: ServiceUserResource,
+    private val roleResource: ServiceRoleResource,
+    private val storageService: StorageService
+) : ReplicationClient {
 
     @Value("\${spring.application.version}")
     private var version: String = DEFAULT_VERSION

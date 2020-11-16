@@ -40,14 +40,13 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class PackageHandler {
-    @Autowired
-    private lateinit var packageClient: PackageClient
+class PackageHandler(
+    private val packageClient: PackageClient
+) {
 
     /**
      * 创建包版本

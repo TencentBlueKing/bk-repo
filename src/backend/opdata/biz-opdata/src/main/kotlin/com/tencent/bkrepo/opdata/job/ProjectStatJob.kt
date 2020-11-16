@@ -39,24 +39,16 @@ import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.RepoMetrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class ProjectStatJob {
-
-    @Autowired
-    private lateinit var projectModel: ProjectModel
-
-    @Autowired
-    private lateinit var repoModel: RepoModel
-
-    @Autowired
-    private lateinit var nodeModel: NodeModel
-
-    @Autowired
-    private lateinit var projectMetricsRepository: ProjectMetricsRepository
+class ProjectStatJob(
+    private val projectModel: ProjectModel,
+    private val repoModel: RepoModel,
+    private val nodeModel: NodeModel,
+    private val projectMetricsRepository: ProjectMetricsRepository
+) {
 
     @Scheduled(cron = "00 15 * * * ?")
     @SchedulerLock(name = "ProjectStatJob", lockAtMostFor = "PT1H")

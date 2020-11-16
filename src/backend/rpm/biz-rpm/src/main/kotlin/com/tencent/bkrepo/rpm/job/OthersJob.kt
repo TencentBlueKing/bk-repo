@@ -36,18 +36,14 @@ import com.tencent.bkrepo.rpm.pojo.IndexType
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class OthersJob {
-
-    @Autowired
-    private lateinit var repositoryClient: RepositoryClient
-
-    @Autowired
-    private lateinit var jobService: JobService
+class OthersJob(
+    private val repositoryClient: RepositoryClient,
+    private val jobService: JobService
+) {
 
     // 每次任务间隔 ms
     @Scheduled(fixedDelay = 5000)

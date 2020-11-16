@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.service.RepositoryService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 
@@ -47,10 +46,9 @@ import org.springframework.stereotype.Component
  * 条件构造器中传入条件是`repoType`，需要转换成对应的仓库列表
  */
 @Component
-class RepoTypeRuleInterceptor : QueryRuleInterceptor {
-
-    @Autowired
-    private lateinit var repositoryService: RepositoryService
+class RepoTypeRuleInterceptor(
+    private val repositoryService: RepositoryService
+) : QueryRuleInterceptor {
 
     override fun match(rule: Rule): Boolean {
         return rule is Rule.QueryRule && rule.field == "repoType"

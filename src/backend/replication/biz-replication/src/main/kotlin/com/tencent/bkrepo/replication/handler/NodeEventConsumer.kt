@@ -45,7 +45,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
 
@@ -54,10 +53,9 @@ import org.springframework.stereotype.Component
  * dispatch it to event  handler
  */
 @Component
-class NodeEventConsumer : AbstractHandler() {
-
-    @Autowired
-    private lateinit var eventPublisher: ApplicationEventPublisher
+class NodeEventConsumer(
+    private val eventPublisher: ApplicationEventPublisher
+) : AbstractHandler() {
 
     fun dealWithNodeCreateEvent(description: Map<String, Any>) {
         val request = description[NODE_REQUEST] as String

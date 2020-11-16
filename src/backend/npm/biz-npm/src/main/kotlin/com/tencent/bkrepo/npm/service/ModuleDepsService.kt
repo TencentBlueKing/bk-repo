@@ -42,7 +42,6 @@ import com.tencent.bkrepo.npm.pojo.module.des.ModuleDepsInfo
 import com.tencent.bkrepo.npm.pojo.module.des.service.DepsCreateRequest
 import com.tencent.bkrepo.npm.pojo.module.des.service.DepsDeleteRequest
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -53,12 +52,10 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class ModuleDepsService {
-    @Autowired
-    private lateinit var moduleDepsRepository: ModuleDepsRepository
-
-    @Autowired
-    private lateinit var mongoTemplate: MongoTemplate
+class ModuleDepsService(
+    private val moduleDepsRepository: ModuleDepsRepository,
+    private val mongoTemplate: MongoTemplate
+) {
 
     /**
      * 创建依赖关系

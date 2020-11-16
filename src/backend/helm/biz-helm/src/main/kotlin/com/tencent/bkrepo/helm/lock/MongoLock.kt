@@ -33,14 +33,12 @@ package com.tencent.bkrepo.helm.lock
 
 import com.tencent.bkrepo.helm.dao.MongoLockDao
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class MongoLock {
-
-    @Autowired
-    private lateinit var mongoLockDao: MongoLockDao
+class MongoLock(
+    private val mongoLockDao: MongoLockDao
+) {
 
     fun tryLock(lockKey: String, lockValue: String): Boolean {
         // 如果存在且value一致，则返回true

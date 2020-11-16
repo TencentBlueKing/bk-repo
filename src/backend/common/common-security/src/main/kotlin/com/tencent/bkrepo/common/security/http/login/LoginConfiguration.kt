@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.security.http.login
 
 import com.tencent.bkrepo.common.security.http.HttpAuthSecurity
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo
@@ -41,13 +40,10 @@ import javax.annotation.PostConstruct
 import kotlin.reflect.jvm.javaMethod
 
 @Configuration
-class LoginConfiguration {
-
-    @Autowired
-    private lateinit var requestMappingHandlerMapping: RequestMappingHandlerMapping
-
-    @Autowired
-    private lateinit var httpAuthSecurity: HttpAuthSecurity
+class LoginConfiguration(
+    private val requestMappingHandlerMapping: RequestMappingHandlerMapping,
+    private val httpAuthSecurity: HttpAuthSecurity
+) {
 
     @PostConstruct
     fun init() {

@@ -33,7 +33,6 @@ package com.tencent.bkrepo.helm.dao
 
 import com.tencent.bkrepo.helm.model.TMongoLock
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -46,10 +45,9 @@ import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 @Repository
-class MongoLockDao {
-
-    @Autowired
-    private lateinit var mongoTemplate: MongoTemplate
+class MongoLockDao(
+    private val mongoTemplate: MongoTemplate
+) {
 
     /**
      * 返回指定key的数据

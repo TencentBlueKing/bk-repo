@@ -37,7 +37,6 @@ import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.service.DataMigrationService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -46,10 +45,9 @@ import org.springframework.web.bind.annotation.RestController
 @Api("npm 用户接口")
 @RequestMapping("/ext")
 @RestController
-class UserPackageMigrationController {
-
-    @Autowired
-    private lateinit var dataMigrationService: DataMigrationService
+class UserPackageMigrationController(
+    private val dataMigrationService: DataMigrationService
+) {
 
     @ApiOperation("data migration by file")
     @GetMapping("/{projectId}/{repoName}/dataMigrationByFile")
