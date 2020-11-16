@@ -21,6 +21,7 @@
 
 package com.tencent.bkrepo.composer.artifact.repository
 
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -30,6 +31,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
@@ -40,6 +42,8 @@ import com.tencent.bkrepo.composer.COMPOSER_VERSION_INIT
 import com.tencent.bkrepo.composer.DIRECT_DISTS
 import com.tencent.bkrepo.composer.INIT_PACKAGES
 import com.tencent.bkrepo.composer.exception.ComposerArtifactMetadataException
+import com.tencent.bkrepo.composer.pojo.ArtifactRepeat
+import com.tencent.bkrepo.composer.pojo.ArtifactUploadResponse
 import com.tencent.bkrepo.composer.pojo.ArtifactVersionDetail
 import com.tencent.bkrepo.composer.pojo.Basic
 import com.tencent.bkrepo.composer.util.DecompressUtil.wrapperJson
@@ -91,25 +95,78 @@ class ComposerLocalRepository : LocalRepository() {
     ): NodeCreateRequest {
         val nodeCreateRequest = buildNodeCreateRequest(context)
         return nodeCreateRequest.copy(
-            fullPath = "/$DIRECT_DISTS${context.artifactInfo.getArtifactFullPath()}",
             overwrite = true,
             metadata = metadata
         )
     }
 
-    private fun updateIndex(composerArtifact: ComposerArtifact, context: ArtifactContext) {
+    /**
+     * 当从同名构件中读取到name、version 与仓库中已保存的构件不同时，删除已保存的构件对应的版本。
+     */
+    private fun checkRepeatArtifactIndex(
+        jsonStr: String,
+        oldComposerArtifact: ComposerArtifact,
+        composerArtifact: ComposerArtifact,
+        context: ArtifactContext
+    ): String {
+        val oldName = PackageKeys.resolveComposer(oldComposerArtifact.name)
+        val oldVersion = oldComposerArtifact.version
+        return if (composerArtifact.name != oldName || composerArtifact.version != oldVersion) {
+            with(context.artifactInfo) {
+                packageClient.deleteVersion(projectId, repoName, PackageKeys.ofComposer(oldName), oldVersion)
+            }
+            JsonUtil.deleteComposerVersion(jsonStr, oldName, oldVersion)
+        } else {
+            jsonStr
+        }
+    }
+
+    /**
+     * 当从同名构件中读取到name、version 与仓库中已保存的构件不同时，删除已保存的构件对应的版本。
+     */
+    private fun getOldComposer(
+        context: ArtifactContext
+    ): ComposerArtifact {
+        // 通过URL查询已保存的构件的版本。
+        val oldNode = with(context.artifactInfo) {
+            nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath())
+        }.data!!
+        val oldPackageKey = oldNode.metadata["packageKey"] ?: throw ComposerArtifactMetadataException(
+            "${oldNode.projectId} | ${oldNode.repoName}\"${oldNode.fullPath}: not found metadata.packageKey"
+        )
+        val name = PackageKeys.resolveComposer(oldPackageKey as String)
+        val version = oldNode.metadata["version"] as String? ?: throw ComposerArtifactMetadataException(
+            "${oldNode.projectId} | ${oldNode.repoName}\"${oldNode.fullPath}: not found metadata.version"
+        )
+        return ComposerArtifact(name, version, "")
+    }
+
+    /**
+     * 更新构件的包索引
+     * 同名构件可能composer.json中版本不同，导致被覆盖的构件的版本未被删除
+     */
+    private fun updateIndex(
+        composerArtifact: ComposerArtifact,
+        oldComposerArtifact: ComposerArtifact?,
+        repeat: ArtifactRepeat,
+        context: ArtifactContext
+    ) {
         // 查询对应的 "/p/%package%.json" 是否存在
         val pArtifactUri = "/p/${composerArtifact.name}.json"
-        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, pArtifactUri).data
-        val resultJson = if (node == null) {
+        val jsonNode = nodeClient.getNodeDetail(context.projectId, context.repoName, pArtifactUri).data
+        val resultJson = if (jsonNode == null) {
             with(composerArtifact) {
                 JsonUtil.addComposerVersion(String.format(COMPOSER_VERSION_INIT, name), json, name, version)
             }
         } else {
-            nodeToJson(node).let {
-                with(composerArtifact) {
-                    JsonUtil.addComposerVersion(it, json, name, version)
+            val jsonStr = nodeToJson(jsonNode)
+            with(composerArtifact) {
+                val tempJsonStr = if (repeat == ArtifactRepeat.FULLPATH) {
+                    checkRepeatArtifactIndex(jsonStr, oldComposerArtifact!!, composerArtifact, context)
+                } else {
+                    jsonStr
                 }
+                JsonUtil.addComposerVersion(tempJsonStr, json, name, version)
             }
         }
         val jsonFile = ByteArrayInputStream(resultJson.toByteArray()).use {
@@ -135,8 +192,42 @@ class ComposerLocalRepository : LocalRepository() {
         )
     }
 
+    /**
+     * 检查上传的构件是否已在仓库中，判断条件：uri && sha256
+     * [ArtifactRepeat.FULLPATH_SHA256] 存在完全相同构件，不操作索引
+     * [ArtifactRepeat.FULLPATH] 请求路径相同，但内容不同，更新索引
+     * [ArtifactRepeat.NONE] 无重复构件
+     */
+    private fun checkRepeatArtifact(context: ArtifactUploadContext): ArtifactRepeat {
+        val artifactUri = context.artifactInfo.getArtifactFullPath()
+        val artifactSha256 = context.getArtifactSha256()
+        return with(context.artifactInfo) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactUri).data ?: return ArtifactRepeat.NONE
+            if (node.sha256 == artifactSha256) {
+                ArtifactRepeat.FULLPATH_SHA256
+            } else {
+                ArtifactRepeat.FULLPATH
+            }
+        }
+    }
+
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        with(context) {
+            val artifactPath = artifactInfo.getArtifactFullPath().removePrefix("/$DIRECT_DISTS")
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactPath).data
+            if (node == null || node.folder) return null
+            val range = resolveRange(context, node.size)
+            val inputStream = storageService.load(node.sha256!!, range, storageCredentials) ?: return null
+            return ArtifactResource(inputStream, artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL, useDisposition)
+        }
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun onUpload(context: ArtifactUploadContext) {
+        val repeat = checkRepeatArtifact(context)
+        val oldComposerArtifact = if (repeat == ArtifactRepeat.FULLPATH) {
+            getOldComposer(context)
+        } else null
         // 读取需要保存数据
         val composerArtifact = context.getArtifactFile().getInputStream().use {
             it.wrapperJson(context.artifactInfo.getArtifactFullPath())
@@ -147,7 +238,8 @@ class ComposerLocalRepository : LocalRepository() {
         metadata["version"] = composerArtifact.version
         val nodeCreateRequest = getCompressNodeCreateRequest(context, metadata)
         store(nodeCreateRequest, context.getArtifactFile(), context.storageCredentials)
-
+        // 更新索引
+        updateIndex(composerArtifact, oldComposerArtifact, repeat, context)
         // 保存版本信息
         packageClient.createVersion(
             PackageVersionCreateRequest(
@@ -160,15 +252,28 @@ class ComposerLocalRepository : LocalRepository() {
                 composerArtifact.version,
                 context.getArtifactFile().getSize(),
                 null,
-                "/$DIRECT_DISTS${context.artifactInfo.getArtifactFullPath()}",
+                context.artifactInfo.getArtifactFullPath(),
                 null,
                 metadata,
                 overwrite = true,
                 createdBy = context.userId
             )
         )
-        // 更新索引
-        updateIndex(composerArtifact, context)
+    }
+
+    override fun onUploadSuccess(context: ArtifactUploadContext) {
+        super.onUploadSuccess(context)
+        val response = HttpContextHolder.getResponse()
+        response.contentType = "application/json; charset=UTF-8"
+        with(context.artifactInfo) {
+            val artifactUploadResponse = ArtifactUploadResponse(
+                projectId, repoName, getArtifactFullPath(),
+                context.getArtifactFile().getFileSha256(), context.getArtifactFile().getFileMd5(),
+                "Uploaded " +
+                    "success"
+            )
+            response.writer.print(artifactUploadResponse.toJsonString())
+        }
     }
 
     /**
@@ -198,7 +303,7 @@ class ComposerLocalRepository : LocalRepository() {
             ).data?.records ?: return
             for (packageVersion in pages) {
                 val node = nodeClient.getNodeDetail(context.projectId, context.repoName, packageVersion.contentPath!!).data
-                        ?: continue
+                    ?: continue
                 removeComposerArtifact(node, packageKey, packageVersion.name, context)
             }
         } else {
@@ -217,7 +322,7 @@ class ComposerLocalRepository : LocalRepository() {
 
     private fun getPackageJson(context: ArtifactContext, name: String): String? {
         val jsonPath = "/p/$name.json"
-        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, jsonPath).data?: return null
+        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, jsonPath).data ?: return null
         return nodeToJson(node)
     }
 

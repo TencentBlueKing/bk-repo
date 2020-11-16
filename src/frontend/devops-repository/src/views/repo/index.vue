@@ -92,6 +92,9 @@
             // }
         },
         watch: {
+            repoType (val) {
+                val === 'docker' && !this.dockerDomain && this.getDockerDomain()
+            },
             repoName () {
                 this.showRepoSearch = false
             },
@@ -105,7 +108,7 @@
             }).then(res => {
                 this.repoList = res.map(v => ({ ...v, type: v.type.toLowerCase() }))
             })
-            !this.dockerDomain && this.getDockerDomain()
+            this.repoType === 'docker' && !this.dockerDomain && this.getDockerDomain()
             this.setRepositoryHistory({
                 projectId: this.projectId,
                 repoType: this.repoType,

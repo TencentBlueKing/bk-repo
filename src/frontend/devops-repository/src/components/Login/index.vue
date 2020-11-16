@@ -81,14 +81,16 @@
                 formData.append('uid', this.loginForm.username)
                 formData.append('token', this.loginForm.password)
                 this.bkrepoLogin(formData).then(res => {
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: this.$t('login') + this.$t('success')
-                    })
-                    this.SHOW_LOGIN_DIALOG(false)
-                    location.href = ''
-                }).catch(() => {
-                    this.loginFailed = true
+                    if (res) {
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: this.$t('login') + this.$t('success')
+                        })
+                        this.SHOW_LOGIN_DIALOG(false)
+                        location.href = ''
+                    } else {
+                        this.loginFailed = true
+                    }
                 })
             }
         }
