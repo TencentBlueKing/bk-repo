@@ -95,7 +95,14 @@ class AuthServiceConfig {
         @Autowired mongoTemplate: MongoTemplate,
         @Autowired repositoryClient: RepositoryClient,
         @Autowired bkiamService: BkiamService
-    ) = BkiamPermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient, bkiamService)
+    ) = BkiamPermissionServiceImpl(
+        userRepository,
+        roleRepository,
+        permissionRepository,
+        mongoTemplate,
+        repositoryClient,
+        bkiamService
+    )
 
     @Bean
     @ConditionalOnMissingBean(RoleService::class)

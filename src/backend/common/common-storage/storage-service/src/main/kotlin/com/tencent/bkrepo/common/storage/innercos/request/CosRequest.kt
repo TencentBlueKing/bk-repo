@@ -58,7 +58,8 @@ abstract class CosRequest(
 
     open fun sign(credentials: InnerCosCredentials, config: ClientConfig): String {
         return headers[AUTHORIZATION] ?: run {
-            val endpoint = config.endpointBuilder.buildEndpoint(credentials.region, credentials.bucket).apply { headers[HOST] = this }
+            val endpoint = config.endpointBuilder.buildEndpoint(credentials.region, credentials.bucket)
+            headers[HOST] = endpoint
             val resolvedHost = config.endpointResolver.resolveEndpoint(endpoint)
             url = config.httpProtocol.getScheme() + resolvedHost + requestUri
             if (parameters.isNotEmpty()) {

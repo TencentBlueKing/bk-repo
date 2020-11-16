@@ -38,9 +38,9 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.npm.pojo.NpmErrorResponse
 import com.tencent.bkrepo.npm.pojo.auth.AuthFailInfo
 import com.tencent.bkrepo.npm.pojo.auth.NpmAuthFailResponse
-import com.tencent.bkrepo.npm.pojo.NpmErrorResponse
 import com.tencent.bkrepo.npm.pojo.auth.NpmAuthResponse
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
@@ -176,7 +176,7 @@ class NpmExceptionHandler {
     private fun logNpmException(exception: Exception) {
         val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val uri = HttpContextHolder.getRequest().requestURI
-        logger.warn("User[$userId] access resource[$uri] failed[${exception.javaClass.simpleName}]: ${exception.message}")
+        logger.warn("User[$userId] access [$uri] failed[${exception.javaClass.simpleName}]: ${exception.message}")
     }
 
     companion object {

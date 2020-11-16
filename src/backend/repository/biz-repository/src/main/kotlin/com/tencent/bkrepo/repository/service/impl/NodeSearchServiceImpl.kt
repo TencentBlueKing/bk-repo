@@ -67,9 +67,15 @@ class NodeSearchServiceImpl(
         // metadata格式转换，并排除id字段
         nodeList.forEach {
             it.remove("_id")
-            it[NodeInfo::createdDate.name]?.let { createDate -> it[TNode::createdDate.name] = convertDateTime(createDate) }
-            it[NodeInfo::lastModifiedDate.name]?.let { lastModifiedDate -> it[TNode::lastModifiedDate.name] = convertDateTime(lastModifiedDate) }
-            val metadata = it[NodeInfo::metadata.name]?.let { metadata -> convert(metadata as List<Map<String, String>>) }
+            it[NodeInfo::createdDate.name]?.let { createDate ->
+                it[TNode::createdDate.name] = convertDateTime(createDate)
+            }
+            it[NodeInfo::lastModifiedDate.name]?.let { lastModifiedDate ->
+                it[TNode::lastModifiedDate.name] = convertDateTime(lastModifiedDate)
+            }
+            val metadata = it[NodeInfo::metadata.name]?.let { metadata ->
+                convert(metadata as List<Map<String, String>>)
+            }
             if (context.selectMetadata) {
                 it[NodeInfo::metadata.name] = metadata
             } else {

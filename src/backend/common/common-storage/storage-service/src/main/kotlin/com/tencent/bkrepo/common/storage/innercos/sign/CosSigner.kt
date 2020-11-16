@@ -77,7 +77,13 @@ object CosSigner {
             .toString()
     }
 
-    private fun buildAuthorization(secretId: String, signTime: String, signedHeaderList: String, signedParameterList: String, signature: String): String {
+    private fun buildAuthorization(
+        secretId: String,
+        signTime: String,
+        signedHeaderList: String,
+        signedParameterList: String,
+        signature: String
+    ): String {
         return StringBuilder()
             .append("q-sign-algorithm=").append(ALGORITHM).append('&')
             .append("q-ak=").append(secretId).append('&')

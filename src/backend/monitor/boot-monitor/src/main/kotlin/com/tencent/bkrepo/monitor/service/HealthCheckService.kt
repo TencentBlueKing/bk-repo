@@ -57,7 +57,15 @@ class HealthCheckService(
 
     private fun createContent(healthInfo: HealthInfo): Any {
         return with(healthInfo) {
-            MESSAGE_TEMPLATE.format(application, instance, clusterName, name, status.status.code, status.details, LocalDateTime.now())
+            MESSAGE_TEMPLATE.format(
+                application,
+                instance,
+                clusterName,
+                name,
+                status.status.code,
+                status.details,
+                LocalDateTime.now()
+            )
         }
     }
 

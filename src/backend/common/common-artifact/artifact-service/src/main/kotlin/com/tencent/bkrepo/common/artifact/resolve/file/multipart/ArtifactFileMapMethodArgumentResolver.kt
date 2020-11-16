@@ -53,7 +53,12 @@ class ArtifactFileMapMethodArgumentResolver : HandlerMethodArgumentResolver {
         return ArtifactFileMap::class.java.isAssignableFrom(parameter.parameterType)
     }
 
-    override fun resolveArgument(parameter: MethodParameter, container: ModelAndViewContainer?, nativeWebRequest: NativeWebRequest, factory: WebDataBinderFactory?): Any? {
+    override fun resolveArgument(
+        parameter: MethodParameter,
+        container: ModelAndViewContainer?,
+        nativeWebRequest: NativeWebRequest,
+        factory: WebDataBinderFactory?
+    ): Any? {
         val request = nativeWebRequest.getNativeRequest(HttpServletRequest::class.java)!!
         val artifactFileMap = ArtifactFileMap()
         if (request is MultipartHttpServletRequest) {

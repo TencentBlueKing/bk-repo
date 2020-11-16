@@ -49,6 +49,7 @@ class HealthSourceService(
 ) {
     @Value("\${service.prefix:repo-}")
     private val servicePrefix: String = "repo-"
+
     @Value("\${service.suffix:}")
     private val serviceSuffix: String = ""
     private val instanceWebClient = instanceWebClientBuilder.build()
@@ -60,7 +61,14 @@ class HealthSourceService(
             val trimmedApplicationListString = applicationListString.trim()
             val includeAll = trimmedApplicationListString.isEmpty() || trimmedApplicationListString == "*"
             val applicationList = trimmedApplicationListString.split(",").map { resolveServiceName(it) }.distinct()
-            val healthSource = InstanceHealthSource(healthEndpoint, includeAll, applicationList, monitorProperties.interval, instanceRegistry, instanceWebClient)
+            val healthSource = InstanceHealthSource(
+                healthEndpoint,
+                includeAll,
+                applicationList,
+                monitorProperties.interval,
+                instanceRegistry,
+                instanceWebClient
+            )
             healthSourceMap[healthEndpoint] = healthSource
         }
     }

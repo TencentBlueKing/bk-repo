@@ -75,7 +75,8 @@ abstract class LocalRepository : AbstractArtifactRepository() {
             if (node == null || node.folder) return null
             val range = resolveRange(context, node.size)
             val inputStream = storageService.load(node.sha256!!, range, storageCredentials) ?: return null
-            return ArtifactResource(inputStream, artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL, useDisposition)
+            val responseName = artifactInfo.getResponseName()
+            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
         }
     }
 

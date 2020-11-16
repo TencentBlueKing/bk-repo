@@ -126,7 +126,8 @@ class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: MissingKotlinParameterException): Response<Void> {
         val messageCode = CommonMessageCode.PARAMETER_MISSING
-        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, arrayOf(exception.parameter.name.orEmpty()))
+        val parameterName = exception.parameter.name.orEmpty()
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, arrayOf(parameterName))
         logBusinessException(exception, "[${messageCode.getCode()}]$errorMessage")
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
     }

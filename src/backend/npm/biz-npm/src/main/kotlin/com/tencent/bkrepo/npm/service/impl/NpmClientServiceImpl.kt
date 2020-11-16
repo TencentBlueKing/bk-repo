@@ -57,8 +57,8 @@ import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.exception.NpmArtifactExistException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmBadRequestException
-import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
+import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
@@ -209,10 +209,10 @@ class NpmClientServiceImpl(
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun getDistTags(artifactInfo: NpmArtifactInfo, name: String): DistTags {
-        logger.info("handling get distTags request for package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}]")
-        val packageMetaData = queryPackageInfo(artifactInfo, name, false)
-        with(packageMetaData) {
-            return distTags.getMap()
+        with(artifactInfo) {
+            logger.info("handling get distTags request for package [$name] in repo [${projectId}/${repoName}]")
+            val packageMetaData = queryPackageInfo(artifactInfo, name, false)
+            return packageMetaData.distTags.getMap()
         }
     }
 

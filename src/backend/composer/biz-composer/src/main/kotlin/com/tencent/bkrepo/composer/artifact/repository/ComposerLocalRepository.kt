@@ -192,14 +192,16 @@ class ComposerLocalRepository : LocalRepository() {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun remove(context: ArtifactRemoveContext) {
+        val projectId = context.projectId
+        val repoName = context.repoName
         val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
         val version = HttpContextHolder.getRequest().getParameter("version")
         if (version.isNullOrBlank()) {
             // 删除包
             val versions = getVersions(packageKey, context)
             val pages = packageClient.listVersionPage(
-                context.projectId,
-                context.repoName,
+                projectId,
+                repoName,
                 packageKey,
                 null,
                 null,
@@ -207,18 +209,12 @@ class ComposerLocalRepository : LocalRepository() {
                 versions!!.toInt()
             ).data?.records ?: return
             for (packageVersion in pages) {
-                val node = nodeClient.getNodeDetail(context.projectId, context.repoName, packageVersion.contentPath!!).data
-                    ?: continue
+                val node = nodeClient.getNodeDetail(projectId, repoName, packageVersion.contentPath!!).data ?: continue
                 removeComposerArtifact(node, packageKey, packageVersion.name, context)
             }
         } else {
             with(context.artifactInfo) {
-                val packageVersion = packageClient.findVersionByName(
-                    context.projectId,
-                    context.repoName,
-                    packageKey,
-                    version
-                ).data ?: return
+                val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: return
                 val node = nodeClient.getNodeDetail(projectId, repoName, packageVersion.contentPath!!).data ?: return
                 removeComposerArtifact(node, packageKey, version, context)
             }

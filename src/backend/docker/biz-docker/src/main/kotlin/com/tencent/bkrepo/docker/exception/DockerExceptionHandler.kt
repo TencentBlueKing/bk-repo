@@ -100,7 +100,10 @@ class DockerExceptionHandler {
         val response = HttpContextHolder.getResponse()
         val scopeStr = "repository:*/*/tb:push,pull"
         response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
-        response.setHeader(HttpHeaders.WWW_AUTHENTICATE, AUTH_CHALLENGE_SERVICE_SCOPE.format(authUrl, REGISTRY_SERVICE, scopeStr))
+        response.setHeader(
+            HttpHeaders.WWW_AUTHENTICATE,
+            AUTH_CHALLENGE_SERVICE_SCOPE.format(authUrl, REGISTRY_SERVICE, scopeStr)
+        )
         response.status = HttpStatus.UNAUTHORIZED.value()
         response.contentType = MediaType.APPLICATION_JSON
         response.writer.print(ERROR_MESSAGE.format("UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))

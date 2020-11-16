@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServletResponse
 import kotlin.system.measureTimeMillis
 
 class ArtifactFileCleanInterceptor : HandlerInterceptor {
+
     @Suppress("UNCHECKED_CAST")
     override fun afterCompletion(request: HttpServletRequest, response: HttpServletResponse, handler: Any, ex: Exception?) {
         try {

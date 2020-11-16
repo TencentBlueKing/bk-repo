@@ -56,10 +56,16 @@ class ArtifactInfoMethodArgumentResolver : HandlerMethodArgumentResolver {
     private val resolverMap: ResolverMap = ResolverScannerRegistrar.resolverMap
 
     override fun supportsParameter(parameter: MethodParameter): Boolean {
-        return ArtifactInfo::class.java.isAssignableFrom(parameter.parameterType) && parameter.hasParameterAnnotation(ArtifactPathVariable::class.java)
+        return ArtifactInfo::class.java.isAssignableFrom(parameter.parameterType)
+            && parameter.hasParameterAnnotation(ArtifactPathVariable::class.java)
     }
 
-    override fun resolveArgument(parameter: MethodParameter, container: ModelAndViewContainer?, nativeWebRequest: NativeWebRequest, factory: WebDataBinderFactory?): Any? {
+    override fun resolveArgument(
+        parameter: MethodParameter,
+        container: ModelAndViewContainer?,
+        nativeWebRequest: NativeWebRequest,
+        factory: WebDataBinderFactory?
+    ): Any? {
         val attributes = nativeWebRequest.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, 0) as Map<*, *>
         val projectId = attributes[PROJECT_ID].toString()
         val repoName = attributes[REPO_NAME].toString()

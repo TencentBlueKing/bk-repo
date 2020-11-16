@@ -50,6 +50,7 @@ import javax.servlet.http.HttpServletResponse
 /**
  * 构件上下文
  */
+@Suppress("UNCHECKED_CAST")
 open class ArtifactContext(repo: RepositoryDetail? = null, artifact: ArtifactInfo? = null) {
     val request: HttpServletRequest = HttpContextHolder.getRequest()
     val response: HttpServletResponse = HttpContextHolder.getResponse()

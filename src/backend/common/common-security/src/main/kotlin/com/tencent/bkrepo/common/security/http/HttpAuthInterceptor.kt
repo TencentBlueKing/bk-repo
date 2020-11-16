@@ -82,7 +82,8 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
                         request.setAttribute(USER_KEY, userId)
                         authHandler.onAuthenticateSuccess(request, response, userId)
                         if (logger.isDebugEnabled) {
-                            logger.debug("User[${SecurityUtils.getPrincipal()}] authenticate success by ${authHandler.javaClass.simpleName}.")
+                            val handlerName = authHandler.javaClass.simpleName
+                            logger.debug("User[${SecurityUtils.getPrincipal()}] authenticate success by $handlerName.")
                         }
                         return true
                     } else if (isLoginRequest) {
