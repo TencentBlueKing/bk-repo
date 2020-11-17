@@ -94,7 +94,11 @@ class RepositoryController(
         return getRepoDetail(projectId, repoName, null)
     }
 
-    override fun getRepoDetailWithType(projectId: String, repoName: String, type: String?): Response<RepositoryDetail?> {
+    override fun getRepoDetailWithType(
+        projectId: String,
+        repoName: String,
+        type: String?
+    ): Response<RepositoryDetail?> {
         return getRepoDetail(projectId, repoName, type)
     }
 

@@ -104,7 +104,14 @@ class RepoNameRuleInterceptor(
         repoPublic: Boolean? = null
     ): Boolean {
         return try {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName, repoPublic)
+            permissionManager.checkPermission(
+                userId = userId,
+                type = ResourceType.REPO,
+                action = PermissionAction.READ,
+                projectId = projectId,
+                repoName = repoName,
+                repoPublic = repoPublic
+            )
             true
         } catch (ignored: Exception) {
             false

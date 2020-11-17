@@ -76,7 +76,13 @@ interface RepositoryService {
      * @param name 仓库名称
      * @param type 仓库类型
      */
-    fun listRepoPage(projectId: String, pageNumber: Int, pageSize: Int, name: String? = null, type: String? = null): Page<RepositoryInfo>
+    fun listRepoPage(
+        projectId: String,
+        pageNumber: Int,
+        pageSize: Int,
+        name: String? = null,
+        type: String? = null
+    ): Page<RepositoryInfo>
 
     /**
      * 根据类型分页查询仓库列表

@@ -376,24 +376,28 @@ class NodeServiceImpl(
 
             val isSameRepository = srcProjectId == destProjectId && srcRepoName == destRepoName
             // 查询repository
-            val srcRepository = repositoryDao.findByNameAndType(srcProjectId, srcRepoName)
+            val srcRepo = repositoryDao.findByNameAndType(srcProjectId, srcRepoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, srcRepoName)
-            val destRepository = if (!isSameRepository) {
+            val destRepo = if (!isSameRepository) {
                 repositoryDao.findByNameAndType(destProjectId, destRepoName)
                     ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, destRepoName)
-            } else srcRepository
+            } else srcRepo
 
             // 查询storageCredentials
-            val srcCredentials = srcRepository.credentialsKey?.let {
+            val srcCredentials = srcRepo.credentialsKey?.let {
                 storageCredentialService.findByKey(it)
             }
             val destCredentials = if (!isSameRepository) {
-                destRepository.credentialsKey?.let { storageCredentialService.findByKey(it) }
+                destRepo.credentialsKey?.let { storageCredentialService.findByKey(it) }
             } else srcCredentials
 
             // 只允许local或者composite类型仓库操作
-            val canSrcRepoMove = srcRepository.category.let { it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE }
-            val canDestRepoMove = destRepository.category.let { it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE }
+            val canSrcRepoMove = srcRepo.category.let {
+                it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE
+            }
+            val canDestRepoMove = destRepo.category.let {
+                it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE
+            }
             if (!canSrcRepoMove || !canDestRepoMove) {
                 throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
             }
@@ -417,13 +421,14 @@ class NodeServiceImpl(
                     // 创建dest父目录
                     mkdirs(destProjectId, destRepoName, path, operator)
                     // 操作节点
-                    moveOrCopyNode(srcNode, destRepository, srcCredentials, destCredentials, path, name, request, operator)
+                    doMoveOrCopy(srcNode, destRepo, srcCredentials, destCredentials, path, name, request, operator)
                     combinePath(path, name)
                 } else {
                     // 目录 -> 存在的目录
                     val path = toPath(destNode.fullPath)
+                    val nodeName = srcNode.name
                     // 操作节点
-                    moveOrCopyNode(srcNode, destRepository, srcCredentials, destCredentials, path, srcNode.name, request, operator)
+                    doMoveOrCopy(srcNode, destRepo, srcCredentials, destCredentials, path, nodeName, request, operator)
                     combinePath(path, srcNode.name)
                 }
                 val srcRootNodePath = toPath(srcNode.fullPath)
@@ -437,7 +442,7 @@ class NodeServiceImpl(
                 // 目录下的节点 -> 创建好的目录
                 nodeDao.find(query).forEach {
                     val destPath = it.path.replaceFirst(srcRootNodePath, destRootNodePath)
-                    moveOrCopyNode(it, destRepository, srcCredentials, destCredentials, destPath, null, request, operator)
+                    doMoveOrCopy(it, destRepo, srcCredentials, destCredentials, destPath, null, request, operator)
                 }
             } else {
                 // 文件 ->
@@ -445,7 +450,7 @@ class NodeServiceImpl(
                 val destName = if (destNode?.folder == true) srcNode.name else resolveName(destFullPath)
                 // 创建dest父目录
                 mkdirs(destProjectId, destRepoName, destPath, operator)
-                moveOrCopyNode(srcNode, destRepository, srcCredentials, destCredentials, destPath, destName, request, operator)
+                doMoveOrCopy(srcNode, destRepo, srcCredentials, destCredentials, destPath, destName, request, operator)
             }
             // event
             if (request is NodeMoveRequest) {
@@ -460,7 +465,7 @@ class NodeServiceImpl(
     /**
      * 移动/拷贝节点
      */
-    private fun moveOrCopyNode(
+    private fun doMoveOrCopy(
         srcNode: TNode,
         destRepository: TRepository,
         srcStorageCredentials: StorageCredentials?,

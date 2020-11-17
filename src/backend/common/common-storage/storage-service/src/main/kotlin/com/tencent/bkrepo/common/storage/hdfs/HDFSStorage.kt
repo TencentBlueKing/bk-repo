@@ -44,33 +44,33 @@ import java.net.URI
 
 open class HDFSStorage : AbstractFileStorage<HDFSCredentials, HDFSClient>() {
 
-    override fun store(path: String, filename: String, file: File, client: HDFSClient) {
+    override fun store(path: String, name: String, file: File, client: HDFSClient) {
         val localPath = Path(file.absolutePath)
-        val remotePath = concatRemotePath(path, filename, client)
+        val remotePath = concatRemotePath(path, name, client)
         client.fileSystem.copyFromLocalFile(localPath, remotePath)
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: HDFSClient) {
-        val remotePath = concatRemotePath(path, filename, client)
+    override fun store(path: String, name: String, inputStream: InputStream, size: Long, client: HDFSClient) {
+        val remotePath = concatRemotePath(path, name, client)
         val outputStream = client.fileSystem.create(remotePath, true)
         outputStream.use { inputStream.copyTo(outputStream) }
     }
 
-    override fun load(path: String, filename: String, range: Range, client: HDFSClient): InputStream? {
-        val remotePath = concatRemotePath(path, filename, client)
+    override fun load(path: String, name: String, range: Range, client: HDFSClient): InputStream? {
+        val remotePath = concatRemotePath(path, name, client)
         val inputStream = client.fileSystem.open(remotePath)
         return inputStream.apply { seek(range.start) }.bound(range)
     }
 
-    override fun delete(path: String, filename: String, client: HDFSClient) {
-        val remotePath = concatRemotePath(path, filename, client)
+    override fun delete(path: String, name: String, client: HDFSClient) {
+        val remotePath = concatRemotePath(path, name, client)
         if (client.fileSystem.exists(remotePath)) {
             client.fileSystem.delete(remotePath, false)
         }
     }
 
-    override fun exist(path: String, filename: String, client: HDFSClient): Boolean {
-        val remotePath = concatRemotePath(path, filename, client)
+    override fun exist(path: String, name: String, client: HDFSClient): Boolean {
+        val remotePath = concatRemotePath(path, name, client)
         return client.fileSystem.exists(remotePath)
     }
 

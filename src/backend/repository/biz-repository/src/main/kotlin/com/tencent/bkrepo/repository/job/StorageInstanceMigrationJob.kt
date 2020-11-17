@@ -70,7 +70,10 @@ class StorageInstanceMigrationJob(
 ) {
 
     fun migrate(projectId: String, repoName: String, destStorageKey: String) {
-        logger.info("Start to migrate storage instance, projectId: $projectId, repoName: $repoName, dest key: $destStorageKey.")
+        logger.info(
+            "Start to migrate storage instance, " +
+                "projectId: $projectId, repoName: $repoName, dest key: $destStorageKey."
+        )
         val repository = repositoryService.getRepoDetail(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
         // 限制只能由默认storage迁移
@@ -97,10 +100,28 @@ class StorageInstanceMigrationJob(
                 repositoryService.updateStorageCredentialsKey(projectId, repoName, destStorageKey)
 
                 // 迁移老文件
-                migrateOldFile(projectId, repoName, startTime, srcBucket, srcStorageKey, destStorageKey, srcCosClient, destCosClient)
+                migrateOldFile(
+                    projectId = projectId,
+                    repoName = repoName,
+                    startTime = startTime,
+                    srcBucket = srcBucket,
+                    srcStorageKey = srcStorageKey,
+                    destStorageKey = destStorageKey,
+                    srcCosClient = srcCosClient,
+                    destCosClient = destCosClient
+                )
 
                 // 校验新文件
-                checkNewFile(projectId, repoName, startTime, srcBucket, srcStorageKey, destStorageKey, srcCosClient, destCosClient)
+                checkNewFile(
+                    projectId = projectId,
+                    repoName = repoName,
+                    startTime = startTime,
+                    srcBucket = srcBucket,
+                    srcStorageKey = srcStorageKey,
+                    destStorageKey = destStorageKey,
+                    srcCosClient = srcCosClient,
+                    destCosClient = destCosClient
+                )
             } catch (exception: RuntimeException) {
                 logger.error("Migrate storage instance failed.", exception)
             }

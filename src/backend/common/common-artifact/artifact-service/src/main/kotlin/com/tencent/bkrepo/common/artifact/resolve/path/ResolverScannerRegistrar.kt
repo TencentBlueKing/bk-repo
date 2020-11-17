@@ -47,17 +47,24 @@ import org.springframework.util.ClassUtils
 /**
  * 自动扫描[Resolver]注解
  */
-class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
+class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAware, BeanClassLoaderAware,
+    EnvironmentAware {
 
     private var resourceLoader: ResourceLoader? = null
     private var environment: Environment? = null
     private var classLoader: ClassLoader? = null
 
-    override fun registerBeanDefinitions(annotationMetadata: AnnotationMetadata, beanDefinitionRegistry: BeanDefinitionRegistry) {
+    override fun registerBeanDefinitions(
+        annotationMetadata: AnnotationMetadata,
+        beanDefinitionRegistry: BeanDefinitionRegistry
+    ) {
         logger.info("Scanning ArtifactInfo resolver.")
         val provider = createResolverScanner()
         provider.resourceLoader = resourceLoader
-        val basePackages = listOf(ClassUtils.getPackageName(this.javaClass), ClassUtils.getPackageName(annotationMetadata.className))
+        val basePackages = listOf(
+            ClassUtils.getPackageName(this.javaClass),
+            ClassUtils.getPackageName(annotationMetadata.className)
+        )
         basePackages.forEach {
             for (beanDefinition in provider.findCandidateComponents(it)) {
                 val clazz = Class.forName(beanDefinition.beanClassName)
@@ -66,7 +73,10 @@ class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAw
                     val instance = clazz.newInstance() as ArtifactInfoResolver
                     if (!resolverMap.containsKey(annotation.value)) {
                         resolverMap.register(annotation.value, instance, annotation.default)
-                        logger.info("Registering ArtifactInfo resolver: [${annotation.value} -> ${beanDefinition.beanClassName} (default: ${annotation.default})].")
+                        val value = annotation.value
+                        val beanClassName = beanDefinition.beanClassName
+                        val isDefault = annotation.default
+                        logger.info("Registering ArtifactInfo resolver: $value -> $beanClassName(default: $isDefault).")
                     }
                 }
             }

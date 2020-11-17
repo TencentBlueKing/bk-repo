@@ -86,7 +86,10 @@ class TaskReloadService(
             }
         }
         if (logger.isDebugEnabled) {
-            logger.debug("Success to reload replication task, total: $totalCount, new: $newTaskCount, expired: $expiredTaskCount")
+            logger.debug(
+                "Success to reload replication task, " +
+                    "total: $totalCount, new: $newTaskCount, expired: $expiredTaskCount"
+            )
         }
     }
 

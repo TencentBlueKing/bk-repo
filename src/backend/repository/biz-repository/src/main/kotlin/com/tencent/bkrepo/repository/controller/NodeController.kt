@@ -78,7 +78,12 @@ class NodeController(
         return ResponseBuilder.success(nodeService.listExistFullPath(projectId, repoName, fullPathList))
     }
 
-    override fun listNodePage(projectId: String, repoName: String, path: String, nodeListOption: NodeListOption): Response<Page<NodeInfo>> {
+    override fun listNodePage(
+        projectId: String,
+        repoName: String,
+        path: String,
+        nodeListOption: NodeListOption
+    ): Response<Page<NodeInfo>> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, path)
         return ResponseBuilder.success(nodeService.listNodePage(artifactInfo, nodeListOption))
     }

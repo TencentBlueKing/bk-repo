@@ -59,35 +59,35 @@ open class S3Storage : AbstractFileStorage<S3Credentials, S3Client>() {
 
     private var defaultTransferManager: TransferManager? = null
 
-    override fun store(path: String, filename: String, file: File, client: S3Client) {
+    override fun store(path: String, name: String, file: File, client: S3Client) {
         val transferManager = getTransferManager(client)
-        val putObjectRequest = PutObjectRequest(client.bucketName, filename, file)
+        val putObjectRequest = PutObjectRequest(client.bucketName, name, file)
         val upload = transferManager.upload(putObjectRequest)
         upload.waitForCompletion()
         shutdownTransferManager(transferManager)
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: S3Client) {
+    override fun store(path: String, name: String, inputStream: InputStream, size: Long, client: S3Client) {
         val metadata = ObjectMetadata().apply { contentLength = size }
-        client.s3Client.putObject(client.bucketName, filename, inputStream, metadata)
+        client.s3Client.putObject(client.bucketName, name, inputStream, metadata)
     }
 
-    override fun load(path: String, filename: String, range: Range, client: S3Client): InputStream? {
-        val getObjectRequest = GetObjectRequest(client.bucketName, filename)
+    override fun load(path: String, name: String, range: Range, client: S3Client): InputStream? {
+        val getObjectRequest = GetObjectRequest(client.bucketName, name)
         getObjectRequest.setRange(range.start, range.end)
         return client.s3Client.getObject(getObjectRequest).objectContent
     }
 
-    override fun delete(path: String, filename: String, client: S3Client) {
-        if (exist(path, filename, client)) {
-            val deleteObjectRequest = DeleteObjectRequest(client.bucketName, filename)
+    override fun delete(path: String, name: String, client: S3Client) {
+        if (exist(path, name, client)) {
+            val deleteObjectRequest = DeleteObjectRequest(client.bucketName, name)
             client.s3Client.deleteObject(deleteObjectRequest)
         }
     }
 
-    override fun exist(path: String, filename: String, client: S3Client): Boolean {
+    override fun exist(path: String, name: String, client: S3Client): Boolean {
         return try {
-            client.s3Client.doesObjectExist(client.bucketName, filename)
+            client.s3Client.doesObjectExist(client.bucketName, name)
         } catch (ignored: Exception) {
             false
         }

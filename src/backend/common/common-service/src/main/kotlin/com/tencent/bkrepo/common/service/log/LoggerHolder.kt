@@ -45,6 +45,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 import javax.servlet.http.HttpServletRequest
 
 object LoggerHolder {
+
     /**
      * 异常logger
      */
@@ -77,7 +78,8 @@ object LoggerHolder {
         val uri = request?.requestURI
         val method = request?.method
         val exceptionMessage = message ?: exception.message.orEmpty()
-        val fullMessage = "User[$principal] $method [$uri] by [$accessChannel] failed[${exception.javaClass.simpleName}]: $exceptionMessage"
+        val exceptionName = exception.javaClass.simpleName
+        val fullMessage = "[$principal] $method [$uri] by [$accessChannel] failed[$exceptionName]: $exceptionMessage"
         if (systemError) {
             exceptionLogger.error(fullMessage, exception)
         } else {

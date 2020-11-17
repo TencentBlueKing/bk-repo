@@ -45,8 +45,12 @@ data class SemVer(
         require(major >= 0) { "Major version must be a positive number" }
         require(minor >= 0) { "Minor version must be a positive number" }
         require(patch >= 0) { "Patch version must be a positive number" }
-        preRelease?.let { require(it.matches(Regex("""[\dA-z\-]+(?:\.[\dA-z\-]+)*"""))) { "Pre-release version is not valid" } }
-        buildMetadata?.let { require(it.matches(Regex("""[\dA-z\-]+(?:\.[\dA-z\-]+)*"""))) { "Pre-release version is not valid" } }
+        preRelease?.let {
+            require(it.matches(Regex("""[\dA-z\-]+(?:\.[\dA-z\-]+)*"""))) { "Pre-release version is not valid" }
+        }
+        buildMetadata?.let {
+            require(it.matches(Regex("""[\dA-z\-]+(?:\.[\dA-z\-]+)*"""))) { "Pre-release version is not valid" }
+        }
     }
 
     /**
@@ -91,7 +95,8 @@ data class SemVer(
          * @throws IllegalArgumentException if the version is not valid.
          */
         fun parse(version: String): SemVer {
-            val result = pattern.matchEntire(version) ?: throw IllegalArgumentException("Invalid version string [$version]")
+            val result = pattern.matchEntire(version)
+                ?: throw IllegalArgumentException("Invalid version string [$version]")
             return SemVer(
                 major = if (result.groupValues[1].isEmpty()) 0 else result.groupValues[1].toInt(),
                 minor = if (result.groupValues[2].isEmpty()) 0 else result.groupValues[2].toInt(),

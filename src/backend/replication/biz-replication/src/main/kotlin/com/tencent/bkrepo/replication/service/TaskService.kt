@@ -54,6 +54,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -95,22 +97,26 @@ class TaskService(
     }
 
     fun listAllRemoteTask(type: ReplicationType): List<TReplicationTask> {
-        val typeCriteria = Criteria.where(TReplicationTask::type.name).`is`(type)
-        val statusCriteria = Criteria.where(TReplicationTask::status.name).`in`(ReplicationStatus.WAITING, ReplicationStatus.REPLICATING)
+        val typeCriteria = TReplicationTask::type.isEqualTo(type)
+        val statusCriteria = TReplicationTask::status.inValues(ReplicationStatus.WAITING, ReplicationStatus.REPLICATING)
         val criteria = Criteria().andOperator(typeCriteria, statusCriteria)
 
         return mongoTemplate.find(Query(criteria), TReplicationTask::class.java)
     }
 
-    fun listRelativeTask(type: ReplicationType, localProjectId: String?, localRepoName: String?): List<TReplicationTask> {
-        val typeCriteria = Criteria.where(TReplicationTask::type.name).`is`(type)
-        val statusCriteria = Criteria.where(TReplicationTask::status.name).`in`(ReplicationStatus.WAITING, ReplicationStatus.REPLICATING)
-        val includeAllCriteria = Criteria.where(TReplicationTask::includeAllProject.name).`is`(true)
-        val projectCriteria = Criteria.where(TReplicationTask::localProjectId.name).`is`(localProjectId)
-        val repoCriteria = Criteria.where(TReplicationTask::localProjectId.name).`is`(localProjectId)
+    fun listRelativeTask(
+        type: ReplicationType,
+        localProjectId: String?,
+        localRepoName: String?
+    ): List<TReplicationTask> {
+        val typeCriteria = TReplicationTask::type.isEqualTo(type)
+        val statusCriteria = TReplicationTask::status.inValues(ReplicationStatus.WAITING, ReplicationStatus.REPLICATING)
+        val includeAllCriteria = TReplicationTask::includeAllProject.isEqualTo(true)
+        val projectCriteria = TReplicationTask::localProjectId.isEqualTo(localProjectId)
+        val repoCriteria = TReplicationTask::localProjectId.isEqualTo(localProjectId)
             .orOperator(
-                Criteria.where(TReplicationTask::localRepoName.name).`is`(localRepoName),
-                Criteria.where(TReplicationTask::localRepoName.name).`is`(null)
+                TReplicationTask::localRepoName.isEqualTo(localRepoName),
+                TReplicationTask::localRepoName.isEqualTo(null)
             )
         val detailCriteria = if (localProjectId == null && localRepoName == null) {
             includeAllCriteria
@@ -162,7 +168,8 @@ class TaskService(
                 val authToken = ReplicationContext.encodeAuthToken(username, password)
                 replicationService.ping(authToken)
             } catch (exception: RuntimeException) {
-                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, exception.message ?: UNKNOWN)
+                val message = exception.message ?: UNKNOWN
+                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, message)
             }
         }
     }

@@ -40,7 +40,12 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfig
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import io.swagger.annotations.ApiModelProperty
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", defaultImpl = LocalConfiguration::class)
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "type",
+    defaultImpl = LocalConfiguration::class
+)
 @JsonSubTypes(
     JsonSubTypes.Type(value = LocalConfiguration::class, name = LocalConfiguration.type),
     JsonSubTypes.Type(value = RemoteConfiguration::class, name = RemoteConfiguration.type),

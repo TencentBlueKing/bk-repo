@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.repository.dao.repository.ProjectRepository
+import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.listener.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.repository.model.TProject
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
@@ -44,10 +44,8 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.service.ProjectService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -58,34 +56,36 @@ import java.util.regex.Pattern
  */
 @Service
 class ProjectServiceImpl(
-    private val projectRepository: ProjectRepository
+    private val projectDao: ProjectDao
 ) : AbstractService(), ProjectService {
 
     override fun getProjectInfo(name: String): ProjectInfo? {
-        return convert(getProjectByName(name))
+        return convert(projectDao.findByName(name))
     }
 
     override fun listProject(): List<ProjectInfo> {
-        return projectRepository.findAll().map { convert(it)!! }
+        return projectDao.findAll().map { convert(it)!! }
     }
 
     override fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?> {
         val limit = request.limit
         val skip = request.offset
         return if (request.projectIds.isEmpty()) {
-            val totalCount = projectRepository.count()
-            val records = mongoTemplate.find(Query().skip(skip).limit(limit), TProject::class.java).map { convert(it) }
+            val query = Query()
+            val totalCount = projectDao.count(query)
+            val records = projectDao.find(query.skip(skip).limit(limit)).map { convert(it) }
             Page(0, limit, totalCount, records)
         } else {
-            val criteria = Criteria.where(TProject::name.name).inValues(request.projectIds)
-            val totalCount = mongoTemplate.count(Query(criteria), TProject::class.java)
-            val records = mongoTemplate.find(Query(criteria).limit(limit).skip(skip), TProject::class.java).map { convert(it) }
+            val criteria = TProject::name.inValues(request.projectIds)
+            val query = Query(criteria)
+            val totalCount = projectDao.count(query)
+            val records = projectDao.find(query.limit(limit).skip(skip)).map { convert(it) }
             Page(0, limit, totalCount, records)
         }
     }
 
     override fun checkExist(name: String): Boolean {
-        return getProjectByName(name) != null
+        return projectDao.findByName(name) != null
     }
 
     override fun createProject(request: ProjectCreateRequest): ProjectInfo {
@@ -104,7 +104,7 @@ class ProjectServiceImpl(
                 lastModifiedDate = LocalDateTime.now()
             )
             return try {
-                projectRepository.insert(project)
+                projectDao.insert(project)
                     .also { publishEvent(ProjectCreatedEvent(request)) }
                     .also { logger.info("Create project [$name] success.") }
                     .let { convert(it)!! }
@@ -115,16 +115,12 @@ class ProjectServiceImpl(
         }
     }
 
-    private fun getProjectByName(name: String): TProject? {
-        return mongoTemplate.findOne(Query(TProject::name.isEqualTo(name)), TProject::class.java)
-    }
-
     private fun validateParameter(request: ProjectCreateRequest) {
         with(request) {
             if (!Pattern.matches(PROJECT_NAME_PATTERN, name)) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::name.name)
             }
-            if (displayName.isBlank() || displayName.length < DISPLAY_NAME_LENGTH_MIN || displayName.length > DISPLAY_NAME_LENGTH_MAX) {
+            if (!Pattern.matches(PROJECT_NAME_PATTERN, displayName)) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::displayName.name)
             }
         }
@@ -133,8 +129,6 @@ class ProjectServiceImpl(
     companion object {
         private val logger = LoggerFactory.getLogger(ProjectServiceImpl::class.java)
         private const val PROJECT_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,31}"
-        private const val DISPLAY_NAME_LENGTH_MIN = 1
-        private const val DISPLAY_NAME_LENGTH_MAX = 32
 
         private fun convert(tProject: TProject?): ProjectInfo? {
             return tProject?.let {

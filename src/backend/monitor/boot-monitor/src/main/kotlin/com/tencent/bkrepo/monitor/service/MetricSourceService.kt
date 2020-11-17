@@ -50,6 +50,7 @@ class MetricSourceService(
 
     @Value("\${service.prefix:repo-}")
     private val servicePrefix: String = "repo-"
+
     @Value("\${service.suffix:}")
     private val serviceSuffix: String = ""
     private val instanceWebClient = instanceWebClientBuilder.build()
@@ -61,7 +62,14 @@ class MetricSourceService(
             val trimmedApplicationListString = applicationListString.trim()
             val includeAll = trimmedApplicationListString.isEmpty() || trimmedApplicationListString == "*"
             val applicationList = trimmedApplicationListString.split(",").map { resolveServiceName(it) }.distinct()
-            val metricSource = InstanceMetricSource(metricEndpoint, includeAll, applicationList, monitorProperties.interval, instanceRegistry, instanceWebClient)
+            val metricSource = InstanceMetricSource(
+                metricEndpoint,
+                includeAll,
+                applicationList,
+                monitorProperties.interval,
+                instanceRegistry,
+                instanceWebClient
+            )
             metricSourceMap[metricEndpoint] = metricSource
         }
     }

@@ -97,8 +97,12 @@ open class MongoQueryInterpreter {
         }
         val pageNumber = newModel.page.getNormalizedPageNumber()
         val pageSize = newModel.page.getNormalizedPageSize()
-        newModel.page.let { mongoQuery.with(PageRequest.of(pageNumber - 1, pageSize)) }
-        newModel.sort?.let { mongoQuery.with(Sort.by(Sort.Direction.fromString(it.direction.name), *it.properties.toTypedArray())) }
+        newModel.page.let {
+            mongoQuery.with(PageRequest.of(pageNumber - 1, pageSize))
+        }
+        newModel.sort?.let {
+            mongoQuery.with(Sort.by(Sort.Direction.fromString(it.direction.name), *it.properties.toTypedArray()))
+        }
         newModel.select?.forEach { mongoQuery.fields().include(it) }
 
         mongoQuery.addCriteria(resolveRule(queryModel.rule, queryContext))

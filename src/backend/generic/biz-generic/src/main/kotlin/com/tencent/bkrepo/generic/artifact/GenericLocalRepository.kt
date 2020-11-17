@@ -138,13 +138,22 @@ class GenericLocalRepository : LocalRepository() {
         return !uploadId.isNullOrBlank() && sequence != null
     }
 
+    /**
+     * 上传分块
+     */
     private fun blockUpload(uploadId: String, sequence: Int, context: ArtifactUploadContext) {
         with(context) {
             if (!storageService.checkBlockId(uploadId, storageCredentials)) {
                 throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
             }
-            val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
-            storageService.storeBlock(uploadId, sequence, getArtifactSha256(), getArtifactFile(), overwrite, storageCredentials)
+            storageService.storeBlock(
+                uploadId,
+                sequence,
+                getArtifactSha256(),
+                getArtifactFile(),
+                HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
+                storageCredentials
+            )
         }
     }
 

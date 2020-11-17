@@ -36,7 +36,7 @@ import com.tencent.bkrepo.repository.UT_PROJECT_DESC
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_PROJECT_DISPLAY
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.dao.repository.ProjectRepository
+import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -44,18 +44,19 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
+import org.springframework.data.mongodb.core.query.Query
 
 @DisplayName("项目服务测试")
 @DataMongoTest
 class ProjectServiceTest @Autowired constructor(
     private val projectService: ProjectService,
-    private val projectRepository: ProjectRepository
+    private val projectDao: ProjectDao
 ) : ServiceBaseTest() {
 
     @BeforeEach
     fun beforeEach() {
         initMock()
-        projectRepository.deleteAll()
+        removeAllProject()
     }
 
     @Test
@@ -113,12 +114,16 @@ class ProjectServiceTest @Autowired constructor(
         request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(32), UT_PROJECT_DESC, UT_USER)
         projectService.createProject(request)
 
-        projectRepository.deleteAll()
+        removeAllProject()
         request = ProjectCreateRequest(UT_PROJECT_ID, "1", UT_PROJECT_DESC, UT_USER)
         projectService.createProject(request)
 
-        projectRepository.deleteAll()
+        removeAllProject()
         request = ProjectCreateRequest(UT_PROJECT_ID, "123-abc", UT_PROJECT_DESC, UT_USER)
         projectService.createProject(request)
+    }
+
+    private fun removeAllProject() {
+        projectDao.remove(Query())
     }
 }

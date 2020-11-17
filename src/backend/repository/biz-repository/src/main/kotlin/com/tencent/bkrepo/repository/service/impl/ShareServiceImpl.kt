@@ -49,6 +49,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -64,7 +67,11 @@ class ShareServiceImpl(
     private val mongoTemplate: MongoTemplate
 ) : ShareService {
 
-    override fun create(userId: String, artifactInfo: ArtifactInfo, request: ShareRecordCreateRequest): ShareRecordInfo {
+    override fun create(
+        userId: String,
+        artifactInfo: ArtifactInfo,
+        request: ShareRecordCreateRequest
+    ): ShareRecordInfo {
         with(artifactInfo) {
             val node = nodeService.getNodeDetail(artifactInfo)
             if (node == null || node.folder) {
@@ -93,19 +100,21 @@ class ShareServiceImpl(
     override fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
             val query = Query.query(
-                Criteria.where(TShareRecord::projectId.name).`is`(artifactInfo.projectId)
-                    .and(TShareRecord::repoName.name).`is`(repoName)
-                    .and(TShareRecord::fullPath.name).`is`(getArtifactFullPath())
-                    .and(TShareRecord::token.name).`is`(token)
+                where(TShareRecord::projectId).isEqualTo(artifactInfo.projectId)
+                    .and(TShareRecord::repoName).isEqualTo(repoName)
+                    .and(TShareRecord::fullPath).isEqualTo(getArtifactFullPath())
+                    .and(TShareRecord::token).isEqualTo(token)
             )
-            val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, token)
+            val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java)
+                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, token)
             if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
                 throw ErrorCodeException(CommonMessageCode.PERMISSION_DENIED)
             }
             if (shareRecord.expireDate?.isBefore(LocalDateTime.now()) == true) {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXPIRED, token)
             }
-            val repo = repositoryService.getRepoDetail(projectId, repoName) ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+            val repo = repositoryService.getRepoDetail(projectId, repoName)
+                ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo)
             val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
@@ -129,7 +138,9 @@ class ShareServiceImpl(
         }
 
         private fun generateShareUrl(shareRecord: TShareRecord): String {
-            return "/api/share/${shareRecord.projectId}/${shareRecord.repoName}${shareRecord.fullPath}?token=${shareRecord.token}"
+            with(shareRecord) {
+                return "/api/share/$projectId/$repoName$fullPath?token=$token"
+            }
         }
 
         private fun computeExpireDate(expireSeconds: Long?): LocalDateTime? {

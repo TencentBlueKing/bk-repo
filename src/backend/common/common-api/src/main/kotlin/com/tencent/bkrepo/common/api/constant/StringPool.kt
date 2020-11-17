@@ -58,7 +58,11 @@ object StringPool {
     fun uniqueId() = UUID.randomUUID().toString().replace(DASH, EMPTY).toLowerCase()
 }
 
-fun String.ensurePrefix(prefix: CharSequence) = if (startsWith(prefix)) this else StringBuilder(prefix).append(this).toString()
-fun String.ensureSuffix(suffix: CharSequence) = if (endsWith(suffix)) this else this + suffix
+fun String.ensurePrefix(prefix: CharSequence): String {
+    return if (startsWith(prefix)) this else StringBuilder(prefix).append(this).toString()
+}
+fun String.ensureSuffix(suffix: CharSequence): String {
+    return if (endsWith(suffix)) this else this + suffix
+}
 fun String.ensurePrefix(prefix: Char) = if (startsWith(prefix)) this else prefix + this
 fun String.ensureSuffix(suffix: Char) = if (endsWith(suffix)) this else this + suffix

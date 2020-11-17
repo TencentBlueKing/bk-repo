@@ -68,75 +68,75 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         onCreateClient(storageProperties.defaultStorageCredentials() as Credentials)
     }
 
-    override fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
+    override fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials) {
         val client = getClient(storageCredentials)
         val size = file.length()
         val nanoTime = measureNanoTime {
-            store(path, filename, file, client)
+            store(path, name, file, client)
         }
         val throughput = Throughput(size, nanoTime)
-        logger.info("Success to persist file [$filename], $throughput.")
+        logger.info("Success to persist file [$name], $throughput.")
     }
 
     override fun store(
         path: String,
-        filename: String,
+        name: String,
         inputStream: InputStream,
         size: Long,
         storageCredentials: StorageCredentials
     ) {
         val client = getClient(storageCredentials)
         val nanoTime = measureNanoTime {
-            store(path, filename, inputStream, size, client)
+            store(path, name, inputStream, size, client)
         }
         val throughput = Throughput(size, nanoTime)
-        logger.info("Success to persist stream [$filename], $throughput.")
+        logger.info("Success to persist stream [$name], $throughput.")
     }
 
     override fun load(
         path: String,
-        filename: String,
+        name: String,
         range: Range,
         storageCredentials: StorageCredentials
     ): InputStream? {
         return try {
             val client = getClient(storageCredentials)
-            load(path, filename, range, client)
+            load(path, name, range, client)
         } catch (ex: Exception) {
-            logger.warn("Failed to load stream[$filename]: ${ex.message}", ex)
+            logger.warn("Failed to load stream[$name]: ${ex.message}", ex)
             null
         }
     }
 
-    override fun delete(path: String, filename: String, storageCredentials: StorageCredentials) {
+    override fun delete(path: String, name: String, storageCredentials: StorageCredentials) {
         val client = getClient(storageCredentials)
-        delete(path, filename, client)
+        delete(path, name, client)
     }
 
-    override fun exist(path: String, filename: String, storageCredentials: StorageCredentials): Boolean {
+    override fun exist(path: String, name: String, storageCredentials: StorageCredentials): Boolean {
         val client = getClient(storageCredentials)
-        return exist(path, filename, client)
+        return exist(path, name, client)
     }
 
     override fun copy(
         path: String,
-        filename: String,
+        name: String,
         fromCredentials: StorageCredentials,
         toCredentials: StorageCredentials
     ) {
         val fromClient = getClient(fromCredentials)
         val toClient = getClient(toCredentials)
-        copy(path, filename, fromClient, toClient)
+        copy(path, name, fromClient, toClient)
     }
 
     override fun recover(
         exception: Exception,
         path: String,
-        filename: String,
+        name: String,
         file: File,
         storageCredentials: StorageCredentials
     ) {
-        val event = StoreFailureEvent(path, filename, file.absolutePath, storageCredentials, exception)
+        val event = StoreFailureEvent(path, name, file.absolutePath, storageCredentials, exception)
         publisher.publishEvent(event)
     }
 
@@ -149,12 +149,12 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     protected abstract fun onCreateClient(credentials: Credentials): Client
-    abstract fun store(path: String, filename: String, file: File, client: Client)
-    abstract fun store(path: String, filename: String, inputStream: InputStream, size: Long, client: Client)
-    abstract fun load(path: String, filename: String, range: Range, client: Client): InputStream?
-    abstract fun delete(path: String, filename: String, client: Client)
-    abstract fun exist(path: String, filename: String, client: Client): Boolean
-    open fun copy(path: String, filename: String, fromClient: Client, toClient: Client) {
+    abstract fun store(path: String, name: String, file: File, client: Client)
+    abstract fun store(path: String, name: String, inputStream: InputStream, size: Long, client: Client)
+    abstract fun load(path: String, name: String, range: Range, client: Client): InputStream?
+    abstract fun delete(path: String, name: String, client: Client)
+    abstract fun exist(path: String, name: String, client: Client): Boolean
+    open fun copy(path: String, name: String, fromClient: Client, toClient: Client) {
         throw UnsupportedOperationException("Copy operation unsupported")
     }
 

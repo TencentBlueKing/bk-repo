@@ -105,7 +105,7 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         val indexCount = shardingCount * indexDefinitions.size
         val consume = System.currentTimeMillis() - start
 
-        logger.info("Ensure [$indexCount] index for sharding collection [$collectionName], consume [$consume] ms totally")
+        logger.info("Ensure [$indexCount] index for sharding collection [$collectionName], consume [$consume] ms.")
     }
 
     private fun filterExistedIndex(indexDefinitions: List<IndexDefinition>): List<IndexDefinition> {
@@ -136,7 +136,8 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         if (shardingKey.column.isNotEmpty()) {
             return shardingKey.column
         }
-        val fieldAnnotation = AnnotationUtils.getAnnotation(shardingField, org.springframework.data.mongodb.core.mapping.Field::class.java)
+        val fieldJavaClass = org.springframework.data.mongodb.core.mapping.Field::class.java
+        val fieldAnnotation = AnnotationUtils.getAnnotation(shardingField, fieldJavaClass)
         if (fieldAnnotation != null && fieldAnnotation.value.isNotEmpty()) {
             return fieldAnnotation.value
         }

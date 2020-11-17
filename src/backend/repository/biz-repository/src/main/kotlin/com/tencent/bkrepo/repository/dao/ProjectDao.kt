@@ -29,20 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.artifact
+package com.tencent.bkrepo.repository.dao
 
-import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
-import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-import javax.servlet.http.HttpServletRequest
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.repository.model.TProject
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 
-@Resolver(GenericArtifactInfo::class)
-class GenericArtifactInfoResolver : ArtifactInfoResolver {
-    override fun resolve(
-        projectId: String,
-        repoName: String,
-        artifactUri: String,
-        request: HttpServletRequest
-    ): GenericArtifactInfo {
-        return GenericArtifactInfo(projectId, repoName, artifactUri)
+/**
+ * 项目数据访问层
+ */
+@Repository
+class ProjectDao : SimpleMongoDao<TProject>() {
+
+    /**
+     * 根据名称[name]查找项目
+     */
+    fun findByName(name: String): TProject? {
+        return this.findOne(Query(TProject::name.isEqualTo(name)))
     }
 }

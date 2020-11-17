@@ -49,13 +49,13 @@ interface FileStorage {
         maxAttempts = 5,
         backoff = Backoff(delay = 60 * 1000, multiplier = 2.0)
     )
-    fun store(path: String, filename: String, file: File, storageCredentials: StorageCredentials)
-    fun store(path: String, filename: String, inputStream: InputStream, size: Long, storageCredentials: StorageCredentials)
-    fun load(path: String, filename: String, range: Range, storageCredentials: StorageCredentials): InputStream?
-    fun delete(path: String, filename: String, storageCredentials: StorageCredentials)
-    fun exist(path: String, filename: String, storageCredentials: StorageCredentials): Boolean
-    fun copy(path: String, filename: String, fromCredentials: StorageCredentials, toCredentials: StorageCredentials)
+    fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials)
+    fun store(path: String, name: String, inputStream: InputStream, size: Long, storageCredentials: StorageCredentials)
+    fun load(path: String, name: String, range: Range, storageCredentials: StorageCredentials): InputStream?
+    fun delete(path: String, name: String, storageCredentials: StorageCredentials)
+    fun exist(path: String, name: String, storageCredentials: StorageCredentials): Boolean
+    fun copy(path: String, name: String, fromCredentials: StorageCredentials, toCredentials: StorageCredentials)
     fun getTempPath(storageCredentials: StorageCredentials): String = System.getProperty("java.io.tmpdir")
     @Recover
-    fun recover(exception: Exception, path: String, filename: String, file: File, storageCredentials: StorageCredentials)
+    fun recover(exception: Exception, path: String, name: String, file: File, storageCredentials: StorageCredentials)
 }

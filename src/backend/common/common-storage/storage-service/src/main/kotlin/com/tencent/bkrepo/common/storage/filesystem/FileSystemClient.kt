@@ -87,7 +87,8 @@ class FileSystemClient(private val root: String) {
             } catch (ex: IOException) {
                 // ignore and let the Files.copy, outside
                 // this if block, take over and attempt to copy it
-                logger.warn("Failed to store file by Files.move(source, target), fallback to use file channel: ${ex.message}")
+                val message = ex.message.orEmpty()
+                logger.warn("Failed to move file by Files.move(source, target), fallback to use file channel: $message")
                 FileLockExecutor.executeInLock(file.inputStream()) { input ->
                     FileLockExecutor.executeInLock(targetFile) { output ->
                         transfer(input, output, file.length())
