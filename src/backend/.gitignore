@@ -8,6 +8,7 @@ reports/
 *.iml
 .DS_Store
 *.log
+node_modules/
 
 data/
 http-client.private.env.json
