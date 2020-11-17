@@ -53,14 +53,6 @@ object PackageQueryHelper {
         return Query(criteria)
     }
 
-    private fun packageListCriteria(projectId: String, repoName: String, packageName: String?): Criteria {
-        return where(TPackage::projectId).isEqualTo(projectId)
-            .and(TPackage::repoName).isEqualTo(repoName)
-            .apply {
-                packageName?.let { and(TPackage::name).regex("^$packageName") }
-            }
-    }
-
     fun packageListQuery(projectId: String, repoName: String, packageName: String?): Query {
         return Query(packageListCriteria(projectId, repoName, packageName))
     }
@@ -74,17 +66,6 @@ object PackageQueryHelper {
         return Query(criteria)
     }
 
-    private fun versionListCriteria(packageId: String, name: String? = null, stageTag: List<String>? = null): Criteria {
-        return where(TPackageVersion::packageId).isEqualTo(packageId)
-            .apply {
-                name?.let { and(TPackageVersion::name).regex("^$name") }
-            }.apply {
-                if (!stageTag.isNullOrEmpty()) {
-                    and(TPackageVersion::stageTag).all(stageTag)
-                }
-            }
-    }
-
     fun versionListQuery(packageId: String, name: String? = null, stageTag: List<String>? = null): Query {
         return Query(versionListCriteria(packageId, name, stageTag))
             .with(Sort.by(Sort.Order(Sort.Direction.DESC, TPackageVersion::ordinal.name)))
@@ -92,5 +73,24 @@ object PackageQueryHelper {
 
     fun versionLatestQuery(packageId: String): Query {
         return versionListQuery(packageId).limit(1)
+    }
+
+    private fun packageListCriteria(projectId: String, repoName: String, packageName: String?): Criteria {
+        return where(TPackage::projectId).isEqualTo(projectId)
+            .and(TPackage::repoName).isEqualTo(repoName)
+            .apply {
+                packageName?.let { and(TPackage::name).regex("^$packageName") }
+            }
+    }
+
+    private fun versionListCriteria(packageId: String, name: String? = null, stageTag: List<String>? = null): Criteria {
+        return where(TPackageVersion::packageId).isEqualTo(packageId)
+            .apply {
+                name?.let { and(TPackageVersion::name).regex("^$it") }
+            }.apply {
+                if (!stageTag.isNullOrEmpty()) {
+                    and(TPackageVersion::stageTag).all(stageTag)
+                }
+            }
     }
 }

@@ -31,14 +31,14 @@
 
 package com.tencent.bkrepo.repository.api
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
@@ -97,20 +97,25 @@ interface PackageClient {
     ): Response<Void>
 
     @ApiOperation("搜索包")
-    @DeleteMapping("/package/search")
+    @PostMapping("/package/search")
     fun searchPackage(
         @RequestBody queryModel: QueryModel
     ): Response<Page<MutableMap<*, *>>>
 
     @ApiOperation("分页查询版本")
-    @GetMapping("/version/page/{projectId}/{repoName}")
+    @PostMapping("/version/page/{projectId}/{repoName}")
     fun listVersionPage(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam packageKey: String,
-        @RequestParam version: String? = null,
-        @RequestParam stageTag: String? = null,
-        @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
-        @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE
+        @RequestBody option: VersionListOption = VersionListOption()
     ): Response<Page<PackageVersion>>
+
+    @ApiOperation("分页查询包")
+    @PostMapping("/package/page/{projectId}/{repoName}")
+    fun listPackagePage(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestBody option: PackageListOption = PackageListOption()
+    ): Response<Page<PackageSummary>>
 }

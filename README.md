@@ -29,7 +29,7 @@
 - monitor 监控微服务
 - replication 备份复制微服务
 
-#### Getting started
+## Getting started
 * [下载与编译](docs/install/source_compile.md)
 * [安装部署](docs/install/installation.md)
 * [API使用说明见这里](docs/apidoc/)

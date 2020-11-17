@@ -108,20 +108,22 @@ class ArtifactContextHolder(
                 request.setAttribute(REPO_KEY, repoDetail)
                 return repoDetail
             } else {
-                repositoryAttribute as RepositoryDetail
+                require(repositoryAttribute is RepositoryDetail)
+                repositoryAttribute
             }
         }
 
         private fun getRepositoryId(request: HttpServletRequest): RepositoryId {
             val artifactInfoAttribute = request.getAttribute(ARTIFACT_INFO_KEY)
             return if (artifactInfoAttribute == null) {
-                val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
-                val projectId = attributes[PROJECT_ID].toString()
-                val repoName = attributes[REPO_NAME].toString()
+                val uriAttribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE)
+                require(uriAttribute is Map<*, *>)
+                val projectId = uriAttribute[PROJECT_ID].toString()
+                val repoName = uriAttribute[REPO_NAME].toString()
                 RepositoryId(projectId, repoName)
             } else {
-                val artifactInfo = artifactInfoAttribute as ArtifactInfo
-                RepositoryId(artifactInfo.projectId, artifactInfo.repoName)
+                require(artifactInfoAttribute is ArtifactInfo)
+                RepositoryId(artifactInfoAttribute.projectId, artifactInfoAttribute.repoName)
             }
         }
 

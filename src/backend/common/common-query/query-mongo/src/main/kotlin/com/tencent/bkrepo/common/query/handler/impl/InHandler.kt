@@ -44,6 +44,7 @@ class InHandler : MongoQueryRuleHandler {
     }
 
     override fun handle(rule: Rule.QueryRule): Criteria {
-        return Criteria.where(rule.field).inValues(rule.value as List<*>)
+        require(rule.value is List<*>)
+        return Criteria.where(rule.field).inValues(rule.value)
     }
 }

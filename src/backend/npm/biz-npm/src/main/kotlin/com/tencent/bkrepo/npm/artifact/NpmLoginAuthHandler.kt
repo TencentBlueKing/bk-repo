@@ -75,9 +75,8 @@ class NpmLoginAuthHandler(
     }
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
-        with(authCredentials as UsernamePasswordCredentials) {
-            return authenticationManager.checkUserAccount(username, password)
-        }
+        require(authCredentials is UsernamePasswordCredentials)
+        return authenticationManager.checkUserAccount(authCredentials.username, authCredentials.password)
     }
 
     override fun onAuthenticateSuccess(request: HttpServletRequest, response: HttpServletResponse, userId: String) {

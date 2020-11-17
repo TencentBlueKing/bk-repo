@@ -31,14 +31,15 @@
 
 package com.tencent.bkrepo.repository.controller
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.service.PackageService
 import org.springframework.web.bind.annotation.RestController
@@ -87,12 +88,22 @@ class PackageController(
         return ResponseBuilder.success(packageService.searchPackage(queryModel))
     }
 
-    override fun listVersionPage(projectId: String, repoName: String, packageKey: String, version: String?, stageTag: String?, pageNumber: Int, pageSize: Int): Response<Page<PackageVersion>> {
-        val stageTagList = stageTag?.split(StringPool.COMMA)
-        val pageResult = packageService.listVersionPage(
-            projectId, repoName, packageKey,
-            version, stageTagList, pageNumber, pageSize
-        )
+    override fun listVersionPage(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        option: VersionListOption
+    ): Response<Page<PackageVersion>> {
+        val pageResult = packageService.listVersionPage(projectId, repoName, packageKey, option)
+        return ResponseBuilder.success(pageResult)
+    }
+
+    override fun listPackagePage(
+        projectId: String,
+        repoName: String,
+        option: PackageListOption
+    ): Response<Page<PackageSummary>> {
+        val pageResult = packageService.listPackagePage(projectId, repoName, option)
         return ResponseBuilder.success(pageResult)
     }
 }

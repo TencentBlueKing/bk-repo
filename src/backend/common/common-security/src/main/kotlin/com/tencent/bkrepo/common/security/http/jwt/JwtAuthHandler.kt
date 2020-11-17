@@ -56,16 +56,15 @@ open class JwtAuthHandler(properties: JwtAuthProperties) : HttpAuthHandler {
     }
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
-        with(authCredentials as JwtAuthCredentials) {
-            try {
-                return JwtUtils.validateToken(signingKey, token).body.subject
-            } catch (exception: ExpiredJwtException) {
-                throw AuthenticationException("Expired token")
-            } catch (exception: JwtException) {
-                throw BadCredentialsException("Invalid token")
-            } catch (exception: IllegalArgumentException) {
-                throw BadCredentialsException("Empty token")
-            }
+        require(authCredentials is JwtAuthCredentials)
+        try {
+            return JwtUtils.validateToken(signingKey, authCredentials.token).body.subject
+        } catch (exception: ExpiredJwtException) {
+            throw AuthenticationException("Expired token")
+        } catch (exception: JwtException) {
+            throw BadCredentialsException("Invalid token")
+        } catch (exception: IllegalArgumentException) {
+            throw BadCredentialsException("Empty token")
         }
     }
 }

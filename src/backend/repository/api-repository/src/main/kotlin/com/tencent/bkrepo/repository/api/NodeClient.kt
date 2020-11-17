@@ -71,41 +71,33 @@ interface NodeClient {
     @ApiOperation("根据路径查看节点详情")
     @GetMapping("/detail/{projectId}/{repoName}")
     fun getNodeDetail(
-        @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
     ): Response<NodeDetail?>
 
     @ApiOperation("根据路径查看节点是否存在")
     @GetMapping("/exist/{projectId}/{repoName}")
     fun checkExist(
-        @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
     ): Response<Boolean>
 
     @ApiOperation("列出仓库中已存在的节点")
     @PostMapping("/exist/list/{projectId}/{repoName}")
     fun listExistFullPath(
-        @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
         @RequestBody fullPathList: List<String>
     ): Response<List<String>>
 
-    @GetMapping("/page/{projectId}/{repoName}")
+    @PostMapping("/page/{projectId}/{repoName}")
     fun listNodePage(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam path: String,
-        nodeListOption: NodeListOption
+        @RequestBody option: NodeListOption = NodeListOption()
     ): Response<Page<NodeInfo>>
 
     @ApiOperation("创建节点")

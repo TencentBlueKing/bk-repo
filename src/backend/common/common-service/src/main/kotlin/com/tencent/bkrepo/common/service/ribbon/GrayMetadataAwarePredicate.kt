@@ -44,9 +44,11 @@ class GrayMetadataAwarePredicate(val properties: RibbonGrayProperties) : Abstrac
         }
         val registration = SpringContextUtils.getBean(Registration::class.java)
         val localEnvTag = registration.metadata.getOrDefault(ENV, ENV_RELEASE)
-        val server = input.server as ConsulServer
-        val serverEnvTag = server.metadata.getOrDefault(ENV, ENV_RELEASE)
-        return localEnvTag == serverEnvTag
+        val server = input.server
+        return if (server is ConsulServer) {
+            val serverEnvTag = server.metadata.getOrDefault(ENV, ENV_RELEASE)
+            localEnvTag == serverEnvTag
+        } else true
     }
 
     companion object {

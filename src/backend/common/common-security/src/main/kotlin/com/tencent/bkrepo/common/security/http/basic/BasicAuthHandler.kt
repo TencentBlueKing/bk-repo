@@ -63,8 +63,7 @@ open class BasicAuthHandler(private val authenticationManager: AuthenticationMan
     }
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
-        with(authCredentials as BasicAuthCredentials) {
-            return authenticationManager.checkUserAccount(username, password)
-        }
+        require(authCredentials is BasicAuthCredentials)
+        return authenticationManager.checkUserAccount(authCredentials.username, authCredentials.password)
     }
 }

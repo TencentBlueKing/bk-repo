@@ -156,8 +156,9 @@ class GlobalExceptionHandler {
         var causeMessage = exception.cause?.message
         var messageCode = CommonMessageCode.SERVICE_CALL_ERROR
         if (exception.failureType == FailureType.COMMAND_EXCEPTION) {
-            if (exception.cause?.cause is ClientException) {
-                causeMessage = (exception.cause?.cause as ClientException).errorMessage
+            val throwable = exception.cause?.cause
+            if (throwable is ClientException) {
+                causeMessage = throwable.errorMessage
             }
         } else if (exception.failureType == FailureType.SHORTCIRCUIT) {
             messageCode = CommonMessageCode.SERVICE_CIRCUIT_BREAKER

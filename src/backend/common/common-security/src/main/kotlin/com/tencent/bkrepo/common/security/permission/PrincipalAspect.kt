@@ -51,7 +51,8 @@ class PrincipalAspect(
         "|| @annotation(com.tencent.bkrepo.common.security.permission.Principal)")
     @Throws(Throwable::class)
     fun around(point: ProceedingJoinPoint): Any? {
-        val signature = point.signature as MethodSignature
+        val signature = point.signature
+        require(signature is MethodSignature)
         val method = signature.method
         var principal = method.getAnnotation(Principal::class.java)
         if (principal == null) {

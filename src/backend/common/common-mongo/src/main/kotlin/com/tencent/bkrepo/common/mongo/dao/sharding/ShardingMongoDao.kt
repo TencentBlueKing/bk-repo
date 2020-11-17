@@ -175,7 +175,8 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         val pipeline = aggregation.toPipeline(Aggregation.DEFAULT_CONTEXT)
         for (document in pipeline) {
             if (document.containsKey("\$match")) {
-                val subDocument = document["\$match"] as Document
+                val subDocument = document["\$match"]
+                require(subDocument is Document)
                 shardingValue = subDocument["projectId"]
                 break
             }
@@ -189,8 +190,10 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         for ((key, value) in document) {
             if (key == shardingColumn) return value
             if (key == "\$and") {
-                for (element in value as BasicDBList) {
-                    determineCollectionName(element as Document)?.let { return it }
+                require(value is BasicDBList)
+                for (element in value) {
+                    require(element is Document)
+                    determineCollectionName(element)?.let { return it }
                 }
             }
         }

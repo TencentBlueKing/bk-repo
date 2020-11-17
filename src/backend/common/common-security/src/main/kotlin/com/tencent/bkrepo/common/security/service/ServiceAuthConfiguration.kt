@@ -53,7 +53,7 @@ class ServiceAuthConfiguration {
         return RequestInterceptor { requestTemplate ->
             requestTemplate.header(MS_AUTH_HEADER_SECURITY_TOKEN, serviceAuthManager.getSecurityToken())
             HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)?.let {
-                requestTemplate.header(MS_AUTH_HEADER_UID, it as String)
+                requestTemplate.header(MS_AUTH_HEADER_UID, it.toString())
             }
         }
     }
