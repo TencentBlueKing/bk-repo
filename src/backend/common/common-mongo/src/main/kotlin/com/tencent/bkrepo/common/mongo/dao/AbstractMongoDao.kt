@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,13 +10,23 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.common.mongo.dao
@@ -24,7 +34,7 @@ package com.tencent.bkrepo.common.mongo.dao
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.MongoCollectionUtils
+import org.springframework.data.mongodb.MongoCollectionUtils.getPreferredCollectionName
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.aggregation.AggregationResults
@@ -42,7 +52,7 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
      * 实体类Class
      */
     @Suppress("UNCHECKED_CAST")
-    protected open val classType = (this.javaClass.genericSuperclass as ParameterizedType).actualTypeArguments[0] as Class<E>
+    protected open val classType = (javaClass.genericSuperclass as ParameterizedType).actualTypeArguments[0] as Class<E>
 
     /**
      * 集合名称
@@ -57,6 +67,10 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         return find(query, classType)
     }
 
+    fun findAll(): List<E> {
+        return findAll(classType)
+    }
+
     override fun <T> findOne(query: Query, clazz: Class<T>): T? {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao findOne: [$query] [$clazz]")
@@ -69,6 +83,13 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
             logger.debug("Mongo Dao find: [$query]")
         }
         return determineMongoTemplate().find(query, clazz, determineCollectionName(query))
+    }
+
+    override fun <T> findAll(clazz: Class<T>): List<T> {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao find all")
+        }
+        return determineMongoTemplate().findAll(clazz, collectionName)
     }
 
     override fun insert(entity: E): E {
@@ -141,7 +162,7 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
             collectionName = if (document.collection.isNotBlank()) document.collection else document.value
         }
 
-        return if (collectionName.isNullOrEmpty()) MongoCollectionUtils.getPreferredCollectionName(classType) else collectionName
+        return if (collectionName.isNullOrEmpty()) getPreferredCollectionName(classType) else collectionName
     }
 
     abstract fun determineMongoTemplate(): MongoTemplate

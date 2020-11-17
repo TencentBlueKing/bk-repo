@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,13 +10,23 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.repository.service.impl
@@ -43,6 +53,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SystemMetadata
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeMovedEvent
@@ -63,7 +74,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import com.tencent.bkrepo.repository.service.NodeService
-import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeDeleteUpdate
@@ -73,11 +83,12 @@ import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeListQuery
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodePathUpdate
 import com.tencent.bkrepo.repository.util.NodeQueryHelper.nodeQuery
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -87,25 +98,14 @@ import java.time.format.DateTimeFormatter
  * 节点服务实现类
  */
 @Service
-class NodeServiceImpl : AbstractService(), NodeService {
-
-    @Autowired
-    private lateinit var nodeDao: NodeDao
-
-    @Autowired
-    private lateinit var repositoryService: RepositoryService
-
-    @Autowired
-    private lateinit var fileReferenceService: FileReferenceService
-
-    @Autowired
-    private lateinit var storageCredentialService: StorageCredentialService
-
-    @Autowired
-    private lateinit var storageService: StorageService
-
-    @Autowired
-    private lateinit var repositoryProperties: RepositoryProperties
+class NodeServiceImpl(
+    private val nodeDao: NodeDao,
+    private val repositoryDao: RepositoryDao,
+    private val fileReferenceService: FileReferenceService,
+    private val storageCredentialService: StorageCredentialService,
+    private val storageService: StorageService,
+    private val repositoryProperties: RepositoryProperties
+) : AbstractService(), NodeService {
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
@@ -285,8 +285,8 @@ class NodeServiceImpl : AbstractService(), NodeService {
         val query = nodeQuery(projectId, repoName)
         query.addCriteria(
             Criteria().orOperator(
-                Criteria.where(TNode::fullPath.name).regex("^$escapedPath"),
-                Criteria.where(TNode::fullPath.name).`is`(normalizedFullPath)
+                where(TNode::fullPath).regex("^$escapedPath"),
+                where(TNode::fullPath).isEqualTo(normalizedFullPath)
             )
         )
         try {
@@ -376,22 +376,28 @@ class NodeServiceImpl : AbstractService(), NodeService {
 
             val isSameRepository = srcProjectId == destProjectId && srcRepoName == destRepoName
             // 查询repository
-            val srcRepository = repositoryService.checkRepository(srcProjectId, srcRepoName)
-            val destRepository = if (!isSameRepository) {
-                repositoryService.checkRepository(destProjectId, destRepoName)
-            } else srcRepository
+            val srcRepo = repositoryDao.findByNameAndType(srcProjectId, srcRepoName)
+                ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, srcRepoName)
+            val destRepo = if (!isSameRepository) {
+                repositoryDao.findByNameAndType(destProjectId, destRepoName)
+                    ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, destRepoName)
+            } else srcRepo
 
             // 查询storageCredentials
-            val srcCredentials = srcRepository.credentialsKey?.let {
+            val srcCredentials = srcRepo.credentialsKey?.let {
                 storageCredentialService.findByKey(it)
             }
             val destCredentials = if (!isSameRepository) {
-                destRepository.credentialsKey?.let { storageCredentialService.findByKey(it) }
+                destRepo.credentialsKey?.let { storageCredentialService.findByKey(it) }
             } else srcCredentials
 
             // 只允许local或者composite类型仓库操作
-            val canSrcRepoMove = srcRepository.category.let { it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE }
-            val canDestRepoMove = destRepository.category.let { it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE }
+            val canSrcRepoMove = srcRepo.category.let {
+                it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE
+            }
+            val canDestRepoMove = destRepo.category.let {
+                it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE
+            }
             if (!canSrcRepoMove || !canDestRepoMove) {
                 throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
             }
@@ -415,13 +421,14 @@ class NodeServiceImpl : AbstractService(), NodeService {
                     // 创建dest父目录
                     mkdirs(destProjectId, destRepoName, path, operator)
                     // 操作节点
-                    moveOrCopyNode(srcNode, destRepository, srcCredentials, destCredentials, path, name, request, operator)
+                    doMoveOrCopy(srcNode, destRepo, srcCredentials, destCredentials, path, name, request, operator)
                     combinePath(path, name)
                 } else {
                     // 目录 -> 存在的目录
                     val path = toPath(destNode.fullPath)
+                    val nodeName = srcNode.name
                     // 操作节点
-                    moveOrCopyNode(srcNode, destRepository, srcCredentials, destCredentials, path, srcNode.name, request, operator)
+                    doMoveOrCopy(srcNode, destRepo, srcCredentials, destCredentials, path, nodeName, request, operator)
                     combinePath(path, srcNode.name)
                 }
                 val srcRootNodePath = toPath(srcNode.fullPath)
@@ -435,7 +442,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 // 目录下的节点 -> 创建好的目录
                 nodeDao.find(query).forEach {
                     val destPath = it.path.replaceFirst(srcRootNodePath, destRootNodePath)
-                    moveOrCopyNode(it, destRepository, srcCredentials, destCredentials, destPath, null, request, operator)
+                    doMoveOrCopy(it, destRepo, srcCredentials, destCredentials, destPath, null, request, operator)
                 }
             } else {
                 // 文件 ->
@@ -443,7 +450,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
                 val destName = if (destNode?.folder == true) srcNode.name else resolveName(destFullPath)
                 // 创建dest父目录
                 mkdirs(destProjectId, destRepoName, destPath, operator)
-                moveOrCopyNode(srcNode, destRepository, srcCredentials, destCredentials, destPath, destName, request, operator)
+                doMoveOrCopy(srcNode, destRepo, srcCredentials, destCredentials, destPath, destName, request, operator)
             }
             // event
             if (request is NodeMoveRequest) {
@@ -458,7 +465,7 @@ class NodeServiceImpl : AbstractService(), NodeService {
     /**
      * 移动/拷贝节点
      */
-    private fun moveOrCopyNode(
+    private fun doMoveOrCopy(
         srcNode: TNode,
         destRepository: TRepository,
         srcStorageCredentials: StorageCredentials?,

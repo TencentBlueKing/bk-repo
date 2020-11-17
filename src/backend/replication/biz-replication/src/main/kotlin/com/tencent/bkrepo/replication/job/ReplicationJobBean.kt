@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,13 +10,23 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.replication.job
@@ -108,7 +118,7 @@ class ReplicationJobBean(
         with(context) {
             val remoteVersion = replicationClient.version(authToken).data!!
             if (version != remoteVersion) {
-                logger.warn("The local cluster's version[$version] is different from remote cluster's version[$remoteVersion].")
+                logger.warn("Local cluster's version[$version] is different from remote cluster[$remoteVersion].")
             }
         }
     }
@@ -151,8 +161,8 @@ class ReplicationJobBean(
         context.projectDetailList.forEach {
             val localProjectId = it.localProjectInfo.name
             val remoteProjectId = it.remoteProjectId
-            val repositoryCount = it.repoDetailList.size
-            logger.info("Start to replica project [$localProjectId] to [$remoteProjectId], repository count: $repositoryCount.")
+            val repoCount = it.repoDetailList.size
+            logger.info("Start to replica project [$localProjectId] to [$remoteProjectId], repo count: $repoCount.")
             try {
                 context.currentProjectDetail = it
                 context.remoteProjectId = it.remoteProjectId
@@ -186,21 +196,24 @@ class ReplicationJobBean(
             replicaUserAndPermission(context)
             // 同步仓库
             this.repoDetailList.forEach {
-                val formattedLocalRepoName = "${it.localRepoDetail.projectId}/${it.localRepoDetail.name}"
-                val formattedRemoteRepoName = "${context.remoteProjectId}/${it.remoteRepoName}"
+                val localRepoKey = "${it.localRepoDetail.projectId}/${it.localRepoDetail.name}"
+                val remoteRepoKey = "${context.remoteProjectId}/${it.remoteRepoName}"
                 val fileCount = it.fileCount
-                logger.info("Start to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName], file count: $fileCount.")
+                logger.info("Start to replica repository [$localRepoKey] to [$remoteRepoKey], file count: $fileCount.")
                 try {
                     context.currentRepoDetail = it
                     context.remoteRepoName = it.remoteRepoName
                     replicaRepo(context)
                     context.progress.successRepo += 1
-                    logger.info("Success to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].")
+                    logger.info("Success to replica repository [$localRepoKey] to [$remoteRepoKey].")
                 } catch (interruptedException: InterruptedException) {
                     throw interruptedException
                 } catch (exception: RuntimeException) {
                     context.progress.failedRepo += 1
-                    logger.error("Failed to replica repository [$formattedLocalRepoName] to [$formattedRemoteRepoName].", exception)
+                    logger.error(
+                        "Failed to replica repository [$localRepoKey] to [$remoteRepoKey].",
+                        exception
+                    )
                 } finally {
                     context.progress.replicatedRepo += 1
                     persistTaskLog(context)
@@ -228,19 +241,21 @@ class ReplicationJobBean(
             replicaUserAndPermission(context, true)
             // 同步节点
             var page = 1
-            var fileNodeList = repoDataService.listFileNode(localRepoDetail.projectId, localRepoDetail.name, ROOT, page, pageSize)
+            val localProjectId = localRepoDetail.projectId
+            val localRepoName = localRepoDetail.name
+            var fileNodeList = repoDataService.listFileNode(localProjectId, localRepoName, ROOT, page, pageSize)
             while (fileNodeList.isNotEmpty()) {
                 val fullPathList = mutableListOf<String>()
                 fileNodeList.forEach { fullPathList.add(it.fullPath) }
                 with(context) {
-                    val nodeCheckRequest = NodeExistCheckRequest(localRepoDetail.projectId, localRepoDetail.name, fullPathList)
-                    val existFullPathList = replicationClient.checkNodeExistList(authToken, nodeCheckRequest).data!!
+                    val request = NodeExistCheckRequest(localProjectId, localRepoName, fullPathList)
+                    val existFullPathList = replicationClient.checkNodeExistList(authToken, request).data!!
                     // 同步不存在的节点
                     fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
                 }
 
                 page += 1
-                fileNodeList = repoDataService.listFileNode(localRepoDetail.projectId, localRepoDetail.name, ROOT, page, pageSize)
+                fileNodeList = repoDataService.listFileNode(localProjectId, localRepoName, ROOT, page, pageSize)
             }
         }
     }
@@ -330,14 +345,16 @@ class ReplicationJobBean(
                 val remoteRoleId = createRole(this, role, remoteProjectId, remoteRepoName)
                 roleIdMap[role.roleId] = remoteRoleId
                 // 包含该角色的用户列表
-                val userIdList = localUserList.filter { user -> user.roles.contains(role.id) }.map { user -> user.userId }
+                val userIdList =
+                    localUserList.filter { user -> user.roles.contains(role.id) }.map { user -> user.userId }
                 // 创建角色-用户绑定关系
                 createUserRoleRelationShip(this, remoteRoleId, userIdList)
             }
             // 同步权限数据
             val resourceType = if (isRepo) ResourceType.REPO else ResourceType.PROJECT
             val localPermissionList = repoDataService.listPermission(resourceType, remoteProjectId, remoteRepoName)
-            val remotePermissionList = replicationClient.listPermission(authToken, resourceType, localProjectId, localRepoName).data!!
+            val remotePermissionList =
+                replicationClient.listPermission(authToken, resourceType, localProjectId, localRepoName).data!!
 
             localPermissionList.forEach { permission ->
                 // 过滤已存在的权限
@@ -374,7 +391,12 @@ class ReplicationJobBean(
         }
     }
 
-    private fun createRole(context: ReplicationContext, role: Role, projectId: String, repoName: String? = null): String {
+    private fun createRole(
+        context: ReplicationContext,
+        role: Role,
+        projectId: String,
+        repoName: String? = null
+    ): String {
         with(context) {
             val request = RoleReplicaRequest(
                 roleId = role.roleId,
@@ -388,7 +410,11 @@ class ReplicationJobBean(
         }
     }
 
-    private fun createUserRoleRelationShip(context: ReplicationContext, remoteRoleId: String, userIdList: List<String>) {
+    private fun createUserRoleRelationShip(
+        context: ReplicationContext,
+        remoteRoleId: String,
+        userIdList: List<String>
+    ) {
         with(context) {
             replicationClient.replicaUserRoleRelationShip(authToken, remoteRoleId, userIdList)
         }
@@ -444,7 +470,10 @@ class ReplicationJobBean(
         }
     }
 
-    private fun convertReplicationRepo(localRepoInfo: RepositoryInfo, remoteRepoName: String? = null): ReplicationRepoDetail {
+    private fun convertReplicationRepo(
+        localRepoInfo: RepositoryInfo,
+        remoteRepoName: String? = null
+    ): ReplicationRepoDetail {
         return with(localRepoInfo) {
             val fileCount = repoDataService.countFileNode(this)
             ReplicationRepoDetail(

@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,13 +10,23 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.common.storage.core
@@ -54,7 +64,7 @@ import kotlin.system.measureNanoTime
 /**
  * 存储服务抽象实现
  */
-@Suppress("TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionCaught", "LateinitUsage")
 abstract class AbstractStorageService : StorageService {
 
     @Autowired
@@ -152,11 +162,6 @@ abstract class AbstractStorageService : StorageService {
         }
     }
 
-    /**
-     * 创建可追加的文件, 返回文件追加Id
-     * 追加文件组织格式: 在temp目录下创建一个具有唯一id的文件，文件名称即追加Id
-     * 数据每次追加都写入到该文件中
-     */
     override fun createAppendId(storageCredentials: StorageCredentials?): String {
         val appendId = uniqueId()
         val credentials = getCredentialsOrDefault(storageCredentials)
@@ -174,8 +179,10 @@ abstract class AbstractStorageService : StorageService {
     override fun append(appendId: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?): Long {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
+        val inputStream = artifactFile.getInputStream()
+        val size = artifactFile.getSize()
         try {
-            val length = tempClient.append(CURRENT_PATH, appendId, artifactFile.getInputStream(), artifactFile.getSize())
+            val length = tempClient.append(CURRENT_PATH, appendId, inputStream, size)
             logger.info("Success to append file [$appendId].")
             return length
         } catch (exception: Exception) {
@@ -199,13 +206,6 @@ abstract class AbstractStorageService : StorageService {
         }
     }
 
-    /**
-     * 创建分块存储目录，返回分块存储Id
-     * 组织格式: 在temp目录下创建一个名称唯一的目录，所有分块存储在该目录下，目录名称即blockId
-     * 其中，每个分块对应两个文件，命名分别为$sequence.block和$sequence.sha256
-     * $sequence.block文件保存其数据，
-     * $sequence.sha256保存文件sha256，用于后续分块合并时校验
-     */
     override fun createBlockId(storageCredentials: StorageCredentials?): String {
         val blockId = uniqueId()
         val credentials = getCredentialsOrDefault(storageCredentials)
@@ -241,9 +241,13 @@ abstract class AbstractStorageService : StorageService {
     ) {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
+        val blockInputStream = artifactFile.getInputStream()
+        val blockSize = artifactFile.getSize()
+        val digestInputStream = digest.byteInputStream()
+        val digestSize = digest.length.toLong()
         try {
-            tempClient.store(blockId, "$sequence$BLOCK_SUFFIX", artifactFile.getInputStream(), artifactFile.getSize(), overwrite)
-            tempClient.store(blockId, "$sequence$SHA256_SUFFIX", digest.byteInputStream(), digest.length.toLong(), overwrite)
+            tempClient.store(blockId, "$sequence$BLOCK_SUFFIX", blockInputStream, blockSize, overwrite)
+            tempClient.store(blockId, "$sequence$SHA256_SUFFIX", digestInputStream, digestSize, overwrite)
             logger.info("Success to store block [$blockId/$sequence].")
         } catch (exception: Exception) {
             logger.error("Failed to store block [$blockId/$sequence] on [$credentials].", exception)
@@ -255,7 +259,9 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
         try {
-            val blockFileList = tempClient.listFiles(blockId, BLOCK_SUFFIX).sortedBy { it.name.removeSuffix(BLOCK_SUFFIX).toInt() }
+            val blockFileList = tempClient.listFiles(blockId, BLOCK_SUFFIX).sortedBy {
+                it.name.removeSuffix(BLOCK_SUFFIX).toInt()
+            }
             blockFileList.takeIf { it.isNotEmpty() } ?: throw StorageException(StorageMessageCode.BLOCK_EMPTY)
             for (index in blockFileList.indices) {
                 val sequence = index + 1
@@ -293,10 +299,13 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
         try {
-            val blockFileList = tempClient.listFiles(blockId, BLOCK_SUFFIX).sortedBy { it.name.removeSuffix(BLOCK_SUFFIX).toInt() }
+            val blockFileList = tempClient.listFiles(blockId, BLOCK_SUFFIX).sortedBy {
+                it.name.removeSuffix(BLOCK_SUFFIX).toInt()
+            }
             return blockFileList.map {
                 val size = it.length()
-                val sha256 = tempClient.load(blockId, it.name.replace(BLOCK_SUFFIX, SHA256_SUFFIX))?.readText().orEmpty()
+                val name = it.name.replace(BLOCK_SUFFIX, SHA256_SUFFIX)
+                val sha256 = tempClient.load(blockId, name)?.readText().orEmpty()
                 Pair(size, sha256)
             }
         } catch (exception: Exception) {
@@ -305,9 +314,6 @@ abstract class AbstractStorageService : StorageService {
         }
     }
 
-    /**
-     * 清理temp目录文件，包括分块上传产生和追加上传产生的脏数据
-     */
     override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
@@ -363,11 +369,39 @@ abstract class AbstractStorageService : StorageService {
         return FileSystemClient(tempPath)
     }
 
-    protected abstract fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials)
-    protected abstract fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): ArtifactInputStream?
+    /**
+     * 实际文件数据存储抽象方法
+     */
+    protected abstract fun doStore(
+        path: String,
+        filename: String,
+        artifactFile: ArtifactFile,
+        credentials: StorageCredentials
+    )
+
+    /**
+     * 实际文件数据加载抽象方法
+     */
+    protected abstract fun doLoad(
+        path: String,
+        filename: String,
+        range: Range,
+        credentials: StorageCredentials
+    ): ArtifactInputStream?
+
+    /**
+     * 实际文件数据删除抽象方法
+     */
     protected abstract fun doDelete(path: String, filename: String, credentials: StorageCredentials)
+
+    /**
+     * 实际判断文件存在抽象方法
+     */
     protected abstract fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean
 
+    /**
+     * 健康检查实现
+     */
     open fun doCheckHealth(credentials: StorageCredentials) {
         val filename = System.nanoTime().toString()
         val size = storageProperties.monitor.dataSize.toBytes()
@@ -376,6 +410,9 @@ abstract class AbstractStorageService : StorageService {
         fileStorage.delete(HEALTH_CHECK_PATH, filename, credentials)
     }
 
+    /**
+     * 获取临时目录
+     */
     open fun getTempPath(credentials: StorageCredentials): String? = null
 
     companion object {
