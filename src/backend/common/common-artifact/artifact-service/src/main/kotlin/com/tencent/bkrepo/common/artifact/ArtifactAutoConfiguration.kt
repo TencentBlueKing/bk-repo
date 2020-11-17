@@ -44,7 +44,6 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.ResolverConfiguration
 import com.tencent.bkrepo.common.artifact.webhook.WebHookService
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
@@ -73,10 +72,9 @@ class ArtifactAutoConfiguration {
     fun compositeRepository(
         localRepository: LocalRepository,
         remoteRepository: RemoteRepository,
-        repositoryClient: RepositoryClient,
         proxyChannelClient: ProxyChannelClient
     ): CompositeRepository {
-        return CompositeRepository(localRepository, remoteRepository, repositoryClient, proxyChannelClient)
+        return CompositeRepository(localRepository, remoteRepository, proxyChannelClient)
     }
 
     @Bean

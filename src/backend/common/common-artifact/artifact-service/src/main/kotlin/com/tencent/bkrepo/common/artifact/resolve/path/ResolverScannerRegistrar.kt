@@ -60,7 +60,7 @@ class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAw
     ) {
         logger.info("Scanning ArtifactInfo resolver.")
         val provider = createResolverScanner()
-        provider.resourceLoader = resourceLoader
+        provider.resourceLoader = resourceLoader!!
         val basePackages = listOf(
             ClassUtils.getPackageName(this.javaClass),
             ClassUtils.getPackageName(annotationMetadata.className)
