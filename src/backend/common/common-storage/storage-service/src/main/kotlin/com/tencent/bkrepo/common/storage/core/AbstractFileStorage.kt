@@ -78,7 +78,13 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         logger.info("Success to persist file [$filename], $throughput.")
     }
 
-    override fun store(path: String, filename: String, inputStream: InputStream, size: Long, storageCredentials: StorageCredentials) {
+    override fun store(
+        path: String,
+        filename: String,
+        inputStream: InputStream,
+        size: Long,
+        storageCredentials: StorageCredentials
+    ) {
         val client = getClient(storageCredentials)
         val nanoTime = measureNanoTime {
             store(path, filename, inputStream, size, client)
@@ -87,7 +93,12 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         logger.info("Success to persist stream [$filename], $throughput.")
     }
 
-    override fun load(path: String, filename: String, range: Range, storageCredentials: StorageCredentials): InputStream? {
+    override fun load(
+        path: String,
+        filename: String,
+        range: Range,
+        storageCredentials: StorageCredentials
+    ): InputStream? {
         return try {
             val client = getClient(storageCredentials)
             load(path, filename, range, client)
@@ -107,13 +118,24 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         return exist(path, filename, client)
     }
 
-    override fun copy(path: String, filename: String, fromCredentials: StorageCredentials, toCredentials: StorageCredentials) {
+    override fun copy(
+        path: String,
+        filename: String,
+        fromCredentials: StorageCredentials,
+        toCredentials: StorageCredentials
+    ) {
         val fromClient = getClient(fromCredentials)
         val toClient = getClient(toCredentials)
         copy(path, filename, fromClient, toClient)
     }
 
-    override fun recover(exception: Exception, path: String, filename: String, file: File, storageCredentials: StorageCredentials) {
+    override fun recover(
+        exception: Exception,
+        path: String,
+        filename: String,
+        file: File,
+        storageCredentials: StorageCredentials
+    ) {
         val event = StoreFailureEvent(path, filename, file.absolutePath, storageCredentials, exception)
         publisher.publishEvent(event)
     }

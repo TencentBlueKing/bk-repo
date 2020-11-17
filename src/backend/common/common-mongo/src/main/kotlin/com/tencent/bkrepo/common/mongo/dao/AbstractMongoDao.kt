@@ -34,7 +34,7 @@ package com.tencent.bkrepo.common.mongo.dao
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.MongoCollectionUtils
+import org.springframework.data.mongodb.MongoCollectionUtils.getPreferredCollectionName
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.aggregation.AggregationResults
@@ -52,7 +52,7 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
      * 实体类Class
      */
     @Suppress("UNCHECKED_CAST")
-    protected open val classType = (this.javaClass.genericSuperclass as ParameterizedType).actualTypeArguments[0] as Class<E>
+    protected open val classType = (javaClass.genericSuperclass as ParameterizedType).actualTypeArguments[0] as Class<E>
 
     /**
      * 集合名称
@@ -162,7 +162,7 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
             collectionName = if (document.collection.isNotBlank()) document.collection else document.value
         }
 
-        return if (collectionName.isNullOrEmpty()) MongoCollectionUtils.getPreferredCollectionName(classType) else collectionName
+        return if (collectionName.isNullOrEmpty()) getPreferredCollectionName(classType) else collectionName
     }
 
     abstract fun determineMongoTemplate(): MongoTemplate
