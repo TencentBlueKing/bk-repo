@@ -85,15 +85,13 @@ class ArtifactFileFactory(
 
         @Suppress("UNCHECKED_CAST")
         private fun track(artifactFile: ArtifactFile) {
-            val requestAttributes = RequestContextHolder.getRequestAttributes()
-            if (requestAttributes != null) {
-                var artifactFileList = requestAttributes.getAttribute(ARTIFACT_FILES, SCOPE_REQUEST) as? MutableList<ArtifactFile>
-                if (artifactFileList == null) {
-                    artifactFileList = mutableListOf()
-                    RequestContextHolder.getRequestAttributes()?.setAttribute(ARTIFACT_FILES, artifactFileList, SCOPE_REQUEST)
-                }
-                artifactFileList.add(artifactFile)
+            val attributes = RequestContextHolder.getRequestAttributes() ?: return
+            var artifactFileList = attributes.getAttribute(ARTIFACT_FILES, SCOPE_REQUEST) as? MutableList<ArtifactFile>
+            if (artifactFileList == null) {
+                artifactFileList = mutableListOf()
+                attributes.setAttribute(ARTIFACT_FILES, artifactFileList, SCOPE_REQUEST)
             }
+            artifactFileList.add(artifactFile)
         }
     }
 }
