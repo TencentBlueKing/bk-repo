@@ -189,4 +189,30 @@ class UserRepositoryController(
         repositoryService.updateRepo(repoUpdateRequest)
         return ResponseBuilder.success()
     }
+
+    @Deprecated("replace with createRepo, waiting kb-ci and bk")
+    @ApiOperation("创建仓库")
+    @PostMapping
+    fun create(
+        @RequestAttribute userId: String,
+        @RequestBody userRepoCreateRequest: UserRepoCreateRequest
+    ): Response<Void> {
+        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.MANAGE, userRepoCreateRequest.projectId)
+
+        val createRequest = with(userRepoCreateRequest) {
+            RepoCreateRequest(
+                projectId = projectId,
+                name = name,
+                type = type,
+                category = category,
+                public = public,
+                description = description,
+                configuration = configuration,
+                storageCredentialsKey = storageCredentialsKey,
+                operator = userId
+            )
+        }
+        repositoryService.createRepo(createRequest)
+        return ResponseBuilder.success()
+    }
 }
