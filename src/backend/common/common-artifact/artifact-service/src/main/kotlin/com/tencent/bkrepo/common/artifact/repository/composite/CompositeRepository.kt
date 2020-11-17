@@ -198,7 +198,10 @@ class CompositeRepository(
     /**
      * 根据原始上下文[context]以及公共代理源设置[setting]生成新的[ArtifactContext]
      */
-    private fun getContextFromPublicProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
+    private fun getContextFromPublicProxyChannel(
+        context: ArtifactContext,
+        setting: ProxyChannelSetting
+    ): ArtifactContext {
         // 查询公共源详情
         val proxyChannel = proxyChannelClient.getById(setting.channelId!!).data!!
         // 查询远程仓库
@@ -218,7 +221,10 @@ class CompositeRepository(
     /**
      * 根据原始上下文[context]以及私有代理源设置[setting]生成新的[ArtifactContext]
      */
-    private fun getContextFromPrivateProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
+    private fun getContextFromPrivateProxyChannel(
+        context: ArtifactContext,
+        setting: ProxyChannelSetting
+    ): ArtifactContext {
         // 查询远程仓库
         val projectId = context.repositoryDetail.projectId
         val repoType = context.repositoryDetail.type.name

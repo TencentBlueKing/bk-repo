@@ -85,7 +85,7 @@ class ArtifactInputStream(
     override fun markSupported(): Boolean = delegate.markSupported()
 
     fun addListener(listener: StreamReadListener) {
-        require(!range.isPartialContent()) { "ArtifactInputStream is partial content, may be result in data inconsistent" }
+        require(!range.isPartialContent()) { "ArtifactInputStream is partial content, maybe cause data inconsistent" }
         listenerList.add(listener)
     }
 

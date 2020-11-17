@@ -68,9 +68,9 @@ object CosHttpClient {
                             return handle404Result
                         }
                     }
-                    throw InnerCosException("Response status error")
+                    throw IllegalStateException("Response status error")
                 }
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 val message = buildMessage(request, it)
                 throw InnerCosException("Failed to execute http request: $message", exception)
             }

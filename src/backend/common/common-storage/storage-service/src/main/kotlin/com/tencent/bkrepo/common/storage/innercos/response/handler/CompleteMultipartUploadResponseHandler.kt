@@ -38,6 +38,6 @@ import okhttp3.Response
 
 class CompleteMultipartUploadResponseHandler : HttpResponseHandler<PutObjectResponse>() {
     override fun handle(response: Response): PutObjectResponse {
-        return PutObjectResponse(readXmlValue(response)[ETAG] as String)
+        return PutObjectResponse(readXmlValue(response)[ETAG].toString())
     }
 }

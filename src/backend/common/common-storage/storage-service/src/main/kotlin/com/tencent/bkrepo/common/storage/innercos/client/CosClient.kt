@@ -171,7 +171,11 @@ class CosClient(val credentials: InnerCosCredentials) {
         }
     }
 
-    private fun completeMultipartUpload(key: String, uploadId: String, partEtagList: List<PartETag>): PutObjectResponse {
+    private fun completeMultipartUpload(
+        key: String,
+        uploadId: String,
+        partEtagList: List<PartETag>
+    ): PutObjectResponse {
         retry(5) {
             val cosRequest = CompleteMultipartUploadRequest(key, uploadId, partEtagList)
             val httpRequest = buildHttpRequest(cosRequest)

@@ -39,8 +39,10 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -60,18 +62,19 @@ class DeletedNodeCleanupJob(
     @SchedulerLock(name = "DeletedNodeCleanupJob", lockAtMostFor = "PT1H")
     fun cleanUp() {
         logger.info("Starting to clean up deleted nodes.")
-        if (repositoryProperties.deletedNodeReserveDays >= 0) {
+        val reserveDays = repositoryProperties.deletedNodeReserveDays
+        if (reserveDays >= 0) {
             var totalCleanupCount = 0L
             var fileCleanupCount = 0L
             var folderCleanupCount = 0L
             val startTimeMillis = System.currentTimeMillis()
-            val expireDate = LocalDateTime.now().minusDays(repositoryProperties.deletedNodeReserveDays)
+            val expireDate = LocalDateTime.now().minusDays(reserveDays)
 
             repositoryDao.findAll().forEach { repo ->
                 val query = Query.query(
-                    Criteria.where(TNode::projectId.name).`is`(repo.projectId)
-                        .and(TNode::repoName.name).`is`(repo.name)
-                        .and(TNode::deleted.name).lt(expireDate)
+                    where(TNode::projectId).isEqualTo(repo.projectId)
+                        .and(TNode::repoName).isEqualTo(repo.name)
+                        .and(TNode::deleted).lt(expireDate)
                 ).with(PageRequest.of(0, 1000))
                 var deletedNodeList = nodeDao.find(query)
                 while (deletedNodeList.isNotEmpty()) {
@@ -86,10 +89,10 @@ class DeletedNodeCleanupJob(
                                 fileCleanupCount += 1
                             }
                             val nodeQuery = Query.query(
-                                Criteria.where(TNode::projectId.name).`is`(node.projectId)
-                                    .and(TNode::repoName.name).`is`(node.repoName)
-                                    .and(TNode::fullPath.name).`is`(node.fullPath)
-                                    .and(TNode::deleted.name).`is`(node.deleted)
+                                where(TNode::projectId).isEqualTo(node.projectId)
+                                    .and(TNode::repoName).isEqualTo(node.repoName)
+                                    .and(TNode::fullPath).isEqualTo(node.fullPath)
+                                    .and(TNode::deleted).isEqualTo(node.deleted)
                             )
                             nodeDao.remove(nodeQuery)
                         } catch (ignored: Exception) {
@@ -110,7 +113,7 @@ class DeletedNodeCleanupJob(
                     ", elapse [$elapseTimeMillis] ms totally."
             )
         } else {
-            logger.info("Reserve days[${repositoryProperties.deletedNodeReserveDays}] for deleted nodes is less than 0, skip cleaning up.")
+            logger.info("Reserve days[$reserveDays] for deleted nodes is less than 0, skip cleaning up.")
         }
     }
 
