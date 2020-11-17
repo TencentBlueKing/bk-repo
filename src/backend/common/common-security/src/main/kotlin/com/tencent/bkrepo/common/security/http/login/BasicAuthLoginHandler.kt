@@ -57,7 +57,11 @@ class BasicAuthLoginHandler(authenticationManager: AuthenticationManager) : Basi
         super.onAuthenticateSuccess(request, response, userId)
     }
 
-    override fun onAuthenticateFailed(request: HttpServletRequest, response: HttpServletResponse, authenticationException: AuthenticationException) {
+    override fun onAuthenticateFailed(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        authenticationException: AuthenticationException
+    ) {
         super.onAuthenticateFailed(request, response, authenticationException)
     }
 }

@@ -75,7 +75,12 @@ class StageServiceImpl(
         }
     }
 
-    private fun findPackageVersion(projectId: String, repoName: String, packageKey: String, version: String): TPackageVersion {
+    private fun findPackageVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String
+    ): TPackageVersion {
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey)
         return packageVersionDao.findByName(tPackage.id!!, version)

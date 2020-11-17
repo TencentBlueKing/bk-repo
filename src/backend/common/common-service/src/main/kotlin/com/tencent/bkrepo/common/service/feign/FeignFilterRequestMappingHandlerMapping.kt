@@ -43,6 +43,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 class FeignFilterRequestMappingHandlerMapping : RequestMappingHandlerMapping() {
 
     override fun isHandler(beanType: Class<*>): Boolean {
-        return AnnotatedElementUtils.hasAnnotation(beanType, Controller::class.java) || AnnotatedElementUtils.hasAnnotation(beanType, RestController::class.java)
+        return AnnotatedElementUtils.hasAnnotation(beanType, Controller::class.java)
+            || AnnotatedElementUtils.hasAnnotation(beanType, RestController::class.java)
     }
 }

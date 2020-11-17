@@ -48,9 +48,16 @@ class OperateService(
     private val permissionManager: PermissionManager
 ) {
 
-    fun listFile(userId: String, projectId: String, repoName: String, path: String, includeFolder: Boolean, deep: Boolean): List<FileInfo> {
+    fun listFile(
+        userId: String,
+        projectId: String,
+        repoName: String,
+        path: String,
+        includeFolder: Boolean,
+        deep: Boolean
+    ): List<FileInfo> {
         permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName)
-        return nodeClient.listNode(projectId, repoName, path, includeFolder, deep).data?.map { toFileInfo(it) } ?: emptyList()
+        return nodeClient.listNode(projectId, repoName, path, includeFolder, deep).data.orEmpty().map { toFileInfo(it) }
     }
 
     companion object {

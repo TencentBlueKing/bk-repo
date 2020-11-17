@@ -47,7 +47,8 @@ class PrincipalAspect(
     private val permissionCheckHandler: PermissionCheckHandler
 ) {
 
-    @Around("@within(com.tencent.bkrepo.common.security.permission.Principal) || @annotation(com.tencent.bkrepo.common.security.permission.Principal)")
+    @Around("@within(com.tencent.bkrepo.common.security.permission.Principal) " +
+        "|| @annotation(com.tencent.bkrepo.common.security.permission.Principal)")
     @Throws(Throwable::class)
     fun around(point: ProceedingJoinPoint): Any? {
         val signature = point.signature as MethodSignature

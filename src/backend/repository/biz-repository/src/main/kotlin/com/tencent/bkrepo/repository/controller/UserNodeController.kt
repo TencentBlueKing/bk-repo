@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -202,10 +203,7 @@ class UserNodeController(
         @RequestBody request: UserNodeMoveRequest
     ): Response<Void> {
         with(request) {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
-            if (destProjectId != null && destRepoName != null) {
-                permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId!!, destRepoName!!)
-            }
+            checkCrossRepoPermission(userId, request)
             val moveRequest = NodeMoveRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
@@ -228,10 +226,7 @@ class UserNodeController(
         @RequestBody request: UserNodeCopyRequest
     ): Response<Void> {
         with(request) {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
-            if (destProjectId != null && destRepoName != null) {
-                permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId!!, destRepoName!!)
-            }
+            checkCrossRepoPermission(userId, request)
             val copyRequest = NodeCopyRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
@@ -283,5 +278,27 @@ class UserNodeController(
         @RequestBody queryModel: QueryModel
     ): Response<Page<Map<String, Any?>>> {
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
+    }
+
+    /**
+     * 校验跨仓库操作权限
+     */
+    private fun checkCrossRepoPermission(userId: String, request: CrossRepoNodeRequest) {
+        val srcProjectId = request.srcProjectId
+        val srcRepoName = request.srcRepoName
+        val destProjectId = request.destProjectId
+        val destRepoName = request.destRepoName
+        // 校验src仓库权限
+        val type = ResourceType.REPO
+        val action = PermissionAction.WRITE
+        permissionManager.checkPermission(userId, type, action, srcProjectId, srcRepoName)
+
+        // 当src和dest不是用一个仓库是，校验dest仓库权限
+        val isDestRepoNull = destProjectId == null && destRepoName == null
+        val isSameRepo = destProjectId == srcProjectId && destRepoName == srcRepoName
+        if (isDestRepoNull || isSameRepo) {
+            return
+        }
+        permissionManager.checkPermission(userId, type, action, destProjectId.orEmpty(), destRepoName.orEmpty())
     }
 }

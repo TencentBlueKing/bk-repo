@@ -87,7 +87,13 @@ data class SemVer(
 
     companion object {
 
-        private val pattern = Regex("""(0|[1-9]\d*)?(?:\.)?(0|[1-9]\d*)?(?:\.)?(0|[1-9]\d*)?(?:-([\dA-z\-]+(?:\.[\dA-z\-]+)*))?(?:\+([\dA-z\-]+(?:\.[\dA-z\-]+)*))?""")
+        /**
+         * 语义化版本正则表达式
+         */
+        private const val SEM_VER_REGEX = "(0|[1-9]\\d*)?(?:\\.)?(0|[1-9]\\d*)?(?:\\.)?(0|[1-9]\\d*)?" +
+            "(?:-([\\dA-z\\-]+(?:\\.[\\dA-z\\-]+)*))?(?:\\+([\\dA-z\\-]+(?:\\.[\\dA-z\\-]+)*))?"
+
+        private val pattern = Regex(SEM_VER_REGEX)
 
         /**
          * Parse the version string to [SemVer] data object.

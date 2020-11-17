@@ -52,7 +52,12 @@ object JwtUtils {
     private val SIGNATURE_ALGORITHM = SignatureAlgorithm.HS512
     private val SECRET_KEY_MIN_LENGTH = SIGNATURE_ALGORITHM.minKeyLength / 8
 
-    fun generateToken(signingKey: Key, expireDuration: Duration, subject: String? = null, claims: Map<String, Any>? = null): String {
+    fun generateToken(
+        signingKey: Key,
+        expireDuration: Duration,
+        subject: String? = null,
+        claims: Map<String, Any>? = null
+    ): String {
         val now = Date()
         val expiration = expireDuration.toMillis().takeIf { it > 0 }?.let { Date(now.time + it) }
         return Jwts.builder()

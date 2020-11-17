@@ -48,9 +48,16 @@ class OperateResourceImpl @Autowired constructor(
     private val operateService: OperateService
 ) : OperateResource {
 
-    override fun listFile(userId: String, artifactInfo: ArtifactInfo, includeFolder: Boolean, deep: Boolean): Response<List<FileInfo>> {
+    override fun listFile(
+        userId: String,
+        artifactInfo: ArtifactInfo,
+        includeFolder: Boolean,
+        deep: Boolean
+    ): Response<List<FileInfo>> {
         return artifactInfo.run {
-            ResponseBuilder.success(operateService.listFile(userId, projectId, repoName, getArtifactFullPath(), includeFolder, deep))
+            val path = getArtifactFullPath()
+            val fileInfoList = operateService.listFile(userId, projectId, repoName, path, includeFolder, deep)
+            ResponseBuilder.success(fileInfoList)
         }
     }
 }

@@ -354,7 +354,7 @@ class RepositoryServiceImpl(
         toCreateList.forEach {
             val proxyRepoName = PRIVATE_PROXY_REPO_NAME.format(repository.name, it.name)
             if (checkExist(repository.projectId, proxyRepoName, null)) {
-                logger.error("Repository[$proxyRepoName] exist in project[${repository.projectId}], skip create proxy repo.")
+                logger.error("[$proxyRepoName] exist in project[${repository.projectId}], skip creating proxy repo.")
             }
             createProxyRepo(repository, proxyRepoName, operator)
         }

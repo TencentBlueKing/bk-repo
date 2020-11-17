@@ -34,7 +34,7 @@ package com.tencent.bkrepo.generic.service
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -91,11 +91,11 @@ class UploadService(
         with(artifactInfo) {
             val expires = getLongHeader(HEADER_EXPIRES)
             val overwrite = getBooleanHeader(HEADER_OVERWRITE)
-
-            expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
+            Preconditions.checkArgument(expires > 0, "expires")
             // 判断文件是否存在
             if (!overwrite && nodeClient.checkExist(projectId, repoName, getArtifactFullPath()).data == true) {
-                logger.warn("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: artifact already exists.")
+                logger.warn("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: " +
+                    "artifact already exists.")
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
 
@@ -105,7 +105,7 @@ class UploadService(
                 expireSeconds = uploadTransactionExpires
             )
 
-            logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success: $uploadTransaction.")
+            logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success: $uploadId.")
             return uploadTransaction
         }
     }
@@ -148,7 +148,9 @@ class UploadService(
         checkUploadId(uploadId, storageCredentials)
 
         val blockInfoList = storageService.listBlock(uploadId, storageCredentials)
-        return blockInfoList.mapIndexed { index, it -> BlockInfo(size = it.first, sequence = index + 1, sha256 = it.second) }
+        return blockInfoList.mapIndexed { index, it ->
+            BlockInfo(size = it.first, sequence = index + 1, sha256 = it.second)
+        }
     }
 
     private fun checkUploadId(uploadId: String, storageCredentials: StorageCredentials?) {

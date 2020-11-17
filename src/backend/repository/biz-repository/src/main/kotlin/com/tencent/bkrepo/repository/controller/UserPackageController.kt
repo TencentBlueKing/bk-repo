@@ -73,7 +73,8 @@ class UserPackageController(
         @RequestParam pageNumber: Int = DEFAULT_PAGE_NUMBER,
         @RequestParam pageSize: Int = DEFAULT_PAGE_SIZE
     ): Response<Page<PackageSummary>> {
-        return ResponseBuilder.success(packageService.listPackagePageByName(projectId, repoName, packageName, pageNumber, pageSize))
+        val page = packageService.listPackagePageByName(projectId, repoName, packageName, pageNumber, pageSize)
+        return ResponseBuilder.success(page)
     }
 
     @ApiOperation("分页查询版本")

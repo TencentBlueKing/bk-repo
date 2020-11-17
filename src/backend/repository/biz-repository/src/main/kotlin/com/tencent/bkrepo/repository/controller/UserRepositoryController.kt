@@ -99,8 +99,8 @@ class UserRepositoryController(
         @RequestAttribute userId: String,
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest
     ): Response<Void> {
-        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.MANAGE, userRepoCreateRequest.projectId)
         val createRequest = with(userRepoCreateRequest) {
+            permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.MANAGE, projectId)
             RepoCreateRequest(
                 projectId = projectId,
                 name = name,

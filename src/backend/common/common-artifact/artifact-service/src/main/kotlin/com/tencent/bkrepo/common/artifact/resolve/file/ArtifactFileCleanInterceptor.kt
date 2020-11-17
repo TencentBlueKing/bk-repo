@@ -42,7 +42,12 @@ import kotlin.system.measureTimeMillis
 class ArtifactFileCleanInterceptor : HandlerInterceptor {
 
     @Suppress("UNCHECKED_CAST")
-    override fun afterCompletion(request: HttpServletRequest, response: HttpServletResponse, handler: Any, ex: Exception?) {
+    override fun afterCompletion(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        handler: Any,
+        ex: Exception?
+    ) {
         try {
             val artifactFileList = request.getAttribute(ArtifactFileFactory.ARTIFACT_FILES) as? List<ArtifactFile>
             artifactFileList?.filter { it.hasInitialized() && !it.isInMemory() }?.forEach {

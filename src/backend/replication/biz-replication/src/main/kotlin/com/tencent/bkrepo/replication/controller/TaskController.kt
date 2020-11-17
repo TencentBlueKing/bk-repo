@@ -64,7 +64,10 @@ class TaskController(
     }
 
     @PostMapping("/create")
-    fun create(@RequestAttribute userId: String, @RequestBody request: ReplicationTaskCreateRequest): Response<ReplicationTaskInfo> {
+    fun create(
+        @RequestAttribute userId: String,
+        @RequestBody request: ReplicationTaskCreateRequest
+    ): Response<ReplicationTaskInfo> {
         return ResponseBuilder.success(taskService.create(userId, request))
     }
 

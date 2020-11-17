@@ -188,8 +188,8 @@ class StorageInstanceMigrationJob(
         val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
         logger.info(
             "Complete check new created files, projectId: $projectId, repoName: $repoName, key: $destStorageKey, " +
-                "total: $totalCount, correct: $correctCount, migrate: $migrateCount, missing data: $dataMissingCount, " +
-                "failed: $failedCount, duration $durationSeconds s totally."
+                "total: $totalCount, correct: $correctCount, migrate: $migrateCount, " +
+                "missing data: $dataMissingCount, failed: $failedCount, duration $durationSeconds s totally."
         )
     }
 

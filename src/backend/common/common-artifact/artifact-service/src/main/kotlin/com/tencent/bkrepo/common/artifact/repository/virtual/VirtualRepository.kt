@@ -59,7 +59,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             traversedList.add(repoIdentify)
             try {
                 val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
+                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
                 val subContext = context.copy(subRepoDetail) as ArtifactQueryContext
                 repository.query(subContext)?.let {
                     if (logger.isDebugEnabled) {
@@ -86,7 +86,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             traversedList.add(repoIdentify)
             try {
                 val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
+                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
                 val subContext = context.copy(subRepoDetail) as ArtifactSearchContext
                 repository.search(subContext).let {
                     if (logger.isDebugEnabled) {
@@ -116,7 +116,8 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             traversedList.add(repoIdentify)
             try {
                 val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
+                val repository =
+                    ArtifactContextHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
                 val subContext = context.copy(repositoryDetail = subRepoDetail) as ArtifactDownloadContext
                 repository.onDownload(subContext)?.let {
                     if (logger.isDebugEnabled) {

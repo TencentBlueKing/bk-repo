@@ -39,7 +39,12 @@ import javax.servlet.http.HttpServletRequest
  */
 @Resolver(DefaultArtifactInfo::class, default = true)
 class DefaultArtifactInfoResolver : ArtifactInfoResolver {
-    override fun resolve(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest): DefaultArtifactInfo {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): DefaultArtifactInfo {
         return DefaultArtifactInfo(projectId, repoName, artifactUri)
     }
 }

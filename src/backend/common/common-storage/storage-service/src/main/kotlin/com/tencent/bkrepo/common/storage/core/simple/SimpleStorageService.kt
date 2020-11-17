@@ -57,7 +57,12 @@ class SimpleStorageService : AbstractStorageService() {
         }
     }
 
-    override fun doLoad(path: String, filename: String, range: Range, credentials: StorageCredentials): ArtifactInputStream? {
+    override fun doLoad(
+        path: String,
+        filename: String,
+        range: Range,
+        credentials: StorageCredentials
+    ): ArtifactInputStream? {
         return fileStorage.load(path, filename, range, credentials)?.toArtifactStream(range)
     }
 

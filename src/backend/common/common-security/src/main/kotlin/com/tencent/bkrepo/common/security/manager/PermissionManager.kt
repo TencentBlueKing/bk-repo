@@ -76,7 +76,8 @@ class PermissionManager(
                 checkRepoPermission(userId, type, action, projectId, repoName, repoPublic)
             }
             else -> {
-                val repoInfo = queryRepositoryInfo(projectId, repoName!!)
+                require(repoName != null) { "Repo name must not be null!" }
+                val repoInfo = queryRepositoryInfo(projectId, repoName)
                 checkRepoPermission(userId, type, action, repoInfo.projectId, repoInfo.name, repoInfo.public)
             }
         }
@@ -153,7 +154,12 @@ class PermissionManager(
         checkPermission(checkRequest)
     }
 
-    private fun checkProjectPermission(userId: String, type: ResourceType, action: PermissionAction, projectId: String) {
+    private fun checkProjectPermission(
+        userId: String,
+        type: ResourceType,
+        action: PermissionAction,
+        projectId: String
+    ) {
         // 匿名用户，提示登录
         val platformId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
         if (userId == ANONYMOUS_USER && platformId == null) throw AuthenticationException()

@@ -90,8 +90,19 @@ class RepoDataService(
         return nodeClient.countFileNode(repositoryInfo.projectId, repositoryInfo.name, ROOT).data!!
     }
 
-    fun listFileNode(projectId: String, repoName: String, path: String = ROOT, pageNumber: Int, pageSize: Int): List<NodeInfo> {
-        return nodeClient.page(projectId, repoName, pageNumber, pageSize, path, includeFolder = false, includeMetadata = true, deep = true).data!!.records
+    fun listFileNode(
+        projectId: String,
+        repoName: String,
+        path: String = ROOT,
+        pageNumber: Int,
+        pageSize: Int
+    ): List<NodeInfo> {
+        return nodeClient.page(
+            projectId, repoName, pageNumber, pageSize, path,
+            includeFolder = false,
+            includeMetadata = true,
+            deep = true
+        ).data!!.records
     }
 
     fun getMetadata(nodeInfo: NodeInfo): Map<String, Any> {

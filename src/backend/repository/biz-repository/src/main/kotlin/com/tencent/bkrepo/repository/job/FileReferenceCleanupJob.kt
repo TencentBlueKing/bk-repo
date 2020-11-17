@@ -39,8 +39,8 @@ import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.model.TFileReference
 import com.tencent.bkrepo.repository.service.StorageCredentialService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
@@ -64,10 +64,11 @@ class FileReferenceCleanupJob(
         var fileMissingCount = 0L
         val storageCredentialsMap = mutableMapOf<String, StorageCredentials>()
         val startTimeMillis = System.currentTimeMillis()
-        val query = Query.query(Criteria.where(TFileReference::count.name).`is`(0))
+        val query = Query.query(TFileReference::count.isEqualTo(0))
+        val mongoTemplate = fileReferenceDao.determineMongoTemplate()
         for (sequence in 0 until SHARDING_COUNT) {
             val collectionName = fileReferenceDao.parseSequenceToCollectionName(sequence)
-            val zeroReferenceList = fileReferenceDao.determineMongoTemplate().find(query, TFileReference::class.java, collectionName)
+            val zeroReferenceList = mongoTemplate.find(query, TFileReference::class.java, collectionName)
             zeroReferenceList.forEach {
                 val storageCredentials = it.credentialsKey?.let { key ->
                     storageCredentialsMap[key] ?: run {

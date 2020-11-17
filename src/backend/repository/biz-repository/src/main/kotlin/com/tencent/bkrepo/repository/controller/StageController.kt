@@ -45,7 +45,12 @@ class StageController(
     private val stageService: StageService
 ) : StageClient {
 
-    override fun query(projectId: String, repoName: String, packageKey: String, version: String): Response<List<String>> {
+    override fun query(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String
+    ): Response<List<String>> {
         val tagList = stageService.query(projectId, repoName, packageKey, version)
         return ResponseBuilder.success(tagList)
     }
