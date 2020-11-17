@@ -37,15 +37,17 @@ import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import org.apache.http.HttpStatus
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.ModelAndView
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-class AuthInterceptor(
-    private val accountService: AccountService
-) : HandlerInterceptor {
+class AuthInterceptor: HandlerInterceptor {
+
+    @Autowired
+    private lateinit var accountService: AccountService
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val basicAuthHeader = request.getHeader(AUTHORIZATION).orEmpty()
