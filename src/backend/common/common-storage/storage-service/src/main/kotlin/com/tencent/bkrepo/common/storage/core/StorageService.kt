@@ -74,6 +74,8 @@ interface StorageService {
 
     /**
      * 创建可追加的文件, 返回文件追加Id
+     * 追加文件组织格式: 在temp目录下创建一个具有唯一id的文件，文件名称即追加Id
+     * 数据每次追加都写入到该文件中
      */
     fun createAppendId(storageCredentials: StorageCredentials?): String
 
@@ -91,6 +93,10 @@ interface StorageService {
 
     /**
      * 创建分块存储目录，返回分块存储Id
+     * 组织格式: 在temp目录下创建一个名称唯一的目录，所有分块存储在该目录下，目录名称即blockId
+     * 其中，每个分块对应两个文件，命名分别为$sequence.block和$sequence.sha256
+     * $sequence.block文件保存其数据，
+     * $sequence.sha256保存文件sha256，用于后续分块合并时校验
      */
     fun createBlockId(storageCredentials: StorageCredentials?): String
 
@@ -133,7 +139,7 @@ interface StorageService {
     fun mergeBlock(blockId: String, storageCredentials: StorageCredentials?): FileInfo
 
     /**
-     * 清理文件
+     * 清理temp目录文件，包括分块上传产生和追加上传产生的脏数据
      */
     fun cleanUp(storageCredentials: StorageCredentials? = null): CleanupResult
 
