@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,38 +10,51 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.repository.service.impl
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.util.version.SemVer
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.search.packages.PackageQueryContext
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.PackageService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
@@ -70,14 +83,16 @@ class PackageServiceImpl(
         return convert(checkPackageVersion(tPackage.id!!, versionName))
     }
 
-    override fun listPackagePageByName(
+    override fun listPackagePage(
         projectId: String,
         repoName: String,
-        packageName: String?,
-        pageNumber: Int,
-        pageSize: Int
+        option: PackageListOption
     ): Page<PackageSummary> {
-        val query = PackageQueryHelper.packageListQuery(projectId, repoName, packageName)
+        val pageNumber = option.pageNumber
+        val pageSize = option.pageSize
+        Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
+        Preconditions.checkArgument(pageSize >= 0, "pageSize")
+        val query = PackageQueryHelper.packageListQuery(projectId, repoName, option.packageName)
         val totalRecords = packageDao.count(query)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val records = packageDao.find(query.with(pageRequest)).map { convert(it)!! }
@@ -88,17 +103,19 @@ class PackageServiceImpl(
         projectId: String,
         repoName: String,
         packageKey: String,
-        versionName: String?,
-        stageTag: List<String>?,
-        pageNumber: Int,
-        pageSize: Int
+        option: VersionListOption
     ): Page<PackageVersion> {
+        val pageNumber = option.pageNumber
+        val pageSize = option.pageSize
+        Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
+        Preconditions.checkArgument(pageSize >= 0, "pageSize")
+        val stageTag = option.stageTag?.split(StringPool.COMMA)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey)
         return if (tPackage == null) {
             Pages.ofResponse(pageRequest, 0, emptyList())
         } else {
-            val query = PackageQueryHelper.versionListQuery(tPackage.id!!, versionName, stageTag)
+            val query = PackageQueryHelper.versionListQuery(tPackage.id!!, option.version, stageTag)
             val totalRecords = packageVersionDao.count(query)
             val records = packageVersionDao.find(query.with(pageRequest)).map { convert(it)!! }
             Pages.ofResponse(pageRequest, totalRecords, records)
@@ -195,7 +212,7 @@ class PackageServiceImpl(
     }
 
     override fun searchPackage(queryModel: QueryModel): Page<MutableMap<*, *>> {
-        val context = packageSearchInterpreter.interpret(queryModel) as PackageQueryContext
+        val context = packageSearchInterpreter.interpret(queryModel)
         val query = context.mongoQuery
         val countQuery = Query.of(query).limit(0).skip(0)
         val totalRecords = packageDao.count(countQuery)

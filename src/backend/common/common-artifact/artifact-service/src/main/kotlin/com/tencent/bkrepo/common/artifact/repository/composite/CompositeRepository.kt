@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,13 +10,23 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.common.artifact.repository.composite
@@ -40,26 +50,16 @@ import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 组合仓库抽象逻辑
  */
-class CompositeRepository : AbstractArtifactRepository() {
-
-    @Autowired
-    private lateinit var localRepository: LocalRepository
-
-    @Autowired
-    private lateinit var remoteRepository: RemoteRepository
-
-    @Autowired
-    private lateinit var repositoryClient: RepositoryClient
-
-    @Autowired
-    private lateinit var proxyChannelClient: ProxyChannelClient
+class CompositeRepository(
+    private val localRepository: LocalRepository,
+    private val remoteRepository: RemoteRepository,
+    private val proxyChannelClient: ProxyChannelClient
+) : AbstractArtifactRepository() {
 
     /**
      * upload复用local仓库逻辑
@@ -112,7 +112,8 @@ class CompositeRepository : AbstractArtifactRepository() {
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return localRepository.onDownload(context) ?: run {
             mapFirstProxyRepo(context) {
-                remoteRepository.onDownload(it as ArtifactDownloadContext)
+                require(it is ArtifactDownloadContext)
+                remoteRepository.onDownload(it)
             }
         }
     }
@@ -120,7 +121,8 @@ class CompositeRepository : AbstractArtifactRepository() {
     override fun query(context: ArtifactQueryContext): Any? {
         return localRepository.query(context) ?: run {
             mapFirstProxyRepo(context) {
-                remoteRepository.query(it as ArtifactQueryContext)
+                require(it is ArtifactQueryContext)
+                remoteRepository.query(it)
             }
         }
     }
@@ -128,7 +130,8 @@ class CompositeRepository : AbstractArtifactRepository() {
     override fun search(context: ArtifactSearchContext): List<Any> {
         val localResult = localRepository.search(context)
         return mapEachProxyRepo(context) {
-            remoteRepository.search(it as ArtifactSearchContext)
+            require(it is ArtifactSearchContext)
+            remoteRepository.search(it)
         }.apply { add(localResult) }.flatten()
     }
 
@@ -140,7 +143,7 @@ class CompositeRepository : AbstractArtifactRepository() {
         for (setting in proxyChannelList) {
             try {
                 action(getContextFromProxyChannel(context, setting))?.let { return it }
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 logger.warn("Failed to execute map with channel ${setting.name}", exception)
             }
         }
@@ -156,7 +159,7 @@ class CompositeRepository : AbstractArtifactRepository() {
         for (proxyChannel in proxyChannelList) {
             try {
                 action(getContextFromProxyChannel(context, proxyChannel))?.let { mapResult.add(it) }
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 logger.warn("Failed to execute map with channel ${proxyChannel.name}", exception)
             }
         }
@@ -171,7 +174,7 @@ class CompositeRepository : AbstractArtifactRepository() {
         for (proxyChannel in proxyChannelList) {
             try {
                 action(getContextFromProxyChannel(context, proxyChannel))
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 logger.warn("Failed to execute action with channel ${proxyChannel.name}", exception)
             }
         }
@@ -188,17 +191,22 @@ class CompositeRepository : AbstractArtifactRepository() {
      * 根据原始上下文[context]以及代理源设置[setting]生成新的[ArtifactContext]
      */
     private fun getContextFromProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
-        return if (setting.public) {
+        val artifactContext = if (setting.public) {
             getContextFromPublicProxyChannel(context, setting)
         } else {
             getContextFromPrivateProxyChannel(context, setting)
-        } as ArtifactDownloadContext
+        }
+        require(artifactContext is ArtifactDownloadContext)
+        return artifactContext
     }
 
     /**
      * 根据原始上下文[context]以及公共代理源设置[setting]生成新的[ArtifactContext]
      */
-    private fun getContextFromPublicProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
+    private fun getContextFromPublicProxyChannel(
+        context: ArtifactContext,
+        setting: ProxyChannelSetting
+    ): ArtifactContext {
         // 查询公共源详情
         val proxyChannel = proxyChannelClient.getById(setting.channelId!!).data!!
         // 查询远程仓库
@@ -207,7 +215,9 @@ class CompositeRepository : AbstractArtifactRepository() {
         val repoName = PUBLIC_PROXY_REPO_NAME.format(repoType, proxyChannel.name)
         val remoteRepoDetail = repositoryClient.getRepoDetail(projectId, repoName, repoType).data!!
         // 构造proxyConfiguration
-        val remoteConfiguration = remoteRepoDetail.configuration as RemoteConfiguration
+
+        val remoteConfiguration = remoteRepoDetail.configuration
+        require(remoteConfiguration is RemoteConfiguration)
         remoteConfiguration.url = proxyChannel.url
         remoteConfiguration.credentials.username = proxyChannel.username
         remoteConfiguration.credentials.password = proxyChannel.password
@@ -218,14 +228,18 @@ class CompositeRepository : AbstractArtifactRepository() {
     /**
      * 根据原始上下文[context]以及私有代理源设置[setting]生成新的[ArtifactContext]
      */
-    private fun getContextFromPrivateProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
+    private fun getContextFromPrivateProxyChannel(
+        context: ArtifactContext,
+        setting: ProxyChannelSetting
+    ): ArtifactContext {
         // 查询远程仓库
         val projectId = context.repositoryDetail.projectId
         val repoType = context.repositoryDetail.type.name
         val repoName = PRIVATE_PROXY_REPO_NAME.format(context.repositoryDetail.name, setting.name)
         val remoteRepoDetail = repositoryClient.getRepoDetail(projectId, repoName, repoType).data!!
         // 构造proxyConfiguration
-        val remoteConfiguration = remoteRepoDetail.configuration as RemoteConfiguration
+        val remoteConfiguration = remoteRepoDetail.configuration
+        require(remoteConfiguration is RemoteConfiguration)
         remoteConfiguration.url = setting.url!!
         remoteConfiguration.credentials.username = setting.username
         remoteConfiguration.credentials.password = setting.password

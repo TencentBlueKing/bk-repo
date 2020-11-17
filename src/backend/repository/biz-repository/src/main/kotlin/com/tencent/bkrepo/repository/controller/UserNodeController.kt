@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,13 +10,23 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.repository.controller
@@ -34,6 +44,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -65,9 +76,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/node")
 class UserNodeController(
-        private val nodeService: NodeService,
-        private val nodeSearchService: NodeSearchService,
-        private val permissionManager: PermissionManager
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService,
+    private val permissionManager: PermissionManager
 ) {
 
     @ApiOperation("根据路径查看节点详情")
@@ -192,10 +203,7 @@ class UserNodeController(
         @RequestBody request: UserNodeMoveRequest
     ): Response<Void> {
         with(request) {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
-            if (destProjectId != null && destRepoName != null) {
-                permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId!!, destRepoName!!)
-            }
+            checkCrossRepoPermission(userId, request)
             val moveRequest = NodeMoveRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
@@ -218,10 +226,7 @@ class UserNodeController(
         @RequestBody request: UserNodeCopyRequest
     ): Response<Void> {
         with(request) {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, srcProjectId, srcRepoName)
-            if (destProjectId != null && destRepoName != null) {
-                permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, destProjectId!!, destRepoName!!)
-            }
+            checkCrossRepoPermission(userId, request)
             val copyRequest = NodeCopyRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
@@ -252,9 +257,9 @@ class UserNodeController(
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/page/$DEFAULT_MAPPING_URI")
     fun listPageNode(
-            @RequestAttribute userId: String,
-            @ArtifactPathVariable artifactInfo: ArtifactInfo,
-            nodeListOption: NodeListOption
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        nodeListOption: NodeListOption
     ): Response<Page<NodeInfo>> {
         val nodePage = nodeService.listNodePage(artifactInfo, nodeListOption)
         return ResponseBuilder.success(nodePage)
@@ -273,5 +278,27 @@ class UserNodeController(
         @RequestBody queryModel: QueryModel
     ): Response<Page<Map<String, Any?>>> {
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
+    }
+
+    /**
+     * 校验跨仓库操作权限
+     */
+    private fun checkCrossRepoPermission(userId: String, request: CrossRepoNodeRequest) {
+        val srcProjectId = request.srcProjectId
+        val srcRepoName = request.srcRepoName
+        val destProjectId = request.destProjectId
+        val destRepoName = request.destRepoName
+        // 校验src仓库权限
+        val type = ResourceType.REPO
+        val action = PermissionAction.WRITE
+        permissionManager.checkPermission(userId, type, action, srcProjectId, srcRepoName)
+
+        // 当src和dest不是用一个仓库是，校验dest仓库权限
+        val isDestRepoNull = destProjectId == null && destRepoName == null
+        val isSameRepo = destProjectId == srcProjectId && destRepoName == srcRepoName
+        if (isDestRepoNull || isSameRepo) {
+            return
+        }
+        permissionManager.checkPermission(userId, type, action, destProjectId.orEmpty(), destRepoName.orEmpty())
     }
 }

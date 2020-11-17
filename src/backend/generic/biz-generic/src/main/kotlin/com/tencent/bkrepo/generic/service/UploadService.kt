@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,13 +10,23 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.generic.service
@@ -24,7 +34,7 @@ package com.tencent.bkrepo.generic.service
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -81,11 +91,11 @@ class UploadService(
         with(artifactInfo) {
             val expires = getLongHeader(HEADER_EXPIRES)
             val overwrite = getBooleanHeader(HEADER_OVERWRITE)
-
-            expires.takeIf { it >= 0 } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "expires")
+            Preconditions.checkArgument(expires > 0, "expires")
             // 判断文件是否存在
             if (!overwrite && nodeClient.checkExist(projectId, repoName, getArtifactFullPath()).data == true) {
-                logger.warn("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: artifact already exists.")
+                logger.warn("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: " +
+                    "artifact already exists.")
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
 
@@ -95,7 +105,7 @@ class UploadService(
                 expireSeconds = uploadTransactionExpires
             )
 
-            logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success: $uploadTransaction.")
+            logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success: $uploadId.")
             return uploadTransaction
         }
     }
@@ -138,7 +148,9 @@ class UploadService(
         checkUploadId(uploadId, storageCredentials)
 
         val blockInfoList = storageService.listBlock(uploadId, storageCredentials)
-        return blockInfoList.mapIndexed { index, it -> BlockInfo(size = it.first, sequence = index + 1, sha256 = it.second) }
+        return blockInfoList.mapIndexed { index, it ->
+            BlockInfo(size = it.first, sequence = index + 1, sha256 = it.second)
+        }
     }
 
     private fun checkUploadId(uploadId: String, storageCredentials: StorageCredentials?) {
@@ -148,8 +160,9 @@ class UploadService(
     }
 
     private fun getStorageCredentials(): StorageCredentials? {
-        val repoInfo = HttpContextHolder.getRequest().getAttribute(REPO_KEY) as RepositoryDetail
-        return repoInfo.storageCredentials
+        val repoDetail = HttpContextHolder.getRequest().getAttribute(REPO_KEY)
+        require(repoDetail is RepositoryDetail)
+        return repoDetail.storageCredentials
     }
 
     companion object {

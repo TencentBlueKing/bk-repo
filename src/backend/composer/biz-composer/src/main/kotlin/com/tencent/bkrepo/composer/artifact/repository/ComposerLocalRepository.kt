@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,13 +10,23 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.composer.artifact.repository
@@ -51,7 +61,6 @@ import com.tencent.bkrepo.composer.util.JsonUtil
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperJson
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperPackageJson
 import com.tencent.bkrepo.composer.util.pojo.ComposerArtifact
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -60,7 +69,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -69,7 +77,7 @@ import java.io.ByteArrayInputStream
 import java.io.InputStreamReader
 
 @Component
-class ComposerLocalRepository : LocalRepository() {
+class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepository() {
 
     // 默认值为方便本地调试
     // 服务域名,例：bkrepo.com
@@ -79,12 +87,6 @@ class ComposerLocalRepository : LocalRepository() {
     // 服务端口识别字段，例 8083或composer
     @Value("\${bkrepo.composer.port:8083}")
     private val composerPort: String = ""
-
-    @Autowired
-    lateinit var packageClient: PackageClient
-
-    @Autowired
-    lateinit var stageClient: StageClient
 
     /**
      * Composer节点创建请求
@@ -287,14 +289,16 @@ class ComposerLocalRepository : LocalRepository() {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun remove(context: ArtifactRemoveContext) {
+        val projectId = context.projectId
+        val repoName = context.repoName
         val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
         val version = HttpContextHolder.getRequest().getParameter("version")
         if (version.isNullOrBlank()) {
             // 删除包
             val versions = getVersions(packageKey, context)
             val pages = packageClient.listVersionPage(
-                context.projectId,
-                context.repoName,
+                projectId,
+                repoName,
                 packageKey,
                 null,
                 null,
@@ -302,18 +306,12 @@ class ComposerLocalRepository : LocalRepository() {
                 versions!!.toInt()
             ).data?.records ?: return
             for (packageVersion in pages) {
-                val node = nodeClient.getNodeDetail(context.projectId, context.repoName, packageVersion.contentPath!!).data
-                    ?: continue
+                val node = nodeClient.getNodeDetail(projectId, repoName, packageVersion.contentPath!!).data ?: continue
                 removeComposerArtifact(node, packageKey, packageVersion.name, context)
             }
         } else {
             with(context.artifactInfo) {
-                val packageVersion = packageClient.findVersionByName(
-                    context.projectId,
-                    context.repoName,
-                    packageKey,
-                    version
-                ).data ?: return
+                val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: return
                 val node = nodeClient.getNodeDetail(projectId, repoName, packageVersion.contentPath!!).data ?: return
                 removeComposerArtifact(node, packageKey, version, context)
             }

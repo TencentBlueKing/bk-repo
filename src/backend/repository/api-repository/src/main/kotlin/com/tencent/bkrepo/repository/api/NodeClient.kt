@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,21 +10,31 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.constant.SERVICE_NAME
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -54,48 +64,40 @@ import org.springframework.web.bind.annotation.RequestParam
  */
 @Api("节点服务接口")
 @Primary
-@FeignClient(SERVICE_NAME, contextId = "NodeClient")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeClient")
 @RequestMapping("/service/node")
 interface NodeClient {
 
     @ApiOperation("根据路径查看节点详情")
     @GetMapping("/detail/{projectId}/{repoName}")
     fun getNodeDetail(
-        @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
     ): Response<NodeDetail?>
 
     @ApiOperation("根据路径查看节点是否存在")
     @GetMapping("/exist/{projectId}/{repoName}")
     fun checkExist(
-        @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "节点完整路径", required = true)
         @RequestParam fullPath: String
     ): Response<Boolean>
 
     @ApiOperation("列出仓库中已存在的节点")
     @PostMapping("/exist/list/{projectId}/{repoName}")
     fun listExistFullPath(
-        @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
         @RequestBody fullPathList: List<String>
     ): Response<List<String>>
 
-    @GetMapping("/page/{projectId}/{repoName}")
+    @PostMapping("/page/{projectId}/{repoName}")
     fun listNodePage(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam path: String,
-        nodeListOption: NodeListOption
+        @RequestBody option: NodeListOption = NodeListOption()
     ): Response<Page<NodeInfo>>
 
     @ApiOperation("创建节点")

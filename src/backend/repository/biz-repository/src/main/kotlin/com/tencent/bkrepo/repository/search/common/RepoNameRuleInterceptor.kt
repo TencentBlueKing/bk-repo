@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,13 +10,23 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.repository.search.common
@@ -30,7 +40,6 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.http.SecurityUtils
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 
@@ -40,10 +49,9 @@ import org.springframework.stereotype.Component
  * 条件构造器中传入条件是`repoName`，过滤无权限的仓库
  */
 @Component
-class RepoNameRuleInterceptor : QueryRuleInterceptor {
-
-    @Autowired
-    private lateinit var permissionManager: PermissionManager
+class RepoNameRuleInterceptor(
+    private val permissionManager: PermissionManager
+) : QueryRuleInterceptor {
 
     override fun match(rule: Rule): Boolean {
         return rule is Rule.QueryRule && rule.field == NodeInfo::repoName.name
@@ -51,11 +59,16 @@ class RepoNameRuleInterceptor : QueryRuleInterceptor {
 
     override fun intercept(rule: Rule, context: QueryContext): Criteria {
         with(rule as Rule.QueryRule) {
+            require(context is CommonQueryContext)
             val userId = SecurityUtils.getUserId()
-            val projectId = (context as CommonQueryContext).findProjectId()
+            val projectId = context.findProjectId()
             val queryRule = when (operation) {
-                OperationType.EQ -> handleRepoNameEq(userId, projectId, value.toString())
-                OperationType.IN -> handleRepoNameIn(userId, projectId, value as List<*>, context)
+                OperationType.EQ -> { handleRepoNameEq(userId, projectId, value.toString()) }
+                OperationType.IN -> {
+                    val listValue = value
+                    require(listValue is List<*>)
+                    handleRepoNameIn(userId, projectId, listValue, context)
+                }
                 else -> throw IllegalArgumentException("RepoName only support EQ and IN operation type.")
             }.toFixed()
             return context.interpreter.resolveRule(queryRule, context)
@@ -96,7 +109,14 @@ class RepoNameRuleInterceptor : QueryRuleInterceptor {
         repoPublic: Boolean? = null
     ): Boolean {
         return try {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName, repoPublic)
+            permissionManager.checkPermission(
+                userId = userId,
+                type = ResourceType.REPO,
+                action = PermissionAction.READ,
+                projectId = projectId,
+                repoName = repoName,
+                repoPublic = repoPublic
+            )
             true
         } catch (ignored: Exception) {
             false

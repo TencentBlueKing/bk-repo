@@ -103,7 +103,7 @@ function _M:get_ticket(bk_ticket)
 end
 
 function _M:verify_bkrepo_token(access_token)
-    local host, port = hostUtil.getAddr("auth")
+    local host, port = hostUtil:getAddr("auth")
     --- 初始化HTTP连接
     local httpc = http.new()
     --- 开始连接
