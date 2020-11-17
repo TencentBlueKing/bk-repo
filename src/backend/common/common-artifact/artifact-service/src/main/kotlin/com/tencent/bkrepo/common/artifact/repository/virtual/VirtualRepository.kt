@@ -120,7 +120,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 val subRepoDetail = repositoryClient.getRepoDetail(projectId, repoName).data!!
                 val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
                 val subContext = context.copy(subRepoDetail) as ArtifactDownloadContext
-                (repository  as AbstractArtifactRepository).onDownload(subContext)?.let {
+                (repository as AbstractArtifactRepository).onDownload(subContext)?.let {
                     if (logger.isDebugEnabled) {
                         logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
                     }
