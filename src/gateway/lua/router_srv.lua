@@ -43,7 +43,7 @@ end
 
 local ns_config = config.ns
 local query_subdomain = config.ns.tag .. "." .. service_prefix .. service_name .. ".service." .. ns_config.domain
-
+ngx.log(ngx.ERR, query_subdomain)
 if not ns_config.ip then
   ngx.log(ngx.ERR, "DNS ip not exist!")
   ngx.exit(503)
