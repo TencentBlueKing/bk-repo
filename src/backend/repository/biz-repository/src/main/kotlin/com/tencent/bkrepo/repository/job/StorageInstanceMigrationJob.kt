@@ -57,6 +57,8 @@ import java.time.LocalDateTime
 /**
  * 存储实例迁移任务
  */
+// TooGenericExceptionCaught: 迁移过程无法预知具体异常类型
+@Suppress("TooGenericExceptionCaught")
 @Component
 class StorageInstanceMigrationJob(
     private val nodeDao: NodeDao,

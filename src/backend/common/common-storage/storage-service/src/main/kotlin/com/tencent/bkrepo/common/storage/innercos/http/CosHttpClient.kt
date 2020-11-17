@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.storage.innercos.http
 
+import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -53,7 +54,7 @@ object CosHttpClient {
             client.newCall(request).execute()
         } catch (exception: IOException) {
             val message = buildMessage(request)
-            throw RuntimeException("Failed to execute http request: $message", exception)
+            throw InnerCosException("Failed to execute http request: $message", exception)
         }
 
         response.useOnCondition(!handler.keepConnection()) {
@@ -67,11 +68,11 @@ object CosHttpClient {
                             return handle404Result
                         }
                     }
-                    throw RuntimeException("Response status error")
+                    throw InnerCosException("Response status error")
                 }
             } catch (exception: Exception) {
                 val message = buildMessage(request, it)
-                throw RuntimeException("Failed to execute http request: $message", exception)
+                throw InnerCosException("Failed to execute http request: $message", exception)
             }
         }
     }

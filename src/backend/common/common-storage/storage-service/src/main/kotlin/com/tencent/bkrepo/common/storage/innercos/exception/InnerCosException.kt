@@ -29,29 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.listener
+package com.tencent.bkrepo.common.storage.innercos.exception
 
-import com.tencent.bkrepo.repository.dao.repository.OperateLogRepository
-import com.tencent.bkrepo.repository.listener.event.IEvent
-import com.tencent.bkrepo.repository.model.TOperateLog
-import org.springframework.beans.factory.annotation.Autowired
-
-// LateinitUsage: 抽象类中使用构造器注入会造成不便
-@Suppress("LateinitUsage")
-abstract class AbstractEventListener {
-
-    @Autowired
-    private lateinit var operateLogRepository: OperateLogRepository
-
-    fun logEvent(event: IEvent) {
-        val log = TOperateLog(
-            resourceType = event.getResourceType(),
-            resourceKey = event.getResourceKey(),
-            operateType = event.getOperateType(),
-            description = event.getRequest(),
-            userId = event.userId,
-            clientAddress = event.clientAddress
-        )
-        operateLogRepository.save(log)
-    }
+/**
+ * Inner Cos 相关异常.
+ */
+open class InnerCosException(message: String? = null, cause: Throwable? = null) : RuntimeException(message, cause) {
+    constructor(message: String?): this(message, null)
+    constructor(cause: Throwable?): this(null, cause)
 }

@@ -70,12 +70,12 @@ class StorageManager(
         val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials)
         try {
             return nodeClient.createNode(request).data!!
-        } catch (exception: Exception) {
+        } catch (exception: RuntimeException) {
             // 当文件有创建，则删除文件
             if (affectedCount == 1) {
                 try {
                     storageService.delete(request.sha256!!, storageCredentials)
-                } catch (exception: Exception) {
+                } catch (exception: RuntimeException) {
                     logger.error("Failed to delete new created file[${request.sha256}]", exception)
                 }
             }

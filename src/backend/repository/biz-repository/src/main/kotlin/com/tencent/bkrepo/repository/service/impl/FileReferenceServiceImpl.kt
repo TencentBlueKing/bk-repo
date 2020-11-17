@@ -58,7 +58,7 @@ class FileReferenceServiceImpl(
         return try {
             val credentialsKey = findCredentialsKey(node, repository)
             increment(node.sha256!!, credentialsKey)
-        } catch (exception: NullPointerException) {
+        } catch (exception: IllegalArgumentException) {
             logger.error("Failed to increment reference of node [$node], repository not found.")
             false
         }
@@ -69,7 +69,7 @@ class FileReferenceServiceImpl(
         return try {
             val credentialsKey = findCredentialsKey(node, repository)
             decrement(node.sha256!!, credentialsKey)
-        } catch (exception: NullPointerException) {
+        } catch (exception: IllegalArgumentException) {
             logger.error("Failed to decrement reference of node [$node], repository not found.")
             false
         }
@@ -118,11 +118,12 @@ class FileReferenceServiceImpl(
     }
 
     private fun findCredentialsKey(node: TNode, repository: TRepository?): String? {
-        return if (repository != null) {
-            repository.credentialsKey
-        } else {
-            return repositoryDao.findByNameAndType(node.projectId, node.repoName)?.credentialsKey
+        if (repository != null) {
+            return repository.credentialsKey
         }
+        val tRepository = repositoryDao.findByNameAndType(node.projectId, node.repoName)
+        require(tRepository != null)
+        return tRepository.credentialsKey
     }
 
     private fun buildQuery(sha256: String, credentialsKey: String?): Query {

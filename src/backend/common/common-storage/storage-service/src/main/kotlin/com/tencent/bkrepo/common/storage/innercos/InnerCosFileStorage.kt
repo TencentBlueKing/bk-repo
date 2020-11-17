@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
+import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
 import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
@@ -63,14 +64,14 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
     override fun delete(path: String, filename: String, client: CosClient) {
         return try {
             client.deleteObject(DeleteObjectRequest(filename))
-        } catch (ignored: Exception) {
+        } catch (ignored: InnerCosException) {
         }
     }
 
     override fun exist(path: String, filename: String, client: CosClient): Boolean {
         return try {
             return client.checkObjectExist(CheckObjectExistRequest(filename))
-        } catch (ignored: Exception) {
+        } catch (ignored: InnerCosException) {
             false
         }
     }

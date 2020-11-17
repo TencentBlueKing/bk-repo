@@ -77,7 +77,6 @@ import com.tencent.bkrepo.pypi.util.PypiVersionUtils.toPypiPackagePojo
 import com.tencent.bkrepo.pypi.util.XmlUtils
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.pypi.util.pojo.PypiInfo
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -90,7 +89,6 @@ import kotlinx.coroutines.launch
 import org.jsoup.nodes.Element
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -105,19 +103,11 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 @Component
-class PypiLocalRepository : LocalRepository() {
-
-    @Autowired
-    private lateinit var mongoTemplate: MongoTemplate
-
-    @Autowired
-    private lateinit var migrateDataRepository: MigrateDataRepository
-
-    @Autowired
-    lateinit var packageClient: PackageClient
-
-    @Autowired
-    lateinit var stageClient: StageClient
+class PypiLocalRepository(
+    private val mongoTemplate: MongoTemplate,
+    private val migrateDataRepository: MigrateDataRepository,
+    private val stageClient: StageClient
+) : LocalRepository() {
 
     /**
      * 获取PYPI节点创建请求

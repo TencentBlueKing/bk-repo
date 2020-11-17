@@ -50,7 +50,6 @@ import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 
 /**
@@ -59,7 +58,6 @@ import org.slf4j.LoggerFactory
 class CompositeRepository(
     private val localRepository: LocalRepository,
     private val remoteRepository: RemoteRepository,
-    private val repositoryClient: RepositoryClient,
     private val proxyChannelClient: ProxyChannelClient
 ) : AbstractArtifactRepository() {
 
@@ -142,7 +140,7 @@ class CompositeRepository(
         for (setting in proxyChannelList) {
             try {
                 action(getContextFromProxyChannel(context, setting))?.let { return it }
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 logger.warn("Failed to execute map with channel ${setting.name}", exception)
             }
         }
@@ -158,7 +156,7 @@ class CompositeRepository(
         for (proxyChannel in proxyChannelList) {
             try {
                 action(getContextFromProxyChannel(context, proxyChannel))?.let { mapResult.add(it) }
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 logger.warn("Failed to execute map with channel ${proxyChannel.name}", exception)
             }
         }
@@ -173,7 +171,7 @@ class CompositeRepository(
         for (proxyChannel in proxyChannelList) {
             try {
                 action(getContextFromProxyChannel(context, proxyChannel))
-            } catch (exception: Exception) {
+            } catch (exception: RuntimeException) {
                 logger.warn("Failed to execute action with channel ${proxyChannel.name}", exception)
             }
         }

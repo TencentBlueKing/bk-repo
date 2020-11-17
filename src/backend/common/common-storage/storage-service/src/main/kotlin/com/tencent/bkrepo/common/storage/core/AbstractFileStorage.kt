@@ -133,7 +133,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     abstract fun delete(path: String, filename: String, client: Client)
     abstract fun exist(path: String, filename: String, client: Client): Boolean
     open fun copy(path: String, filename: String, fromClient: Client, toClient: Client) {
-        throw RuntimeException("Copy operation unsupported")
+        throw UnsupportedOperationException("Copy operation unsupported")
     }
 
     companion object {
