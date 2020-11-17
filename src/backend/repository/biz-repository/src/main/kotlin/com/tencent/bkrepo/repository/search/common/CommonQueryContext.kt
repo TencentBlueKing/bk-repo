@@ -51,17 +51,17 @@ open class CommonQueryContext(
     var repoList: List<RepositoryInfo>? = null
 
     fun findProjectId(): String {
-        if (projectId == null) {
-            val rule = queryModel.rule
-            if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
-                for (subRule in rule.rules) {
-                    if (subRule is Rule.QueryRule && subRule.field == TNode::projectId.name) {
-                        return subRule.value.toString().apply { projectId = this }
-                    }
+        if (projectId != null) {
+            return projectId!!
+        }
+        val rule = queryModel.rule
+        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
+            for (subRule in rule.rules) {
+                if (subRule is Rule.QueryRule && subRule.field == TNode::projectId.name) {
+                    return subRule.value.toString().apply { projectId = this }
                 }
             }
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "projectId")
         }
-        return projectId!!
+        throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "projectId")
     }
 }

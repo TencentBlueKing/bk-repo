@@ -100,7 +100,7 @@ interface NodeClient {
         @RequestBody fullPathList: List<String>
     ): Response<List<String>>
 
-    @GetMapping("/page/{projectId}/{repoName}")
+    @PostMapping("/page/{projectId}/{repoName}")
     fun listNodePage(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
