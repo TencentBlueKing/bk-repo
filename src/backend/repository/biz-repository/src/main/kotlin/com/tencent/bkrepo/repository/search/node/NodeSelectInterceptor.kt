@@ -44,10 +44,10 @@ class NodeSelectInterceptor : SelectFieldInterceptor() {
 
     override fun intercept(queryModel: QueryModel, context: QueryContext): QueryModel {
         val newQueryModel = super.intercept(queryModel, context)
-        with(context as NodeQueryContext) {
-            selectMetadata = newQueryModel.select?.contains(NodeInfo::metadata.name) ?: true
-            selectStageTag = newQueryModel.select?.contains(NodeInfo::stageTag.name) ?: true
-            if (selectStageTag || selectMetadata) {
+        if (context is NodeQueryContext) {
+            context.selectMetadata = newQueryModel.select?.contains(NodeInfo::metadata.name) ?: true
+            context.selectStageTag = newQueryModel.select?.contains(NodeInfo::stageTag.name) ?: true
+            if (context.selectStageTag || context.selectMetadata) {
                 val newSelect = newQueryModel.select?.toMutableList()
                 newSelect?.add(NodeInfo::metadata.name)
                 newQueryModel.select = newSelect

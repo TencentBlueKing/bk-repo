@@ -83,7 +83,8 @@ class WeChatWorkNotifier(
         val application = instance.registration.name
         val instanceId = instance.id
         val from = getLastStatus(event.instance)
-        val to = (event as InstanceStatusChangedEvent).statusInfo.status
+        require(event is InstanceStatusChangedEvent)
+        val to = event.statusInfo.status
         val currentDate = LocalDateTime.now()
         return MESSAGE_TEMPLATE.format(application, instanceId, clusterName, from, to, currentDate)
     }

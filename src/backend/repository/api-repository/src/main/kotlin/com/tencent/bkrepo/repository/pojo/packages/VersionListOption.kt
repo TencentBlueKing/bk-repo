@@ -29,14 +29,21 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.response.handler
+package com.tencent.bkrepo.repository.pojo.packages
 
-import com.tencent.bkrepo.common.storage.innercos.RESPONSE_UPLOAD_ID
-import com.tencent.bkrepo.common.storage.innercos.http.HttpResponseHandler
-import okhttp3.Response
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-class InitiateMultipartUploadResponseHandler : HttpResponseHandler<String>() {
-    override fun handle(response: Response): String {
-        return readXmlValue(response)[RESPONSE_UPLOAD_ID].toString()
-    }
-}
+@ApiModel("版本列表选项")
+data class VersionListOption(
+    @ApiModelProperty("当前页")
+    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
+    @ApiModelProperty("分页大小")
+    val pageSize: Int = DEFAULT_PAGE_SIZE,
+    @ApiModelProperty("版本")
+    val version: String? = null,
+    @ApiModelProperty("晋级tag, 多个tag以逗号分隔")
+    val stageTag: String? = null
+)

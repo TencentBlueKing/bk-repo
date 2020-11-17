@@ -65,7 +65,9 @@ abstract class RepositoryConfiguration {
      */
     @JsonIgnore
     inline fun <reified T> getSetting(key: String): T? {
-        return settings[key] as T?
+        val value = settings[key]
+        require(value is T?)
+        return value
     }
 
     /**

@@ -55,8 +55,10 @@ class RepoTypeRuleInterceptor(
     }
 
     override fun intercept(rule: Rule, context: QueryContext): Criteria {
-        with(rule as Rule.QueryRule) {
-            val projectId = (context as CommonQueryContext).findProjectId()
+        require(rule is Rule.QueryRule)
+        with(rule) {
+            require(context is CommonQueryContext)
+            val projectId = context.findProjectId()
             val repoNameList = repositoryService.listRepo(projectId, name = null, type = value.toString())
                 .apply { context.repoList = this }
                 .map { it.name }

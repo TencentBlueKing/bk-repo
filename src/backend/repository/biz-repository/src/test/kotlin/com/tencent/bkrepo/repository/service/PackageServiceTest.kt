@@ -42,7 +42,9 @@ import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
@@ -135,7 +137,8 @@ class PackageServiceTest @Autowired constructor(
             )
             packageService.createPackageVersion(request2)
         }
-        val page = packageService.listPackagePageByName(UT_PROJECT_ID, UT_REPO_NAME, "package", 1, 10)
+        val option = PackageListOption(pageNumber = 1, pageSize = 10, packageName = "package")
+        val page = packageService.listPackagePage(UT_PROJECT_ID, UT_REPO_NAME, option)
         Assertions.assertEquals(10, page.records.size)
         Assertions.assertEquals(size, page.totalRecords.toInt())
         Assertions.assertEquals(2, page.totalPages)
@@ -158,7 +161,8 @@ class PackageServiceTest @Autowired constructor(
             )
             packageService.createPackageVersion(request2)
         }
-        val page = packageService.listVersionPage(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, null, null, 1, 10)
+        val option = VersionListOption(pageNumber = 1, pageSize = 10)
+        val page = packageService.listVersionPage(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, option)
         Assertions.assertEquals(10, page.records.size)
         Assertions.assertEquals(size, page.totalRecords.toInt())
         Assertions.assertEquals(2, page.totalPages)

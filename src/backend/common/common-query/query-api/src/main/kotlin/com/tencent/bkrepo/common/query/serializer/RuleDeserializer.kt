@@ -51,7 +51,8 @@ class RuleDeserializer : JsonDeserializer<Rule>() {
 
     @Throws(IOException::class, JsonProcessingException::class)
     override fun deserialize(parser: JsonParser, context: DeserializationContext): Rule {
-        val mapper = parser.codec as ObjectMapper
+        val mapper = parser.codec
+        require(mapper is ObjectMapper)
         val node = mapper.readTree<JsonNode>(parser)
         try {
             return if (node["relation"] != null) {

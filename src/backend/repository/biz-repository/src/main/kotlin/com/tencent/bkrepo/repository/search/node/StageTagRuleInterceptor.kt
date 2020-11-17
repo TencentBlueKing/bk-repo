@@ -51,7 +51,8 @@ class StageTagRuleInterceptor : QueryRuleInterceptor {
     }
 
     override fun intercept(rule: Rule, context: QueryContext): Criteria {
-        with(rule as Rule.QueryRule) {
+        require(rule is Rule.QueryRule)
+        with(rule) {
             val queryRule = Rule.QueryRule(METADATA_PREFIX + SystemMetadata.STAGE.key, value, operation)
             return context.interpreter.resolveRule(queryRule, context)
         }

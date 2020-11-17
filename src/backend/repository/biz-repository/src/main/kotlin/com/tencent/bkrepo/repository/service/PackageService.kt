@@ -33,8 +33,10 @@ package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 
 /**
@@ -71,20 +73,16 @@ interface PackageService {
     ): PackageVersion?
 
     /**
-     * 分页查询包列表, 根据packageName模糊搜索
+     * 分页查询包列表, 支持根据packageName模糊搜索
      *
      * @param projectId 项目id
      * @param repoName 仓库id
-     * @param packageName 包名称
-     * @param pageNumber 页码
-     * @param pageSize 每页数量
+     * @param option 包列表选项
      */
-    fun listPackagePageByName(
+    fun listPackagePage(
         projectId: String,
         repoName: String,
-        packageName: String? = null,
-        pageNumber: Int,
-        pageSize: Int
+        option: PackageListOption
     ): Page<PackageSummary>
 
     /**
@@ -93,19 +91,13 @@ interface PackageService {
      * @param projectId 项目id
      * @param repoName 仓库id
      * @param packageKey 包唯一标识
-     * @param versionName 版本名称，前缀匹配
-     * @param stageTag 晋级标签过滤
-     * @param pageNumber 页码
-     * @param pageSize 每页数量
+     * @param option 列表选项
      */
     fun listVersionPage(
         projectId: String,
         repoName: String,
         packageKey: String,
-        versionName: String? = null,
-        stageTag: List<String>? = null,
-        pageNumber: Int,
-        pageSize: Int
+        option: VersionListOption
     ): Page<PackageVersion>
 
     /**

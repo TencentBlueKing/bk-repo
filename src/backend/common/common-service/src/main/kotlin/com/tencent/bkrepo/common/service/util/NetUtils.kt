@@ -65,10 +65,10 @@ object NetUtils {
             var candidateAddress: InetAddress? = null
             val interfaces = NetworkInterface.getNetworkInterfaces()
             while (interfaces.hasMoreElements()) {
-                val netInterface = interfaces.nextElement() as NetworkInterface
+                val netInterface = interfaces.nextElement()
                 val addresses = netInterface.inetAddresses
                 while (addresses.hasMoreElements()) {
-                    val netAddress = addresses.nextElement() as InetAddress
+                    val netAddress = addresses.nextElement()
                     if (!netAddress.isLoopbackAddress) {
                         if (netAddress.isSiteLocalAddress) {
                             return netAddress

@@ -41,21 +41,29 @@ import javax.servlet.http.HttpServletResponse
 
 object HttpContextHolder {
     fun getRequest(): HttpServletRequest {
-        return (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes).request
+        val requestAttributes = RequestContextHolder.getRequestAttributes()
+        require(requestAttributes is ServletRequestAttributes)
+        return requestAttributes.request
     }
 
     fun getRequestOrNull(): HttpServletRequest? {
-        return (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request
+        val requestAttributes = RequestContextHolder.getRequestAttributes() ?: return null
+        require(requestAttributes is ServletRequestAttributes)
+        return requestAttributes.request
     }
 
     fun getResponse(): HttpServletResponse {
-        return (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes).response!!
+        val requestAttributes = RequestContextHolder.getRequestAttributes()
+        require(requestAttributes is ServletRequestAttributes)
+        return requestAttributes.response!!
     }
 
     fun getClientAddress(): String {
-        return (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request?.let {
-            val header = it.getHeader(HttpHeaders.X_FORWARDED_FOR)
-            if (header.isNullOrBlank()) it.remoteAddr else StringTokenizer(header, ",").nextToken()
-        } ?: StringPool.UNKNOWN
+        val requestAttributes = RequestContextHolder.getRequestAttributes()
+        return if(requestAttributes is ServletRequestAttributes) {
+            val request = requestAttributes.request
+            val header = request.getHeader(HttpHeaders.X_FORWARDED_FOR)
+            if (header.isNullOrBlank()) request.remoteAddr else StringTokenizer(header, ",").nextToken()
+        } else StringPool.UNKNOWN
     }
 }

@@ -29,14 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.response.handler
+package com.tencent.bkrepo.repository.pojo.packages
 
-import com.tencent.bkrepo.common.storage.innercos.RESPONSE_UPLOAD_ID
-import com.tencent.bkrepo.common.storage.innercos.http.HttpResponseHandler
-import okhttp3.Response
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-class InitiateMultipartUploadResponseHandler : HttpResponseHandler<String>() {
-    override fun handle(response: Response): String {
-        return readXmlValue(response)[RESPONSE_UPLOAD_ID].toString()
-    }
-}
+@ApiModel("包列表选项")
+data class PackageListOption(
+    @ApiModelProperty("当前页")
+    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
+    @ApiModelProperty("分页大小")
+    val pageSize: Int = DEFAULT_PAGE_SIZE,
+    @ApiModelProperty("包名称, 根据该字段模糊搜索")
+    val packageName: String? = null
+)

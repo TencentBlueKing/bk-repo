@@ -42,6 +42,7 @@ data class QueryModel(
     var select: List<String>?,
     var rule: Rule
 ) {
+    @Suppress("UNCHECKED_CAST")
     fun addQueryRule(newRule: Rule.QueryRule) {
         if (this.rule is Rule.QueryRule) {
             this.rule = Rule.NestedRule(mutableListOf(this.rule, newRule), Rule.NestedRule.RelationType.AND)

@@ -76,9 +76,9 @@ object CertTrustManager {
         val algorithm = TrustManagerFactory.getDefaultAlgorithm()
         val trustManagerFactory = TrustManagerFactory.getInstance(algorithm).apply { init(keyStore) }
         val trustManagers = trustManagerFactory.trustManagers
-        check(!(trustManagers.size != 1 || trustManagers[0] !is X509TrustManager)) {
-            "Unexpected default trust managers:" + trustManagers.toList()
-        }
-        return trustManagers[0] as X509TrustManager
+        check(trustManagers.size == 1) { "Unexpected default trust managers size: ${trustManagers.size}"}
+        val firstTrustManager = trustManagers.first()
+        check(firstTrustManager is X509TrustManager) { "Unexpected default trust managers:$firstTrustManager" }
+        return firstTrustManager
     }
 }

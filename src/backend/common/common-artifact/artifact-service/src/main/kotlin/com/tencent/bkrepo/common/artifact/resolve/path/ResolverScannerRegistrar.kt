@@ -70,7 +70,8 @@ class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAw
                 val clazz = Class.forName(beanDefinition.beanClassName)
                 if (ArtifactInfoResolver::class.java.isAssignableFrom(clazz)) {
                     val annotation = clazz.getAnnotation(Resolver::class.java)
-                    val instance = clazz.newInstance() as ArtifactInfoResolver
+                    val instance = clazz.newInstance()
+                    require(instance is ArtifactInfoResolver)
                     if (!resolverMap.containsKey(annotation.value)) {
                         resolverMap.register(annotation.value, instance, annotation.default)
                         val value = annotation.value

@@ -73,13 +73,14 @@ open class PlatformAuthHandler(
     }
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
-        with(authCredentials as PlatformAuthCredentials) {
-            val appId = authenticationManager.checkPlatformAccount(accessKey, secretKey)
-            val userId = request.getHeader(AUTH_HEADER_UID)?.apply { checkUserId(this) } ?: ANONYMOUS_USER
-            request.setAttribute(PLATFORM_KEY, appId)
-            request.setAttribute(USER_KEY, userId)
-            return userId
-        }
+        require(authCredentials is PlatformAuthCredentials)
+        val accessKey = authCredentials.accessKey
+        val secretKey = authCredentials.secretKey
+        val appId = authenticationManager.checkPlatformAccount(accessKey, secretKey)
+        val userId = request.getHeader(AUTH_HEADER_UID)?.apply { checkUserId(this) } ?: ANONYMOUS_USER
+        request.setAttribute(PLATFORM_KEY, appId)
+        request.setAttribute(USER_KEY, userId)
+        return userId
     }
 
     private fun checkUserId(userId: String) {
