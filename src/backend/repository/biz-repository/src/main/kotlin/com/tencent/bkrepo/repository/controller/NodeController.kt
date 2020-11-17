@@ -82,10 +82,10 @@ class NodeController(
         projectId: String,
         repoName: String,
         path: String,
-        nodeListOption: NodeListOption
+        option: NodeListOption
     ): Response<Page<NodeInfo>> {
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, path)
-        return ResponseBuilder.success(nodeService.listNodePage(artifactInfo, nodeListOption))
+        return ResponseBuilder.success(nodeService.listNodePage(artifactInfo, option))
     }
 
     override fun createNode(nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {

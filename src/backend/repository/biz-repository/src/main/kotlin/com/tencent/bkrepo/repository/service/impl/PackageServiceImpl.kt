@@ -31,9 +31,11 @@
 
 package com.tencent.bkrepo.repository.service.impl
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -44,8 +46,10 @@ import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.PackageService
@@ -79,14 +83,16 @@ class PackageServiceImpl(
         return convert(checkPackageVersion(tPackage.id!!, versionName))
     }
 
-    override fun listPackagePageByName(
+    override fun listPackagePage(
         projectId: String,
         repoName: String,
-        packageName: String?,
-        pageNumber: Int,
-        pageSize: Int
+        option: PackageListOption
     ): Page<PackageSummary> {
-        val query = PackageQueryHelper.packageListQuery(projectId, repoName, packageName)
+        val pageNumber = option.pageNumber
+        val pageSize = option.pageSize
+        Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
+        Preconditions.checkArgument(pageSize >= 0, "pageSize")
+        val query = PackageQueryHelper.packageListQuery(projectId, repoName, option.packageName)
         val totalRecords = packageDao.count(query)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val records = packageDao.find(query.with(pageRequest)).map { convert(it)!! }
@@ -97,17 +103,19 @@ class PackageServiceImpl(
         projectId: String,
         repoName: String,
         packageKey: String,
-        versionName: String?,
-        stageTag: List<String>?,
-        pageNumber: Int,
-        pageSize: Int
+        option: VersionListOption
     ): Page<PackageVersion> {
+        val pageNumber = option.pageNumber
+        val pageSize = option.pageSize
+        Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
+        Preconditions.checkArgument(pageSize >= 0, "pageSize")
+        val stageTag = option.stageTag?.split(StringPool.COMMA)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey)
         return if (tPackage == null) {
             Pages.ofResponse(pageRequest, 0, emptyList())
         } else {
-            val query = PackageQueryHelper.versionListQuery(tPackage.id!!, versionName, stageTag)
+            val query = PackageQueryHelper.versionListQuery(tPackage.id!!, option.version, stageTag)
             val totalRecords = packageVersionDao.count(query)
             val records = packageVersionDao.find(query.with(pageRequest)).map { convert(it)!! }
             Pages.ofResponse(pageRequest, totalRecords, records)

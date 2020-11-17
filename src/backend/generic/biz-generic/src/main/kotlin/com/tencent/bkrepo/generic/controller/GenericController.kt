@@ -46,7 +46,6 @@ import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.UploadService
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -123,8 +122,7 @@ class GenericController(
         return nodeClient.listNodePage(
             projectId = "carrypan",
             repoName = "generic-local",
-            path = "/",
-            nodeListOption = NodeListOption(sort = true)
+            path = "/"
         )
     }
 }
