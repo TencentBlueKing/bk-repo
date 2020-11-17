@@ -59,11 +59,16 @@ class RepoNameRuleInterceptor(
 
     override fun intercept(rule: Rule, context: QueryContext): Criteria {
         with(rule as Rule.QueryRule) {
+            require(context is CommonQueryContext)
             val userId = SecurityUtils.getUserId()
-            val projectId = (context as CommonQueryContext).findProjectId()
+            val projectId = context.findProjectId()
             val queryRule = when (operation) {
-                OperationType.EQ -> handleRepoNameEq(userId, projectId, value.toString())
-                OperationType.IN -> handleRepoNameIn(userId, projectId, value as List<*>, context)
+                OperationType.EQ -> { handleRepoNameEq(userId, projectId, value.toString()) }
+                OperationType.IN -> {
+                    val listValue = value
+                    require(listValue is List<*>)
+                    handleRepoNameIn(userId, projectId, listValue, context)
+                }
                 else -> throw IllegalArgumentException("RepoName only support EQ and IN operation type.")
             }.toFixed()
             return context.interpreter.resolveRule(queryRule, context)

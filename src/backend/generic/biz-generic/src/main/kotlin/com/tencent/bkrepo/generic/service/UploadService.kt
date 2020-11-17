@@ -160,8 +160,9 @@ class UploadService(
     }
 
     private fun getStorageCredentials(): StorageCredentials? {
-        val repoInfo = HttpContextHolder.getRequest().getAttribute(REPO_KEY) as RepositoryDetail
-        return repoInfo.storageCredentials
+        val repoDetail = HttpContextHolder.getRequest().getAttribute(REPO_KEY)
+        require(repoDetail is RepositoryDetail)
+        return repoDetail.storageCredentials
     }
 
     companion object {

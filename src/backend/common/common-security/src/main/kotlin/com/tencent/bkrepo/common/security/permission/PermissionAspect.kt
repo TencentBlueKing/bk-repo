@@ -56,7 +56,7 @@ class PermissionAspect(
         val signature = point.signature as MethodSignature
         val method = signature.method
         val permission = method.getAnnotation(Permission::class.java)
-        val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
+        val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY)?.toString() ?: ANONYMOUS_USER
 
         return try {
             permissionCheckHandler.onPermissionCheck(userId, permission)

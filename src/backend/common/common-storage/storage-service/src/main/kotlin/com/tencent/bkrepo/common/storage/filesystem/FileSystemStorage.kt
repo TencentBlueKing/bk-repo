@@ -73,7 +73,7 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
     override fun onCreateClient(credentials: FileSystemCredentials) = FileSystemClient(credentials.path)
 
     override fun getTempPath(storageCredentials: StorageCredentials): String {
-        storageCredentials as FileSystemCredentials
+        require(storageCredentials is FileSystemCredentials)
         return Paths.get(storageCredentials.path, TEMP).toString()
     }
 }

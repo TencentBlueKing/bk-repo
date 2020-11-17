@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.handler.MongoQueryRuleHandler
 import com.tencent.bkrepo.common.query.model.Rule
 import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.isEqualTo
 
 class NullHandler : MongoQueryRuleHandler {
 
@@ -43,6 +44,6 @@ class NullHandler : MongoQueryRuleHandler {
     }
 
     override fun handle(rule: Rule.QueryRule): Criteria {
-        return Criteria.where(rule.field).`is`(null)
+        return Criteria.where(rule.field).isEqualTo(null)
     }
 }

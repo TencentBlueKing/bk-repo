@@ -112,7 +112,8 @@ class CompositeRepository(
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return localRepository.onDownload(context) ?: run {
             mapFirstProxyRepo(context) {
-                remoteRepository.onDownload(it as ArtifactDownloadContext)
+                require(it is ArtifactDownloadContext)
+                remoteRepository.onDownload(it)
             }
         }
     }
@@ -120,7 +121,8 @@ class CompositeRepository(
     override fun query(context: ArtifactQueryContext): Any? {
         return localRepository.query(context) ?: run {
             mapFirstProxyRepo(context) {
-                remoteRepository.query(it as ArtifactQueryContext)
+                require(it is ArtifactQueryContext)
+                remoteRepository.query(it)
             }
         }
     }
@@ -128,7 +130,8 @@ class CompositeRepository(
     override fun search(context: ArtifactSearchContext): List<Any> {
         val localResult = localRepository.search(context)
         return mapEachProxyRepo(context) {
-            remoteRepository.search(it as ArtifactSearchContext)
+            require(it is ArtifactSearchContext)
+            remoteRepository.search(it)
         }.apply { add(localResult) }.flatten()
     }
 
@@ -188,11 +191,13 @@ class CompositeRepository(
      * 根据原始上下文[context]以及代理源设置[setting]生成新的[ArtifactContext]
      */
     private fun getContextFromProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
-        return if (setting.public) {
+        val artifactContext = if (setting.public) {
             getContextFromPublicProxyChannel(context, setting)
         } else {
             getContextFromPrivateProxyChannel(context, setting)
-        } as ArtifactDownloadContext
+        }
+        require(artifactContext is ArtifactDownloadContext)
+        return artifactContext
     }
 
     /**
@@ -210,7 +215,9 @@ class CompositeRepository(
         val repoName = PUBLIC_PROXY_REPO_NAME.format(repoType, proxyChannel.name)
         val remoteRepoDetail = repositoryClient.getRepoDetail(projectId, repoName, repoType).data!!
         // 构造proxyConfiguration
-        val remoteConfiguration = remoteRepoDetail.configuration as RemoteConfiguration
+
+        val remoteConfiguration = remoteRepoDetail.configuration
+        require(remoteConfiguration is RemoteConfiguration)
         remoteConfiguration.url = proxyChannel.url
         remoteConfiguration.credentials.username = proxyChannel.username
         remoteConfiguration.credentials.password = proxyChannel.password
@@ -231,7 +238,8 @@ class CompositeRepository(
         val repoName = PRIVATE_PROXY_REPO_NAME.format(context.repositoryDetail.name, setting.name)
         val remoteRepoDetail = repositoryClient.getRepoDetail(projectId, repoName, repoType).data!!
         // 构造proxyConfiguration
-        val remoteConfiguration = remoteRepoDetail.configuration as RemoteConfiguration
+        val remoteConfiguration = remoteRepoDetail.configuration
+        require(remoteConfiguration is RemoteConfiguration)
         remoteConfiguration.url = setting.url!!
         remoteConfiguration.credentials.username = setting.username
         remoteConfiguration.credentials.password = setting.password

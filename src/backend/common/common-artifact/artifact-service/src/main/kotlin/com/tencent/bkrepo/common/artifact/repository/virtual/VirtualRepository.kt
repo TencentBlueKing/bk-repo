@@ -60,7 +60,8 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             try {
                 val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
-                val subContext = context.copy(subRepoDetail) as ArtifactQueryContext
+                val subContext = context.copy(subRepoDetail)
+                require(subContext is ArtifactQueryContext)
                 repository.query(subContext)?.let {
                     if (logger.isDebugEnabled) {
                         logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
@@ -87,7 +88,8 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             try {
                 val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
                 val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
-                val subContext = context.copy(subRepoDetail) as ArtifactSearchContext
+                val subContext = context.copy(subRepoDetail)
+                require(subContext is ArtifactSearchContext)
                 repository.search(subContext).let {
                     if (logger.isDebugEnabled) {
                         logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
@@ -119,8 +121,10 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 val repoName = repoIdentify.name
                 val subRepoDetail = repositoryClient.getRepoDetail(projectId, repoName).data!!
                 val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
-                val subContext = context.copy(subRepoDetail) as ArtifactDownloadContext
-                (repository as AbstractArtifactRepository).onDownload(subContext)?.let {
+                val subContext = context.copy(subRepoDetail)
+                require(subContext is ArtifactDownloadContext)
+                require(repository is AbstractArtifactRepository)
+                repository.onDownload(subContext)?.let {
                     if (logger.isDebugEnabled) {
                         logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
                     }

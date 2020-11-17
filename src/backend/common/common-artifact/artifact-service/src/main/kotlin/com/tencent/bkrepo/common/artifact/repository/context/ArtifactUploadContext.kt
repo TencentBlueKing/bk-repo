@@ -95,17 +95,20 @@ open class ArtifactUploadContext : ArtifactContext {
     }
 
     /**
-     * 获取[MultipartArtifactFile]
+     * 获取[MultipartArtifactFile]，不存在则抛[NullPointerException]异常
      */
     fun getMultipartArtifactFile(name: String): MultipartArtifactFile {
-        return artifactFileMap[name]!! as MultipartArtifactFile
+        val artifactFile = artifactFileMap[name]
+        require(artifactFile is MultipartArtifactFile)
+        return artifactFile
     }
 
     /**
-     * 获取[OctetStreamArtifactFile]
+     * 获取[OctetStreamArtifactFile]，不存在则抛[NullPointerException]异常
      */
+    @Suppress("UNCHECKED_CAST")
     fun getOctetStreamArtifactFile(): OctetStreamArtifactFile {
-        return artifactFile!! as OctetStreamArtifactFile
+        return artifactFile as OctetStreamArtifactFile
     }
 
     /**

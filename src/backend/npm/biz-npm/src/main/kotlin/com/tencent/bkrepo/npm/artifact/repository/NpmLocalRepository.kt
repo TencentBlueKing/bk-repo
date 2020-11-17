@@ -214,7 +214,7 @@ class NpmLocalRepository(
         val fullPath = context.getAttribute<List<*>>(NPM_FILE_FULL_PATH)
         val userId = context.userId
         fullPath?.forEach {
-            nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, it as String, userId))
+            nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, it.toString(), userId))
             logger.info("delete artifact $it success.")
         }
     }

@@ -52,7 +52,8 @@ class MetadataRuleInterceptor : QueryRuleInterceptor {
     }
 
     override fun intercept(rule: Rule, context: QueryContext): Criteria {
-        val key = (rule as Rule.QueryRule).field.removePrefix(METADATA_PREFIX)
+        require(rule is Rule.QueryRule)
+        val key = rule.field.removePrefix(METADATA_PREFIX)
         val keyRule = Rule.QueryRule(TMetadata::key.name, key, OperationType.EQ).toFixed()
         val valueRule = Rule.QueryRule(TMetadata::value.name, rule.value, rule.operation).toFixed()
         val nestedAndRule = Rule.NestedRule(mutableListOf(keyRule, valueRule))
