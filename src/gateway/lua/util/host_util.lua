@@ -20,9 +20,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 local _M = {}
 
 --[[获取微服务真实地址]]
-function _M:getAddr(service_name)
+function _M:get_addr(service_name)
 
-    service_name = "auth"
+    --service_name = "auth"
     local service_prefix = config.service_prefix
 
     if service_prefix == nil or service_prefix == "" then
