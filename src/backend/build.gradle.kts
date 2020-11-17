@@ -18,6 +18,7 @@ allprojects {
         val privateMavenRepoUrl: String by project
 
         mavenLocal()
+        maven(url = "http://bkrepo.canway.net/maven/canway/maven-virtual")
         maven(url = publicMavenRepoUrl)
         maven(url = privateMavenRepoUrl)
         maven(url = "https://repo.spring.io/libs-milestone")
