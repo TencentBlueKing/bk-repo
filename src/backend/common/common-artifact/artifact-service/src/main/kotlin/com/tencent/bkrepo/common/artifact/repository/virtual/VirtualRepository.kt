@@ -115,11 +115,12 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             }
             traversedList.add(repoIdentify)
             try {
-                val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository =
-                    ArtifactContextHolder.getRepository(subRepoDetail.category) as AbstractArtifactRepository
-                val subContext = context.copy(repositoryDetail = subRepoDetail) as ArtifactDownloadContext
-                repository.onDownload(subContext)?.let {
+                val projectId = repoIdentify.projectId
+                val repoName = repoIdentify.name
+                val subRepoDetail = repositoryClient.getRepoDetail(projectId, repoName).data!!
+                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
+                val subContext = context.copy(subRepoDetail) as ArtifactDownloadContext
+                (repository  as AbstractArtifactRepository).onDownload(subContext)?.let {
                     if (logger.isDebugEnabled) {
                         logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
                     }
@@ -129,7 +130,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                         logger.debug("Artifact[$artifactInfo] is not found in repository[$repoIdentify], skipped.")
                     }
                 }
-            } catch (ignored: Exception) {
+            } catch (ignored: RuntimeException) {
                 logger.warn("Download Artifact[$artifactInfo] from repository[$repoIdentify] failed: ${ignored.message}")
             }
         }
