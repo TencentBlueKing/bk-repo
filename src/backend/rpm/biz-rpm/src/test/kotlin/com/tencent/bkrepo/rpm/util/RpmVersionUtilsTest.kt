@@ -24,19 +24,4 @@ class RpmVersionUtilsTest {
         Assertions.assertEquals("httpd", str.toRpmPackagePojo().name)
         Assertions.assertEquals("2.4.6-93.el7.centos.x86_64", str.toRpmPackagePojo().version)
     }
-
-    @Test
-    fun checkFormat() {
-        val file = File("/Users/weaving/Downloads/24c23c2606313a9578ab80e809ffcfef015eae5d-primary.xml")
-        var line: String?
-        val string = StringBuilder()
-        BufferedReader(InputStreamReader(FileInputStream(file))).use { br ->
-            while (br.readLine().also { line = it } != null) {
-                string.append(line)
-            }
-        }
-
-        val xml = string.toString()
-        val primary = XStreamUtil.xmlToObject(xml)
-    }
 }

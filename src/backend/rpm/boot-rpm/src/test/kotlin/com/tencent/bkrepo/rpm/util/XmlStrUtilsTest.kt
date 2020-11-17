@@ -22,6 +22,8 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.rpm.pojo.IndexType
+import com.tencent.bkrepo.rpm.util.XmlStrUtils.findPackageIndex
+import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -37,7 +39,7 @@ class XmlStrUtilsTest {
         val uri = "/7/os/x86_64/hello-world-1-1.x86_64.rpm"
         val depth = 3
         val repodataUri = XmlStrUtils.resolveRepodataUri(uri, depth)
-        Assertions.assertEquals("7/os/x86_64/", repodataUri.repodataPath)
+        Assertions.assertEquals("7/os/x86_64/", repodataUri.repoDataPath)
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri.artifactRelativePath)
 
         val uri2 = "/7/hello-world-1-1.x86_64.rpm"
@@ -53,14 +55,6 @@ class XmlStrUtilsTest {
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri3.artifactRelativePath)
     }
 
-    @Test
-    fun updatePackageCountTest() {
-        val start = System.currentTimeMillis()
-        val file = File("/Downloads/60M.xml")
-        val randomAccessFile = RandomAccessFile(file, "rw")
-        updatePackageCount(randomAccessFile, IndexType.PRIMARY, 0, true)
-        println(System.currentTimeMillis() - start)
-    }
 
     @Test
     fun packagesModifyTest01() {
@@ -74,13 +68,6 @@ class XmlStrUtilsTest {
         }
     }
 
-    @Test
-    fun indexOfTest() {
-        val file = File("/Users/weaving/Downloads/filelist/21e8c7280184d7428e4fa259c669fa4b2cfef05f-filelists.xml")
-        val randomAccessFile = RandomAccessFile(file, "r")
-        val index = indexOf(randomAccessFile, """<package pkgid="cb764f7906736425286341f6c5939347b01c5c17" name="httpd" arch="x86_64">""")
-        Assertions.assertEquals(287, index)
-    }
 
     @Test
     fun indexPackageTest() {
@@ -117,6 +104,6 @@ class XmlStrUtilsTest {
     @Test
     fun test() {
         val file = File("${System.getenv("HOME")}/Downloads/nfaprofile_consumer_request-master-20200921636887-1-x86_64.rpm")
-        println(XStreamUtil.checkMarkFile(file.inputStream().readBytes()))
+        println(XStreamUtil.checkMarkFile(file.inputStream().readBytes(), IndexType.PRIMARY))
     }
 }

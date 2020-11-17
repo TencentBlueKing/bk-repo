@@ -39,7 +39,7 @@ import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenMetadata
 import com.tencent.bkrepo.maven.pojo.MavenPom
-import com.tencent.bkrepo.maven.util.MavenGAVCUtils.GAVC
+import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.StringUtils.formatSeparator
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.StageClient
@@ -272,7 +272,7 @@ class MavenLocalRepository : LocalRepository() {
         with(context) {
             val fullPath = context.artifactInfo.getArtifactFullPath()
             return if (fullPath.endsWith(".pom")) {
-                val mavenGAVC = fullPath.GAVC()
+                val mavenGAVC = fullPath.mavenGAVC()
                 val version = mavenGAVC.version
                 val artifactId = mavenGAVC.artifactId
                 val groupId = mavenGAVC.groupId.formatSeparator("/", ".")

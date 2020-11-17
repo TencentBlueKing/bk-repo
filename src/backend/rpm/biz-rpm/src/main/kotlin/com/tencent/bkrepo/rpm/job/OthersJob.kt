@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.rpm.job
 
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -14,18 +13,15 @@ import org.springframework.stereotype.Component
 class OthersJob {
 
     @Autowired
-    private lateinit var repositoryClient: RepositoryClient
-
-    @Autowired
     private lateinit var jobService: JobService
 
-    // 每次任务间隔100ms
+    // 每次任务间隔 ms
     @Scheduled(fixedDelay = 30 * 1000)
     @SchedulerLock(name = "OthersJob", lockAtMostFor = "PT30M")
     fun updateOthersIndex() {
         logger.info("update others index start")
         val startMillis = System.currentTimeMillis()
-        val repoList = repositoryClient.pageByType(0, 100, "RPM").data?.records
+        val repoList = jobService.getAllRpmRepo()
         repoList?.let {
             for (repo in repoList) {
                 logger.info("update others index [${repo.projectId}|${repo.name}] start")

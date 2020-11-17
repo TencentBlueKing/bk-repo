@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.rpm.job
 
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -14,9 +13,6 @@ import org.springframework.stereotype.Component
 class PrimaryJob {
 
     @Autowired
-    private lateinit var repositoryClient: RepositoryClient
-
-    @Autowired
     private lateinit var jobService: JobService
 
     @Scheduled(fixedDelay = 20 * 1000)
@@ -24,7 +20,7 @@ class PrimaryJob {
     fun updatePrimaryIndex() {
         logger.info("update primary index start")
         val startMillis = System.currentTimeMillis()
-        val repoList = repositoryClient.pageByType(0, 100, "RPM").data?.records
+        val repoList = jobService.getAllRpmRepo()
         repoList?.let {
             for (repo in repoList) {
                 logger.info("update primary index [${repo.projectId}|${repo.name}] start")

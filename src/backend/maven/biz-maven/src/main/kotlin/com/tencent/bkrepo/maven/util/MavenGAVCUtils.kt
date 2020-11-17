@@ -26,7 +26,7 @@ import org.apache.commons.lang.StringUtils
 import javax.servlet.http.HttpServletRequest
 
 object MavenGAVCUtils {
-    fun String.GAVC(): MavenGAVC {
+    fun String.mavenGAVC(): MavenGAVC {
         val pathList = this.removePrefix("/").removeSuffix("/").split("/")
         val jarName = pathList.last()
         val version = pathList[pathList.size - 2]

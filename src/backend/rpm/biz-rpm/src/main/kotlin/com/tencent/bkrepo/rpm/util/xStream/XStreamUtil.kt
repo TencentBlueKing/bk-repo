@@ -21,29 +21,19 @@
 
 package com.tencent.bkrepo.rpm.util.xStream
 
-import com.tencent.bkrepo.rpm.util.xStream.pojo.*
+import com.tencent.bkrepo.rpm.pojo.IndexType
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmEntry
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmFile
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageChangeLog
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageFileList
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackage
 import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
 import com.thoughtworks.xstream.XStream
 import org.slf4j.LoggerFactory
-import java.io.ByteArrayOutputStream
-import java.io.OutputStreamWriter
-import java.io.Writer
 
 object XStreamUtil {
     private val logger = LoggerFactory.getLogger(XStreamUtil::class.java)
-    /**
-     * 对象转 xml 字符串
-     */
-    fun Any.objectToXml(): String {
-        val xStream = XStream()
-        val outputStream = ByteArrayOutputStream()
-        val writer: Writer = OutputStreamWriter(outputStream, "UTF-8")
-        // 如果Any is RpmXmlMetadata 添加xml声明
-        if (this is RpmXmlMetadata) { writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n") }
-        xStream.autodetectAnnotations(true)
-        xStream.toXML(this, writer)
-        return String(outputStream.toByteArray())
-    }
 
     fun xmlToObject(xml: String): Any {
         val xStream = XStream()
@@ -61,15 +51,20 @@ object XStreamUtil {
         return xStream.fromXML(xml)
     }
 
-    fun checkMarkFile(markFileContent: ByteArray): Boolean {
+    fun checkMarkFile(markFileContent: ByteArray, indexType: IndexType): Boolean {
         return try {
             val xStream = XStream()
             XStream.setupDefaultSecurity(xStream)
             xStream.autodetectAnnotations(true)
-            xStream.alias("package", RpmPackage::class.java)
+            val clazz = when (indexType) {
+                IndexType.FILELISTS -> RpmPackageFileList::class.java
+                IndexType.OTHERS -> RpmPackageChangeLog::class.java
+                IndexType.PRIMARY -> RpmPackage::class.java
+            }
+            xStream.alias("package", clazz)
             xStream.allowTypes(
                 arrayOf(
-                    RpmPackage::class.java,
+                    clazz,
                     RpmEntry::class.java,
                     RpmFile::class.java
                 )

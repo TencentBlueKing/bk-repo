@@ -75,7 +75,6 @@ object GZipUtils {
                 while (gZIPInputStream.read(buffer).also { len = it } > 0) {
                     bufferedOutputStream.write(buffer, 0, len)
                 }
-                bufferedOutputStream.flush()
             }
             return file
         }
