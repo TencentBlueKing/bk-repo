@@ -43,17 +43,15 @@ import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.nio.file.Paths
-import java.util.concurrent.Executor
-import javax.annotation.Resource
 
 /**
  * 支持缓存的存储服务
  */
-class CacheStorageService : AbstractStorageService() {
-
-    @Resource
-    private lateinit var taskAsyncExecutor: Executor
+class CacheStorageService(
+    private val threadPoolTaskExecutor: ThreadPoolTaskExecutor
+) : AbstractStorageService() {
 
     override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
         when {
@@ -65,7 +63,7 @@ class CacheStorageService : AbstractStorageService() {
             }
             else -> {
                 val cachedFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
-                taskAsyncExecutor.execute {
+                threadPoolTaskExecutor.execute {
                     fileStorage.store(path, filename, cachedFile, credentials)
                 }
             }

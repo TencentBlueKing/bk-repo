@@ -176,7 +176,7 @@ class CosClient(val credentials: InnerCosCredentials) {
         uploadId: String,
         partEtagList: List<PartETag>
     ): PutObjectResponse {
-        retry(5) {
+        retry(RETRY_COUNT) {
             val cosRequest = CompleteMultipartUploadRequest(key, uploadId, partEtagList)
             val httpRequest = buildHttpRequest(cosRequest)
             return CosHttpClient.execute(httpRequest, CompleteMultipartUploadResponseHandler())
@@ -220,5 +220,6 @@ class CosClient(val credentials: InnerCosCredentials) {
 
     companion object {
         private val executors = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
+        private const val RETRY_COUNT = 5
     }
 }

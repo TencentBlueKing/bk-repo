@@ -57,8 +57,7 @@ import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAdd
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
-import java.util.concurrent.Executor
-import javax.annotation.Resource
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 
 /**
  * 构件仓库抽象类
@@ -92,8 +91,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     @Autowired
     lateinit var packageDownloadStatisticsClient: PackageDownloadStatisticsClient
 
-    @Resource
-    private lateinit var taskAsyncExecutor: Executor
+    @Autowired
+    private lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
 
     override fun upload(context: ArtifactUploadContext) {
         try {

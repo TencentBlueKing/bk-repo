@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.storage.innercos
 
 import java.net.URLEncoder
+import java.util.concurrent.TimeUnit
 
 const val DEFAULT_ENCODING = "UTF-8"
 const val PATH_DELIMITER = '/'
@@ -78,7 +79,7 @@ inline fun <R> retry(times: Int, delayInSeconds: Long = 10, block: (Int) -> R): 
             return block(retries)
         } catch (e: RuntimeException) {
             if (retries < times) {
-                Thread.sleep(delayInSeconds * 1000)
+                TimeUnit.SECONDS.sleep(delayInSeconds)
                 retries += 1
             } else {
                 throw e
