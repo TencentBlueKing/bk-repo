@@ -38,11 +38,13 @@ import io.micrometer.core.instrument.binder.MeterBinder
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.util.concurrent.atomic.AtomicInteger
-import javax.annotation.Resource
 
 @Suppress("LateinitUsage")
 @Component
-class ArtifactMetrics : MeterBinder {
+class ArtifactMetrics(
+    private val threadPoolTaskExecutor: ThreadPoolTaskExecutor
+) : MeterBinder {
+
     var uploadingCount = AtomicInteger(0)
     var downloadingCount = AtomicInteger(0)
 
@@ -52,9 +54,6 @@ class ArtifactMetrics : MeterBinder {
     lateinit var uploadedConsumeCounter: Counter
     lateinit var downloadedBytesCounter: Counter
     lateinit var downloadedConsumeCounter: Counter
-
-    @Resource
-    lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
 
     override fun bindTo(meterRegistry: MeterRegistry) {
         Gauge.builder(ARTIFACT_UPLOADING_COUNT, uploadingCount, { it.get().toDouble() })
@@ -89,11 +88,11 @@ class ArtifactMetrics : MeterBinder {
             .description(ARTIFACT_DOWNLOADED_CONSUME_COUNT_DESC)
             .register(meterRegistry)
 
-        Gauge.builder(ASYNC_TASK_ACTIVE_COUNT, taskAsyncExecutor.threadPoolExecutor, { it.activeCount.toDouble() })
+        Gauge.builder(ASYNC_TASK_ACTIVE_COUNT, threadPoolTaskExecutor.threadPoolExecutor, { it.activeCount.toDouble() })
             .description(ASYNC_TASK_ACTIVE_COUNT_DESC)
             .register(meterRegistry)
 
-        Gauge.builder(ASYNC_TASK_QUEUE_SIZE, taskAsyncExecutor.threadPoolExecutor, { it.queue.size.toDouble() })
+        Gauge.builder(ASYNC_TASK_QUEUE_SIZE, threadPoolTaskExecutor.threadPoolExecutor, { it.queue.size.toDouble() })
             .description(ASYNC_TASK_QUEUE_SIZE_DESC)
             .register(meterRegistry)
     }

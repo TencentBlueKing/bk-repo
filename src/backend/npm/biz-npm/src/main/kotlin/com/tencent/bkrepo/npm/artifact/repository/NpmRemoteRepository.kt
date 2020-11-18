@@ -53,23 +53,19 @@ import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.io.InputStream
-import java.util.concurrent.Executor
-import javax.annotation.Resource
 
 @Component
 class NpmRemoteRepository(
-    // private val npmProperties: NpmProperties
+    private val executor: ThreadPoolTaskExecutor
 ) : RemoteRepository() {
-
-    @Resource
-    private lateinit var taskAsyncExecutor: Executor
 
     override fun onDownloadSuccess(context: ArtifactDownloadContext, artifactResource: ArtifactResource) {
         super.onDownloadSuccess(context, artifactResource)
         // 存储package-version.json文件
-        taskAsyncExecutor.execute { cachePackageVersionMetadata(context) }
+        executor.execute { cachePackageVersionMetadata(context) }
     }
 
     private fun cachePackageVersionMetadata(context: ArtifactDownloadContext) {
