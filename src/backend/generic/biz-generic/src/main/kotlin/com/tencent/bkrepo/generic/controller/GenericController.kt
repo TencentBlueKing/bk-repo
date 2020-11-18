@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.generic.controller
 
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
@@ -44,8 +43,6 @@ import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.UploadService
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -57,8 +54,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class GenericController(
     private val uploadService: UploadService,
-    private val downloadService: DownloadService,
-    private val nodeClient: NodeClient
+    private val downloadService: DownloadService
 ) {
 
     @PutMapping(GENERIC_MAPPING_URI)
@@ -115,14 +111,5 @@ class GenericController(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo
     ): Response<List<BlockInfo>> {
         return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
-    }
-
-    @GetMapping("/test")
-    fun test(): Response<Page<NodeInfo>> {
-        return nodeClient.listNodePage(
-            projectId = "carrypan",
-            repoName = "generic-local",
-            path = "/"
-        )
     }
 }

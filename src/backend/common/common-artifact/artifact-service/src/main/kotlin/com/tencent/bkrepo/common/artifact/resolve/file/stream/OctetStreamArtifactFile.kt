@@ -58,18 +58,16 @@ open class OctetStreamArtifactFile(
 ) : ArtifactFile {
 
     private var hasInitialized: Boolean = false
-    private val listener = DigestCalculateListener()
-    private val receiver = createStreamReceiver()
     private var sha1: String? = null
+    private val listener: DigestCalculateListener
+    private val receiver: SmartStreamReceiver
 
-    private fun createStreamReceiver(): SmartStreamReceiver {
+    init {
         val path = storageCredentials.upload.location.toPath()
         val fileSizeThreshold = storageProperties.fileSizeThreshold.toBytes()
         val enableTransfer = storageProperties.monitor.enableTransfer
-        return SmartStreamReceiver(fileSizeThreshold, generateRandomName(), path, enableTransfer)
-    }
-
-    init {
+        receiver = SmartStreamReceiver(fileSizeThreshold, generateRandomName(), path, enableTransfer)
+        listener = DigestCalculateListener()
         if (!storageProperties.isResolveLazily) {
             init()
         }
@@ -121,7 +119,7 @@ open class OctetStreamArtifactFile(
 
     override fun getFileSha1(): String {
         init()
-        return sha1 ?: run { getInputStream().sha1().apply { sha1 = this } }
+        return sha1 ?: getInputStream().sha1().apply { sha1 = this }
     }
 
     override fun getFileSha256(): String {
@@ -143,23 +141,24 @@ open class OctetStreamArtifactFile(
     }
 
     fun init() {
-        if (!hasInitialized) {
-            try {
-                if (storageCredentials == storageProperties.defaultStorageCredentials()) {
-                    monitor.add(receiver)
-                    if (!monitor.health.get()) {
-                        receiver.unhealthy(monitor.getFallbackPath(), monitor.reason)
-                    }
+        if (hasInitialized) {
+            return
+        }
+        try {
+            if (storageCredentials == storageProperties.defaultStorageCredentials()) {
+                monitor.add(receiver)
+                if (!monitor.health.get()) {
+                    receiver.unhealthy(monitor.getFallbackPath(), monitor.reason)
                 }
-                val throughput = receiver.receive(source, listener)
-                hasInitialized = true
-
-                Metrics.counter(ARTIFACT_UPLOADED_BYTES_COUNT).increment(throughput.bytes.toDouble())
-                Metrics.counter(ARTIFACT_UPLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
-                logger.info("Receive artifact file, $throughput.")
-            } finally {
-                monitor.remove(receiver)
             }
+            val throughput = receiver.receive(source, listener)
+            hasInitialized = true
+
+            Metrics.counter(ARTIFACT_UPLOADED_BYTES_COUNT).increment(throughput.bytes.toDouble())
+            Metrics.counter(ARTIFACT_UPLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
+            logger.info("Receive artifact file, $throughput.")
+        } finally {
+            monitor.remove(receiver)
         }
     }
 

@@ -133,36 +133,38 @@ class SmartStreamReceiver(
      * 检查是否需要fall back操作
      */
     private fun checkFallback() {
-        if (fallback && !hasTransferred) {
-            if (fallBackPath != null && fallBackPath != path) {
-                // originalPath表示NFS位置， fallBackPath表示本地磁盘位置
-                val originalPath = path
-                // 更新当前path为本地磁盘
-                path = fallBackPath!!
-                // transfer date
-                if (!isInMemory) {
-                    // 当文件已经落到NFS
-                    if (enableTransfer) {
-                        // 开Transfer功能时，从NFS转移到本地盘
-                        cleanOriginalOutputStream()
-                        val originalFile = originalPath.resolve(filename)
-                        val filePath = path.resolve(filename).apply { this.createFile() }
-                        originalFile.toFile().inputStream().use {
-                            outputStream = filePath.toFile().outputStream()
-                            it.copyTo(outputStream)
-                        }
-                        Files.deleteIfExists(originalFile)
-                        logger.info("Success to transfer data from [$originalPath] to [$path]")
-                    } else {
-                        // 禁用Transfer功能时，忽略操作，继续使用NFS
-                        path = originalPath
-                    }
-                }
-            } else {
-                logger.info("Fallback path is null or equals to primary path, ignore transfer data")
-            }
-            hasTransferred = true
+        if (!fallback || hasTransferred) {
+            return
         }
+        if (fallBackPath == null || fallBackPath == path) {
+            logger.info("Fallback path is null or equals to primary path, skip transfer data")
+            hasTransferred = true
+            return
+        }
+        // originalPath表示NFS位置， fallBackPath表示本地磁盘位置
+        val originalPath = path
+        // 更新当前path为本地磁盘
+        path = fallBackPath!!
+        // transfer date
+        if (!isInMemory) {
+            // 当文件已经落到NFS
+            if (enableTransfer) {
+                // 开Transfer功能时，从NFS转移到本地盘
+                cleanOriginalOutputStream()
+                val originalFile = originalPath.resolve(filename)
+                val filePath = path.resolve(filename).apply { this.createFile() }
+                originalFile.toFile().inputStream().use {
+                    outputStream = filePath.toFile().outputStream()
+                    it.copyTo(outputStream)
+                }
+                Files.deleteIfExists(originalFile)
+                logger.info("Success to transfer data from [$originalPath] to [$path]")
+            } else {
+                // 禁用Transfer功能时，忽略操作，继续使用NFS
+                path = originalPath
+            }
+        }
+        hasTransferred = true
     }
 
     /**

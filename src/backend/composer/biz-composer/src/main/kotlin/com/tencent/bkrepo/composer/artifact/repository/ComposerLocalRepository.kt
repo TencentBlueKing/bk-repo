@@ -67,6 +67,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -296,15 +297,11 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
         if (version.isNullOrBlank()) {
             // 删除包
             val versions = getVersions(packageKey, context)
-            val pages = packageClient.listVersionPage(
-                projectId,
-                repoName,
-                packageKey,
-                null,
-                null,
-                0,
-                versions!!.toInt()
-            ).data?.records ?: return
+            val option = VersionListOption(
+                pageNumber = 1,
+                pageSize = versions!!.toInt()
+            )
+            val pages = packageClient.listVersionPage(projectId, repoName, packageKey, option).data?.records ?: return
             for (packageVersion in pages) {
                 val node = nodeClient.getNodeDetail(projectId, repoName, packageVersion.contentPath!!).data ?: continue
                 removeComposerArtifact(node, packageKey, packageVersion.name, context)

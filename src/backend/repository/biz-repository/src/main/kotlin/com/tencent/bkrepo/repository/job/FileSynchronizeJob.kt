@@ -55,10 +55,11 @@ class FileSynchronizeJob(
         executeAndMeasureTime {
             storageService.synchronizeFile()
         }.apply {
-            logger.info("Synchronize file success. Walked [${first.totalCount}] files totally, " +
-                "synchronized[${first.synchronizedCount}], " +
-                "error[${first.errorCount}], ignored[${first.ignoredCount}], " +
-                "[${first.totalSize}] bytes totally, elapse [${second.seconds}] s."
+            logger.info(
+                "Synchronize file success. Walked [${first.totalCount}] files totally, " +
+                    "synchronized[${first.synchronizedCount}], " +
+                    "error[${first.errorCount}], ignored[${first.ignoredCount}], " +
+                    "[${first.totalSize}] bytes totally, elapse [${second.seconds}] s."
             )
         }
     }

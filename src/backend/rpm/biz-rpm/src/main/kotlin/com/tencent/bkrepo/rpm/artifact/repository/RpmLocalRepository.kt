@@ -38,11 +38,11 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -56,6 +56,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.rpm.INDEXER
@@ -90,10 +91,10 @@ import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
 import com.tencent.bkrepo.rpm.util.rpm.RpmFormatUtils
 import com.tencent.bkrepo.rpm.util.rpm.RpmMetadataUtils
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadataChangeLog
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageChangeLog
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadataFileList
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageChangeLog
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageFileList
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -103,10 +104,10 @@ import java.io.FileInputStream
 import java.nio.channels.Channels
 
 @Component
-class RpmLocalRepository(private val stageClient: StageClient) : LocalRepository() {
-
-    @Autowired
-    private lateinit var jobService: JobService
+class RpmLocalRepository(
+    private val stageClient: StageClient,
+    private val jobService: JobService
+) : LocalRepository() {
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
@@ -481,19 +482,17 @@ class RpmLocalRepository(private val stageClient: StageClient) : LocalRepository
      */
     @Transactional(rollbackFor = [Throwable::class])
     override fun remove(context: ArtifactRemoveContext) {
+        val projectId = context.projectId
+        val repoName = context.repoName
         val packageKey = HttpContextHolder.getRequest().getParameter("packageKey")
         val version = HttpContextHolder.getRequest().getParameter("version")
         if (version.isNullOrBlank()) {
             val versions = getVersions(packageKey, context)
-            val pages = packageClient.listVersionPage(
-                context.projectId,
-                context.repoName,
-                packageKey,
-                null,
-                null,
-                0,
-                versions!!.toInt()
-            ).data?.records ?: return
+            val option = VersionListOption(
+                pageNumber = 1,
+                pageSize = versions!!.toInt()
+            )
+            val pages = packageClient.listVersionPage(projectId, repoName, packageKey, option).data?.records ?: return
             for (packageVersion in pages) {
                 val artifactFullPath = packageVersion.contentPath!!
                 val node = nodeClient.getNodeDetail(context.projectId, context.repoName, artifactFullPath).data ?: continue

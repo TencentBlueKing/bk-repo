@@ -94,8 +94,10 @@ class UploadService(
             Preconditions.checkArgument(expires > 0, "expires")
             // 判断文件是否存在
             if (!overwrite && nodeClient.checkExist(projectId, repoName, getArtifactFullPath()).data == true) {
-                logger.warn("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: " +
-                    "artifact already exists.")
+                logger.warn(
+                    "User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: " +
+                        "artifact already exists."
+                )
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
 
