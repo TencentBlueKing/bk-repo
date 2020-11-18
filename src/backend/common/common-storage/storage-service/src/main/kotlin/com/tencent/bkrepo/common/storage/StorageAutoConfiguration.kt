@@ -50,6 +50,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.retry.annotation.EnableRetry
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 
 /**
  * 存储自动配置
@@ -60,12 +61,15 @@ import org.springframework.retry.annotation.EnableRetry
 class StorageAutoConfiguration {
 
     @Bean
-    fun fileStorage(properties: StorageProperties): FileStorage {
+    fun fileStorage(
+        properties: StorageProperties,
+        executor: ThreadPoolTaskExecutor
+    ): FileStorage {
         val fileStorage = when (properties.type) {
             StorageType.FILESYSTEM -> FileSystemStorage()
             StorageType.INNERCOS -> InnerCosFileStorage()
             StorageType.HDFS -> HDFSStorage()
-            StorageType.S3 -> S3Storage()
+            StorageType.S3 -> S3Storage(executor)
             else -> FileSystemStorage()
         }
         logger.info("Initializing FileStorage[${fileStorage::class.simpleName}]")
@@ -73,9 +77,12 @@ class StorageAutoConfiguration {
     }
 
     @Bean
-    fun storageService(properties: StorageProperties): StorageService {
+    fun storageService(
+        properties: StorageProperties,
+        threadPoolTaskExecutor: ThreadPoolTaskExecutor
+    ): StorageService {
         val cacheEnabled = properties.defaultStorageCredentials().cache.enabled
-        val storageService = if (cacheEnabled) CacheStorageService() else SimpleStorageService()
+        val storageService = if (cacheEnabled) CacheStorageService(threadPoolTaskExecutor) else SimpleStorageService()
         logger.info("Initializing StorageService[${storageService::class.simpleName}].")
         return storageService
     }
