@@ -18,7 +18,6 @@ service:
   name: auth
 
 auth:
-  realm: local
   iam:
     callbackUser: bk_iam
   devops:
