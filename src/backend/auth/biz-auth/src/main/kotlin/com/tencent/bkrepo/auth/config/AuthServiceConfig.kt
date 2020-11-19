@@ -38,9 +38,11 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.ClusterService
-import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
+import com.tencent.bkrepo.auth.service.bkauth.BkAuthPermissionService
+import com.tencent.bkrepo.auth.service.bkauth.BkAuthPermissionServiceImpl
+import com.tencent.bkrepo.auth.service.bkauth.BkAuthProjectService
 import com.tencent.bkrepo.auth.service.bkiam.BkiamPermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiam.BkiamService
 import com.tencent.bkrepo.auth.service.local.AccountServiceImpl
@@ -77,7 +79,7 @@ class AuthServiceConfig {
     ) = ClusterServiceImpl(clusterRepository, mongoTemplate)
 
     @Bean
-    @ConditionalOnMissingBean(PermissionService::class)
+    @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local")
     fun permissionService(
         @Autowired userRepository: UserRepository,
         @Autowired roleRepository: RoleRepository,
@@ -102,6 +104,28 @@ class AuthServiceConfig {
         mongoTemplate,
         repositoryClient,
         bkiamService
+    )
+
+    @Bean
+    @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "devops")
+    fun bkAuthPermissionService(
+        @Autowired userRepository: UserRepository,
+        @Autowired roleRepository: RoleRepository,
+        @Autowired permissionRepository: PermissionRepository,
+        @Autowired mongoTemplate: MongoTemplate,
+        @Autowired repositoryClient: RepositoryClient,
+        @Autowired bkAuthConfig: BkAuthConfig,
+        @Autowired bkAuthPermissionService: BkAuthPermissionService,
+        @Autowired bkAuthProjectService: BkAuthProjectService
+    ) = BkAuthPermissionServiceImpl(
+        userRepository,
+        roleRepository,
+        permissionRepository,
+        mongoTemplate,
+        repositoryClient,
+        bkAuthConfig,
+        bkAuthPermissionService,
+        bkAuthProjectService
     )
 
     @Bean
