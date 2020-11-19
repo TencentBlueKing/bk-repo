@@ -38,6 +38,7 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.ClusterService
+import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.service.bkauth.BkAuthPermissionService
@@ -51,6 +52,7 @@ import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.local.RoleServiceImpl
 import com.tencent.bkrepo.auth.service.local.UserServiceImpl
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -86,7 +88,10 @@ class AuthServiceConfig {
         @Autowired permissionRepository: PermissionRepository,
         @Autowired mongoTemplate: MongoTemplate,
         @Autowired repositoryClient: RepositoryClient
-    ) = PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient)
+    ): PermissionService {
+        logger.debug("init PermissionServiceImpl")
+        return PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient)
+    }
 
     @Bean
     @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "bkiam")
@@ -97,14 +102,17 @@ class AuthServiceConfig {
         @Autowired mongoTemplate: MongoTemplate,
         @Autowired repositoryClient: RepositoryClient,
         @Autowired bkiamService: BkiamService
-    ) = BkiamPermissionServiceImpl(
-        userRepository,
-        roleRepository,
-        permissionRepository,
-        mongoTemplate,
-        repositoryClient,
-        bkiamService
-    )
+    ): PermissionService {
+        logger.debug("init BkiamPermissionServiceImpl")
+        return BkiamPermissionServiceImpl(
+            userRepository,
+            roleRepository,
+            permissionRepository,
+            mongoTemplate,
+            repositoryClient,
+            bkiamService
+        )
+    }
 
     @Bean
     @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "devops")
@@ -117,16 +125,19 @@ class AuthServiceConfig {
         @Autowired bkAuthConfig: BkAuthConfig,
         @Autowired bkAuthPermissionService: BkAuthPermissionService,
         @Autowired bkAuthProjectService: BkAuthProjectService
-    ) = BkAuthPermissionServiceImpl(
-        userRepository,
-        roleRepository,
-        permissionRepository,
-        mongoTemplate,
-        repositoryClient,
-        bkAuthConfig,
-        bkAuthPermissionService,
-        bkAuthProjectService
-    )
+    ): PermissionService {
+        logger.debug("init BkAuthPermissionServiceImpl")
+        return BkAuthPermissionServiceImpl(
+            userRepository,
+            roleRepository,
+            permissionRepository,
+            mongoTemplate,
+            repositoryClient,
+            bkAuthConfig,
+            bkAuthPermissionService,
+            bkAuthProjectService
+        )
+    }
 
     @Bean
     @ConditionalOnMissingBean(RoleService::class)
@@ -139,4 +150,8 @@ class AuthServiceConfig {
         @Autowired roleRepository: RoleRepository,
         @Autowired mongoTemplate: MongoTemplate
     ) = UserServiceImpl(userRepository, roleRepository, mongoTemplate)
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(AuthServiceConfig::class.java)
+    }
 }
