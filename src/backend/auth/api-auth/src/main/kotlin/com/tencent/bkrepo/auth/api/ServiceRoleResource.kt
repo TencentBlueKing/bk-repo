@@ -114,10 +114,8 @@ interface ServiceRoleResource {
     @ApiOperation("根据类型和项目id查询角色")
     @GetMapping("/list")
     fun listRole(
-        @ApiParam(value = "角色类型")
-        @RequestParam type: RoleType? = null,
         @ApiParam(value = "项目ID")
-        @RequestParam projectId: String? = null,
+        @RequestParam projectId: String,
         @ApiParam(value = "仓库名")
         @RequestParam repoName: String? = null
     ): Response<List<Role>>

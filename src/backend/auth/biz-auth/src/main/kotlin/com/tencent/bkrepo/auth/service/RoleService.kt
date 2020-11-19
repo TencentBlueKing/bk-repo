@@ -33,7 +33,6 @@ package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.Role
-import com.tencent.bkrepo.auth.pojo.enums.RoleType
 
 interface RoleService {
 
@@ -41,7 +40,7 @@ interface RoleService {
 
     fun deleteRoleByid(id: String): Boolean
 
-    fun listRoleByProject(type: RoleType?, projectId: String?, repoName: String?): List<Role>
+    fun listRoleByProject(projectId: String, repoName: String?): List<Role>
 
     fun detail(id: String): Role?
 

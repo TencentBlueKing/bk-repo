@@ -115,8 +115,8 @@ class RepoDataService(
     }
 
     fun listRole(projectId: String, repoName: String?): List<Role> {
-        val roleType = if (repoName == null) RoleType.PROJECT else RoleType.REPO
-        return roleResource.listRole(roleType, projectId, repoName).data!!
+        if (repoName == null) RoleType.PROJECT else RoleType.REPO
+        return roleResource.listRole(projectId, repoName).data!!
     }
 
     fun listUser(roleIdList: List<String>): List<User> {

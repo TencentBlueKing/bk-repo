@@ -93,20 +93,13 @@ class RoleServiceImpl constructor(
         return transfer(result)
     }
 
-    override fun listRoleByProject(type: RoleType?, projectId: String?, repoName: String?): List<Role> {
-        logger.info("list  role  type : [$type] , projectId : [$projectId], repoName: [$repoName]")
-        if (type == null && projectId == null) {
-            return roleRepository.findAll().map { transfer(it) }
-        } else if (type != null && projectId == null) {
-            return roleRepository.findByType(type).map { transfer(it) }
-        } else if (type == null && projectId != null) {
-            return roleRepository.findByProjectId(projectId).map { transfer(it) }
-        } else if (type != null && projectId != null) {
-            return roleRepository.findByTypeAndProjectId(type, projectId).map { transfer(it) }
-        } else if (projectId != null && repoName != null) {
-            roleRepository.findByRepoNameAndProjectId(repoName, projectId).map { transfer(it) }
+    override fun listRoleByProject(projectId: String, repoName: String?): List<Role> {
+        logger.info("list  role params , projectId : [$projectId], repoName: [$repoName]")
+        repoName?.let {
+            return roleRepository.findByProjectIdAndRepoNameAndType(projectId, repoName, RoleType.REPO)
+                .map { transfer(it) }
         }
-        return emptyList()
+        return roleRepository.findByTypeAndProjectId(RoleType.PROJECT, projectId).map { transfer(it) }
     }
 
     override fun deleteRoleByid(id: String): Boolean {
