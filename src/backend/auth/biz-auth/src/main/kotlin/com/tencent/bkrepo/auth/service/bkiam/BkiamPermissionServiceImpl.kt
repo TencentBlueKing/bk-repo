@@ -45,6 +45,9 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 
+/**
+ * 对接蓝鲸权限中心3.0
+ */
 class BkiamPermissionServiceImpl constructor(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,

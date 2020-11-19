@@ -265,7 +265,7 @@ class UserServiceTest {
         userService.createUser(createUserRequest())
         val userWithToken = userService.createToken(userId)
         val removeToken = userService.removeToken(userId, userWithToken!!.id)
-        removeToken?.let {
+        removeToken.let {
             Assertions.assertTrue(it)
         }
     }
