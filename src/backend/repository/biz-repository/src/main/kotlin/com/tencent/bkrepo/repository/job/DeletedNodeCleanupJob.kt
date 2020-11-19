@@ -36,6 +36,7 @@ import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.service.FileReferenceService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.data.domain.PageRequest
@@ -77,35 +78,19 @@ class DeletedNodeCleanupJob(
             val criteria = where(TNode::projectId).isEqualTo(repo.projectId)
                 .and(TNode::repoName).isEqualTo(repo.name)
                 .and(TNode::deleted).lt(expireDate)
-            val query = Query.query(criteria).with(PageRequest.of(0, 1000))
+            val query = Query.query(criteria).with(PageRequest.of(0, PAGE_SIZE))
             var deletedNodeList = nodeDao.find(query)
             while (deletedNodeList.isNotEmpty()) {
                 logger.info("Retrieved [${deletedNodeList.size}] deleted records to be clean up.")
                 deletedNodeList.forEach { node ->
-                    var fileReferenceChanged = false
-                    try {
-                        val nodeQuery = Query.query(
-                            where(TNode::projectId).isEqualTo(node.projectId)
-                                .and(TNode::repoName).isEqualTo(node.repoName)
-                                .and(TNode::fullPath).isEqualTo(node.fullPath)
-                                .and(TNode::deleted).isEqualTo(node.deleted)
-                        )
-                        nodeDao.remove(nodeQuery)
-                        if (node.folder) {
-                            folderCleanupCount += 1
-                        } else {
-                            fileReferenceChanged = fileReferenceService.decrement(node, repo)
-                            fileCleanupCount += 1
-                        }
-                    } catch (ignored: Exception) {
-                        logger.error("Clean up deleted node[$node] failed.", ignored)
-                        if (fileReferenceChanged) {
-                            fileReferenceService.increment(node, repo)
-                        }
-                    } finally {
-                        totalCleanupCount += 1
+                    cleanUpNode(repo, node)
+                    if (node.folder) {
+                        folderCleanupCount += 1
+                    } else {
+                        fileCleanupCount += 1
                     }
                 }
+                totalCleanupCount += deletedNodeList.size
                 deletedNodeList = nodeDao.find(query)
             }
         }
@@ -116,7 +101,29 @@ class DeletedNodeCleanupJob(
         )
     }
 
+    private fun cleanUpNode(repo: TRepository, node: TNode) {
+        var fileReferenceChanged = false
+        try {
+            val nodeQuery = Query.query(
+                where(TNode::projectId).isEqualTo(node.projectId)
+                    .and(TNode::repoName).isEqualTo(node.repoName)
+                    .and(TNode::fullPath).isEqualTo(node.fullPath)
+                    .and(TNode::deleted).isEqualTo(node.deleted)
+            )
+            nodeDao.remove(nodeQuery)
+            if (!node.folder) {
+                fileReferenceChanged = fileReferenceService.decrement(node, repo)
+            }
+        } catch (ignored: Exception) {
+            logger.error("Clean up deleted node[$node] failed.", ignored)
+            if (fileReferenceChanged) {
+                fileReferenceService.increment(node, repo)
+            }
+        }
+    }
+
     companion object {
         private val logger = LoggerHolder.jobLogger
+        private const val PAGE_SIZE = 1000
     }
 }

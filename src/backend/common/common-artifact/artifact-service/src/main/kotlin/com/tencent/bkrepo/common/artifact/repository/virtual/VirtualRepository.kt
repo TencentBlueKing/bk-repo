@@ -64,12 +64,12 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 require(subContext is ArtifactQueryContext)
                 repository.query(subContext)?.let {
                     if (logger.isDebugEnabled) {
-                        logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
+                        logger.debug("Artifact[$artifactInfo] is found in repo[$repoIdentify].")
                     }
                     return it
                 }
             } catch (ignored: Exception) {
-                logger.warn("Query Artifact[$artifactInfo] from repository[$repoIdentify] failed: ${ignored.message}")
+                logger.warn("Query Artifact[$artifactInfo] from repo[$repoIdentify] failed: ${ignored.message}")
             }
         }
         return null
@@ -92,12 +92,12 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 require(subContext is ArtifactSearchContext)
                 repository.search(subContext).let {
                     if (logger.isDebugEnabled) {
-                        logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
+                        logger.debug("Artifact[$artifactInfo] is found in repo[$repoIdentify].")
                     }
                     return it
                 }
             } catch (ignored: Exception) {
-                logger.warn("Search Artifact[$artifactInfo] from repository[$repoIdentify] failed: ${ignored.message}")
+                logger.warn("Search Artifact[$artifactInfo] from repo[$repoIdentify] failed: ${ignored.message}")
             }
         }
         return emptyList()
@@ -126,16 +126,16 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
                 require(repository is AbstractArtifactRepository)
                 repository.onDownload(subContext)?.let {
                     if (logger.isDebugEnabled) {
-                        logger.debug("Artifact[$artifactInfo] is found in repository[$repoIdentify].")
+                        logger.debug("Artifact[$artifactInfo] is found in repo[$repoIdentify].")
                     }
                     return it
                 } ?: run {
                     if (logger.isDebugEnabled) {
-                        logger.debug("Artifact[$artifactInfo] is not found in repository[$repoIdentify], skipped.")
+                        logger.debug("Artifact[$artifactInfo] is not found in repo[$repoIdentify], skipped.")
                     }
                 }
             } catch (ignored: RuntimeException) {
-                logger.warn("Download Artifact[$artifactInfo] from repository[$repoIdentify] failed: ${ignored.message}")
+                logger.warn("Download Artifact[$artifactInfo] from repo[$repoIdentify] failed: ${ignored.message}")
             }
         }
         return null

@@ -49,13 +49,10 @@ import com.tencent.bkrepo.common.storage.credentials.S3Credentials
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
 import java.io.InputStream
-import java.util.concurrent.Executor
-import javax.annotation.Resource
 
-open class S3Storage : AbstractFileStorage<S3Credentials, S3Client>() {
-
-    @Resource
-    private lateinit var taskAsyncExecutor: Executor
+class S3Storage(
+    private val executor: ThreadPoolTaskExecutor
+) : AbstractFileStorage<S3Credentials, S3Client>() {
 
     private var defaultTransferManager: TransferManager? = null
 
@@ -131,7 +128,7 @@ open class S3Storage : AbstractFileStorage<S3Credentials, S3Client>() {
     }
 
     private fun createTransferManager(client: S3Client): TransferManager {
-        val executorService = (taskAsyncExecutor as ThreadPoolTaskExecutor).threadPoolExecutor
+        val executorService = executor.threadPoolExecutor
         return TransferManagerBuilder.standard()
             .withS3Client(client.s3Client)
             .withMultipartUploadThreshold(10L * Constants.MB)

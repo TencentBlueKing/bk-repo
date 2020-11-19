@@ -106,7 +106,7 @@ class ArtifactContextHolder(
                     queryRepoDetail(repositoryId).apply { repositoryDetailCache.put(repositoryId, this) }
                 }
                 request.setAttribute(REPO_KEY, repoDetail)
-                return repoDetail
+                repoDetail
             } else {
                 require(repositoryAttribute is RepositoryDetail)
                 repositoryAttribute

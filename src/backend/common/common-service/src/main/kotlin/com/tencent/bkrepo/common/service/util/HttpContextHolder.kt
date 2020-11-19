@@ -60,7 +60,7 @@ object HttpContextHolder {
 
     fun getClientAddress(): String {
         val requestAttributes = RequestContextHolder.getRequestAttributes()
-        return if(requestAttributes is ServletRequestAttributes) {
+        return if (requestAttributes is ServletRequestAttributes) {
             val request = requestAttributes.request
             val header = request.getHeader(HttpHeaders.X_FORWARDED_FOR)
             if (header.isNullOrBlank()) request.remoteAddr else StringTokenizer(header, ",").nextToken()

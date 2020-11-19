@@ -31,10 +31,8 @@
 
 package com.tencent.bkrepo.common.security.http
 
-import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.security.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import org.slf4j.LoggerFactory
@@ -69,12 +67,9 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val requestUri = request.requestURI
-        if (logger.isDebugEnabled) {
-            logger.debug("HttpAuthInterceptor.preHandle, Authorization: ${request.getHeader(AUTHORIZATION)}")
-            logger.debug("HttpAuthInterceptor.preHandle, X-BKREPO-UID: ${request.getAttribute(AUTH_HEADER_UID)}")
-        }
         httpAuthSecurity.getAuthHandlerList().forEach { authHandler ->
             val isLoginRequest = authHandler.getLoginEndpoint()?.let { pathMatcher.match(it, requestUri) } ?: false
+            // 拦截所有请求或当前为LoginEndpoint请求，表示需要认证处理
             if (authHandler.getLoginEndpoint() == null || isLoginRequest) {
                 try {
                     val authCredentials = authHandler.extractAuthCredentials(request)
@@ -98,9 +93,6 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
         }
         // 没有合适的认证handler或为匿名用户
         if (httpAuthSecurity.isAnonymousEnabled()) {
-            if (logger.isDebugEnabled) {
-                logger.debug("None of the auth handler authenticate success, set anonymous user.")
-            }
             request.setAttribute(USER_KEY, ANONYMOUS_USER)
             return true
         } else {

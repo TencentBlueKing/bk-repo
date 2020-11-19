@@ -41,37 +41,31 @@ import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
 import org.aspectj.lang.reflect.MethodSignature
 import org.slf4j.LoggerFactory
+import java.lang.reflect.Method
 
 @Aspect
 class PrincipalAspect(
     private val permissionCheckHandler: PermissionCheckHandler
 ) {
 
-    @Around("@within(com.tencent.bkrepo.common.security.permission.Principal) " +
-        "|| @annotation(com.tencent.bkrepo.common.security.permission.Principal)")
+    @Around(
+        "@within(com.tencent.bkrepo.common.security.permission.Principal) " +
+            "|| @annotation(com.tencent.bkrepo.common.security.permission.Principal)"
+    )
     @Throws(Throwable::class)
     fun around(point: ProceedingJoinPoint): Any? {
         val signature = point.signature
         require(signature is MethodSignature)
         val method = signature.method
-        var principal = method.getAnnotation(Principal::class.java)
-        if (principal == null) {
-            principal = point.target.javaClass.getAnnotation(Principal::class.java)
-            if (principal == null) { // 获取接口上的注解
-                for (clazz in point.javaClass.interfaces) {
-                    principal = clazz.getAnnotation(Principal::class.java)
-                    if (principal != null) {
-                        break
-                    }
-                }
-            }
-        }
+        val principal = resolveFromMethod(method) ?: resolveFromClass(point.target.javaClass)
         val request = HttpContextHolder.getRequest()
         val userId = request.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
 
         return try {
             permissionCheckHandler.onPrincipalCheck(userId, principal)
-            logger.debug("User[${SecurityUtils.getPrincipal()}] check principal [$principal] success.")
+            if (logger.isDebugEnabled) {
+                logger.debug("User[${SecurityUtils.getPrincipal()}] check principal [$principal] success.")
+            }
             permissionCheckHandler.onPermissionCheckSuccess()
             point.proceed()
         } catch (exception: PermissionException) {
@@ -79,6 +73,23 @@ class PrincipalAspect(
             permissionCheckHandler.onPermissionCheckFailed(exception)
             null
         }
+    }
+
+    private fun resolveFromClass(javaClass: Class<Any>): Principal {
+        var principal = javaClass.getAnnotation(Principal::class.java)
+        if (principal == null) { // 获取接口上的注解
+            for (clazz in javaClass.interfaces) {
+                principal = clazz.getAnnotation(Principal::class.java)
+                if (principal != null) {
+                    break
+                }
+            }
+        }
+        return principal
+    }
+
+    private fun resolveFromMethod(method: Method?): Principal? {
+        return method?.getAnnotation(Principal::class.java)
     }
 
     companion object {
