@@ -68,21 +68,15 @@ open class PermissionServiceImpl constructor(
         return true
     }
 
-    override fun listPermission(resourceType: ResourceType?, projectId: String?, repoName: String?): List<Permission> {
-        logger.info("list  permission resourceType : [$resourceType], projectId: [$projectId], repoName: [$repoName]")
+    override fun listPermission(projectId: String, repoName: String?): List<Permission> {
+        logger.info("list  permission  projectId: [$projectId], repoName: [$repoName]")
 
-        return if (resourceType == null && projectId == null && repoName == null) {
-            permissionRepository.findAll().map { transferPermission(it) }
-        } else if (projectId == null && resourceType != null) {
-            permissionRepository.findByResourceType(resourceType).map { transferPermission(it) }
-        } else if (projectId != null && resourceType != null && repoName == null) {
-            permissionRepository.findByResourceTypeAndProjectId(resourceType, projectId).map { transferPermission(it) }
-        } else if (projectId != null && resourceType != null && repoName != null) {
-            permissionRepository.findByResourceTypeAndProjectIdAndRepos(resourceType, projectId, repoName)
+        repoName?.let {
+            return permissionRepository.findByResourceTypeAndProjectIdAndRepos(ResourceType.REPO, projectId, repoName)
                 .map { transferPermission(it) }
-        } else {
-            emptyList()
         }
+        return permissionRepository.findByResourceTypeAndProjectId(ResourceType.PROJECT, projectId)
+            .map { transferPermission(it) }
     }
 
     override fun createPermission(request: CreatePermissionRequest): Boolean {

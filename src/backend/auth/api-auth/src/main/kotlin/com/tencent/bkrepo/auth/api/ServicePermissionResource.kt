@@ -71,10 +71,8 @@ interface ServicePermissionResource {
     @ApiOperation("权限列表")
     @GetMapping("/list")
     fun listPermission(
-        @ApiParam(value = "权限类型")
-        @RequestParam resourceType: ResourceType?,
         @ApiParam(value = "项目ID")
-        @RequestParam projectId: String?,
+        @RequestParam projectId: String,
         @ApiParam(value = "仓库名称")
         @RequestParam repoName: String?
     ): Response<List<Permission>>

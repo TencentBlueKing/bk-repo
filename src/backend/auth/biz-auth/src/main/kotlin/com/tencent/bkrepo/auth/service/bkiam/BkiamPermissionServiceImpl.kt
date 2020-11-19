@@ -49,11 +49,11 @@ import org.springframework.data.mongodb.core.MongoTemplate
  * 对接蓝鲸权限中心3.0
  */
 class BkiamPermissionServiceImpl constructor(
-    private val userRepository: UserRepository,
-    private val roleRepository: RoleRepository,
-    private val permissionRepository: PermissionRepository,
-    private val mongoTemplate: MongoTemplate,
-    private val repositoryClient: RepositoryClient,
+    userRepository: UserRepository,
+    roleRepository: RoleRepository,
+    permissionRepository: PermissionRepository,
+    mongoTemplate: MongoTemplate,
+    repositoryClient: RepositoryClient,
     private val bkiamService: BkiamService
 ) : PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient) {
 

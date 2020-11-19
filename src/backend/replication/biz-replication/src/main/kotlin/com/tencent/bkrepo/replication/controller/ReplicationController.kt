@@ -172,7 +172,7 @@ class ReplicationController(
         projectId: String,
         repoName: String?
     ): Response<List<Permission>> {
-        return permissionResource.listPermission(resourceType, projectId, repoName)
+        return permissionResource.listPermission(projectId, repoName)
     }
 
     @PostMapping(FILE_MAPPING_URI, consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])

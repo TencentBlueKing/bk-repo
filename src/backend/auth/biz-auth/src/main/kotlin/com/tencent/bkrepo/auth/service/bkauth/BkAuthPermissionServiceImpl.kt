@@ -52,11 +52,11 @@ import org.springframework.data.mongodb.core.MongoTemplate
  * 对接蓝鲸权限中心2.x
  */
 class BkAuthPermissionServiceImpl @Autowired constructor(
-    private val userRepository: UserRepository,
-    private val roleRepository: RoleRepository,
-    private val permissionRepository: PermissionRepository,
-    private val mongoTemplate: MongoTemplate,
-    private val repositoryClient: RepositoryClient,
+    userRepository: UserRepository,
+    roleRepository: RoleRepository,
+    permissionRepository: PermissionRepository,
+    mongoTemplate: MongoTemplate,
+    repositoryClient: RepositoryClient,
     private val bkAuthConfig: BkAuthConfig,
     private val bkAuthPermissionService: BkAuthPermissionService,
     private val bkAuthProjectService: BkAuthProjectService

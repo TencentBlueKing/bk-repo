@@ -12,6 +12,8 @@ bkrepo权限体系，基于rbac的模型，另外提供基础访问账号权限�
 
 **[平台账号相关](auth/account.md)**
 
+**[前端相关](auth/ext.md)**
+
 
 
 

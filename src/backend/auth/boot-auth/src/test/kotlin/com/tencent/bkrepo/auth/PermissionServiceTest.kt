@@ -79,11 +79,6 @@ class PermissionServiceTest {
         roleService.detail(roleId, projectId)?.let {
             roleService.deleteRoleByid(it.id!!)
         }
-
-        // 删除创建的权限
-        permissionService.listPermission(null, null, null).forEach {
-            permissionService.deletePermission(it.id!!)
-        }
     }
 
     @Test
@@ -143,20 +138,13 @@ class PermissionServiceTest {
                 resourceType = ResourceType.PROJECT
             )
         )
-        val permissionList = permissionService.listPermission(null, null, null)
-        Assertions.assertTrue(permissionList.size >= 8)
-        val permissionList1 = permissionService.listPermission(ResourceType.PROJECT, null, null)
-        Assertions.assertTrue(permissionList1.size >= 3)
-        val permissionList2 = permissionService.listPermission(ResourceType.PROJECT, "bk_test", null)
+
+        val permissionList2 = permissionService.listPermission("bk_test", null)
         Assertions.assertTrue(permissionList2.size == 1)
-        val permissionList3 = permissionService.listPermission(ResourceType.PROJECT, "bk_test", "test-local")
+        val permissionList3 = permissionService.listPermission("bk_test", "test-local")
         Assertions.assertTrue(permissionList3.size == 1)
-        val permissionList4 = permissionService.listPermission(ResourceType.REPO, null, null)
-        Assertions.assertTrue(permissionList4.size >= 5)
-        val permissionList5 = permissionService.listPermission(null, "bkrepo_test", null)
+        val permissionList5 = permissionService.listPermission("bkrepo_test", null)
         Assertions.assertTrue(permissionList5.size == 0)
-        val permissionList6 = permissionService.listPermission(null, null, "test-remote")
-        Assertions.assertTrue(permissionList6.size == 0)
     }
 
     @Test
@@ -264,7 +252,7 @@ class PermissionServiceTest {
     @DisplayName("删除权限测试用例")
     fun deletePermissionTest() {
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission(ResourceType.REPO, "test", null).forEach {
+        permissionService.listPermission("test", null).forEach {
             permissionService.deletePermission(it.id!!)
         }
     }
@@ -274,7 +262,7 @@ class PermissionServiceTest {
     fun updateIncludePathTest() {
         assertThrows<ErrorCodeException> { permissionService.updateIncludePath("test_test", listOf("/include")) }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission(ResourceType.REPO, "test", null).forEach {
+        permissionService.listPermission("test", null).forEach {
             val updateIncludePath = permissionService.updateIncludePath(it.id!!, listOf("/include"))
             Assertions.assertTrue(updateIncludePath)
         }
@@ -285,7 +273,7 @@ class PermissionServiceTest {
     fun updateExcludePathTest() {
         assertThrows<ErrorCodeException> { permissionService.updateExcludePath("test_test", listOf("/exclude")) }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission(ResourceType.REPO, "test", null).forEach {
+        permissionService.listPermission("test", null).forEach {
             val updateExcludePath = permissionService.updateExcludePath(it.id!!, listOf("/exclude"))
             Assertions.assertTrue(updateExcludePath)
         }
@@ -296,7 +284,7 @@ class PermissionServiceTest {
     fun updateRepoPermissionTest() {
         assertThrows<ErrorCodeException> { permissionService.updateRepoPermission("test_test", listOf("test-local")) }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission(ResourceType.REPO, "test", null).forEach {
+        permissionService.listPermission("test", null).forEach {
             val updateStatus = permissionService.updateRepoPermission(it.id!!, listOf("test-local", "test-remote"))
             Assertions.assertTrue(updateStatus)
         }
@@ -314,7 +302,7 @@ class PermissionServiceTest {
             )
         }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission(ResourceType.REPO, "test", null).forEach {
+        permissionService.listPermission("test", null).forEach {
             val updateStatus = permissionService.updateUserPermission(
                 it.id!!,
                 userId,
@@ -342,7 +330,7 @@ class PermissionServiceTest {
                 )
             )
         )
-        permissionService.listPermission(ResourceType.REPO, "test", null).forEach {
+        permissionService.listPermission("test", null).forEach {
             val updateStatus = permissionService.removeUserPermission(
                 it.id!!,
                 userId
@@ -363,7 +351,7 @@ class PermissionServiceTest {
             )
         }
         permissionService.createPermission(createPermissionRequest(permName = "查询信息权限测试", projectId = "test"))
-        permissionService.listPermission(ResourceType.REPO, "test", null).forEach {
+        permissionService.listPermission("test", null).forEach {
             val updateStatus = permissionService.updateRolePermission(
                 it.id!!,
                 rid,
@@ -392,7 +380,7 @@ class PermissionServiceTest {
                 )
             )
         )
-        permissionService.listPermission(ResourceType.REPO, "test", null).forEach {
+        permissionService.listPermission("test", null).forEach {
             val updateStatus = permissionService.removeRolePermission(
                 it.id!!,
                 rid
