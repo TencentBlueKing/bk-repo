@@ -41,7 +41,7 @@ import com.tencent.bkrepo.auth.service.ClusterService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthPermissionService
+import com.tencent.bkrepo.auth.service.bkauth.BkAuthService
 import com.tencent.bkrepo.auth.service.bkauth.BkAuthPermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkauth.BkAuthProjectService
 import com.tencent.bkrepo.auth.service.bkiam.BkiamPermissionServiceImpl
@@ -123,7 +123,7 @@ class AuthServiceConfig {
         @Autowired mongoTemplate: MongoTemplate,
         @Autowired repositoryClient: RepositoryClient,
         @Autowired bkAuthConfig: BkAuthConfig,
-        @Autowired bkAuthPermissionService: BkAuthPermissionService,
+        @Autowired bkAuthService: BkAuthService,
         @Autowired bkAuthProjectService: BkAuthProjectService
     ): PermissionService {
         logger.debug("init BkAuthPermissionServiceImpl")
@@ -134,7 +134,7 @@ class AuthServiceConfig {
             mongoTemplate,
             repositoryClient,
             bkAuthConfig,
-            bkAuthPermissionService,
+            bkAuthService,
             bkAuthProjectService
         )
     }

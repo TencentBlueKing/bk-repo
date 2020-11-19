@@ -57,7 +57,7 @@ class BkAuthPermissionServiceImpl constructor(
     private val mongoTemplate: MongoTemplate,
     private val repositoryClient: RepositoryClient,
     private val bkAuthConfig: BkAuthConfig,
-    private val bkAuthPermissionService: BkAuthPermissionService,
+    private val bkAuthService: BkAuthService,
     private val bkAuthProjectService: BkAuthProjectService
 ) : PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient) {
     private fun parsePipelineId(path: String): String? {
@@ -116,7 +116,7 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun checkPipelinePermission(uid: String, projectId: String, pipelineId: String): Boolean {
         logger.info("checkPipelinePermission: uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
-        return bkAuthPermissionService.validateUserResourcePermission(
+        return bkAuthService.validateUserResourcePermission(
             user = uid,
             serviceCode = BkAuthServiceCode.PIPELINE,
             resourceType = BkAuthResourceType.PIPELINE_DEFAULT,

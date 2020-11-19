@@ -49,7 +49,7 @@ import org.springframework.stereotype.Service
 import java.util.concurrent.TimeUnit
 
 @Service
-class BkAuthPermissionService @Autowired constructor(
+class BkAuthService @Autowired constructor(
     private val bkAuthConfig: BkAuthConfig,
     private val bkAuthTokenService: BkAuthTokenService
 ) {
@@ -95,6 +95,6 @@ class BkAuthPermissionService @Autowired constructor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(BkAuthPermissionService::class.java)
+        private val logger = LoggerFactory.getLogger(BkAuthService::class.java)
     }
 }
