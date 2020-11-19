@@ -148,7 +148,7 @@
 
 ### 角色列表
 
-- API: GET /auth/api/role/list?projectId=ops&type=PROJECT
+- API: GET /auth/api/role/list?projectId=ops&repoName=dockerlocal
 
 - API 名称: role_list
 - 功能说明：
@@ -166,7 +166,7 @@
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
 |projectId|string|否|无|项目id|the project id|
-|type|ENUM|否|无|角色类型|the type of role[REPO,PROJECT]|
+|repoName|string|否|无|仓库名称|the name of repository|
 
 - output:
 
