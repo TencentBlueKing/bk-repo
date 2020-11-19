@@ -65,7 +65,6 @@ class XmlStrUtilsTest {
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri3.artifactRelativePath)
     }
 
-
     @Test
     fun packagesModifyTest01() {
         val regex = "^<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
@@ -77,7 +76,6 @@ class XmlStrUtilsTest {
             println(matcher.group(1).toInt())
         }
     }
-
 
     @Test
     fun indexPackageTest() {

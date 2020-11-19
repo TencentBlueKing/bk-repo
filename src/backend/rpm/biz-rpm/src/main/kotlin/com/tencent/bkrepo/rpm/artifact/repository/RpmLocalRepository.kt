@@ -56,6 +56,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.rpm.INDEXER
@@ -101,6 +102,7 @@ import org.springframework.util.StopWatch
 import java.io.ByteArrayInputStream
 import java.io.FileInputStream
 import java.nio.channels.Channels
+import org.springframework.beans.factory.annotation.Autowired
 
 @Component
 class RpmLocalRepository(private val stageClient: StageClient) : LocalRepository() {
@@ -516,10 +518,8 @@ class RpmLocalRepository(private val stageClient: StageClient) : LocalRepository
                 context.projectId,
                 context.repoName,
                 packageKey,
-                null,
-                null,
-                0,
-                versions!!.toInt()
+                VersionListOption(0, versions!!.toInt(), null, null)
+
             ).data?.records ?: return
             for (packageVersion in pages) {
                 val artifactFullPath = packageVersion.contentPath!!

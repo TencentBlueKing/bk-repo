@@ -67,6 +67,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -300,10 +301,7 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
                 projectId,
                 repoName,
                 packageKey,
-                null,
-                null,
-                0,
-                versions!!.toInt()
+                VersionListOption(1, versions!!.toInt(), null, null)
             ).data?.records ?: return
             for (packageVersion in pages) {
                 val node = nodeClient.getNodeDetail(projectId, repoName, packageVersion.contentPath!!).data ?: continue

@@ -32,14 +32,8 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmPackagePojo
-import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileInputStream
-import java.io.InputStreamReader
-import java.lang.StringBuilder
 
 class RpmVersionUtilsTest {
     @Test
