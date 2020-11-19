@@ -116,10 +116,10 @@
 ### 用户列表
 
 - API:GET /auth/api/user/list
-- API 名称: user_list
+- API 名称: list_user
 - 功能说明：
 	- 中文：用户列表
-	- English：user list
+	- English：list user
 
 - input body:
 

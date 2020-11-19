@@ -150,7 +150,7 @@
 
 - API: GET /auth/api/role/list?projectId=ops&repoName=dockerlocal
 
-- API 名称: role_list
+- API 名称: list_role
 - 功能说明：
 	- 中文：角色列表
 	- English：list role
