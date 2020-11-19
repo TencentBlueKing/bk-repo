@@ -93,25 +93,11 @@ object ArtifactResourceWriter {
             response.setHeader(HttpHeaders.ETAG, resolveETag(it))
             response.setDateHeader(HttpHeaders.LAST_MODIFIED, resolveLastModified(it.lastModifiedDate))
         }
-
-        try {
-            resource.inputStream.use {
-                if (request.method != HttpMethod.HEAD.name) {
-                    writeRangeStream(it, response)
-                } else {
-                    logger.info("Skip writing data to response body because of HEAD request")
-                }
-            }
-        } catch (exception: IOException) {
-            val message = exception.message.orEmpty()
-            when {
-                message.contains("Connection reset by peer") -> {
-                    LoggerHolder.logBusinessException(exception, "Stream response failed[Connection reset by peer]")
-                }
-                message.contains("Broken pipe") -> {
-                    LoggerHolder.logBusinessException(exception, "Stream response failed[Broken pipe]")
-                }
-                else -> throw exception
+        resource.inputStream.use {
+            if (request.method != HttpMethod.HEAD.name) {
+                writeRangeStream(it, response)
+            } else {
+                logger.info("Skip writing data to response body because of HEAD request")
             }
         }
     }
@@ -135,13 +121,26 @@ object ArtifactResourceWriter {
     }
 
     private fun writeRangeStream(inputStream: ArtifactInputStream, response: HttpServletResponse) {
-        executeAndMeasureNanoTime {
-            inputStream.copyTo(response.outputStream, STREAM_BUFFER_SIZE)
-        }.apply {
-            val throughput = Throughput(first, second)
-            Metrics.counter(ARTIFACT_DOWNLOADED_BYTES_COUNT).increment(throughput.bytes.toDouble())
-            Metrics.counter(ARTIFACT_DOWNLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
-            logger.info("Response artifact file, $throughput.")
+        try {
+            executeAndMeasureNanoTime {
+                inputStream.copyTo(response.outputStream, STREAM_BUFFER_SIZE)
+            }.apply {
+                val throughput = Throughput(first, second)
+                Metrics.counter(ARTIFACT_DOWNLOADED_BYTES_COUNT).increment(throughput.bytes.toDouble())
+                Metrics.counter(ARTIFACT_DOWNLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
+                logger.info("Response artifact file, $throughput.")
+            }
+        } catch (exception: IOException) {
+            val message = exception.message.orEmpty()
+            when {
+                message.contains("Connection reset by peer") -> {
+                    LoggerHolder.logBusinessException(exception, "Stream response failed[Connection reset by peer]")
+                }
+                message.contains("Broken pipe") -> {
+                    LoggerHolder.logBusinessException(exception, "Stream response failed[Broken pipe]")
+                }
+                else -> throw exception
+            }
         }
     }
 

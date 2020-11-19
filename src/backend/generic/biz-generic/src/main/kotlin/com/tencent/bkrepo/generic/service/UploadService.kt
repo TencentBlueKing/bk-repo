@@ -69,8 +69,6 @@ class UploadService(
     private val storageService: StorageService
 ) {
 
-    private val uploadTransactionExpires: Long = 3600 * 12
-
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
@@ -94,15 +92,17 @@ class UploadService(
             Preconditions.checkArgument(expires > 0, "expires")
             // 判断文件是否存在
             if (!overwrite && nodeClient.checkExist(projectId, repoName, getArtifactFullPath()).data == true) {
-                logger.warn("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: " +
-                    "artifact already exists.")
+                logger.warn(
+                    "User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: " +
+                        "artifact already exists."
+                )
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
 
             val uploadId = storageService.createBlockId(getStorageCredentials())
             val uploadTransaction = UploadTransactionInfo(
                 uploadId = uploadId,
-                expireSeconds = uploadTransactionExpires
+                expireSeconds = TRANSACTION_EXPIRES
             )
 
             logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success: $uploadId.")
@@ -167,5 +167,6 @@ class UploadService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(UploadService::class.java)
+        private const val TRANSACTION_EXPIRES: Long = 3600 * 12L
     }
 }

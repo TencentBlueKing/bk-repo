@@ -44,7 +44,7 @@ import java.util.Base64
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-class AuthInterceptor: HandlerInterceptor {
+class AuthInterceptor : HandlerInterceptor {
 
     @Autowired
     private lateinit var accountService: AccountService

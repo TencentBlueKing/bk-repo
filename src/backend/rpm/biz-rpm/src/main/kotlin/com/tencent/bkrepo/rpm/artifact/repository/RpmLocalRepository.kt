@@ -38,11 +38,11 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -91,10 +91,10 @@ import com.tencent.bkrepo.rpm.util.XmlStrUtils.getGroupNodeFullPath
 import com.tencent.bkrepo.rpm.util.rpm.RpmFormatUtils
 import com.tencent.bkrepo.rpm.util.rpm.RpmMetadataUtils
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadataChangeLog
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageChangeLog
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadataFileList
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageChangeLog
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageFileList
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -102,13 +102,12 @@ import org.springframework.util.StopWatch
 import java.io.ByteArrayInputStream
 import java.io.FileInputStream
 import java.nio.channels.Channels
-import org.springframework.beans.factory.annotation.Autowired
 
 @Component
-class RpmLocalRepository(private val stageClient: StageClient) : LocalRepository() {
-
-    @Autowired
-    private lateinit var jobService: JobService
+class RpmLocalRepository(
+    private val stageClient: StageClient,
+    private val jobService: JobService
+) : LocalRepository() {
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
@@ -521,6 +520,7 @@ class RpmLocalRepository(private val stageClient: StageClient) : LocalRepository
                 VersionListOption(0, versions!!.toInt(), null, null)
 
             ).data?.records ?: return
+
             for (packageVersion in pages) {
                 val artifactFullPath = packageVersion.contentPath!!
                 val node = nodeClient.getNodeDetail(context.projectId, context.repoName, artifactFullPath).data

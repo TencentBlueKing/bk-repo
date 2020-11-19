@@ -49,6 +49,9 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.time.Duration
@@ -71,8 +74,7 @@ class StorageInstanceMigrationJob(
 
     fun migrate(projectId: String, repoName: String, destStorageKey: String) {
         logger.info(
-            "Start to migrate storage instance, " +
-                "projectId: $projectId, repoName: $repoName, dest key: $destStorageKey."
+            "Start to migrate storage instance, projectId: $projectId, repoName: $repoName, dest key: $destStorageKey."
         )
         val repository = repositoryService.getRepoDetail(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
@@ -144,14 +146,13 @@ class StorageInstanceMigrationJob(
         var failedCount = 0L
         var totalCount = 0L
         // 查询新上传文件
-        val newFileNodeQuery = Query.query(
-            Criteria.where(TNode::projectId.name).`is`(projectId)
-                .and(TNode::repoName.name).`is`(repoName)
-                .and(TNode::folder.name).`is`(false)
-                .and(TNode::createdDate.name).gt(startTime)
-        ).with(Sort.by(Sort.Direction.DESC, TNode::createdDate.name))
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::folder).isEqualTo(false)
+            .and(TNode::createdDate).gt(startTime)
+        val newFileNodeQuery = Query(criteria).with(Sort.by(Sort.Direction.DESC, TNode::createdDate.name))
         val newFileNodeList = nodeDao.find(newFileNodeQuery)
-        logger.info("${newFileNodeList.size} new created file nodes to be checked.")
+        logger.info("[${newFileNodeList.size}] new created file nodes to be checked.")
         newFileNodeList.forEach { node ->
             val sha256 = node.sha256!!
             try {
@@ -209,7 +210,7 @@ class StorageInstanceMigrationJob(
 
         // 分页查询文件节点，只查询当前时间以前创建的文件节点，之后创建的是在新实例上
         var page = 0
-        val size = 10000
+        val size = PAGE_SIZE
         val query = Query.query(
             Criteria.where(TNode::projectId.name).`is`(projectId)
                 .and(TNode::repoName.name).`is`(repoName)
@@ -285,5 +286,6 @@ class StorageInstanceMigrationJob(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
+        private const val PAGE_SIZE = 10000
     }
 }

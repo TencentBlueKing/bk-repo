@@ -40,6 +40,7 @@ import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageFileList
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackage
 import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
 import com.thoughtworks.xstream.XStream
+import com.thoughtworks.xstream.XStreamException
 import org.slf4j.LoggerFactory
 
 object XStreamUtil {
@@ -81,7 +82,7 @@ object XStreamUtil {
             )
             xStream.fromXML(markFileContent.inputStream())
             true
-        } catch (e: Exception) {
+        } catch (e: XStreamException) {
             logger.warn("checkMarkFile error: ${e.message}")
             false
         }
