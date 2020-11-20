@@ -297,11 +297,12 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
         if (version.isNullOrBlank()) {
             // 删除包
             val versions = getVersions(packageKey, context)
-            val option = VersionListOption(
-                pageNumber = 1,
-                pageSize = versions!!.toInt()
-            )
-            val pages = packageClient.listVersionPage(projectId, repoName, packageKey, option).data?.records ?: return
+            val pages = packageClient.listVersionPage(
+                projectId,
+                repoName,
+                packageKey,
+                VersionListOption(1, versions!!.toInt(), null, null)
+            ).data?.records ?: return
             for (packageVersion in pages) {
                 val node = nodeClient.getNodeDetail(projectId, repoName, packageVersion.contentPath!!).data ?: continue
                 removeComposerArtifact(node, packageKey, packageVersion.name, context)
