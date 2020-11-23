@@ -128,5 +128,6 @@
     "versionPlacehodler": "支持前缀搜索版本",
     "enableFileLists": "启用FileLists",
     "repodataDepth": "索引目录深度",
-    "groupXmlSet": "分组文件名"
+    "groupXmlSet": "分组文件名",
+    "permissionConfig": "权限管理"
 }

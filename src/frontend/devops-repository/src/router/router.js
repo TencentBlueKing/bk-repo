@@ -56,10 +56,7 @@ const routes = [
                 name: 'repoList',
                 component: repoList,
                 meta: {
-                    title: '仓库列表',
-                    header: '仓库列表',
-                    icon: 'repo',
-                    to: 'repoList'
+                    title: '仓库列表'
                 }
             },
             {
@@ -67,10 +64,7 @@ const routes = [
                 name: 'createRepo',
                 component: createRepo,
                 meta: {
-                    title: '',
-                    header: '新建仓库',
-                    icon: 'repo',
-                    to: 'repoList'
+                    title: '新建仓库'
                 }
             },
             {
@@ -78,10 +72,7 @@ const routes = [
                 name: 'repoConfig',
                 component: repoConfig,
                 meta: {
-                    title: '仓库配置',
-                    header: '仓库配置',
-                    icon: 'repo',
-                    to: 'repoList'
+                    title: '仓库配置'
                 }
             },
             {
@@ -89,10 +80,7 @@ const routes = [
                 name: 'repoDetail',
                 component: repoDetail,
                 meta: {
-                    title: '仓库主页',
-                    header: '仓库主页',
-                    icon: 'repo',
-                    to: 'repoList'
+                    title: '仓库主页'
                 },
                 children: [
                     {
@@ -137,21 +125,6 @@ const routes = [
                         name: 'repoGeneric',
                         component: repoGeneric
                     }
-                    // {
-                    //     path: 'docker',
-                    //     name: 'docker',
-                    //     component: repoDocker
-                    // },
-                    // {
-                    //     path: 'npm',
-                    //     name: 'npm',
-                    //     component: repoNpm
-                    // },
-                    // {
-                    //     path: 'maven',
-                    //     name: 'maven',
-                    //     component: repoMaven
-                    // }
                 ]
             },
             {
@@ -159,10 +132,7 @@ const routes = [
                 name: 'repoSearch',
                 component: repoSearch,
                 meta: {
-                    title: '文件搜索',
-                    header: '文件搜索',
-                    icon: 'repo',
-                    to: 'repoList'
+                    title: '文件搜索'
                 }
             },
             {
@@ -170,10 +140,7 @@ const routes = [
                 name: 'repoToken',
                 component: repoToken,
                 meta: {
-                    title: '访问令牌',
-                    header: '访问令牌',
-                    icon: 'repo',
-                    to: 'repoList'
+                    title: '访问令牌'
                 }
             }
         ]

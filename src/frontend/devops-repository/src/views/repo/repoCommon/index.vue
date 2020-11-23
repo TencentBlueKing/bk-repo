@@ -46,10 +46,6 @@
                     breadcrumb.push({
                         name: this.packageKey.replace(/^.*:\/\/(?:.*:)*([^:]+)$/, '$1'),
                         value: this.packageKey,
-                        // list: this.dockerList.map(v => ({ name: v.name, value: v.name })),
-                        // changeHandler: name => {
-                        //     this.showCommonPackageDetail(this.dockerList.find(v => v.name === name))
-                        // },
                         cilckHandler: pkg => {
                             this.$router.push({
                                 name: 'commonPackage',
@@ -64,10 +60,6 @@
                         breadcrumb.push({
                             name: this.version,
                             value: this.version
-                            // list: this.currentDocker.tagList.map(v => ({ name: v.tag, value: v.tag })),
-                            // changeHandler: name => {
-                            //     this.showDockerTagDetail(this.currentDocker.tagList.find(v => v.tag === name))
-                            // }
                         })
                     }
                 }
