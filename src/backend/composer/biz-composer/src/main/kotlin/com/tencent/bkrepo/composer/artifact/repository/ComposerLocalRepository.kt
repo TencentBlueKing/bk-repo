@@ -250,7 +250,7 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
                 context.repoName,
                 composerArtifact.name,
                 PackageKeys.ofComposer(composerArtifact.name),
-                PackageType.RPM,
+                PackageType.COMPOSER,
                 null,
                 composerArtifact.version,
                 context.getArtifactFile().getSize(),
@@ -460,7 +460,7 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
         artifactResource: ArtifactResource
     ): DownloadStatisticsAddRequest? {
         with(context) {
-            val fullPath = context.artifactInfo.getArtifactFullPath()
+            val fullPath = context.artifactInfo.getArtifactFullPath().removePrefix("/$DIRECT_DISTS")
             val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return null
             val packageKey = node.metadata["packageKey"] ?: throw ComposerArtifactMetadataException(
                 "${artifactInfo.getArtifactFullPath()} : not found metadata.packageKay value"
