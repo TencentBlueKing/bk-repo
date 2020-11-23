@@ -1,45 +1,68 @@
-apply(plugin="maven-publish")
+apply(plugin = "signing")
 
-val isSnapShot = project.version.toString().endsWith("-SNAPSHOT")
-
-val sourceSets = extensions.getByType(SourceSetContainer::class.java)
-val sourcesJar by tasks.registering(Jar::class) {
-    archiveClassifier.set("sources")
-    from(sourceSets.getByName("main").allSource)
-}
+val isReleaseVersion = !version.toString().endsWith("SNAPSHOT")
 
 configure<PublishingExtension> {
     publications {
-        create<MavenPublication>("maven") {
-            groupId = project.group.toString()
-            artifactId = project.name
-            version = project.version.toString()
-            from(components["java"])
-            artifact(sourcesJar.get())
+        plugins.findPlugin(JavaPlugin::class.java)?.let {
+            create<MavenPublication>("jar") {
+                from(components["java"])
+            }
         }
-    }
-    repositories {
-        maven {
-            val releaseRepoUrl: String by project
-            val releaseRepoUsername: String by project
-            val releaseRepoPassword: String by project
-            val snapshotRepoUrl: String by project
-            val snapshotRepoUsername: String by project
-            val snapshotRepoPassword: String by project
+        plugins.findPlugin(JavaPlatformPlugin::class.java)?.let {
+            create<MavenPublication>("pom") {
+                from(components["javaPlatform"])
+            }
+        }
 
-            if (isSnapShot) {
-                url = uri(snapshotRepoUrl)
-                credentials {
-                    username = snapshotRepoUsername
-                    password = snapshotRepoPassword
+        publications.withType<MavenPublication> {
+            pom {
+                name.set(project.name)
+                description.set(project.description ?: project.name)
+                url.set("https://github.com/Tencent/bk-ci")
+                licenses {
+                    license {
+                        name.set("The MIT License (MIT)")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
                 }
-            } else {
-                url = uri(releaseRepoUrl)
-                credentials {
-                    username = releaseRepoUsername
-                    password = releaseRepoPassword
+                developers {
+                    developer {
+                        name.set("bk-ci")
+                        email.set("devops@tencent.com")
+                        url.set("https://bk.tencent.com")
+                        roles.set(listOf("Manager"))
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/Tencent/bk-ci.get")
+                    developerConnection.set("scm:git:ssh://github.com/Tencent/bk-ci.git")
+                    url.set("https://github.com/Tencent/bk-ci")
                 }
             }
+        }
+    }
+
+    configure<SigningExtension> {
+        val signingKey: String? by project
+        val signingKeyId: String? by project
+        val signingPassword: String? by project
+        useInMemoryPgpKeys( signingKeyId, signingKey, signingPassword)
+        setRequired({ isReleaseVersion && gradle.taskGraph.hasTask("upload")})
+        sign(publications)
+    }
+}
+
+extensions.findByType(JavaPluginExtension::class.java)?.run {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+tasks {
+    withType<Jar> {
+        manifest {
+            attributes("Implementation-Title" to (project.description ?: project.name))
+            attributes("Implementation-Version" to project.version)
         }
     }
 }
