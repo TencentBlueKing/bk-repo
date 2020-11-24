@@ -269,7 +269,7 @@
             deleteVersionHandler (row) {
                 this.$bkInfo({
                     type: 'error',
-                    title: this.$t('deleteVersionTitle', [row.tag]),
+                    title: this.$t('deleteVersionTitle'),
                     subTitle: this.$t('deleteVersionSubTitle'),
                     showFooter: true,
                     confirmFn: () => {
