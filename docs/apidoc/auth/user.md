@@ -265,10 +265,10 @@
 
 ```
 {
-"code": 0,
-"message": null,
-"data": true,
-"traceId": ""
+    "code":0,
+    "message":null,
+    "data":true,
+    "traceId":""
 }
 
 ```
@@ -294,11 +294,10 @@
 
 ``` json
 {
-  "admin": true,
-  "name": "string",
-  "pwd": "string"
+    "admin":true,
+    "name":"string",
+    "pwd":"string"
 }
-
 ```
 
 
@@ -315,10 +314,10 @@
 
 ```
 {
-"code": 0,
-"message": null,
-"data": true,
-"traceId": ""
+    "code":0,
+    "message":null,
+    "data":true,
+    "traceId":""
 }
 
 ```
@@ -481,10 +480,10 @@
 
 ```
 {
-"code": 0,
-"message": null,
-"data": true,
-"traceId": ""
+    "code":0,
+    "message":null,
+    "data":true,
+    "traceId":""
 }
 
 ```

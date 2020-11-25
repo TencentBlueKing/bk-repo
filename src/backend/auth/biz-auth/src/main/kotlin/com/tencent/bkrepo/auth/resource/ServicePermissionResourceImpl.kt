@@ -39,6 +39,8 @@ import com.tencent.bkrepo.auth.pojo.permission.ListRepoPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.service.PermissionService
@@ -90,16 +92,16 @@ class ServicePermissionResourceImpl @Autowired constructor(
         return ResponseBuilder.success(permissionService.deletePermission(id))
     }
 
-    override fun updateIncludePermissionPath(id: String, pathList: List<String>): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.updateIncludePath(id, pathList))
+    override fun updateIncludePermissionPath(request: UpdatePermissionPathRequest): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.updateIncludePath(request))
     }
 
-    override fun updateExcludePermissionPath(id: String, pathList: List<String>): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.updateExcludePath(id, pathList))
+    override fun updateExcludePermissionPath(request: UpdatePermissionPathRequest): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.updateExcludePath(request))
     }
 
-    override fun updatePermissionRepo(id: String, repoList: List<String>): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.updateRepoPermission(id, repoList))
+    override fun updatePermissionRepo(request: UpdatePermissionRepoRequest): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.updateRepoPermission(request))
     }
 
     override fun updatePermissionUser(request: UpdatePermissionUserRequest): Response<Boolean> {

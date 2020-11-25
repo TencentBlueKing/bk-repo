@@ -203,10 +203,10 @@
 
 ```
 {
-"code": 0,
-"message": null,
-"data": true,
-"traceId": ""
+    "code":0,
+    "message":null,
+    "data":true,
+    "traceId":""
 }
 
 ```
@@ -245,12 +245,12 @@
 
 ```
 {
-  "code": 0,
-  "message": null,
-  "data": {
-    "userId": "owenlxu2"
-},
-  "traceId": ""
+    "code":0,
+    "message":null,
+    "data":{
+        "userId":"owenlxu2"
+    },
+    "traceId":""
 }
 
 ```

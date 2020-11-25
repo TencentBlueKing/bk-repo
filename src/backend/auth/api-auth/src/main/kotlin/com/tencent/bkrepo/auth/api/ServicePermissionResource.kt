@@ -41,6 +41,8 @@ import com.tencent.bkrepo.auth.pojo.permission.ListRepoPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
@@ -116,27 +118,21 @@ interface ServicePermissionResource {
     ): Response<Boolean>
 
     @ApiOperation("更新权限include path")
-    @PutMapping("/includePath/{id}")
+    @PutMapping("/includePath")
     fun updateIncludePermissionPath(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @RequestBody pathList: List<String>
+        @RequestBody request: UpdatePermissionPathRequest
     ): Response<Boolean>
 
     @ApiOperation("更新权限exclude path")
-    @PutMapping("/excludePath/{id}")
+    @PutMapping("/excludePath")
     fun updateExcludePermissionPath(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @RequestBody pathList: List<String>
+        @RequestBody request: UpdatePermissionPathRequest
     ): Response<Boolean>
 
     @ApiOperation("更新权限权限绑定repo")
-    @PutMapping("/repo/{id}")
+    @PutMapping("/repo")
     fun updatePermissionRepo(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @RequestBody repoList: List<String>
+        @RequestBody request: UpdatePermissionRepoRequest
     ): Response<Boolean>
 
     @ApiOperation("更新权限绑定用户")

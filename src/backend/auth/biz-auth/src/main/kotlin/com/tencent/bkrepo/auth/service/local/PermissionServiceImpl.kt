@@ -47,6 +47,8 @@ import com.tencent.bkrepo.auth.pojo.permission.ListRepoPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.repository.PermissionRepository
@@ -59,7 +61,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import java.time.LocalDateTime
 import java.util.stream.Collectors
 
@@ -134,70 +135,60 @@ open class PermissionServiceImpl constructor(
         return false
     }
 
-    override fun updateIncludePath(id: String, path: List<String>): Boolean {
-        logger.info("update include path id : [$id] ,path : [$path]")
-        checkPermissionExist(id)
-        return updatePermissionById(id, TPermission::includePattern.name, path)
+    override fun updateIncludePath(request: UpdatePermissionPathRequest): Boolean {
+        logger.info("update include path request :[$request]")
+        with(request) {
+            checkPermissionExist(permissionId)
+            return updatePermissionById(permissionId, TPermission::includePattern.name, path)
+        }
     }
 
-    override fun updateExcludePath(id: String, path: List<String>): Boolean {
-        logger.info("update exclude path id : [$id] ,path :[$path]")
-        checkPermissionExist(id)
-        return updatePermissionById(id, TPermission::excludePattern.name, path)
+    override fun updateExcludePath(request: UpdatePermissionPathRequest): Boolean {
+        logger.info("update exclude path request :[$request]")
+        with(request) {
+            checkPermissionExist(permissionId)
+            return updatePermissionById(permissionId, TPermission::excludePattern.name, path)
+        }
     }
 
-    override fun updateRepoPermission(id: String, repos: List<String>): Boolean {
-        logger.info("update repo permission  id : [$id] ,repos : [$repos]")
-        checkPermissionExist(id)
-        return updatePermissionById(id, TPermission::repos.name, repos)
+    override fun updateRepoPermission(request: UpdatePermissionRepoRequest): Boolean {
+        logger.info("update repo permission request :  [$request]")
+        with(request) {
+            checkPermissionExist(permissionId)
+            return updatePermissionById(permissionId, TPermission::repos.name, repos)
+        }
     }
 
     override fun updatePermissionUser(request: UpdatePermissionUserRequest): Boolean {
         logger.info("update permission user request:[$request]")
-        checkPermissionExist(request.permissionId)
-
-        val query = Query.query(Criteria.where("_id").`is`(request.permissionId))
-        val update = Update()
-        update.set(TPermission::users.name, request.userId)
-        val result = mongoTemplate.updateFirst(query, update, TPermission::class.java)
-        if (result.modifiedCount == 1L) return true
-        return false
+        with(request) {
+            checkPermissionExist(permissionId)
+            return updatePermissionById(permissionId, TPermission::users.name, userId)
+        }
     }
 
     override fun updatePermissionRole(request: UpdatePermissionRoleRequest): Boolean {
         logger.info("update permission role request:[$request]")
-        checkPermissionExist(request.permissionId)
-
-        val query = Query.query(Criteria.where("_id").`is`(request.permissionId))
-        val update = Update()
-        update.set(TPermission::roles.name, request.rId)
-        val result = mongoTemplate.updateFirst(query, update, TPermission::class.java)
-        if (result.modifiedCount == 1L) return true
-        return false
+        with(request) {
+            checkPermissionExist(permissionId)
+            return updatePermissionById(permissionId, TPermission::roles.name, rId)
+        }
     }
 
     override fun updatePermissionDepartment(request: UpdatePermissionDepartmentRequest): Boolean {
         logger.info("update  permission department request:[$request]")
-        checkPermissionExist(request.permissionId)
-
-        val query = Query.query(Criteria.where("_id").`is`(request.permissionId))
-        val update = Update()
-        update.set(TPermission::departments.name, request.departmentId)
-        val result = mongoTemplate.updateFirst(query, update, TPermission::class.java)
-        if (result.modifiedCount == 1L) return true
-        return false
+        with(request) {
+            checkPermissionExist(permissionId)
+            return updatePermissionById(permissionId, TPermission::departments.name, departmentId)
+        }
     }
 
     override fun updatePermissionAction(request: UpdatePermissionActionRequest): Boolean {
         logger.info("update permission action request:[$request]")
-        checkPermissionExist(request.permissionId)
-
-        val query = Query.query(Criteria.where("_id").`is`(request.permissionId))
-        val update = Update()
-        update.set(TPermission::actions.name, request.actions)
-        val result = mongoTemplate.updateFirst(query, update, TPermission::class.java)
-        if (result.modifiedCount == 1L) return true
-        return false
+        with(request) {
+            checkPermissionExist(permissionId)
+            return updatePermissionById(permissionId, TPermission::actions.name, actions)
+        }
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {

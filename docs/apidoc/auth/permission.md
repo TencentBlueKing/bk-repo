@@ -215,90 +215,7 @@
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
-### 更新权限排除路径
 
-- API: PUT /auth/api/permission/excludePath/{id}
-
-- API 名称: update_exclude_path
-- 功能说明：
-	- 中文：更新权限排除路径
-	- English：update permission exclude path
-
-- input body:
-
-``` json
-[
-    "/path1",
-    "/path2"
-]
-```
-
-- input 字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|id|string|是|无|权限主键ID|the permission key  id|
-
-- output:
-
-```
-{
-"code": 0,
-"message": null,
-"data": true,
-"traceId": ""
-}
-
-```
-- output 字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
-|data | bool | result data |the data for response|
-|traceId|string|请求跟踪id|the trace id|
-
-### 更新权限包含路径
-
-- API: PUT /auth/api/permission/includePath/{id}
-- API 名称: update_include_path
-- 功能说明：
-	- 中文：更新权限包含路径
-	- English：update permission include path
-- input body:
-
-``` json
-[
-    "/path1",
-    "/path2"
-]
-```
-
-- input 字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|id|string|是|无|权限主键ID|the permission key  id|
-
-- output:
-```
-{
-"code": 0,
-"message": null,
-"data": true,
-"traceId": ""
-}
-
-```
-- output 字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
-|data | bool | result data |the data for response|
-|traceId|string|请求跟踪id|the trace id|
 
 ### 仓库内置权限列表
 
@@ -495,23 +412,28 @@
 
 ### 更新权限绑定仓库
 
-- API: PUT /auth/api/permission/repo/{id}
+- API: PUT /auth/api/permission/repo
 - 功能说明：
 	- 中文：更新权限绑定仓库
 	- English：update permission repo
 - input body:
 
 ``` json
-[
-    "docker-local1",
-    "docker-remote1"
-]
+{
+    "permissionId":"5ea4f6608c165f702f5bd41e",
+    "repos":[
+        "owen",
+        "tt"
+    ]
+}
 ```
 - input 字段说明
 
+
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
-|id|string|是|无|权限主键ID|the permission key  id|
+|permissionId|string|是|无|角色主键id|the permission primary key|
+|repos|string array|是|[]|仓库名称列表|the repo name array|
 
 - output:
 
@@ -718,6 +640,100 @@
 |data | bool | the request result |the request result|
 |traceId|string|请求跟踪id|the trace id|
 
+
+### 更新权限包含路径
+
+- API: PUT /auth/api/permission/includePath
+- API 名称: update_include_path
+- 功能说明：
+	- 中文：更新权限包含路径
+	- English：update permission include path
+- input body:
+
+``` json
+{
+    "permissionId":"5ea4f6608c165f702f5bd41e",
+    "path":[
+        "/path1",
+        "/path2"
+    ]
+}
+```
+
+- input 字段说明
+
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|permissionId|string|是|无|角色主键id|the permission primary key|
+|path|string array|是|[]|路径列表|the path list|
+
+- output:
+```
+{
+    "code":0,
+    "message":null,
+    "data":true,
+    "traceId":""
+}
+
+```
+- output 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
+|message|result message|错误消息 |the failure message |
+|data | bool | result data |the data for response|
+|traceId|string|请求跟踪id|the trace id|
+
+
+### 更新权限排除路径
+
+- API: PUT /auth/api/permission/excludePath
+
+- API 名称: update_exclude_path
+- 功能说明：
+	- 中文：更新权限排除路径
+	- English：update permission exclude path
+
+- input body:
+
+``` json
+{
+    "permissionId":"5ea4f6608c165f702f5bd41e",
+    "path":[
+        "/path1",
+        "/path2"
+    ]
+}
+```
+
+- input 字段说明
+
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|permissionId|string|是|无|角色主键id|the permission primary key|
+|path|string array|是|[]|路径列表|the path list|
+
+- output:
+
+```
+{
+    "code":0,
+    "message":null,
+    "data":true,
+    "traceId":""
+}
+
+```
+- output 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
+|message|result message|错误消息 |the failure message |
+|data | bool | result data |the data for response|
+|traceId|string|请求跟踪id|the trace id|
 
 
 
