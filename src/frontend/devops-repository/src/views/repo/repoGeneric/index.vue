@@ -376,7 +376,8 @@
                     repoName: this.repoName,
                     fullPath: this.selectedTreeNode.fullPath,
                     current: this.pagination.current,
-                    limit: this.pagination.limit
+                    limit: this.pagination.limit,
+                    isPipeline: this.repoName === 'pipeline'
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
@@ -397,7 +398,6 @@
                     projectId: this.projectId,
                     repoName: this.repoName,
                     name: query.name,
-                    // stageTag: (query.stageTag || []).join(','),
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
@@ -447,7 +447,8 @@
                     projectId: this.projectId,
                     repoName: this.repoName,
                     fullPath: item.fullPath,
-                    roadMap: item.roadMap
+                    roadMap: item.roadMap,
+                    isPipeline: this.repoName === 'pipeline'
                 })
                 this.$set(item, 'loading', false)
             },
@@ -609,7 +610,7 @@
             },
             async deleteRes () {
                 this.$bkInfo({
-                    title: `${this.$t('confirm') + this.$t('delete')}${this.selectedRow.folder ? this.$t('folder') : this.$t('file')} ${this.selectedRow.name} ？`,
+                    title: `${this.$t('confirm') + this.$t('delete')}${this.selectedRow.folder ? this.$t('folder') : this.$t('file')}？`,
                     closeIcon: false,
                     theme: 'danger',
                     confirmFn: () => {
