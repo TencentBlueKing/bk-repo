@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth
 
-import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -150,6 +150,13 @@ class RoleServiceTest {
         repoName: String? = null,
         admin: Boolean = false
     ): CreateRoleRequest {
-        return CreateRoleRequest(roleId, roleName, type, projectId, repoName, admin)
+        return CreateRoleRequest(
+            roleId,
+            roleName,
+            type,
+            projectId,
+            repoName,
+            admin
+        )
     }
 }

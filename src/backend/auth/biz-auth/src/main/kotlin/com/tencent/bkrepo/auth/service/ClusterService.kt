@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.auth.service
 
-import com.tencent.bkrepo.auth.pojo.AddClusterRequest
-import com.tencent.bkrepo.auth.pojo.Cluster
-import com.tencent.bkrepo.auth.pojo.UpdateClusterRequest
+import com.tencent.bkrepo.auth.pojo.cluster.AddClusterRequest
+import com.tencent.bkrepo.auth.pojo.cluster.Cluster
+import com.tencent.bkrepo.auth.pojo.cluster.UpdateClusterRequest
 
 interface ClusterService {
 

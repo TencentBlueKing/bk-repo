@@ -123,7 +123,7 @@
 
 ### 校验权限
 
-- API: POST /auth/api/permission/ckeck
+- API: POST /auth/api/permission/check
 - API 名称: check_permission
 - 功能说明：
 	- 中文：校验权限
@@ -300,9 +300,117 @@
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
+### 仓库内置权限列表
+
+- API: GET /auth/api/permission/list/inrepo?projectId=ops&repoName=repo
+- API 名称: list_permission
+- 功能说明：
+	- 中文：权限列表
+	- English：the permission list
+- input body:
+
+``` json
+
+```
+
+- input 字段说明
+
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|projectId|string|是|无|项目ID|the project id|
+|repoName|string|是|无|仓库名称|the repo name|
+|resourceType|ENUM|否|无|权限类型[REPO,PROJECT,SYSTEM,NODE]|permission type [REPO,PROJECT,SYSTEM,NODE]|
+
+- output:
+```
+{
+  "code": 0,
+  "message": null,
+  "data": [
+    {
+      "id": "5fbcc9d85fe04f126a508a3a",
+      "resourceType": "REPO",
+      "projectId": "ops",
+      "permName": "repo_admin",
+      "repos": [
+        "generic"
+      ],
+      "includePattern": [],
+      "excludePattern": [],
+      "users": [],
+      "roles": [],
+      "departments": [],
+      "actions": [],
+      "createBy": "admin",
+      "updatedBy": "admin",
+      "createAt": "2020-11-24T16:52:40.575",
+      "updateAt": "2020-11-24T16:52:40.575"
+    },
+    {
+      "id": "5fbcc9d85fe04f126a508a3b",
+      "resourceType": "REPO",
+      "projectId": "ops",
+      "permName": "repo_user",
+      "repos": [
+        "generic"
+      ],
+      "includePattern": [],
+      "excludePattern": [],
+      "users": [],
+      "roles": [],
+      "departments": [],
+      "actions": [],
+      "createBy": "admin",
+      "updatedBy": "admin",
+      "createAt": "2020-11-24T16:52:40.678",
+      "updateAt": "2020-11-24T16:52:40.678"
+    },
+    {
+      "id": "5fbcc9d85fe04f126a508a3c",
+      "resourceType": "REPO",
+      "projectId": "ops",
+      "permName": "repo_viewer",
+      "repos": [
+        "generic"
+      ],
+      "includePattern": [],
+      "excludePattern": [],
+      "users": [],
+      "roles": [],
+      "departments": [],
+      "actions": [],
+      "createBy": "admin",
+      "updatedBy": "admin",
+      "createAt": "2020-11-24T16:52:40.704",
+      "updateAt": "2020-11-24T16:52:40.704"
+    }
+  ],
+  "traceId": ""
+}
+
+
+```
+- output 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
+|message|result message|错误消息 |the failure message |
+|data | object array | result data,具体字段见创建请求 |the data for response|
+|traceId|string|请求跟踪id|the trace id|
+
+- data 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|users|string array|用户id|the user id|
+|roles|string array|用户组id|the role id|
+|departments|string array|部门id|the department id|
+|actions|string array|action id|the action id|
+
 ### 权限列表
 
-- API: GET /auth/api/permission/list?projectId=ops&resourceType=REPO
+- API: GET /auth/api/permission/list?projectId=ops&repoName=repo
 - API 名称: list_permission
 - 功能说明：
 	- 中文：权限列表
@@ -318,7 +426,7 @@
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
 |projectId|string|否|无|项目ID|the project id|
-|resourceType|ENUM|否|无|权限类型[REPO,PROJECT,SYSTEM,NODE]|permission type [REPO,PROJECT,SYSTEM,NODE]|
+|repoName|string|否|无|仓库名称|the repo name|
 
 - output:
 ```
@@ -468,7 +576,7 @@
 |data | bool | the request result |the request result|
 |traceId|string|请求跟踪id|the trace id|
 
-### 更新角色绑定角色
+### 更新权限绑定角色
 
 - API:PUT /auth/api/permission/role
 - API 名称: update_permission_role
@@ -516,7 +624,7 @@
 |traceId|string|请求跟踪id|the trace id|
 
 
-### 更新角色绑定部门
+### 更新权限绑定部门
 
 - API:PUT /auth/api/permission/department
 - API 名称: update_permission_department
@@ -563,7 +671,7 @@
 |data | bool | the request result |the request result|
 |traceId|string|请求跟踪id|the trace id|
 
-### 更新角色绑定动作
+### 更新权限绑定动作
 
 - API:PUT /auth/api/permission/action
 - API 名称: update_permission_action
@@ -611,144 +719,11 @@
 |traceId|string|请求跟踪id|the trace id|
 
 
-### 更新用户绑定权限
-
-- API: POST /auth/api/permission/user/{id}/{uid}
-- 功能说明：
-	- 中文：更新用户绑定权限
-	- English：update user permission
-- input body:
-
-``` json
-[
-    "MANAGE",
-    "DELETE"
-]
-```
-- input 字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|id|string|是|无|权限主键ID|the permission key  id|
-|uid|string|是|无|用户ID|the user id|
-
-- output:
-
-```
-
-```
-- output 字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
-|data | object array | result data,具体字段见创建请求 |the data for response|
-|traceId|string|请求跟踪id|the trace id|
-
-### 更新角色绑定权限
-
-- API: POST /auth/api/permission/role/{id}/{rid}
-- 功能说明：
-	- 中文：更新角色绑定权限
-	- English：update role permission
-- input body:
-
-``` json
-[
-    "MANAGE",
-    "DELETE"
-]
-```
-- input 字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|id|string|是|无|权限主键ID|the permission key  id|
-|rid|string|是|无|角色主键ID|the role key id|
-
-- output:
-
-```
-
-```
-- output 字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
-|data | object array | result data,具体字段见创建请求 |the data for response|
-|traceId|string|请求跟踪id|the trace id|
 
 
-### 删除角色绑定权限
 
-- API: DELETE /auth/api/permission/role/{id}/{rid}
-- 功能说明：
-	- 中文：删除角色权限
-	- English：delete role permission
-- input body:
 
-``` json
-[
-    "MANAGE",
-    "DELETE"
-]
-```
-- input 字段说明
 
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|id|string|是|无|权限主键ID|the permission key  id|
-|rid|string|是|无|角色主键ID|the role key id|
 
-- output:
 
-```
-
-```
-- output 字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
-|data | object array | result data,具体字段见创建请求 |the data for response|
-|traceId|string|请求跟踪id|the trace id|
-
-### 删除用户绑定权限
-
-- API: DELETE /auth/api/permission/user/{id}/{uid}
-- 功能说明：
-	- 中文：删除角色权限
-	- English：delete role permission
-- input body:
-
-``` json
-[
-    "MANAGE",
-    "DELETE"
-]
-```
-- input 字段说明
-
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|id|string|是|无|权限主键ID|the permission key  id|
-|uid|string|是|无|用户ID|the user id|
-
-- output:
-
-```
-
-```
-- output 字段说明
-
-| 字段|类型|说明|Description|
-|---|---|---|---|
-|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
-|message|result message|错误消息 |the failure message |
-|data | object array | result data,具体字段见创建请求 |the data for response|
-|traceId|string|请求跟踪id|the trace id|
 

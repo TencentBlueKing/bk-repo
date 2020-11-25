@@ -33,8 +33,8 @@ package com.tencent.bkrepo.auth.service.local
 
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TRole
-import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
-import com.tencent.bkrepo.auth.pojo.Role
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.service.RoleService
@@ -76,19 +76,19 @@ class RoleServiceImpl constructor(
     }
 
     override fun detail(id: String): Role? {
-        logger.info("get role detail : [$id] ")
+        logger.debug("get role detail : [$id] ")
         val result = roleRepository.findFirstById(id) ?: return null
         return transfer(result)
     }
 
     override fun detail(rid: String, projectId: String): Role? {
-        logger.info("get  role  detail rid : [$rid] , projectId : [$projectId] ")
+        logger.debug("get  role  detail rid : [$rid] , projectId : [$projectId] ")
         val result = roleRepository.findFirstByRoleIdAndProjectId(rid, projectId) ?: return null
         return transfer(result)
     }
 
     override fun detail(rid: String, projectId: String, repoName: String): Role? {
-        logger.info("get  role  detail rid : [$rid] , projectId : [$projectId], repoName: [$repoName]")
+        logger.debug("get  role  detail rid : [$rid] , projectId : [$projectId], repoName: [$repoName]")
         val result = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(rid, projectId, repoName) ?: return null
         return transfer(result)
     }

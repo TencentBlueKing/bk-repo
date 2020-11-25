@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.pojo.permission
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 

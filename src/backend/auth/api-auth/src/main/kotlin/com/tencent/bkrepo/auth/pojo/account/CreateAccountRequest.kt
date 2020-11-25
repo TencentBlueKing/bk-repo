@@ -29,21 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.pojo.account
 
-import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
 
-@ApiModel("账户认证信息")
-data class CredentialSet(
-    @ApiModelProperty("accessKey")
-    val accessKey: String,
-    @ApiModelProperty("secretKey")
-    val secretKey: String,
-    @ApiModelProperty("创建时间")
-    val createdAt: LocalDateTime,
-    @ApiModelProperty("状态")
-    val status: CredentialStatus
+@ApiModel("创建账号请求")
+data class CreateAccountRequest(
+    @ApiModelProperty("系统Id")
+    val appId: String,
+    @ApiModelProperty("是否锁定")
+    val locked: Boolean = false
 )

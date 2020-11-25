@@ -32,12 +32,15 @@
 package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
-import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.ListRepoPermissionRequest
-import com.tencent.bkrepo.auth.pojo.Permission
 import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.ListRepoPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -79,6 +82,10 @@ class ServicePermissionResourceImpl @Autowired constructor(
         return ResponseBuilder.success(permissionService.listPermission(projectId, repoName))
     }
 
+    override fun listRepoBuiltinPermission(projectId: String, repoName: String): Response<List<Permission>> {
+        return ResponseBuilder.success(permissionService.listBuiltinPermission(projectId, repoName))
+    }
+
     override fun deletePermission(id: String): Response<Boolean> {
         return ResponseBuilder.success(permissionService.deletePermission(id))
     }
@@ -95,20 +102,20 @@ class ServicePermissionResourceImpl @Autowired constructor(
         return ResponseBuilder.success(permissionService.updateRepoPermission(id, repoList))
     }
 
-    override fun updatePermissionUser(id: String, uid: String, actionList: List<PermissionAction>): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.updateUserPermission(id, uid, actionList))
+    override fun updatePermissionUser(request: UpdatePermissionUserRequest): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.updatePermissionUser(request))
     }
 
-    override fun removePermissionUser(id: String, uid: String): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.removeUserPermission(id, uid))
+    override fun updatePermissionRole(request: UpdatePermissionRoleRequest): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.updatePermissionRole(request))
     }
 
-    override fun updatePermissionRole(id: String, rid: String, actionList: List<PermissionAction>): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.updateRolePermission(id, rid, actionList))
+    override fun updatePermissionDepartment(request: UpdatePermissionDepartmentRequest): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.updatePermissionDepartment(request))
     }
 
-    override fun removePermissionRole(id: String, rid: String): Response<Boolean> {
-        return ResponseBuilder.success(permissionService.removeRolePermission(id, rid))
+    override fun updatePermissionAction(request: UpdatePermissionActionRequest): Response<Boolean> {
+        return ResponseBuilder.success(permissionService.updatePermissionAction(request))
     }
 
     override fun registerResource(request: RegisterResourceRequest): Response<Boolean> {

@@ -31,11 +31,10 @@
 
 package com.tencent.bkrepo.auth
 
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
-import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
-import com.tencent.bkrepo.auth.pojo.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.PermissionSet
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
@@ -144,7 +143,7 @@ class PermissionServiceTest {
         val permissionList3 = permissionService.listPermission("bk_test", "test-local")
         Assertions.assertTrue(permissionList3.size == 1)
         val permissionList5 = permissionService.listPermission("bkrepo_test", null)
-        Assertions.assertTrue(permissionList5.size == 0)
+        Assertions.assertTrue(permissionList5.isEmpty())
     }
 
     @Test
@@ -175,7 +174,8 @@ class PermissionServiceTest {
             createPermissionRequest(
                 permName = "权限测试", projectId = "test",
                 repos = listOf("test-local"), resourceType = ResourceType.REPO,
-                users = listOf(PermissionSet(userId, listOf(PermissionAction.READ, PermissionAction.WRITE)))
+                users = listOf(userId),
+                actions = listOf(PermissionAction.READ, PermissionAction.WRITE)
             )
         )
         // check permission when user role is empty
@@ -204,7 +204,8 @@ class PermissionServiceTest {
             createPermissionRequest(
                 permName = "权限测试", projectId = "test",
                 repos = listOf("test-local"), resourceType = ResourceType.PROJECT,
-                users = listOf(PermissionSet(userId, listOf(PermissionAction.READ, PermissionAction.WRITE)))
+                users = listOf(userId),
+                actions = listOf(PermissionAction.READ, PermissionAction.WRITE)
             )
         )
         // check permission when user role is empty
@@ -232,8 +233,10 @@ class PermissionServiceTest {
         permissionService.createPermission(
             createPermissionRequest(
                 permName = "权限测试", projectId = "test",
-                repos = listOf("test-local"), resourceType = ResourceType.REPO,
-                users = listOf(PermissionSet(userId, listOf(PermissionAction.READ, PermissionAction.WRITE)))
+                repos = listOf("test-local"),
+                resourceType = ResourceType.REPO,
+                users = listOf(userId),
+                actions = listOf(PermissionAction.READ, PermissionAction.WRITE)
             )
         )
         // check permission when user role is empty
@@ -295,7 +298,7 @@ class PermissionServiceTest {
     fun updateUserPermissionTest() {
         userService.createUser(createUserRequest())
         assertThrows<ErrorCodeException> {
-            permissionService.updateUserPermission(
+            permissionService.updatePermissionUser(
                 "test_test",
                 userId,
                 listOf(PermissionAction.WRITE, PermissionAction.MANAGE)
@@ -325,9 +328,9 @@ class PermissionServiceTest {
             createPermissionRequest(
                 permName = "查询信息权限测试", projectId = "test",
                 users = listOf(
-                    PermissionSet(userId, listOf(PermissionAction.DELETE, PermissionAction.UPDATE)),
-                    PermissionSet("test_userId", listOf(PermissionAction.MANAGE, PermissionAction.UPDATE))
-                )
+                    userId, "test_userId"
+                ),
+                actions = listOf(PermissionAction.MANAGE, PermissionAction.UPDATE)
             )
         )
         permissionService.listPermission("test", null).forEach {
@@ -375,9 +378,9 @@ class PermissionServiceTest {
             createPermissionRequest(
                 permName = "查询信息权限测试", projectId = "test",
                 roles = listOf(
-                    PermissionSet(rid, listOf(PermissionAction.DELETE, PermissionAction.UPDATE)),
-                    PermissionSet("test_roleId", listOf(PermissionAction.READ, PermissionAction.UPDATE))
-                )
+                    rid, "test_roleId"
+                ),
+                actions = listOf(PermissionAction.READ, PermissionAction.UPDATE)
             )
         )
         permissionService.listPermission("test", null).forEach {
@@ -405,7 +408,14 @@ class PermissionServiceTest {
         repoName: String? = null,
         admin: Boolean = false
     ): CreateRoleRequest {
-        return CreateRoleRequest(roleId, "测试项目管理员", type, projectId, repoName, admin)
+        return CreateRoleRequest(
+            roleId,
+            "测试项目管理员",
+            type,
+            projectId,
+            repoName,
+            admin
+        )
     }
 
     private fun createPermissionRequest(
@@ -415,8 +425,10 @@ class PermissionServiceTest {
         repos: List<String> = emptyList(),
         includePattern: List<String> = emptyList(),
         excludePattern: List<String> = emptyList(),
-        users: List<PermissionSet> = emptyList(),
-        roles: List<PermissionSet> = emptyList(),
+        users: List<String> = emptyList(),
+        roles: List<String> = emptyList(),
+        departments: List<String> = emptyList(),
+        actions: List<PermissionAction> = emptyList(),
         createBy: String = "admin",
         updatedBy: String = "admin"
     ): CreatePermissionRequest {
@@ -429,6 +441,8 @@ class PermissionServiceTest {
             excludePattern,
             users,
             roles,
+            departments,
+            actions,
             createBy,
             updatedBy
         )

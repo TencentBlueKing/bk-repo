@@ -29,19 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.pojo.cluster
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("添加用户角色请求")
-data class AddUserRoleRequest(
-    @ApiModelProperty("用户名")
-    val userName: String,
-    @ApiModelProperty("权限ID")
-    val roleId: String,
-    @ApiModelProperty("项目ID")
-    val projectId: String,
-    @ApiModelProperty("仓库ID")
-    val repoId: String?
+@ApiModel("集群信息")
+data class Cluster(
+    @ApiModelProperty("集群id")
+    val clusterId: String,
+    @ApiModelProperty("集群地址")
+    val clusterAddr: String,
+    @ApiModelProperty("集群证书")
+    val cert: String,
+    @ApiModelProperty("集群认证状态")
+    val credentialStatus: Boolean? = false
 )

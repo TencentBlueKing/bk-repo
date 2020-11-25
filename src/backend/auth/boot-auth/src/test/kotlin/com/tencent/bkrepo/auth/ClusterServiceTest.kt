@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.auth
 
-import com.tencent.bkrepo.auth.pojo.AddClusterRequest
-import com.tencent.bkrepo.auth.pojo.UpdateClusterRequest
+import com.tencent.bkrepo.auth.pojo.cluster.AddClusterRequest
+import com.tencent.bkrepo.auth.pojo.cluster.UpdateClusterRequest
 import com.tencent.bkrepo.auth.service.ClusterService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.junit.jupiter.api.AfterEach
@@ -73,7 +73,12 @@ class ClusterServiceTest {
     @Test
     @DisplayName("添加集群测试")
     fun addClusterTest() {
-        val clusterRequest = AddClusterRequest(clusterId, "clusterAddr", "cert", false)
+        val clusterRequest = AddClusterRequest(
+            clusterId,
+            "clusterAddr",
+            "cert",
+            false
+        )
         val addCluster = clusterService.addCluster(clusterRequest)
         Assertions.assertTrue(addCluster)
         assertThrows<ErrorCodeException> { clusterService.addCluster(clusterRequest) }
@@ -82,7 +87,12 @@ class ClusterServiceTest {
     @Test
     @DisplayName("列出所有集群测试")
     fun listCluster() {
-        val clusterRequest = AddClusterRequest(clusterId, "clusterAddr", "cert", false)
+        val clusterRequest = AddClusterRequest(
+            clusterId,
+            "clusterAddr",
+            "cert",
+            false
+        )
         clusterService.addCluster(clusterRequest)
         val listCluster = clusterService.listCluster()
         Assertions.assertTrue(listCluster.size == 1)
@@ -92,7 +102,12 @@ class ClusterServiceTest {
     @DisplayName("删除集群测试")
     fun deleteTest() {
         assertThrows<ErrorCodeException> { clusterService.delete(clusterId) }
-        val clusterRequest = AddClusterRequest(clusterId, "clusterAddr", "cert", false)
+        val clusterRequest = AddClusterRequest(
+            clusterId,
+            "clusterAddr",
+            "cert",
+            false
+        )
         clusterService.addCluster(clusterRequest)
         val delete = clusterService.delete(clusterId)
         Assertions.assertTrue(delete)
@@ -101,9 +116,18 @@ class ClusterServiceTest {
     @Test
     @DisplayName("更新集群")
     fun updateClusterTest() {
-        val updateClusterRequest = UpdateClusterRequest("newClusterAddr", "newCert", true)
+        val updateClusterRequest = UpdateClusterRequest(
+            "newClusterAddr",
+            "newCert",
+            true
+        )
         assertThrows<ErrorCodeException> { clusterService.updateCluster(clusterId, updateClusterRequest) }
-        val clusterRequest = AddClusterRequest(clusterId, "clusterAddr", "cert", false)
+        val clusterRequest = AddClusterRequest(
+            clusterId,
+            "clusterAddr",
+            "cert",
+            false
+        )
         clusterService.addCluster(clusterRequest)
         val update = clusterService.updateCluster(clusterId, updateClusterRequest)
         Assertions.assertTrue(update)

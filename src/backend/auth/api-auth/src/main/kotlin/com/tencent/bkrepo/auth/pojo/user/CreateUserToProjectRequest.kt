@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.pojo.user
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty

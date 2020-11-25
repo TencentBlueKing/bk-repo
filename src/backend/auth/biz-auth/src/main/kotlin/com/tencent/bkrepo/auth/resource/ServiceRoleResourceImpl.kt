@@ -36,8 +36,8 @@ import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
 import com.tencent.bkrepo.auth.constant.REPO_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
-import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
-import com.tencent.bkrepo.auth.pojo.Role
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -57,13 +57,27 @@ class ServiceRoleResourceImpl @Autowired constructor(
     }
 
     override fun createProjectManage(projectId: String): Response<String?> {
-        val request = CreateRoleRequest(PROJECT_MANAGE_ID, PROJECT_MANAGE_NAME, RoleType.PROJECT, projectId, null, true)
+        val request = CreateRoleRequest(
+            PROJECT_MANAGE_ID,
+            PROJECT_MANAGE_NAME,
+            RoleType.PROJECT,
+            projectId,
+            null,
+            true
+        )
         val id = roleService.createRole(request)
         return ResponseBuilder.success(id)
     }
 
     override fun createRepoManage(projectId: String, repoName: String): Response<String?> {
-        val request = CreateRoleRequest(REPO_MANAGE_ID, REPO_MANAGE_NAME, RoleType.REPO, projectId, repoName, true)
+        val request = CreateRoleRequest(
+            REPO_MANAGE_ID,
+            REPO_MANAGE_NAME,
+            RoleType.REPO,
+            projectId,
+            repoName,
+            true
+        )
         val id = roleService.createRole(request)
         return ResponseBuilder.success(id)
     }

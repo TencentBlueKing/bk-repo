@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.config.BkAuthConfig
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthServiceCode

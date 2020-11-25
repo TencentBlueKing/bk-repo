@@ -35,11 +35,11 @@ import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.model.TUser
-import com.tencent.bkrepo.auth.pojo.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
-import com.tencent.bkrepo.auth.pojo.Permission
-import com.tencent.bkrepo.auth.pojo.PermissionSet
-import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.permission.PermissionSet
+import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
@@ -110,7 +110,8 @@ abstract class AbstractServiceImpl constructor(
 
     fun updatePermissionAction(pId: String, urId: String, actions: List<PermissionAction>, filed: String): Boolean {
         val update = Update()
-        var userAction = PermissionSet(id = urId, action = actions)
+        var userAction =
+            PermissionSet(id = urId, action = actions)
         update.addToSet(filed, userAction)
         val result = mongoTemplate.updateFirst(buildIdQuery(pId), update, TPermission::class.java)
         if (result.matchedCount == 1L) return true
@@ -159,6 +160,11 @@ abstract class AbstractServiceImpl constructor(
             tokens = tUser.tokens,
             roles = tUser.roles
         )
+    }
+
+    fun filterRepos(repos: List<String>, originRepoNames: List<String>): List<String> {
+        (repos as MutableList).retainAll(originRepoNames)
+        return repos
     }
 
     companion object {

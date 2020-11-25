@@ -29,15 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.pojo.token
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-@ApiModel("创建账号请求")
-data class CreateAccountRequest(
-    @ApiModelProperty("系统Id")
-    val appId: String,
-    @ApiModelProperty("是否锁定")
-    val locked: Boolean = false
+@ApiModel("token信息")
+data class TokenResult(
+    @ApiModelProperty("tokenName")
+    val name: String?,
+    @ApiModelProperty("创建时间")
+    val createdAt: LocalDateTime,
+    @ApiModelProperty("过期时间")
+    val expiredAt: LocalDateTime?
 )
