@@ -33,8 +33,8 @@ package com.tencent.bkrepo.auth.service.local
 
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TRole
-import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
-import com.tencent.bkrepo.auth.pojo.Role
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.service.RoleService
@@ -76,37 +76,30 @@ class RoleServiceImpl constructor(
     }
 
     override fun detail(id: String): Role? {
-        logger.info("get role detail : [$id] ")
+        logger.debug("get role detail : [$id] ")
         val result = roleRepository.findFirstById(id) ?: return null
         return transfer(result)
     }
 
     override fun detail(rid: String, projectId: String): Role? {
-        logger.info("get  role  detail rid : [$rid] , projectId : [$projectId] ")
+        logger.debug("get  role  detail rid : [$rid] , projectId : [$projectId] ")
         val result = roleRepository.findFirstByRoleIdAndProjectId(rid, projectId) ?: return null
         return transfer(result)
     }
 
     override fun detail(rid: String, projectId: String, repoName: String): Role? {
-        logger.info("get  role  detail rid : [$rid] , projectId : [$projectId], repoName: [$repoName]")
+        logger.debug("get  role  detail rid : [$rid] , projectId : [$projectId], repoName: [$repoName]")
         val result = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(rid, projectId, repoName) ?: return null
         return transfer(result)
     }
 
-    override fun listRoleByProject(type: RoleType?, projectId: String?, repoName: String?): List<Role> {
-        logger.info("list  role  type : [$type] , projectId : [$projectId], repoName: [$repoName]")
-        if (type == null && projectId == null) {
-            return roleRepository.findAll().map { transfer(it) }
-        } else if (type != null && projectId == null) {
-            return roleRepository.findByType(type).map { transfer(it) }
-        } else if (type == null && projectId != null) {
-            return roleRepository.findByProjectId(projectId).map { transfer(it) }
-        } else if (type != null && projectId != null) {
-            return roleRepository.findByTypeAndProjectId(type, projectId).map { transfer(it) }
-        } else if (projectId != null && repoName != null) {
-            roleRepository.findByRepoNameAndProjectId(repoName, projectId).map { transfer(it) }
+    override fun listRoleByProject(projectId: String, repoName: String?): List<Role> {
+        logger.info("list  role params , projectId : [$projectId], repoName: [$repoName]")
+        repoName?.let {
+            return roleRepository.findByProjectIdAndRepoNameAndType(projectId, repoName, RoleType.REPO)
+                .map { transfer(it) }
         }
-        return emptyList()
+        return roleRepository.findByTypeAndProjectId(RoleType.PROJECT, projectId).map { transfer(it) }
     }
 
     override fun deleteRoleByid(id: String): Boolean {

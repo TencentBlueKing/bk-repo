@@ -100,7 +100,7 @@ class BkiamCallbackService @Autowired constructor(
         val repos = repoPage.records.map {
             val entity = InstanceInfoDTO()
             entity.id = it!!.name
-            entity.displayName = it!!.name
+            entity.displayName = it.name
             entity
         }
         val data = BaseDataResponseDTO<InstanceInfoDTO>()
@@ -119,7 +119,7 @@ class BkiamCallbackService @Autowired constructor(
         val repos = repoPage.records.map {
             val entity = InstanceInfoDTO()
             entity.id = it!!.name
-            entity.displayName = it!!.name
+            entity.displayName = it.name
             entity
         }
         val result = FetchInstanceInfoResponseDTO()
@@ -141,7 +141,7 @@ class BkiamCallbackService @Autowired constructor(
         val projects = projectPage.records.map {
             val entity = InstanceInfoDTO()
             entity.id = it!!.name
-            entity.displayName = it!!.displayName
+            entity.displayName = it.displayName
             entity
         }
         val result = ListInstanceResponseDTO()
@@ -162,7 +162,7 @@ class BkiamCallbackService @Autowired constructor(
         val projects = projectPage.records.map {
             val entity = InstanceInfoDTO()
             entity.id = it!!.name
-            entity.displayName = it!!.displayName
+            entity.displayName = it.displayName
             entity
         }
 

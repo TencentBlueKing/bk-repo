@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.dockerapi.client
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.AUTHORIZATION
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response

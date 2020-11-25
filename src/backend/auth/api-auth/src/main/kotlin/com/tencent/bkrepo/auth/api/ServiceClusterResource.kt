@@ -32,9 +32,9 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PREFIX
-import com.tencent.bkrepo.auth.pojo.AddClusterRequest
-import com.tencent.bkrepo.auth.pojo.Cluster
-import com.tencent.bkrepo.auth.pojo.UpdateClusterRequest
+import com.tencent.bkrepo.auth.pojo.cluster.AddClusterRequest
+import com.tencent.bkrepo.auth.pojo.cluster.Cluster
+import com.tencent.bkrepo.auth.pojo.cluster.UpdateClusterRequest
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api

@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth.util
 
 import com.tencent.bk.sdk.iam.constants.ExpressionOperationEnum
 import com.tencent.bk.sdk.iam.dto.expression.ExpressionDTO
+import com.tencent.bkrepo.auth.exception.BkiamException
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 
@@ -50,6 +51,7 @@ object BkiamUtils {
             ExpressionOperationEnum.ANY -> projectList.add("*")
             ExpressionOperationEnum.EQUAL -> projectList.add(content.value.toString())
             ExpressionOperationEnum.IN -> projectList.addAll(StringUtils.obj2List(content.value.toString()))
+            else -> throw BkiamException("unsupported operation")
         }
         return projectList
     }
@@ -140,6 +142,7 @@ object BkiamUtils {
                     parentExpression.operator
                 )
             )
+            else -> throw BkiamException("unsupported operation")
         }
         return instantList
     }
@@ -235,6 +238,7 @@ object BkiamUtils {
             ExpressionOperationEnum.START_WITH -> {
                 instanceList.addAll(checkProject(projectId, expression).second)
             }
+            else -> throw BkiamException("unsupported operation")
         }
 
         return instanceList
@@ -262,7 +266,7 @@ object BkiamUtils {
 
     private fun andCheck(instanceList: Set<String>, op: ExpressionOperationEnum): Boolean {
         if (op == ExpressionOperationEnum.AND) {
-            if (instanceList == null || instanceList.isEmpty()) {
+            if (instanceList.isEmpty()) {
                 return false
             }
             return true

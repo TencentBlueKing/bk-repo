@@ -29,6 +29,7 @@
  * SOFTWARE.
  */
 
+import de.marcphilipp.gradle.nexus.NexusPublishExtension
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 import org.springframework.boot.gradle.tasks.run.BootRun
 
@@ -37,12 +38,13 @@ plugins {
     kotlin("plugin.spring") version "1.3.72" apply false
     id("org.springframework.boot") version "2.3.2.RELEASE" apply false
     id("io.spring.dependency-management") version "1.0.9.RELEASE"
-    id("maven-publish")
+    id("de.marcphilipp.nexus-publish") version "0.4.0" apply false
+    id("io.codearte.nexus-staging") version "0.22.0"
 }
 
 allprojects {
     group = "com.tencent.bkrepo"
-    version = "0.7.1"
+    version = "0.8.30"
 
     repositories {
         val publicMavenRepoUrl: String by project
@@ -64,7 +66,6 @@ subprojects {
     apply(plugin = "org.springframework.boot")
     apply(plugin = "io.spring.dependency-management")
     apply(from = rootProject.file("gradle/ktlint.gradle.kts"))
-    apply(from = rootProject.file("gradle/publish.gradle.kts"))
 
     dependencyManagement {
         imports {
@@ -135,14 +136,27 @@ subprojects {
     jar.enabled = !isBootProject
 }
 
-tasks.register<DefaultTask>("publishApiJar") {
-    val projectList = listOf(
-        ":common:common-api",
-        ":common:common-artifact:artifact-api",
-        ":common:common-query:query-api",
-        ":common:common-storage:storage-api",
-        ":generic:api-generic",
-        ":repository:api-repository"
-    )
-    projectList.forEach { dependsOn(project(it).tasks.publish) }
+nexusStaging {
+    username = System.getenv("SONATYPE_USERNAME")
+    password = System.getenv("SONATYPE_PASSWORD")
+}
+
+val publishList = listOf(
+    ":common:common-api",
+    ":common:common-artifact:artifact-api",
+    ":common:common-query:query-api",
+    ":generic:api-generic",
+    ":repository:api-repository"
+)
+
+publishList.forEach {
+    project(it) {
+        apply(plugin = "de.marcphilipp.nexus-publish")
+        apply(from = rootProject.file("gradle/publish.gradle.kts"))
+        configure<NexusPublishExtension> {
+            repositories {
+                sonatype()
+            }
+        }
+    }
 }

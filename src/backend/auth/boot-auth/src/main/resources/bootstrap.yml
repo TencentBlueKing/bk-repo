@@ -14,10 +14,13 @@ spring:
         data-key: data
         profileSeparator: '::'
 
+service:
+  name: auth
+
 auth:
   realm: local
   iam:
     callbackUser: bk_iam
-
-service:
-  name: auth
+  devops:
+    authEnabled: false
+    allowAnonymous: false

@@ -34,9 +34,9 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
-import com.tencent.bkrepo.auth.pojo.Permission
-import com.tencent.bkrepo.auth.pojo.Role
-import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.role.Role
+import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
@@ -115,8 +115,8 @@ class RepoDataService(
     }
 
     fun listRole(projectId: String, repoName: String?): List<Role> {
-        val roleType = if (repoName == null) RoleType.PROJECT else RoleType.REPO
-        return roleResource.listRole(roleType, projectId, repoName).data!!
+        if (repoName == null) RoleType.PROJECT else RoleType.REPO
+        return roleResource.listRole(projectId, repoName).data!!
     }
 
     fun listUser(roleIdList: List<String>): List<User> {

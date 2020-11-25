@@ -31,10 +31,10 @@
 
 package com.tencent.bkrepo.auth
 
-import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
-import com.tencent.bkrepo.auth.pojo.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
-import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
@@ -164,7 +164,8 @@ class UserServiceTest {
         userService.createUser(createUserRequest())
         val newUserName = "test1"
         val nwePwd = "!@#$%^&*"
-        val updateUserRequest = UpdateUserRequest(newUserName, nwePwd, true)
+        val updateUserRequest =
+            UpdateUserRequest(newUserName, nwePwd, true)
         val result = userService.updateUserById(userId, updateUserRequest)
         Assertions.assertEquals(result, true)
         userService.getUserById(userId)?.let {
@@ -179,7 +180,14 @@ class UserServiceTest {
     fun addUserToRoleTest() {
         userService.createUser(createUserRequest())
         assertThrows<ErrorCodeException> { userService.addUserToRole(userId, roleId) }
-        val roleRequest = CreateRoleRequest(roleId, roleName, RoleType.REPO, testProjectId, testRepoName, false)
+        val roleRequest = CreateRoleRequest(
+            roleId,
+            roleName,
+            RoleType.REPO,
+            testProjectId,
+            testRepoName,
+            false
+        )
         // 创建角色
         val roleId = roleService.createRole(roleRequest)!!
 
@@ -200,7 +208,14 @@ class UserServiceTest {
             idList.add(userId)
         }
         assertThrows<ErrorCodeException> { userService.addUserToRoleBatch(idList, roleId) }
-        val roleRequest = CreateRoleRequest(roleId, roleName, RoleType.REPO, testProjectId, testRepoName, false)
+        val roleRequest = CreateRoleRequest(
+            roleId,
+            roleName,
+            RoleType.REPO,
+            testProjectId,
+            testRepoName,
+            false
+        )
         // 创建角色
         val roleId = roleService.createRole(roleRequest)!!
         val isSuccess = userService.addUserToRoleBatch(idList, roleId)
@@ -229,7 +244,14 @@ class UserServiceTest {
             userService.createUser(createUserRequest(id = userId))
             idList.add(userId)
         }
-        val roleRequest = CreateRoleRequest(roleId, roleName, RoleType.REPO, testProjectId, testRepoName, false)
+        val roleRequest = CreateRoleRequest(
+            roleId,
+            roleName,
+            RoleType.REPO,
+            testProjectId,
+            testRepoName,
+            false
+        )
         // 创建角色
         val roleId = roleService.createRole(roleRequest)!!
         val isSuccess = userService.addUserToRoleBatch(idList, roleId)
@@ -265,7 +287,7 @@ class UserServiceTest {
         userService.createUser(createUserRequest())
         val userWithToken = userService.createToken(userId)
         val removeToken = userService.removeToken(userId, userWithToken!!.id)
-        removeToken?.let {
+        removeToken.let {
             Assertions.assertTrue(it)
         }
     }
@@ -306,7 +328,14 @@ class UserServiceTest {
     }
 
     private fun createRole(): String? {
-        val roleRequest = CreateRoleRequest(roleId, roleName, RoleType.PROJECT, testProjectId, null, false)
+        val roleRequest = CreateRoleRequest(
+            roleId,
+            roleName,
+            RoleType.PROJECT,
+            testProjectId,
+            null,
+            false
+        )
         return roleService.createRole(roleRequest)
     }
 }

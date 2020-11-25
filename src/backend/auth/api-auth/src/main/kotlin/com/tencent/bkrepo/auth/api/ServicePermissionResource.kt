@@ -34,13 +34,17 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_PERMISSION_PREFIX
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
-import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.ListRepoPermissionRequest
-import com.tencent.bkrepo.auth.pojo.Permission
 import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.ListRepoPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
@@ -71,12 +75,19 @@ interface ServicePermissionResource {
     @ApiOperation("权限列表")
     @GetMapping("/list")
     fun listPermission(
-        @ApiParam(value = "权限类型")
-        @RequestParam resourceType: ResourceType?,
         @ApiParam(value = "项目ID")
-        @RequestParam projectId: String?,
+        @RequestParam projectId: String,
         @ApiParam(value = "仓库名称")
         @RequestParam repoName: String?
+    ): Response<List<Permission>>
+
+    @ApiOperation("获取仓库内置权限列表")
+    @GetMapping("/list/inrepo")
+    fun listRepoBuiltinPermission(
+        @ApiParam(value = "项目ID")
+        @RequestParam projectId: String,
+        @ApiParam(value = "仓库名称")
+        @RequestParam repoName: String
     ): Response<List<Permission>>
 
     @ApiOperation("校验管理员")
@@ -107,65 +118,45 @@ interface ServicePermissionResource {
     ): Response<Boolean>
 
     @ApiOperation("更新权限include path")
-    @PutMapping("/includePath/{id}")
+    @PutMapping("/includePath")
     fun updateIncludePermissionPath(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @RequestBody pathList: List<String>
+        @RequestBody request: UpdatePermissionPathRequest
     ): Response<Boolean>
 
     @ApiOperation("更新权限exclude path")
-    @PutMapping("/excludePath/{id}")
+    @PutMapping("/excludePath")
     fun updateExcludePermissionPath(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @RequestBody pathList: List<String>
+        @RequestBody request: UpdatePermissionPathRequest
     ): Response<Boolean>
 
     @ApiOperation("更新权限权限绑定repo")
-    @PutMapping("/repo/{id}")
+    @PutMapping("/repo")
     fun updatePermissionRepo(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @RequestBody repoList: List<String>
+        @RequestBody request: UpdatePermissionRepoRequest
     ): Response<Boolean>
 
     @ApiOperation("更新权限绑定用户")
-    @PostMapping("/user/{id}/{uid}")
+    @PutMapping("/user")
     fun updatePermissionUser(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @ApiParam(value = "用户ID")
-        @PathVariable uid: String,
-        @RequestBody actionList: List<PermissionAction>
-    ): Response<Boolean>
-
-    @ApiOperation("删除权限绑定用户")
-    @DeleteMapping("/user/{id}/{uid}")
-    fun removePermissionUser(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @ApiParam(value = "用户ID")
-        @PathVariable uid: String
+        @RequestBody request: UpdatePermissionUserRequest
     ): Response<Boolean>
 
     @ApiOperation("更新权限绑定角色")
-    @PostMapping("/role/{id}/{rid}")
+    @PutMapping("/role")
     fun updatePermissionRole(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @ApiParam(value = "用户ID")
-        @PathVariable rid: String,
-        @RequestBody actionList: List<PermissionAction>
+        @RequestBody request: UpdatePermissionRoleRequest
     ): Response<Boolean>
 
-    @ApiOperation("删除权限绑定角色")
-    @DeleteMapping("/role/{id}/{rid}")
-    fun removePermissionRole(
-        @ApiParam(value = "权限主键ID")
-        @PathVariable id: String,
-        @ApiParam(value = "角色ID")
-        @PathVariable rid: String
+    @ApiOperation("更新权限绑定部门")
+    @PutMapping("/department")
+    fun updatePermissionDepartment(
+        @RequestBody request: UpdatePermissionDepartmentRequest
+    ): Response<Boolean>
+
+    @ApiOperation("更新权限绑定动作")
+    @PutMapping("/action")
+    fun updatePermissionAction(
+        @RequestBody request: UpdatePermissionActionRequest
     ): Response<Boolean>
 
     @ApiOperation("注册资源")

@@ -45,6 +45,6 @@ class AfterHandler : MongoQueryRuleHandler {
 
     override fun handle(rule: Rule.QueryRule): Criteria {
         require(rule.value is LocalDateTime)
-        return Criteria.where(rule.field).gt(rule.value)
+        return Criteria.where(rule.field).gt(rule.value as LocalDateTime)
     }
 }

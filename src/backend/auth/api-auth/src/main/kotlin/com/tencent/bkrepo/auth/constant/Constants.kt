@@ -34,7 +34,6 @@ package com.tencent.bkrepo.auth.constant
 /**
  * 认证相关
  */
-const val LOGIN_FROM = "from"
 
 const val PROJECT_MANAGE_ID = "project_manage"
 
@@ -72,6 +71,15 @@ const val AUTH_USER_PREFIX = "/user"
 const val AUTH_API_USER_PREFIX = "/api/user"
 const val AUTH_SERVICE_USER_PREFIX = "/service/user"
 
+const val AUTH_DEPARTMENT_PREFIX = "/department"
+const val AUTH_API_DEPARTMENT_PREFIX = "/api/department"
+const val AUTH_SERVICE_DEPARTMENT_PREFIX = "/service/department"
+
 const val AUTH_ACCOUNT_PREFIX = "/account"
 const val AUTH_SERVICE_ACCOUNT_PREFIX = "/service/account"
 const val AUTH_API_ACCOUNT_PREFIX = "/api/account"
+
+const val AUTH_ADMIN = "admin"
+const val AUTH_BUILTIN_ADMIN = "repo_admin"
+const val AUTH_BUILTIN_USER = "repo_user"
+const val AUTH_BUILTIN_VIEWER = "repo_viewer"
