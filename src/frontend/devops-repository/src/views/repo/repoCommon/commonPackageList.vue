@@ -104,8 +104,8 @@
             deletePackageHandler (pkg) {
                 this.$bkInfo({
                     type: 'error',
-                    title: this.$t('deletePackageTitle', [pkg.type, pkg.name]),
-                    subTitle: this.$t('deletePackageSubTitle', [pkg.name]),
+                    title: this.$t('deletePackageTitle'),
+                    subTitle: this.$t('deletePackageSubTitle'),
                     showFooter: true,
                     confirmFn: () => {
                         this.deletePackage({

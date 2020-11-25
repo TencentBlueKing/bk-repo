@@ -31,16 +31,6 @@
                     @clear="searchHandler"
                     :placeholder="$t('pleaseInput') + $t('packageName')">
                 </bk-input>
-                <!-- <bk-search-select
-                    :values="artiQuery"
-                    :data="filterList"
-                    clearable
-                    :split-code="' & '"
-                    :placeholder="$t('enterConfirm')"
-                    @change="queryChangeHandler"
-                    :show-condition="false"
-                    :show-popover-tag-change="true">
-                </bk-search-select> -->
                 <i class="repo-detail-search-btn devops-icon icon-search" @click="searchHandler"></i>
                 <bk-button v-if="repoType !== 'generic'" class="ml20" outline theme="primary" @click="fileSearch">
                     {{$t('searchForPkg')}}
@@ -62,7 +52,6 @@
     import Breadcrumb from '@/components/Breadcrumb'
     import RepoSelect from '@/components/RepoSelect'
     import repoGuide from './repoCommon/repoGuide'
-    // import filterList from './filter'
     import repoGuideMixin from './repoGuideMixin'
     import { mapState, mapActions } from 'vuex'
     export default {
@@ -79,7 +68,6 @@
                 showRepoSearch: false,
                 showGuide: false,
                 packageNameInput: ''
-                // artiQuery: []
             }
         },
         computed: {
@@ -87,9 +75,6 @@
             showFilterIcon () {
                 return this.$route.name === 'commonList' || this.$route.name === 'repoGeneric'
             }
-            // filterList () {
-            //     return filterList[this.repoType]
-            // }
         },
         watch: {
             repoType (val) {
@@ -148,32 +133,16 @@
             handlerShowGuide () {
                 this.showGuide = true
             },
-            // queryChangeHandler (query) {
-            //     const keys = this.filterList.map(v => v.id)
-            //     this.artiQuery = Object.values(
-            //         query.reduce((target, item) => {
-            //             if (keys.includes(item.id)) {
-            //                 target[item.id] = item
-            //             }
-            //             return target
-            //         }, {}))
-            // },
             searchHandler () {
-                // const query = this.artiQuery.reduce((target, item) => {
-                //     target[item.id] = item.values.map(v => v.id).join('')
-                //     return target
-                // }, {})
                 this.$refs[this.repoType].searchHandler({
                     name: this.packageNameInput
                 })
             },
             resetQueryAndBack () {
-                // this.artiQuery = []
                 this.showRepoSearch = false
                 this.$refs[this.repoType].resetQueryAndBack()
             },
             fileSearch () {
-                // const file = (this.artiQuery.find(v => v.id === 'name') || { values: [{ id: '' }] }).values[0].id
                 this.$router.push({
                     name: 'repoSearch',
                     query: {

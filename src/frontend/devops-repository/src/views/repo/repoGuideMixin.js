@@ -110,7 +110,11 @@ export default {
                         {
                             subTitle: '设置 npm registry为当前制品库仓库，进入command/shell命令行窗口根据用户凭证登录',
                             codeList: [
-                                `npm registry ${this.repoUrl}/`,
+                                `npm config set registry ${this.repoUrl}/`
+                            ]
+                        },
+                        {
+                            codeList: [
                                 `npm login`
                             ]
                         }
@@ -302,15 +306,15 @@ export default {
                     title: '推送',
                     main: [
                         {
-                            subTitle: '推送打包后的Chart',
+                            subTitle: '1、推送Chart',
                             codeList: [
-                                `curl -X POST -T <mychart.tgz> -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> "${this.repoUrl}"`
+                                `curl -F "chart=@<FILE_NAME>" -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
                             ]
                         },
                         {
-                            subTitle: '推送Chart Provenance',
+                            subTitle: '2、推送Chart Provenance',
                             codeList: [
-                                `curl -X POST -T <mychart.tgz.prov> -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> "${this.repoUrl}?prov=1"`
+                                `curl -F "prov=@<PROV_FILE_NAME>" -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
                             ]
                         }
                     ]
@@ -321,7 +325,7 @@ export default {
                         {
                             subTitle: '1、配置',
                             codeList: [
-                                `helm repo add --username ${this.userInfo.username} ${this.repoName} "${this.repoUrl}"`
+                                `helm repo add --username ${this.userInfo.username} --password <PERSONAL_ACCESS_TOKEN> ${this.repoName} "${this.repoUrl}"`
                             ]
                         },
                         {
@@ -333,7 +337,7 @@ export default {
                         {
                             subTitle: '3、拉取',
                             codeList: [
-                                `helm fetch ${this.repoName}/${this.packageName}`
+                                `helm install ${this.repoName}/${this.packageName}`
                             ]
                         }
                     ]
@@ -347,7 +351,7 @@ export default {
                         {
                             subTitle: '1、手动配置',
                             codeList: [
-                                `helm repo add --username ${this.userInfo.username} ${this.repoName} "${this.repoUrl}"`
+                                `helm repo add --username ${this.userInfo.username} --password <PERSONAL_ACCESS_TOKEN> ${this.repoName} "${this.repoUrl}"`
                             ]
                         },
                         {
@@ -390,7 +394,7 @@ export default {
                     main: [
                         {
                             codeList: [
-                                `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> -X PUT ${this.repoUrl} -T <RPM_FILE_NAME>`
+                                `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> -X PUT ${this.repoUrl}/ -T <RPM_FILE_NAME>`
                             ]
                         }
                     ]
