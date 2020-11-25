@@ -34,12 +34,13 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_USER_PREFIX
-import com.tencent.bkrepo.auth.pojo.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
-import com.tencent.bkrepo.auth.pojo.Token
-import com.tencent.bkrepo.auth.pojo.TokenResult
-import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
-import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.pojo.token.Token
+import com.tencent.bkrepo.auth.pojo.token.TokenResult
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
@@ -76,10 +77,10 @@ interface ServiceUserResource {
     ): Response<Boolean>
 
     @ApiOperation("用户列表")
-    @PostMapping("/list")
+    @GetMapping("/list")
     fun listUser(
-        @RequestBody rids: List<String> = emptyList()
-    ): Response<List<User>>
+        @RequestBody rids: List<String>?
+    ): Response<List<UserResult>>
 
     @ApiOperation("删除用户")
     @DeleteMapping("/{uid}")

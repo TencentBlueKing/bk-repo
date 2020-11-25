@@ -34,9 +34,8 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_ROLE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ROLE_PREFIX
-import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
-import com.tencent.bkrepo.auth.pojo.Role
-import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api

@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.auth.service
 
-import com.tencent.bkrepo.auth.pojo.Account
-import com.tencent.bkrepo.auth.pojo.CreateAccountRequest
-import com.tencent.bkrepo.auth.pojo.CredentialSet
+import com.tencent.bkrepo.auth.pojo.account.Account
+import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
+import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 
 interface AccountService {

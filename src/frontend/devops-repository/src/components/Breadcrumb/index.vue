@@ -4,10 +4,10 @@
             <div class="ml10 hover-btn"
                 v-for="(item, index) in list"
                 :key="item.name"
-                @click="showSelect(item, index)"
+                @click="($event) => showSelect(item, index, $event)"
                 :class="{ 'pointer': item.list }">
                 <template v-if="item.showSelect">
-                    <bk-select ref="breadcrumbSelect" class="breadcrumb-select" searchable :clearable="false" :value="item.value" @change="item.changeHandler">
+                    <bk-select class="breadcrumb-select" searchable :clearable="false" :value="item.value" @change="item.changeHandler">
                         <bk-option
                             v-for="option in item.list"
                             :key="option.name"
@@ -40,14 +40,15 @@
                     this.$set(item, 'showSelect', false)
                 })
             },
-            showSelect (selected, index) {
+            showSelect (selected, index, $event) {
                 this.list.forEach(item => {
                     this.$set(item, 'showSelect', false)
                 })
+                // 面包屑最后一项，提供下拉切换功能
                 if (selected.list && selected.list.length && index === this.list.length - 1) {
                     this.$set(selected, 'showSelect', true)
                     this.$nextTick(() => {
-                        const parent = this.$refs.breadcrumbSelect[0].$el
+                        const parent = this.$el.querySelector('.breadcrumb-select')
                         parent.addEventListener('click', e => {
                             e.stopPropagation()
                         }, { capture: false, once: true })

@@ -29,18 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.pojo.cluster
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
 
-@ApiModel("token信息")
-data class TokenResult(
-    @ApiModelProperty("tokenName")
-    val name: String?,
-    @ApiModelProperty("创建时间")
-    val createdAt: LocalDateTime,
-    @ApiModelProperty("过期时间")
-    val expiredAt: LocalDateTime?
+@ApiModel("新增集群请求")
+data class AddClusterRequest(
+    @ApiModelProperty("集群id")
+    val clusterId: String,
+    @ApiModelProperty("集群地址")
+    val clusterAddr: String,
+    @ApiModelProperty("集群证书")
+    val cert: String,
+    @ApiModelProperty("集群认证状态")
+    val credentialStatus: Boolean? = false
 )

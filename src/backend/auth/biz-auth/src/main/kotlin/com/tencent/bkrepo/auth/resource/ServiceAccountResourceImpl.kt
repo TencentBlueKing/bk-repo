@@ -32,9 +32,9 @@
 package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
-import com.tencent.bkrepo.auth.pojo.Account
-import com.tencent.bkrepo.auth.pojo.CreateAccountRequest
-import com.tencent.bkrepo.auth.pojo.CredentialSet
+import com.tencent.bkrepo.auth.pojo.account.Account
+import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
+import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.common.api.pojo.Response

@@ -15,44 +15,22 @@
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ *
  */
-export default {
-    callBack: () => {},
 
-    installWsMessage (callBack) {
-        this.callBack = (res) => {
-            const data = res.data
-            const type = data.webSocketType
-            if (type === 'IFRAME') {
-                const message = JSON.parse(data.message)
-                callBack(message)
-            }
-        }
-        window.addEventListener('message', this.callBack)
-    },
+package com.tencent.bkrepo.auth.resource
 
-    unInstallWsMessage () {
-        window.removeEventListener('message', this.callBack)
-        this.callBack = () => {}
-    },
+import com.tencent.bkrepo.auth.api.ServiceDepartmentResource
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RestController
 
-    openDialogWebSocket (callBack, payLoad) {
-        const postData = Object.assign({ type: 'openLogWs' }, payLoad)
-        window.parent.postMessage(postData, '*')
-        this.openDialogWebSocket.dialogCallBack = (res) => {
-            const data = res.data
-            const type = data.webSocketType
-            if (type === 'IFRAMEDIALOG') {
-                const message = JSON.parse(data.message)
-                callBack(message)
-            }
-        }
-        window.addEventListener('message', this.openDialogWebSocket.dialogCallBack)
-    },
+@RestController
+class ServiceDepartmentResourceImpl @Autowired constructor() : ServiceDepartmentResource {
 
-    closeDialogWebSocket (payLoad) {
-        const postData = Object.assign({ type: 'closeLogWs' }, payLoad)
-        window.parent.postMessage(postData, '*')
-        window.removeEventListener('message', this.openDialogWebSocket.dialogCallBack)
+    override fun listDepartment(): Response<List<Map<Any, Any>>> {
+        return ResponseBuilder.success(emptyList())
     }
 }

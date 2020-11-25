@@ -31,11 +31,11 @@
 
 package com.tencent.bkrepo.replication.job
 
-import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.Permission
-import com.tencent.bkrepo.auth.pojo.PermissionSet
-import com.tencent.bkrepo.auth.pojo.Role
-import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.permission.PermissionSet
+import com.tencent.bkrepo.auth.pojo.role.Role
+import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
@@ -424,7 +424,9 @@ class ReplicationJobBean(
         with(context) {
             // 查询角色对应id
             val roles = permission.roles.map {
-                PermissionSet(roleIdMap[it.id] ?: error("Can not find corresponding role id[${it.id}]."), it.action)
+                PermissionSet(
+                    roleIdMap[it.id] ?: error("Can not find corresponding role id[${it.id}]."), it.action
+                )
             }
             // 创建权限
             val request = CreatePermissionRequest(

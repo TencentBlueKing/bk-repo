@@ -1,6 +1,5 @@
 ## bkrepo 平台账号相关接口
 
-
 ### 创建访问账号
 
 - API: POST /auth/api/account/create

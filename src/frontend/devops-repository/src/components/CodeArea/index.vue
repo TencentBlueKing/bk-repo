@@ -7,7 +7,7 @@
         <div v-for="code in codeList" :key="code + Math.random()"
             :class="{
                 'code-main': true,
-                'line-number': lineNumber
+                'line-number': lineNumber && codeList.length > 1
             }">
             <pre class="code-pre">{{ code }}</pre>
         </div>

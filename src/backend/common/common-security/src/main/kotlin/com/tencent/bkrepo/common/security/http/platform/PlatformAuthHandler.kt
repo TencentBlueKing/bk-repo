@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.common.security.http.platform
 
 import com.tencent.bkrepo.auth.api.ServiceUserResource
-import com.tencent.bkrepo.auth.pojo.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.CharPool.COLON
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
@@ -85,7 +85,8 @@ open class PlatformAuthHandler(
 
     private fun checkUserId(userId: String) {
         if (serviceUserResource.detail(userId).data == null) {
-            val request = CreateUserRequest(userId = userId, name = userId)
+            val request =
+                CreateUserRequest(userId = userId, name = userId)
             serviceUserResource.createUser(request)
             logger.info("Create user [$request] success.")
         }

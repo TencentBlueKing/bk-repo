@@ -91,7 +91,6 @@ class BkAuthService @Autowired constructor(
             throw RuntimeException("validate user resource permission failed")
         }
         return responseObject.code == 0
-
     }
 
     companion object {

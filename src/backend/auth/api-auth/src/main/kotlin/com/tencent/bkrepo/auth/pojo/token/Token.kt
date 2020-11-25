@@ -29,15 +29,20 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.pojo.token
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-@ApiModel("添加角色权限请求")
-data class AddRolePermissionRequest(
-    @ApiModelProperty("角色ID")
-    val roleId: String,
-    @ApiModelProperty("权限ID")
-    val permissionId: String
+@ApiModel("token信息")
+data class Token(
+    @ApiModelProperty("tokenName")
+    val name: String?,
+    @ApiModelProperty("tokenID")
+    val id: String,
+    @ApiModelProperty("创建时间")
+    val createdAt: LocalDateTime,
+    @ApiModelProperty("过期时间")
+    val expiredAt: LocalDateTime?
 )

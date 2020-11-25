@@ -61,8 +61,8 @@ class ProxyChannelServiceImpl(
         with(request) {
             Preconditions.checkArgument(public, this::public.name)
             Preconditions.checkNotBlank(name, this::name.name)
-            Preconditions.checkArgument(checkExistByName(name, repoType), this::name.name)
-            Preconditions.checkArgument(checkExistByUrl(url, repoType), this::url.name)
+            Preconditions.checkArgument(!checkExistByName(name, repoType), this::name.name)
+            Preconditions.checkArgument(!checkExistByUrl(url, repoType), this::url.name)
             val tProxyChannel = TProxyChannel(
                 public = public,
                 name = name.trim(),
