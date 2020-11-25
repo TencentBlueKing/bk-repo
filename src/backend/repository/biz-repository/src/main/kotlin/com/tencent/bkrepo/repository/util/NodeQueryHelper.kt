@@ -98,7 +98,7 @@ object NodeQueryHelper {
                 )
             )
         }
-        if (option.includeMetadata) {
+        if (!option.includeMetadata) {
             query.fields().exclude(TNode::metadata.name)
         }
         return query

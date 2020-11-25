@@ -32,12 +32,12 @@
 package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.config.BkAuthConfig
-import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthServiceCode
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
@@ -45,20 +45,19 @@ import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 
 /**
  * 对接蓝鲸权限中心2.x
  */
-class BkAuthPermissionServiceImpl @Autowired constructor(
-    userRepository: UserRepository,
-    roleRepository: RoleRepository,
-    permissionRepository: PermissionRepository,
-    mongoTemplate: MongoTemplate,
-    repositoryClient: RepositoryClient,
+class BkAuthPermissionServiceImpl constructor(
+    private val userRepository: UserRepository,
+    private val roleRepository: RoleRepository,
+    private val permissionRepository: PermissionRepository,
+    private val mongoTemplate: MongoTemplate,
+    private val repositoryClient: RepositoryClient,
     private val bkAuthConfig: BkAuthConfig,
-    private val bkAuthPermissionService: BkAuthPermissionService,
+    private val bkAuthService: BkAuthService,
     private val bkAuthProjectService: BkAuthProjectService
 ) : PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient) {
     private fun parsePipelineId(path: String): String? {
@@ -117,7 +116,7 @@ class BkAuthPermissionServiceImpl @Autowired constructor(
 
     private fun checkPipelinePermission(uid: String, projectId: String, pipelineId: String): Boolean {
         logger.info("checkPipelinePermission: uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
-        return bkAuthPermissionService.validateUserResourcePermission(
+        return bkAuthService.validateUserResourcePermission(
             user = uid,
             serviceCode = BkAuthServiceCode.PIPELINE,
             resourceType = BkAuthResourceType.PIPELINE_DEFAULT,

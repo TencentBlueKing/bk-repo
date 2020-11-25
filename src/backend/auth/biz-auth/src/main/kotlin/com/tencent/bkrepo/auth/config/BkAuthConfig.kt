@@ -40,43 +40,43 @@ class BkAuthConfig {
     /**
      * auth 环境名称
      */
-    @Value("\${auth.devops.envName: ''}")
+    @Value("\${auth.devops.envName:}")
     var authEnvName: String = ""
 
     /**
      * auth 服务器地址
      */
-    @Value("\${auth.devops.authServer: ''}")
+    @Value("\${auth.devops.authServer:}")
     private var authServer: String = ""
 
     /**
      * 流水线资源 appSecret
      */
-    @Value("\${auth.devops.pipelineSecret: ''}")
+    @Value("\${auth.devops.pipelineSecret:}")
     var pipelineSecret: String = ""
 
     /**
      * 版本仓库资源 appSecret
      */
-    @Value("\${auth.devops.artifactorySecret: ''}")
+    @Value("\${auth.devops.artifactorySecret:}")
     var artifactorySecret: String = ""
 
     /**
      * 蓝盾平台用户 appId
      */
-    @Value("\${auth.devops.appId: ''}")
+    @Value("\${auth.devops.appId:}")
     var appId: String = ""
 
     /**
      * 是否开启蓝盾用户权限认证开关
      */
-    @Value("\${auth.devops.authEnabled: false}")
+    @Value("\${auth.devops.authEnabled:true}")
     var authEnabled: Boolean = true
 
     /**
      * 是否允许蓝盾匿名用户请求
      */
-    @Value("\${auth.devops.allowAnonymous: ''}")
+    @Value("\${auth.devops.allowAnonymous:true}")
     var allowAnonymous: Boolean = true
 
     fun getAppSecret(serviceCode: BkAuthServiceCode): String {
