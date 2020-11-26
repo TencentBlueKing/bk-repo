@@ -68,7 +68,7 @@
                 <bk-tab-panel v-if="showProxyConfigTab" name="proxyConfig" :label="$t('proxyConfig')">
                     <proxy-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></proxy-config>
                 </bk-tab-panel>
-                <bk-tab-panel name="permissionConfig" :label="$t('permissionConfig')">
+                <bk-tab-panel render-directive="if" name="permissionConfig" :label="$t('permissionConfig')">
                     <permission-config></permission-config>
                 </bk-tab-panel>
             </bk-tab>

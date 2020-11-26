@@ -3,6 +3,7 @@ import Vue from 'vue'
 import repoGeneric from './repoGeneric'
 import repoCommon from './repoCommon'
 import token from './token'
+import permission from './permission'
 
 const prefix = 'repository/api'
 
@@ -10,6 +11,7 @@ export default {
     ...repoGeneric,
     ...repoCommon,
     ...token,
+    ...permission,
     /*
         创建仓库
         body: {
