@@ -29,41 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.handler.event
+package com.tencent.bkrepo.replication.message
 
-import com.tencent.bkrepo.replication.job.ReplicationContext
-import com.tencent.bkrepo.replication.message.metadata.MetadataDeletedMessage
-import com.tencent.bkrepo.replication.message.metadata.MetadataSavedMessage
-import org.springframework.context.event.EventListener
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.tencent.bkrepo.replication.message.node.NodeCreatedMessage
 
-/**
- * handler metadata message and replicate
- */
-class MetaDataEventHandler : AbstractEventHandler() {
-
-    @EventListener(MetadataSavedMessage::class)
-    fun handle(message: MetadataSavedMessage) {
-        with(message.request) {
-            getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
-                this.copy(
-                    projectId = getRemoteProjectId(it, projectId),
-                    repoName = getRemoteRepoName(it, repoName)
-                ).apply { replicationService.replicaMetadataSaveRequest(context, this) }
-            }
-        }
-    }
-
-    @EventListener(MetadataDeletedMessage::class)
-    fun handle(message: MetadataDeletedMessage) {
-        with(message.request) {
-            getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
-                this.copy(
-                    projectId = getRemoteProjectId(it, projectId),
-                    repoName = getRemoteRepoName(it, repoName)
-                ).apply { replicationService.replicaMetadataDeleteRequest(context, this) }
-            }
-        }
-    }
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "messageType")
+@JsonSubTypes(
+    JsonSubTypes.Type(value = NodeCreatedMessage::class, name = MessageType.NODE_CREATED)
+)
+interface IMessage {
+    fun getMessageType(): String
 }
+

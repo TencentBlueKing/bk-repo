@@ -29,13 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.repository
+package com.tencent.bkrepo.replication.message.node
 
-import com.tencent.bkrepo.auth.model.TUserRole
-import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.replication.message.IMessage
+import com.tencent.bkrepo.replication.message.MessageType
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 
-@Repository
-interface UserRoleRepository : MongoRepository<TUserRole, String> {
-    fun findByUserNameAndProjectId(userName: String, projectId: String): List<TUserRole>
+data class NodeMovedMessage(val request: NodeMoveRequest) : IMessage {
+    override fun getMessageType() = MessageType.NODE_MOVED
 }

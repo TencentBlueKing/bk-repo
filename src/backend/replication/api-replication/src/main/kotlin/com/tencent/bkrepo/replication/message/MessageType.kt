@@ -29,18 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.replication.message
 
-import org.springframework.data.mongodb.core.mapping.Document
+object MessageType {
+    const val PROJECT_CREATED = "project-created"
 
-/**
- * 角色
- */
-@Document("user_role")
-data class TUserRole(
-    val id: String? = null,
-    val userName: String,
-    val roleId: String,
-    val projectId: String,
-    val repoId: String?
-)
+    const val REPO_CREATED = "repo-created"
+    const val REPO_UPDATED = "repo-updated"
+    const val REPO_DELETED = "repo-deleted"
+
+    const val NODE_CREATED = "node-created"
+    const val NODE_UPDATED = "node-updated"
+    const val NODE_DELETED = "node-deleted"
+    const val NODE_RENAMED = "node-renamed"
+    const val NODE_COPIED = "node-copied"
+    const val NODE_MOVED = "node-moved"
+
+    const val METADATA_SAVED = "metadata-saved"
+    const val METADATA_DELETED = "metadata-deleted"
+}
