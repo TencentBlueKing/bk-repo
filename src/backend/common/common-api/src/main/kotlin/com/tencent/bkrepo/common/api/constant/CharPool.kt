@@ -40,4 +40,6 @@ object CharPool {
     const val DASH = '-'
     const val AT = '@'
     const val QUESTION = '?'
+    const val AND = "&"
+    const val EQUAL = "="
 }
