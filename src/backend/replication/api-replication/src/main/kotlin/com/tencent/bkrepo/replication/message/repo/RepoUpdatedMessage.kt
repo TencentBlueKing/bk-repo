@@ -29,41 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.handler.event
+package com.tencent.bkrepo.replication.message.repo
 
-import com.tencent.bkrepo.replication.job.ReplicationContext
-import com.tencent.bkrepo.replication.message.metadata.MetadataDeletedMessage
-import com.tencent.bkrepo.replication.message.metadata.MetadataSavedMessage
-import org.springframework.context.event.EventListener
+import com.tencent.bkrepo.replication.message.IMessage
+import com.tencent.bkrepo.replication.message.MessageType
+import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 
-/**
- * handler metadata message and replicate
- */
-class MetaDataEventHandler : AbstractEventHandler() {
-
-    @EventListener(MetadataSavedMessage::class)
-    fun handle(message: MetadataSavedMessage) {
-        with(message.request) {
-            getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
-                this.copy(
-                    projectId = getRemoteProjectId(it, projectId),
-                    repoName = getRemoteRepoName(it, repoName)
-                ).apply { replicationService.replicaMetadataSaveRequest(context, this) }
-            }
-        }
-    }
-
-    @EventListener(MetadataDeletedMessage::class)
-    fun handle(message: MetadataDeletedMessage) {
-        with(message.request) {
-            getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
-                this.copy(
-                    projectId = getRemoteProjectId(it, projectId),
-                    repoName = getRemoteRepoName(it, repoName)
-                ).apply { replicationService.replicaMetadataDeleteRequest(context, this) }
-            }
-        }
-    }
+data class RepoUpdatedMessage(val request: RepoUpdateRequest) : IMessage {
+    override fun getMessageType() = MessageType.REPO_UPDATED
 }

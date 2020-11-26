@@ -29,41 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.handler.event
+package com.tencent.bkrepo.replication.message
 
-import com.tencent.bkrepo.replication.job.ReplicationContext
-import com.tencent.bkrepo.replication.message.metadata.MetadataDeletedMessage
-import com.tencent.bkrepo.replication.message.metadata.MetadataSavedMessage
-import org.springframework.context.event.EventListener
+object MessageType {
+    const val PROJECT_CREATED = "project-created"
 
-/**
- * handler metadata message and replicate
- */
-class MetaDataEventHandler : AbstractEventHandler() {
+    const val REPO_CREATED = "repo-created"
+    const val REPO_UPDATED = "repo-updated"
+    const val REPO_DELETED = "repo-deleted"
 
-    @EventListener(MetadataSavedMessage::class)
-    fun handle(message: MetadataSavedMessage) {
-        with(message.request) {
-            getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
-                this.copy(
-                    projectId = getRemoteProjectId(it, projectId),
-                    repoName = getRemoteRepoName(it, repoName)
-                ).apply { replicationService.replicaMetadataSaveRequest(context, this) }
-            }
-        }
-    }
+    const val NODE_CREATED = "node-created"
+    const val NODE_UPDATED = "node-updated"
+    const val NODE_DELETED = "node-deleted"
+    const val NODE_RENAMED = "node-renamed"
+    const val NODE_COPIED = "node-copied"
+    const val NODE_MOVED = "node-moved"
 
-    @EventListener(MetadataDeletedMessage::class)
-    fun handle(message: MetadataDeletedMessage) {
-        with(message.request) {
-            getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
-                this.copy(
-                    projectId = getRemoteProjectId(it, projectId),
-                    repoName = getRemoteRepoName(it, repoName)
-                ).apply { replicationService.replicaMetadataDeleteRequest(context, this) }
-            }
-        }
-    }
+    const val METADATA_SAVED = "metadata-saved"
+    const val METADATA_DELETED = "metadata-deleted"
 }

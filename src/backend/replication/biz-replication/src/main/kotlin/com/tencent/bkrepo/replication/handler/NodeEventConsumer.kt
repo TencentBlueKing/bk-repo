@@ -32,13 +32,13 @@
 package com.tencent.bkrepo.replication.handler
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.stream.message.node.NodeCopiedMessage
-import com.tencent.bkrepo.common.stream.message.node.NodeCreatedMessage
-import com.tencent.bkrepo.common.stream.message.node.NodeDeletedMessage
-import com.tencent.bkrepo.common.stream.message.node.NodeMovedMessage
-import com.tencent.bkrepo.common.stream.message.node.NodeRenamedMessage
-import com.tencent.bkrepo.common.stream.message.node.NodeUpdatedMessage
 import com.tencent.bkrepo.replication.config.NODE_REQUEST
+import com.tencent.bkrepo.replication.message.node.NodeCopiedMessage
+import com.tencent.bkrepo.replication.message.node.NodeCreatedMessage
+import com.tencent.bkrepo.replication.message.node.NodeDeletedMessage
+import com.tencent.bkrepo.replication.message.node.NodeMovedMessage
+import com.tencent.bkrepo.replication.message.node.NodeRenamedMessage
+import com.tencent.bkrepo.replication.message.node.NodeUpdatedMessage
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
