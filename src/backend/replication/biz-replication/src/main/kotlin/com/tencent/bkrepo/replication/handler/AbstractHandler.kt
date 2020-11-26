@@ -38,7 +38,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicationType
 import com.tencent.bkrepo.replication.service.RepoDataService
 import com.tencent.bkrepo.replication.service.TaskService
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.annotation.Autowired
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
@@ -51,7 +51,7 @@ abstract class AbstractHandler {
     @Autowired
     lateinit var taskService: TaskService
 
-    fun convertReplicationRepo(localRepoInfo: RepositoryInfo, remoteRepoName: String? = null): ReplicationRepoDetail {
+    fun convertReplicationRepo(localRepoInfo: RepositoryDetail, remoteRepoName: String? = null): ReplicationRepoDetail {
         return with(localRepoInfo) {
             ReplicationRepoDetail(
                 localRepoDetail = repoDataService.getRepositoryDetail(projectId, name)!!,

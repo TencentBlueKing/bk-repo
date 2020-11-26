@@ -34,12 +34,10 @@ package com.tencent.bkrepo.replication.controller
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.role.Role
-import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -122,21 +120,26 @@ class ReplicationController(
     }
 
     override fun replicaUser(token: String, userReplicaRequest: UserReplicaRequest): Response<User> {
-        with(userReplicaRequest) {
-            val userInfo = userResource.detail(userId).data ?: run {
-                val request = CreateUserRequest(userId, name, pwd, admin)
-                userResource.createUser(request)
-                userResource.detail(userId).data!!
-            }
-            val remoteTokenStringList = this.tokens.map { it.id }
-            val selfTokenStringList = userInfo.tokens.map { it.id }
-            remoteTokenStringList.forEach {
-                if (!selfTokenStringList.contains(it)) {
-                    userResource.addUserToken(userId, token,it.,null)
-                }
-            }
-            return ResponseBuilder.success(userInfo)
-        }
+        // with(userReplicaRequest) {
+        //     val userInfo = userResource.detail(userId).data ?: run {
+        //         val request = CreateUserRequest(userId, name, pwd, admin)
+        //         userResource.createUser(request)
+        //         userResource.detail(userId).data!!
+        //     }
+        //     val selfTokenStringList = userInfo.tokens.map { it.id }
+        //     this.tokens.forEach{
+        //         if (!selfTokenStringList.contains(it.id)) {
+        //             userResource.addUserToken(userId, token,it.expiredAt ,)
+        //         }
+        //     }
+        //     // val remoteTokenStringList = this.tokens.map { }
+        //     //
+        //     // remoteTokenStringList.forEach {
+        //     //
+        //     // }
+        //     return ResponseBuilder.success(userInfo)
+        // }
+        // return ResponseBuilder.success(userInfo)
     }
 
     override fun replicaRole(token: String, roleReplicaRequest: RoleReplicaRequest): Response<Role> {
@@ -173,12 +176,7 @@ class ReplicationController(
         return ResponseBuilder.success()
     }
 
-    override fun listPermission(
-        token: String,
-        resourceType: ResourceType,
-        projectId: String,
-        repoName: String?
-    ): Response<List<Permission>> {
+    override fun listPermission(token: String, projectId: String, repoName: String?): Response<List<Permission>> {
         return permissionResource.listPermission(projectId, repoName)
     }
 

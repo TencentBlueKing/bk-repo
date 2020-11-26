@@ -34,11 +34,10 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.auth.pojo.user.User
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -120,11 +119,11 @@ class RepoDataService(
     }
 
     fun listUser(roleIdList: List<String>): List<User> {
-        return userResource.listUser(roleIdList).data!!
+        return userResource.listAllUser(roleIdList).data!!
     }
 
-    fun listPermission(resourceType: ResourceType, projectId: String, repoName: String?): List<Permission> {
-        return permissionResource.listPermission(resourceType, projectId, repoName).data!!
+    fun listPermission(projectId: String, repoName: String?): List<Permission> {
+        return permissionResource.listPermission(projectId, repoName).data!!
     }
 
     fun getUserDetail(uid: String): User? {

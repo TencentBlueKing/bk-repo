@@ -99,6 +99,14 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
+    override fun listAllUser(rids: List<String>?): Response<List<User>> {
+        var params = emptyList<String>()
+        rids?.let {
+            params = rids
+        }
+        return ResponseBuilder.success(userService.listUser(params))
+    }
+
     override fun deleteById(uid: String): Response<Boolean> {
         userService.deleteById(uid)
         return ResponseBuilder.success(true)
