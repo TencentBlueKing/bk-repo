@@ -85,6 +85,10 @@ class RepoDataService(
         return repositoryClient.getRepoDetail(projectId, repoName).data
     }
 
+    fun countFileNode(repositoryInfo: RepositoryDetail): Long {
+        return nodeClient.countFileNode(repositoryInfo.projectId, repositoryInfo.name, ROOT).data!!
+    }
+
     fun countFileNode(repositoryInfo: RepositoryInfo): Long {
         return nodeClient.countFileNode(repositoryInfo.projectId, repositoryInfo.name, ROOT).data!!
     }
