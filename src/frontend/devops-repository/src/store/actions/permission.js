@@ -16,9 +16,14 @@ export default {
         )
     },
     // 查询所有部门
-    getRepoDepartmentList () {
+    getRepoDepartmentList (_, { departmentId }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/department/list`
+            `${authPrefix}/department/list`,
+            {
+                params: {
+                    departmentId
+                }
+            }
         )
     },
     // 查询仓库所有权限
@@ -52,6 +57,13 @@ export default {
     setActionPermission (_, { body }) {
         return Vue.prototype.$ajax.put(
             `${authPrefix}/permission/action`,
+            body
+        )
+    },
+    // 通过部门id查询部门详情
+    getRepoDepartmentDetail (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/department/listByIds`,
             body
         )
     }

@@ -3,71 +3,73 @@
         <bk-collapse-item v-for="section in [admin, user, viewer]" :key="section.name" :name="section.name">
             <header class="section-header">
                 <div class="flex-align-center">
-                    <icon class="mr10" size="24" :name="section.icon"></icon>
+                    <icon class="mr10" size="20" :name="section.icon"></icon>
                     <span>{{ section.title }}</span>
                     <span class="mr10 permission-actions">（{{ getActions(section.actions.data) }}）</span>
                     <i v-if="section !== admin" class="devops-icon icon-edit hover-btn" @click.stop="editActionsDialogHandler(section)"></i>
                 </div>
             </header>
             <div slot="content" class="section-main">
-                <template v-for="part in ['users', 'roles', ...(section !== admin ? [] : [])]">
+                <template v-for="part in ['users', 'roles', ...(section !== admin ? ['departments'] : [])]">
                     <header :key="part + 'header'" class="section-sub-title flex-align-center">
                         <span>{{section[part].title}}</span>
-                        <i class="ml10 devops-icon icon-plus-square hover-btn" @click="section[part].showAddArea = !section[part].showAddArea"></i>
+                        <i class="ml10 devops-icon hover-btn"
+                            :class="section[part].showAddArea ? 'icon-minus-square' : 'icon-plus-square'"
+                            @click="handleShowAddArea(section[part])">
+                        </i>
+                        <div v-show="section[part].showAddArea" :key="part + 'operation'" class="ml15 flex-align-center">
+                            <template v-if="part === 'departments'">
+                                <bk-select
+                                    style="min-width: 350px"
+                                    searchable
+                                    multiple
+                                    v-model="section[part].addList"
+                                    :remote-method="(keyword) => $refs[`${section.name}Tree`][0].filter(keyword)"
+                                    :display-tag="true"
+                                    :tag-fixed-height="false"
+                                    :show-empty="false"
+                                    @toggle="show => toggleTreeSelect(show, $refs[`${section.name}Tree`][0], section[part].data)"
+                                    @tab-remove="({ id }) => $refs[`${section.name}Tree`][0].setChecked(id, { emitEvent: true, checked: false })"
+                                    @clear="$refs[`${section.name}Tree`][0].removeChecked({ emitEvent: false })">
+                                    <bk-big-tree
+                                        :ref="`${section.name}Tree`"
+                                        show-checkbox
+                                        :check-strictly="false"
+                                        show-link-line
+                                        :lazy-method="(node) => handleDepartmentTreeNode(node, $refs[`${section.name}Tree`][0], section[part].data)"
+                                        @check-change="ids => changeAddDepartments(section[part], ids)">
+                                    </bk-big-tree>
+                                </bk-select>
+                            </template>
+                            <template v-else>
+                                <bk-select
+                                    style="min-width: 250px"
+                                    v-model="section[part].addList"
+                                    multiple
+                                    display-tag
+                                    searchable
+                                    enable-virtual-scroll
+                                    :list="filterSelectOptions(section[part], part)">
+                                </bk-select>
+                            </template>
+                            <i v-if="section[part].addList.length"
+                                class="section-sub-add-btn devops-icon icon-check-1"
+                                @click="() => {
+                                    submit('add', part, section)
+                                }">
+                            </i>
+                        </div>
                     </header>
-                    <div v-show="section[part].showAddArea" :key="part + 'operation'" class="mt10 flex-align-center">
-                        <template v-if="part === 'departments'">
-                            <bk-select
-                                style="min-width: 250px"
-                                searchable
-                                multiple
-                                v-model="section[part].addList"
-                                :remote-method="(keyword) => $refs[`${section.name}Tree`][0].filter(keyword)"
-                                :display-tag="true"
-                                :tag-fixed-height="false"
-                                :show-empty="false"
-                                @tab-remove="({ id }) => $refs[`${section.name}Tree`][0].setChecked(id, { emitEvent: true, checked: false })"
-                                @clear="$refs[`${section.name}Tree`][0].removeChecked({ emitEvent: false })">
-                                <bk-big-tree
-                                    :ref="`${section.name}Tree`"
-                                    :data="departmentList"
-                                    show-checkbox
-                                    :check-strictly="false"
-                                    show-link-line
-                                    :default-checked-nodes="section[part].addList"
-                                    @check-change="ids => section[part].addList = [...ids]">
-                                </bk-big-tree>
-                            </bk-select>
-                        </template>
-                        <template v-else>
-                            <bk-tag-input
-                                style="min-width: 250px"
-                                v-model="section[part].addList"
-                                :list="Object.values({
-                                    users: userList,
-                                    roles: roleList
-                                }[part])
-                                    .filter(v => !section[part]
-                                        .data
-                                        .find(w => w === v.id)
-                                    )"
-                                trigger="focus"
-                                allow-create
-                                has-delete-icon>
-                            </bk-tag-input>
-                        </template>
-                        <bk-button v-if="section[part].addList.length" class="ml20" :loading="section.loading" theme="primary" @click="submit('add', part, section)">{{$t('add')}}</bk-button>
-                    </div>
-                    <div :key="part + 'data'">
+                    <div :key="part + 'data'" class="section-sub">
                         <div class="section-sub-main mt10">
-                            <div class="permission-tag" v-for="tag in (section[part].data.filter(v => !section[part].deleteList.find(w => w === v)))" :key="tag">
+                            <div class="permission-tag" v-for="tag in filterDeleteTagList(section[part])" :key="tag">
                                 {{ getName(part, tag) }}
-                                <i class="devops-icon icon-close-circle-shape" @click="section[part].deleteList.push(tag)"></i>
+                                <i class="devops-icon icon-close-circle-shape" @click="handleDeleteTag(section[part], tag)"></i>
                             </div>
                         </div>
                         <div v-if="section[part].deleteList && section[part].deleteList.length">
                             <bk-button :loading="section.loading" theme="primary" @click="submit('delete', part, section)">{{$t('save')}}</bk-button>
-                            <bk-button class="ml10" theme="default" @click="section[part].deleteList = []">{{$t('cancel')}}</bk-button>
+                            <bk-button class="ml10" theme="default" @click="cancel(section[part])">{{$t('cancel')}}</bk-button>
                         </div>
                     </div>
                 </template>
@@ -91,7 +93,7 @@
     </bk-collapse>
 </template>
 <script>
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     export default {
         name: 'permissionConfig',
         data () {
@@ -201,35 +203,8 @@
                 },
                 userList: {},
                 roleList: {},
-                departmentList: [
-                    {
-                        id: '1',
-                        name: '1',
-                        children: [
-                            {
-                                id: '1-1',
-                                name: '1-1'
-                            },
-                            {
-                                id: '1-2',
-                                name: '1-2'
-                            }
-                        ]
-                    }, {
-                        id: '2',
-                        name: '2',
-                        children: [
-                            {
-                                id: '2-1',
-                                name: '2-1'
-                            },
-                            {
-                                id: '2-2',
-                                name: '2-2'
-                            }
-                        ]
-                    }
-                ],
+                flatDepartment: {},
+                departmentTree: [],
                 actionList: [
                     { id: 'MANAGE', name: '管理' },
                     { id: 'READ', name: '查看' },
@@ -240,11 +215,38 @@
             }
         },
         computed: {
+            ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
             repoName () {
                 return this.$route.query.name
+            },
+            getName () {
+                return (part, tag) => {
+                    const map = {
+                        users: this.userList,
+                        roles: this.roleList,
+                        departments: this.flatDepartment
+                    }[part]
+                    return map[tag] ? map[tag].name : tag
+                }
+            },
+            getActions () {
+                return (actions) => {
+                    return actions.map(v => this.actionList.find(w => w.id === v).name).join('，')
+                }
+            },
+            filterDeleteTagList () {
+                return (target) => {
+                    return target.data.filter(v => !target.deleteList.find(w => w === v))
+                }
+            },
+            filterSelectOptions () {
+                return (target, part) => {
+                    const list = Object.values({ users: this.userList, roles: this.roleList }[part])
+                    return list.filter(v => !target.data.find(w => w === v.id))
+                }
             }
         },
         created () {
@@ -266,7 +268,7 @@
                     return target
                 }, {})
             })
-            this.getRepoDepartmentList()
+            this.handleDepartmentTreeNode()
             this.handlePermissionDetail()
         },
         methods: {
@@ -278,17 +280,68 @@
                 'setUserPermission',
                 'setRolePermission',
                 'setDepartmentPermission',
-                'setActionPermission'
+                'setActionPermission',
+                'getRepoDepartmentDetail'
             ]),
-            getName (part, tag) {
-                const map = {
-                    users: this.userList,
-                    roles: this.roleList
-                }[part]
-                return map[tag] ? map[tag].name : tag
+            handleShowAddArea (target) {
+                target.showAddArea = !target.showAddArea
             },
-            getActions (actions) {
-                return actions.map(v => this.actionList.find(w => w.id === v).name).join('，')
+            handleDeleteTag (target, tag) {
+                target.deleteList.push(tag)
+            },
+            toggleTreeSelect (show, treeTarget, disabled) {
+                show && treeTarget.setData(this.departmentTree)
+                disabled.forEach(id => {
+                    treeTarget.setChecked(id)
+                    treeTarget.setDisabled(id)
+                })
+            },
+            changeAddDepartments (treeTarget, ids) {
+                treeTarget.addList = ids.filter(id => !treeTarget.data.find(exist => id === exist))
+            },
+            handleFlatDepartment (departments) {
+                departments.forEach(v => {
+                    this.$set(this.flatDepartment, v.id, v)
+                })
+            },
+            async handleDepartmentTreeNode (node, root, disabled) {
+                if (!node) {
+                    // 初始化
+                    this.getRepoDepartmentList({
+                        username: this.userInfo.username
+                    }).then(res => {
+                        this.handleFlatDepartment(res)
+                        this.departmentTree = res.map(v => ({ ...v, has_children: true }))
+                    })
+                } else {
+                    // 初始化
+                    if (!node.data.has_children) return ({ data: [], leaf: [] })
+                    const res = await this.getRepoDepartmentList({
+                        username: this.userInfo.username,
+                        departmentId: node.id
+                    })
+                    this.handleFlatDepartment(res)
+                    this.$nextTick(() => {
+                        let target = this.departmentTree
+                        node.parents.forEach(parent => {
+                            target = (target.children || target).find(v => v.id === parent.id).children
+                        })
+                        target = target.find(v => v.id === node.id)
+                        target.children = res
+                        if (root) {
+                            root.setData(this.departmentTree)
+                            root.setExpanded([node.id])
+                            disabled.forEach(id => {
+                                root.setChecked(id)
+                                root.setDisabled(id)
+                            })
+                        }
+                    })
+                    return {
+                        data: [],
+                        leaf: res.filter(v => !v.has_children).map(w => w.id)
+                    }
+                }
             },
             async handlePermissionDetail (target, origin, id) {
                 this.isLoading = true
@@ -299,6 +352,7 @@
                     if (target && origin && id) {
                         this[origin][target].data = res.find(v => v.id === id)[target]
                     } else {
+                        let departments = []
                         res.forEach(part => {
                             const perm = this[part.permName.replace(/^.*_([^_]+)$/, '$1')]
                             perm.id = part.id
@@ -306,7 +360,10 @@
                             perm.roles.data = part.roles
                             perm.departments.data = part.departments
                             perm.actions.data = part.actions
+                            departments = departments.concat(part.departments)
                         })
+                        departments = Array.from(new Set(departments)).filter(v => !this.flatDepartment.hasOwnProperty(v))
+                        departments.length && this.getRepoDepartmentDetail({ body: departments }).then(this.handleFlatDepartment)
                     }
                 }).finally(() => {
                     this.isLoading = false
@@ -343,6 +400,9 @@
                 }).finally(() => {
                     this.loading = false
                 })
+            },
+            cancel (target) {
+                target.deleteList = []
             },
             editActionsDialogHandler (data) {
                 this.editActionsDialog = {
@@ -385,8 +445,8 @@
         }
         .bk-collapse-item-header {
             position: relative;
-            height: 48px;
-            line-height: 48px;
+            height: 42px;
+            line-height: 40px;
             .icon-angle-right {
                 padding: 0 15px;
             }
@@ -396,50 +456,67 @@
         margin-top: 20px;
     }
     .section-header {
-        padding-left: 20px;
+        padding-left: 10px;
         color: $fontBoldColor;
         background-color: #f2f2f2;
         border: 1px solid #d5d5d5;
-        font-size: 16px;
+        font-size: 14px;
         font-weight: normal;
         .icon-edit {
             font-size: 14px;
         }
         .permission-actions {
-            font-size: 14px;
+            font-size: 12px;
             color: $fontColor;
         }
     }
     .section-main {
         padding: 10px;
-        border: 1px solid #d5d5d5;
+        border: solid #d5d5d5;
+        border-width: 0 1px 1px;
         /deep/ .bk-select-empty {
             display: none;
         }
         .section-sub-title {
+            height: 52px;
             padding: 10px;
-            font-weight: bold;
             border-bottom: 1px solid #d5d5d5;
-        }
-        .section-sub-main {
-            display: flex;
-            flex-wrap: wrap;
-            .permission-tag {
+            .section-sub-add-btn {
                 position: relative;
-                margin-right: 15px;
-                margin-bottom: 10px;
-                padding: 10px 20px;
-                background-color: #f2f2f2;
-                .icon-close-circle-shape {
-                    display: none;
-                    position: absolute;
-                    top: -5px;
-                    right: -5px;
-                    color: $dangerColor;
-                    cursor: pointer;
+                z-index: 1;
+                padding: 9px;
+                color: white;
+                margin-left: -2px;
+                border-radius: 0 2px 2px 0;
+                background-color: #3a84ff;
+                cursor: pointer;
+                &:hover {
+                    background-color: #699df4;
                 }
-                &:hover .icon-close-circle-shape {
-                    display: block;
+            }
+        }
+        .section-sub {
+            margin-bottom: 20px;
+            .section-sub-main {
+                display: flex;
+                flex-wrap: wrap;
+                .permission-tag {
+                    position: relative;
+                    margin-right: 15px;
+                    margin-bottom: 10px;
+                    padding: 7px 20px;
+                    background-color: #f2f2f2;
+                    .icon-close-circle-shape {
+                        display: none;
+                        position: absolute;
+                        top: -5px;
+                        right: -5px;
+                        color: $dangerColor;
+                        cursor: pointer;
+                    }
+                    &:hover .icon-close-circle-shape {
+                        display: block;
+                    }
                 }
             }
         }
