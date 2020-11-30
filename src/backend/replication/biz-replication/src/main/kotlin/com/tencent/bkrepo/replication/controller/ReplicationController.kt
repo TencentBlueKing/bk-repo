@@ -38,6 +38,7 @@ import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.role.Role
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -78,6 +79,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
+import java.time.format.DateTimeFormatter
 
 @Principal(type = PrincipalType.ADMIN)
 @RestController
@@ -120,26 +122,25 @@ class ReplicationController(
     }
 
     override fun replicaUser(token: String, userReplicaRequest: UserReplicaRequest): Response<User> {
-        // with(userReplicaRequest) {
-        //     val userInfo = userResource.detail(userId).data ?: run {
-        //         val request = CreateUserRequest(userId, name, pwd, admin)
-        //         userResource.createUser(request)
-        //         userResource.detail(userId).data!!
-        //     }
-        //     val selfTokenStringList = userInfo.tokens.map { it.id }
-        //     this.tokens.forEach{
-        //         if (!selfTokenStringList.contains(it.id)) {
-        //             userResource.addUserToken(userId, token,it.expiredAt ,)
-        //         }
-        //     }
-        //     // val remoteTokenStringList = this.tokens.map { }
-        //     //
-        //     // remoteTokenStringList.forEach {
-        //     //
-        //     // }
-        //     return ResponseBuilder.success(userInfo)
-        // }
-        // return ResponseBuilder.success(userInfo)
+        with(userReplicaRequest) {
+            val userInfo = userResource.detail(userId).data ?: run {
+                val request = CreateUserRequest(userId, name, pwd, admin)
+                userResource.createUser(request)
+                userResource.detail(userId).data!!
+            }
+            val selfTokenStringList = userInfo.tokens.map { it.id }
+            this.tokens.forEach {
+                if (!selfTokenStringList.contains(it.id)) {
+                    userResource.addUserToken(
+                        userId,
+                        token,
+                        it.expiredAt!!.format(DateTimeFormatter.ISO_DATE_TIME),
+                        null
+                    )
+                }
+            }
+            return ResponseBuilder.success(userInfo)
+        }
     }
 
     override fun replicaRole(token: String, roleReplicaRequest: RoleReplicaRequest): Response<Role> {

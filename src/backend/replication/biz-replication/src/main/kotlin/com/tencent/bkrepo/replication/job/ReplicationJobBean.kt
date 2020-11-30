@@ -55,7 +55,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -471,9 +470,10 @@ class ReplicationJobBean(
         remoteRepoName: String? = null
     ): ReplicationRepoDetail {
         return with(localRepoInfo) {
+            val repoDetail = repoDataService.getRepositoryDetail(projectId, name)
             val fileCount = repoDataService.countFileNode(this)
             ReplicationRepoDetail(
-                localRepoDetail = this,
+                localRepoDetail = repoDetail!!,
                 fileCount = fileCount,
                 remoteRepoName = remoteRepoName ?: this.name
             )
