@@ -91,8 +91,8 @@ env:
   BK_REPO_DOCKER_HOST: docker.bkrepo.com
   BK_REPO_DOCKER_HTTP_PORT: 80
   BK_REPO_DOCKER_HTTPS_PORT: 443
-  BK_REPO_DOCKER_CERT_KEY:
-  BK_REPO_DOCKER_CERT_PEM:
+  BK_REPO_DOCKER_CERT_KEY: /data/workspace/certs/cert.key
+  BK_REPO_DOCKER_CERT_PEM: /data/workspace/certs/cert.pem
 
   # npm
   BK_REPO_NPM_PORT: 25804

@@ -14,6 +14,7 @@ mkdir -p tmp
 
 ## 编译frontend
 info "编译frontend..."
+yarn --cwd $root_dir/src/frontend install
 yarn --cwd $root_dir/src/frontend run public
 info "编译frontend完成"
 
